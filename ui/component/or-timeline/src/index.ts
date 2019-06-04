@@ -1,16 +1,93 @@
-import {html, LitElement, property} from 'lit-element';
+import {html, LitElement, property, customElement} from "lit-element";
+import moment from "moment";
 
-import moment from 'moment';
-
+@customElement("or-timeline")
 class OrTimeline extends LitElement {
-    protected render() {
-        if(this.shadowRoot){
-            const range:any = this.shadowRoot.getElementById('or-timeline-slider');
-            if(range) {
-                range.value = Math.round(this.current);
-                this.moveBubble(range);
+
+    // default value in minutes
+    @property({type: Number})
+    public current: number = 0;
+
+    @property({type: Function})
+    public onChange: any;
+
+    // default value in minutes
+    @property({type: Number})
+    public value: number = 0;
+
+    // maxRange in minutes
+    @property({type: Number})
+    public maxRange: number = 360;
+
+    // minRange in minutes
+    @property({type: Number})
+    public minRange: number = 0;
+
+    // Steps in minutes
+    @property({type: Number})
+    public step: number = 5;
+
+    constructor() {
+        super();
+    }
+
+    public moveBubble(e: any= null, value: string|null= null) {
+        let el;
+        if (e) {
+            el = e.target;
+        } else {
+            if (this.shadowRoot) {
+                el = this.shadowRoot.getElementById("or-timeline-slider");
             }
         }
+
+        if (el) {
+            if (value) {
+                this.current = parseInt(value);
+            } else {
+                this.current = parseInt(el.value);
+            }
+            // Measure width of range input
+            const width = el.offsetWidth;
+            const v = this.current;
+
+            // Figure out placement percentage between left and right of input
+            const newPoint = v / this.maxRange;
+            // Janky value to get pointer to line up better
+            const offset = 15;
+            let newPlace;
+
+            // Prevent bubble from going beyond left or right (unsupported browsers)
+            if (newPoint < 0) {
+                newPlace = 0;
+            } else if (newPoint > 1) {
+                newPlace = width - offset;
+            } else {
+                newPlace = (width - offset) * newPoint;
+
+                if (newPlace < 0 ) {
+                    newPlace = 0;
+                }
+
+            }
+
+            // Move bubble
+            if (this.shadowRoot) {
+                const range: HTMLElement | null = this.shadowRoot.getElementById("range-value");
+                if (range) {
+                    range.style.left = newPlace + "px";
+                }
+            }
+        }
+
+    }
+
+    public valueChange(e: any) {
+        this.moveBubble(e);
+        this.onChange();
+    }
+
+    protected render() {
 
         return html`
               <style>
@@ -30,16 +107,16 @@ class OrTimeline extends LitElement {
                     }
                     .slidecontainer {
                         position: relative;
-                        margin: -5px 50px 0 30px;
+                        margin: -5px 44px 0 19px;
                     }
                     
                     /* The slider itself */
                     .slider {
+                      color: var(--timeline-accent,  #1D5632);
                       box-sizing: border-box;
                       -webkit-appearance: none;
                       outline: none;
-                      width: 102%;
-                      margin-left: -15px;
+                      width: 100%;
                     }
                     .slider::-webkit-slider-runnable-track {                      
                       cursor: pointer;
@@ -54,7 +131,7 @@ class OrTimeline extends LitElement {
                       border-radius: 50%;
                       cursor: pointer;
                       -webkit-appearance: none;
-                      background-color: var(--timeline-accent,  blue); /* Green background */
+                      background-color: var(--timeline-accent,  #1D5632); /* Green background */
                       pointer-events: all;
                       margin-top: -2px;
                     }
@@ -73,7 +150,7 @@ class OrTimeline extends LitElement {
                       border-radius: 50%;
                       cursor: pointer;
                       -webkit-appearance: none;
-                      background-color: var(--timeline-accent,  blue); /* Green background */
+                      background-color: var(--timeline-accent,  #1D5632); /* Green background */
                       pointer-events: all;
                       margin-top: -2px;
                     }
@@ -92,7 +169,7 @@ class OrTimeline extends LitElement {
                       border-radius: 50%;
                       cursor: pointer;
                       -webkit-appearance: none;
-                      background-color: var(--timeline-accent,  blue); /* Green background */
+                      background-color: var(--timeline-accent,  currentColor); /* Bug in Edge set colour on slider itself */
                       pointer-events: all;
                       margin-top: -2px;
                     }
@@ -140,7 +217,7 @@ class OrTimeline extends LitElement {
                   
                     #range-value {
                         position: absolute;
-                        background-color:  var(--timeline-accent,  blue);
+                        background-color:  var(--timeline-accent,  #1D5632);
                         height: 30px; 
                         width: 60px;
                         margin-left: -30px;
@@ -164,111 +241,26 @@ class OrTimeline extends LitElement {
             
             
             <div class="time-value-container">
-                <div id="range-value">${this.current === 0 ? 'LIVE' : moment().add(this.current, 'minutes').format('HH:mm')}</div>
+                <div id="range-value">${this.current === 0 ? "LIVE" : moment().add(this.current, "minutes").format("HH:mm")}</div>
             </div>
             <div class="timeline-container">
                  <div id="timelineHourMarkers" class="layout horizontal justified style-scope controller-timeline">
-                    ${new Array((this.maxRange/60)+1).fill(0).map((_, idx) => {
+                    ${new Array((this.maxRange / 60) + 1).fill(0).map((_, idx) => {
                         return html`
                         ${idx === 0 ? html`
                             <div class="timelineHourMark style-scope controller-timeline">Nu</div>
                         ` : html`
                             <div class="timelineHourMark style-scope controller-timeline">+${idx}u</div>
                         `}
-                    `})}
+                    `; })}
                 </div>
                 
                 <div class="slidecontainer">
-                  <input id="or-timeline-slider" class="slider" type="range"  @input="${this.moveBubble}" @change="${this.valueChange}" value="${this.current}"  min="${this.minRange}" max="${this.maxRange}" step="${this.step}">
+                  <input id="or-timeline-slider" class="slider" type="range" @input="${this.moveBubble}" @change="${this.valueChange}" value="${this.current}"  min="${this.minRange}" max="${this.maxRange}" step="${this.step}">
                 </div>
             </div>
                
     `;
     }
-    @property({type: Function})
-    private onChange: any;
-
-    // default value in minutes
-    @property({type: Number})
-    private value: number = 0;
-
-    // default value in minutes
-    @property({type: Number})
-    public current: number = 0;
-
-    // maxRange in minutes
-    @property({type: Number})
-    private maxRange: number = 360;
-
-    // minRange in minutes
-    @property({type: Number})
-    private minRange: number = 0;
-
-    // Steps in minutes
-    @property({type: Number})
-    private step: number = 5;
-
-    moveBubble(e:any=null, value:string|null=null) {
-        let el;
-        if(e){
-            el = e.target;
-        } else {
-            if(this.shadowRoot){
-                el = this.shadowRoot.getElementById('or-timeline-slider');
-            }
-        }
-
-        if(el) {
-            if(value){
-                this.current = parseInt(value);
-            } else {
-                this.current = parseInt(el.value);
-            }
-            // Measure width of range input
-            const width = el.offsetWidth;
-            const v = this.current;
-
-            // Figure out placement percentage between left and right of input
-            const newPoint = v / this.maxRange;
-            // Janky value to get pointer to line up better
-            let offset = 15;
-            let newPlace;
-
-            // Prevent bubble from going beyond left or right (unsupported browsers)
-            if (newPoint < 0) {
-                newPlace = 0;
-            } else if (newPoint > 1) {
-                newPlace = width - offset;
-            } else {
-                newPlace = (width - offset) * newPoint;
-
-                if(newPlace < 0 ) {
-                    newPlace = 0;
-                }
-
-            }
-
-            // Move bubble
-            if(this.shadowRoot) {
-                const range:HTMLElement | null = this.shadowRoot.getElementById('range-value');
-                if(range){
-                    range.style.left = newPlace + "px";
-                }
-            }
-        }
-
-    }
-
-    valueChange (e:any) {
-        this.moveBubble(e);
-        this.onChange();
-    }
-
-    constructor() {
-        super();
-    }
-
 
 }
-
-window.customElements.define('or-timeline', OrTimeline);

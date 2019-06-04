@@ -1,17 +1,120 @@
-import {html, LitElement, property, customElement, PropertyValues} from 'lit-element';
+import {html, LitElement, property, customElement, PropertyValues} from "lit-element";
 
-import moment from 'moment';
+import moment from "moment";
 
-import {icon} from '@fortawesome/fontawesome-svg-core'
-import {faClock} from '@fortawesome/free-regular-svg-icons';
-import {faTimes} from '@fortawesome/free-solid-svg-icons';
+import {icon} from "@fortawesome/fontawesome-svg-core";
+import {faClock} from "@fortawesome/free-regular-svg-icons";
+import {faTimes} from "@fortawesome/free-solid-svg-icons";
 
 import REST from "@openremote/rest";
 import {AssetQuery, BaseAssetQueryInclude} from "@openremote/model";
 import openremote from "@openremote/core";
 
-@customElement('or-smart-notify')
+@customElement("or-smart-notify")
 class OrSmartNotify extends LitElement {
+    // default function on smartyNotify
+    @property({type: Function})
+    private onChange: any;
+
+    // if smart notify popup is visible
+    @property({type: Boolean})
+    private isVisible: boolean = false;
+
+    // If smart notify is active
+    @property({type: Boolean})
+    private isActive: boolean = false;
+
+    // If smart notify is active
+    @property({type: Boolean})
+    private isDisabled: boolean = false;
+
+    // If smart notify is active
+    @property({type: Object})
+    private smartNotify: any = {};
+
+    // default function on smartyNotify
+    @property({type: String})
+    private currentTime: string = "-";
+
+    constructor() {
+        super();
+        const self: any = this;
+        this.currentTime = moment().format("HH:mm");
+
+        setInterval(function() {
+            self.currentTime = moment().format("HH:mm");
+        }, 500);
+    }
+
+    public getSmartNotify() {
+        const self: any = this;
+        return new Promise((resolve: any, reject: any) => {
+            const smartNotifyQuery: AssetQuery = {
+                name: {predicateType: "string", value: "SMART_NOTIFY_ASSET"},
+                select: {include: BaseAssetQueryInclude.ALL_EXCEPT_PATH}
+            };
+            REST.api.AssetResource.queryAssets(smartNotifyQuery).then((response: any) => {
+                console.log("Setting Smart Notify");
+                if (response.data) {
+                    self.smartNotify = response.data[0];
+                    self.isActive = self.smartNotify.attributes.SMART_NOTIFY_ENABLED.value;
+                    self.onChange();
+                    resolve(response);
+                }
+
+            }).catch((reason: any) =>  {
+                reject(Error("Error:" + reason));
+                console.log("Error:" + reason);
+            });
+
+        });
+    }
+
+    public checkSmartNotifyMarkers() {
+        const self: any = this;
+        if (this.isActive && this.smartNotify.attributes.SMART_NOTIFY_RESULT.value.markers && this.smartNotify.attributes.SMART_NOTIFY_RESULT.value.markers.length > 0) {
+        } else if (this.isActive && this.smartNotify.attributes.SMART_NOTIFY_RESULT.value.markers.length === 0) {
+            this.getSmartNotify().then(() => {
+                setTimeout(() => {
+                    self.checkSmartNotifyMarkers();
+                }, 3000);
+            });
+        }
+    }
+
+    public setSmartNotify(e: any) {
+        const isChecked = e.target.checked;
+        if (isChecked) {
+            this.smartNotify.attributes.SMART_NOTIFY_ENABLED.value = moment();
+            this.smartNotify.attributes.SMART_NOTIFY_ENABLED.valueTimestamp = moment();
+            this.isActive = true;
+        } else {
+            this.smartNotify.attributes.SMART_NOTIFY_ENABLED.value = null;
+            this.isActive = false;
+        }
+        REST.api.AssetResource.update(this.smartNotify.id, this.smartNotify).then((response: any) => {
+            console.log("Setting Smart Notify");
+            this.smartNotify.version = this.smartNotify.version + 1;
+            if (isChecked) {
+                this.checkSmartNotifyMarkers();
+            } else {
+
+                // Clear the smart notify markers and smart notify in frontend
+                this.smartNotify.attributes.SMART_NOTIFY_ENABLED.value = false;
+                this.smartNotify.attributes.SMART_NOTIFY_RESULT.value.markers = [];
+                this.onChange();
+            }
+
+        }).catch((reason: any) => console.log("Error:" + reason));
+    }
+
+    public close() {
+        this.isVisible = false;
+    }
+
+    public toggleVisibility() {
+        this.isVisible = !this.isVisible;
+    }
     protected render() {
         // language=HTML
         return html`
@@ -211,7 +314,7 @@ class OrSmartNotify extends LitElement {
                 ${this.isActive ? html`
                     <div class="layout horizontal">
                         <div style="background-color: var(--app-lightgrey-color, #dedede);" class="flex padding-10">Starttijd</div>
-                        <div class="flex t-center">${this.isActive ? moment(this.smartNotify.attributes.SMART_NOTIFY_ENABLED.valueTimestamp).format('HH:mm')  : "-"}</div>
+                        <div class="flex t-center">${this.isActive ? moment(this.smartNotify.attributes.SMART_NOTIFY_ENABLED.valueTimestamp).format("HH:mm")  : "-"}</div>
                     </div>
                 ` : ``}
             </div>
@@ -225,116 +328,10 @@ class OrSmartNotify extends LitElement {
                
     `;
     }
-    // default function on smartyNotify
-    @property({type: Function})
-    private onChange: any;
-
-    // if smart notify popup is visible
-    @property({type: Boolean})
-    private isVisible: boolean = false;
-
-    // If smart notify is active
-    @property({type: Boolean})
-    private isActive: boolean = false;
-
-    // If smart notify is active
-    @property({type: Boolean})
-    private isDisabled: boolean = false;
-
-    // If smart notify is active
-    @property({type: Object})
-    private smartNotify: any = {};
-
-    // default function on smartyNotify
-    @property({type: String})
-    private currentTime: string = '-';
-
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
         this.isDisabled = !openremote.hasRole("write:assets");
     }
 
-    getSmartNotify() {
-        const self:any = this;
-        return new Promise(function(resolve: any, reject: any) {
-            const smartNotifyQuery: AssetQuery = {
-                name: {predicateType: "string", value: "SMART_NOTIFY_ASSET"},
-                select: {include: BaseAssetQueryInclude.ALL_EXCEPT_PATH}
-            };
-            REST.api.AssetResource.queryAssets(smartNotifyQuery).then((response: any) => {
-                console.log("Setting Smart Notify");
-                if (response.data) {
-                    self.smartNotify = response.data[0];
-                    self.isActive = self.smartNotify.attributes.SMART_NOTIFY_ENABLED.value ? true : false;
-                    self.onChange();
-                    resolve(response);
-                }
-
-            }).catch((reason:any) =>  {
-                reject(Error("Error:" + reason));
-                console.log("Error:" + reason)
-            });
-
-        });
-    }
-
-    checkSmartNotifyMarkers() {
-        const self:any = this;
-        if(this.isActive && this.smartNotify.attributes.SMART_NOTIFY_RESULT.value.markers && this.smartNotify.attributes.SMART_NOTIFY_RESULT.value.markers.length > 0) {
-        } else if (this.isActive && this.smartNotify.attributes.SMART_NOTIFY_RESULT.value.markers.length === 0) {
-            this.getSmartNotify().then(()=> {
-                setTimeout(function(){
-                    self.checkSmartNotifyMarkers();
-                }.bind(this), 3000);
-            });
-        }
-    }
-
-    setSmartNotify(e:any) {
-        const isChecked = e.target.checked;
-        if (isChecked == true) {
-            this.smartNotify.attributes.SMART_NOTIFY_ENABLED.value = moment();
-            this.smartNotify.attributes.SMART_NOTIFY_ENABLED.valueTimestamp = moment();
-            this.isActive = true;
-        } else {
-            this.smartNotify.attributes.SMART_NOTIFY_ENABLED.value = null;
-            this.isActive = false;
-        }
-        REST.api.AssetResource.update(this.smartNotify.id, this.smartNotify).then((response:any) => {
-            console.log("Setting Smart Notify");
-            this.smartNotify.version = this.smartNotify.version+1;
-            if(isChecked == true){
-                this.checkSmartNotifyMarkers();
-            } else {
-
-                // Clear the smartnotify markers and smart notify in frontend
-                this.smartNotify.attributes.SMART_NOTIFY_ENABLED.value = false;
-                this.smartNotify.attributes.SMART_NOTIFY_RESULT.value.markers = [];
-                this.onChange();
-            }
-
-        }).catch((reason:any) => console.log("Error:" + reason));
-    }
-
-    close() {
-        this.isVisible = false;
-    }
-
-    toggleVisibility() {
-        this.isVisible = !this.isVisible;
-    }
-
-    constructor() {
-        super();
-        const self:any = this;
-        this.currentTime = moment().format('HH:mm');
-
-        setInterval(function(){
-            self.currentTime = moment().format('HH:mm');
-        }, 500);
-    }
-
-
 }
-
