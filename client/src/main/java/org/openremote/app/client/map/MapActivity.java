@@ -181,7 +181,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
                     showAssetInfoItems();
                     environment.getEventService().subscribe(
                         AttributeEvent.class,
-                        new AssetEvent.AssetIdFilter(asset.getId())
+                        new AssetEvent.AssetIdFilter<>(asset.getId())
                     );
                 }
             });

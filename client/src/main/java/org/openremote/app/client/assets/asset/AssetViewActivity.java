@@ -187,7 +187,7 @@ public class AssetViewActivity
         if (subscribe) {
             environment.getEventService().subscribe(
                 AttributeEvent.class,
-                new AssetEvent.AssetIdFilter(asset.getId())
+                new AssetEvent.AssetIdFilter<>(asset.getId())
             );
         } else {
             environment.getEventService().unsubscribe(
@@ -242,9 +242,7 @@ public class AssetViewActivity
             } else {
                 AgentLink.getAgentLink(assetAttribute)
                     .filter(agentLink -> agentLink.equals(event.getProtocolConfiguration()))
-                    .ifPresent(agentLink -> {
-                        attributeView.setStatus(event.getConnectionStatus());
-                    });
+                    .ifPresent(agentLink -> attributeView.setStatus(event.getConnectionStatus()));
             }
 
         }
