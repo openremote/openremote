@@ -43,17 +43,17 @@ public enum AssetType implements AssetDescriptor {
             GEO_COUNTRY,
             GEO_POSTAL_CODE),
 
-    FLOOR(ASSET_NAMESPACE + ":floor", "server"),
+    FLOOR(ASSET_NAMESPACE + ":floor", "bars"),
 
     RESIDENCE(ASSET_NAMESPACE + ":residence", "home"),
 
-    ROOM(ASSET_NAMESPACE + ":room", "office"),
+    ROOM(ASSET_NAMESPACE + ":room", "door-open"),
 
     AGENT(ASSET_NAMESPACE + ":agent", "cogs"),
 
-    CONSOLE(ASSET_NAMESPACE + ":console", "cellphone-android"),
+    CONSOLE(ASSET_NAMESPACE + ":console", "bullseye"),
 
-    THING(ASSET_NAMESPACE + ":thing", "settings");
+    THING(ASSET_NAMESPACE + ":thing", "cube");
 
     final protected String type;
     final protected String icon;

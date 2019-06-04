@@ -219,7 +219,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
 
 
             infoItems.add(0, new MapInfoItem(
-                "map-marker",
+                "map-marker-alt",
                 environment.getMessages().location(),
                 null,
                 Values.create(getCoordinatesLabel())
