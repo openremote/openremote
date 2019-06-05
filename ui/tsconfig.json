@@ -6,10 +6,7 @@
     "moduleResolution": "node",
     "lib": [
       "dom",
-      "dom.iterable",
-      "es6",
-      "scripthost",
-      "es2016.array.include"
+      "es2017"
     ],
     "noEmitOnError": true,
     "strict": true,
