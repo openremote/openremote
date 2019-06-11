@@ -81,7 +81,6 @@ public class JsonRulesBuilder extends RulesBuilder {
     static class RuleTriggerState {
 
         final TimerService timerService;
-        boolean notifiedLocationPredicates;
         boolean trackUnmatched;
         BaseAssetQuery.OrderBy orderBy;
         int limit;
@@ -153,10 +152,9 @@ public class JsonRulesBuilder extends RulesBuilder {
                 unfilteredAssetStates = facts.matchAssetState(query).collect(Collectors.toSet());
 
                 // Use this opportunity to notify RulesFacts about any location predicates
-                if (!notifiedLocationPredicates) {
+                if (facts.trackLocationRules) {
                     List<AttributePredicate> flattenedAttributePredicates = RuleCondition.flatten(Collections.singletonList(attributePredicates));
                     facts.storeLocationPredicates(getLocationPredicates(flattenedAttributePredicates));
-                    notifiedLocationPredicates = true;
                 }
             }
         }
