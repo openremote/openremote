@@ -717,7 +717,11 @@ export class Manager implements EventProviderFactory {
 
                     this._name = this._keycloak.tokenParsed.name;
                     this._username = this._keycloak.tokenParsed.preferred_username;
-                    this._roles = this._keycloak.resourceAccess.openremote.roles;
+                    if (this._keycloak.resourceAccess.openremote) {
+                        this._roles = this._keycloak.resourceAccess.openremote.roles;
+                    } else {
+                        this._roles = this._keycloak.resourceAccess.account.roles;
+                    }
 
                     // Update the access token every 10s (note keycloak will only update if expiring within configured
                     // time period.
