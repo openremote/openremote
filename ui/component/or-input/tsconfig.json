@@ -10,6 +10,6 @@
   ],
   "references": [
     { "path": "../core" },
-    { "path": "../rest" }
+    { "path": "../or-select" }
   ]
 }

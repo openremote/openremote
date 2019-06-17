@@ -12,10 +12,8 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "lit-element": "^2.1.0",
-    "@material/select": "^1.0.1",
-    "@material/list": "^1.0.1",
-    "@material/menu": "^1.0.1",
-    "@material/menu-surface": "^1.0.1"
+    "@openremote/core": "^1.0.0",
+    "@openremote/or-select": "^1.0.0"
   },
   "devDependencies": {
     "@polymer/decorators": "^3.0.0",

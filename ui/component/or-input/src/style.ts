@@ -1,4 +1,4 @@
-import {css} from "lit-element";
+    import {css} from "lit-element";
 
 // TODO this is temp work, should be replaced with material design components / styling
 // language=CSS
@@ -15,5 +15,5 @@ export const orInputStyle = css`
         background-color: #f2f2f2;
     }
 
-    input:focus:required:invalid { border-bottom: 2px solid red;}
+    input:invalid { border-bottom: 2px solid red;}
 `;
