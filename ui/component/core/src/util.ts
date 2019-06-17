@@ -5,7 +5,7 @@ import {
     PushNotificationMessage,
     RuleActionUnion,
     RuleCondition,
-    RuleTrigger
+    LogicGroup
 } from "@openremote/model";
 
 export class Deferred<T> {
@@ -48,7 +48,7 @@ export function getGeoNotificationsFromRulesSet(rulesetDefinition: JsonRulesetDe
 
         if (rule.when && rule.then && rule.then.length > 0) {
             const geoNotificationMap = new Map<String, GeoNotification[]>();
-            addGeofencePredicatesFromRuleTriggerCondition(rule.when, 0, geoNotificationMap);
+            addGeofencePredicatesFromRuleConditionCondition(rule.when, 0, geoNotificationMap);
 
             if (geoNotificationMap.size > 0) {
                 rule.then.forEach((ruleAction) => addPushNotificationsFromRuleAction(ruleAction, geoNotificationMap));
@@ -67,13 +67,13 @@ export function getGeoNotificationsFromRulesSet(rulesetDefinition: JsonRulesetDe
     return geoNotifications;
 }
 
-function addGeofencePredicatesFromRuleTriggerCondition(ruleCondition: RuleCondition<RuleTrigger> | undefined, index: number, geoNotificationMap: Map<String, GeoNotification[]>) {
+function addGeofencePredicatesFromRuleConditionCondition(ruleCondition: LogicGroup<RuleCondition> | undefined, index: number, geoNotificationMap: Map<String, GeoNotification[]>) {
     if (!ruleCondition) {
         return;
     }
 
-    if (ruleCondition.predicates) {
-        ruleCondition.predicates.forEach((ruleTrigger) => {
+    if (ruleCondition.items) {
+        ruleCondition.items.forEach((ruleTrigger) => {
             if (ruleTrigger.assets && ruleTrigger.assets.attributes) {
                 const geoNotifications: GeoNotification[] = [];
                 addGeoNotificationsFromAttributePredicateCondition(ruleTrigger.assets.attributes, geoNotifications);
@@ -86,12 +86,12 @@ function addGeofencePredicatesFromRuleTriggerCondition(ruleCondition: RuleCondit
     }
 }
 
-function addGeoNotificationsFromAttributePredicateCondition(attributeCondition: RuleCondition<AttributePredicate> | undefined, geoNotifications: GeoNotification[]) {
+function addGeoNotificationsFromAttributePredicateCondition(attributeCondition: LogicGroup<AttributePredicate> | undefined, geoNotifications: GeoNotification[]) {
     if (!attributeCondition) {
         return;
     }
 
-    attributeCondition.predicates!.forEach((predicate) => {
+    attributeCondition.items!.forEach((predicate) => {
         if (predicate.value && (predicate.value.predicateType === "radial" || predicate.value!.predicateType === "rect")) {
             geoNotifications.push({
                 predicate: predicate.value as GeofencePredicate
@@ -99,8 +99,8 @@ function addGeoNotificationsFromAttributePredicateCondition(attributeCondition: 
         }
     });
 
-    if (attributeCondition.conditions) {
-        attributeCondition.conditions.forEach((condition) => addGeoNotificationsFromAttributePredicateCondition(condition, geoNotifications));
+    if (attributeCondition.groups) {
+        attributeCondition.groups.forEach((condition) => addGeoNotificationsFromAttributePredicateCondition(condition, geoNotifications));
     }
 }
 
@@ -109,8 +109,8 @@ function addPushNotificationsFromRuleAction(ruleAction: RuleActionUnion, geoPred
         if (ruleAction.notification && ruleAction.notification.message && ruleAction.notification.message.type === "push") {
             // Find applicable targets
             const target = ruleAction.target;
-            if (target && target.ruleTriggerTag) {
-                const geoNotifications = geoPredicateMap.get(target.ruleTriggerTag);
+            if (target && target.ruleConditionTag) {
+                const geoNotifications = geoPredicateMap.get(target.ruleConditionTag);
                 if (geoNotifications) {
                     geoNotifications.forEach((geoNotification) => {
                         geoNotification.notification = ruleAction.notification!.message as PushNotificationMessage;
@@ -126,6 +126,31 @@ function addPushNotificationsFromRuleAction(ruleAction: RuleActionUnion, geoPred
             }
         }
     }
+}
+
+const TIME_DURATION_REGEXP = /([+-])?((\d+)[Dd])?\s*((\d+)[Hh])?\s*((\d+)[Mm]$)?\s*((\d+)[Ss])?\s*((\d+)([Mm][Ss]$))?\s*((\d+)[Ww])?\s*((\d+)[Mm][Nn])?\s*((\d+)[Yy])?/;
+
+export function isTimeDuration(time?: string): boolean {
+    if (!time) {
+        return false;
+    }
+
+    time = time.trim();
+
+    return time.length > 0
+        && (TIME_DURATION_REGEXP.test(time)
+            || isTimeDurationPositiveInfinity(time)
+            || isTimeDurationNegativeInfinity(time));
+}
+
+export function isTimeDurationPositiveInfinity(time?: string): boolean {
+    time = time != null ? time.trim() : undefined;
+    return "*" === time || "+*" === time;
+}
+
+export function isTimeDurationNegativeInfinity(time?: string): boolean {
+    time = time != null ? time.trim() : undefined;
+    return "-*" === time;
 }
 
 export function arraysEqual<T>(arr1?: T[], arr2?: T[]) {
@@ -155,4 +180,14 @@ export function arrayRemove<T>(arr: T[], item: T) {
     if (index >= 0) {
         arr.splice(index, 1);
     }
+}
+
+export function enumContains(enm: object, val: string): boolean {
+    return enm && Object.values(enm).includes(val);
+}
+
+export function getEnumKeyAsString(enm: object, val: string): string {
+    // @ts-ignore
+    const key = Object.keys(enm).find((k) => enm[k] === val);
+    return key!;
 }

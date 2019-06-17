@@ -6,7 +6,7 @@ import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next from "i18next";
 import i18nextXhr from "i18next-xhr-backend";
-import {AssetDescriptor, AttributeDescriptor, AttributeValueDescriptor, MetaItemDescriptor, Asset} from "@openremote/model/dist";
+import {AssetDescriptor, AttributeDescriptor, AttributeValueDescriptor, MetaItemDescriptor, Asset, MetaItemType} from "@openremote/model";
 
 export enum ORError {
     NONE = "NONE",
@@ -76,19 +76,19 @@ export class AssetModelUtil {
     public static _metaItemDescriptors: MetaItemDescriptor[] = [];
 
     public static getAssetDescriptors(): AssetDescriptor[] {
-        return this._assetDescriptors;
+        return [...this._assetDescriptors];
     }
 
     public static getAttributeDescriptors(): AttributeDescriptor[] {
-        return this._attributeDescriptors;
+        return [...this._attributeDescriptors];
     }
 
     public static getAttributeValueDescriptors(): AttributeValueDescriptor[] {
-        return this._attributeValueDescriptors;
+        return [...this._attributeValueDescriptors];
     }
 
     public static getMetaItemDescriptors(): MetaItemDescriptor[] {
-        return this._metaItemDescriptors;
+        return [...this._metaItemDescriptors];
     }
 
     public static getAssetDescriptor(type?: string): AssetDescriptor | undefined {
@@ -119,6 +119,24 @@ export class AssetModelUtil {
         });
     }
 
+    public static getAttributeDescriptorFromAsset(assetType?: string, attributeName?: string): AttributeDescriptor | undefined {
+        if (!attributeName) {
+            return;
+        }
+
+        if (assetType) {
+            const assetDescriptor = this.getAssetDescriptor(assetType);
+            if (assetDescriptor && assetDescriptor.attributeDescriptors) {
+                const attributeDescriptor = assetDescriptor.attributeDescriptors.find((ad) => ad.attributeName === attributeName);
+                if (attributeDescriptor) {
+                    return attributeDescriptor;
+                }
+            }
+        }
+
+        return this.getAttributeDescriptor(attributeName);
+    }
+
     public static getAttributeValueDescriptor(name?: string): AttributeValueDescriptor | undefined {
         if (!name) {
             return;
@@ -147,6 +165,28 @@ export class AssetModelUtil {
             return false;
         }
         return attributeValueDescriptor1.name === attributeValueDescriptor2.name && attributeValueDescriptor1.valueType === attributeValueDescriptor2.valueType;
+    }
+
+    public static getMetaInitialValueFromMetaDescriptors(metaItemUrn: MetaItemDescriptor | string, metaItemDescriptors: MetaItemDescriptor[] | undefined): any | undefined {
+        if (!metaItemDescriptors) {
+            return;
+        }
+
+        const matchUrn = typeof metaItemUrn === "string" ? metaItemUrn : metaItemUrn.urn;
+        const metaItemDescriptor = metaItemDescriptors && metaItemDescriptors.find((mid) => mid && mid.urn === matchUrn);
+        if (metaItemDescriptor) {
+            return metaItemDescriptor.initialValue;
+        }
+    }
+
+    public static getMetaItemDescriptorInitialValue(metaItemDescriptor: MetaItemDescriptor, initialValue: any) {
+        if (metaItemDescriptor.valueFixed) {
+            return metaItemDescriptor;
+        }
+
+        const newMetaItem = JSON.parse(JSON.stringify(metaItemDescriptor)) as MetaItemDescriptor;
+        newMetaItem.initialValue = initialValue;
+        return newMetaItem;
     }
 }
 
