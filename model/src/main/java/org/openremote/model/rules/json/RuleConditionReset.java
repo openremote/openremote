@@ -25,7 +25,7 @@ package org.openremote.model.rules.json;
  * <p>
  * There is an implicit OR condition between each option.
  */
-public class RuleTriggerReset {
+public class RuleConditionReset {
 
     /**
      * Never reset i.e. fire once only for a given {@link org.openremote.model.rules.AssetState}.

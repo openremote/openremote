@@ -84,8 +84,8 @@ public class JsonRulesBuilder extends RulesBuilder {
         boolean trackUnmatched;
         BaseAssetQuery.OrderBy orderBy;
         int limit;
-        RuleCondition<AttributePredicate> attributePredicates = null;
-        RuleTrigger ruleTrigger;
+        LogicGroup<AttributePredicate> attributePredicates = null;
+        RuleCondition ruleCondition;
         Set<AssetState> unfilteredAssetStates = new HashSet<>();
         Set<AssetState> previouslyMatchedAssetStates = new HashSet<>();
         Set<AssetState> previouslyUnmatchedAssetStates;
@@ -96,48 +96,48 @@ public class JsonRulesBuilder extends RulesBuilder {
         CronExpression timerExpression;
         RuleTriggerResult lastTriggerResult;
 
-        public RuleTriggerState(RuleTrigger ruleTrigger, boolean trackUnmatched, TimerService timerService) {
+        public RuleTriggerState(RuleCondition ruleCondition, boolean trackUnmatched, TimerService timerService) {
             this.timerService = timerService;
-            this.ruleTrigger = ruleTrigger;
+            this.ruleCondition = ruleCondition;
             this.trackUnmatched = trackUnmatched;
 
             if (trackUnmatched) {
                 previouslyUnmatchedAssetStates = new HashSet<>();
             }
 
-            if (ruleTriggerResetHasTimer(ruleTrigger.reset)) {
+            if (ruleConditionResetHasTimer(ruleCondition.reset)) {
                 previouslyMatchedExpiryTimes = new HashMap<>();
-                if (!TextUtil.isNullOrEmpty(ruleTrigger.reset.timer) && TimeUtil.isTimeDuration(ruleTrigger.reset.timer)) {
-                    resetDurationMillis = TimeUtil.parseTimeDuration(ruleTrigger.reset.timer);
+                if (!TextUtil.isNullOrEmpty(ruleCondition.reset.timer) && TimeUtil.isTimeDuration(ruleCondition.reset.timer)) {
+                    resetDurationMillis = TimeUtil.parseTimeDuration(ruleCondition.reset.timer);
                 }
             }
 
-            if (!TextUtil.isNullOrEmpty(ruleTrigger.timer)) {
+            if (!TextUtil.isNullOrEmpty(ruleCondition.timer)) {
                 try {
-                    if (TimeUtil.isTimeDuration(ruleTrigger.timer)) {
+                    if (TimeUtil.isTimeDuration(ruleCondition.timer)) {
                         nextExecuteMillis = timerService.getCurrentTimeMillis();
-                        long duration = TimeUtil.parseTimeDuration(ruleTrigger.timer);
+                        long duration = TimeUtil.parseTimeDuration(ruleCondition.timer);
                         updateNextExecuteTime = () -> nextExecuteMillis += duration;
                     }
-                    if (CronExpression.isValidExpression(ruleTrigger.timer)) {
-                        timerExpression = new CronExpression(ruleTrigger.timer);
+                    if (CronExpression.isValidExpression(ruleCondition.timer)) {
+                        timerExpression = new CronExpression(ruleCondition.timer);
                         nextExecuteMillis = timerExpression.getNextValidTimeAfter(new Date(timerService.getCurrentTimeMillis())).getTime();
                         updateNextExecuteTime = () ->
                                 nextExecuteMillis = timerExpression.getNextInvalidTimeAfter(timerExpression.getNextInvalidTimeAfter(new Date(nextExecuteMillis))).getTime();
                     }
                 } catch (Exception e) {
-                    log(Level.SEVERE, "Failed to parse rule trigger timer expression: " + ruleTrigger.timer, e);
+                    log(Level.SEVERE, "Failed to parse rule trigger timer expression: " + ruleCondition.timer, e);
                 }
             }
 
             // Pull out order, limit and attribute predicates so they can be applied at required times
-            if (ruleTrigger.assets != null) {
-                orderBy = ruleTrigger.assets.orderBy;
-                limit = ruleTrigger.assets.limit;
-                attributePredicates = ruleTrigger.assets.attributes;
-                ruleTrigger.assets.orderBy = null;
-                ruleTrigger.assets.limit = 0;
-                ruleTrigger.assets.attributes = null;
+            if (ruleCondition.assets != null) {
+                orderBy = ruleCondition.assets.orderBy;
+                limit = ruleCondition.assets.limit;
+                attributePredicates = ruleCondition.assets.attributes;
+                ruleCondition.assets.orderBy = null;
+                ruleCondition.assets.limit = 0;
+                ruleCondition.assets.attributes = null;
             }
         }
 
@@ -145,15 +145,15 @@ public class JsonRulesBuilder extends RulesBuilder {
             // Clear last trigger to ensure update runs again
             lastTriggerResult = null;
 
-            if (ruleTrigger.timer != null) {
+            if (ruleCondition.timer != null) {
                 unfilteredAssetStates = new HashSet<>(facts.getAssetStates());
-            } else if (ruleTrigger.assets != null) {
-                NewAssetQuery query = ruleTrigger.assets;
+            } else if (ruleCondition.assets != null) {
+                NewAssetQuery query = ruleCondition.assets;
                 unfilteredAssetStates = facts.matchAssetState(query).collect(Collectors.toSet());
 
                 // Use this opportunity to notify RulesFacts about any location predicates
                 if (facts.trackLocationRules) {
-                    List<AttributePredicate> flattenedAttributePredicates = RuleCondition.flatten(Collections.singletonList(attributePredicates));
+                    List<AttributePredicate> flattenedAttributePredicates = LogicGroup.flatten(Collections.singletonList(attributePredicates));
                     facts.storeLocationPredicates(getLocationPredicates(flattenedAttributePredicates));
                 }
             }
@@ -166,7 +166,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 return;
             }
 
-            if (!TextUtil.isNullOrEmpty(ruleTrigger.timer)) {
+            if (!TextUtil.isNullOrEmpty(ruleCondition.timer)) {
                 lastTriggerResult = null;
 
                 if (updateNextExecuteTime != null && nextExecuteMillis < timerService.getCurrentTimeMillis()) {
@@ -211,7 +211,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
 
             // Apply reset logic to make previously matched asset states eligible for matching again
-            if (ruleTrigger.reset == null || ruleTrigger.reset.noLongerMatches) {
+            if (ruleCondition.reset == null || ruleCondition.reset.noLongerMatches) {
                 previouslyMatchedAssetStates.removeIf(assetState -> {
                     boolean noLongerMatches = !matchedAssetStates.contains(assetState);
                     if (noLongerMatches) {
@@ -221,7 +221,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 });
             }
 
-            if (ruleTriggerResetHasTimer(ruleTrigger.reset)) {
+            if (ruleConditionResetHasTimer(ruleCondition.reset)) {
                 previouslyMatchedAssetStates.removeIf(assetState -> {
                     Long timestamp = previouslyMatchedExpiryTimes.get(assetState);
                     boolean expired = timestamp != null && timerService.getCurrentTimeMillis() > timestamp;
@@ -233,7 +233,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 });
             }
 
-            if (ruleTrigger.reset != null && ruleTrigger.reset.valueChanges) {
+            if (ruleCondition.reset != null && ruleCondition.reset.valueChanges) {
                 previouslyMatchedAssetStates.removeIf(previousAssetState -> {
                     int index = matchedAssetStates.indexOf(previousAssetState);
                     if (index < 0) {
@@ -334,7 +334,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     final protected NotificationsFacade notificationFacade;
     final protected ManagerExecutorService executorService;
     final protected BiConsumer<Runnable, Long> scheduledActionConsumer;
-    final protected Map<String, Map<String, RuleTriggerState>> ruleTriggerStateMap = new HashMap<>();
+    final protected Map<String, Map<String, RuleTriggerState>> ruleConditionStateMap = new HashMap<>();
 
     public JsonRulesBuilder(TimerService timerService, AssetStorageService assetStorageService, ManagerExecutorService executorService, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationFacade, BiConsumer<Runnable, Long> scheduledActionConsumer) {
         this.timerService = timerService;
@@ -347,17 +347,17 @@ public class JsonRulesBuilder extends RulesBuilder {
     }
 
     public void onAssetStatesChanged(RulesFacts facts) {
-        ruleTriggerStateMap.values().forEach(triggerStateMap -> triggerStateMap.values().forEach(ruleTriggerState -> ruleTriggerState.updateUnfilteredAssetStates(facts)));
+        ruleConditionStateMap.values().forEach(triggerStateMap -> triggerStateMap.values().forEach(ruleConditionState -> ruleConditionState.updateUnfilteredAssetStates(facts)));
     }
 
     public JsonRulesBuilder add(Rule rule) {
 
-        if (ruleTriggerStateMap.containsKey(rule.name)) {
+        if (ruleConditionStateMap.containsKey(rule.name)) {
             throw new IllegalArgumentException("Rules must have a unique name within a ruleset, rule name '" + rule.name + "' already used");
         }
 
         Map<String, RuleTriggerState> triggerStateMap = new HashMap<>();
-        ruleTriggerStateMap.put(rule.name, triggerStateMap);
+        ruleConditionStateMap.put(rule.name, triggerStateMap);
         addRuleTriggerState(rule.when, rule.otherwise != null, 0, triggerStateMap, rule.reset);
 
         Condition condition = buildLhsCondition(rule, triggerStateMap);
@@ -388,22 +388,22 @@ public class JsonRulesBuilder extends RulesBuilder {
         return this;
     }
 
-    protected void addRuleTriggerState(RuleCondition<RuleTrigger> ruleTriggerCondition, boolean trackUnmatched, int index, Map<String, RuleTriggerState> triggerStateMap, RuleTriggerReset defaultReset) {
-        if (ruleTriggerCondition != null) {
-            if (ruleTriggerCondition.predicates != null && ruleTriggerCondition.predicates.length > 0) {
-                for (RuleTrigger ruleTrigger : ruleTriggerCondition.predicates) {
-                    if (TextUtil.isNullOrEmpty(ruleTrigger.tag)) {
-                        ruleTrigger.tag = Integer.toString(index);
+    protected void addRuleTriggerState(LogicGroup<RuleCondition> ruleConditionCondition, boolean trackUnmatched, int index, Map<String, RuleTriggerState> triggerStateMap, RuleConditionReset defaultReset) {
+        if (ruleConditionCondition != null) {
+            if (ruleConditionCondition.items != null && ruleConditionCondition.items.length > 0) {
+                for (RuleCondition ruleCondition : ruleConditionCondition.items) {
+                    if (TextUtil.isNullOrEmpty(ruleCondition.tag)) {
+                        ruleCondition.tag = Integer.toString(index);
                     }
-                    if (ruleTrigger.reset == null) {
-                        ruleTrigger.reset = defaultReset;
+                    if (ruleCondition.reset == null) {
+                        ruleCondition.reset = defaultReset;
                     }
-                    triggerStateMap.put(ruleTrigger.tag, new RuleTriggerState(ruleTrigger, trackUnmatched, timerService));
+                    triggerStateMap.put(ruleCondition.tag, new RuleTriggerState(ruleCondition, trackUnmatched, timerService));
                     index++;
                 }
             }
-            if (ruleTriggerCondition.conditions != null && ruleTriggerCondition.conditions.length > 0) {
-                for (RuleCondition<RuleTrigger> childRuleTriggerCondition : ruleTriggerCondition.conditions) {
+            if (ruleConditionCondition.groups != null && ruleConditionCondition.groups.length > 0) {
+                for (LogicGroup<RuleCondition> childRuleTriggerCondition : ruleConditionCondition.groups) {
                     addRuleTriggerState(childRuleTriggerCondition, trackUnmatched, index, triggerStateMap, defaultReset);
                 }
             }
@@ -455,25 +455,25 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         // Push rule trigger results into the trigger state for future runs and store timestamps where required
         if (triggerStateMap != null) {
-            triggerStateMap.values().forEach(ruleTriggerState -> {
-                if (ruleTriggerState.lastTriggerResult != null) {
+            triggerStateMap.values().forEach(ruleConditionState -> {
+                if (ruleConditionState.lastTriggerResult != null) {
 
                     // Remove any stale matched asset states
-                    ruleTriggerState.previouslyMatchedAssetStates.removeAll(ruleTriggerState.lastTriggerResult.matchedAssetStates);
-                    ruleTriggerState.previouslyMatchedAssetStates.addAll(ruleTriggerState.lastTriggerResult.matchedAssetStates);
+                    ruleConditionState.previouslyMatchedAssetStates.removeAll(ruleConditionState.lastTriggerResult.matchedAssetStates);
+                    ruleConditionState.previouslyMatchedAssetStates.addAll(ruleConditionState.lastTriggerResult.matchedAssetStates);
 
-                    RuleTriggerReset reset = ruleTriggerState.ruleTrigger.reset;
-                    if (ruleTriggerResetHasTimer(reset)) {
+                    RuleConditionReset reset = ruleConditionState.ruleCondition.reset;
+                    if (ruleConditionResetHasTimer(reset)) {
                         if (reset.timestampChanges) {
-                            ruleTriggerState.lastTriggerResult.matchedAssetStates.forEach(assetState ->
-                                    ruleTriggerState.previouslyMatchedExpiryTimes.put(assetState, assetState.getTimestamp()));
-                        } else if (ruleTriggerState.resetDurationMillis > 0) {
-                            ruleTriggerState.lastTriggerResult.matchedAssetStates.forEach(assetState ->
-                                    ruleTriggerState.previouslyMatchedExpiryTimes.put(assetState, timerService.getCurrentTimeMillis() + ruleTriggerState.resetDurationMillis));
+                            ruleConditionState.lastTriggerResult.matchedAssetStates.forEach(assetState ->
+                                    ruleConditionState.previouslyMatchedExpiryTimes.put(assetState, assetState.getTimestamp()));
+                        } else if (ruleConditionState.resetDurationMillis > 0) {
+                            ruleConditionState.lastTriggerResult.matchedAssetStates.forEach(assetState ->
+                                    ruleConditionState.previouslyMatchedExpiryTimes.put(assetState, timerService.getCurrentTimeMillis() + ruleConditionState.resetDurationMillis));
                         }
                     }
-                    if (ruleTriggerState.trackUnmatched) {
-                        ruleTriggerState.previouslyUnmatchedAssetStates.addAll(ruleTriggerState.lastTriggerResult.unmatchedAssetStates);
+                    if (ruleConditionState.trackUnmatched) {
+                        ruleConditionState.previouslyUnmatchedAssetStates.addAll(ruleConditionState.lastTriggerResult.unmatchedAssetStates);
                     }
                 }
             });
@@ -754,13 +754,13 @@ public class JsonRulesBuilder extends RulesBuilder {
                 .parent(newQuery.parents != null && newQuery.parents.length > 0 ? newQuery.parents[0] : null)
                 .path(newQuery.paths != null && newQuery.paths.length > 0 ? newQuery.paths[0] : null)
                 .type(newQuery.types != null && newQuery.types.length > 0 ? newQuery.types[0] : null)
-                .attributes(newQuery.attributes != null && newQuery.attributes.predicates != null ? newQuery.attributes.predicates : null);
+                .attributes(newQuery.attributes != null && newQuery.attributes.items != null ? newQuery.attributes.items : null);
     }
     
     protected static Collection<String> getRuleActionTargetIds(RuleActionTarget target, boolean useUnmatched, Map<String, RuleTriggerState> triggerStateMap, Assets assetsFacade, Users usersFacade) {
         if (target != null) {
-            if (!TextUtil.isNullOrEmpty(target.ruleTriggerTag) && triggerStateMap != null) {
-                RuleTriggerState triggerState = triggerStateMap.get(target.ruleTriggerTag);
+            if (!TextUtil.isNullOrEmpty(target.ruleConditionTag) && triggerStateMap != null) {
+                RuleTriggerState triggerState = triggerStateMap.get(target.ruleConditionTag);
                 if (!useUnmatched) {
                     return triggerState != null ? triggerState.getMatchedAssetIds() : Collections.emptyList();
                 }
@@ -792,46 +792,46 @@ public class JsonRulesBuilder extends RulesBuilder {
         return Collections.emptyList();
     }
 
-    protected static boolean matches(RuleCondition<RuleTrigger> ruleTriggerCondition, Map<String, RuleTriggerState> triggerStateMap) {
+    protected static boolean matches(LogicGroup<RuleCondition> ruleConditionCondition, Map<String, RuleTriggerState> triggerStateMap) {
 
         boolean match = false;
 
-        if (conditionIsEmpty(ruleTriggerCondition)) {
+        if (conditionIsEmpty(ruleConditionCondition)) {
             return false;
         }
 
-        RuleOperator operator = ruleTriggerCondition.operator == null ? RuleOperator.AND : ruleTriggerCondition.operator;
+        RuleOperator operator = ruleConditionCondition.operator == null ? RuleOperator.AND : ruleConditionCondition.operator;
 
         if (operator == RuleOperator.AND) {
-            if (ruleTriggerCondition.predicates != null) {
-                match = Arrays.stream(ruleTriggerCondition.predicates)
-                        .map(ruleTrigger -> triggerStateMap.get(ruleTrigger.tag))
-                        .allMatch(ruleTriggerState -> ruleTriggerState.lastTriggerResult != null && ruleTriggerState.lastTriggerResult.matches);
+            if (ruleConditionCondition.items != null) {
+                match = Arrays.stream(ruleConditionCondition.items)
+                        .map(ruleCondition -> triggerStateMap.get(ruleCondition.tag))
+                        .allMatch(ruleConditionState -> ruleConditionState.lastTriggerResult != null && ruleConditionState.lastTriggerResult.matches);
 
                 if (!match) {
                     return false;
                 }
             }
 
-            if (ruleTriggerCondition.conditions != null) {
-                match = Arrays.stream(ruleTriggerCondition.conditions)
+            if (ruleConditionCondition.groups != null) {
+                match = Arrays.stream(ruleConditionCondition.groups)
                         .allMatch(condition -> matches(condition, triggerStateMap));
             }
         }
 
         if (operator == RuleOperator.OR) {
-            if (ruleTriggerCondition.predicates != null) {
-                match = Arrays.stream(ruleTriggerCondition.predicates)
-                        .map(ruleTrigger -> triggerStateMap.get(ruleTrigger.tag))
-                        .anyMatch(ruleTriggerState -> ruleTriggerState.lastTriggerResult != null && ruleTriggerState.lastTriggerResult.matches);
+            if (ruleConditionCondition.items != null) {
+                match = Arrays.stream(ruleConditionCondition.items)
+                        .map(ruleCondition -> triggerStateMap.get(ruleCondition.tag))
+                        .anyMatch(ruleConditionState -> ruleConditionState.lastTriggerResult != null && ruleConditionState.lastTriggerResult.matches);
 
                 if (match) {
                     return true;
                 }
             }
 
-            if (ruleTriggerCondition.conditions != null) {
-                match = Arrays.stream(ruleTriggerCondition.conditions)
+            if (ruleConditionCondition.groups != null) {
+                match = Arrays.stream(ruleConditionCondition.groups)
                         .anyMatch(condition -> matches(condition, triggerStateMap));
             }
         }
@@ -839,12 +839,12 @@ public class JsonRulesBuilder extends RulesBuilder {
         return match;
     }
 
-    protected static boolean ruleTriggerResetHasTimer(RuleTriggerReset reset) {
+    protected static boolean ruleConditionResetHasTimer(RuleConditionReset reset) {
         return reset != null && (!TextUtil.isNullOrEmpty(reset.timer) || reset.timestampChanges);
     }
 
     protected static boolean targetIsNotAssets(RuleActionTarget target) {
-        return target != null && target.assets == null && TextUtil.isNullOrEmpty(target.ruleTriggerTag);
+        return target != null && target.users != null;
     }
 
     protected static void log(Level level, String message) {

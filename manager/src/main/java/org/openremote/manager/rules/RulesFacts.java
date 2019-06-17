@@ -34,7 +34,7 @@ import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.TemporaryFact;
-import org.openremote.model.rules.json.RuleCondition;
+import org.openremote.model.rules.json.LogicGroup;
 import org.openremote.model.util.TimeUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -438,7 +438,7 @@ public class RulesFacts extends Facts implements RuleListener {
 
     public Stream<AssetState> matchAssetState(NewAssetQuery assetQuery) {
         if (trackLocationRules && assetQuery.attributes != null) {
-            List<AttributePredicate> attributePredicates = RuleCondition.flatten(Collections.singletonList(assetQuery.attributes));
+            List<AttributePredicate> attributePredicates = LogicGroup.flatten(Collections.singletonList(assetQuery.attributes));
             storeLocationPredicates(getLocationPredicates(attributePredicates));
         }
 

@@ -25,13 +25,13 @@ import org.openremote.model.query.UserQuery;
 /**
  * None or one of the options should be set the precedence is:
  * <ol>
- * <li>{@link #ruleTriggerTag}</li>
+ * <li>{@link #ruleConditionTag}</li>
  * <li>{@link #assets}</li>
  * <li>{@link #users}</li>
  * </ol>
  */
 public class RuleActionTarget {
-    public String ruleTriggerTag;
+    public String ruleConditionTag;
     public NewAssetQuery assets;
     public UserQuery users;
 }

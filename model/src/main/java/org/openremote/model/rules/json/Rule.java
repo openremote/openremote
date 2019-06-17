@@ -26,13 +26,13 @@ import org.openremote.model.query.NewAssetQuery;
  * <p>
  * <h2>LHS</li>
  * <p>
- * {@link #when} - A series of grouped {@link RuleTrigger}s to which bitwise operations can be performed based on the
- * {@link RuleCondition#operator} of each group. These are used to filter {@link org.openremote.model.rules.AssetState}s
+ * {@link #when} - A series of grouped {@link RuleCondition}s to which bitwise operations can be performed based on the
+ * {@link LogicGroup#operator} of each group. These are used to filter {@link org.openremote.model.rules.AssetState}s
  * in the RuleEngine that this rule is loaded into to determine which {@link org.openremote.model.asset.Asset}s match;
  * if one or more assets match then the RHS {@link #then} will be triggered. Once a rule is triggered the
  * {@link org.openremote.model.rules.AssetState}s that triggered the rule cannot trigger the rule again until it no longer
- * matches (within the context of the {@link RuleTrigger} i.e. an {@link org.openremote.model.rules.AssetState} can
- * re-trigger a rule if it is matched by a different {@link RuleTrigger})
+ * matches (within the context of the {@link RuleCondition} i.e. an {@link org.openremote.model.rules.AssetState} can
+ * re-trigger a rule if it is matched by a different {@link RuleCondition})
  * <p>
  * The {@link #otherwise} {@link RuleAction}s are applied to the {@link org.openremote.model.asset.Asset}s filtered by
  * the query that don't match the {@link NewAssetQuery#attributes} predicates.
@@ -42,14 +42,13 @@ import org.openremote.model.query.NewAssetQuery;
  * <h2>RHS</h2>
  * <p>
  * {@link #then} - Defines a series of {@link RuleAction}s to perform when the bitwise result of applying all
- * {@link RuleTrigger}s in the {@link #when} is true.
+ * {@link RuleCondition}s in the {@link #when} is true.
  * <p>
  * {@link #otherwise} - Defines a series of {@link RuleAction}s to perform when there is one or more asset that matched  rule doesn't match the assets specified
  * in the {@link Rule#when}. The list of assets this applies to is the assets filtered by applying the
  * {@link Rule#when} but excluding the {@link NewAssetQuery#attributes} predicates and excluding any assets that match
  * the entire {@link Rule#when}. If the number of these assets is greater than 0 then these {@link RuleAction}s will be
- * executed, if any {@link RuleActionWithTarget#target} is set to {@link RuleActionTarget#useAssetsFromWhen}
- * then the assets that caused this to trigger will be used.
+ * executed.
  * <h2>Reset</h2>
  * <p>
  * {@link #reset} - Optional logic used to reset the rule, this is applied to each
@@ -63,10 +62,10 @@ public class Rule {
     public String name;
     public String description;
     public int priority = Integer.MAX_VALUE-1;
-    public RuleCondition<RuleTrigger> when;
+    public LogicGroup<RuleCondition> when;
     public RuleAction[] then;
     public RuleAction[] otherwise;
-    public RuleTriggerReset reset;
+    public RuleConditionReset reset;
     public RuleAction[] onStart;
     public RuleAction[] onStop;
 }

@@ -19,44 +19,26 @@
  */
 package org.openremote.model.rules.json;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import org.openremote.model.query.NewAssetQuery;
+import org.openremote.model.query.filter.DateTimePredicate;
 
-public class RuleCondition<T> {
+/**
+ * Consists of a timer expression (interval, absolute, CRON etc.) or query for filtering
+ * {@link org.openremote.model.rules.AssetState}s, if both are specified then the timer is used.
+ * <p>
+ * For timer based trigger it evaluates to true if the timer expression matches the current time. For query based trigger
+ * it evaluates to true when one or more {@link org.openremote.model.rules.AssetState}s (referencing unique
+ * {@link org.openremote.model.asset.Asset}s) are returned after applying the query to the
+ * {@link org.openremote.model.rules.AssetState}s in the RuleEngine that this rule is loaded into.
+ * <p>
+ * The {@link #tag} is used to name the {@link org.openremote.model.asset.Asset}s that are filtered by the query and can
+ * be used in the rule RHS to perform actions on these specific assets.
+ */
+public class RuleCondition {
 
-    public RuleCondition() {
-    }
-
-    public RuleCondition(RuleOperator operator, T[] predicates, RuleCondition<T>[] conditions) {
-        this.operator = operator;
-        this.predicates = predicates;
-        this.conditions = conditions;
-    }
-
-    /**
-     * If not specified then {@link RuleOperator#AND} is assumed.
-     */
-    public RuleOperator operator;
-
-    /**
-     * Defines the predicates to apply using the {@link #operator}
-     */
-    public T[] predicates;
-
-    /**
-     * Nested conditions allow for more complex logic with a mix of operators
-     */
-    public RuleCondition<T>[] conditions;
-
-    public static <T> List<T> flatten(List<RuleCondition<T>> conditions) {
-        List<T> flattened = new ArrayList<>();
-        for (RuleCondition<T> ruleCondition : conditions) {
-            flattened.addAll(Arrays.asList(ruleCondition.predicates));
-            if (ruleCondition.conditions != null) {
-                flattened.addAll(flatten(Arrays.asList(ruleCondition.conditions)));
-            }
-        }
-        return flattened;
-    }
+    public String timer;
+    public DateTimePredicate datetime;
+    public NewAssetQuery assets;
+    public String tag;
+    public RuleConditionReset reset;
 }
