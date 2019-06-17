@@ -22,14 +22,14 @@ openremote.init({
         const rasterMap = maps[0] as OrMap;
         const vectorMap = maps[1] as OrMap;
 
-        rasterMap.addEventListener(OrMapMarkerEvent.CLICKED, (evt) => {
+        rasterMap.addEventListener(OrMapMarkerClickedEvent.NAME, (evt) => {
             console.log("RASTER MAP: Marker clicked: " + JSON.stringify(evt.detail));
         });
         rasterMap.addEventListener("click", (evt) => {
             console.log("RASTER MAP: Map clicked");
         });
 
-        vectorMap.addEventListener(OrMapMarkerEvent.CLICKED, (evt) => {
+        vectorMap.addEventListener(OrMapMarkerClickedEvent.NAME, (evt) => {
             console.log("VECTOR MAP: Marker clicked: " + JSON.stringify(evt.detail));
         });
         vectorMap.addEventListener("click", (evt) => {

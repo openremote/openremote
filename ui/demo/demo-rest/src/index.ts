@@ -12,7 +12,7 @@ function renderUi() {
         let queryAssetsTemplate = html`
             ${loggedInTemplate(openremote)}
             <br />
-            <button @click=${() => queryAssets()}>Get Assets</button><span> (see console window)</span>
+            <button @click="${() => queryAssets()}">Get Assets</button><span> (see console window)</span>
         `;
         render(queryAssetsTemplate, document.body);
     } else {

@@ -101,7 +101,7 @@ export class OrMap extends LitElement {
 
     constructor() {
         super();
-        this.addEventListener(OrMapMarkerEvent.CHANGED, this._onMarkerChangedEvent);
+        this.addEventListener(OrMapMarkerChangedEvent.NAME, this._onMarkerChangedEvent);
     }
 
     public get markers(): OrMapMarker[] {

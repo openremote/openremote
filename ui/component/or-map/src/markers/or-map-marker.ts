@@ -5,17 +5,12 @@ export enum OrMapMarkerEvent {
     CHANGED = "or-map-marker-changed"
 }
 
-declare global {
-    export interface HTMLElementEventMap {
-        [OrMapMarkerEvent.CHANGED]: OrMapMarkerChangedEvent;
-        [OrMapMarkerEvent.CLICKED]: OrMapMarkerClickedEvent;
-    }
-}
-
 export class OrMapMarkerChangedEvent extends CustomEvent<MarkerChangedEventDetail> {
 
+    public static readonly NAME = "or-map-marker-changed";
+
     constructor(marker: OrMapMarker, prop: string) {
-        super(OrMapMarkerEvent.CHANGED, {
+        super(OrMapMarkerChangedEvent.NAME, {
             detail: {
                 marker: marker,
                 property: prop
@@ -28,8 +23,10 @@ export class OrMapMarkerChangedEvent extends CustomEvent<MarkerChangedEventDetai
 
 export class OrMapMarkerClickedEvent extends CustomEvent<MarkerEventDetail> {
 
+    public static readonly NAME = "or-map-marker-clicked";
+
     constructor(marker: OrMapMarker) {
-        super(OrMapMarkerEvent.CLICKED, {
+        super(OrMapMarkerClickedEvent.NAME, {
             detail: {
                 marker: marker
             },
@@ -45,6 +42,13 @@ export interface MarkerEventDetail {
 
 export interface MarkerChangedEventDetail extends MarkerEventDetail {
     property: string;
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [OrMapMarkerChangedEvent.NAME]: OrMapMarkerChangedEvent;
+        [OrMapMarkerClickedEvent.NAME]: OrMapMarkerClickedEvent;
+    }
 }
 
 export const MarkerStyle = css`
