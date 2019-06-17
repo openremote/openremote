@@ -1,7 +1,5 @@
 import {html, LitElement, property, customElement, PropertyValues, query} from "lit-element";
-import i18next from "i18next";
 import {selectStyle} from "./style";
-import {translate} from "@openremote/or-translate/dist/translate-mixin";
 
 export class OrSelectChangedEvent extends CustomEvent<OrSelectChangedEventDetail> {
 
@@ -31,7 +29,7 @@ declare global {
 }
 
 @customElement("or-select")
-export class OrSelect extends translate(i18next)(LitElement) {
+export class OrSelect extends LitElement {
 
     static get styles() {
         return [
