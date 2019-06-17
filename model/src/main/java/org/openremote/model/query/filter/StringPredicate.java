@@ -31,6 +31,7 @@ public class StringPredicate implements ValuePredicate {
     public BaseAssetQuery.Match match = BaseAssetQuery.Match.EXACT;
     public boolean caseSensitive = true;
     public String value;
+    public boolean negate;
 
     public StringPredicate() {
     }
@@ -58,6 +59,9 @@ public class StringPredicate implements ValuePredicate {
         objectValue.getBoolean("caseSensitive").ifPresent(caseSensitive -> {
             stringPredicate.caseSensitive = caseSensitive;
         });
+        objectValue.getBoolean("negate").ifPresent(negate -> {
+            stringPredicate.negate = negate;
+        });
         objectValue.getString("value").ifPresent(value -> {
             stringPredicate.value = value;
         });
@@ -79,6 +83,11 @@ public class StringPredicate implements ValuePredicate {
         return this;
     }
 
+    public StringPredicate negate(boolean negate) {
+        this.negate = negate;
+        return this;
+    }
+
     public String prepareValue() {
         String s = match.prepare(this.value);
         if (!caseSensitive)
@@ -91,6 +100,7 @@ public class StringPredicate implements ValuePredicate {
         objectValue.put("predicateType", name);
         objectValue.put("match", Values.create(match.toString()));
         objectValue.put("caseSensitive", Values.create(caseSensitive));
+        objectValue.put("negate", Values.create(negate));
         objectValue.put("value", Values.create(value));
         return objectValue;
     }
@@ -100,6 +110,7 @@ public class StringPredicate implements ValuePredicate {
         return getClass().getSimpleName() + "{" +
             "match=" + match +
             ", caseSensitive=" + caseSensitive +
+            ", negate=" + negate +
             ", value='" + value + '\'' +
             '}';
     }

@@ -19,11 +19,14 @@
  */
 package org.openremote.model.query.filter;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public abstract class GeofencePredicate implements ValuePredicate {
 
     public boolean negated;
 
     // TODO: switch return type to location object
+    @JsonIgnore
     public abstract double[] getCentrePoint();
 
     public GeofencePredicate negate() {

@@ -22,8 +22,6 @@ package org.openremote.manager.rules;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import org.geotools.referencing.GeodeticCalculator;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.attribute.Meta;
@@ -34,10 +32,12 @@ import org.openremote.model.query.BaseAssetQuery.NumberType;
 import org.openremote.model.query.NewAssetQuery;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.rules.AssetState;
-import org.openremote.model.rules.json.RuleCondition;
+import org.openremote.model.rules.json.LogicGroup;
 import org.openremote.model.rules.json.RuleOperator;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TimeUtil;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
@@ -46,9 +46,6 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static org.openremote.model.query.BaseAssetQuery.Operator.LESS_EQUALS;
-import static org.openremote.model.query.BaseAssetQuery.Operator.LESS_THAN;
 
 /**
  * Test an {@link AssetState} with a {@link BaseAssetQuery}.
@@ -69,7 +66,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
         this.query.names = query.name != null ? new StringPredicate[] {query.name} : null;
         this.query.parents = query.parent != null ? new ParentPredicate[] {query.parent} : null;
         this.query.paths = query.path != null ? new PathPredicate[] {query.path} : null;
-        this.query.attributes = query.attribute != null ? new RuleCondition<>(RuleOperator.AND, query.attribute, null) : null;
+        this.query.attributes = query.attribute != null ? new LogicGroup<>(RuleOperator.AND, query.attribute, null) : null;
         this.query.types = query.type != null ? new StringPredicate[] {query.type} : null;
         this.query.userIds = query.userId != null ? new String[] {query.userId} : null;
         this.query.tenant = query.tenant;
@@ -160,13 +157,59 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
 
             switch (predicate.match) {
                 case BEGIN:
-                    return have.startsWith(shouldMatch);
+                    return predicate.negate != have.startsWith(shouldMatch);
                 case END:
-                    return have.endsWith(shouldMatch);
+                    return predicate.negate != have.endsWith(shouldMatch);
                 case CONTAINS:
-                    return have.contains(shouldMatch);
+                    return predicate.negate != have.contains(shouldMatch);
             }
-            return have.equals(shouldMatch);
+            return predicate.negate != have.equals(shouldMatch);
+        };
+    }
+
+    public static Predicate<ArrayValue> asPredicate(ArrayPredicate predicate) {
+        return arrayValue ->  {
+            if (arrayValue == null) {
+                return false;
+            }
+
+            boolean result = true;
+
+            if (predicate.value != null) {
+                if (predicate.index != null) {
+                    result = arrayValue.length() >= predicate.index && Objects.equals(arrayValue.get(predicate.index).orElse(null), predicate.value);
+                } else {
+                    result = arrayValue.stream().anyMatch(av -> Objects.equals(av, predicate.value));
+                }
+            }
+
+            if (result && predicate.lengthEquals != null) {
+                result = arrayValue.length() == predicate.lengthEquals;
+            }
+            if (result && predicate.lengthGreaterThan != null) {
+                result = arrayValue.length() > predicate.lengthGreaterThan;
+            }
+            if (result && predicate.lengthEquals != null) {
+                result = arrayValue.length() < predicate.lengthLessThan;
+            }
+            if (predicate.negated) {
+                return !result;
+            }
+            return result;
+        };
+    }
+
+    public static Predicate<ObjectValue> asPredicate(ObjectValueKeyPredicate predicate) {
+        return objectValue -> {
+            if (objectValue == null) {
+                return false;
+            }
+
+            boolean result = objectValue.hasKey(predicate.key);
+            if (predicate.negated) {
+                return !result;
+            }
+            return result;
         };
     }
 
@@ -209,20 +252,36 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             switch (predicate.operator) {
 
                 case EQUALS:
+                    if (predicate.negate) {
+                        return timestamp != fromAndTo.key.longValue();
+                    }
                     return timestamp == fromAndTo.key.longValue();
-                case NOT_EQUALS:
-                    return timestamp != fromAndTo.key.longValue();
                 case GREATER_THAN:
+                    if (predicate.negate) {
+                        return timestamp <= fromAndTo.key;
+                    }
                     return timestamp > fromAndTo.key;
                 case GREATER_EQUALS:
+                    if (predicate.negate) {
+                        return timestamp < fromAndTo.key;
+                    }
                     return timestamp >= fromAndTo.key;
                 case LESS_THAN:
+                    if (predicate.negate) {
+                        return timestamp >= fromAndTo.key;
+                    }
                     return timestamp < fromAndTo.key;
                 case LESS_EQUALS:
+                    if (predicate.negate) {
+                        return timestamp > fromAndTo.key;
+                    }
                     return timestamp <= fromAndTo.key;
                 case BETWEEN:
                     if (fromAndTo.value == null) {
                         throw new IllegalArgumentException("Date time predicate 'rangeValue' is not valid: " + predicate);
+                    }
+                    if (predicate.negate) {
+                        return !(timestamp > fromAndTo.key && timestamp < fromAndTo.value);
                     }
                     return timestamp > fromAndTo.key && timestamp < fromAndTo.value;
             }
@@ -235,31 +294,49 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
         return d -> {
             if (d == null) {
 
-                // If given a null and we want to know if it's "less than x", it's always less than x
-                // TODO Should be consistent with BETWEEN behavior?
-                if (predicate.operator == LESS_THAN || predicate.operator == LESS_EQUALS) {
-                    return true;
-                }
+                // RT: Commented this out as shouldn't treat null like a value all operators should fail
+//                // If given a null and we want to know if it's "less than x", it's always less than x
+//                // TODO Should be consistent with BETWEEN behavior?
+//                if (predicate.operator == LESS_THAN || predicate.operator == LESS_EQUALS) {
+//                    return true;
+//                }
 
                 return false;
             }
 
             Number leftOperand = predicate.numberType == NumberType.DOUBLE ? d : d.intValue();
             Number rightOperand = predicate.numberType == NumberType.DOUBLE ? predicate.value : (int) predicate.value;
+
             switch (predicate.operator) {
                 case EQUALS:
+                    if (predicate.negate) {
+                        return !leftOperand.equals(rightOperand);
+                    }
                     return leftOperand.equals(rightOperand);
-                case NOT_EQUALS:
-                    return !leftOperand.equals(rightOperand);
                 case BETWEEN:
+                    if (predicate.negate) {
+                        return !(leftOperand.doubleValue() >= rightOperand.doubleValue() && leftOperand.doubleValue() <= predicate.rangeValue);
+                    }
                     return leftOperand.doubleValue() >= rightOperand.doubleValue() && leftOperand.doubleValue() <= predicate.rangeValue;
                 case LESS_THAN:
+                    if (predicate.negate) {
+                        return leftOperand.doubleValue() >= rightOperand.doubleValue();
+                    }
                     return leftOperand.doubleValue() < rightOperand.doubleValue();
                 case LESS_EQUALS:
+                    if (predicate.negate) {
+                        return leftOperand.doubleValue() > rightOperand.doubleValue();
+                    }
                     return leftOperand.doubleValue() <= rightOperand.doubleValue();
                 case GREATER_THAN:
+                    if (predicate.negate) {
+                        return leftOperand.doubleValue() <= rightOperand.doubleValue();
+                    }
                     return leftOperand.doubleValue() > rightOperand.doubleValue();
                 case GREATER_EQUALS:
+                    if (predicate.negate) {
+                        return leftOperand.doubleValue() < rightOperand.doubleValue();
+                    }
                     return leftOperand.doubleValue() >= rightOperand.doubleValue();
             }
             return false;
@@ -400,6 +477,18 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                         .flatMap(GeoJSONPoint::fromValue)
                         .map(point -> new Coordinate(point.getY(), point.getX()))
                         .orElse(null));
+            } else if (predicate instanceof ObjectValueKeyPredicate) {
+
+                ObjectValueKeyPredicate p = (ObjectValueKeyPredicate) predicate;
+                return asPredicate(p).test(Optional.ofNullable(value)
+                        .flatMap(Values::getObject)
+                        .orElse(null));
+            }  else if (predicate instanceof ArrayPredicate) {
+
+                ArrayPredicate p = (ArrayPredicate) predicate;
+                return asPredicate(p).test(Optional.ofNullable(value)
+                        .flatMap(Values::getArray)
+                        .orElse(null));
             } else {
                 // TODO Implement more
                 throw new UnsupportedOperationException(
@@ -428,7 +517,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
         return meta -> meta.stream().anyMatch(metaItemPredicate);
     }
 
-    public static Predicate<AssetState> asPredicate(Supplier<Long> currentMillisProducer, RuleCondition<AttributePredicate> condition) {
+    public static Predicate<AssetState> asPredicate(Supplier<Long> currentMillisProducer, LogicGroup<AttributePredicate> condition) {
         if (conditionIsEmpty(condition)) {
             return as -> true;
         }
@@ -437,9 +526,9 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
 
         List<Predicate<AssetState>> assetStatePredicates = new ArrayList<>();
 
-        if (condition.predicates != null && condition.predicates.length > 0) {
+        if (condition.items != null && condition.items.length > 0) {
             assetStatePredicates.addAll(
-                    Arrays.stream(condition.predicates)
+                    Arrays.stream(condition.items)
                             .map(p -> {
                                 if (p instanceof NewAttributePredicate) {
                                     return asPredicate(currentMillisProducer, (NewAttributePredicate)p);
@@ -449,9 +538,9 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             );
         }
 
-        if (condition.conditions != null && condition.conditions.length > 0) {
+        if (condition.groups != null && condition.groups.length > 0) {
             assetStatePredicates.addAll(
-                    Arrays.stream(condition.conditions)
+                    Arrays.stream(condition.groups)
                             .map(c -> asPredicate(currentMillisProducer, c)).collect(Collectors.toList())
             );
         }
@@ -459,9 +548,9 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
         return asPredicate(assetStatePredicates, operator);
     }
 
-    protected static boolean conditionIsEmpty(RuleCondition condition) {
-        return (condition.predicates == null || condition.predicates.length == 0)
-                && (condition.conditions == null || condition.conditions.length == 0);
+    protected static boolean conditionIsEmpty(LogicGroup condition) {
+        return (condition.items == null || condition.items.length == 0)
+                && (condition.groups == null || condition.groups.length == 0);
     }
 
     protected static <T> Predicate<T> asPredicate(Collection<Predicate<T>> predicates, RuleOperator operator) {

@@ -952,7 +952,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         if (level == 1 && query.name != null) {
             sb.append(query.name.caseSensitive ? " and A.NAME " : " and upper(A.NAME)");
-            sb.append(buildMatchFilter(query.name.match));
+            sb.append(buildMatchFilter(query.name));
             final int pos = binders.size() + 1;
             binders.add(st -> st.setString(pos, query.name.prepareValue()));
         }
@@ -1007,7 +1007,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             if (query.type != null) {
                 sb.append(query.type.caseSensitive ? " and A.ASSET_TYPE" : " and upper(A.ASSET_TYPE)");
-                sb.append(buildMatchFilter(query.type.match));
+                sb.append(buildMatchFilter(query.type));
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, query.type.prepareValue()));
             }
@@ -1053,19 +1053,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     ? " and AM.VALUE #>> '{name}'"
                     : " and upper(AM.VALUE #>> '{name}')"
             );
-            switch (attributeMetaPredicate.itemNamePredicate.match) {
-                case EXACT:
-                    attributeMetaBuilder.append(" = ? ");
-                    break;
-                case NOT_EXACT:
-                    attributeMetaBuilder.append(" <> ? ");
-                    break;
-                case BEGIN:
-                case END:
-                case CONTAINS:
-                    attributeMetaBuilder.append(" like ? ");
-                    break;
-            }
+            attributeMetaBuilder.append(buildMatchFilter(attributeMetaPredicate.itemNamePredicate));
             final int pos = binders.size() + 1;
             binders.add(st -> st.setString(pos, attributeMetaPredicate.itemNamePredicate.prepareValue()));
         }
@@ -1076,7 +1064,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         ? " and AM.VALUE #>> '{value}'"
                         : " and upper(AM.VALUE #>> '{value}')"
                 );
-                attributeMetaBuilder.append(buildMatchFilter(stringPredicate.match));
+                attributeMetaBuilder.append(buildMatchFilter(stringPredicate));
 
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
@@ -1093,7 +1081,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             ? " and AM.VALUE #> '{value}' ->> " + i
                             : " and upper(AM.VALUE #> '{value}' ->> " + i + ")"
                     );
-                    attributeMetaBuilder.append(buildMatchFilter(stringPredicate.match));
+                    attributeMetaBuilder.append(buildMatchFilter(stringPredicate));
                     final int pos = binders.size() + 1;
                     binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
                 }
@@ -1111,7 +1099,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     ? " and AX.key"
                     : " and upper(AX.key)"
             );
-            attributeBuilder.append(buildMatchFilter(attributePredicate.name.match));
+            attributeBuilder.append(buildMatchFilter(attributePredicate.name));
 
             final int pos = binders.size() + 1;
             binders.add(st -> st.setString(pos, attributePredicate.name.prepareValue()));
@@ -1123,7 +1111,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         ? " and AX.VALUE #>> '{value}'"
                         : " and upper(AX.VALUE #>> '{value}')"
                 );
-                attributeBuilder.append(buildMatchFilter(stringPredicate.match));
+                attributeBuilder.append(buildMatchFilter(stringPredicate));
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
             } else if (attributePredicate.value instanceof BooleanPredicate) {
@@ -1139,7 +1127,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             ? " and AX.VALUE #> '{value}' ->> " + i
                             : " and upper(AX.VALUE #> '{value}' ->> " + i + ")"
                     );
-                    attributeBuilder.append(buildMatchFilter(stringPredicate.match));
+                    attributeBuilder.append(buildMatchFilter(stringPredicate));
                     final int pos = binders.size() + 1;
                     binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
                 }
@@ -1151,59 +1139,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setObject(pos, new java.sql.Timestamp(fromAndTo.key).toLocalDateTime()));
+                attributeBuilder.append(buildOperatorFilter(dateTimePredicate.operator, dateTimePredicate.negate));
 
-                switch (dateTimePredicate.operator) {
-                    case EQUALS:
-                        attributeBuilder.append(" = ?");
-                        break;
-                    case NOT_EQUALS:
-                        attributeBuilder.append(" <> ?");
-                        break;
-                    case GREATER_THAN:
-                        attributeBuilder.append(" > ?");
-                        break;
-                    case GREATER_EQUALS:
-                        attributeBuilder.append(" >= ?");
-                        break;
-                    case LESS_THAN:
-                        attributeBuilder.append(" < ?");
-                        break;
-                    case LESS_EQUALS:
-                        attributeBuilder.append(" <= ?");
-                        break;
-                    case BETWEEN:
-                        final int pos2 = binders.size() + 1;
-                        binders.add(st -> st.setObject(pos2, new java.sql.Timestamp(fromAndTo.value).toLocalDateTime()));
-                        attributeBuilder.append(" BETWEEN ? AND ?");
-                        break;
+                if (dateTimePredicate.operator == Operator.BETWEEN) {
+                    final int pos2 = binders.size() + 1;
+                    binders.add(st -> st.setObject(pos2, new java.sql.Timestamp(fromAndTo.value).toLocalDateTime()));
                 }
             } else if (attributePredicate.value instanceof NumberPredicate) {
                 NumberPredicate numberPredicate = (NumberPredicate) attributePredicate.value;
                 attributeBuilder.append(" and (AX.VALUE #>> '{value}')::numeric");
-                switch (numberPredicate.operator) {
-                    case EQUALS:
-                    default:
-                        attributeBuilder.append(" = ?");
-                        break;
-                    case NOT_EQUALS:
-                        attributeBuilder.append(" <> ?");
-                        break;
-                    case GREATER_THAN:
-                        attributeBuilder.append(" > ?");
-                        break;
-                    case GREATER_EQUALS:
-                        attributeBuilder.append(" >= ?");
-                        break;
-                    case LESS_THAN:
-                        attributeBuilder.append(" < ?");
-                        break;
-                    case LESS_EQUALS:
-                        attributeBuilder.append(" <= ?");
-                        break;
-                    case BETWEEN:
-                        attributeBuilder.append(" BETWEEN ? AND ?");
-                        break;
-                }
+                attributeBuilder.append(buildOperatorFilter(numberPredicate.operator, numberPredicate.negate));
 
                 final int pos = binders.size() + 1;
                 switch (numberPredicate.numberType) {
@@ -1232,6 +1177,46 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, keyPredicate.key));
+            } else if (attributePredicate.value instanceof ArrayPredicate) {
+                ArrayPredicate arrayPredicate = (ArrayPredicate) attributePredicate.value;
+                attributeBuilder.append(" and 1=1");
+                if (arrayPredicate.negated) {
+                    attributeBuilder.append(" and NOT(");
+                }
+                if (arrayPredicate.value != null) {
+                    if (arrayPredicate.index != null) {
+                        attributeBuilder.append(" and AX.VALUE -> ");
+                        attributeBuilder.append(arrayPredicate.index);
+                    } else {
+                        attributeBuilder.append(" and AX.VALUE");
+                    }
+                    attributeBuilder.append(" @> ?");
+                    final int pos = binders.size() + 1;
+                    PGobject pgJsonValue = new PGobject();
+                    pgJsonValue.setType("jsonb");
+                    try {
+                        pgJsonValue.setValue(arrayPredicate.value.toJson());
+                    } catch (SQLException e) {
+                        LOG.log(Level.SEVERE, "Failed to build SQL statement for array predicate", e);
+                        return "";
+                    }
+                    binders.add(st -> st.setObject(pos, pgJsonValue));
+                }
+                if (arrayPredicate.lengthEquals != null) {
+                    attributeBuilder.append("json_array_length(AX.VALUE) = ");
+                    attributeBuilder.append(arrayPredicate.lengthEquals);
+                }
+                if (arrayPredicate.lengthGreaterThan != null) {
+                    attributeBuilder.append("json_array_length(AX.VALUE) > ");
+                    attributeBuilder.append(arrayPredicate.lengthGreaterThan);
+                }
+                if (arrayPredicate.lengthLessThan != null) {
+                    attributeBuilder.append("json_array_length(AX.VALUE) < ");
+                    attributeBuilder.append(arrayPredicate.lengthLessThan);
+                }
+                if (arrayPredicate.negated) {
+                    attributeBuilder.append(")");
+                }
             } else if (attributePredicate.value instanceof GeofencePredicate) {
                 if (attributePredicate.value instanceof RadialGeofencePredicate) {
                     RadialGeofencePredicate location = (RadialGeofencePredicate) attributePredicate.value;
@@ -1267,17 +1252,56 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return attributeBuilder.toString();
     }
 
-    protected String buildMatchFilter(Match match) {
-        switch (match) {
-            case EXACT:
+    protected String buildOperatorFilter(BaseAssetQuery.Operator operator, boolean negate) {
+        switch (operator) {
+            case EQUALS:
+                if (negate) {
+                    return " <> ? ";
+                }
                 return " = ? ";
-            case NOT_EXACT:
-                return " <> ? ";
+            case GREATER_THAN:
+                if (negate) {
+                    return " <= ? ";
+                }
+                return " > ? ";
+            case GREATER_EQUALS:
+                if (negate) {
+                    return " < ? ";
+                }
+                return " >= ? ";
+            case LESS_THAN:
+                if (negate) {
+                    return " >= ? ";
+                }
+                return " < ? ";
+            case LESS_EQUALS:
+                if (negate) {
+                    return " > ? ";
+                }
+                return " <= ? ";
+            case BETWEEN:
+                if (negate) {
+                    return " NOT BETWEEN ? AND ? ";
+                }
+                return " BETWEEN ? AND ? ";
+        }
+
+        throw new IllegalArgumentException("Unsupported operator: " + operator);
+    }
+
+    protected String buildMatchFilter(StringPredicate predicate) {
+        switch (predicate.match) {
             case BEGIN:
             case END:
             case CONTAINS:
+                if (predicate.negate) {
+                    return " not like ? ";
+                }
                 return " like ? ";
             default:
+                if (predicate.negate) {
+                    return " <> ? ";
+                }
                 return " = ? ";
         }
     }

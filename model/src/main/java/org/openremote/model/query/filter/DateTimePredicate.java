@@ -34,6 +34,7 @@ public class DateTimePredicate implements ValuePredicate {
     public String value; // Sliding window value e.g. 1h or fixed date time
     public String rangeValue; // Sliding window value e.g. 1h or fixed date time (used as upper bound when Operator.BETWEEN)
     public BaseAssetQuery.Operator operator = BaseAssetQuery.Operator.EQUALS;
+    public boolean negate;
 
     public DateTimePredicate() {
     }
@@ -61,6 +62,9 @@ public class DateTimePredicate implements ValuePredicate {
         objectValue.getString("operator").ifPresent(operator -> {
             dateTimePredicate.operator = BaseAssetQuery.Operator.valueOf(operator);
         });
+        objectValue.getBoolean("negate").ifPresent(negate -> {
+            dateTimePredicate.negate = negate;
+        });
         return dateTimePredicate;
     }
 
@@ -80,11 +84,17 @@ public class DateTimePredicate implements ValuePredicate {
         return this;
     }
 
+    public DateTimePredicate negate(boolean negate) {
+        this.negate = negate;
+        return this;
+    }
+
     public ObjectValue toModelValue() {
         ObjectValue objectValue = Values.createObject();
         objectValue.put("predicateType", name);
         objectValue.put("value", Values.create(value));
         objectValue.put("rangeValue", Values.create(rangeValue));
+        objectValue.put("negate", Values.create(negate));
         objectValue.put("operator", Values.create(operator.toString()));
         return objectValue;
     }
@@ -95,6 +105,7 @@ public class DateTimePredicate implements ValuePredicate {
                 "value='" + value + '\'' +
                 ", rangeValue='" + rangeValue + '\'' +
                 ", operator =" + operator +
+                ", negate =" + negate +
                 '}';
     }
 }

@@ -21,7 +21,8 @@ package org.openremote.model.query;
 
 import org.openremote.model.query.filter.*;
 import org.openremote.model.rules.json.RuleActionTarget;
-import org.openremote.model.rules.json.RuleCondition;
+import org.openremote.model.rules.json.LogicGroup;
+import org.openremote.model.rules.json.RuleConditionReset;
 
 /**
  * <p>
@@ -29,7 +30,7 @@ import org.openremote.model.rules.json.RuleCondition;
  * if after applying the filtering one or more {@link org.openremote.model.rules.AssetState}s are returned.
  * <p>
  * The {@link org.openremote.model.asset.Asset}s associated with the returned {@link org.openremote.model.rules.AssetState}s
- * are then used as the context for any {@link org.openremote.model.rules.json.RuleTriggerReset} to control when the
+ * are then used as the context for any {@link RuleConditionReset} to control when the
  * {@link NewAssetQuery} is allowed to be applied again to the same asset. They can also optionally be used as context
  * in the {@link RuleActionTarget}, to apply an action to the matched
  * {@link org.openremote.model.asset.Asset}s.
@@ -47,7 +48,7 @@ public class NewAssetQuery {
     public TenantPredicate tenant;
     public String[] userIds;
     public StringPredicate[] types;
-    public RuleCondition<AttributePredicate> attributes;
+    public LogicGroup<AttributePredicate> attributes;
 
     /**
      * To be used in combination with {@link #limit} to control the ordering of {@link org.openremote.model.asset.Asset}s

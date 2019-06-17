@@ -30,6 +30,7 @@ public class NumberPredicate implements ValuePredicate {
     public double rangeValue; // Used as upper bound when Operator.BETWEEN
     public BaseAssetQuery.Operator operator = BaseAssetQuery.Operator.EQUALS;
     public BaseAssetQuery.NumberType numberType = BaseAssetQuery.NumberType.DOUBLE;
+    public boolean negate;
 
     public NumberPredicate() {
     }
@@ -62,6 +63,9 @@ public class NumberPredicate implements ValuePredicate {
         objectValue.getNumber("rangeValue").ifPresent(rangeValue -> {
             numberPredicate.rangeValue = rangeValue;
         });
+        objectValue.getBoolean("negate").ifPresent(negate -> {
+            numberPredicate.negate = negate;
+        });
         objectValue.getString("operator").ifPresent(operator -> {
             numberPredicate.operator = BaseAssetQuery.Operator.valueOf(operator);
         });
@@ -89,11 +93,17 @@ public class NumberPredicate implements ValuePredicate {
         return this;
     }
 
+    public NumberPredicate negate(boolean negate) {
+        this.negate = negate;
+        return this;
+    }
+
     public ObjectValue toModelValue() {
         ObjectValue objectValue = Values.createObject();
         objectValue.put("predicateType", name);
         objectValue.put("value", Values.create(value));
         objectValue.put("rangeValue", Values.create(rangeValue));
+        objectValue.put("negate", Values.create(negate));
         objectValue.put("operator", Values.create(operator.toString()));
         return objectValue;
     }
@@ -105,6 +115,7 @@ public class NumberPredicate implements ValuePredicate {
             ", rangeValue=" + rangeValue +
             ", operator=" + operator +
             ", numberType=" + numberType +
+            ", negate=" + negate +
             '}';
     }
 }
