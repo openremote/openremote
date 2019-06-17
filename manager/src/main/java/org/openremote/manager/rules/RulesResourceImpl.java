@@ -191,11 +191,12 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     /* ################################################################################################# */
 
     @Override
-    public void createGlobalRuleset(@BeanParam RequestParams requestParams, GlobalRuleset ruleset) {
+    public long createGlobalRuleset(@BeanParam RequestParams requestParams, GlobalRuleset ruleset) {
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        rulesetStorageService.merge(ruleset);
+        ruleset = rulesetStorageService.merge(ruleset);
+        return ruleset.getId();
     }
 
     @Override
@@ -232,7 +233,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     /* ################################################################################################# */
 
     @Override
-    public void createTenantRuleset(@BeanParam RequestParams requestParams, TenantRuleset ruleset) {
+    public long createTenantRuleset(@BeanParam RequestParams requestParams, TenantRuleset ruleset) {
         Tenant tenant = identityService.getIdentityProvider().getTenant(ruleset.getRealm());
         if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
@@ -241,7 +242,8 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             LOG.fine("Forbidden access for user '" + getUsername() + "': " + tenant);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        rulesetStorageService.merge(ruleset);
+        ruleset = rulesetStorageService.merge(ruleset);
+        return ruleset.getId();
     }
 
     @Override
@@ -303,7 +305,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     /* ################################################################################################# */
 
     @Override
-    public void createAssetRuleset(@BeanParam RequestParams requestParams, AssetRuleset ruleset) {
+    public long createAssetRuleset(@BeanParam RequestParams requestParams, AssetRuleset ruleset) {
         String assetId = ruleset.getAssetId();
         if (assetId == null || assetId.length() == 0) {
             throw new WebApplicationException("Missing asset identifier value", BAD_REQUEST);
@@ -318,7 +320,8 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        rulesetStorageService.merge(ruleset);
+        ruleset = rulesetStorageService.merge(ruleset);
+        return ruleset.getId();
     }
 
     @Override

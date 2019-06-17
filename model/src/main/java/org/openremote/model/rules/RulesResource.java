@@ -111,7 +111,7 @@ public interface RulesResource {
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
     @SuppressWarnings("unusable-by-js")
-    void createGlobalRuleset(@BeanParam RequestParams requestParams, @Valid GlobalRuleset ruleset);
+    long createGlobalRuleset(@BeanParam RequestParams requestParams, @Valid GlobalRuleset ruleset);
 
     /**
      * Retrieve a global ruleset. Only the superuser can perform this operation, a 403 status is returned if a regular
@@ -162,7 +162,7 @@ public interface RulesResource {
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
     @SuppressWarnings("unusable-by-js")
-    void createTenantRuleset(@BeanParam RequestParams requestParams, @Valid TenantRuleset ruleset);
+    long createTenantRuleset(@BeanParam RequestParams requestParams, @Valid TenantRuleset ruleset);
 
     /**
      * Retrieve a tenant ruleset. The superuser can retrieve rules of all realms, a 403 status is returned if a regular
@@ -214,7 +214,7 @@ public interface RulesResource {
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
     @SuppressWarnings("unusable-by-js")
-    void createAssetRuleset(@BeanParam RequestParams requestParams, @Valid AssetRuleset ruleset);
+    long createAssetRuleset(@BeanParam RequestParams requestParams, @Valid AssetRuleset ruleset);
 
     /**
      * Retrieve an asset ruleset. The superuser can retrieve rules of all assets, a 403 status is returned if a regular
