@@ -46,7 +46,13 @@ public enum AttributeValueType implements AttributeValueDescriptor {
 
     NUMBER("hashtag", ValueType.NUMBER),
 
+    INTEGER("hashtag", ValueType.NUMBER),
+
     BOOLEAN("toggle-on", ValueType.BOOLEAN),
+
+    SWITCH_TOGGLE("toggle-on", ValueType.BOOLEAN),
+
+    SWITCH_MOMENTARY("toggle-on", ValueType.BOOLEAN),
 
     OBJECT("cube", ValueType.OBJECT),
 

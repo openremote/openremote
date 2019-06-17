@@ -53,8 +53,8 @@ public class VelbusSerialProtocol extends AbstractVelbusProtocol implements Prot
             null,
             1,
             null,
-            false
-        ),
+            false,
+                null, null, null),
         new MetaItemDescriptorImpl(
             META_VELBUS_SERIAL_BAUDRATE,
             ValueType.NUMBER,
@@ -63,8 +63,8 @@ public class VelbusSerialProtocol extends AbstractVelbusProtocol implements Prot
             MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(),
             1,
             Values.create(DEFAULT_BAUDRATE),
-            false
-        )
+            false,
+                null, null, null)
     );
 
     @Override

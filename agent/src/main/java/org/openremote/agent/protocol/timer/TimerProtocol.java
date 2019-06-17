@@ -73,7 +73,7 @@ public class TimerProtocol extends AbstractProtocol {
             MetaItemDescriptor.PatternFailure.CRON_EXPRESSION.name(),
             null,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_TIMER_ACTION,
             ValueType.OBJECT,
@@ -82,7 +82,7 @@ public class TimerProtocol extends AbstractProtocol {
             null,
             null,
             null,
-            false)
+            false, null, null, null)
     );
 
     protected static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Collections.singletonList(
@@ -100,7 +100,7 @@ public class TimerProtocol extends AbstractProtocol {
                 TimerValue.TIME,
             null,
             null,
-            false)
+            false, null, null, null)
     );
 
     protected final Map<AttributeRef, CronExpressionParser> cronExpressionMap = new HashMap<>();

@@ -24,12 +24,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -43,6 +43,9 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
     protected final String pattern;
     protected final Integer maxPerAttribute;
     protected final Value initialValue;
+    protected final Value allowedMin;
+    protected final Value allowedMax;
+    protected final Value[] allowedValues;
     protected final boolean valueFixed;
     protected final String patternFailureMessage;
 
@@ -56,7 +59,10 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                                   @JsonProperty("patternFailureMessage") String patternFailureMessage,
                                   @JsonProperty("maxPerAttribute") Integer maxPerAttribute,
                                   @JsonProperty("initialValue") Value initialValue,
-                                  @JsonProperty("valueFixed") boolean valueFixed) {
+                                  @JsonProperty("valueFixed") boolean valueFixed,
+                                  @JsonProperty("allowedMin")Value allowedMin,
+                                  @JsonProperty("allowedMax")Value allowedMax,
+                                  @JsonProperty("allowedValues")Value[] allowedValues) {
         this.urn = urn;
         this.valueType = valueType;
         this.access = access;
@@ -66,6 +72,9 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
         this.maxPerAttribute = maxPerAttribute;
         this.initialValue = initialValue;
         this.valueFixed = valueFixed;
+        this.allowedMin = allowedMin;
+        this.allowedMax = allowedMax;
+        this.allowedValues = allowedValues;
     }
 
     @JsIgnore
@@ -82,7 +91,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 metaItemDescriptor.getPatternFailureMessage(),
                 metaItemDescriptor.getMaxPerAttribute(),
                 initialValue,
-                metaItemDescriptor.isValueFixed());
+                metaItemDescriptor.isValueFixed(), null, null, null);
     }
 
     @JsIgnore
@@ -93,8 +102,11 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                                   String patternFailureMessage,
                                   Integer maxPerAttribute,
                                   Value initialValue,
-                                  boolean valueFixed) {
-        this(urn, valueType, Access.ACCESS_PRIVATE, required, pattern, patternFailureMessage, maxPerAttribute, initialValue, valueFixed);
+                                  boolean valueFixed,
+                                  Value allowedMin,
+                                  Value allowedMax,
+                                  Value[] allowedValues) {
+        this(urn, valueType, Access.ACCESS_PRIVATE, required, pattern, patternFailureMessage, maxPerAttribute, initialValue, valueFixed, allowedMin, allowedMax, allowedValues);
     }
 
     @Override
@@ -142,6 +154,21 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
         return valueFixed;
     }
 
+    @Override
+    public Value getAllowedMin() {
+        return allowedMin;
+    }
+
+    @Override
+    public Value getAllowedMax() {
+        return allowedMax;
+    }
+
+    @Override
+    public Value[] getAllowedValues() {
+        return allowedValues;
+    }
+
     @JsonIgnore
     @Override
     public Optional<Function<Value, Optional<ValidationFailure>>> getValidator() {
@@ -158,6 +185,9 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 ", pattern='" + pattern + '\'' +
                 ", maxPerAttribute=" + maxPerAttribute +
                 ", initialValue=" + initialValue +
+                ", allowedMin=" + allowedMin +
+                ", allowedMax=" + allowedMax +
+                ", allowedValues=" + (allowedValues != null ? Arrays.toString(allowedValues) : "null") +
                 ", valueFixed=" + valueFixed +
                 ", patternFailureMessage='" + patternFailureMessage + '\'' +
                 '}';

@@ -72,6 +72,9 @@ public enum MetaItemType implements MetaItemDescriptor {
         null,
         null,
         false,
+        null,
+        null,
+        null,
         value ->
             Optional.ofNullable(AttributeRef.isAttributeRef(value)
                                     ? null
@@ -91,6 +94,9 @@ public enum MetaItemType implements MetaItemDescriptor {
         null,
         null,
         false,
+        null,
+        null,
+        null,
         value ->
             Optional.ofNullable(AttributeLink.isAttributeLink(value)
                                     ? null
@@ -301,6 +307,9 @@ public enum MetaItemType implements MetaItemDescriptor {
             PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(),
             null,
             false,
+            Values.create(1d),
+            null,
+            null,
             value -> value == null ? Optional.empty() : Values.getIntegerCoerced(value)
                     .isPresent() ? Optional.empty() : Optional.of(new ValidationFailure(META_ITEM_VALUE_MISMATCH, "Integer"))),
 
@@ -379,12 +388,28 @@ public enum MetaItemType implements MetaItemDescriptor {
         null,
         null,
         Values.create(true),
-        true);
+        true),
+
+    /**
+     * Indicates the discreet values allowed for this attribute, only makes sense for attributes that
+     * support a limited number of values otherwise can be <code>null</code>.
+     */
+    ALLOWED_VALUES(
+        ASSET_META_NAMESPACE + ":allowedValues",
+        new Access(true, false, true),
+        ValueType.ARRAY,
+        null,
+        null,
+        null,
+        false);
 
     final protected String urn;
     final protected Access access;
     final protected ValueType valueType;
     final protected Value initialValue;
+    protected final Value allowedMin;
+    protected final Value allowedMax;
+    protected final Value[] allowedValues;
     final protected boolean valueFixed;
     final protected Integer maxPerAttribute = 1; // All asset meta so far are single instance
     final protected boolean required = false; // All asset meta so far are not mandatory
@@ -393,10 +418,18 @@ public enum MetaItemType implements MetaItemDescriptor {
     final protected Function<Value, Optional<ValidationFailure>> validator;
 
     MetaItemType(String urn, Access access, ValueType valueType, String pattern, String patternFailureMessage, Value initialValue, boolean valueFixed) {
-        this(urn, access, valueType, pattern, patternFailureMessage, initialValue, valueFixed, null);
+        this(urn, access, valueType, pattern, patternFailureMessage, initialValue, valueFixed, null, null, null, null);
     }
 
-    MetaItemType(String urn, Access access, ValueType valueType, String pattern, String patternFailureMessage, Value initialValue, boolean valueFixed, Function<Value, Optional<ValidationFailure>> validator) {
+    MetaItemType(String urn,
+                 Access access,
+                 ValueType valueType,
+                 String pattern,
+                 String patternFailureMessage,
+                 Value initialValue,
+                 boolean valueFixed,
+                 Value allowedMin, Value allowedMax, Value[] allowedValues, Function<Value, Optional<ValidationFailure>> validator) {
+
         if (initialValue != null && initialValue.getType() != valueType) {
             throw new IllegalStateException("Initial asset meta value must be of the same type as the asset meta");
         }
@@ -408,6 +441,9 @@ public enum MetaItemType implements MetaItemDescriptor {
         this.valueFixed = valueFixed;
         this.pattern = pattern;
         this.patternFailureMessage = patternFailureMessage;
+        this.allowedMin = allowedMin;
+        this.allowedMax = allowedMax;
+        this.allowedValues = allowedValues;
     }
 
 
@@ -459,6 +495,21 @@ public enum MetaItemType implements MetaItemDescriptor {
     @Override
     public boolean isValueFixed() {
         return valueFixed;
+    }
+
+    @Override
+    public Value getAllowedMin() {
+        return allowedMin;
+    }
+
+    @Override
+    public Value getAllowedMax() {
+        return allowedMax;
+    }
+
+    @Override
+    public Value[] getAllowedValues() {
+        return allowedValues;
     }
 
     public MetaItemDescriptor withInitialValue(Value initialValue) {

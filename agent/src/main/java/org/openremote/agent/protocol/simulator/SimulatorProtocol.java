@@ -133,7 +133,7 @@ public class SimulatorProtocol extends AbstractProtocol {
             "WRITE_THROUGH_IMMEDIATE|WRITE_THROUGH_DELAYED|MANUAL",
             null,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             CONFIG_WRITE_DELAY_MILLISECONDS,
             ValueType.NUMBER,
@@ -142,7 +142,7 @@ public class SimulatorProtocol extends AbstractProtocol {
             MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE.name(),
             null,
             null,
-            false)
+            false, null, null, null)
     );
 
     protected static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Collections.singletonList(
@@ -162,7 +162,7 @@ public class SimulatorProtocol extends AbstractProtocol {
                 ColorSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT),
             null,
             null,
-            false)
+            false, null, null, null)
     );
 
     // TODO This is not nice, find a better way how the protocol can talk to the service (through message bus?)

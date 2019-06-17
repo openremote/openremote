@@ -449,7 +449,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             MetaItemDescriptor.PatternFailure.HTTP_URL.name(),
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_PROTOCOL_USERNAME,
             ValueType.STRING,
@@ -458,7 +458,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             MetaItemDescriptor.PatternFailure.STRING_EMPTY_OR_CONTAINS_WHITESPACE.name(),
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_PROTOCOL_PASSWORD,
             ValueType.STRING,
@@ -467,7 +467,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             MetaItemDescriptor.PatternFailure.STRING_EMPTY_OR_CONTAINS_WHITESPACE.name(),
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_PROTOCOL_OAUTH_GRANT,
             ValueType.OBJECT,
@@ -476,7 +476,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_PROTOCOL_PING_PATH,
             ValueType.STRING,
@@ -485,7 +485,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(),
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_PROTOCOL_PING_METHOD,
             ValueType.STRING,
@@ -494,7 +494,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(),
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_PROTOCOL_PING_BODY,
             null,
@@ -503,7 +503,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_PROTOCOL_PING_CONTENT_TYPE,
             ValueType.STRING,
@@ -512,7 +512,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(),
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_PROTOCOL_PING_SECONDS,
             ValueType.NUMBER,
@@ -521,7 +521,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(),
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_PROTOCOL_PING_QUERY_PARAMETERS,
             ValueType.OBJECT,
@@ -530,7 +530,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_PROTOCOL_PING_HEADERS,
             ValueType.OBJECT,
@@ -539,7 +539,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_PROTOCOL_FOLLOW_REDIRECTS,
             ValueType.BOOLEAN,
@@ -548,7 +548,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_QUERY_PARAMETERS,
             ValueType.OBJECT,
@@ -557,7 +557,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_QUERY_PARAMETERS,
             ValueType.OBJECT,
@@ -566,7 +566,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_FAILURE_CODES,
             ValueType.ARRAY,
@@ -575,7 +575,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_PAGING_ENABLED,
             ValueType.BOOLEAN,
@@ -584,7 +584,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
-            false)
+            false, null, null, null)
     );
 
 
@@ -597,7 +597,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(),
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_ATTRIBUTE_METHOD,
             ValueType.STRING,
@@ -606,7 +606,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(),
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_ATTRIBUTE_BODY,
             null,
@@ -615,7 +615,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_ATTRIBUTE_CONTENT_TYPE,
             ValueType.STRING,
@@ -624,7 +624,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(),
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_ATTRIBUTE_POLLING_SECONDS,
             ValueType.NUMBER,
@@ -633,7 +633,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(),
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_QUERY_PARAMETERS,
             ValueType.OBJECT,
@@ -642,7 +642,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_QUERY_PARAMETERS,
             ValueType.OBJECT,
@@ -651,7 +651,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_FAILURE_CODES,
             ValueType.ARRAY,
@@ -660,7 +660,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
-            false),
+            false, null, null, null),
         new MetaItemDescriptorImpl(
             META_PAGING_ENABLED,
             ValueType.BOOLEAN,
@@ -669,7 +669,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
-            false)
+            false, null, null, null)
     );
 
 

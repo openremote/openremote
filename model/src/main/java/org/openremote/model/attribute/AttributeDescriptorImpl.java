@@ -29,10 +29,10 @@ import org.openremote.model.value.Value;
 @JsType(namespace = "Model", name = "AttributeDescriptor")
 public class AttributeDescriptorImpl implements AttributeDescriptor {
 
-    protected String attributeName;
-    protected AttributeValueDescriptor valueDescriptor;
-    protected MetaItemDescriptor[] metaItemDescriptors;
-    protected Value initialValue;
+    protected final String attributeName;
+    protected final AttributeValueDescriptor valueDescriptor;
+    protected final MetaItemDescriptor[] metaItemDescriptors;
+    protected final Value initialValue;
 
     @JsIgnore
     public AttributeDescriptorImpl(String attributeName, AttributeValueDescriptor valueDescriptor) {
@@ -48,7 +48,8 @@ public class AttributeDescriptorImpl implements AttributeDescriptor {
     @JsConstructor
     public AttributeDescriptorImpl(@JsonProperty("attributeName") String attributeName,
                                    @JsonProperty("valueDescriptor") AttributeValueDescriptor valueDescriptor,
-                                   @JsonProperty("initialValue") Value initialValue, @JsonProperty("metaItemDescriptors") MetaItemDescriptor... metaItemDescriptors) {
+                                   @JsonProperty("initialValue") Value initialValue,
+                                   @JsonProperty("metaItemDescriptors") MetaItemDescriptor... metaItemDescriptors) {
         this.attributeName = attributeName;
         this.valueDescriptor = valueDescriptor;
         this.metaItemDescriptors = metaItemDescriptors;

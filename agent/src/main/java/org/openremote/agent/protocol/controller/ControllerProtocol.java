@@ -146,25 +146,25 @@ public class ControllerProtocol extends AbstractProtocol {
 
     protected static final List<MetaItemDescriptorImpl> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays
             .asList(new MetaItemDescriptorImpl(META_PROTOCOL_BASE_URI, ValueType.STRING, true,
-                            REGEXP_PATTERN_BASIC_HTTP_URL, MetaItemDescriptor.PatternFailure.HTTP_URL.name(), 1, null, false),
+                            REGEXP_PATTERN_BASIC_HTTP_URL, MetaItemDescriptor.PatternFailure.HTTP_URL.name(), 1, null, false, null, null, null),
                     new MetaItemDescriptorImpl(META_PROTOCOL_USERNAME, ValueType.STRING, false,
                             REGEXP_PATTERN_STRING_NON_EMPTY_NO_WHITESPACE,
-                            MetaItemDescriptor.PatternFailure.STRING_EMPTY_OR_CONTAINS_WHITESPACE.name(), 1, null, false),
+                            MetaItemDescriptor.PatternFailure.STRING_EMPTY_OR_CONTAINS_WHITESPACE.name(), 1, null, false, null, null, null),
                     new MetaItemDescriptorImpl(META_PROTOCOL_PASSWORD, ValueType.STRING, false,
                             REGEXP_PATTERN_STRING_NON_EMPTY_NO_WHITESPACE,
-                            MetaItemDescriptor.PatternFailure.STRING_EMPTY_OR_CONTAINS_WHITESPACE.name(), 1, null, false));
+                            MetaItemDescriptor.PatternFailure.STRING_EMPTY_OR_CONTAINS_WHITESPACE.name(), 1, null, false, null, null, null));
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays
             .asList(new MetaItemDescriptorImpl(META_ATTRIBUTE_DEVICE_NAME, ValueType.STRING, false,
-                            REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false),
+                            REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false, null, null, null),
                     new MetaItemDescriptorImpl(META_ATTRIBUTE_SENSOR_NAME, ValueType.STRING, false,
-                            REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false),
+                            REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false, null, null, null),
                     new MetaItemDescriptorImpl(META_ATTRIBUTE_COMMAND_DEVICE_NAME, ValueType.STRING, false,
-                            REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false),
+                            REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false, null, null, null),
                     new MetaItemDescriptorImpl(META_ATTRIBUTE_COMMAND_NAME, ValueType.STRING, false,
-                            REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false),
+                            REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false, null, null, null),
                     new MetaItemDescriptorImpl(META_ATTRIBUTE_COMMANDS_MAP, ValueType.OBJECT, false, null, null, 1, null,
-                            false));
+                            false, null, null, null));
 
     /*--------------- Protocol attributes ---------------*/
     public static final String PROTOCOL_DISPLAY_NAME = "Controller Client";

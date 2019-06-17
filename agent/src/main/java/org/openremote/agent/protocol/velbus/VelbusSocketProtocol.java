@@ -50,8 +50,8 @@ public class VelbusSocketProtocol extends AbstractVelbusProtocol {
             null,
             1,
             null,
-            false
-        ),
+            false,
+                null, null, null),
         new MetaItemDescriptorImpl(
             META_VELBUS_SOCKET_PORT,
             ValueType.NUMBER,
@@ -60,8 +60,8 @@ public class VelbusSocketProtocol extends AbstractVelbusProtocol {
             MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(),
             1,
             null,
-            false
-        )
+            false,
+                null, null, null)
     );
 
     @Override

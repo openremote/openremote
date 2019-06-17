@@ -76,7 +76,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
             MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(),
             1,
             Values.create(DEFAULT_TIME_INJECTION_INTERVAL_SECONDS),
-            false)
+            false, null, null, null)
     );
 
 
@@ -89,8 +89,8 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
             "1-255",
             1,
             null,
-            false
-        ),
+            false,
+                null, null, null),
         new MetaItemDescriptorImpl(
             META_VELBUS_DEVICE_VALUE_LINK,
             ValueType.STRING,
@@ -99,8 +99,8 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
             null,
             1,
             null,
-            false
-        )
+            false,
+                null, null, null)
     );
 
     @Override

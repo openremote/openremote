@@ -20,6 +20,7 @@
 package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jsinterop.annotations.JsConstructor;
@@ -167,6 +168,27 @@ public interface MetaItemDescriptor extends HasUniqueResourceName {
      */
     @JsonProperty
     boolean isValueFixed();
+
+    /**
+     * Indicates the minimum allowed value for instances of this meta item, only makes sense for meta items that
+     * support continuous data types (number, datetime, etc.) otherwise can be <code>null</code>.
+     */
+    @JsonProperty
+    Value getAllowedMin();
+
+    /**
+     * Indicates the maximum allowed value for instances of this meta item, only makes sense for meta items that
+     * support continuous data types (number, datetime, etc.) otherwise can be <code>null</code>.
+     */
+    @JsonProperty
+    Value getAllowedMax();
+
+    /**
+     * Indicates the discreet values allowed for instances of this meta item, only makes sense for meta items that
+     * support a limited number of values otherwise can be <code>null</code>.
+     */
+    @JsonProperty
+    Value[] getAllowedValues();
 
     /**
      * Get optional validation function; this allows {@link MetaItemDescriptor} implementations to do more advanced
