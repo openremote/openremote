@@ -3,10 +3,16 @@ import {css} from "lit-element";
 // TODO this is temp work, should be replaced with material design components / styling
 // language=CSS
 export const selectStyle = css`
+    
+    select:invalid {
+        border-bottom: 2px solid red;
+    }
+    
     .mdc-select {
         font-family:
                 'Roboto','Helvetica','Arial',sans-serif;
         position: relative;
+        display: inline-block;
     }
 
     select {

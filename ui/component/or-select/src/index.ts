@@ -1,25 +1,37 @@
-import {html, LitElement, property, PropertyValues} from 'lit-element';
-import openremote from "@openremote/core";
-
-import {MDCSelect} from '@material/select';
+import {html, LitElement, property, customElement, PropertyValues, query} from "lit-element";
 import i18next from "i18next";
-import {selectStyle} from './style';
+import {selectStyle} from "./style";
+import {translate} from "@openremote/or-translate/dist/translate-mixin";
 
-class OrSelect extends LitElement {
-    @property({type: String})
-    label: string = '';
+export class OrSelectChangedEvent extends CustomEvent<OrSelectChangedEventDetail> {
 
-    @property({type: String})
-    name: string = '';
+    public static readonly NAME = "or-select-changed";
 
-    @property({type: String})
-    value: string = '';
+    constructor(value?: string, previousValue?: string) {
+        super(OrSelectChangedEvent.NAME, {
+            detail: {
+                value: value,
+                previousValue: previousValue
+            },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
 
-    @property({type: Boolean})
-    public disabled: boolean = false;
+export interface OrSelectChangedEventDetail {
+    value?: string;
+    previousValue?: string;
+}
 
-    @property({type: Array})
-    options: string[] = [];
+declare global {
+    export interface HTMLElementEventMap {
+        [OrSelectChangedEvent.NAME]: OrSelectChangedEvent;
+    }
+}
+
+@customElement("or-select")
+export class OrSelect extends translate(i18next)(LitElement) {
 
     static get styles() {
         return [
@@ -27,46 +39,68 @@ class OrSelect extends LitElement {
         ];
     }
 
+    @property({type: String})
+    public value?: string;
+
+    @property({type: Boolean})
+    public readonly: boolean = false;
+
+    @property({type: Boolean})
+    public required: boolean = true;
+
+    @property({type: Boolean})
+    public addEmpty: boolean = true;
+
+    @property({type: Array})
+    public options: string[] | [string, string][] = [];
+
+    @query("#or-select")
+    protected _select!: HTMLSelectElement;
+
+    protected onChange() {
+        const previousValue = this.value;
+        this.value = this._select.value && this._select.value.length > 0 ? this._select.value : undefined;
+        this.dispatchEvent(new OrSelectChangedEvent(this.value, previousValue));
+    }
+
+    protected firstUpdated(_changedProperties: PropertyValues) {
+        super.firstUpdated(_changedProperties);
+        if (this.options.length === 1) {
+            const opt = this.options[0];
+            const val = Array.isArray(opt) ? opt[0] : opt;
+            if (this.value !== val) {
+                window.setTimeout(() => {
+                    if (this._select) {
+                        this._select.value = val;
+                    }
+                });
+            }
+        }
+    }
+
     protected render() {
+        if (this._select) {
+            // If we don't do this then selected attribute on option is not respected when a select is updated
+            if (!this.value) {
+                this._select.selectedIndex = this.addEmpty ? 0 : -1;
+            }
+        }
+        const isSingular = this.options.length === 1;
 
         return html`
                <div class="mdc-select">
-                      <select id="or-select" @change="${this.onChange}" name="${this.name}" ?disabled="${this.disabled}">
-                        ${this.options.map((option: string) => {
-                           return html`<option ?selected=${this.value === option} value="${option}">${i18next.t(option || "")}</option>`
-                        })}
+                      <select id="or-select" ?required="${this.required}" @change="${this.onChange}" ?disabled="${this.readonly || isSingular}">
+                        ${this.addEmpty && !isSingular ? html`<option value="" ?selected="${!this.value}"></option>` : ``};
+                        ${this.options.length > 0 && Array.isArray(this.options[0]) ?
+                            (this.options as [string, string][]).map((option: [string, string]) => {
+                                return html`<option ?selected="${this.value === option[0]}" value="${option[0]}">${option[1]}</option>`;                            
+                            }) :
+                            (this.options as string[]).map((option: string) => {
+                                return html`<option ?selected="${this.value === option}" value="${option}">${option}</option>`;
+                            })
+                        }
                       </select>
                 </div>
         `;
     }
-
-    protected firstUpdated(_changedProperties: PropertyValues): void {
-        super.firstUpdated(_changedProperties);
-        this.disabled = !openremote.hasRole("write:assets");
-    }
-
-    onChange() {
-        if(this.shadowRoot){
-            const input = (<HTMLInputElement>this.shadowRoot.getElementById('or-select'));
-            const value = input.value;
-            const name = input.name;
-
-            // Launch event for all parent elements
-            let event = new CustomEvent('or-input:changed', {
-                detail: { value: value, name: name  },
-                bubbles: true,
-                composed: true });
-
-            this.dispatchEvent(event);
-        }
-    }
-
-
-    constructor() {
-        super();
-    }
-
-
 }
-
-window.customElements.define('or-select', OrSelect);
