@@ -51,30 +51,35 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
             case "provider":
                 if let postMessageDict = jsonDictionnary?[DefaultsKey.dataKey] as? [String: Any] {
                     if let action = postMessageDict[DefaultsKey.actionKey] as? String {
-                        if let provider = postMessageDict[DefaultsKey.providerKey] as? String {
-                            if provider == Providers.push {
-                                if action == Actions.providerInit {
+                        if let provider = postMessageDict[DefaultsKey.providerKey] as? String  {
+                            switch (provider) {
+                            case Providers.push:
+                                switch(action) {
+                                case Actions.providerInit:
                                     pushProvider = PushNotificationProvider()
                                     pushProvider!.initialize(callback: { initalizeData in
                                         self.sendData(data: initalizeData)
                                     })
-                                } else if action == Actions.providerEnable {
+                                case Actions.providerEnable:
                                     if let consoleId = postMessageDict[GeofenceProvider.consoleIdKey] as? String {
                                         pushProvider?.enable(consoleId: consoleId, callback: { enableData in
                                             self.sendData(data: enableData)
                                         })
                                     }
-                                } else if action == Actions.providerDisable {
+                                case Actions.providerDisable:
                                     if let disableData = pushProvider?.disable() {
                                         sendData(data: disableData)
                                     }
+                                default:
+                                    print("Wrong action \(action) for \(provider)")
                                 }
-                            } else if provider == Providers.geofence {
-                                if action == Actions.providerInit {
+                            case Providers.geofence:
+                                switch(action) {
+                                case Actions.providerInit:
                                     geofenceProvider = GeofenceProvider()
                                     let initializeData = geofenceProvider!.initialize()
                                     sendData(data: initializeData)
-                                } else if action == Actions.providerEnable {
+                                case Actions.providerEnable:
                                     if let consoleId = postMessageDict[GeofenceProvider.consoleIdKey] as? String {
                                         geofenceProvider?.enable(baseUrl: "\(ORServer.baseUrl)api/\(ORServer.realm)", consoleId: consoleId,  callback: { enableData in
                                             self.sendData(data: enableData)
@@ -83,37 +88,64 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                                             }
                                         })
                                     }
-                                } else if action == Actions.geofenceRefresh {
-                                    geofenceProvider?.refreshGeofences()
-                                } else if action == Actions.providerDisable {
+                                case Actions.providerDisable:
                                     if let disableData = geofenceProvider?.disable() {
                                         sendData(data: disableData)
                                     }
+                                case Actions.geofenceRefresh:
+                                    geofenceProvider?.refreshGeofences()
+                                case Actions.getLocation:
+                                    geofenceProvider?.getLocation(callback: { locationData in
+                                        if locationData.isEmpty {
+                                            let alertController = UIAlertController(title: "Location Services disabled", message: "Please enable Location Services for this app", preferredStyle: .alert)
+                                            if let settingsUrl = URL(string: UIApplication.openSettingsURLString), UIApplication.shared.canOpenURL(settingsUrl) {
+                                                alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { alertAction in
+                                                    if UIApplication.shared.canOpenURL(settingsUrl) {
+                                                        UIApplication.shared.open(settingsUrl, completionHandler: { (success) in
+                                                            print("Settings opened: \(success)") // Prints true
+                                                        })
+                                                    }
+                                                }))
+                                                alertController.addAction(UIAlertAction(title: "Not now", style: .cancel, handler: nil))
+                                            } else {
+                                                alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                                            }
+                                            self.present(alertController, animated: true, completion: nil)
+                                        }
+                                        self.sendData(data: locationData)
+                                    })
+                                default:
+                                    print("Wrong action \(action) for \(provider)")
                                 }
-                            } else if provider == Providers.storage {
-                                if action == Actions.providerInit {
+                            case Providers.storage:
+                                switch(action) {
+                                case Actions.providerInit:
                                     storageProvider = StorageProvider()
                                     let initializeData = storageProvider!.initialize()
                                     sendData(data: initializeData)
-                                } else if action == Actions.providerEnable {
+                                case Actions.providerEnable:
                                     if let enableData = storageProvider?.enable() {
                                         sendData(data: enableData)
                                     }
-                                } else if action == Actions.store {
+                                case Actions.providerDisable:
+                                    if let disableData = storageProvider?.disable() {
+                                        sendData(data: disableData)
+                                    }
+                                case Actions.store:
                                     if let key = postMessageDict["key"] as? String {
                                         storageProvider?.store(key: key, data: postMessageDict["value"] as? String)
                                     }
-                                } else if action == Actions.retrieve {
+                                case Actions.retrieve:
                                     if let key = postMessageDict["key"] as? String {
                                         if let retrieveData = storageProvider?.retrieve(key: key) {
                                             sendData(data: retrieveData)
                                         }
                                     }
-                                } else if action == Actions.providerDisable {
-                                    if let disableData = storageProvider?.disable() {
-                                        sendData(data: disableData)
-                                    }
+                                default:
+                                    print("Wrong action \(action) for \(provider)")
                                 }
+                            default:
+                                print("Unknown provider type: \(provider )")
                             }
                         }
                     }
@@ -326,5 +358,5 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
 
 // Helper function inserted by Swift 4.2 migrator.
 fileprivate func convertToUIApplicationOpenExternalURLOptionsKeyDictionary(_ input: [String: Any]) -> [UIApplication.OpenExternalURLOptionsKey: Any] {
-	return Dictionary(uniqueKeysWithValues: input.map { key, value in (UIApplication.OpenExternalURLOptionsKey(rawValue: key), value)})
+    return Dictionary(uniqueKeysWithValues: input.map { key, value in (UIApplication.OpenExternalURLOptionsKey(rawValue: key), value)})
 }
