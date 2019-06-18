@@ -5,7 +5,6 @@ import {whenStyle} from "./style";
 import "./or-rule-condition";
 import i18next from "i18next";
 
-// TODO: Update to properly support LogicGroup<RuleCondition>
 @customElement("or-rule-when")
 class OrRuleWhen extends LitElement {
 
@@ -97,6 +96,7 @@ class OrRuleWhen extends LitElement {
         } else {
             group.operator = RuleOperator.OR;
         }
+        this.dispatchEvent(new OrRuleChangedEvent());
         this.requestUpdate();
     }
 

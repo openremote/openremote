@@ -12,6 +12,7 @@
     "ordered-imports": false,
     "object-literal-sort-keys": false,
     "ban-types": false,
+    "array-type": false,
     "object-literal-shorthand": false
   }
 }

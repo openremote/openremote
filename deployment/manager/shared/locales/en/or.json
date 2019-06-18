@@ -56,6 +56,8 @@
   "confirmDelete": "Are you sure you want to delete?",
   "when": "When",
   "then": "Then",
+  "and": "and",
+  "or": "or",
   "datetime": "Datetime",
   "timer": "Timer",
   "rulesEditorAddCondition": "Add condition",
