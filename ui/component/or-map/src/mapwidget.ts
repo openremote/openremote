@@ -52,6 +52,26 @@ export class MapWidget {
         return this;
     }
 
+    public flyTo(LngLat:LngLatLike): this {
+        switch (this._type) {
+            case Type.RASTER:
+                if (this._mapJs) {
+                    //TODO implement fylTo
+                }
+                break;
+            case Type.VECTOR:
+                if (this._mapGl && LngLat) {
+                    this._mapGl.flyTo({
+                        center: LngLat,
+                        zoom: 17
+                    });
+                }
+                break;
+        }
+
+        return this;
+    }
+
     public setZoom(zoom?: number): this {
 
         this._zoom = zoom;

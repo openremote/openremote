@@ -137,7 +137,6 @@ export class OrMap extends LitElement {
         }
 
         if (this._mapContainer && this._slotElement) {
-
             this._map = new MapWidget(this.type, this.shadowRoot!, this._mapContainer)
                 .setCenter(this.center)
                 .setZoom(this.zoom);
@@ -151,6 +150,12 @@ export class OrMap extends LitElement {
         }
 
         this._loaded = true;
+    }
+
+    public flyTo(LngLat: LngLatLike) {
+        if (this._map) {
+            this._map.flyTo(LngLat);
+        }
     }
 
     protected _onMarkerChangedEvent(evt: OrMapMarkerChangedEvent) {
