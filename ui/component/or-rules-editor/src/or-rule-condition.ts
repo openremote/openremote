@@ -11,7 +11,6 @@ import {
 } from "./index";
 import "./or-rule-asset-query";
 import {OrSelectChangedEvent} from "@openremote/or-select";
-import {OrInputChangedEvent} from "@openremote/or-input";
 import {conditionEditorStyle} from "./style";
 import i18next from "i18next";
 
