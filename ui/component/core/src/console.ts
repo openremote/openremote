@@ -198,7 +198,8 @@ export class Console {
             throw new Error("Console must be initialised before enabling providers");
         }
 
-        for (let providerName of this._pendingProviderEnables) {
+        for (let index = this._pendingProviderEnables.length - 1; index > -1; index--) {
+            let providerName = this._pendingProviderEnables[index];
             await this.enableProvider(providerName);
         }
     }
