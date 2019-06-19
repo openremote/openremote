@@ -46,7 +46,10 @@ import android.widget.Toast;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
@@ -604,16 +607,23 @@ public class MainActivity extends Activity {
                             .apply();
                 }
                 // TODO: Implement topic support
-                String fcmToken = FirebaseInstanceId.getInstance().getToken();
-                Map<String, Object> response = new HashMap<>();
-                response.put("action", "PROVIDER_ENABLE");
-                response.put("provider", "push");
-                response.put("hasPermission", true);
-                response.put("success", true);
-                Map<String, Object> responseData = new HashMap<>();
-                responseData.put("token", fcmToken);
-                response.put("data", responseData);
-                notifyClient(response);
+                FirebaseInstanceId.getInstance().getInstanceId().addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<InstanceIdResult> task) {
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("action", "PROVIDER_ENABLE");
+                        response.put("provider", "push");
+                        response.put("hasPermission", true);
+                        response.put("success", true);
+                        Map<String, Object> responseData = new HashMap<>();
+                        if (task.isSuccessful()) {
+                            responseData.put("token", task.getResult().getToken());
+                        }
+                        response.put("data", responseData);
+                        notifyClient(response);
+                    }
+                });
+
             } else if (action.equalsIgnoreCase("PROVIDER_DISABLE")) {
                 // Cannot disable push notifications
                 Map<String, Object> response = new HashMap<>();
