@@ -63,7 +63,7 @@ export class MapWidget {
                 if (this._mapGl && LngLat) {
                     this._mapGl.flyTo({
                         center: LngLat,
-                        zoom: 17
+                        zoom: 16
                     });
                 }
                 break;

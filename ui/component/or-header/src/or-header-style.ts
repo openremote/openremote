@@ -74,6 +74,6 @@ export const OrHeaderStyle = css`
      }
      
      [slot="desktop-left"] > a[selected] {
-        border-bottom: 4px solid #A3BDD0;
+        border-bottom: 4px solid var(--app-header-selected-border);
      }
 `;
