@@ -105,6 +105,7 @@ export interface RulesConfig {
         hideConditionTypeOptions?: boolean;
         hideThenAddAction?: boolean;
         hideWhenAddCondition?: boolean;
+        hideWhenAddAttribute?: boolean;
         hideWhenAddGroup?: boolean;
         hideWhenGroupOutline?: boolean;
     };

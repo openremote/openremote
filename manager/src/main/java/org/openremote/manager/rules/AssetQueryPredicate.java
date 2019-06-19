@@ -128,6 +128,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
         }
 
         if (query.attributes != null) {
+            // TODO: LogicGroup AND doesn't make much sense when applying to a single asset state
             if (!asPredicate(timerService::getCurrentTimeMillis, query.attributes).test(assetState)) {
                 return false;
             }

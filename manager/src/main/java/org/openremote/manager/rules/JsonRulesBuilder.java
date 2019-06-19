@@ -48,6 +48,7 @@ import org.quartz.CronExpression;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -85,6 +86,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         BaseAssetQuery.OrderBy orderBy;
         int limit;
         LogicGroup<AttributePredicate> attributePredicates = null;
+        Collection<Predicate<AssetState>> attributeAndedPredicates = null;
         RuleCondition ruleCondition;
         Set<AssetState> unfilteredAssetStates = new HashSet<>();
         Set<AssetState> previouslyMatchedAssetStates = new HashSet<>();
@@ -135,6 +137,16 @@ public class JsonRulesBuilder extends RulesBuilder {
                 orderBy = ruleCondition.assets.orderBy;
                 limit = ruleCondition.assets.limit;
                 attributePredicates = ruleCondition.assets.attributes;
+
+                if (attributePredicates != null && attributePredicates.items != null) {
+                    // Note only supports a single level or logic group for attributes (i.e. cannot nest groups)
+                    attributePredicates.groups = null;
+                    if (attributePredicates.operator == null || attributePredicates.operator == RuleOperator.AND) {
+                        attributeAndedPredicates = Arrays.stream(attributePredicates.items)
+                                .map(attributePredicate -> AssetQueryPredicate.asPredicate(timerService::getCurrentTimeMillis, attributePredicate))
+                                .collect(Collectors.toList());
+                    }
+                }
                 ruleCondition.assets.orderBy = null;
                 ruleCondition.assets.limit = 0;
                 ruleCondition.assets.attributes = null;
@@ -195,12 +207,43 @@ public class JsonRulesBuilder extends RulesBuilder {
             if (attributePredicates == null) {
                 matchedAssetStates = new ArrayList<>(unfilteredAssetStates);
             } else {
-                Predicate<AssetState> predicate = AssetQueryPredicate.asPredicate(timerService::getCurrentTimeMillis, attributePredicates);
-                Map<Boolean,List<AssetState>> results = unfilteredAssetStates.stream().collect(Collectors.groupingBy(predicate::test));
+                Map<Boolean, List<AssetState>> results;
+
+                if (attributeAndedPredicates != null) {
+                    // ANDs need to be applied in the context of an entire asset as don't make any sense otherwise
+                    results = new HashMap<>();
+                    ArrayList<AssetState> matched = new ArrayList<>();
+                    ArrayList<AssetState> unmatched = new ArrayList<>();
+                    results.put(true, matched);
+                    results.put(false, unmatched);
+
+                    unfilteredAssetStates.stream().collect(Collectors.groupingBy(AssetState::getId)).forEach((id, states) -> {
+                        Set<AssetState> assetMatched = new HashSet<>();
+
+                        for (Predicate<AssetState> attributePredicate : attributeAndedPredicates) {
+                            Collection<AssetState> assetPredicateMatched = states.stream().filter(attributePredicate).collect(Collectors.toList());
+
+                            if (assetPredicateMatched.isEmpty()) {
+                                assetMatched.clear();
+                                break;
+                            }
+
+                            assetMatched.addAll(assetPredicateMatched);
+                        }
+
+                        matched.addAll(assetMatched);
+                        unmatched.addAll(states.stream().filter(as -> !assetMatched.contains(as)).collect(Collectors.toList()));
+                    });
+
+                } else {
+                    Predicate<AssetState> predicate = AssetQueryPredicate.asPredicate(timerService::getCurrentTimeMillis, attributePredicates);
+                    results = unfilteredAssetStates.stream().collect(Collectors.groupingBy(predicate::test));
+                }
+
                 matchedAssetStates = results.getOrDefault(true, Collections.emptyList());
+                unmatchedAssetStates = results.getOrDefault(false, Collections.emptyList());
 
                 if (trackUnmatched) {
-                    unmatchedAssetStates = results.getOrDefault(false, Collections.emptyList());
 
                     // Clear out previous unmatched that now match
                     previouslyUnmatchedAssetStates.removeIf(matchedAssetStates::contains);

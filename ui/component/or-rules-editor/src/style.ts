@@ -504,10 +504,17 @@ export const conditionEditorStyle = css`
     :host > * {
         margin-right: 20px;
     }
+    
+    or-rule-asset-query {
+        flex-grow: 1;
+    }
 `;
 
 // language=CSS
 export const assetQueryEditorStyle = css`
+    
+    ${buttonStyle}
+    
     :host {
         display: flex;
         flex-direction: row;
@@ -515,5 +522,59 @@ export const assetQueryEditorStyle = css`
     
     :host > * {
         margin-right: 20px;
+    }
+    
+    .attribute-group {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        position: relative;
+    }
+    
+    .attribute-items {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .attribute-items > div {
+        margin: 10px 0;
+    }
+    
+    .attribute-item {
+        position: relative;
+        padding-left: 40px;
+    }
+    
+    .attribute {
+        display: flex;
+    }
+
+    .operator {
+        text-transform: uppercase;
+        position: absolute;
+        left: 0;
+        top: 100%;
+        padding: 2px;
+        border: 2px solid var(--internal-or-rule-foreground-color);
+        border-radius: 3px;
+        font-weight: bold;
+    }
+    
+    .operator * {
+        font-size: small;
+        color: var(--internal-or-rule-foreground-color);    
+    }
+    
+    .attribute > * {
+        flex-grow: 0;
+    }
+    
+    .attribute > .attribute-editor {
+        flex-grow: 1;
+    }
+    
+    .attribute-items div:last-child > .operator {
+        display: none;
     }
 `;

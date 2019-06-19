@@ -25,18 +25,20 @@ class OrRuleWhen extends LitElement {
         return html`<button class="button-clear add-button" @click="${() => this.addGroup(parent)}"><or-icon icon="plus-circle"></or-icon><or-translate value="rulesEditorAddGroup"></or-translate></button>`;
     }
 
-    protected ruleGroupTemplate(group: LogicGroup<RuleCondition>): TemplateResult | string {
+    protected ruleGroupTemplate(group: LogicGroup<RuleCondition>, parentGroup?: LogicGroup<RuleCondition>): TemplateResult | string {
         if (!group) {
             return ``;
         }
 
-        const showAddCondition = !this.config || !this.config.controls || this.config.controls.hideWhenAddCondition !== true;
-        const showAddgroup = !this.config || !this.config.controls || this.config.controls.hideWhenAddGroup !== true;
         const showGroupOutline = !this.config || !this.config.controls || this.config.controls.hideWhenGroupOutline !== true;
+        const showAddCondition = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddCondition !== true);
+        const showRemoveCondition = !this.readonly && group.items && group.items.length > 1;
+        const showAddGroup = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddGroup !== true);
+        const showRemoveGroup = !this.readonly && (parentGroup || (group.groups && group.groups.length > 0));
 
         return html`
             <div class="rule-group ${showGroupOutline ? "visible" : "hidden"}">
-                ${!this.readonly && showAddgroup ? html`
+                ${showRemoveGroup ? html`
                     <button class="button-clear remove-button" @click="${() => this.removeGroup(group)}">
                         <div></div>
                         <or-icon icon="close-circle"></or-icon>                        
@@ -50,7 +52,7 @@ class OrRuleWhen extends LitElement {
                                 <button @click="${() => this.toggleGroup(group)}" class="button-clear operator"><span>${i18next.t(!group.operator || group.operator === RuleOperator.AND ? "and" : "or")}</span></button>
                                 <div class="rule-condition">
                                     <or-rule-condition .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .ruleCondition="${condition}" .readonly="${this.readonly}" ></or-rule-condition>
-                                    ${!this.readonly ? html`
+                                    ${showRemoveCondition ? html`
                                         <button class="button-clear" @click="${() => this.removeCondition(condition)}"><or-icon icon="close-circle"></or-icon></input>
                                     ` : ``}
                                 </div>
@@ -62,16 +64,16 @@ class OrRuleWhen extends LitElement {
                         ${group.groups.map((childGroup: LogicGroup<RuleCondition>) => html`
                             <div class="rule-group-item">
                                 <button @click="${() => this.toggleGroup(group)}" class="button-clear operator"><span>${i18next.t(!group.operator || group.operator === RuleOperator.AND ? "and" : "or")}</span></button>
-                                ${this.ruleGroupTemplate(childGroup)}
+                                ${this.ruleGroupTemplate(childGroup, group)}
                             </div>
                         `)}
                     ` : ``}
                 </div>
                 
-                ${showAddCondition || showAddgroup ? html`
+                ${showAddCondition || showAddGroup ? html`
                     <div class="add-buttons-container">
                         ${showAddCondition ? html`<button class="button-clear add-button" @click="${() => this.addCondition(group)}"><or-icon icon="plus-circle"></or-icon><or-translate value="rulesEditorAddCondition"></or-translate></button>` : ``}
-                        ${showAddgroup ? this.groupAddTemplate(group) : ``}
+                        ${showAddGroup ? this.groupAddTemplate(group) : ``}
                     </div>
                 ` : ``}
             </div>

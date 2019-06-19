@@ -9,7 +9,9 @@ import {
     ValuePredicateUnion,
     ValueType,
     AttributeValueDescriptor,
-    AssetDescriptor
+    AssetDescriptor,
+    RuleOperator,
+    LogicGroup
 } from "@openremote/model";
 import {
     AssetQueryOperator, AssetTypeAttributeName,
@@ -54,11 +56,13 @@ class OrRuleAssetQuery extends LitElement {
         const attributes = this.getAttributes(assetDescriptor).map((a) => [a, i18next.t(a)]);
 
         return html`
-            <or-select @or-select-changed="${(e: OrSelectChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributes}" .value="${attributeName}"></or-select>
-            
-            ${attributeName ? html`<or-select @or-select-changed="${(e: OrSelectChangedEvent) => this.setOperator(assetDescriptor, attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${this.getOperators(assetDescriptor, attributeName)}" .value="${operator}"></or-select>` : ``}
-            
-            ${attributePredicate ? this.attributePredicateValueEditorTemplate(assetDescriptor, attributePredicate) : ``}
+            <div class="attribute-editor">
+                <or-select @or-select-changed="${(e: OrSelectChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributes}" .value="${attributeName}"></or-select>
+                
+                ${attributeName ? html`<or-select @or-select-changed="${(e: OrSelectChangedEvent) => this.setOperator(assetDescriptor, attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${this.getOperators(assetDescriptor, attributeName)}" .value="${operator}"></or-select>` : ``}
+                
+                ${attributePredicate ? this.attributePredicateValueEditorTemplate(assetDescriptor, attributePredicate) : ``}
+            </div>
         `;
     }
 
@@ -143,11 +147,33 @@ class OrRuleAssetQuery extends LitElement {
             this.query.attributes.items = [{}];
         }
 
+        const showAddAttribute = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddAttribute !== true);
+        const showRemoveAttribute = !this.readonly && this.query.attributes && this.query.attributes.items && this.query.attributes.items.length > 1;
+
         return html`
-            <div class="attribute-predicate-list">
-                ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate) => {
-                    return html`${this.attributePredicateEditorTemplate(assetDescriptor, attributePredicate)}`;
-                }) : ``}
+            <div class="attribute-group">
+                <div class="attribute-items">
+                    ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate) => {
+                        
+                        return html`
+                           <div class="attribute-item">
+                                <button @click="${() => this.toggleAttributeGroup(this.query!.attributes!)}" class="button-clear operator"><span>${i18next.t(!this.query!.attributes!.operator || this.query!.attributes!.operator === RuleOperator.AND ? "and" : "or")}</span></button>
+                                <div class="attribute">
+                                    ${this.attributePredicateEditorTemplate(assetDescriptor, attributePredicate)}
+                                    ${showRemoveAttribute ? html`
+                                        <button class="button-clear" @click="${() => this.removeAttributePredicate(this.query!.attributes!, attributePredicate)}"><or-icon icon="close-circle"></or-icon></input>
+                                    ` : ``}
+                                </div>
+                            </div>
+                        `;
+                    }) : ``}
+                </div>
+                
+                ${showAddAttribute ? html`
+                    <div class="add-buttons-container">
+                        ${showAddAttribute ? html`<button class="button-clear add-button" @click="${() => this.addAttributePredicate(this.query!.attributes!)}"><or-icon icon="plus-circle"></or-icon><or-translate value="rulesEditorAddCondition"></or-translate></button>` : ``}
+                    </div>
+                ` : ``}
             </div>
         `;
     }
@@ -529,6 +555,34 @@ class OrRuleAssetQuery extends LitElement {
 
     protected setValuePredicateProperty(valuePredicate: ValuePredicateUnion, propertyName: string, value: any) {
         (valuePredicate as any)[propertyName] = value;
+        this.dispatchEvent(new OrRuleChangedEvent());
+        this.requestUpdate();
+    }
+
+    protected removeAttributePredicate(group: LogicGroup<AttributePredicate>, attributePredicate: AttributePredicate) {
+        const index = group.items!.indexOf(attributePredicate);
+        if (index >= 0) {
+            group.items!.splice(index, 1);
+        }
+        this.dispatchEvent(new OrRuleChangedEvent());
+        this.requestUpdate();
+    }
+
+    protected addAttributePredicate(group: LogicGroup<AttributePredicate>) {
+        if (!group.items) {
+            group.items = [];
+        }
+        group.items.push({});
+        this.dispatchEvent(new OrRuleChangedEvent());
+        this.requestUpdate();
+    }
+
+    protected toggleAttributeGroup(group: LogicGroup<AttributePredicate>) {
+        if (group.operator === RuleOperator.OR) {
+            group.operator = RuleOperator.AND;
+        } else {
+            group.operator = RuleOperator.OR;
+        }
         this.dispatchEvent(new OrRuleChangedEvent());
         this.requestUpdate();
     }
