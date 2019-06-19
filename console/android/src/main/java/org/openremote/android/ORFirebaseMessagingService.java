@@ -10,10 +10,11 @@ import android.content.Intent;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
-import android.support.annotation.RequiresApi;
-import android.support.v4.app.NotificationCompat;
+import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationCompat;
 import android.text.TextUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.messaging.RemoteMessage;
 import org.openremote.android.service.AlertAction;
 import org.openremote.android.service.AlertButton;
@@ -144,6 +145,12 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
                 handleNotification(notificationId, title, body, action, buttons);
             }
         }
+    }
+
+    @Override
+    public void onNewToken(String s) {
+        super.onNewToken(s);
+        tokenService.sendOrStoreFCMToken(s, FirebaseInstanceId.getInstance().getId());
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

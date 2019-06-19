@@ -7,13 +7,10 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.support.v4.app.ActivityCompat
-import android.support.v4.content.ContextCompat
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.android.gms.location.Geofence
-import com.google.android.gms.location.GeofencingClient
-import com.google.android.gms.location.GeofencingRequest
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.*
 import org.openremote.android.MainActivity
 import org.openremote.android.R
 import java.net.URL
@@ -24,7 +21,7 @@ import kotlin.concurrent.schedule
 
 class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissionsResultCallback {
 
-    interface EnableCallback {
+    interface GeofenceCallback {
         fun accept(responseData: Map<String, Any>)
     }
 
@@ -53,7 +50,7 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
         fun getGeofences(context: Context): Array<GeofenceDefinition> {
             val sharedPreferences = context.getSharedPreferences(context.getString(R.string.OR_CONSOLE_NAME), Context.MODE_PRIVATE)
             val existingGeofencesJson = sharedPreferences.getString(geofencesKey, null)
-            var geofences : Array<GeofenceDefinition> = arrayOf()
+            var geofences: Array<GeofenceDefinition> = arrayOf()
             if (existingGeofencesJson != null) {
                 geofences = JSON.readValue(existingGeofencesJson, Array<GeofenceDefinition>::class.java)
             }
@@ -136,7 +133,33 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
         LocationServices.getGeofencingClient(context)
     }
 
-    var enableCallback: EnableCallback? = null
+    private val locationClient: FusedLocationProviderClient by lazy {
+        LocationServices.getFusedLocationProviderClient(context)
+    }
+
+    private val locationUpdateCallback: LocationCallback by lazy {
+        object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult?) {
+                locationResult?.lastLocation?.let {
+                    locationClient.removeLocationUpdates(this)
+                    locationCallback?.accept(hashMapOf(
+                            "action" to "GET_LOCATION",
+                            "provider" to "geofence",
+                            "data" to hashMapOf(
+                                    "latitude" to it.latitude,
+                                    "longitude" to it.longitude
+                            )
+                    ))
+                    locationCallback = null
+                }
+            }
+        }
+    }
+
+    private lateinit var locationRequest: LocationRequest
+
+    private var enableCallback: GeofenceCallback? = null
+    private var locationCallback: GeofenceCallback? = null
 
     fun initialize(): Map<String, Any> {
         val sharedPreferences = context.getSharedPreferences(context.getString(R.string.OR_CONSOLE_NAME), Context.MODE_PRIVATE)
@@ -154,7 +177,7 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
     }
 
     @SuppressLint("MissingPermission")
-    fun enable(activity: Activity, baseUrl: String, consoleId: String, callback: EnableCallback) {
+    fun enable(activity: Activity, baseUrl: String, consoleId: String, callback: GeofenceCallback) {
         val sharedPreferences = context.getSharedPreferences(context.getString(R.string.OR_CONSOLE_NAME), Context.MODE_PRIVATE)
 
         sharedPreferences.edit()
@@ -163,7 +186,7 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
                 .remove(geofenceDisabledKey)
                 .apply()
 
-        if(ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             enableCallback = callback
             registerPermissions(activity)
             return
@@ -185,6 +208,29 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
                 .apply()
 
         //context.stopService(Intent(context, LocationService::class.java))
+    }
+
+    fun getLocation(activity: Activity, callback: GeofenceCallback?) {
+        locationCallback = callback
+
+
+        val hasPermission = ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+        if (hasPermission) {
+            locationRequest = LocationRequest.create()
+            locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+            locationRequest.numUpdates = 1
+
+            locationClient.requestLocationUpdates(locationRequest, locationUpdateCallback, null)
+        } else {
+            registerPermissions(activity)
+            locationCallback?.accept(hashMapOf(
+                    "action" to "GET_LOCATION",
+                    "provider" to "geofence",
+                    "data" to hashMapOf<String, Any>()
+            ))
+            locationCallback = null
+        }
     }
 
     fun refreshGeofences() {
@@ -228,7 +274,7 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
         }
     }
 
-    private fun onEnable(callback: EnableCallback?) {
+    private fun onEnable(callback: GeofenceCallback?) {
 
         LOG.info("Enabling geofence provider")
 

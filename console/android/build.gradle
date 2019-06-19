@@ -1,5 +1,4 @@
 buildscript {
-    ext.kotlin_version = "$kotlinVersion"
     repositories {
         google()
         jcenter()
@@ -59,10 +58,9 @@ android {
 dependencies {
     implementation "com.squareup.okhttp3:okhttp:$okhttp3Version"
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
-    implementation "com.android.support:support-compat:$androidSupportVersion"
-    implementation "com.android.support:appcompat-v7:$androidSupportVersion"
-    implementation "com.google.firebase:firebase-core:$fcmVersion"
-    implementation "com.google.firebase:firebase-messaging:$fcmVersion"
+    implementation "androidx.core:core:1.0.2"
+    implementation "com.google.firebase:firebase-core:$firebaseCoreVersion"
+    implementation "com.google.firebase:firebase-messaging:$fcmMessagingVersion"
     implementation "com.squareup.retrofit2:converter-jackson:$jacksonVersion"
     implementation "com.squareup.retrofit2:converter-scalars:$retrofitVersion"
     implementation "com.google.android.gms:play-services-location:$googlePlayVersion"

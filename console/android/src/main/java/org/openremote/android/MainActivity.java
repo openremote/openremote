@@ -5,7 +5,11 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.DownloadManager;
-import android.content.*;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -14,21 +18,36 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.net.http.SslError;
-import android.os.*;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
-import android.webkit.*;
+import android.webkit.ConsoleMessage;
+import android.webkit.CookieManager;
+import android.webkit.DownloadListener;
+import android.webkit.JavascriptInterface;
+import android.webkit.SslErrorHandler;
+import android.webkit.URLUtil;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.iid.FirebaseInstanceId;
+
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -40,6 +59,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 public class MainActivity extends Activity {
 
@@ -111,7 +134,7 @@ public class MainActivity extends Activity {
         String platform = "Android " + Build.VERSION.RELEASE;
         String name = getString(R.string.OR_CONSOLE_NAME);
         String providers = getString(R.string.OR_CONSOLE_PROVIDERS);
-        String version = "N/A";
+        String version = BuildConfig.VERSION_NAME;
 
         try {
             PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
@@ -121,10 +144,10 @@ public class MainActivity extends Activity {
         }
 
         return getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL)
-            + "?consolePlatform=" + platform
-            + "&consoleName=" + name
-            + "&consoleVersion=" + version
-            + "&consoleProviders=" + providers;
+                + "?consolePlatform=" + platform
+                + "&consoleName=" + name
+                + "&consoleVersion=" + version
+                + "&consoleProviders=" + providers;
     }
 
     @Override
@@ -185,7 +208,7 @@ public class MainActivity extends Activity {
     protected void openIntentUrl(Intent intent) {
         if (!intent.hasExtra("appUrl")) {
             String url = getClientUrl();
-                LOG.fine("Loading web view: " + url);
+            LOG.fine("Loading web view: " + url);
             loadUrl(url);
         } else {
             String url = getClientUrl();
@@ -291,14 +314,14 @@ public class MainActivity extends Activity {
                 // server was reinstalled), we detect the failure and then don't show an error view. We clear the stored
                 // invalid token. The web app will then start a new login.
                 if (request.getUrl().getLastPathSegment() != null &&
-                    request.getUrl().getLastPathSegment().equals("token") &&
-                    request.getMethod().equals("POST") &&
-                    errorResponse.getStatusCode() == 400) {
-                        MainActivity.this.storeData(getString(R.string.SHARED_PREF_REFRESH_TOKEN), null);
-                        return;
-                    }
+                        request.getUrl().getLastPathSegment().equals("token") &&
+                        request.getMethod().equals("POST") &&
+                        errorResponse.getStatusCode() == 400) {
+                    MainActivity.this.storeData(getString(R.string.SHARED_PREF_REFRESH_TOKEN), null);
+                    return;
+                }
 
-                    handleError(errorResponse.getStatusCode(), errorResponse.getReasonPhrase(), request.getUrl().toString(), request.isForMainFrame());
+                handleError(errorResponse.getStatusCode(), errorResponse.getReasonPhrase(), request.getUrl().toString(), request.isForMainFrame());
             }
 
             @Override
@@ -333,8 +356,8 @@ public class MainActivity extends Activity {
                 }
 
                 handleError(
-                    error.getErrorCode(), error.getDescription().toString(),
-                    request.getUrl().toString(), request.isForMainFrame());
+                        error.getErrorCode(), error.getDescription().toString(),
+                        request.getUrl().toString(), request.isForMainFrame());
             }
 
             @Override
@@ -378,8 +401,8 @@ public class MainActivity extends Activity {
 
                     //TODO should we always ignore image errors?
                     if (failingUrl != null && (failingUrl.endsWith("png")
-                        || failingUrl.endsWith("jpg")
-                        || failingUrl.endsWith("ico"))) {
+                            || failingUrl.endsWith("jpg")
+                            || failingUrl.endsWith("ico"))) {
                         LOG.info("Ignoring error loading image resource");
                         return;
                     }
@@ -418,7 +441,7 @@ public class MainActivity extends Activity {
                     ActivityCompat.requestPermissions(MainActivity.this, new String[]{writePermission}, WRITE_PERMISSION_FOR_DOWNLOAD);
                 } else {
                     DownloadManager.Request request = new
-                        DownloadManager.Request(Uri.parse(url));
+                            DownloadManager.Request(Uri.parse(url));
 
                     request.setMimeType(mimetype);
                     //------------------------COOKIE!!------------------------
@@ -527,15 +550,15 @@ public class MainActivity extends Activity {
                 if (consoleId != null) {
                     ((MainActivity) activity).consoleId = consoleId;
                     geofenceProvider.enable(MainActivity.this, String.format("%s/api/%s",
-                        getString(R.string.OR_BASE_SERVER),
-                        getString(R.string.OR_REALM)),
-                        consoleId, new GeofenceProvider.EnableCallback() {
-                            @Override
-                            public void accept(@NotNull Map<String, ?> responseData) {
-                                //noinspection unchecked
-                                notifyClient((Map<String, Object>) responseData);
-                            }
-                        });
+                            getString(R.string.OR_BASE_SERVER),
+                            getString(R.string.OR_REALM)),
+                            consoleId, new GeofenceProvider.GeofenceCallback() {
+                                @Override
+                                public void accept(@NotNull Map<String, ?> responseData) {
+                                    //noinspection unchecked
+                                    notifyClient((Map<String, Object>) responseData);
+                                }
+                            });
                 }
             } else if (action.equalsIgnoreCase("PROVIDER_DISABLE")) {
                 geofenceProvider.disable();
@@ -545,6 +568,14 @@ public class MainActivity extends Activity {
                 notifyClient(response);
             } else if (action.equalsIgnoreCase("GEOFENCE_REFRESH")) {
                 geofenceProvider.refreshGeofences();
+            } else if (action.equalsIgnoreCase("GET_LOCATION")) {
+                geofenceProvider.getLocation(MainActivity.this, new GeofenceProvider.GeofenceCallback() {
+                    @Override
+                    public void accept(@NotNull Map<String, ?> responseData) {
+                        //noinspection unchecked
+                        notifyClient((Map<String, Object>) responseData);
+                    }
+                });
             }
         }
 
@@ -683,7 +714,7 @@ public class MainActivity extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             ConnectivityManager cm
-                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                    = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             onConnectivityChanged(activeNetwork != null && activeNetwork.isConnectedOrConnecting());

@@ -42,13 +42,6 @@
 
         </service>
 
-        <service
-            android:name="org.openremote.android.ORFirebaseInstanceIDService">
-            <intent-filter>
-                <action android:name="com.google.firebase.INSTANCE_ID_EVENT"/>
-            </intent-filter>
-        </service>
-
         <receiver android:name=".service.GeofenceBootCompleteReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
