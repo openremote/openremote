@@ -458,7 +458,9 @@ public class JsonRulesBuilder extends RulesBuilder {
             triggerStateMap.values().forEach(ruleConditionState -> {
                 if (ruleConditionState.lastTriggerResult != null) {
 
-                    // Remove any stale matched asset states
+                    // Replace any stale matched asset states (values may have changed equality is by asset ID and attribute name)
+                    // only need up to date values in the previously matched asset states previously unmatched asset states is only
+                    // used to compare asset ID and attribute name.
                     ruleConditionState.previouslyMatchedAssetStates.removeAll(ruleConditionState.lastTriggerResult.matchedAssetStates);
                     ruleConditionState.previouslyMatchedAssetStates.addAll(ruleConditionState.lastTriggerResult.matchedAssetStates);
 
@@ -792,19 +794,19 @@ public class JsonRulesBuilder extends RulesBuilder {
         return Collections.emptyList();
     }
 
-    protected static boolean matches(LogicGroup<RuleCondition> ruleConditionCondition, Map<String, RuleTriggerState> triggerStateMap) {
+    protected static boolean matches(LogicGroup<RuleCondition> ruleConditionGroup, Map<String, RuleTriggerState> triggerStateMap) {
 
         boolean match = false;
 
-        if (conditionIsEmpty(ruleConditionCondition)) {
+        if (conditionIsEmpty(ruleConditionGroup)) {
             return false;
         }
 
-        RuleOperator operator = ruleConditionCondition.operator == null ? RuleOperator.AND : ruleConditionCondition.operator;
+        RuleOperator operator = ruleConditionGroup.operator == null ? RuleOperator.AND : ruleConditionGroup.operator;
 
         if (operator == RuleOperator.AND) {
-            if (ruleConditionCondition.items != null) {
-                match = Arrays.stream(ruleConditionCondition.items)
+            if (ruleConditionGroup.items != null) {
+                match = Arrays.stream(ruleConditionGroup.items)
                         .map(ruleCondition -> triggerStateMap.get(ruleCondition.tag))
                         .allMatch(ruleConditionState -> ruleConditionState.lastTriggerResult != null && ruleConditionState.lastTriggerResult.matches);
 
@@ -813,15 +815,15 @@ public class JsonRulesBuilder extends RulesBuilder {
                 }
             }
 
-            if (ruleConditionCondition.groups != null) {
-                match = Arrays.stream(ruleConditionCondition.groups)
+            if (ruleConditionGroup.groups != null) {
+                match = Arrays.stream(ruleConditionGroup.groups)
                         .allMatch(condition -> matches(condition, triggerStateMap));
             }
         }
 
         if (operator == RuleOperator.OR) {
-            if (ruleConditionCondition.items != null) {
-                match = Arrays.stream(ruleConditionCondition.items)
+            if (ruleConditionGroup.items != null) {
+                match = Arrays.stream(ruleConditionGroup.items)
                         .map(ruleCondition -> triggerStateMap.get(ruleCondition.tag))
                         .anyMatch(ruleConditionState -> ruleConditionState.lastTriggerResult != null && ruleConditionState.lastTriggerResult.matches);
 
@@ -830,8 +832,8 @@ public class JsonRulesBuilder extends RulesBuilder {
                 }
             }
 
-            if (ruleConditionCondition.groups != null) {
-                match = Arrays.stream(ruleConditionCondition.groups)
+            if (ruleConditionGroup.groups != null) {
+                match = Arrays.stream(ruleConditionGroup.groups)
                         .anyMatch(condition -> matches(condition, triggerStateMap));
             }
         }
