@@ -200,10 +200,10 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
         assert assets != null
         assert assets.length == 13
         assert assets.each {
-            !TextUtil.isNullOrEmpty(it.id) &&
-                !TextUtil.isNullOrEmpty(it.getName()) &&
-                !it.getAttributesList().isEmpty() &&
-                it.getAttributesStream().allMatch({attr ->
+            !TextUtil.isNullOrEmpty(it.asset.id) &&
+                !TextUtil.isNullOrEmpty(it.asset.getName()) &&
+                !it.asset.getAttributesList().isEmpty() &&
+                it.asset.getAttributesStream().allMatch({attr ->
                     AgentLink.getAgentLink(attr)
                         .map({agentLink -> agentLink.entityId == agent.id && agentLink.attributeName == "protocolConfig"})
                         .orElse(false)
@@ -212,10 +212,10 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
         }
 
         and: "a given asset should have the correct attributes (VMBGPOD)"
-        def asset = assets.find {it.name == "VMBGPOD"}
+        def asset = assets.find {it.asset.name == "VMBGPOD"}
         assert asset != null
-        assert asset.getAttributesList().size() == 303
-        def memoTextAttribute = asset.getAttributesList().find {VelbusConfiguration.getVelbusDevicePropertyLink(it) == "MEMO_TEXT"}
+        assert asset.asset.getAttributesList().size() == 303
+        def memoTextAttribute = asset.asset.getAttributesList().find {VelbusConfiguration.getVelbusDevicePropertyLink(it) == "MEMO_TEXT"}
         assert memoTextAttribute != null
         assert VelbusConfiguration.getVelbusDeviceAddress(memoTextAttribute) == 24
 

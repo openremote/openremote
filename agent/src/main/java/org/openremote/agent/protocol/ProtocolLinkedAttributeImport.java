@@ -21,6 +21,7 @@ package org.openremote.agent.protocol;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.file.FileInfo;
 
 /**
@@ -45,5 +46,5 @@ public interface ProtocolLinkedAttributeImport {
      * using the supplied {@link FileInfo}.
      * @throws IllegalStateException when there is an issue processing the provided {@link FileInfo}
      */
-    Asset[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException;
+    AssetTreeNode[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException;
 }

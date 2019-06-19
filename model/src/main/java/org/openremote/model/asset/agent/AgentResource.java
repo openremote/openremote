@@ -23,6 +23,7 @@ import jsinterop.annotations.JsType;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetResource;
+import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
@@ -131,7 +132,7 @@ public interface AgentResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
-    Asset[] searchForLinkedAttributes(
+    AssetTreeNode[] searchForLinkedAttributes(
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId,
         @PathParam("protocolConfigurationName") String protocolConfigurationName,
@@ -155,7 +156,7 @@ public interface AgentResource {
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
     // TODO: File upload should use standard multipart mechanism
-    Asset[] importLinkedAttributes(
+    AssetTreeNode[] importLinkedAttributes(
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId,
         @PathParam("protocolConfigurationName") String protocolConfigurationName,

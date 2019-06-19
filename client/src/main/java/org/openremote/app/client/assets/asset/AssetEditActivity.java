@@ -76,6 +76,7 @@ public class AssetEditActivity
     protected final AgentResource agentResource;
     protected final AssetMapper assetMapper;
     protected final AssetArrayMapper assetArrayMapper;
+    protected final AssetTreeNodeArrayMapper assetTreeNodeArrayMapper;
     protected final AssetQueryMapper assetQueryMapper;
     protected final ProtocolDescriptorArrayMapper protocolDescriptorArrayMapper;
     protected final ProtocolDescriptorMapMapper protocolDescriptorMapMapper;
@@ -96,6 +97,7 @@ public class AssetEditActivity
                              AssetResource assetResource,
                              AgentResource agentResource,
                              AssetMapper assetMapper,
+                             AssetTreeNodeArrayMapper assetTreeNodeArrayMapper,
                              AssetArrayMapper assetArrayMapper,
                              AssetQueryMapper assetQueryMapper,
                              ProtocolDescriptorArrayMapper protocolDescriptorArrayMapper,
@@ -113,6 +115,7 @@ public class AssetEditActivity
         this.agentResource = agentResource;
         this.assetMapper = assetMapper;
         this.assetArrayMapper = assetArrayMapper;
+        this.assetTreeNodeArrayMapper = assetTreeNodeArrayMapper;
         this.assetQueryMapper = assetQueryMapper;
         this.protocolDescriptorArrayMapper = protocolDescriptorArrayMapper;
         this.protocolDescriptorMapMapper = protocolDescriptorMapMapper;
@@ -694,7 +697,7 @@ public class AssetEditActivity
         }
 
         environment.getApp().getRequests().sendWithAndReturn(
-            assetArrayMapper,
+            assetTreeNodeArrayMapper,
             fileInfoMapper,
             requestParams -> {
                 if (request.getFileInfo() != null) {
@@ -720,12 +723,27 @@ public class AssetEditActivity
                 view.setFormBusy(false);
                 view.setAvailableAttributeTypes(attributeTypesToList());
                 if (isImport) {
-                    showSuccess(environment.getMessages().protocolLinkImportSuccess(discoveredAssets.length));
+                    showSuccess(environment.getMessages().protocolLinkImportSuccess(getAssetTreeNodeCount(discoveredAssets)));
                 } else {
-                    showSuccess(environment.getMessages().protocolLinkDiscoverySuccess(discoveredAssets.length));
+                    showSuccess(environment.getMessages().protocolLinkDiscoverySuccess(getAssetTreeNodeCount(discoveredAssets)));
                 }
                 callback.run();
             }
         );
+    }
+
+    protected int getAssetTreeNodeCount(org.openremote.model.asset.AssetTreeNode assetTreeNodes[]) {
+        int count = 0;
+
+        if (assetTreeNodes != null) {
+            for (org.openremote.model.asset.AssetTreeNode node : assetTreeNodes) {
+                if (node.getAsset() != null) {
+                    count++;
+                }
+                count += getAssetTreeNodeCount(node.getChildAssets());
+            }
+        }
+
+        return count;
     }
 }

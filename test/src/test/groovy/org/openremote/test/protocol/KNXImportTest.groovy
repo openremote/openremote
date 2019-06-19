@@ -111,10 +111,10 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
             assert assets != null
             assert assets.length == 12
             assert assets.each {
-                !TextUtil.isNullOrEmpty(it.id) &&
-                    !TextUtil.isNullOrEmpty(it.getName()) &&
-                    !it.getAttributesList().isEmpty() &&
-                    it.getAttributesStream().allMatch({attr ->
+                !TextUtil.isNullOrEmpty(it.asset.id) &&
+                    !TextUtil.isNullOrEmpty(it.asset.getName()) &&
+                    !it.asset.getAttributesList().isEmpty() &&
+                    it.asset.getAttributesStream().allMatch({attr ->
                         AgentLink.getAgentLink(attr)
                             .map({agentLink -> agentLink.entityId == knxAgent.id && agentLink.attributeName == "knxConfigError1"})
                             .orElse(false)
@@ -124,10 +124,10 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
         }
         
         and: "a given asset should have the correct attributes (Target Temperature)"
-        def asset = assets.find {it.name == "Target Temperature"}
+        def asset = assets.find {it.asset.name == "Target Temperature"}
         assert asset != null
-        assert asset.getAttributesList().size() == 1
-        def attribute = asset.getAttribute("TargetTemperature").get()
+        assert asset.asset.getAttributesList().size() == 1
+        def attribute = asset.asset.getAttribute("TargetTemperature").get()
         assert attribute != null
         def metaItem = attribute.getMetaItem(KNXProtocol.META_KNX_STATUS_GA).get()
         assert metaItem != null

@@ -20,6 +20,7 @@
 package org.openremote.manager.agent;
 
 import org.openremote.agent.protocol.Protocol;
+import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeDiscovery;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
 import org.openremote.model.ValidationFailure;
@@ -88,7 +89,7 @@ public class LocalAgentConnector implements AgentConnector {
     }
 
     @Override
-    public Asset[] getDiscoveredLinkedAttributes(AttributeRef protocolConfigurationRef) throws IllegalArgumentException, UnsupportedOperationException {
+    public AssetTreeNode[] getDiscoveredLinkedAttributes(AttributeRef protocolConfigurationRef) throws IllegalArgumentException, UnsupportedOperationException {
         Optional<Pair<Protocol, AssetAttribute>> protocolAndConfigOptional = getProtocolAndConfig(protocolConfigurationRef);
 
         if (!protocolAndConfigOptional.isPresent()) {
@@ -106,11 +107,11 @@ public class LocalAgentConnector implements AgentConnector {
                 ProtocolLinkedAttributeDiscovery discoveryProtocol = (ProtocolLinkedAttributeDiscovery)protocolAndConfig.key;
                 return discoveryProtocol.discoverLinkedAssetAttributes(protocolAndConfig.value);
             })
-            .orElse(new Asset[0]);
+            .orElse(new AssetTreeNode[0]);
     }
 
     @Override
-    public Asset[] getDiscoveredLinkedAttributes(AttributeRef protocolConfigurationRef, FileInfo fileInfo) throws IllegalArgumentException, UnsupportedOperationException, IllegalStateException {
+    public AssetTreeNode[] getDiscoveredLinkedAttributes(AttributeRef protocolConfigurationRef, FileInfo fileInfo) throws IllegalArgumentException, UnsupportedOperationException, IllegalStateException {
         Optional<Pair<Protocol, AssetAttribute>> protocolAndConfigOptional = getProtocolAndConfig(protocolConfigurationRef);
 
         if (!protocolAndConfigOptional.isPresent()) {

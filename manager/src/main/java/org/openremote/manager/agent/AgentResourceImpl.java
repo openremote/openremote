@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.agent;
 
+import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -40,10 +41,7 @@ import org.openremote.model.util.TextUtil;
 import javax.ws.rs.*;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -129,7 +127,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
     }
 
     @Override
-    public Asset[] searchForLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId, String realm) {
+    public AssetTreeNode[] searchForLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId, String realm) {
         AttributeRef protocolConfigRef = new AttributeRef(agentId, protocolConfigurationName);
 
         if (!isSuperUser() && TextUtil.isNullOrEmpty(realm)) {
@@ -139,7 +137,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
         Asset parentAsset = getParent(parentId, realm);
 
         // TODO: Allow user to select which assets/attributes are actually added to the DB
-        Asset[] assets = withAgentConnector(
+        AssetTreeNode[] assets = withAgentConnector(
             agentId,
             agentConnector -> {
                 LOG.finer(
@@ -149,20 +147,12 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
             }
         );
 
-        try {
-            persistAssets(assets, parentAsset, realm);
-            return assets;
-        } catch (IllegalArgumentException e) {
-            LOG.log(Level.WARNING, e.getMessage(), e);
-            throw new NotFoundException(e.getMessage());
-        } catch (UnsupportedOperationException e) {
-            LOG.log(Level.WARNING, e.getMessage(), e);
-            throw new NotSupportedException(e.getMessage());
-        }
+        persistAssets(assets, parentAsset, realm);
+        return assets;
     }
 
     @Override
-    public Asset[] importLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId, String realm, FileInfo fileInfo) {
+    public AssetTreeNode[] importLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId, String realm, FileInfo fileInfo) {
         AttributeRef protocolConfigRef = new AttributeRef(agentId, protocolConfigurationName);
 
         if (TextUtil.isNullOrEmpty(parentId) && TextUtil.isNullOrEmpty(realm)) {
@@ -175,7 +165,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
             throw new BadRequestException("A file must be provided for import");
         }
 
-        Asset[] assets = withAgentConnector(
+        AssetTreeNode[] assets = withAgentConnector(
             agentId,
             agentConnector -> {
                 LOG.finer(
@@ -186,20 +176,8 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
             }
         );
 
-        try {
-            // TODO: Allow user to select which assets/attributes are actually added to the DB
-            persistAssets(assets, parentAsset, realm);
-            return assets;
-        } catch (IllegalArgumentException e) {
-            LOG.log(Level.WARNING, e.getMessage(), e);
-            throw new NotFoundException(e.getMessage());
-        } catch (UnsupportedOperationException e) {
-            LOG.log(Level.WARNING, e.getMessage(), e);
-            throw new NotSupportedException(e.getMessage());
-        } catch (IllegalStateException e) {
-            LOG.log(Level.SEVERE, e.getMessage(), e);
-            throw new InternalServerErrorException(e.getMessage());
-        }
+        persistAssets(assets, parentAsset, realm);
+        return assets;
     }
 
     protected <T> T withAgentConnector(String agentId, Function<Pair<Asset, AgentConnector>, T> function) {
@@ -216,19 +194,44 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
             });
     }
 
-    protected void persistAssets(Asset[] assets, Asset parentAsset, String realm) {
-        if (assets == null || assets.length == 0) {
-            LOG.info("No assets to import");
-            return;
-        }
+    // TODO: Allow user to select which assets/attributes are actually added to the DB
+    protected void persistAssets(AssetTreeNode[] assets, Asset parentAsset, String realm) {
+        try {
 
-        for (int i = 0; i < assets.length; i++) {
-            Asset asset = assets[i];
-            asset.setId(null);
-            asset.setRealm(realm);
-            asset.setParent(parentAsset);
-            Asset newAsset = Asset.map(asset, new Asset());
-            assets[i] = assetStorageService.merge(newAsset);
+            if (assets == null || assets.length == 0) {
+                LOG.info("No assets to import");
+                return;
+            }
+
+            for (int i = 0; i < assets.length; i++) {
+                AssetTreeNode assetNode = assets[i];
+                Asset asset = assetNode.asset;
+
+                if (asset == null) {
+                    LOG.info("Skipping node as asset not set");
+                    continue;
+                }
+
+                asset.setId(null);
+                asset.setRealm(realm);
+                asset.setParent(parentAsset);
+                assetNode.asset = assetStorageService.merge(asset);
+
+                if (assetNode.children != null) {
+                    persistAssets(assetNode.children, asset, realm);
+                }
+            }
+
+
+        } catch (IllegalArgumentException e) {
+            LOG.log(Level.WARNING, e.getMessage(), e);
+            throw new NotFoundException(e.getMessage());
+        } catch (UnsupportedOperationException e) {
+            LOG.log(Level.WARNING, e.getMessage(), e);
+            throw new NotSupportedException(e.getMessage());
+        } catch (IllegalStateException e) {
+            LOG.log(Level.SEVERE, e.getMessage(), e);
+            throw new InternalServerErrorException(e.getMessage());
         }
     }
 

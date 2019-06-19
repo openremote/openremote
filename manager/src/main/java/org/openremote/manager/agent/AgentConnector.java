@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.agent;
 
+import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.AgentStatusEvent;
@@ -49,7 +50,7 @@ public interface AgentConnector {
      * @throws IllegalArgumentException when the protocol cannot be found for this {@link org.openremote.model.asset.agent.ProtocolConfiguration} reference
      * @throws UnsupportedOperationException when the protocol doesn't implement {@link org.openremote.agent.protocol.ProtocolLinkedAttributeDiscovery}
      */
-    Asset[] getDiscoveredLinkedAttributes(AttributeRef protocolConfigurationRef) throws IllegalArgumentException, UnsupportedOperationException;
+    AssetTreeNode[] getDiscoveredLinkedAttributes(AttributeRef protocolConfigurationRef) throws IllegalArgumentException, UnsupportedOperationException;
 
     /**
      * Ask the protocol for discovered linked {@link AssetAttribute}s using the supplied file (protocol specific file).
@@ -60,6 +61,6 @@ public interface AgentConnector {
      * @throws UnsupportedOperationException when the protocol doesn't implement {@link org.openremote.agent.protocol.ProtocolLinkedAttributeDiscovery}
      * @throws IllegalStateException thrown by the protocol if an error occurs processing the supplied {@link FileInfo}
      */
-    Asset[] getDiscoveredLinkedAttributes(AttributeRef protocolConfigurationRef, FileInfo fileInfo) throws  IllegalArgumentException, UnsupportedOperationException, IllegalStateException;
+    AssetTreeNode[] getDiscoveredLinkedAttributes(AttributeRef protocolConfigurationRef, FileInfo fileInfo) throws  IllegalArgumentException, UnsupportedOperationException, IllegalStateException;
 
 }

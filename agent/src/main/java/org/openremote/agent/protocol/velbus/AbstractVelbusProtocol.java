@@ -26,8 +26,8 @@ import org.openremote.agent.protocol.velbus.device.VelbusDeviceType;
 import org.openremote.container.util.CodecUtil;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
@@ -253,13 +253,13 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
     }
 
     @Override
-    public Asset[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration) {
+    public AssetTreeNode[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration) {
         // TODO: Implement asset attribute discovery using the bus
-        return new Asset[0];
+        return new AssetTreeNode[0];
     }
 
     @Override
-    public Asset[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException {
+    public AssetTreeNode[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException {
         Document xmlDoc;
         try {
             String xmlStr = fileInfo.isBinary() ? new String(CodecUtil.decodeBase64(fileInfo.getContents()), "UTF8") : fileInfo.getContents();
@@ -333,7 +333,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
             devices.add(device);
         }
 
-        return devices.toArray(new Asset[devices.size()]);
+        return devices.stream().map(AssetTreeNode::new).toArray(AssetTreeNode[]::new);
     }
 
     ProtocolExecutorService getExecutorService() {

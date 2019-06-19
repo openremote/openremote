@@ -1,13 +1,13 @@
 package org.openremote.agent.protocol.knx;
 
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
 import org.openremote.container.util.CodecUtil;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -428,7 +428,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
     }
 
     @Override
-    public Asset[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException {
+    public AssetTreeNode[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException {
         ZipInputStream zin = null;
 
         try {
@@ -489,9 +489,9 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
                     LOG.info("Only group addresses ending on #A, #S, #AS or #SA will be imported. Ignoring: " + dp.getName());
                 }
             }
-            
-            return createdAssets.values().toArray(new Asset[createdAssets.values().size()]);
-            
+
+            return createdAssets.values().stream().map(AssetTreeNode::new).toArray(AssetTreeNode[]::new);
+
         } catch (Exception e) {
             throw new IllegalStateException("ETS import error", e);
         } finally {
