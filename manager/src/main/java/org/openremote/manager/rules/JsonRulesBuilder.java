@@ -48,7 +48,6 @@ import org.quartz.CronExpression;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -826,12 +825,12 @@ public class JsonRulesBuilder extends RulesBuilder {
             if (!useUnmatched) {
                 return triggerStateMap.values().stream().flatMap(triggerState ->
                         triggerState != null ? triggerState.getMatchedAssetIds().stream() : Stream.empty()
-                ).collect(Collectors.toList());
+                ).distinct().collect(Collectors.toList());
             }
 
             return triggerStateMap.values().stream().flatMap(triggerState ->
                     triggerState != null ? triggerState.getUnmatchedAssetIds().stream() : Stream.empty()
-            ).collect(Collectors.toList());
+            ).distinct().collect(Collectors.toList());
         }
 
         return Collections.emptyList();
