@@ -39,11 +39,23 @@ Closure<Stream<AssetState>> residenceWithVentilationAutoMatch =
             facts.matchAssetState(
                     new AssetQuery().type(RESIDENCE).attributeValue("ventilationAuto", true)
             ).filter { residenceWithVentilationAuto ->
-                facts.matchFirstAssetState(
-                        // and ventilation level is above/below/equal/etc. threshold
-                        new AssetQuery().id(residenceWithVentilationAuto.id)
-                                .attributeValue("ventilationLevel", operator, ventilationLevelThreshold)
-                ).isPresent()
+
+                // and ventilation level is above/below/equal/etc. threshold
+                if (operator == LESS_THAN) {
+                    // Used to have an implicit "OR NULL" which has now been removed
+                    def isNull = facts.matchFirstAssetState(
+                            new AssetQuery().id(residenceWithVentilationAuto.id).attributeName("ventilationLevel")
+                    ).map {!it.value.isPresent()}.orElse(false)
+
+                    if (isNull) {
+                        return true
+                    }
+                }
+
+                return facts.matchFirstAssetState(
+                    new AssetQuery().id(residenceWithVentilationAuto.id)
+                            .attributeValue("ventilationLevel", operator, ventilationLevelThreshold)
+                    ).isPresent()
             }
         }
 

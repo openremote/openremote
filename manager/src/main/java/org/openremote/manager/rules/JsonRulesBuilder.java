@@ -400,7 +400,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         Map<String, RuleTriggerState> triggerStateMap = new HashMap<>();
         ruleConditionStateMap.put(rule.name, triggerStateMap);
-        addRuleTriggerState(rule.when, rule.otherwise != null, 0, triggerStateMap, rule.reset);
+        addRuleTriggerStates(rule.when, rule.otherwise != null, 0, triggerStateMap, rule.reset);
 
         Condition condition = buildLhsCondition(rule, triggerStateMap);
         Action action = buildRhsAction(rule, triggerStateMap);
@@ -430,7 +430,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         return this;
     }
 
-    protected void addRuleTriggerState(LogicGroup<RuleCondition> ruleConditionCondition, boolean trackUnmatched, int index, Map<String, RuleTriggerState> triggerStateMap, RuleConditionReset defaultReset) {
+    protected void addRuleTriggerStates(LogicGroup<RuleCondition> ruleConditionCondition, boolean trackUnmatched, int index, Map<String, RuleTriggerState> triggerStateMap, RuleConditionReset defaultReset) {
         if (ruleConditionCondition != null) {
             if (ruleConditionCondition.items != null && ruleConditionCondition.items.length > 0) {
                 for (RuleCondition ruleCondition : ruleConditionCondition.items) {
@@ -446,7 +446,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
             if (ruleConditionCondition.groups != null && ruleConditionCondition.groups.length > 0) {
                 for (LogicGroup<RuleCondition> childRuleTriggerCondition : ruleConditionCondition.groups) {
-                    addRuleTriggerState(childRuleTriggerCondition, trackUnmatched, index, triggerStateMap, defaultReset);
+                    addRuleTriggerStates(childRuleTriggerCondition, trackUnmatched, index, triggerStateMap, defaultReset);
                 }
             }
         }

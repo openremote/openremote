@@ -3,7 +3,7 @@
     {
       "name": "Test Rule",
       "when": {
-        "predicates": [
+        "items": [
           {
             "assets": {
               "types": [
@@ -14,7 +14,7 @@
                 }
               ],
               "attributes": {
-                "predicates": [
+                "items": [
                   {
                     "name": {
                       "predicateType": "string",

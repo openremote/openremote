@@ -25,7 +25,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
     def "Presence detection with motion sensor"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 20, delay: 1)
+        def conditions = new PollingConditions(timeout: 30, delay: 1)
         def serverPort = findEphemeralPort()
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
