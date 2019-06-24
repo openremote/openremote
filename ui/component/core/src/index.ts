@@ -6,7 +6,7 @@ import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next from "i18next";
 import i18nextXhr from "i18next-xhr-backend";
-import {AssetDescriptor, AttributeDescriptor, AttributeValueDescriptor, MetaItemDescriptor, Asset, MetaItemType} from "@openremote/model";
+import {AssetDescriptor, AttributeDescriptor, AttributeValueDescriptor, MetaItemDescriptor} from "@openremote/model";
 
 export enum ORError {
     NONE = "NONE",
@@ -259,7 +259,7 @@ export class Manager implements EventProviderFactory {
 
         if (!normalisedConfig.managerUrl || normalisedConfig.managerUrl === "") {
             // Assume manager is running on same host as this code
-            normalisedConfig.managerUrl = window.location.protocol + "//" + window.location.hostname + (window.location.port ? + ":" + window.location.port : "");
+            normalisedConfig.managerUrl = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : "");
         } else {
             // Normalise by stripping any trailing slashes
             normalisedConfig.managerUrl = normalisedConfig.managerUrl.replace(/\/+$/, "");
