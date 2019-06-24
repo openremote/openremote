@@ -258,11 +258,7 @@ extension ORAppDelegate : UNUserNotificationCenterDelegate {
 
         switch response.actionIdentifier {
         case UNNotificationDefaultActionIdentifier:
-            if let notiId = notificationId, let conId = consoleId {
-                ORNotificationResource.sharedInstance.notificationDelivered(notificationId: notiId, targetId: conId)
-            }
-
-            if let urlToOpen = userInfo[ActionType.appUrl] as? String {
+            if let urlToOpen = userInfo[ActionType.appUrl] as? String, !urlToOpen.isEmpty {
                 let urlRequest: URL?
                 if urlToOpen.hasPrefix("http") || urlToOpen.hasPrefix("https") {
                     urlRequest = URL(string:urlToOpen)
@@ -282,7 +278,7 @@ extension ORAppDelegate : UNUserNotificationCenterDelegate {
         case UNNotificationDismissActionIdentifier,
              "declineAction":
             if let notiId = notificationId, let conId = consoleId {
-                ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: "")
+                ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: response.actionIdentifier)
             }
         default :
             if let notiId = notificationId, let conId = consoleId {
