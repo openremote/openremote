@@ -282,6 +282,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
         } else {
             sbHeight = UIApplication.shared.statusBarFrame.height
         }
+        webCfg.setURLSchemeHandler(ORSchemeHandler(), forURLScheme: ORSchemeHandler.browserScheme)
         let webFrame = CGRect(x : 0,y : sbHeight,width : view.frame.size.width,height : view.frame.size.height - sbHeight)
         myWebView = WKWebView(frame: webFrame, configuration: webCfg)
         myWebView?.autoresizingMask = [.flexibleWidth, .flexibleHeight];

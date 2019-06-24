@@ -64,6 +64,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -380,6 +381,19 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 webViewLoaded = true;
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                if (request.getUrl().getScheme().equalsIgnoreCase("webbrowser")) {
+                    String newUrl = request.getUrl().buildUpon().scheme("https").build().toString();
+                    Intent i = new Intent(Intent.ACTION_VIEW);
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    i.setData(Uri.parse(newUrl));
+                    startActivity(i);
+                    return true;
+                }
+                return super.shouldOverrideUrlLoading(view, request);
             }
 
             protected void handleError(int errorCode, String description, String failingUrl, boolean isForMainFrame) {
