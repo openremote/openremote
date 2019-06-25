@@ -46,3 +46,10 @@ public enum ORFCM {
 public enum ORAppGroup {
     public static var entitlement = "group.org.openremote.console"
 }
+
+extension UIColor {
+    public static var mainColor = UIColor(red:0.22, green:0.30, blue:0.31, alpha:1.0)
+    public static var mainColorDark = UIColor(red:0.15, green:0.20, blue:0.22, alpha:1.0)
+    public static var mainColorAccent = UIColor(red:0.75, green:0.84, blue:0.18, alpha:1.0)
+}
+

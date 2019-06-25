@@ -26,6 +26,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
     
     public var data : Data?
     public var myWebView : WKWebView?
+    public var webProgressBar: UIProgressView?
     public var defaults : UserDefaults?
     public var webCfg : WKWebViewConfiguration?
     public var isLoading = false
@@ -177,6 +178,10 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
         self.dismiss(animated: true, completion: nil)
         completionHandler()
     }
+
+    public func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        showProgressView()
+    }
     
     open func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         if (navigationAction.request.url?.absoluteString.contains("logout"))! {
@@ -253,6 +258,27 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
     
     open func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         UIApplication.shared.isNetworkActivityIndicatorVisible = false
+        hideProgressView()
+    }
+
+    public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        NSLog("error %@", error.localizedDescription)
+        UIApplication.shared.isNetworkActivityIndicatorVisible = false
+        if let err = error as? URLError {
+
+            let httpCode: Int
+            switch(err.code) {
+            case .cannotFindHost:
+                httpCode = 404
+            default:
+                httpCode = 500
+            }
+
+            handleError(errorCode: httpCode, description: err.localizedDescription, failingUrl: err.failureURLString ?? "", isForMainFrame: true)
+        } else {
+            handleError(errorCode: 0, description: error.localizedDescription, failingUrl: webView.url?.absoluteString ?? "", isForMainFrame: true)
+        }
+        hideProgressView()
     }
     
     open func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
@@ -283,12 +309,50 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
             sbHeight = UIApplication.shared.statusBarFrame.height
         }
         webCfg.setURLSchemeHandler(ORSchemeHandler(), forURLScheme: ORSchemeHandler.browserScheme)
-        let webFrame = CGRect(x : 0,y : sbHeight,width : view.frame.size.width,height : view.frame.size.height - sbHeight)
+        let webFrame = CGRect(x: 0, y: sbHeight, width: view.frame.size.width, height: view.frame.size.height - sbHeight)
         myWebView = WKWebView(frame: webFrame, configuration: webCfg)
         myWebView?.autoresizingMask = [.flexibleWidth, .flexibleHeight];
         myWebView?.uiDelegate = self;
         myWebView?.navigationDelegate = self;
+        //add observer to get estimated progress value
+        myWebView?.addObserver(self, forKeyPath: "estimatedProgress", options: .new, context: nil);
+
+        webProgressBar = UIProgressView(progressViewStyle: .bar)
+        webProgressBar?.progressTintColor = UIColor.mainColorAccent
+
         view.addSubview(myWebView!)
+        view.addSubview(webProgressBar!)
+        view.bringSubviewToFront(webProgressBar!)
+
+        webProgressBar?.translatesAutoresizingMaskIntoConstraints = false
+        webProgressBar?.leadingAnchor.constraint(equalTo: myWebView!.leadingAnchor).isActive = true
+        webProgressBar?.trailingAnchor.constraint(equalTo: myWebView!.trailingAnchor).isActive = true
+        webProgressBar?.topAnchor.constraint(equalTo: myWebView!.topAnchor, constant: -2).isActive = true
+        webProgressBar?.heightAnchor.constraint(equalToConstant: 2).isActive = true
+    }
+
+    override open func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        if keyPath == "estimatedProgress" {
+            if let webView = myWebView {
+                webProgressBar?.progress = Float(webView.estimatedProgress);
+            }
+        }
+    }
+
+    func showProgressView() {
+        if let progressBar = webProgressBar {
+            UIView.animate(withDuration: 0.5, delay: 0, options: .curveEaseInOut, animations: {
+                progressBar.alpha = 1
+            }, completion: nil)
+        }
+    }
+
+    func hideProgressView() {
+        if let progressBar = webProgressBar {
+            UIView.animate(withDuration: 0.5, delay: 0, options: .curveEaseInOut, animations: {
+                progressBar.alpha = 0
+            }, completion: nil)
+        }
     }
     
     open func loadURL(url : URL) {

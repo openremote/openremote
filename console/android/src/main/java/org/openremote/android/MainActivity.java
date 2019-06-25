@@ -41,6 +41,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -64,7 +65,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -82,6 +82,7 @@ public class MainActivity extends Activity {
 
     protected final ConnectivityChangeReceiver connectivityChangeReceiver = new ConnectivityChangeReceiver();
     protected WebView webView;
+    protected ProgressBar progressBar;
     protected int webViewTimeout = WEBVIEW_LOAD_TIMEOUT_DEFAULT;
     protected boolean webViewLoaded;
     protected ErrorViewHolder errorViewHolder;
@@ -200,6 +201,10 @@ public class MainActivity extends Activity {
             initializeWebView();
         }
         openIntentUrl(getIntent());
+
+        progressBar = findViewById(R.id.webProgressBar);
+        progressBar.setMax(100);
+        progressBar.setProgress(1);
 
         errorViewHolder = new ErrorViewHolder(findViewById(R.id.errorView));
     }
@@ -367,6 +372,8 @@ public class MainActivity extends Activity {
             @Override
             public void onPageStarted(WebView view, final String url, Bitmap favicon) {
 
+                progressBar.setVisibility(View.VISIBLE);
+
                 Runnable run = new Runnable() {
                     public void run() {
                         if (!webViewLoaded) {
@@ -381,6 +388,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 webViewLoaded = true;
+                progressBar.setVisibility(View.GONE);
             }
 
             @Override
@@ -445,6 +453,10 @@ public class MainActivity extends Activity {
                         LOG.severe(msg);
                 }
                 return true;
+            }
+
+            public void onProgressChanged(WebView view, int progress) {
+                progressBar.setProgress(progress);
             }
         });
 

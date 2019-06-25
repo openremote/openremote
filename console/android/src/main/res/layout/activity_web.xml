@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/activity_web"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".MainActivity"
-    android:padding="0dp">
+                xmlns:tools="http://schemas.android.com/tools"
+                android:id="@+id/activity_web"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="0dp"
+                tools:context=".MainActivity">
 
     <WebView
         android:id="@+id/webview"
@@ -15,6 +15,18 @@
         android:layout_alignParentEnd="true">
 
     </WebView>
+
+    <ProgressBar
+        android:id="@+id/webProgressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="-7dp"
+        android:background="@android:color/transparent"
+        android:indeterminate="false"
+        android:max="100"
+        android:progress="1"/>
 
     <include layout="@layout/error_layout"/>
 </RelativeLayout>
