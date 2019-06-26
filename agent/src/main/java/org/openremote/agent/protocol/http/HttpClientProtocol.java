@@ -559,7 +559,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false, null, null, null),
         new MetaItemDescriptorImpl(
-            META_QUERY_PARAMETERS,
+            META_HEADERS,
             ValueType.OBJECT,
             false,
             null,
