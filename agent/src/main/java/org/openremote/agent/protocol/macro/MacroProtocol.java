@@ -20,8 +20,8 @@
 package org.openremote.agent.protocol.macro;
 
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
@@ -126,7 +126,7 @@ public class MacroProtocol extends AbstractProtocol {
             }
 
             // Get next execution delay
-            Integer delayMillis = actions.get(iteration).getDelayMilliseconds();
+            int delayMillis = actions.get(iteration).getDelayMilliseconds();
 
             // Schedule the next iteration
             scheduledFuture = executorService.schedule(this::run, delayMillis > 0 ? delayMillis : 0);

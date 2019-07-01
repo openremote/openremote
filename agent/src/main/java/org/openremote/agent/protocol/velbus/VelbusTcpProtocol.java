@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.protocol.velbus;
 
-import org.openremote.agent.protocol.MessageProcessor;
+import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeValidationResult;
@@ -35,7 +35,7 @@ import java.util.Objects;
 
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO;
 
-public class VelbusSocketProtocol extends AbstractVelbusProtocol {
+public class VelbusTcpProtocol extends AbstractVelbusProtocol {
 
     public static final String PROTOCOL_NAME = PROTOCOL_BASE_NAME + "Socket";
     public static final String PROTOCOL_DISPLAY_NAME = "VELBUS Socket";
@@ -100,7 +100,7 @@ public class VelbusSocketProtocol extends AbstractVelbusProtocol {
     }
 
     @Override
-    protected MessageProcessor<VelbusPacket> createMessageProcessor(AssetAttribute protocolConfiguration) throws RuntimeException {
+    protected IoClient<VelbusPacket> createClient(AssetAttribute protocolConfiguration) throws RuntimeException {
 
         // Extract IP and Host
         String host = protocolConfiguration.getMetaItem(META_VELBUS_SOCKET_HOST).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
@@ -109,7 +109,7 @@ public class VelbusSocketProtocol extends AbstractVelbusProtocol {
         TextUtil.requireNonNullAndNonEmpty(host, "Host cannot be null or empty");
         Objects.requireNonNull(port, "Port cannot be null");
 
-        return new VelbusSocketMessageProcessor(host, port, executorService);
+        return new VelbusTcpClient(host, port, executorService);
     }
 
     @Override

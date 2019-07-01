@@ -121,15 +121,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     static {
         attributeMetaItemDescriptors = Arrays.asList(
-            new MetaItemDescriptorImpl(
-                META_PROTOCOL_FILTERS,
-                ValueType.ARRAY,
-                false,
-                null,
-                null,
-                1,
-                null,
-                false, null, null, null)
+            META_ATTRIBUTE_FILTERS
         );
     }
 
@@ -200,6 +192,7 @@ public abstract class AbstractProtocol implements Protocol {
                 protocolConfiguration.getReferenceOrThrow(),
                 new LinkedProtocolInfo(protocolConfiguration, statusConsumer, ConnectionStatus.CONNECTING)
             );
+            statusConsumer.accept(ConnectionStatus.CONNECTING);
             doLinkProtocolConfiguration(protocolConfiguration);
         });
     }
@@ -209,6 +202,7 @@ public abstract class AbstractProtocol implements Protocol {
         withLock(getProtocolName() + "::unlinkProtocolConfiguration", () -> {
             LOG.finer("Unlinking protocol configuration from protocol '" + getProtocolName() + "': " + protocolConfiguration);
             doUnlinkProtocolConfiguration(protocolConfiguration);
+            updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.DISCONNECTED);
             linkedProtocolConfigurations.remove(protocolConfiguration.getReferenceOrThrow());
         });
     }
@@ -367,7 +361,7 @@ public abstract class AbstractProtocol implements Protocol {
                             } catch (Exception e) {
                                 LOG.log(
                                     Level.SEVERE,
-                                    "Message filter threw and exception during processing of message: "
+                                    "Message filter threw an exception during processing of message: "
                                         + filter.getClass().getName(),
                                     e);
                                 value = null;

@@ -19,7 +19,8 @@
  */
 package org.openremote.agent.protocol.velbus;
 
-import org.openremote.agent.protocol.MessageProcessor;
+import org.openremote.agent.protocol.io.IoClient;
+import org.openremote.agent.protocol.serial.NrJavaSerialAddress;
 import org.openremote.agent.protocol.ProtocolConfigurationDiscovery;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
@@ -100,7 +101,7 @@ public class VelbusSerialProtocol extends AbstractVelbusProtocol implements Prot
     }
 
     @Override
-    protected MessageProcessor<VelbusPacket> createMessageProcessor(AssetAttribute protocolConfiguration) throws RuntimeException {
+    protected IoClient<VelbusPacket> createClient(AssetAttribute protocolConfiguration) throws RuntimeException {
 
         // Extract port and baud rate
         String port = protocolConfiguration.getMetaItem(META_VELBUS_SERIAL_PORT).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
@@ -108,7 +109,7 @@ public class VelbusSerialProtocol extends AbstractVelbusProtocol implements Prot
 
         TextUtil.requireNonNullAndNonEmpty(port, "Port cannot be null or empty");
 
-        return new VelbusSerialMessageProcessor(port, baudRate, executorService);
+        return new VelbusSerialClient(port, baudRate, executorService);
     }
 
     @Override

@@ -28,7 +28,7 @@ import org.openremote.manager.concurrent.ManagerExecutorService
 import org.openremote.model.value.ValueType
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
-import org.openremote.test.MockMessageProcessor
+import org.openremote.test.MockVelbusClient
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -44,12 +44,12 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
     def static VelbusNetwork network
 
     @Shared
-    def static MockMessageProcessor messageProcessor = new MockMessageProcessor()
+    def static MockVelbusClient messageProcessor = new MockVelbusClient()
 
     @Shared
     def static PollingConditions conditions = new PollingConditions(timeout: 10)
 
-    static loadDevicePackets(MockMessageProcessor messageProcessor) {
+    static loadDevicePackets(MockVelbusClient messageProcessor) {
         messageProcessor.mockPackets = [
 
             /*
@@ -811,9 +811,9 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         VelbusNetwork.DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS = 1; // Minimal delay for simulated network
 
         // Uncomment and configure the below lines to communicate with an actual VELBUS network
-//        def messageProcessor = new VelbusSocketMessageProcessor("192.168.0.65", 6000, protocolExecutorService);
+//        def client = new VelbusSocketMessageProcessor("192.168.0.65", 6000, protocolExecutorService);
 //        VelbusNetwork.DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS = 100;
-//        def messageProcessor = new VelbusSerialMessageProcessor("COM6", 38400, protocolExecutorService);
+//        def client = new VelbusSerialMessageProcessor("COM6", 38400, protocolExecutorService);
 //        VelbusNetwork.DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS = 100;
 
         network = new VelbusNetwork(messageProcessor,  protocolExecutorService, null)
@@ -986,7 +986,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a button is long pressed on the device"
-        network.messageProcessor.onMessageReceived(VelbusPacket.fromString("0F F8 32 04 00 00 00 20 A3 04 00 00 00 00"))
+        network.client.onMessageReceived(VelbusPacket.fromString("0F F8 32 04 00 00 00 20 A3 04 00 00 00 00"))
 
         then: "the property value should change to LONG_PRESSED"
         conditions.eventually {
@@ -995,7 +995,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the button is released on the device"
-        network.messageProcessor.onMessageReceived(VelbusPacket.fromString("0F F8 32 04 00 00 20 00 A3 04 00 00 00 00"))
+        network.client.onMessageReceived(VelbusPacket.fromString("0F F8 32 04 00 00 20 00 A3 04 00 00 00 00"))
 
         then: "the property value should return to RELEASED"
         conditions.eventually {
@@ -1004,7 +1004,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a button is pressed on the device"
-        network.messageProcessor.onMessageReceived(VelbusPacket.fromString("0F F8 32 04 00 20 00 00 A3 04 00 00 00 00"))
+        network.client.onMessageReceived(VelbusPacket.fromString("0F F8 32 04 00 20 00 00 A3 04 00 00 00 00"))
 
         then: "the property value should change to PRESSED"
         conditions.eventually {
@@ -1013,7 +1013,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the button is released on the device"
-        network.messageProcessor.onMessageReceived(VelbusPacket.fromString("0F F8 32 04 00 00 20 00 A3 04 00 00 00 00"))
+        network.client.onMessageReceived(VelbusPacket.fromString("0F F8 32 04 00 00 20 00 A3 04 00 00 00 00"))
 
         then: "the property value should return to RELEASED"
         conditions.eventually {
@@ -1034,7 +1034,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             device.getPropertyValue("CH22").getPropertyValue() == InputProcessor.ChannelState.PRESSED
         }
-        if (network.messageProcessor == messageProcessor) {
+        if (network.client == messageProcessor) {
             assert messageProcessor.sentMessages.size() == 1
             assert messageProcessor.sentMessages[0].toString() == "0F F8 32 04 00 20 00 00 A3 04 00 00 00 00"
         }
@@ -1045,7 +1045,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         then: "the button release packet should have been sent to the message processor"
         conditions.eventually {
             device.getPropertyValue("CH22").getPropertyValue() == InputProcessor.ChannelState.RELEASED
-            if (network.messageProcessor == messageProcessor) {
+            if (network.client == messageProcessor) {
                 assert messageProcessor.sentMessages.size() == 2
                 assert messageProcessor.sentMessages[1].toString() == "0F F8 32 04 00 00 20 00 A3 04 00 00 00 00"
             }
@@ -1094,7 +1094,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         then: "the LED should be on"
         conditions.eventually {
             device.getPropertyValue("CH1_LED").getPropertyValue() == FeatureProcessor.LedState.ON
-            if (network.messageProcessor == messageProcessor) {
+            if (network.client == messageProcessor) {
                 assert messageProcessor.sentMessages.size() == 1
                 assert messageProcessor.sentMessages[0].toString() == "0F FB 30 02 F6 01 CD 04 00 00 00 00 00 00"
             }
@@ -1107,7 +1107,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         then: "the LED should be on slow"
         conditions.eventually {
             device.getPropertyValue("CH1_LED").getPropertyValue() == FeatureProcessor.LedState.SLOW
-            if (network.messageProcessor == messageProcessor) {
+            if (network.client == messageProcessor) {
                 assert messageProcessor.sentMessages.size() == 1
                 assert messageProcessor.sentMessages[0].toString() == "0F FB 30 02 F7 01 CC 04 00 00 00 00 00 00"
             }
@@ -1120,7 +1120,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         then: "the LED should be on fast"
         conditions.eventually {
             device.getPropertyValue("CH1_LED").getPropertyValue() == FeatureProcessor.LedState.FAST
-            if (network.messageProcessor == messageProcessor) {
+            if (network.client == messageProcessor) {
                 assert messageProcessor.sentMessages.size() == 1
                 assert messageProcessor.sentMessages[0].toString() == "0F FB 30 02 F8 01 CB 04 00 00 00 00 00 00"
             }
@@ -1133,7 +1133,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         then: "the LED should be on very fast"
         conditions.eventually {
             device.getPropertyValue("CH1_LED").getPropertyValue() == FeatureProcessor.LedState.VERYFAST
-            if (network.messageProcessor == messageProcessor) {
+            if (network.client == messageProcessor) {
                 assert messageProcessor.sentMessages.size() == 1
                 assert messageProcessor.sentMessages[0].toString() == "0F FB 30 02 F9 01 CA 04 00 00 00 00 00 00"
             }
@@ -1146,7 +1146,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         then: "the LED should be off"
         conditions.eventually {
             device.getPropertyValue("CH1_LED").getPropertyValue() == FeatureProcessor.LedState.OFF
-            if (network.messageProcessor == messageProcessor) {
+            if (network.client == messageProcessor) {
                 assert messageProcessor.sentMessages.size() == 1
                 assert messageProcessor.sentMessages[0].toString() == "0F FB 30 02 F5 01 CE 04 00 00 00 00 00 00"
             }
@@ -1190,7 +1190,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a button is long pressed on the device"
-        network.messageProcessor.onMessageReceived(VelbusPacket.fromString("0F F8 0A 04 00 00 00 02 E9 04"))
+        network.client.onMessageReceived(VelbusPacket.fromString("0F F8 0A 04 00 00 00 02 E9 04"))
 
         then: "the property value should change to LONG_PRESSED"
         conditions.eventually {
@@ -1198,7 +1198,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the button is released on the device"
-        network.messageProcessor.onMessageReceived(VelbusPacket.fromString("0F F8 0A 04 00 00 02 00 E9 04"))
+        network.client.onMessageReceived(VelbusPacket.fromString("0F F8 0A 04 00 00 02 00 E9 04"))
 
         then: "the property value should return to RELEASED"
         conditions.eventually {
@@ -1206,7 +1206,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a button is pressed on the device"
-        network.messageProcessor.onMessageReceived(VelbusPacket.fromString("0F F8 0A 04 00 02 00 00 E9 04"))
+        network.client.onMessageReceived(VelbusPacket.fromString("0F F8 0A 04 00 02 00 00 E9 04"))
 
         then: "the property value should change to PRESSED"
         conditions.eventually {
@@ -1214,7 +1214,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the button is released on the device"
-        network.messageProcessor.onMessageReceived(VelbusPacket.fromString("0F F8 0A 04 00 00 02 00 E9 04"))
+        network.client.onMessageReceived(VelbusPacket.fromString("0F F8 0A 04 00 00 02 00 E9 04"))
 
         then: "the property value should return to RELEASED"
         conditions.eventually {
@@ -1233,7 +1233,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         then: "the button press packet should have been sent to the message processor"
         conditions.eventually {
             device.getPropertyValue("CH3").getPropertyValue() == InputProcessor.ChannelState.PRESSED
-            if (network.messageProcessor == messageProcessor) {
+            if (network.client == messageProcessor) {
                 assert messageProcessor.sentMessages.size() == 1
                 assert messageProcessor.sentMessages[0].toString() == "0F F8 0A 04 00 04 00 00 E7 04 00 00 00 00"
             }
@@ -1245,7 +1245,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         then: "the button release packet should have been sent to the message processor"
         conditions.eventually {
             device.getPropertyValue("CH3").getPropertyValue() == InputProcessor.ChannelState.RELEASED
-            if (network.messageProcessor == messageProcessor) {
+            if (network.client == messageProcessor) {
                 assert messageProcessor.sentMessages.size() == 2
                 assert messageProcessor.sentMessages[1].toString() == "0F F8 0A 04 00 00 04 00 E7 04 00 00 00 00"
             }
@@ -1353,7 +1353,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "we receive a temperature sensor value"
-        network.messageProcessor.onMessageReceived(VelbusPacket.fromString("0F FB 30 07 E6 3F 60 30 A0 3F 80 AB 04"))
+        network.client.onMessageReceived(VelbusPacket.fromString("0F FB 30 07 E6 3F 60 30 A0 3F 80 AB 04"))
 
         then: "the temperature value should be resolved to 0.1 degrees"
         assert device.getPropertyValue("TEMP_CURRENT").getPropertyValue() == 31.7d
@@ -1693,7 +1693,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         device.writeProperty("MEMO_TEXT", Values.create(msg))
 
         then: "the memo text property should contain the text and the correct packets should have been sent to the device"
-        if (network.messageProcessor == messageProcessor) {
+        if (network.client == messageProcessor) {
             conditions.eventually {
                 assert device.getPropertyValue("MEMO_TEXT").getPropertyValue() == msg.substring(0, 62)
                 assert messageProcessor.sentMessages.size() == 13
@@ -2036,7 +2036,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the counter updates on the device"
-        network.messageProcessor.onMessageReceived(VelbusPacket.fromString("0F FB 0A 08 BE 68 00 00 00 71 23 46 E4 04"))
+        network.client.onMessageReceived(VelbusPacket.fromString("0F FB 0A 08 BE 68 00 00 00 71 23 46 E4 04"))
 
         then: "the counter should update to match"
         conditions.eventually {
@@ -2300,7 +2300,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         }
 
         then: "the dimmer should switch off again"
-        if (network.messageProcessor == messageProcessor) {
+        if (network.client == messageProcessor) {
             messageProcessor.onMessageReceived(VelbusPacket.fromString("0F F8 BB 04 00 00 02 00 38 04 00 00 00 00"))
             messageProcessor.onMessageReceived(VelbusPacket.fromString("0F FB BB 08 B8 02 00 00 00 00 00 00 79 04"))
         }

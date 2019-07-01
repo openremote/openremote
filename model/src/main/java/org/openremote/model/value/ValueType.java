@@ -26,6 +26,7 @@ import java.util.Locale;
 @JsType(namespace = "Model", name = "ValueType")
 public enum ValueType {
 
+    ANY(Value.class),
     OBJECT(ObjectValue.class),
     ARRAY(ArrayValue.class),
     STRING(StringValue.class),

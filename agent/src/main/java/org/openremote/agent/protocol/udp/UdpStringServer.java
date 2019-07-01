@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2019, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.tcp;
+package org.openremote.agent.protocol.udp;
 
 import io.netty.buffer.Unpooled;
-import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
@@ -29,17 +29,17 @@ import org.openremote.agent.protocol.ProtocolExecutorService;
 import java.net.InetSocketAddress;
 
 /**
- * This is an {@link AbstractTcpServer} implementation that handles {@link String} messages.
+ * This is an {@link AbstractUdpServer} implementation that handles {@link String} messages.
  * <p>
  * Uses {@link DelimiterBasedFrameDecoder} and {@link StringDecoder}.
  */
-public class TcpStringServer extends AbstractTcpServer<String> {
+public class UdpStringServer extends AbstractUdpServer<String> {
 
     protected String delimiter;
     protected int maxFrameLength;
     protected boolean stripDelimiter;
 
-    public TcpStringServer(ProtocolExecutorService executorService, InetSocketAddress localAddress, String delimiter, int maxFrameLength, boolean stripDelimiter) {
+    public UdpStringServer(ProtocolExecutorService executorService, InetSocketAddress localAddress, String delimiter, int maxFrameLength, boolean stripDelimiter) {
         super(executorService, localAddress);
         this.delimiter = delimiter;
         this.maxFrameLength = maxFrameLength;
@@ -47,14 +47,14 @@ public class TcpStringServer extends AbstractTcpServer<String> {
     }
 
     @Override
-    protected void addDecoders(SocketChannel channel) {
+    protected void addDecoders(DatagramChannel channel) {
         // Add delimiter and string decoders to do the work
         addDecoder(channel, new DelimiterBasedFrameDecoder(maxFrameLength, stripDelimiter, Unpooled.wrappedBuffer(delimiter.getBytes())));
         addDecoder(channel, new StringDecoder());
     }
 
     @Override
-    protected void addEncoders(SocketChannel channel) {
+    protected void addEncoders(DatagramChannel channel) {
         addEncoder(channel, new StringEncoder());
     }
 }

@@ -19,22 +19,25 @@
  */
 package org.openremote.agent.protocol.velbus;
 
-import org.openremote.agent.protocol.*;
-import org.openremote.agent.protocol.velbus.device.*;
+import org.openremote.agent.protocol.ProtocolExecutorService;
+import org.openremote.agent.protocol.io.IoClient;
+import org.openremote.agent.protocol.velbus.device.DevicePropertyValue;
+import org.openremote.agent.protocol.velbus.device.VelbusDevice;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.value.*;
+import org.openremote.model.value.Value;
 
 import java.util.*;
-import java.util.concurrent.*;
-import java.util.function.*;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
+import java.util.function.Consumer;
 
-import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.*;
+import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
 
 public class VelbusNetwork {
 
     protected static int DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS = 100; // Need to throttle bus writes
     protected final Integer timeInjectionIntervalSeconds;
-    protected MessageProcessor<VelbusPacket> messageProcessor;
+    protected IoClient<VelbusPacket> client;
     protected final Queue<VelbusPacket> messageQueue = new ArrayDeque<>();
     protected List<ScheduledFuture> scheduledTasks = new ArrayList<>();
     protected ScheduledFuture timeInjector;
@@ -44,12 +47,12 @@ public class VelbusNetwork {
     protected ProtocolExecutorService executorService;
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
 
-    public VelbusNetwork(MessageProcessor<VelbusPacket> messageProcessor, ProtocolExecutorService executorService, Integer timeInjectionIntervalSeconds) {
-        this.messageProcessor = messageProcessor;
+    public VelbusNetwork(IoClient<VelbusPacket> client, ProtocolExecutorService executorService, Integer timeInjectionIntervalSeconds) {
+        this.client = client;
         this.executorService = executorService;
         this.timeInjectionIntervalSeconds = timeInjectionIntervalSeconds;
-        messageProcessor.addConnectionStatusConsumer(this::onConnectionStatusChanged);
-        messageProcessor.addMessageConsumer(this::onPacketReceived);
+        client.addConnectionStatusConsumer(this::onConnectionStatusChanged);
+        client.addMessageConsumer(this::onPacketReceived);
         onConnectionStatusChanged(getConnectionStatus());
         if (timeInjectionIntervalSeconds != null) {
             timeInjector = getExecutorService().scheduleWithFixedDelay(this::doTimeInjection, timeInjectionIntervalSeconds * 1000, timeInjectionIntervalSeconds * 1000);
@@ -83,19 +86,19 @@ public class VelbusNetwork {
     }
 
     public void connect() {
-        if (messageProcessor == null) {
+        if (client == null) {
             return;
         }
 
-        messageProcessor.connect();
+        client.connect();
     }
 
     public void disconnect() {
         scheduledTasks.forEach(task -> task.cancel(true));
         scheduledTasks.clear();
 
-        if (messageProcessor != null) {
-            messageProcessor.disconnect();
+        if (client != null) {
+            client.disconnect();
         }
     }
 
@@ -111,15 +114,15 @@ public class VelbusNetwork {
 
         disconnect();
 
-        if (messageProcessor != null) {
-            messageProcessor.removeConnectionStatusConsumer(this::onConnectionStatusChanged);
-            messageProcessor.removeMessageConsumer(this::onPacketReceived);
-            messageProcessor = null;
+        if (client != null) {
+            client.removeConnectionStatusConsumer(this::onConnectionStatusChanged);
+            client.removeMessageConsumer(this::onPacketReceived);
+            client = null;
         }
     }
 
     public ConnectionStatus getConnectionStatus() {
-        return messageProcessor.getConnectionStatus();
+        return client.getConnectionStatus();
     }
 
     protected void onConnectionStatusChanged(ConnectionStatus status) {
@@ -271,7 +274,7 @@ public class VelbusNetwork {
             if (packet != null) {
                 VelbusPacket.OutboundCommand command = VelbusPacket.OutboundCommand.fromCode(packet.getCommand());
                 LOG.finest("Sending packet " + command + " : " + packet);
-                messageProcessor.sendMessage(packet);
+                client.sendMessage(packet);
             } else {
                 queueProcessingTask.cancel(false);
                 queueProcessingTask = null;

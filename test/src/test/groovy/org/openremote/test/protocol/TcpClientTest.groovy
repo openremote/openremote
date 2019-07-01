@@ -21,7 +21,7 @@ package org.openremote.test.protocol
 
 import io.netty.buffer.ByteBuf
 import io.netty.util.CharsetUtil
-import org.openremote.agent.protocol.AbstractSocketMessageProcessor
+import org.openremote.agent.protocol.tcp.AbstractTcpClient
 import org.openremote.agent.protocol.tcp.TcpStringServer
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.manager.concurrent.ManagerExecutorService
@@ -31,32 +31,31 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 /**
- * This tests the {@link AbstractSocketMessageProcessor} by creating a simple echo socket
- * server that the message processor communicates with
+ * This tests the {@link AbstractTcpClient} by creating a simple echo server that the client communicates with
  */
-class SocketMessageProcessorTest extends Specification implements ManagerContainerTrait {
+class TcpClientTest extends Specification implements ManagerContainerTrait {
 
-    def "Check socket message processor"() {
+    def "Check socket client"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 1)
-
-        and: "a simple socket echo server"
-        def socketServerPort = findEphemeralPort()
-        def socketServer = new TcpStringServer(new InetSocketAddress(socketServerPort), ";", Integer.MAX_VALUE, true)
-        socketServer.addMessageConsumer({
-            channel, message -> socketServer.sendMessage(message)
-        })
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), Collections.singletonList(new ManagerExecutorService()))
         def protocolExecutorService = container.getService(ManagerExecutorService.class)
 
-        and: "a simple socket message processor"
-        def messageProcessor = new AbstractSocketMessageProcessor<String>(
+        and: "a simple TCP echo server"
+        def echoServerPort = findEphemeralPort()
+        def echoServer = new TcpStringServer(protocolExecutorService, new InetSocketAddress(echoServerPort), ";", Integer.MAX_VALUE, true)
+        echoServer.addMessageConsumer({
+            message, channel, sender -> echoServer.sendMessage(message)
+        })
+
+        and: "a simple TCP client"
+        def client = new AbstractTcpClient<String>(
                 "localhost",
-                socketServerPort,
+                echoServerPort,
                 protocolExecutorService) {
 
             @Override
@@ -73,36 +72,36 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
             }
         }
 
-        and: "we add callback consumers to the message processor"
-        def connectionStatus = messageProcessor.getConnectionStatus()
+        and: "we add callback consumers to the client"
+        def connectionStatus = client.getConnectionStatus()
         String lastMessage
-        messageProcessor.addMessageConsumer({
+        client.addMessageConsumer({
             message -> lastMessage = message
         })
-        messageProcessor.addConnectionStatusConsumer({
+        client.addConnectionStatusConsumer({
             status -> connectionStatus = status
         })
 
         when: "the server is started"
-        socketServer.start()
+        echoServer.start()
 
         then: "the server should be running"
         conditions.eventually {
-            assert socketServer.channelFuture.isDone()
-            assert socketServer.channelFuture.isSuccess()
+            assert echoServer.channelFuture.isDone()
+            assert echoServer.channelFuture.isSuccess()
         }
 
-        when: "we call connect on the message processor"
-        messageProcessor.connect()
+        when: "we call connect on the client"
+        client.connect()
 
-        then: "the message processor status should become CONNECTED"
+        then: "the client status should become CONNECTED"
         conditions.eventually {
-            assert messageProcessor.connectionStatus == ConnectionStatus.CONNECTED
+            assert client.connectionStatus == ConnectionStatus.CONNECTED
             assert connectionStatus == ConnectionStatus.CONNECTED
         }
 
         when: "the server sends a message"
-        socketServer.sendMessage("Hello world")
+        echoServer.sendMessage("Hello world")
 
         then: "we should receive the message"
         conditions.eventually {
@@ -110,34 +109,34 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
         }
 
         when: "we send a message to the server"
-        messageProcessor.sendMessage("Test;")
+        client.sendMessage("Test;")
 
         then: "we should get the same message back"
         conditions.eventually {
             assert lastMessage == "Test"
         }
 
-        when: "we request the message processor to disconnect"
-        messageProcessor.disconnect()
+        when: "we request the client to disconnect"
+        client.disconnect()
 
-        then: "the message processor should become DISCONNECTED"
+        then: "the client should become DISCONNECTED"
         conditions.eventually {
-            assert messageProcessor.connectionStatus == ConnectionStatus.DISCONNECTED
+            assert client.connectionStatus == ConnectionStatus.DISCONNECTED
             assert connectionStatus == ConnectionStatus.DISCONNECTED
         }
 
-        when: "we reconnect the same message processor"
-        messageProcessor.connect()
+        when: "we reconnect the same client"
+        client.connect()
 
-        then: "the message processor status should become CONNECTED"
+        then: "the client status should become CONNECTED"
         conditions.eventually {
-            assert messageProcessor.connectionStatus == ConnectionStatus.CONNECTED
+            assert client.connectionStatus == ConnectionStatus.CONNECTED
             assert connectionStatus == ConnectionStatus.CONNECTED
-            assert socketServer.allChannels.size() == 2
+            assert echoServer.allChannels.size() == 1
         }
 
         when: "the server sends a message"
-        socketServer.sendMessage("Is there anyone there?")
+        echoServer.sendMessage("Is there anyone there?")
 
         then: "we should receive the message"
         conditions.eventually {
@@ -145,7 +144,7 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
         }
 
         when: "we send a message to the server"
-        messageProcessor.sendMessage("Yes there is!;")
+        client.sendMessage("Yes there is!;")
 
         then: "we should get the same message back"
         conditions.eventually {
@@ -153,25 +152,25 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
         }
 
         when: "we lose connection to the server"
-        socketServer.stop()
+        echoServer.stop()
 
-        then: "the message processor status should change to WAITING"
+        then: "the client status should change to WAITING"
         conditions.eventually {
-            assert messageProcessor.connectionStatus == ConnectionStatus.WAITING
+            assert client.connectionStatus == ConnectionStatus.WAITING
             assert connectionStatus == ConnectionStatus.WAITING
         }
 
         when: "the connection to the server is restored"
-        socketServer.start()
+        echoServer.start()
 
-        then: "the message processor status should become CONNECTED"
+        then: "the client status should become CONNECTED"
         conditions.eventually {
-            assert messageProcessor.connectionStatus == ConnectionStatus.CONNECTED
+            assert client.connectionStatus == ConnectionStatus.CONNECTED
             assert connectionStatus == ConnectionStatus.CONNECTED
         }
 
         when: "the server sends a message"
-        socketServer.sendMessage("Is there anyone there?")
+        echoServer.sendMessage("Is there anyone there?")
 
         then: "we should receive the message"
         conditions.eventually {
@@ -179,7 +178,7 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
         }
 
         when: "we send a message to the server"
-        messageProcessor.sendMessage("Yes there is!;")
+        client.sendMessage("Yes there is!;")
 
         then: "we should get the same message back"
         conditions.eventually {
@@ -187,17 +186,17 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
         }
 
         when: "we request the processor to disconnect"
-        messageProcessor.disconnect()
+        client.disconnect()
 
-        then: "the message processor should become DISCONNECTED"
+        then: "the client should become DISCONNECTED"
         conditions.eventually {
-            assert messageProcessor.connectionStatus == ConnectionStatus.DISCONNECTED
+            assert client.connectionStatus == ConnectionStatus.DISCONNECTED
             assert connectionStatus == ConnectionStatus.DISCONNECTED
         }
 
         cleanup: "the server should be stopped"
-        messageProcessor.disconnect()
-        socketServer.stop()
+        client.disconnect()
+        echoServer.stop()
         stopContainer(container)
     }
 }

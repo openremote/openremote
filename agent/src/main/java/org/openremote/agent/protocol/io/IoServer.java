@@ -21,6 +21,7 @@ package org.openremote.agent.protocol.io;
 
 import org.openremote.model.asset.agent.ConnectionStatus;
 
+import java.net.SocketAddress;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -28,12 +29,19 @@ import java.util.function.Consumer;
  * Represents an IO server that accepts incoming clients.
  * <p>
  * Implementors are responsible for handling the low level communication and for providing consumers with a mechanism
- * for encoding/decoding messages of type &lt;T&gt;
+ * for encoding/decoding messages of type &lt;T&gt; received from source &lt;U&gt; with an address &lt;V&gt;.
  *
  * @param <T> Defines the message type that the server can send/receive
  * @param <U> Defines the client identifier type that can be used to uniquely identify clients connected to this server
+ * @param <V> Defines the client address that can be used to uniquely identify the client
  */
-public interface IoServer<T, U> {
+public interface IoServer<T, U, V extends SocketAddress> {
+
+    @FunctionalInterface
+    interface IoServerMessageConsumer<T, U, V> {
+
+        void accept(T t, U u, V v);
+    }
 
     /**
      * Send a message to a client
@@ -48,12 +56,27 @@ public interface IoServer<T, U> {
     /**
      * Add a consumer of received messages
      */
-    void addMessageConsumer(BiConsumer<U, T> messageConsumer);
+    void addMessageConsumer(IoServerMessageConsumer<T, U, V> messageConsumer);
 
     /**
      * Remove a consumer of received messages
      */
-    void removeMessageConsumer(BiConsumer<U, T> messageConsumer);
+    void removeMessageConsumer(IoServerMessageConsumer<T, U, V> messageConsumer);
+
+    /**
+     * Remove every consumer of received messages
+     */
+    void removeAllMessageConsumers();
+
+    /**
+     * Add a consumer of server connection status changes
+     */
+    void addConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer);
+
+    /**
+     * Remove a consumer of server connection status changes
+     */
+    void removeConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer);
 
     /**
      * Add a consumer of client connection status changes
@@ -64,6 +87,16 @@ public interface IoServer<T, U> {
      * Remove a consumer of client connection status changes
      */
     void removeConnectionStatusConsumer(BiConsumer<U, ConnectionStatus> connectionStatusConsumer);
+
+    /**
+     * Remove every consumer of connection status
+     */
+    void removeAllConnectionStatusConsumers();
+
+    /**
+     * Get current connection status of the server
+     */
+    ConnectionStatus getConnectionStatus();
 
     /**
      * Get current connection status of a client (either {@link ConnectionStatus#CONNECTED} or

@@ -274,8 +274,9 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, initialDelay: 1)
 
-        and: "the HTTP client protocol polling time units are set to milliseconds"
-        HttpClientProtocol.POLLING_TIME_UNIT = TimeUnit.MILLISECONDS
+        and: "the HTTP client protocol min times are adjusted for testing"
+        HttpClientProtocol.MIN_POLLING_MILLIS = 10
+        HttpClientProtocol.MIN_PING_MILLIS = 10
 
         when: "the container starts"
         def serverPort = findEphemeralPort()
@@ -327,7 +328,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                         Values.create("pingGet")
                     ),
                     new MetaItem(
-                        HttpClientProtocol.META_PROTOCOL_PING_SECONDS,
+                        HttpClientProtocol.META_PROTOCOL_PING_MILLIS,
                         Values.create(100) // Note for testing time unit is set to milliseconds
                     ),
                     new MetaItem(
@@ -406,7 +407,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     Values.create("pingPost")
                 ),
                 new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_PING_SECONDS,
+                    HttpClientProtocol.META_PROTOCOL_PING_MILLIS,
                     Values.create(100) // Note for testing time unit is set to milliseconds
                 ),
                 new MetaItem(
@@ -468,7 +469,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("put_request_with_headers")),
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_METHOD, Values.create(HttpMethod.PUT)),
                     new MetaItem(
-                        HttpClientProtocol.META_ATTRIBUTE_BODY,
+                        Protocol.META_ATTRIBUTE_WRITE_VALUE,
                         Values.<ObjectValue>parse('{"prop1": "{$value}", "prop2": "prop2Value"}').get()
                     ),
                     new MetaItem(
@@ -491,9 +492,9 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                 .addMeta(
                     new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_poll_slow")),
-                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_POLLING_SECONDS, Values.create(50)), // This is ms in testing
+                    new MetaItem(HttpClientProtocol.META_POLLING_MILLIS, Values.create(50)), // This is ms in testing
                     new MetaItem(
-                        Protocol.META_PROTOCOL_FILTERS,
+                        Protocol.META_ATTRIBUTE_FILTERS,
                         Values.createArray().add(new RegexFilter("\\d+", 0, 0).toValue().get())
                     )
                 ),
@@ -502,9 +503,9 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                 .addMeta(
                     new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_poll_fast")),
-                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_POLLING_SECONDS, Values.create(40)), // This is ms in testing
+                    new MetaItem(HttpClientProtocol.META_POLLING_MILLIS, Values.create(40)), // This is ms in testing
                     new MetaItem(
-                        Protocol.META_PROTOCOL_FILTERS,
+                        Protocol.META_ATTRIBUTE_FILTERS,
                         Values.createArray().add(new RegexFilter("\\d+", 0, 1).toValue().get())
                     )
                 )
@@ -639,7 +640,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                 .addMeta(
                     new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig3").toArrayValue()),
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_failure_401")),
-                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_POLLING_SECONDS, Values.create(50)), // This is ms in testing
+                    new MetaItem(HttpClientProtocol.META_POLLING_MILLIS, Values.create(50)), // This is ms in testing
                 ),
             new AssetAttribute("getSuccess2", AttributeValueType.STRING)
                 .addMeta(

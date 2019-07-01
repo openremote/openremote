@@ -1,7 +1,7 @@
 package org.openremote.test.protocol.velbus
 
 import org.apache.commons.io.IOUtils
-import org.openremote.agent.protocol.MessageProcessor
+import org.openremote.agent.protocol.io.IoClient
 import org.openremote.agent.protocol.velbus.AbstractVelbusProtocol
 import org.openremote.agent.protocol.velbus.VelbusConfiguration
 import org.openremote.agent.protocol.velbus.VelbusPacket
@@ -22,7 +22,7 @@ import org.openremote.model.file.FileInfo
 import org.openremote.model.util.TextUtil
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
-import org.openremote.test.MockMessageProcessor
+import org.openremote.test.MockVelbusClient
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -36,13 +36,13 @@ import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtoco
 class VelbusProtocolTest extends Specification implements ManagerContainerTrait {
 
     @Shared
-    static MockMessageProcessor messageProcessor = new MockMessageProcessor()
+    static MockVelbusClient messageProcessor = new MockVelbusClient()
 
     @Shared
     static AbstractVelbusProtocol velbusProtocol = new AbstractVelbusProtocol() {
 
         @Override
-        protected MessageProcessor<VelbusPacket> createMessageProcessor(AssetAttribute protocolConfiguration) throws RuntimeException {
+        protected IoClient<VelbusPacket> createClient(AssetAttribute protocolConfiguration) throws RuntimeException {
             return messageProcessor
         }
 

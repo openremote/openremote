@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol;
+package org.openremote.agent.protocol.io;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.MessageToByteEncoder;
+import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 
@@ -38,7 +39,7 @@ import java.util.logging.Logger;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
- * This is a {@link MessageProcessor} implementation for netty.
+ * This is a {@link IoClient} implementation for netty.
  * <p>
  * It uses the netty component for managing the connection.
  * <p>
@@ -54,18 +55,19 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <b>NOTE: Care must be taken when working with Netty {@link ByteBuf} as Netty uses reference counting to manage their
  * lifecycle. Refer to the Netty documentation for more information.</b>
  */
-public abstract class AbstractNettyMessageProcessor<T> implements MessageProcessor<T> {
+public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implements IoClient<T> {
 
     public class MessageDecoder extends ByteToMessageDecoder {
         protected List<T> messages = new ArrayList<>(1);
 
         @Override
         protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
-            AbstractNettyMessageProcessor.this.decode(in, messages);
+            AbstractNettyIoClient.this.decode(in, messages);
 
             if (!messages.isEmpty()) {
+                U address = (U)ctx.channel().remoteAddress();
                 // Don't pass them along the channel pipeline just consume them
-                messages.forEach(AbstractNettyMessageProcessor.this::onMessageReceived);
+                messages.forEach(m -> AbstractNettyIoClient.this.onMessageReceived(address, m));
                 messages.clear();
             }
         }
@@ -73,7 +75,7 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             super.exceptionCaught(ctx, cause);
-            AbstractNettyMessageProcessor.this.onDecodeException(ctx, cause);
+            AbstractNettyIoClient.this.onDecodeException(ctx, cause);
         }
     }
 
@@ -85,17 +87,17 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
 
         @Override
         protected void encode(ChannelHandlerContext ctx, T msg, ByteBuf out) {
-            AbstractNettyMessageProcessor.this.encode(msg, out);
+            AbstractNettyIoClient.this.encode(msg, out);
         }
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             super.exceptionCaught(ctx, cause);
-            AbstractNettyMessageProcessor.this.onEncodeException(ctx, cause);
+            AbstractNettyIoClient.this.onEncodeException(ctx, cause);
         }
     }
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractNettyMessageProcessor.class);
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractNettyIoClient.class);
     protected final static int INITIAL_RECONNECT_DELAY_MILLIS = 1000;
     protected final static int MAX_RECONNECT_DELAY_MILLIS = 60000;
     protected final static int RECONNECT_BACKOFF_MULTIPLIER = 2;
@@ -105,23 +107,22 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
     protected ChannelFuture channelFuture;
     protected Channel channel;
     protected Bootstrap bootstrap;
-    protected SocketAddress socketAddress;
     protected EventLoopGroup workerGroup;
     protected ProtocolExecutorService executorService;
     protected ScheduledFuture reconnectTask;
     protected int reconnectDelayMilliseconds = INITIAL_RECONNECT_DELAY_MILLIS;
 
-    public AbstractNettyMessageProcessor(ProtocolExecutorService executorService) {
+    public AbstractNettyIoClient(ProtocolExecutorService executorService) {
         this.executorService = executorService;
     }
 
     protected abstract Class<? extends Channel> getChannelClass();
 
-    protected abstract SocketAddress getSocketAddress();
-
     protected abstract String getSocketAddressString();
 
     protected abstract EventLoopGroup getWorkerGroup();
+
+    protected abstract ChannelFuture startChannel();
 
     protected void configureChannel() {
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 2000);
@@ -130,11 +131,11 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
     @Override
     public synchronized void connect() {
         if (connectionStatus != ConnectionStatus.DISCONNECTED && connectionStatus != ConnectionStatus.WAITING) {
-            LOG.finest("Must be disconnected before calling connect");
+            LOG.finest("Must be disconnected before calling connect: " + getSocketAddressString());
             return;
         }
 
-        LOG.fine("Connecting");
+        LOG.fine("Connecting IO Client: " + getSocketAddressString());
         onConnectionStatusChanged(ConnectionStatus.CONNECTING);
 
         if (workerGroup == null) {
@@ -150,20 +151,19 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
         bootstrap.handler(new ChannelInitializer() {
             @Override
             public void initChannel(Channel channel) {
-                AbstractNettyMessageProcessor.this.initChannel(channel);
+                AbstractNettyIoClient.this.initChannel(channel);
             }
         });
 
-        // Start the client and store the channel
-        socketAddress = getSocketAddress();
-        channelFuture = bootstrap.connect(socketAddress);
+        // Start and store the channel
+        channelFuture = startChannel();
         channel = channelFuture.channel();
 
         // Add channel callback - this gets called when the channel connects or when channel encounters an error
         channelFuture.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) {
-                synchronized (AbstractNettyMessageProcessor.this) {
+                synchronized (AbstractNettyIoClient.this) {
                     channelFuture.removeListener(this);
 
                     if (connectionStatus == ConnectionStatus.DISCONNECTING) {
@@ -171,11 +171,11 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
                     }
 
                     if (future.isSuccess()) {
-                        LOG.log(Level.INFO, "Connection initialising");
+                        LOG.log(Level.INFO, "Connection initialising: " + getSocketAddressString());
                         reconnectTask = null;
                         reconnectDelayMilliseconds = INITIAL_RECONNECT_DELAY_MILLIS;
                     } else if (future.cause() != null) {
-                        LOG.log(Level.INFO, "Connection error", future.cause());
+                        LOG.log(Level.WARNING, "Connection error: " + getSocketAddressString(), future.cause());
                         // Failed to connect so schedule reconnection attempt
                         scheduleReconnect();
                     }
@@ -194,11 +194,11 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
     @Override
     public synchronized void disconnect() {
         if (connectionStatus == ConnectionStatus.DISCONNECTING || connectionStatus == ConnectionStatus.DISCONNECTED) {
-            LOG.finest("Already disconnecting or disconnected");
+            LOG.finest("Already disconnecting or disconnected: " + getSocketAddressString());
             return;
         }
 
-        LOG.finest("Disconnecting");
+        LOG.finest("Disconnecting IO client: " + getSocketAddressString());
         onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
 
         try {
@@ -218,7 +218,6 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
                 channel = null;
             }
 
-            socketAddress = null;
         } catch (InterruptedException ignored) {
 
         } finally {
@@ -233,24 +232,16 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
     @Override
     public void sendMessage(T message) {
         if (connectionStatus != ConnectionStatus.CONNECTED) {
-            LOG.fine("Cannot send message: Status = " + connectionStatus);
+            LOG.fine("Cannot send message: Status = " + connectionStatus + ": " + getSocketAddressString());
             return;
         }
 
         try {
-            channel.writeAndFlush(message);
-            LOG.finest("Message sent");
             // Don't block here as it can cause deadlock
-//            ChannelFuture future = channel.writeAndFlush(message).sync();
-//            if (future.isCancelled()) {
-//                LOG.info("Message send cancelled");
-//            } else if (!future.isSuccess()) {
-//                LOG.log(Level.WARNING, "Message send failed", future.cause());
-//            } else {
-//                LOG.finest("Message sent");
-//            }
+            channel.writeAndFlush(message);
+            LOG.finest("Message sent to server: " + getSocketAddressString());
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Message send failed", e);
+            LOG.log(Level.WARNING, "Message send failed: " + getSocketAddressString(), e);
         }
     }
 
@@ -276,6 +267,13 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
     }
 
     @Override
+    public void removeAllConnectionStatusConsumers() {
+        synchronized (connectionStatusConsumers) {
+            connectionStatusConsumers.clear();
+        }
+    }
+
+    @Override
     public synchronized void addMessageConsumer(Consumer<T> messageConsumer) {
         if (!messageConsumers.contains(messageConsumer)) {
             messageConsumers.add(messageConsumer);
@@ -287,6 +285,11 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
         messageConsumers.remove(messageConsumer);
     }
 
+    @Override
+    public synchronized void removeAllMessageConsumers() {
+        messageConsumers.clear();
+    }
+
     /**
      * Inserts the decoders and encoders into the channel pipeline
      */
@@ -294,7 +297,7 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
         channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void channelActive(ChannelHandlerContext ctx) throws Exception {
-                synchronized (AbstractNettyMessageProcessor.this) {
+                synchronized (AbstractNettyIoClient.this) {
                     LOG.fine("Connected: " + getSocketAddressString());
                     onConnectionStatusChanged(ConnectionStatus.CONNECTED);
                 }
@@ -303,7 +306,7 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
 
             @Override
             public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-                synchronized (AbstractNettyMessageProcessor.this) {
+                synchronized (AbstractNettyIoClient.this) {
                     if (connectionStatus != ConnectionStatus.DISCONNECTING) {
                         // This is a connection failure so ignore as reconnect logic will handle it
                         return;
@@ -315,25 +318,34 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
                 super.channelInactive(ctx);
             }
         });
+        addDecoders(channel);
+        addEncoders(channel);
+    }
+
+    protected void addDecoders(Channel channel) {
         channel.pipeline().addLast(new MessageDecoder());
+    }
+
+    protected void addEncoders(Channel channel) {
         channel.pipeline().addLast(new MessageEncoder());
     }
 
-    protected void onMessageReceived(T message) {
+    protected void onMessageReceived(U address, T message) {
         if (connectionStatus != ConnectionStatus.CONNECTED) {
             return;
         }
-        LOG.finest("Message received notifying consumers");
+
+        LOG.finest("Message received notifying consumers: " + getSocketAddressString());
         messageConsumers.forEach(consumer -> consumer.accept(message));
     }
 
     protected void onDecodeException(ChannelHandlerContext ctx, Throwable cause) {
-        LOG.log(Level.SEVERE, "Exception occurred on in-bound message: ", cause);
+        LOG.log(Level.SEVERE, "Exception occurred on in-bound message: " + getSocketAddressString(), cause);
         onConnectionStatusChanged(ConnectionStatus.ERROR);
     }
 
     protected void onEncodeException(ChannelHandlerContext ctx, Throwable cause) {
-        LOG.log(Level.SEVERE, "Exception occurred on out-bound message: ", cause);
+        LOG.log(Level.SEVERE, "Exception occurred on out-bound message: " + getSocketAddressString(), cause);
         onConnectionStatusChanged(ConnectionStatus.ERROR);
     }
 
@@ -359,10 +371,10 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
             reconnectDelayMilliseconds = Math.min(MAX_RECONNECT_DELAY_MILLIS, reconnectDelayMilliseconds);
         }
 
-        LOG.finest("Scheduling reconnection in '" + reconnectDelayMilliseconds + "' milliseconds");
+        LOG.finest("Scheduling reconnection in '" + reconnectDelayMilliseconds + "' milliseconds: " + getSocketAddressString());
 
         reconnectTask = executorService.schedule(() -> {
-            synchronized (AbstractNettyMessageProcessor.this) {
+            synchronized (AbstractNettyIoClient.this) {
                 reconnectTask = null;
 
                 // Attempt to reconnect if not disconnecting
@@ -384,4 +396,9 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
     protected abstract void decode(ByteBuf buf, List<T> messages);
 
     protected abstract void encode(T message, ByteBuf buf);
+
+    @Override
+    public String toString() {
+        return getSocketAddressString();
+    }
 }

@@ -17,29 +17,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol;
+package org.openremote.agent.protocol.serial;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.oio.OioEventLoopGroup;
+import org.openremote.agent.protocol.ProtocolExecutorService;
+import org.openremote.agent.protocol.io.AbstractNettyIoClient;
+import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.model.util.TextUtil;
 
-import java.net.SocketAddress;
-import java.util.Objects;
-
 /**
- * This is a {@link MessageProcessor} implementation for serial ports.
+ * This is a {@link IoClient} implementation for serial ports.
  */
-public abstract class AbstractSerialMessageProcessor<T> extends AbstractNettyMessageProcessor<T> {
+public abstract class AbstractSerialClient<T> extends AbstractNettyIoClient<T, NrJavaSerialAddress> {
 
     protected String port;
     protected int baudRate;
+    public static int DEFAULT_BAUD_RATE = 38400;
 
-    public AbstractSerialMessageProcessor(String port, Integer baudRate, ProtocolExecutorService executorService) {
+    public AbstractSerialClient(String port, Integer baudRate, ProtocolExecutorService executorService) {
         super(executorService);
         TextUtil.requireNonNullAndNonEmpty(port);
-        Objects.requireNonNull(baudRate);
         this.port = port;
-        this.baudRate = baudRate;
+        this.baudRate = baudRate == null ? DEFAULT_BAUD_RATE : baudRate;
     }
 
     @Override
@@ -48,13 +49,13 @@ public abstract class AbstractSerialMessageProcessor<T> extends AbstractNettyMes
     }
 
     @Override
-    protected SocketAddress getSocketAddress() {
-        return new NrJavaSerialAddress(port, 38400);
+    protected ChannelFuture startChannel() {
+        return bootstrap.connect(new NrJavaSerialAddress(port, baudRate));
     }
 
     @Override
     protected String getSocketAddressString() {
-        return port;
+        return "serial://" + port;
     }
 
     @SuppressWarnings("deprecation")

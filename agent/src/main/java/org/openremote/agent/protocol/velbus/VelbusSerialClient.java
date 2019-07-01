@@ -17,19 +17,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol;
+package org.openremote.agent.protocol.velbus;
 
-@SuppressWarnings("deprecation")
-public class NrJavaSerialAddress extends io.netty.channel.rxtx.RxtxDeviceAddress {
+import io.netty.buffer.ByteBuf;
+import org.openremote.agent.protocol.serial.AbstractSerialClient;
+import org.openremote.agent.protocol.ProtocolExecutorService;
 
-    protected int baudRate;
+import java.util.List;
 
-    public NrJavaSerialAddress(String port, int baudRate) {
-        super(port);
-        this.baudRate = baudRate;
+public class VelbusSerialClient extends AbstractSerialClient<VelbusPacket> {
+
+    public VelbusSerialClient(String port, Integer baudRate, ProtocolExecutorService executorService) {
+        super(port, baudRate, executorService);
     }
 
-    public int getBaudRate() {
-        return baudRate;
+    @Override
+    protected void decode(ByteBuf buf, List<VelbusPacket> messages) {
+        VelbusPacketEncoderDecoder.decode(buf, messages);
+    }
+
+    @Override
+    protected void encode(VelbusPacket message, ByteBuf buf) {
+        VelbusPacketEncoderDecoder.encode(message, buf);
     }
 }

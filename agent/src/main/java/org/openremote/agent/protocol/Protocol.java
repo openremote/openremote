@@ -19,20 +19,26 @@
  */
 package org.openremote.agent.protocol;
 
+import org.apache.commons.codec.binary.BinaryCodec;
+import org.apache.commons.codec.binary.Hex;
 import org.openremote.agent.protocol.filter.MessageFilter;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.model.AbstractValueHolder;
-import org.openremote.model.asset.*;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.ValueType;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -42,6 +48,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
+import static org.openremote.model.attribute.MetaItemDescriptorImpl.*;
 
 /**
  * A protocol is a thread-safe singleton {@link ContainerService} that connects devices and
@@ -88,8 +96,13 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  * receive and send value change messages with values of that type.
  * <p>
  * Generic protocols should implement support for filtering state messages from devices (or services) before the
- * protocol updates the linked attribute, to implement this protocols should use the {@link #META_PROTOCOL_FILTERS}
+ * protocol updates the linked attribute, to implement this protocols should use the {@link #META_ATTRIBUTE_FILTERS}
  * {@link MetaItem}.
+ * <p>
+ * <h1>Dynamic value injection</h1>
+ * This allows values to be dynamically injected into strings when a protocol linked attribute write occurs; the value
+ * contained within the {@link AttributeEvent} can be dynamically injected into the string by using the
+ * {@value Protocol#DYNAMIC_VALUE_PLACEHOLDER} as a placeholder and this will be dynamically replaced at request time.
  * <p>
  * NOTE: That {@link #linkProtocolConfiguration} will always be called
  * before {@link #linkAttributes} and {@link #unlinkAttributes} will always be called before
@@ -146,16 +159,75 @@ public interface Protocol extends ContainerService {
      * where each {@link ObjectValue} represents a serialised {@link MessageFilter}. The message should pass through the
      * filters in array order.
      */
-    String META_PROTOCOL_FILTERS = PROTOCOL_NAMESPACE + ":filters";
+    MetaItemDescriptor META_ATTRIBUTE_FILTERS = metaItemArray(
+            PROTOCOL_NAMESPACE + ":filters",
+            ACCESS_PRIVATE,
+            false,
+            null);
 
+    /**
+     * Can be used by protocols that support it to indicate that string values should be converted to/from bytes from/to
+     * HEX string representation (e.g. 34FD87)
+     */
+    MetaItemDescriptor META_PROTOCOL_CONVERT_HEX = metaItemFixedBoolean(PROTOCOL_NAMESPACE + ":convertHex", ACCESS_PRIVATE, false);
+
+    /**
+     * Can be used by protocols that support it to indicate that string values should be converted to/from bytes from/to
+     * binary string representation (e.g. 1001010111)
+     */
+    MetaItemDescriptor META_PROTOCOL_CONVERT_BINARY = metaItemFixedBoolean(PROTOCOL_NAMESPACE + ":convertBinary", ACCESS_PRIVATE, false);
+
+    /**
+     * Charset to use when converting byte[] to a string (should default to UTF8 if not specified); values must be string
+     * that matches a charset as defined in {@link java.nio.charset.Charset}
+     */
+    MetaItemDescriptor META_PROTOCOL_CHARSET = metaItemString(
+            PROTOCOL_NAMESPACE + ":charset",
+            ACCESS_PRIVATE,
+            false,
+            Charset.availableCharsets().keySet().toArray(new String[0])
+    );
+
+    /**
+     * Value to be used for attribute writes, protocols that support this should also support dynamic value insertion,
+     * see interface javadoc for more details
+     */
+    MetaItemDescriptor META_ATTRIBUTE_WRITE_VALUE = new MetaItemDescriptorImpl(
+            PROTOCOL_NAMESPACE + ":writeValue",
+            ValueType.ANY,
+            ACCESS_PRIVATE,
+            false,
+            TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY,
+            PatternFailure.STRING_EMPTY.name(),
+            1,
+            null,
+            false,
+            null,
+            null,
+            null);
+
+    /**
+     * Polling frequency in milliseconds for {@link Attribute}s whose value should be polled; can be set on the
+     * {@link ProtocolConfiguration} or the {@link Attribute} (the latter takes precedence).
+     */
+    MetaItemDescriptor META_POLLING_MILLIS = metaItemInteger(
+            PROTOCOL_NAMESPACE + ":pollingMillis",
+            ACCESS_PRIVATE,
+            false,
+            1000,
+            null);
 
     // TODO: Some of these options should be configurable depending on expected load etc.
-
     // Message topic for communicating from asset/thing to protocol layer (asset attribute changed, trigger actuator)
     String ACTUATOR_TOPIC = "seda://ActuatorTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
 
     // Message queue for communicating from protocol to asset/thing layer (sensor changed, trigger asset attribute update)
     String SENSOR_QUEUE = "seda://SensorQueue?waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
+
+    String DYNAMIC_VALUE_PLACEHOLDER = "{$value}";
+
+    String DYNAMIC_VALUE_PLACEHOLDER_REGEXP = "\"?\\{\\$value}\"?";
+
 
     /**
      * Get the name for this protocol
@@ -230,7 +302,7 @@ public interface Protocol extends ContainerService {
             return Optional.empty();
         }
 
-        Optional<ArrayValue> arrayValueOptional = attribute.getMetaItem(META_PROTOCOL_FILTERS)
+        Optional<ArrayValue> arrayValueOptional = attribute.getMetaItem(META_ATTRIBUTE_FILTERS)
             .flatMap(AbstractValueHolder::getValueAsArray);
 
         if (!arrayValueOptional.isPresent()) {
@@ -264,6 +336,32 @@ public interface Protocol extends ContainerService {
         } catch (IOException ioException) {
             LOG.log(Level.WARNING, "Failed to deserialise message filter", ioException);
             throw new IllegalArgumentException(ioException);
+        }
+    }
+
+    static String bytesToHexString(byte[] bytes) {
+        return Hex.encodeHexString(bytes);
+    }
+
+    static byte[] bytesFromHexString(String hex) {
+        try {
+            return Hex.decodeHex(hex.toCharArray());
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to convert hex string to bytes", e);
+            return new byte[0];
+        }
+    }
+
+    static String bytesToBinaryString(byte[] bytes) {
+        return BinaryCodec.toAsciiString(bytes);
+    }
+
+    static byte[] bytesFromBinaryString(String binary) {
+        try {
+            return BinaryCodec.fromAscii(binary.toCharArray());
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to convert hex string to bytes", e);
+            return new byte[0];
         }
     }
 }

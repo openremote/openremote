@@ -19,16 +19,16 @@
  */
 package org.openremote.test;
 
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.agent.protocol.MessageProcessor;
+import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.agent.protocol.velbus.VelbusPacket;
+import org.openremote.model.asset.agent.ConnectionStatus;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class MockMessageProcessor implements MessageProcessor<VelbusPacket> {
+public class MockVelbusClient implements IoClient<VelbusPacket> {
     protected final List<Consumer<VelbusPacket>> messageConsumers = new ArrayList<>();
     protected final List<Consumer<ConnectionStatus>> statusConsumers = new ArrayList<>();
     protected List<VelbusPacket> sentMessages = new ArrayList<>();
@@ -57,9 +57,9 @@ public class MockMessageProcessor implements MessageProcessor<VelbusPacket> {
             if (mappings != null) {
                 synchronized (messageConsumers) {
                     mappings.forEach(returnPacket -> {
-                        messageConsumers.forEach(consumer -> {
-                            consumer.accept(VelbusPacket.fromString(returnPacket));
-                        });
+                        messageConsumers.forEach(consumer ->
+                            consumer.accept(VelbusPacket.fromString(returnPacket))
+                        );
                     });
                 }
             }
@@ -85,6 +85,11 @@ public class MockMessageProcessor implements MessageProcessor<VelbusPacket> {
     }
 
     @Override
+    public void removeAllMessageConsumers() {
+        messageConsumers.clear();
+    }
+
+    @Override
     public void addConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer) {
         statusConsumers.add(connectionStatusConsumer);
     }
@@ -92,6 +97,11 @@ public class MockMessageProcessor implements MessageProcessor<VelbusPacket> {
     @Override
     public void removeConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer) {
         statusConsumers.remove(connectionStatusConsumer);
+    }
+
+    @Override
+    public void removeAllConnectionStatusConsumers() {
+        statusConsumers.clear();
     }
 
     @Override

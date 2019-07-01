@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.velbus;
 
 import org.openremote.agent.protocol.*;
+import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.agent.protocol.velbus.device.DevicePropertyValue;
 import org.openremote.agent.protocol.velbus.device.FeatureProcessor;
 import org.openremote.agent.protocol.velbus.device.VelbusDeviceType;
@@ -135,7 +136,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
             velbusNetwork = networkMap.get(networkIdentifier);
         } else {
             try {
-                MessageProcessor<VelbusPacket> messageProcessor = createMessageProcessor(protocolConfiguration);
+                IoClient<VelbusPacket> messageProcessor = createClient(protocolConfiguration);
                 int timeInjectionSeconds = getTimeInjectionIntervalSeconds(protocolConfiguration);
                 LOG.fine("Creating new VELBUS network instance for protocolConfiguration: " + protocolRef);
                 velbusNetwork = new VelbusNetwork(messageProcessor, executorService, timeInjectionSeconds);
@@ -148,7 +149,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
         }
 
         if (velbusNetwork != null) {
-            if (protocolConfiguration.isEnabled() && velbusNetwork.getConnectionStatus() == ConnectionStatus.DISCONNECTED) {
+            if (velbusNetwork.getConnectionStatus() == ConnectionStatus.DISCONNECTED) {
                 velbusNetwork.connect();
             }
             Consumer<ConnectionStatus> statusConsumer = status -> updateStatus(protocolRef, status);
@@ -349,9 +350,9 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
     }
 
     /**
-     * Should return an instance of {@link MessageProcessor} for the supplied protocolConfiguration
+     * Should return an instance of {@link IoClient} for the supplied protocolConfiguration
      */
-    protected abstract MessageProcessor<VelbusPacket> createMessageProcessor(AssetAttribute protocolConfiguration) throws RuntimeException;
+    protected abstract IoClient<VelbusPacket> createClient(AssetAttribute protocolConfiguration) throws RuntimeException;
 
 
     /**

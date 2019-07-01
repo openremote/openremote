@@ -20,14 +20,14 @@
 package org.openremote.agent.protocol.velbus;
 
 import io.netty.buffer.ByteBuf;
-import org.openremote.agent.protocol.AbstractSocketMessageProcessor;
+import org.openremote.agent.protocol.tcp.AbstractTcpClient;
 import org.openremote.agent.protocol.ProtocolExecutorService;
 
 import java.util.List;
 
-public class VelbusSocketMessageProcessor extends AbstractSocketMessageProcessor<VelbusPacket> {
+public class VelbusTcpClient extends AbstractTcpClient<VelbusPacket> {
 
-    public VelbusSocketMessageProcessor(String host, int port, ProtocolExecutorService executorService) {
+    public VelbusTcpClient(String host, int port, ProtocolExecutorService executorService) {
         super(host, port, executorService);
     }
     @Override

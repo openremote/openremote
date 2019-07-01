@@ -33,6 +33,7 @@ import org.openremote.model.value.Values;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
@@ -45,18 +46,18 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  * <h1>Protocol Configurations</h1>
  * An instance is created by defining a {@link ProtocolConfiguration} with the following {@link MetaItem}s:
  * <ul>
- * <li>{@link #META_PROTOCOL_PORT} <b>(required)</b></li>
+ * <li>{@link #META_PROTOCOL_BIND_PORT} <b>(required)</b></li>
  * <li>{@link #META_PROTOCOL_BIND_ADDRESS}</li>
  * </ul>
  */
-public abstract class AbstractTcpServerProtocol<T extends TcpServer<U>, U> extends AbstractProtocol {
+public abstract class AbstractTcpServerProtocol<T extends AbstractTcpServer<U>, U> extends AbstractProtocol {
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":tcpServer";
 
     /**
      * Sets the port that this server will bind to.
      */
-    public static final String META_PROTOCOL_PORT = PROTOCOL_NAME + ":port";
+    public static final String META_PROTOCOL_BIND_PORT = PROTOCOL_NAME + ":bindPort";
     /**
      * Sets the network interface that this server will bind to; if not defined then the server
      * will bind to all network interfaces.
@@ -70,15 +71,10 @@ public abstract class AbstractTcpServerProtocol<T extends TcpServer<U>, U> exten
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
-        if (!protocolConfiguration.isEnabled()) {
-            updateStatus(protocolRef, ConnectionStatus.DISABLED);
-            return;
-        }
-
-        int port = protocolConfiguration.getMetaItem(META_PROTOCOL_PORT)
+        int port = protocolConfiguration.getMetaItem(META_PROTOCOL_BIND_PORT)
             .flatMap(AbstractValueHolder::getValueAsInteger)
             .orElseThrow(() ->
-                 new IllegalArgumentException("Missing or invalid require meta item: " + META_PROTOCOL_PORT));
+                 new IllegalArgumentException("Missing or invalid require meta item: " + META_PROTOCOL_BIND_PORT));
 
         Optional<StringValue> bindAddress = Values.getMetaItemValueOrThrow(
             protocolConfiguration,
@@ -90,15 +86,15 @@ public abstract class AbstractTcpServerProtocol<T extends TcpServer<U>, U> exten
 
         LOG.info("Creating TCP server instance");
         T tcpServer = createTcpServer(port, bindAddress.map(StringValue::getString).orElse(null), protocolConfiguration);
+        Consumer<ConnectionStatus> connectionStatusConsumer = connectionStatus ->
+                onServerConnectionStatusChanged(protocolRef, connectionStatus);
+        tcpServer.addConnectionStatusConsumer(connectionStatusConsumer);
         tcpServerMap.put(protocolRef, tcpServer);
         startTcpServer(protocolRef, tcpServer);
+    }
 
-        if (!tcpServer.isStarted()) {
-            LOG.warning("Failed to start TCP server instance");
-            updateStatus(protocolRef, ConnectionStatus.ERROR);
-        } else {
-            updateStatus(protocolRef, ConnectionStatus.CONNECTED);
-        }
+    protected void onServerConnectionStatusChanged(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
+        updateStatus(protocolRef, connectionStatus);
     }
 
     @Override
@@ -106,12 +102,12 @@ public abstract class AbstractTcpServerProtocol<T extends TcpServer<U>, U> exten
         final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
         T tcpServer = tcpServerMap.remove(protocolRef);
-
         if (tcpServer == null) {
             return;
         }
 
         LOG.info("Removing TCP server instance");
+        tcpServer.removeAllConnectionStatusConsumers();
         stopTcpServer(protocolRef, tcpServer);
         updateStatus(protocolRef, ConnectionStatus.DISCONNECTED);
     }

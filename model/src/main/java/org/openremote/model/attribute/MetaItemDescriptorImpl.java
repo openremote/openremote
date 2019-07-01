@@ -26,8 +26,7 @@ import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.value.*;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -191,5 +190,125 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 ", valueFixed=" + valueFixed +
                 ", patternFailureMessage='" + patternFailureMessage + '\'' +
                 '}';
+    }
+
+    public static MetaItemDescriptor metaItemFixedBoolean(String urn, Access access, boolean required) {
+        return new MetaItemDescriptorImpl(
+                urn,
+                ValueType.BOOLEAN,
+                access,
+                required,
+                null,
+                null,
+                1,
+                Values.create(true),
+                true,
+                null,
+                null,
+                null);
+    }
+
+    public static MetaItemDescriptor metaItemString(String urn, Access access, boolean required, String...allowedValues) {
+        Value[] values = allowedValues != null && allowedValues.length > 0 ? Arrays.stream(allowedValues).map(Values::create).toArray(Value[]::new) : null;
+
+        return new MetaItemDescriptorImpl(
+                urn,
+                ValueType.STRING,
+                access,
+                required,
+                null,
+                null,
+                1,
+                values != null ? values[0] : null,
+                false,
+                null,
+                null,
+                allowedValues != null ? Arrays.stream(allowedValues).map(Values::create).toArray(Value[]::new) : null);
+    }
+
+    public static MetaItemDescriptor metaItemString(String urn, Access access, boolean required, String patternRegex, PatternFailure failureMessage) {
+        return metaItemString(urn, access, required, patternRegex, failureMessage.name());
+    }
+
+    public static MetaItemDescriptor metaItemString(String urn, Access access, boolean required, String patternRegex, String patternFailureMessage) {
+        return new MetaItemDescriptorImpl(
+                urn,
+                ValueType.STRING,
+                access,
+                required,
+                patternRegex,
+                patternFailureMessage,
+                1,
+                null,
+                false,
+                null,
+                null,
+                null);
+    }
+
+    public static MetaItemDescriptor metaItemInteger(String urn, Access access, boolean required, Integer minValue, Integer maxValue) {
+        return new MetaItemDescriptorImpl(
+                urn,
+                ValueType.NUMBER,
+                access,
+                required,
+                null,
+                null,
+                1,
+                minValue != null ? Values.create(minValue) : null,
+                false,
+                minValue != null ? Values.create(minValue) : null,
+                maxValue != null ? Values.create(maxValue) : null,
+                null);
+    }
+
+    public static MetaItemDescriptor metaItemInteger(String urn, Access access, boolean required, Integer...allowedValues) {
+        Value[] values = allowedValues != null && allowedValues.length > 0 ? Arrays.stream(allowedValues).map(Values::create).toArray(Value[]::new) : null;
+
+        return new MetaItemDescriptorImpl(
+                urn,
+                ValueType.NUMBER,
+                access,
+                required,
+                null,
+                null,
+                1,
+                values != null ? values[0] : null,
+                false,
+                null,
+                null,
+                values);
+    }
+
+    public static MetaItemDescriptor metaItemObject(String urn, Access access, boolean required, ObjectValue initialValue) {
+        return new MetaItemDescriptorImpl(
+                urn,
+                ValueType.OBJECT,
+                access,
+                required,
+                null,
+                null,
+                1,
+                initialValue,
+                false,
+                null,
+                null,
+                null);
+    }
+
+    public static MetaItemDescriptor metaItemArray(String urn, Access access, boolean required, ArrayValue initialValue) {
+        return new MetaItemDescriptorImpl(
+                urn,
+                ValueType.ARRAY,
+                access,
+                required,
+                null,
+                null,
+                1,
+                initialValue,
+                false,
+                null,
+                null,
+                null);
     }
 }

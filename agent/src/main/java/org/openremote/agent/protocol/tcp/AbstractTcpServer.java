@@ -19,12 +19,13 @@
  */
 package org.openremote.agent.protocol.tcp;
 
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.ServerChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import org.openremote.agent.protocol.io.AbstractIoServer;
+import org.openremote.agent.protocol.ProtocolExecutorService;
+import org.openremote.agent.protocol.io.AbstractNettyIoServer;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -34,32 +35,37 @@ import java.net.SocketAddress;
  * to configure the pipeline with the necessary encoders and decoders to ensure messages of type &lt;T&gt; are
  * generated/consumed at/from the end/start of the pipeline.
  */
-public abstract class TcpServer<T> extends AbstractIoServer<T, SocketChannel> {
+public abstract class AbstractTcpServer<T> extends AbstractNettyIoServer<T, SocketChannel, ServerBootstrap, InetSocketAddress> {
 
     protected SocketAddress localAddress;
 
-    public TcpServer(InetSocketAddress localAddress) {
+    public AbstractTcpServer(ProtocolExecutorService executorService, InetSocketAddress localAddress) {
+        super(executorService);
         this.localAddress = localAddress;
     }
 
     @Override
-    protected String getInstanceIdentifier() {
+    protected String getSocketAddressString() {
         return localAddress == null ? null : "tcp://" + localAddress;
     }
 
     @Override
-    protected Class<? extends ServerChannel> getServerChannelClass() {
-        return NioServerSocketChannel.class;
-    }
+    protected ServerBootstrap createAndConfigureBootstrap() {
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        bootstrap.channel(NioServerSocketChannel.class);
+        bootstrap.group(workerGroup);
+        bootstrap.localAddress(localAddress);
+        bootstrap.option(ChannelOption.SO_BACKLOG, clientLimit);
 
-    @Override
-    protected EventLoopGroup getWorkerGroup() {
-        return new NioEventLoopGroup();
-    }
+        bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
+        bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
+            @Override
+            protected void initChannel(SocketChannel channel) {
+                AbstractTcpServer.this.initClientChannel(channel);
+            }
+        });
 
-    @Override
-    protected SocketAddress getLocalAddress() {
-        return localAddress;
+        return bootstrap;
     }
 
     @Override

@@ -56,7 +56,7 @@ public abstract class MessageFilter<T extends Value> {
     /**
      * Apply this filter to the supplied message
      */
-    public abstract  Value process(T message);
+    public abstract Value process(T message);
 
     /**
      * Convert this filter to an {@link ObjectValue}

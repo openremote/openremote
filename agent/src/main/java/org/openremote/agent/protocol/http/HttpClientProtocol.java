@@ -34,6 +34,7 @@ import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.*;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.*;
@@ -59,6 +60,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.*;
 
 /**
@@ -72,27 +74,31 @@ import static org.openremote.model.util.TextUtil.*;
  * items: <ul> <li>{@link #META_PROTOCOL_BASE_URI} (<b>required</b>)</li> <li>{@link #META_PROTOCOL_USERNAME}</li>
  * <li>{@link #META_PROTOCOL_PASSWORD}</li> <li>{@link #META_PROTOCOL_OAUTH_GRANT}</li> <li>{@link
  * #META_PROTOCOL_PING_PATH}</li> <li>{@link #META_PROTOCOL_PING_METHOD}</li> <li>{@link #META_PROTOCOL_PING_BODY}</li>
- * <li>{@link #META_PROTOCOL_PING_QUERY_PARAMETERS}</li> <li>{@link #META_PROTOCOL_PING_SECONDS}</li> <li>{@link
+ * <li>{@link #META_PROTOCOL_PING_QUERY_PARAMETERS}</li> <li>{@link #META_PROTOCOL_PING_MILLIS}</li> <li>{@link
  * #META_PROTOCOL_FOLLOW_REDIRECTS}</li> <li>{@link #META_FAILURE_CODES}</li> <li>{@link #META_HEADERS}</li> </ul>
  * <h1>Linked Attributes</h1>
  * <p>
  * {@link Attribute}s that are linked to this protocol using an {@link MetaItemType#AGENT_LINK} {@link MetaItem} support
  * the following meta items: <ul> <li>{@link #META_ATTRIBUTE_PATH} (<b>if not supplied then base URI is used</b>)</li>
- * <li>{@link #META_ATTRIBUTE_METHOD}</li> <li>{@link #META_ATTRIBUTE_BODY}</li> <li>{@link
- * #META_ATTRIBUTE_POLLING_SECONDS} (<b>required if attribute value should be set by the response received from this
- * endpoint</b>)</li> <li>{@link #META_QUERY_PARAMETERS}</li> <li>{@link #META_FAILURE_CODES}</li> <li>{@link #META_HEADERS}</li> </ul>
+ * <li>{@link #META_ATTRIBUTE_METHOD}</li> <li>{@link Protocol#META_ATTRIBUTE_WRITE_VALUE} (used as the body of the
+ * request for writes)</li> <li>{@link #META_POLLING_MILLIS} (<b>required if attribute value should be set by
+ * the response received from this endpoint</b>)</li> <li>{@link #META_QUERY_PARAMETERS}</li>
+ * <li>{@link #META_FAILURE_CODES}</li>
+ * <li>{@link #META_HEADERS}</li>
+ * <li>{@link Protocol#META_ATTRIBUTE_FILTERS}</li>
+ * </ul>
  * <p>
  * <h1>Response filtering</h1>
  * <p>
  * Any {@link Attribute} whose value is to be set by the HTTP server response (i.e. it has an {@link
- * #META_ATTRIBUTE_POLLING_SECONDS} {@link MetaItem}) can use the standard {@link Protocol#META_PROTOCOL_FILTERS} in
+ * #META_POLLING_MILLIS} {@link MetaItem}) can use the standard {@link Protocol#META_ATTRIBUTE_FILTERS} in
  * order to filter the received HTTP response.
  * <p>
  * <h1>Connection Status</h1>
  * <p>
  * The {@link ConnectionStatus} of the {@link ProtocolConfiguration} is determined by the ping {@link
  * org.openremote.model.attribute.MetaItem}s on the protocol configuration. If specified then the {@link
- * #META_PROTOCOL_PING_PATH} will be called every {@link #META_PROTOCOL_PING_SECONDS} this should be a lightweight
+ * #META_PROTOCOL_PING_PATH} will be called every {@link #META_PROTOCOL_PING_MILLIS} this should be a lightweight
  * endpoint (i.e. no response body or small response body) and if the HTTP server requires authentication then this ping
  * endpoint should also be a secured endpoint to validate the credentials.
  * <p>
@@ -110,9 +116,9 @@ import static org.openremote.model.util.TextUtil.*;
  * <b>NOTE: if an exception is thrown during the request that means no response is returned then this is treated as if
  * a 500 response has been received</b>
  * <h1>Dynamic value injection</h1>
- * This allows the {@link #META_ATTRIBUTE_PATH} and/or {@link #META_ATTRIBUTE_BODY} to contain the linked
+ * This allows the {@link #META_ATTRIBUTE_PATH} and/or {@link Protocol#META_ATTRIBUTE_WRITE_VALUE} to contain the linked
  * {@link Attribute} value when sending requests. To dynamically inject the attribute value use
- * {@value #DYNAMIC_VALUE_PLACEHOLDER} as a placeholder and this will be dynamically replaced at request time.
+ * {@value Protocol#DYNAMIC_VALUE_PLACEHOLDER} as a placeholder and this will be dynamically replaced at request time.
  * <h2>Path example</h2>
  * {@link #META_ATTRIBUTE_PATH} = "volume/set/{$value}" and request received to set attribute value to 100. Actual path
  * used for the request = "volume/set/100"
@@ -130,10 +136,10 @@ import static org.openremote.model.util.TextUtil.*;
  * Request received to set attribute value to true. Actual query parameters injected into the request =
  * "param1=val1&param1=val2&param2=12232&param3=true"
  * <h2>Body examples</h2>
- * {@link #META_ATTRIBUTE_BODY} = '<?xml version="1.0" encoding="UTF-8"?>{$value}</xml>' and request received to set attribute value to 100. Actual body
+ * {@link Protocol#META_ATTRIBUTE_WRITE_VALUE} = '<?xml version="1.0" encoding="UTF-8"?>{$value}</xml>' and request received to set attribute value to 100. Actual body
  * used for the request = "{volume: 100}"
  * <p>
- * {@link #META_ATTRIBUTE_BODY} = '{myObject: "{$value}"}' and request received to set attribute value to:
+ * {@link Protocol#META_ATTRIBUTE_WRITE_VALUE} = '{myObject: "{$value}"}' and request received to set attribute value to:
  * <blockquote><pre>
  * {@code
  * {
@@ -369,9 +375,9 @@ public class HttpClientProtocol extends AbstractProtocol {
      */
     public static final String META_PROTOCOL_PING_QUERY_PARAMETERS = PROTOCOL_NAME + ":pingQueryParameters";
     /**
-     * Ping frequency in seconds (integer default: {@value #DEFAULT_PING_SECONDS})
+     * Ping frequency in seconds (integer default: {@value #DEFAULT_PING_MILLIS})
      */
-    public static final String META_PROTOCOL_PING_SECONDS = PROTOCOL_NAME + ":pingSeconds";
+    public static final String META_PROTOCOL_PING_MILLIS = PROTOCOL_NAME + ":pingMillis";
     /**
      * Flag to indicate whether redirect responses from the HTTP server should be followed (boolean)
      */
@@ -388,22 +394,14 @@ public class HttpClientProtocol extends AbstractProtocol {
      */
     public static final String META_ATTRIBUTE_METHOD = PROTOCOL_NAME + ":method";
     /**
-     * HTTP request body; supports dynamic value insertion, see class javadoc for more details ({@link Value})
-     */
-    public static final String META_ATTRIBUTE_BODY = PROTOCOL_NAME + ":body";
-    /**
      * Used to indicate the type of data sent in the body, a default will be used if not supplied; default is determined
      * as follows:
      * <ul>
-     * <li>{@link #META_ATTRIBUTE_BODY} value type = {@link ObjectValue} or {@link ArrayValue}: {@link MediaType#APPLICATION_JSON}</li>
-     * <li>{@link #META_ATTRIBUTE_BODY} value type = any other value type: {@value #DEFAULT_CONTENT_TYPE}</li>
+     * <li>{@link Protocol#META_ATTRIBUTE_WRITE_VALUE} value type = {@link ObjectValue} or {@link ArrayValue}: {@link MediaType#APPLICATION_JSON}</li>
+     * <li>{@link Protocol#META_ATTRIBUTE_WRITE_VALUE} value type = any other value type: {@value #DEFAULT_CONTENT_TYPE}</li>
      * </ul>
      */
     public static final String META_ATTRIBUTE_CONTENT_TYPE = PROTOCOL_NAME + ":contentType";
-    /**
-     * Polling frequency in seconds for {@link Attribute}s whose value should come from the HTTP server
-     */
-    public static final String META_ATTRIBUTE_POLLING_SECONDS = PROTOCOL_NAME + ":pollingSeconds";
 
     /*--------------- META ITEMS TO BE USED ON PROTOCOL CONFIGURATIONS OR LINKED ATTRIBUTES ---------------*/
     /**
@@ -514,7 +512,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false, null, null, null),
         new MetaItemDescriptorImpl(
-            META_PROTOCOL_PING_SECONDS,
+                META_PROTOCOL_PING_MILLIS,
             ValueType.NUMBER,
             false,
             REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO,
@@ -607,15 +605,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             1,
             null,
             false, null, null, null),
-        new MetaItemDescriptorImpl(
-            META_ATTRIBUTE_BODY,
-            null,
-            false,
-            null,
-            null,
-            1,
-            null,
-            false, null, null, null),
+            META_ATTRIBUTE_WRITE_VALUE,
         new MetaItemDescriptorImpl(
             META_ATTRIBUTE_CONTENT_TYPE,
             ValueType.STRING,
@@ -625,15 +615,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             1,
             null,
             false, null, null, null),
-        new MetaItemDescriptorImpl(
-            META_ATTRIBUTE_POLLING_SECONDS,
-            ValueType.NUMBER,
-            false,
-            REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO,
-            MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(),
-            1,
-            null,
-            false, null, null, null),
+            META_POLLING_MILLIS,
         new MetaItemDescriptorImpl(
             META_QUERY_PARAMETERS,
             ValueType.OBJECT,
@@ -673,14 +655,13 @@ public class HttpClientProtocol extends AbstractProtocol {
     );
 
 
-    private static final Logger LOG = Logger.getLogger(HttpClientProtocol.class.getName());
-    public static final String PROTOCOL_DISPLAY_NAME = "Http Client";
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, HttpClientProtocol.class.getName());
+    public static final String PROTOCOL_DISPLAY_NAME = "HTTP Client";
     public static final String PROTOCOL_VERSION = "1.0";
     protected static final String HEADER_LINK = "Link";
-    public static final String DYNAMIC_VALUE_PLACEHOLDER = "{$value}";
-    protected static final String DYNAMIC_VALUE_PLACEHOLDER_REGEXP = "\"?\\{\\$value}\"?";
-    private static TimeUnit POLLING_TIME_UNIT = TimeUnit.SECONDS; // Only here to allow override in tests
-    public static final int DEFAULT_PING_SECONDS = 60;
+    public static final int DEFAULT_PING_MILLIS = 60000;
+    private static int MIN_POLLING_MILLIS = 1000;
+    private static int MIN_PING_MILLIS = 10000;
     public static final String DEFAULT_HTTP_METHOD = HttpMethod.GET;
     public static final String DEFAULT_CONTENT_TYPE = MediaType.TEXT_PLAIN;
     protected final Map<AttributeRef, Pair<ResteasyWebTarget, List<Integer>>> clientMap = new HashMap<>();
@@ -821,7 +802,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             .flatMap(objectValue -> getMultivaluedMap(objectValue, false))
             .orElse(null);
 
-        Integer pingPollingSeconds = getPingSeconds(protocolConfiguration);
+        Integer pingPollingMillis = getPingMillis(protocolConfiguration);
 
         String contentType = Values.getMetaItemValueOrThrow(
             protocolConfiguration,
@@ -851,7 +832,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             protocolRef,
             pingRequest,
-            pingPollingSeconds));
+            pingPollingMillis));
     }
 
     @Override
@@ -892,7 +873,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             .orElse(null);
 
         Value body = attribute
-            .getMetaItem(META_ATTRIBUTE_BODY)
+            .getMetaItem(META_ATTRIBUTE_WRITE_VALUE)
             .flatMap(AbstractValueHolder::getValue)
             .orElse(null);
 
@@ -925,17 +906,16 @@ public class HttpClientProtocol extends AbstractProtocol {
             .flatMap(objectValue -> getMultivaluedMap(objectValue, false))
             .orElse(null);
 
-        Optional<Integer> pollingSeconds = Values.getMetaItemValueOrThrow(
+        Optional<Integer> pollingMillis = Values.getMetaItemValueOrThrow(
             attribute,
-            META_ATTRIBUTE_POLLING_SECONDS,
-            NumberValue.class,
+                META_POLLING_MILLIS,
             false,
             true)
             .map(polling ->
                 Values.getIntegerCoerced(polling)
-                    .map(seconds -> seconds < 1 ? null : seconds)
+                    .map(millis -> millis < MIN_POLLING_MILLIS ? null : millis)
                     .orElseThrow(() ->
-                        new IllegalArgumentException("Polling seconds meta item must be an integer >= 1")
+                        new IllegalArgumentException("Polling millis meta item must be an integer >= " + MIN_POLLING_MILLIS)
                     ));
 
         Boolean pagingEnabled = Values.getMetaItemValueOrThrow(
@@ -959,7 +939,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             pagingEnabled,
             body,
             contentType,
-            pollingSeconds.orElse(null));
+            pollingMillis.orElse(null));
     }
 
     protected void addHttpClientRequest(AssetAttribute protocolConfiguration,
@@ -1094,7 +1074,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             try {
                 getOAuthGrant(protocolConfiguration);
                 getUsernameAndPassword(protocolConfiguration);
-                getPingSeconds(protocolConfiguration);
+                getPingMillis(protocolConfiguration);
             } catch (IllegalArgumentException e) {
                 result.addAttributeFailure(
                     new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_MISMATCH, PROTOCOL_NAME)
@@ -1142,20 +1122,20 @@ public class HttpClientProtocol extends AbstractProtocol {
         return username.map(stringValue -> new Pair<>(stringValue, password.get()));
     }
 
-    public static Integer getPingSeconds(AssetAttribute attribute) throws IllegalArgumentException {
+    public static Integer getPingMillis(AssetAttribute attribute) throws IllegalArgumentException {
         return Values.getMetaItemValueOrThrow(
             attribute,
-            META_PROTOCOL_PING_SECONDS,
+                META_PROTOCOL_PING_MILLIS,
             NumberValue.class,
             false,
             true)
             .map(polling ->
                 Values.getIntegerCoerced(polling)
-                    .map(seconds -> seconds < 1 ? null : seconds)
+                    .map(seconds -> seconds < MIN_PING_MILLIS ? null : seconds)
                     .orElseThrow(() ->
-                        new IllegalArgumentException("Ping polling seconds meta item must be an integer >= 1")
+                        new IllegalArgumentException("Ping polling seconds meta item must be an integer >= " + MIN_PING_MILLIS)
                     ))
-            .orElse(DEFAULT_PING_SECONDS);
+            .orElse(DEFAULT_PING_MILLIS);
     }
 
 
@@ -1214,9 +1194,9 @@ public class HttpClientProtocol extends AbstractProtocol {
     protected ScheduledFuture schedulePollingRequest(AttributeRef attributeRef,
                                                      AttributeRef protocolConfigurationRef,
                                                      HttpClientRequest clientRequest,
-                                                     int pollingSeconds) {
+                                                     int pollingMillis) {
 
-        LOG.fine("Scheduling polling request '" + clientRequest + "' to execute every " + pollingSeconds + " seconds for attribute: " + attributeRef);
+        LOG.fine("Scheduling polling request '" + clientRequest + "' to execute every " + pollingMillis + " ms for attribute: " + attributeRef);
 
         return executorService.scheduleWithFixedDelay(() ->
             executePollingRequest(clientRequest, response ->
@@ -1225,7 +1205,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                     response,
                     attributeRef,
                     protocolConfigurationRef)
-            ), 0, pollingSeconds, POLLING_TIME_UNIT);
+            ), 0, pollingMillis, TimeUnit.MILLISECONDS);
     }
 
     protected void executePollingRequest(HttpClientRequest clientRequest, Consumer<Response> responseConsumer) {

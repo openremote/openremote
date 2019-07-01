@@ -19,6 +19,7 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.base.Any;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.impl.ValueFactoryImpl;
 
@@ -170,6 +171,20 @@ public class Values {
         }
 
         return Optional.of(stream.collect(Collectors.toList()));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T extends Value> Optional<T> getMetaItemValueOrThrow(AssetAttribute attribute,
+                                                                        MetaItemDescriptor metaItemDescriptor,
+                                                                        boolean throwIfMetaMissing,
+                                                                        boolean throwIfValueMissing)
+        throws IllegalArgumentException {
+        return getMetaItemValueOrThrow(
+                attribute,
+                metaItemDescriptor.getUrn(),
+                metaItemDescriptor.getValueType().getModelType(),
+                throwIfMetaMissing,
+                throwIfValueMissing);
     }
 
     @SuppressWarnings("unchecked")

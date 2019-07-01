@@ -17,21 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol;
+package org.openremote.agent.protocol.io;
 
 import org.openremote.model.asset.agent.ConnectionStatus;
 
 import java.util.function.Consumer;
 
 /**
- * This is an abstraction for encoding/decoding messages for communication 'over the wire' in a generic way.
+ * Represents an IO client that communicates with a server.
  * <p>
  * Implementors are responsible for handling the low level communication and for providing consumers with a mechanism
- * for encoding/decoding messages of type &lt;T&gt;
+ * for encoding/decoding messages of type &lt;T&gt.
  *
  * @param <T> Defines the message type that the instance will encode/decode
  */
-public interface MessageProcessor<T> {
+public interface IoClient<T> {
 
     /**
      * Send a message over the wire
@@ -49,6 +49,11 @@ public interface MessageProcessor<T> {
     void removeMessageConsumer(Consumer<T> messageConsumer);
 
     /**
+     * Remove every consumer of received messages
+     */
+    void removeAllMessageConsumers();
+
+    /**
      * Add a consumer of connection status
      */
     void addConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer);
@@ -57,6 +62,11 @@ public interface MessageProcessor<T> {
      * Remove a consumer of connection status
      */
     void removeConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer);
+
+    /**
+     * Remove every consumer of connection status
+     */
+    void removeAllConnectionStatusConsumers();
 
     /**
      * Get current connection status

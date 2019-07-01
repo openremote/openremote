@@ -17,32 +17,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol;
+package org.openremote.agent.protocol.tcp;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import org.openremote.agent.protocol.ProtocolExecutorService;
+import org.openremote.agent.protocol.io.AbstractNettyIoClient;
+import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
- * This is a {@link MessageProcessor} implementation for sockets.
+ * This is a {@link IoClient} implementation for TCP.
  */
-public abstract class AbstractSocketMessageProcessor<T> extends AbstractNettyMessageProcessor<T> {
+public abstract class AbstractTcpClient<T> extends AbstractNettyIoClient<T, InetSocketAddress> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractSocketMessageProcessor.class);
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractTcpClient.class);
     protected String host;
     protected int port;
 
-    public AbstractSocketMessageProcessor(String host, int port, ProtocolExecutorService executorService) {
+    public AbstractTcpClient(String host, int port, ProtocolExecutorService executorService) {
         super(executorService);
         TextUtil.requireNonNullAndNonEmpty(host);
         this.host = host;
@@ -55,18 +58,18 @@ public abstract class AbstractSocketMessageProcessor<T> extends AbstractNettyMes
     }
 
     @Override
-    protected SocketAddress getSocketAddress() {
-        return new InetSocketAddress(host, port);
-    }
-
-    @Override
     protected String getSocketAddressString() {
-        return host + ":" + port;
+        return "tcp://" + host + ":" + port;
     }
 
     @Override
     protected EventLoopGroup getWorkerGroup() {
         return new NioEventLoopGroup(1);
+    }
+
+    @Override
+    protected ChannelFuture startChannel() {
+        return bootstrap.connect(new InetSocketAddress(host, port));
     }
 
     @Override

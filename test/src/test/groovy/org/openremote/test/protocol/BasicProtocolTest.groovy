@@ -310,7 +310,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                     new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                 ),
                 new MetaItem(
-                    Protocol.META_PROTOCOL_FILTERS,
+                    Protocol.META_ATTRIBUTE_FILTERS,
                     Values.createArray().add(new RegexFilter("\\w(\\d+)", 1, 2).toValue().get())
                 )
             ),
@@ -322,7 +322,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                     new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                 ),
                 new MetaItem(
-                    Protocol.META_PROTOCOL_FILTERS,
+                    Protocol.META_ATTRIBUTE_FILTERS,
                     Values.createArray().add(new SubStringFilter(10, 12).toValue().get())
                 )
             ),
@@ -334,7 +334,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                     new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                 ),
                 new MetaItem(
-                    Protocol.META_PROTOCOL_FILTERS,
+                    Protocol.META_ATTRIBUTE_FILTERS,
                     Values.createArray()
                         .add(new SubStringFilter(23).toValue().get())
                         .add(new RegexFilter("[a-z|\\s]+(\\d+)%\"}", 1, 0).toValue().get())
@@ -370,7 +370,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         assert protocolMethodCalls[14] == "LINK_ATTRIBUTE"
         assert protocolMethodCalls[15] == "LINK_ATTRIBUTE"
 
-        expect: "the linked attributes values should have been updated by the protocol"
+        and: "the linked attributes values should have been updated by the protocol"
         conditions.eventually {
             def mockAsset = assetStorageService.find(mockThing.getId(), true)
             // Check all valid linked attributes have the new values
@@ -512,6 +512,22 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         conditions.eventually {
             mockThing = assetStorageService.find(mockThing.getId(), true)
             assert !mockThing.getAttribute("filterRegexSubstring").get().getValueAsNumber().isPresent()
+        }
+
+        when: "the disabled protocol configuration is enabled"
+        protocolMethodCalls.clear()
+        mockAgent.getAttribute("mockConfig4").ifPresent({it.meta.removeIf({it.name.get() == MetaItemType.DISABLED.urn})})
+        mockAgent = assetStorageService.merge(mockAgent)
+
+        then: "the newly enabled protocol configuration should be unlinked and re-linked"
+        conditions.eventually {
+            assert protocolMethodCalls.size() == 6
+            assert protocolMethodCalls[0] == "UNLINK_ATTRIBUTE"
+            assert protocolMethodCalls[1] == "UNLINK_ATTRIBUTE"
+            assert protocolMethodCalls[2] == "UNLINK_PROTOCOL"
+            assert protocolMethodCalls[3] == "LINK_PROTOCOL"
+            assert protocolMethodCalls[4] == "LINK_ATTRIBUTE"
+            assert protocolMethodCalls[5] == "LINK_ATTRIBUTE"
         }
 
         cleanup: "the server should be stopped"
