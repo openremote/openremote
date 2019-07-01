@@ -71,7 +71,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * the following meta items:
  * <ul>
  * <li>{@link #META_ATTRIBUTE_WRITE_VALUE} (if specified also supports dynamic value injection as described in {@link Protocol})</li>
- * <li>{@link #META_ATTRIBUTE_FILTERS}</li>
+ * <li>{@link #META_VALUE_FILTERS}</li>
  * <li>{@link #META_POLLING_MILLIS}</li>
  * </ul>
  *
@@ -81,8 +81,15 @@ public class UdpClientProtocol extends AbstractProtocol {
     private static class AttributeInfo {
         Consumer<Value> sendConsumer;
         ScheduledFuture pollingTask;
+        int retries;
+        boolean expectResponse;
 
-
+        public AttributeInfo(Consumer<Value> sendConsumer, ScheduledFuture pollingTask, int retries, boolean expectResponse) {
+            this.sendConsumer = sendConsumer;
+            this.pollingTask = pollingTask;
+            this.retries = retries;
+            this.expectResponse = expectResponse;
+        }
     }
 
 
@@ -93,9 +100,9 @@ public class UdpClientProtocol extends AbstractProtocol {
     private static int DEFAULT_RESPONSE_TIMEOUT_MILLIS = 3000;
     private static int DEFAULT_SEND_RETRIES = 1;
     private static boolean DEFAULT_SERVER_ALWAYS_RESPONDS = false;
+    private static int MIN_POLLING_MILLIS = 1000;
     protected final Map<AttributeRef, IoClient<String>> clientMap = new HashMap<>();
-    protected final Map<AttributeRef, Consumer<Value>> attributeWriteMap = new HashMap<>();
-    protected final Map<AttributeRef, ScheduledFuture> attributePollingMap = new HashMap<>();
+    protected final Map<AttributeRef, AttributeInfo> attributeInfoMap = new HashMap<>();
 
     /**
      * The UDP server host name/IP address
@@ -170,6 +177,12 @@ public class UdpClientProtocol extends AbstractProtocol {
 
     @Override
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+
+        if (!protocolConfiguration.isEnabled()) {
+            LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
+            return;
+        }
+
         final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
         String host = Values.getMetaItemValueOrThrow(
@@ -237,6 +250,11 @@ public class UdpClientProtocol extends AbstractProtocol {
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
 
+        if (!protocolConfiguration.isEnabled()) {
+            LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
+            return;
+        }
+
         IoClient<String> client = clientMap.get(protocolConfiguration.getReferenceOrThrow());
 
         if (client == null) {
@@ -250,29 +268,42 @@ public class UdpClientProtocol extends AbstractProtocol {
                 .flatMap(Values::getIntegerCoerced)
                 .orElse(null);
 
-        final Integer responseTimeoutMillis = Values.getMetaItemValueOrThrow(attribute, META_RESPONSE_TIMEOUT_MILLIS, false, true)
+        final int responseTimeoutMillis = Values.getMetaItemValueOrThrow(attribute, META_RESPONSE_TIMEOUT_MILLIS, false, true)
                 .flatMap(Values::getIntegerCoerced)
                 .orElseGet(() ->
                         Values.getMetaItemValueOrThrow(protocolConfiguration, META_RESPONSE_TIMEOUT_MILLIS, false, true)
                                 .flatMap(Values::getIntegerCoerced)
-                                .orElse(null)
+                                .orElse(DEFAULT_RESPONSE_TIMEOUT_MILLIS)
                 );
 
-        final Integer sendRetries = Values.getMetaItemValueOrThrow(attribute, META_SEND_RETRIES, false, true)
+        final int sendRetries = Values.getMetaItemValueOrThrow(attribute, META_SEND_RETRIES, false, true)
                 .flatMap(Values::getIntegerCoerced)
                 .orElseGet(() ->
                         Values.getMetaItemValueOrThrow(protocolConfiguration, META_SEND_RETRIES, false, true)
                                 .flatMap(Values::getIntegerCoerced)
-                                .orElse(null)
+                                .orElse(DEFAULT_SEND_RETRIES)
                 );
 
+        final boolean serverAlwaysResponds = Values.getMetaItemValueOrThrow(
+                attribute,
+                META_SERVER_ALWAYS_RESPONDS,
+                false,
+                false
+        ).flatMap(Values::getBoolean).orElseGet(() ->
+                Values.getMetaItemValueOrThrow(protocolConfiguration, META_SERVER_ALWAYS_RESPONDS, false, false)
+                        .flatMap(Values::getBoolean)
+                        .orElse(DEFAULT_SERVER_ALWAYS_RESPONDS)
+        );
+
+        Consumer<Value> sendConsumer = null;
+        ScheduledFuture pollingTask = null;
+
         if (!attribute.isReadOnly()) {
-            Consumer<Value> valueWriter = createWriteConsumer(client, attribute.getReferenceOrThrow(), writeValue, null);
-            attributeWriteMap.put(attribute.getReferenceOrThrow(), valueWriter);
+            sendConsumer = createWriteConsumer(client, attribute.getReferenceOrThrow(), writeValue, null);
         }
 
-        if (pollingMillis < 1000) {
-            LOG.warning("Polling ms must be >= 1000");
+        if (pollingMillis != null && pollingMillis < MIN_POLLING_MILLIS) {
+            LOG.warning("Polling ms must be >= " + MIN_POLLING_MILLIS);
             return;
         }
 
@@ -289,10 +320,32 @@ public class UdpClientProtocol extends AbstractProtocol {
                                     str != null ? Values.create(str) : null));
 
             Consumer<Value> pollingWriter = createWriteConsumer(client, attribute.getReferenceOrThrow(), writeValue, responseConsumer);
-            Runnable pollingTask = () -> pollingWriter.accept(null);
-            ScheduledFuture pollingFuture = schedulePollingRequest(client, attribute.getReferenceOrThrow(), pollingTask, pollingMillis);
-            attributePollingMap.put(attribute.getReferenceOrThrow(), pollingFuture);
+            Runnable pollingRunnable = () -> pollingWriter.accept(null);
+            pollingTask = schedulePollingRequest(client, attribute.getReferenceOrThrow(), pollingRunnable, pollingMillis);
         }
+
+        attributeInfoMap.put(attribute.getReferenceOrThrow(), new AttributeInfo(sendConsumer, pollingTask, sendRetries, serverAlwaysResponds));
+    }
+
+    @Override
+    protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+        AttributeInfo info = attributeInfoMap.remove(attribute.getReferenceOrThrow());
+
+        if (info != null && info.pollingTask != null) {
+            info.pollingTask.cancel(false);
+        }
+    }
+
+    @Override
+    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+        AttributeInfo info = attributeInfoMap.get(event.getAttributeRef());
+
+        if (info == null || info.sendConsumer == null) {
+            LOG.info("Request to write unlinked attribute or attribute that doesn't support writes so ignoring: " + event);
+            return;
+        }
+
+        info.sendConsumer.accept(event.getValue().orElse(null));
     }
 
     protected Consumer<Value> createWriteConsumer(IoClient<String> client, AttributeRef attributeRef, String writeValue, Consumer<String> responseConsumer) {
@@ -306,28 +359,6 @@ public class UdpClientProtocol extends AbstractProtocol {
 
             onClientWriteRequest(client, attributeRef, str, responseConsumer);
         };
-    }
-
-    @Override
-    protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        attributeWriteMap.remove(attribute.getReferenceOrThrow());
-        ScheduledFuture pollingTask = attributePollingMap.remove(attribute.getReferenceOrThrow());
-
-        if (pollingTask != null) {
-            pollingTask.cancel(false);
-        }
-    }
-
-    @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
-        Consumer<Value> writer = attributeWriteMap.get(event.getAttributeRef());
-
-        if (writer == null) {
-            LOG.info("Request to write unlinked attribute so ignoring: " + event);
-            return;
-        }
-
-        writer.accept(event.getValue().orElse(null));
     }
 
     protected void onConnectionStatusChanged(AttributeRef protocolRef, ConnectionStatus connectionStatus) {

@@ -75,7 +75,7 @@ public final class VelbusConfiguration {
         if (attribute.getMeta() != null && !attribute.getMeta().isEmpty()) {
             for (int i = 0; i < attribute.getMeta().size(); i++) {
                 MetaItem metaItem = attribute.getMeta().get(i);
-                if (isMetaNameEqualTo(metaItem, VelbusTcpProtocol.META_VELBUS_SOCKET_HOST)) {
+                if (isMetaNameEqualTo(metaItem, VelbusTcpProtocol.META_VELBUS_HOST)) {
                     hostFound = true;
                     if (isNullOrEmpty(metaItem.getValueAsString().orElse(null))) {
                         failure = true;
@@ -85,7 +85,7 @@ public final class VelbusConfiguration {
                         result.addMetaFailure(i,
                             new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_VALUE_IS_REQUIRED, ValueType.STRING.name()));
                     }
-                } else if (isMetaNameEqualTo(metaItem, VelbusTcpProtocol.META_VELBUS_SOCKET_PORT)) {
+                } else if (isMetaNameEqualTo(metaItem, VelbusTcpProtocol.META_VELBUS_PORT)) {
                     portFound = true;
                     int port = metaItem.getValueAsInteger().orElse(0);
                     if (port <= 0 || port > 65536) {
@@ -106,7 +106,7 @@ public final class VelbusConfiguration {
                 result.addMetaFailure(
                     new ValidationFailure(
                         MetaItem.MetaItemFailureReason.META_ITEM_MISSING,
-                        VelbusTcpProtocol.META_VELBUS_SOCKET_HOST));
+                        VelbusTcpProtocol.META_VELBUS_HOST));
             }
         }
         if (!portFound) {
@@ -115,7 +115,7 @@ public final class VelbusConfiguration {
                 result.addMetaFailure(
                     new ValidationFailure(
                         MetaItem.MetaItemFailureReason.META_ITEM_MISSING,
-                        VelbusTcpProtocol.META_VELBUS_SOCKET_PORT));
+                        VelbusTcpProtocol.META_VELBUS_PORT));
             }
         }
 
@@ -170,7 +170,7 @@ public final class VelbusConfiguration {
             failure = true;
             if (result != null) {
                 result.addMetaFailure(
-                    new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_MISSING, VelbusTcpProtocol.META_VELBUS_SOCKET_PORT)
+                    new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_MISSING, VelbusTcpProtocol.META_VELBUS_PORT)
                 );
             }
         }

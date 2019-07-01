@@ -213,7 +213,7 @@ public class AttributeLinkEditor extends FlowPanel {
                 // Check item with this name doesn't already exist
                 boolean canAdd = !converterAttribute.hasMetaItem(item.getName().orElse(null));
                 if (!canAdd) {
-                    String metaItemName = getMetaItemDisplayName(environment, MetaItemType.ATTRIBUTE_LINK.name());
+                    String metaItemName = getMetaItemDisplayName(environment, MetaItemType.ATTRIBUTE_LINK.getUrn());
                     showValidationError(attribute.getName().orElse(""), metaItemName, new ValidationFailure(FailureReason.CONVERTER_KEY_DUPLICATION, item.getName().orElse("")));
                     return false;
                 }
@@ -266,7 +266,7 @@ public class AttributeLinkEditor extends FlowPanel {
     @SuppressWarnings("ParameterCanBeLocal")
     protected void showConverterEditorValidationError(String attributeName, String metaItemName, ValidationFailure validationFailure) {
         // Replace metaItemName with AttributeLink
-        metaItemName = environment.getMessages().metaItemDisplayName(MetaItemType.ATTRIBUTE_LINK.name());
+        metaItemName = environment.getMessages().metaItemDisplayName(MetaItemType.ATTRIBUTE_LINK.getUrn().replace(":", ""));
 
         // Replace meta item validation failures
         if (validationFailure != null) {

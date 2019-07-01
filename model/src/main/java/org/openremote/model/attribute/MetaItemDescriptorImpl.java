@@ -192,6 +192,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 '}';
     }
 
+    @JsIgnore
     public static MetaItemDescriptor metaItemFixedBoolean(String urn, Access access, boolean required) {
         return new MetaItemDescriptorImpl(
                 urn,
@@ -208,6 +209,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 null);
     }
 
+    @JsIgnore
     public static MetaItemDescriptor metaItemString(String urn, Access access, boolean required, String...allowedValues) {
         Value[] values = allowedValues != null && allowedValues.length > 0 ? Arrays.stream(allowedValues).map(Values::create).toArray(Value[]::new) : null;
 
@@ -226,10 +228,12 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 allowedValues != null ? Arrays.stream(allowedValues).map(Values::create).toArray(Value[]::new) : null);
     }
 
+    @JsIgnore
     public static MetaItemDescriptor metaItemString(String urn, Access access, boolean required, String patternRegex, PatternFailure failureMessage) {
         return metaItemString(urn, access, required, patternRegex, failureMessage.name());
     }
 
+    @JsIgnore
     public static MetaItemDescriptor metaItemString(String urn, Access access, boolean required, String patternRegex, String patternFailureMessage) {
         return new MetaItemDescriptorImpl(
                 urn,
@@ -246,6 +250,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 null);
     }
 
+    @JsIgnore
     public static MetaItemDescriptor metaItemInteger(String urn, Access access, boolean required, Integer minValue, Integer maxValue) {
         return new MetaItemDescriptorImpl(
                 urn,
@@ -262,6 +267,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 null);
     }
 
+    @JsIgnore
     public static MetaItemDescriptor metaItemInteger(String urn, Access access, boolean required, Integer...allowedValues) {
         Value[] values = allowedValues != null && allowedValues.length > 0 ? Arrays.stream(allowedValues).map(Values::create).toArray(Value[]::new) : null;
 
@@ -280,6 +286,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 values);
     }
 
+    @JsIgnore
     public static MetaItemDescriptor metaItemObject(String urn, Access access, boolean required, ObjectValue initialValue) {
         return new MetaItemDescriptorImpl(
                 urn,
@@ -296,6 +303,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 null);
     }
 
+    @JsIgnore
     public static MetaItemDescriptor metaItemArray(String urn, Access access, boolean required, ArrayValue initialValue) {
         return new MetaItemDescriptorImpl(
                 urn,
@@ -304,6 +312,29 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 required,
                 null,
                 null,
+                1,
+                initialValue,
+                false,
+                null,
+                null,
+                null);
+    }
+
+    @JsIgnore
+    public static MetaItemDescriptor metaItemAny(
+            String urn,
+            Access access,
+            boolean required,
+            Value initialValue,
+            String patternRegex,
+            String patternFailureMessage) {
+        return new MetaItemDescriptorImpl(
+                urn,
+                ValueType.ANY,
+                access,
+                required,
+                patternRegex,
+                patternFailureMessage,
                 1,
                 initialValue,
                 false,

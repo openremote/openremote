@@ -50,7 +50,6 @@ import javax.ws.rs.HttpMethod
 import javax.ws.rs.client.ClientRequestContext
 import javax.ws.rs.client.ClientRequestFilter
 import javax.ws.rs.core.*
-import java.util.concurrent.TimeUnit
 
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration
 
@@ -494,7 +493,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_poll_slow")),
                     new MetaItem(HttpClientProtocol.META_POLLING_MILLIS, Values.create(50)), // This is ms in testing
                     new MetaItem(
-                        Protocol.META_ATTRIBUTE_FILTERS,
+                        Protocol.META_VALUE_FILTERS,
                         Values.createArray().add(new RegexFilter("\\d+", 0, 0).toValue().get())
                     )
                 ),
@@ -505,7 +504,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_poll_fast")),
                     new MetaItem(HttpClientProtocol.META_POLLING_MILLIS, Values.create(40)), // This is ms in testing
                     new MetaItem(
-                        Protocol.META_ATTRIBUTE_FILTERS,
+                        Protocol.META_VALUE_FILTERS,
                         Values.createArray().add(new RegexFilter("\\d+", 0, 1).toValue().get())
                     )
                 )

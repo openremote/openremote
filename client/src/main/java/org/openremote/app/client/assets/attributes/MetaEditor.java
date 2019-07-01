@@ -598,11 +598,11 @@ public class MetaEditor extends AbstractAttributeViewExtension {
 
     }
 
-    public static String getMetaItemDisplayName(Environment environment, String name) {
-        String displayName = environment.getMessages().metaItemDisplayName(name);
+    public static String getMetaItemDisplayName(Environment environment, String urn) {
+        String displayName = environment.getMessages().metaItemDisplayName(urn.replace(":", ""));
 
         if (isNullOrEmpty(displayName)) {
-            displayName = name;
+            displayName = urn;
         }
         return displayName;
     }

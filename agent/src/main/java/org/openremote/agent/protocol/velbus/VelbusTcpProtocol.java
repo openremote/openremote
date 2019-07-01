@@ -39,11 +39,11 @@ public class VelbusTcpProtocol extends AbstractVelbusProtocol {
 
     public static final String PROTOCOL_NAME = PROTOCOL_BASE_NAME + "Socket";
     public static final String PROTOCOL_DISPLAY_NAME = "VELBUS Socket";
-    public static final String META_VELBUS_SOCKET_HOST = PROTOCOL_NAME + ":host";
-    public static final String META_VELBUS_SOCKET_PORT = PROTOCOL_NAME + ":port";
+    public static final String META_VELBUS_HOST = PROTOCOL_NAME + ":host";
+    public static final String META_VELBUS_PORT = PROTOCOL_NAME + ":port";
     public static final List<MetaItemDescriptorImpl> META_ITEM_DESCRIPTORS = Arrays.asList(
         new MetaItemDescriptorImpl(
-            META_VELBUS_SOCKET_HOST,
+                META_VELBUS_HOST,
             ValueType.STRING,
             true,
             null,
@@ -53,7 +53,7 @@ public class VelbusTcpProtocol extends AbstractVelbusProtocol {
             false,
                 null, null, null),
         new MetaItemDescriptorImpl(
-            META_VELBUS_SOCKET_PORT,
+                META_VELBUS_PORT,
             ValueType.NUMBER,
             true,
             REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO,
@@ -94,8 +94,8 @@ public class VelbusTcpProtocol extends AbstractVelbusProtocol {
     public AssetAttribute getProtocolConfigurationTemplate() {
         return super.getProtocolConfigurationTemplate()
             .addMeta(
-                new MetaItem(META_VELBUS_SOCKET_HOST, null),
-                new MetaItem(META_VELBUS_SOCKET_PORT, null)
+                new MetaItem(META_VELBUS_HOST, null),
+                new MetaItem(META_VELBUS_PORT, null)
             );
     }
 
@@ -103,8 +103,8 @@ public class VelbusTcpProtocol extends AbstractVelbusProtocol {
     protected IoClient<VelbusPacket> createClient(AssetAttribute protocolConfiguration) throws RuntimeException {
 
         // Extract IP and Host
-        String host = protocolConfiguration.getMetaItem(META_VELBUS_SOCKET_HOST).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
-        Integer port = protocolConfiguration.getMetaItem(META_VELBUS_SOCKET_PORT).flatMap(AbstractValueHolder::getValueAsInteger).orElse(null);
+        String host = protocolConfiguration.getMetaItem(META_VELBUS_HOST).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
+        Integer port = protocolConfiguration.getMetaItem(META_VELBUS_PORT).flatMap(AbstractValueHolder::getValueAsInteger).orElse(null);
 
         TextUtil.requireNonNullAndNonEmpty(host, "Host cannot be null or empty");
         Objects.requireNonNull(port, "Port cannot be null");
@@ -114,10 +114,10 @@ public class VelbusTcpProtocol extends AbstractVelbusProtocol {
 
     @Override
     protected String getUniqueNetworkIdentifier(AssetAttribute protocolConfiguration) {
-        String host = protocolConfiguration.getMetaItem(META_VELBUS_SOCKET_HOST)
+        String host = protocolConfiguration.getMetaItem(META_VELBUS_HOST)
             .flatMap(AbstractValueHolder::getValueAsString)
             .orElse("");
-        String port = protocolConfiguration.getMetaItem(META_VELBUS_SOCKET_PORT)
+        String port = protocolConfiguration.getMetaItem(META_VELBUS_PORT)
             .flatMap(AbstractValueHolder::getValueAsInteger)
             .map(Object::toString)
             .orElse("");

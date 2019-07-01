@@ -61,7 +61,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
      * IP address of the KNX gateway to connect to in TUNNEL mode. Optional if {@link #META_KNX_IP_CONNECTION_TYPE} is ROUTING.<br>
      * In ROUTING mode, the IP address specifies the multicast group to join.
      */
-    public static final String META_KNX_GATEWAY_IP = PROTOCOL_NAME + ":gatewayIp";
+    public static final String META_KNX_GATEWAY_HOST = PROTOCOL_NAME + ":gatewayHost";
     
     /**
      * The KNX gateway port to connect to in TUNNEL mode. Not used in ROUTING mode.<br>
@@ -92,7 +92,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
      * Local IP address or hostname to establish connection from.<br>
      * Default: hostname
      */
-    public static final String META_KNX_LOCAL_IP = PROTOCOL_NAME + ":localIP";
+    public static final String META_KNX_LOCAL_HOST = PROTOCOL_NAME + ":localhost";
     
     
     //Attribute specific configuration meta items
@@ -110,12 +110,12 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
     public static final String PATTERN_FAILURE_GROUP_ADDRESS = "KNX Group Address (e.g. 1/1/1)";
 
     protected static final List<MetaItemDescriptor> PROTOCOL_CONFIG_META_ITEM_DESCRIPTORS = Arrays.asList(
-        new MetaItemDescriptorImpl(META_KNX_GATEWAY_IP, ValueType.STRING, false, null, null, 1, null, false, null, null, null),
+        new MetaItemDescriptorImpl(META_KNX_GATEWAY_HOST, ValueType.STRING, false, null, null, 1, null, false, null, null, null),
         new MetaItemDescriptorImpl(META_KNX_GATEWAY_PORT, ValueType.NUMBER, false, REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO, MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(), 1, null, false, null, null, null),
         new MetaItemDescriptorImpl(META_KNX_GATEWAY_USENAT, ValueType.BOOLEAN, false, null, null, 1, Values.create(false), false, null, null, null),
         new MetaItemDescriptorImpl(META_KNX_IP_CONNECTION_TYPE, ValueType.STRING, false, "^(TUNNELLING|ROUTING)$", PATTERN_FAILURE_CONNECTION_TYPE, 1, Values.create("TUNNELLING"), false, null, null, null),
         new MetaItemDescriptorImpl(META_KNX_LOCAL_BUS_ADDRESS, ValueType.STRING, false, REGEXP_BUS_ADDRESS, "0.0.0", 1, null, false, null, null, null),
-        new MetaItemDescriptorImpl(META_KNX_LOCAL_IP, ValueType.STRING, false, null, null, 1, null, false, null, null, null)
+        new MetaItemDescriptorImpl(META_KNX_LOCAL_HOST, ValueType.STRING, false, null, null, 1, null, false, null, null, null)
     );
 
     protected static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
@@ -149,7 +149,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
         return super.getProtocolConfigurationTemplate()
             .addMeta(
                 new MetaItem(META_KNX_IP_CONNECTION_TYPE, Values.create("TUNNELLING")),
-                new MetaItem(META_KNX_GATEWAY_IP, null)
+                new MetaItem(META_KNX_GATEWAY_HOST, null)
             );
     }
 
@@ -171,7 +171,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
                         }
 
                         ipFound = "ROUTING".equals(connectionType);
-                    } else if (isMetaNameEqualTo(actionMetaItem, META_KNX_GATEWAY_IP)) {
+                    } else if (isMetaNameEqualTo(actionMetaItem, META_KNX_GATEWAY_HOST)) {
                         ipFound = true;
                         if (isNullOrEmpty(actionMetaItem.getValueAsString().orElse(null))) {
                             result.addMetaFailure(
@@ -184,7 +184,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
 
             if (!ipFound) {
                 result.addMetaFailure(
-                    new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_MISSING, META_KNX_GATEWAY_IP)
+                    new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_MISSING, META_KNX_GATEWAY_HOST)
                 );
             }
         }
@@ -213,7 +213,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
             return;
         }
         
-        Optional<String> gatewayIpParam = protocolConfiguration.getMetaItem(META_KNX_GATEWAY_IP).flatMap(AbstractValueHolder::getValueAsString);
+        Optional<String> gatewayIpParam = protocolConfiguration.getMetaItem(META_KNX_GATEWAY_HOST).flatMap(AbstractValueHolder::getValueAsString);
         // RT: KNXConnection constructor implies gateway IP is always required so removed TUNNELLING only check here
         if (!gatewayIpParam.isPresent()) {
             LOG.severe("No KNX gateway IP address provided for protocol configuration: " + protocolConfiguration);
@@ -226,7 +226,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
             return;
         }
         
-        String localIp = protocolConfiguration.getMetaItem(META_KNX_LOCAL_IP).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
+        String localIp = protocolConfiguration.getMetaItem(META_KNX_LOCAL_HOST).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
         Integer remotePort = protocolConfiguration.getMetaItem(META_KNX_GATEWAY_PORT).flatMap(AbstractValueHolder::getValueAsInteger).orElse(3671);
         String localKNXAddress = protocolConfiguration.getMetaItem(META_KNX_LOCAL_BUS_ADDRESS).flatMap(AbstractValueHolder::getValueAsString).orElse("0.0.0");
         Boolean useNat = protocolConfiguration.getMetaItem(META_KNX_GATEWAY_USENAT).flatMap(AbstractValueHolder::getValueAsBoolean).orElse(Boolean.FALSE);
@@ -257,7 +257,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
             statusConsumer = statusConsumerMap.get(protocolConfiguration.getReferenceOrThrow());
         }
 
-        String gatewayIp = protocolConfiguration.getMetaItem(META_KNX_GATEWAY_IP).flatMap(AbstractValueHolder::getValueAsString).orElse("");
+        String gatewayIp = protocolConfiguration.getMetaItem(META_KNX_GATEWAY_HOST).flatMap(AbstractValueHolder::getValueAsString).orElse("");
         synchronized (knxConnections) {
             KNXConnection knxConnection = knxConnections.get(gatewayIp);
             if (knxConnection != null) {
@@ -272,7 +272,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
 
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        String gatewayIp = protocolConfiguration.getMetaItem(META_KNX_GATEWAY_IP).flatMap(AbstractValueHolder::getValueAsString).orElse("");
+        String gatewayIp = protocolConfiguration.getMetaItem(META_KNX_GATEWAY_HOST).flatMap(AbstractValueHolder::getValueAsString).orElse("");
         final AttributeRef attributeRef = attribute.getReferenceOrThrow();
 
         // Check there is a META_KNX_DPT

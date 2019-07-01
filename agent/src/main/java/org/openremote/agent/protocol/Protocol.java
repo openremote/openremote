@@ -96,7 +96,7 @@ import static org.openremote.model.attribute.MetaItemDescriptorImpl.*;
  * receive and send value change messages with values of that type.
  * <p>
  * Generic protocols should implement support for filtering state messages from devices (or services) before the
- * protocol updates the linked attribute, to implement this protocols should use the {@link #META_ATTRIBUTE_FILTERS}
+ * protocol updates the linked attribute, to implement this protocols should use the {@link #META_VALUE_FILTERS}
  * {@link MetaItem}.
  * <p>
  * <h1>Dynamic value injection</h1>
@@ -153,19 +153,6 @@ public interface Protocol extends ContainerService {
     String SENSOR_QUEUE_SOURCE_PROTOCOL = "Protocol";
 
     /**
-     * {@link MetaItem} for defining {@link MessageFilter}s to apply to values before they are sent on the
-     * {@link #SENSOR_QUEUE} (i.e. before it is used to update a protocol linked attribute); this is particularly
-     * useful for generic protocols. The {@link MetaItem} value should be an {@link ArrayValue} of {@link ObjectValue}s
-     * where each {@link ObjectValue} represents a serialised {@link MessageFilter}. The message should pass through the
-     * filters in array order.
-     */
-    MetaItemDescriptor META_ATTRIBUTE_FILTERS = metaItemArray(
-            PROTOCOL_NAMESPACE + ":filters",
-            ACCESS_PRIVATE,
-            false,
-            null);
-
-    /**
      * Can be used by protocols that support it to indicate that string values should be converted to/from bytes from/to
      * HEX string representation (e.g. 34FD87)
      */
@@ -192,19 +179,13 @@ public interface Protocol extends ContainerService {
      * Value to be used for attribute writes, protocols that support this should also support dynamic value insertion,
      * see interface javadoc for more details
      */
-    MetaItemDescriptor META_ATTRIBUTE_WRITE_VALUE = new MetaItemDescriptorImpl(
+    MetaItemDescriptor META_ATTRIBUTE_WRITE_VALUE = metaItemAny(
             PROTOCOL_NAMESPACE + ":writeValue",
-            ValueType.ANY,
             ACCESS_PRIVATE,
             false,
+            null,
             TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY,
-            PatternFailure.STRING_EMPTY.name(),
-            1,
-            null,
-            false,
-            null,
-            null,
-            null);
+            PatternFailure.STRING_EMPTY.name());
 
     /**
      * Polling frequency in milliseconds for {@link Attribute}s whose value should be polled; can be set on the
@@ -215,6 +196,19 @@ public interface Protocol extends ContainerService {
             ACCESS_PRIVATE,
             false,
             1000,
+            null);
+
+    /**
+     * {@link MetaItem} for defining {@link MessageFilter}s to apply to values before they are sent on the
+     * {@link #SENSOR_QUEUE} (i.e. before it is used to update a protocol linked attribute); this is particularly
+     * useful for generic protocols. The {@link MetaItem} value should be an {@link ArrayValue} of {@link ObjectValue}s
+     * where each {@link ObjectValue} represents a serialised {@link MessageFilter}. The message should pass through the
+     * filters in array order.
+     */
+    MetaItemDescriptor META_VALUE_FILTERS = metaItemArray(
+            PROTOCOL_NAMESPACE + ":valueFilters",
+            ACCESS_PRIVATE,
+            false,
             null);
 
     // TODO: Some of these options should be configurable depending on expected load etc.
@@ -302,7 +296,7 @@ public interface Protocol extends ContainerService {
             return Optional.empty();
         }
 
-        Optional<ArrayValue> arrayValueOptional = attribute.getMetaItem(META_ATTRIBUTE_FILTERS)
+        Optional<ArrayValue> arrayValueOptional = attribute.getMetaItem(META_VALUE_FILTERS)
             .flatMap(AbstractValueHolder::getValueAsArray);
 
         if (!arrayValueOptional.isPresent()) {

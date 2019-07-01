@@ -84,8 +84,8 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
             agent.addAttributes(
                 initProtocolConfiguration(new AssetAttribute("knxConfig"), KNXProtocol.PROTOCOL_NAME)
                     .addMeta(
-                        new MetaItem(KNXProtocol.META_KNX_GATEWAY_IP, Values.create(knxGatewayIp)),
-                        new MetaItem(KNXProtocol.META_KNX_LOCAL_IP, Values.create(knxLocalIp))
+                        new MetaItem(KNXProtocol.META_KNX_GATEWAY_HOST, Values.create(knxGatewayIp)),
+                        new MetaItem(KNXProtocol.META_KNX_LOCAL_HOST, Values.create(knxLocalIp))
                     )
             );
             Asset knxDevices = new Asset("KNX Devices", THING, agent, masterRealm);

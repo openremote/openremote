@@ -127,6 +127,11 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
+        if (!protocolConfiguration.isEnabled()) {
+            LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
+            return;
+        }
+
         // Look for existing network
         String networkIdentifier = getUniqueNetworkIdentifier(protocolConfiguration);
         VelbusNetwork velbusNetwork = null;
@@ -182,6 +187,12 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
 
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+
+        if (!protocolConfiguration.isEnabled()) {
+            LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
+            return;
+        }
+
         Pair<VelbusNetwork, Consumer<ConnectionStatus>> velbusNetworkConsumerPair = networkConfigurationMap.get(protocolConfiguration.getReferenceOrThrow());
 
         if (velbusNetworkConsumerPair == null) {

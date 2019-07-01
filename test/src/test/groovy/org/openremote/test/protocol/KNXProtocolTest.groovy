@@ -94,8 +94,8 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         knxAgent.setAttributes(
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("knxConfig"), KNXProtocol.PROTOCOL_NAME)
                 .addMeta(
-                    new MetaItem(KNXProtocol.META_KNX_GATEWAY_IP, Values.create("localhost")),
-                    new MetaItem(KNXProtocol.META_KNX_LOCAL_IP, Values.create("localhost"))
+                    new MetaItem(KNXProtocol.META_KNX_GATEWAY_HOST, Values.create("localhost")),
+                    new MetaItem(KNXProtocol.META_KNX_LOCAL_HOST, Values.create("localhost"))
                 ),
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("knxConfigError1"), KNXProtocol.PROTOCOL_NAME),
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("knxConfigError2"), KNXProtocol.PROTOCOL_NAME)
