@@ -288,9 +288,6 @@ public class HttpClientProtocol extends AbstractProtocol {
         }
     }
 
-    /**
-     * Used to
-     */
     protected static class PagingResponse extends BuiltResponse {
 
         private PagingResponse(int status, Headers<Object> metadata, Object entity, Annotation[] entityAnnotations) {

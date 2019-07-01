@@ -71,6 +71,11 @@ public abstract class AbstractTcpServerProtocol<T extends AbstractTcpServer<U>, 
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
+        if (!protocolConfiguration.isEnabled()) {
+            LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
+            return;
+        }
+
         int port = protocolConfiguration.getMetaItem(META_PROTOCOL_BIND_PORT)
             .flatMap(AbstractValueHolder::getValueAsInteger)
             .orElseThrow(() ->
