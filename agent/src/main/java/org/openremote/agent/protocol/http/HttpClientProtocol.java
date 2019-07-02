@@ -552,7 +552,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             META_FAILURE_CODES,
             META_PAGING_ENABLED);
 
-    protected static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
+    public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
             META_PROTOCOL_BASE_URI,
             META_PROTOCOL_USERNAME,
             META_PROTOCOL_PASSWORD,

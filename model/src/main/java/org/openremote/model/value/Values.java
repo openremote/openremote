@@ -214,11 +214,10 @@ public class Values {
             return Optional.empty();
         }
 
-        if (value.get().getType().getModelType() != valueClazz) {
+        if (valueClazz != Value.class && value.get().getType().getModelType() != valueClazz) {
             throw new IllegalArgumentException("Meta item value is of incorrect type: expected="
                 + valueClazz.getName() + "; actual=" + value.get().getType().getModelType().getName());
         }
-
 
         return Optional.of((T)value.get());
     }

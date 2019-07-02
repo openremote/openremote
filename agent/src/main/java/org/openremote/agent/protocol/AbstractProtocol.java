@@ -379,10 +379,12 @@ public abstract class AbstractProtocol implements Protocol {
 
                 if (value != null && attributeValueType.isPresent()) {
                     if (attributeValueType.get() != value.getType()) {
-                        LOG.fine("Converting value: " + value.getType() + " -> " + attributeValueType.get());
+                        LOG.fine("Trying to convert value: " + value.getType() + " -> " + attributeValueType.get());
                         Optional<Value> convertedValue = Values.convert(value, attributeValueType.get());
                         if (!convertedValue.isPresent()) {
                             LOG.warning("Failed to convert value: " + value.getType() + " -> " + attributeValueType.get());
+                            LOG.warning("Cannot send linked attribute update");
+                            return;
                         } else {
                             value = convertedValue.get();
                         }

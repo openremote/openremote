@@ -99,7 +99,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
 
         then: "the agent status change event should have been received"
         conditions.eventually {
-            assert collectedSharedEvents.size() == 3
+            assert collectedSharedEvents.size() == 4
             assert collectedSharedEvents[0] instanceof AgentStatusEvent
             assert (collectedSharedEvents[0] as AgentStatusEvent).protocolConfiguration.entityId == managerDemoSetup.agentId
             assert (collectedSharedEvents[0] as AgentStatusEvent).protocolConfiguration.attributeName == managerDemoSetup.agentProtocolConfigName
@@ -111,7 +111,11 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
             assert collectedSharedEvents[2] instanceof AgentStatusEvent
             assert (collectedSharedEvents[2] as AgentStatusEvent).protocolConfiguration.entityId == managerDemoSetup.agentId
             assert (collectedSharedEvents[2] as AgentStatusEvent).protocolConfiguration.attributeName == managerDemoSetup.agentProtocolConfigName
-            assert (collectedSharedEvents[2] as AgentStatusEvent).connectionStatus == ConnectionStatus.DISABLED
+            assert (collectedSharedEvents[2] as AgentStatusEvent).connectionStatus == ConnectionStatus.CONNECTING
+            assert collectedSharedEvents[3] instanceof AgentStatusEvent
+            assert (collectedSharedEvents[3] as AgentStatusEvent).protocolConfiguration.entityId == managerDemoSetup.agentId
+            assert (collectedSharedEvents[3] as AgentStatusEvent).protocolConfiguration.attributeName == managerDemoSetup.agentProtocolConfigName
+            assert (collectedSharedEvents[3] as AgentStatusEvent).connectionStatus == ConnectionStatus.DISABLED
         }
 
         when: "the subscription is removed"

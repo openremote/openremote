@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.test.protocol
+package org.openremote.test.protocol.udp
 
 import io.netty.buffer.ByteBuf
 import io.netty.util.CharsetUtil
 import io.netty.util.internal.SocketUtils
+import org.openremote.agent.protocol.ProtocolExecutorService
 import org.openremote.agent.protocol.udp.AbstractUdpClient
 import org.openremote.agent.protocol.udp.UdpStringServer
 import org.openremote.manager.concurrent.ManagerExecutorService
@@ -46,7 +47,7 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
         def serverPort = findEphemeralPort()
         def clientPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), Collections.singletonList(new ManagerExecutorService()))
-        def protocolExecutorService = container.getService(ManagerExecutorService.class)
+        def protocolExecutorService = container.getService(ProtocolExecutorService.class)
 
         and: "a simple UDP echo server"
         def echoServerPort = findEphemeralPort()
