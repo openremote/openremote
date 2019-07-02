@@ -26,6 +26,7 @@ import org.openremote.model.ValidationFailure;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
 import java.util.Collection;
@@ -117,7 +118,7 @@ public class MetaItem extends AbstractValueHolder {
                                 );
                             }
 
-                            if (getValue().map(Value::getType).map(type -> descriptor.getValueType() != null && descriptor.getValueType() != type).orElse(true)) {
+                            if (getValue().map(Value::getType).map(type -> descriptor.getValueType() != null && descriptor.getValueType() != ValueType.ANY && descriptor.getValueType() != type).orElse(true)) {
                                 failures.add(new ValidationFailure(META_ITEM_VALUE_MISMATCH, descriptor.getValueType() != null ? descriptor.getValueType().name() : null));
                                 return true;
                             }

@@ -237,7 +237,10 @@ public class UdpClientProtocol extends AbstractProtocol {
      * Indicates whether the server replies to each packet not just polling requests (need this to successfully match
      * request and response packets)
      */
-    public static final MetaItemDescriptor META_SERVER_ALWAYS_RESPONDS = metaItemFixedBoolean(PROTOCOL_NAMESPACE + ":serverAlwaysResponds", ACCESS_PRIVATE, false);
+    public static final MetaItemDescriptor META_SERVER_ALWAYS_RESPONDS = metaItemFixedBoolean(
+        PROTOCOL_NAME+ ":serverAlwaysResponds",
+        ACCESS_PRIVATE,
+        false);
 
     /**
      * Indicates how long to wait for a response from the server before re-attempting {@link #META_SEND_RETRIES} times
@@ -303,6 +306,15 @@ public class UdpClientProtocol extends AbstractProtocol {
     @Override
     protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
         return ATTRIBUTE_META_ITEM_DESCRIPTORS;
+    }
+
+    @Override
+    public AssetAttribute getProtocolConfigurationTemplate() {
+        return super.getProtocolConfigurationTemplate()
+            .addMeta(
+                new MetaItem(META_PROTOCOL_HOST, null),
+                new MetaItem(META_PROTOCOL_PORT, null)
+            );
     }
 
     @Override

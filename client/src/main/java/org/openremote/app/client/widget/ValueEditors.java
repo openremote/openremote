@@ -66,6 +66,15 @@ public final class ValueEditors {
                                              ManagerMessages managerMessages) {
 
         switch(valueType) {
+            case ANY:
+                return createAnyEditor(
+                    currentValue,
+                    onValueModified,
+                    timestamp,
+                    readOnly,
+                    widgetStyle,
+                    managerMessages
+                );
             case OBJECT:
                 ObjectValue currentValueObj = Values.getObject(currentValue).orElse(null);
 
@@ -183,6 +192,30 @@ public final class ValueEditors {
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center or-ValueEditor or-BooleanValueEditor");
         IsWidget widget = ValueEditors.createBooleanEditorWidget(styleName, readOnly, currentValue != null && currentValue.getBoolean(), updateConsumer);
+        FlowPanel widgetWrapper = new FlowPanel();
+        widgetWrapper.setStyleName("flex layout horizontal center");
+        widgetWrapper.add(widget);
+        panel.add(widgetWrapper);
+        timestamp.ifPresent(time -> addTimestampLabel(time, panel));
+        return panel;
+    }
+
+    public static IsWidget createAnyEditor(Value currentValue,
+                                              Consumer<Value> onValueModified,
+                                              Optional<Long> timestamp,
+                                              boolean readOnly,
+                                              WidgetStyle widgetStyle,
+                                              ManagerMessages managerMessages) {
+
+        Consumer<Value> updateConsumer = readOnly ? null : onValueModified::accept;
+
+        FlowPanel panel = new FlowPanel();
+        panel.setStyleName("flex layout horizontal center or-ValueEditor or-ObjectValueEditor");
+        String label = managerMessages.jsonObject();
+        String title = managerMessages.edit() + " " + managerMessages.jsonObject();
+        IsWidget widget = createJsonEditorWidget(
+            new JsonEditor(title, widgetStyle, managerMessages), readOnly, label, currentValue, updateConsumer
+        );
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
         widgetWrapper.add(widget);
