@@ -72,7 +72,7 @@ public class Meta extends AbstractList<MetaItem> {
     public MetaItem set(int index, MetaItem metaItem) {
         checkBounds(index);
         arrayValue.set(index, metaItem.getObjectValue());
-        return super.set(index, metaItem);
+        return metaItem;
     }
 
     @Override

@@ -19,12 +19,15 @@
  */
 package org.openremote.test.protocol.udp
 
-import org.jboss.resteasy.spi.ResteasyUriInfo
-import org.jboss.resteasy.util.BasicAuthHelper
-import org.openremote.agent.protocol.Protocol
+import io.netty.buffer.Unpooled
+import io.netty.channel.ChannelHandlerContext
+import io.netty.channel.ChannelOutboundHandler
+import io.netty.channel.socket.DatagramChannel
+import io.netty.handler.codec.FixedLengthFrameDecoder
+import io.netty.handler.codec.MessageToMessageEncoder
+import io.netty.handler.codec.bytes.ByteArrayDecoder
 import org.openremote.agent.protocol.ProtocolExecutorService
-import org.openremote.agent.protocol.filter.RegexFilter
-import org.openremote.agent.protocol.http.*
+import org.openremote.agent.protocol.udp.AbstractUdpServer
 import org.openremote.agent.protocol.udp.UdpClientProtocol
 import org.openremote.agent.protocol.udp.UdpStringServer
 import org.openremote.manager.agent.AgentService
@@ -36,231 +39,14 @@ import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.*
-import org.openremote.model.value.ObjectValue
-import org.openremote.model.value.Value
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
-import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
-
-import javax.ws.rs.HttpMethod
-import javax.ws.rs.client.ClientRequestContext
-import javax.ws.rs.client.ClientRequestFilter
-import javax.ws.rs.core.*
 
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration
 
 class UdpClientProtocolTest extends Specification implements ManagerContainerTrait {
-
-    @Shared
-    def mockServer = new ClientRequestFilter() {
-
-        private boolean supportsRefresh
-        private int accessTokenCount
-        private int refreshTokenCount
-        private String accessToken = null
-        private String refreshToken = null
-        private int pingCount = 0
-        private int pollCountFast = 0
-        private int pollCountSlow = 0
-        private boolean putRequestWithHeadersCalled = false
-        private int successFailureCount = 0
-
-        @Override
-        void filter(ClientRequestContext requestContext) throws IOException {
-            def requestUri = requestContext.uri
-            def requestPath = requestUri.scheme + "://" + requestUri.host + requestUri.path
-
-            switch (requestPath) {
-                case "https://mockapi/basicauth":
-                    def authHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION)
-                    if (authHeader != null) {
-                        def usernameAndPassword = BasicAuthHelper.parseHeader(authHeader)
-                        if (usernameAndPassword != null
-                            && usernameAndPassword[0] == "testuser"
-                            && usernameAndPassword[1] == "password1") {
-                            requestContext.abortWith(Response.ok().build())
-                            return
-                        }
-                    }
-                    break
-                case "https://mockapi/token":
-                    // OAuth token request extract the grant info
-                    def grant = ((Form) requestContext.getEntity()).asMap()
-                    if (grant.getFirst(OAuthGrant.VALUE_KEY_GRANT_TYPE) == "password"
-                        && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID) == "TestClient"
-                        && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_SECRET) == "TestSecret"
-                        && grant.getFirst(OAuthGrant.VALUE_KEY_SCOPE) == "scope1 scope2"
-                        && grant.getFirst(OAuthPasswordGrant.VALUE_KEY_USERNAME) == "testuser"
-                        && grant.getFirst(OAuthPasswordGrant.VALUE_KEY_PASSWORD) == "password") {
-                        accessToken = "accesstoken" + accessTokenCount++
-                        def response = new OAuthServerResponse()
-                        response.accessToken = accessToken
-                        response.expiresIn = 100
-                        response.tokenType = "Bearer"
-
-                        // Include refresh token if configured to support it
-                        if (supportsRefresh) {
-                            refreshToken = "refreshtoken" + accessTokenCount
-                            response.refreshToken = refreshToken
-                        }
-
-                        requestContext.abortWith(
-                            Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
-                        )
-                        return
-                    } else if (grant.getFirst(OAuthGrant.VALUE_KEY_GRANT_TYPE) == "refresh_token"
-                        && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID) == "TestClient"
-                        && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_SECRET) == "TestSecret"
-                        && grant.getFirst(OAuthGrant.VALUE_KEY_SCOPE) == "scope1 scope2"
-                        && grant.getFirst(OAuthRefreshTokenGrant.VALUE_KEY_REFRESH_TOKEN) == refreshToken) {
-                        refreshTokenCount++
-                        accessToken = "accesstoken" + accessTokenCount++
-                        refreshToken = "refreshtoken" + accessTokenCount
-                        def response = new OAuthServerResponse()
-                        response.accessToken = accessToken
-                        response.refreshToken = refreshToken
-                        response.expiresIn = 100
-                        response.tokenType = "Bearer"
-
-                        requestContext.abortWith(
-                            Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
-                        )
-                        return
-                    }
-                    break
-                default:
-                    // Check access token is valid
-                    def authHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION)
-                    def accessToken = authHeader == null ? null : authHeader.substring(7)
-                    if (accessToken == null || this.accessToken == null || accessToken != this.accessToken) {
-                        requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build())
-                        return
-                    }
-                    break
-            }
-
-            switch (requestPath) {
-                case "https://mockapi/pingGet":
-                    UriInfo uriInfo = new ResteasyUriInfo(requestContext.uri)
-                    def queryParams = uriInfo.getQueryParameters(true)
-                    if (queryParams.get("param1").size() == 1
-                        && queryParams.getFirst("param1") == "param1Value1"
-                        && queryParams.get("param2").size() == 2
-                        && queryParams.get("param2").get(0) == "param2Value1"
-                        && queryParams.get("param2").get(1) == "param2Value2"
-                        && requestContext.getHeaderString("header1") == "header1Value1"
-                        && requestContext.getHeaderString("header2") == "header2Value1,header2Value2") {
-                        pingCount++
-                        requestContext.abortWith(
-                            Response.ok().build()
-                        )
-                        return
-                    }
-                    break
-                case "https://mockapi/pingPost":
-                    UriInfo uriInfo = new ResteasyUriInfo(requestContext.uri)
-                    def queryParams = uriInfo.getQueryParameters(true)
-                    if (queryParams.get("param1").size() == 2
-                        && queryParams.getFirst("param1") == "param1Value1"
-                        && queryParams.get("param1").get(1) == "param1Value2"
-                        && queryParams.get("param2").size() == 2
-                        && queryParams.get("param2").get(0) == "param2Value1"
-                        && queryParams.get("param2").get(1) == "param2Value2"
-                        && queryParams.get("param3").size() == 1
-                        && queryParams.getFirst("param3") == "param3Value1"
-                        && requestContext.method == HttpMethod.POST
-                        && requestContext.getHeaderString("header1") == "header1Value1"
-                        && requestContext.getHeaderString("header2") == "header2Value1,header2Value2"
-                        && (requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_JSON
-                        || requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_XML)) {
-
-                        String bodyStr = (String) requestContext.getEntity()
-                        ObjectValue body = Values.<ObjectValue> parse(bodyStr).orElse(null)
-                        if (body.get("prop1").isPresent() && body.get("prop2").isPresent()) {
-                            pingCount++
-                            requestContext.abortWith(Response.ok().build())
-                            return
-                        }
-                    }
-                    break
-                case "https://mockapi/put_request_with_headers":
-                    UriInfo uriInfo = new ResteasyUriInfo(requestContext.uri)
-                    def queryParams = uriInfo.getQueryParameters(true)
-                    if (queryParams.get("param1").size() == 1
-                        && queryParams.getFirst("param1") == "param1Value1"
-                        && queryParams.get("param2").size() == 3
-                        && queryParams.get("param2").get(0) == "param2Value1"
-                        && queryParams.get("param2").get(1) == "param2Value2"
-                        && queryParams.get("param2").get(2) == "param2Value3"
-                        && queryParams.get("param3").size() == 1
-                        && queryParams.getFirst("param3") == "param3Value1"
-                        && requestContext.method == HttpMethod.PUT
-                        && requestContext.getHeaderString("header1") == null
-                        && requestContext.getHeaderString("header2") == "header2Value1,header2Value2"
-                        && requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_JSON) {
-
-                        String bodyStr = (String) requestContext.getEntity()
-                        ObjectValue body = Values.<ObjectValue> parse(bodyStr).orElse(null)
-                        if (body.get("prop1").isPresent()
-                            && body.get("prop1").get().toString() == /{"myProp1":123,"myProp2":true}/
-                            && body.get("prop2").isPresent() && body.get("prop2").get().toString() == "prop2Value") {
-                            putRequestWithHeadersCalled = true
-                            requestContext.abortWith(Response.ok().build())
-                            return
-                        }
-                    }
-                    break
-                case "https://mockapi/value/50/set":
-                    requestContext.abortWith(Response.ok().build())
-                    return
-                case "https://mockapi/get_poll_slow":
-                    pollCountSlow++
-                    requestContext.abortWith(
-                        Response
-                            .ok("This is an example response where the value of 100% is in the body of the message.", MediaType.TEXT_PLAIN)
-                            .build()
-                    )
-                    return
-                case "https://mockapi/get_poll_fast":
-                    pollCountFast++
-                    requestContext.abortWith(
-                        Response
-                            .ok("This is an example response where there are multiple values of 100% 60% in the body of the message.", MediaType.TEXT_PLAIN)
-                            .build()
-                    )
-                    return
-                case "https://mockapi/get_success_200":
-                case "https://redirected.mockapi/get_success_200":
-                    successFailureCount++
-                    requestContext.abortWith(Response.ok().build())
-                    return
-                case "https://mockapi/get_failure_401":
-                    successFailureCount++
-                    requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build())
-                    return
-                case "https://mockapi/redirect":
-                    requestContext.abortWith(Response.temporaryRedirect(new URI("https://redirected.mockapi/get_success_200")).build())
-                    return
-            }
-
-            requestContext.abortWith(Response.serverError().build())
-        }
-    }
-
-    def cleanup() {
-        mockServer.supportsRefresh = false
-        mockServer.accessToken = null
-        mockServer.refreshToken = null
-        mockServer.accessTokenCount = 0
-        mockServer.refreshTokenCount = 0
-        mockServer.pingCount = 0
-        mockServer.pollCountSlow = 0
-        mockServer.pollCountFast = 0
-        mockServer.successFailureCount = 0
-        mockServer.putRequestWithHeadersCalled = false
-    }
 
     def "Check UDP client protocol configuration and linked attribute deployment"() {
 
@@ -287,10 +73,11 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         when: "a simple UDP echo server is started"
         def echoServerPort = findEphemeralPort()
         def clientPort = findEphemeralPort()
-        def echoServer = new UdpStringServer(protocolExecutorService, new InetSocketAddress(echoServerPort), ";", Integer.MAX_VALUE, true)
-        def doEcho = true
+        AbstractUdpServer echoServer = new UdpStringServer(protocolExecutorService, new InetSocketAddress(echoServerPort), ";", Integer.MAX_VALUE, true)
+        def echoSkipCount = 0
         def clientActualPort = null
         def lastCommand = null
+        def lastSend = null
         def receivedMessages = []
         echoServer.addMessageConsumer({
             message, channel, sender ->
@@ -298,8 +85,11 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
                 lastCommand = message
                 receivedMessages.add(message)
 
-                if (doEcho) {
+                if (echoSkipCount == 0) {
                     echoServer.sendMessage(message, sender)
+                    lastSend = message
+                } else {
+                    echoSkipCount--
                 }
         })
         echoServer.start()
@@ -354,7 +144,8 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
                     new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
                     new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create('Hello {$value};')),
                     new MetaItem(UdpClientProtocol.META_SEND_RETRIES, Values.create(0)),
-                    new MetaItem(UdpClientProtocol.META_SERVER_ALWAYS_RESPONDS, Values.create(true))
+                    new MetaItem(UdpClientProtocol.META_SERVER_ALWAYS_RESPONDS, Values.create(true)),
+                    new MetaItem(MetaItemType.EXECUTABLE)
                 ),
             // attribute send with 10 retries
             new AssetAttribute("echoWorld", AttributeValueType.STRING)
@@ -362,7 +153,8 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
                     new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
                     new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create("World;")),
                     new MetaItem(UdpClientProtocol.META_SEND_RETRIES, Values.create(10)),
-                    new MetaItem(UdpClientProtocol.META_SERVER_ALWAYS_RESPONDS, Values.create(true))
+                    new MetaItem(UdpClientProtocol.META_SERVER_ALWAYS_RESPONDS, Values.create(true)),
+                    new MetaItem(MetaItemType.EXECUTABLE)
                 ),
             // attribute poll with 3 retries
             new AssetAttribute("pollTest", AttributeValueType.STRING)
@@ -401,7 +193,156 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
             assert receivedMessages.indexOf("Hello there") >= 0
         }
 
+        when: "the protocol configuration is disabled"
+        agent.getAttribute("protocolConfig").ifPresent{it.addMeta(MetaItemType.DISABLED)}
+        agent = assetStorageService.merge(agent)
+
+        then: "the protocol should be unlinked"
+        conditions.eventually {
+            assert udpClientProtocol.clientMap.isEmpty()
+            assert udpClientProtocol.attributeInfoMap.isEmpty()
+        }
+
+        when: "the received messages are cleared"
+        receivedMessages.clear()
+
+        then: "after a while no more messages should be received by the server"
+        new PollingConditions(initialDelay: 1, timeout: 2).eventually {
+            assert receivedMessages.isEmpty()
+        }
+
+        when: "the polling attribute is removed"
+        asset.removeAttribute("pollTest")
+        asset = assetStorageService.merge(asset)
+
+        and: "the protocol configuration is re-enabled"
+        agent.getAttribute("protocolConfig").ifPresent{it.meta.removeIf{it.name.orElse(null) == MetaItemType.DISABLED.urn}}
+        agent = assetStorageService.merge(agent)
+
+        then: "the two remaining attributes should be linked"
+        conditions.eventually {
+            assert udpClientProtocol.clientMap.size() == 1
+            assert udpClientProtocol.attributeInfoMap.size() == 2
+        }
+
+        when: "the server stops responding to the next request"
+        echoSkipCount = 1
+        lastSend = null
+
+        and: "the attribute that is configured for no retries is executed"
+        attributeEvent = new AttributeEvent(asset.id,
+            "echoHello",
+            AttributeExecuteStatus.REQUEST_START.asValue())
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        then: "the server should have received the attribute write value but it doesn't reply"
+        conditions.eventually {
+            assert receivedMessages.size() == 1
+            assert lastSend == null
+        }
+
+        then: "after a while no more messages should be received by the server and the send queue is clear"
+        new PollingConditions(initialDelay: 1, timeout: 2).eventually {
+            assert receivedMessages.size() == 1
+            assert udpClientProtocol.clientMap.get(new AttributeRef(agent.id, "protocolConfig")).actionQueue.isEmpty()
+        }
+
+        when: "the server stops responding to the next 3 requests"
+        echoSkipCount = 3
+        lastSend = null
+        receivedMessages.clear()
+
+        and: "the attribute that is configured for retries is executed"
+        attributeEvent = new AttributeEvent(asset.id,
+            "echoWorld",
+            AttributeExecuteStatus.REQUEST_START.asValue())
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        then: "the server should have received the attribute write value 4 times and responded on the 4th"
+        conditions.eventually {
+            assert receivedMessages.size() == 4
+            assert lastSend == "World"
+        }
+
+        then: "after a while no more messages should be received by the server"
+        new PollingConditions(initialDelay: 1, timeout: 2).eventually {
+            assert receivedMessages.size() == 4
+        }
+
+        when: "the echo server is changed to a byte based server"
+        echoServer.stop()
+        echoServer.removeAllMessageConsumers()
+        echoServer = new AbstractUdpServer<byte[]>(protocolExecutorService, new InetSocketAddress(echoServerPort)) {
+
+            @Override
+            protected void addDecoders(DatagramChannel channel) {
+                addDecoder(channel, new FixedLengthFrameDecoder(3))
+                addDecoder(channel, new ByteArrayDecoder())
+            }
+
+            @Override
+            protected void addEncoders(DatagramChannel channel) {
+                addEncoder(channel, new MessageToMessageEncoder<byte[]>() {
+
+                    @Override
+                    protected void encode(ChannelHandlerContext channelHandlerContext, byte[] bytes, List<Object> out) throws Exception {
+                        out.add(Unpooled.copiedBuffer(bytes))
+                    }
+                })
+            }
+        }
+        byte[] lastBytes = null
+        echoServer.addMessageConsumer({
+            message, channel, sender ->
+                lastBytes = message
+        })
+        echoServer.start()
+
+        then: "the server should be connected"
+        conditions.eventually {
+            echoServer.connectionStatus == ConnectionStatus.CONNECTED
+        }
+
+        when: "the protocol configuration is updated to use HEX mode"
+        def client = udpClientProtocol.clientMap.get(new AttributeRef(agent.id, "protocolConfig"))
+        agent.getAttribute("protocolConfig").ifPresent{it.addMeta(UdpClientProtocol.META_PROTOCOL_CONVERT_HEX)}
+        agent = assetStorageService.merge(agent)
+
+        then: "the protocol should be relinked"
+        conditions.eventually {
+            assert udpClientProtocol.clientMap.size() == 1
+            assert udpClientProtocol.clientMap.get(new AttributeRef(agent.id, "protocolConfig")) != client
+        }
+
+        when: "the linked attributes are also updated to work with hex server"
+        def attributeInfo = udpClientProtocol.attributeInfoMap.get(new AttributeRef(asset.id, "echoHello"))
+        asset.getAttribute("echoHello").ifPresent({it.meta.replaceAll{it.name.get() == UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE.urn ? new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create("abcdef")) : it}})
+        asset.getAttribute("echoWorld").ifPresent({it.meta.replaceAll{it.name.get() == UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE.urn ? new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create("123456")) : it}})
+        asset = assetStorageService.merge(asset)
+
+        then: "the attributes should be relinked"
+        conditions.eventually {
+            assert udpClientProtocol.attributeInfoMap.size() == 2
+            assert udpClientProtocol.attributeInfoMap.get(new AttributeRef(asset.id, "echoHello")) != attributeInfo
+        }
+
+        when: "the hello linked attribute is executed"
+        attributeEvent = new AttributeEvent(asset.id,
+            "echoHello",
+            AttributeExecuteStatus.REQUEST_START.asValue())
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        then: "the bytes should be received by the server"
+        conditions.eventually {
+            assert lastBytes != null
+            assert lastBytes.length == 3
+            assert (lastBytes[0] & 0xFF) == 171
+            assert (lastBytes[1] & 0xFF) == 205
+            assert (lastBytes[2] & 0xFF) == 239
+        }
+
         cleanup: "the server should be stopped"
+        echoServer.stop()
         stopContainer(container)
     }
 }

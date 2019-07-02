@@ -482,7 +482,27 @@ public class UdpClientProtocol extends AbstractProtocol {
             return;
         }
 
-        info.sendConsumer.accept(event.getValue().orElse(null));
+        AssetAttribute attribute = getLinkedAttribute(event.getAttributeRef());
+        AttributeExecuteStatus status = null;
+
+        if (attribute.isExecutable()) {
+            status = event.getValue()
+                .flatMap(Values::getString)
+                .flatMap(AttributeExecuteStatus::fromString)
+                .orElse(null);
+
+            if (status != null && status != AttributeExecuteStatus.REQUEST_START) {
+                LOG.fine("Unsupported execution status: " + status);
+                return;
+            }
+        }
+
+        Value value = status != null ? null : event.getValue().orElse(null);
+        info.sendConsumer.accept(value);
+
+        if (status != null) {
+            updateLinkedAttribute(new AttributeState(event.getAttributeRef(), AttributeExecuteStatus.COMPLETED.asValue()));
+        }
     }
 
     protected void onConnectionStatusChanged(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
@@ -494,8 +514,12 @@ public class UdpClientProtocol extends AbstractProtocol {
 
             String str = value != null ? value.toString() : "";
 
-            if (!TextUtil.isNullOrEmpty(writeValue) && writeValue.contains(DYNAMIC_VALUE_PLACEHOLDER)) {
-                str = writeValue.replaceAll(DYNAMIC_VALUE_PLACEHOLDER_REGEXP, str);
+            if (!TextUtil.isNullOrEmpty(writeValue)) {
+                if (str.isEmpty()) {
+                    str = writeValue;
+                } else {
+                    str = writeValue.replaceAll(DYNAMIC_VALUE_PLACEHOLDER_REGEXP, str);
+                }
             }
 
             clientAndQueue.send(str, responseConsumer, attributeInfo);
