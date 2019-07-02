@@ -17,24 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.filter;
+package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.*;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
-import static org.openremote.agent.protocol.filter.RegexFilter.NAME;
+import static org.openremote.model.value.RegexValueFilter.NAME;
 
 @JsonTypeName(NAME)
-public class JsonFilter extends MessageFilter<ObjectValue> {
+public class JsonValueFilter extends ValueFilter<ObjectValue> {
 
     public static final String NAME = "json";
 
@@ -42,11 +38,11 @@ public class JsonFilter extends MessageFilter<ObjectValue> {
     protected List<String> path;
 
     @JsonCreator
-    public JsonFilter(@JsonProperty("path") List<String> path) {
+    public JsonValueFilter(@JsonProperty("path") List<String> path) {
         this.path = path;
     }
 
-    public JsonFilter(String... path) {
+    public JsonValueFilter(String... path) {
         this(Arrays.asList(path));
     }
 

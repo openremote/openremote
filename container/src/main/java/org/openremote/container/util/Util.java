@@ -1,9 +1,16 @@
 package org.openremote.container.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.openremote.container.Container;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Values;
+
+import javax.validation.constraints.NotNull;
 import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -13,6 +20,18 @@ import java.util.function.Predicate;
  * TODO Old functions for old rules, can be deleted?
  */
 public class Util {
+
+    /**
+     * Convert a JSON serialisable object to an {@link ObjectValue}
+     */
+    public static Optional<ObjectValue> objectToValue(@NotNull Object obj) {
+        try {
+            String json = Container.JSON.writeValueAsString(obj);
+            return Values.parse(json);
+        } catch (JsonProcessingException ignore) {}
+        return Optional.empty();
+    }
+
     public static <T> T[] reverseArray(T[] array, Class<T> clazz) {
         if (array == null) {
             return null;

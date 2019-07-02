@@ -21,7 +21,7 @@ package org.openremote.agent.protocol;
 
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.agent.protocol.filter.MessageFilter;
+import org.openremote.model.value.ValueFilter;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.concurrent.GlobalLock;
@@ -111,7 +111,7 @@ public abstract class AbstractProtocol implements Protocol {
     public static final int PRIORITY = ContainerService.DEFAULT_PRIORITY - 100;
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected final Map<AttributeRef, LinkedProtocolInfo> linkedProtocolConfigurations = new HashMap<>();
-    protected final Map<AttributeRef, List<MessageFilter>> linkedAttributeFilters = new HashMap<>();
+    protected final Map<AttributeRef, List<ValueFilter>> linkedAttributeFilters = new HashMap<>();
     protected static final List<MetaItemDescriptor> attributeMetaItemDescriptors;
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
@@ -217,7 +217,7 @@ public abstract class AbstractProtocol implements Protocol {
                 // linking process and without entry in the map any update would be blocked
                 linkedAttributes.put(attributeRef, attribute);
 
-                Optional<List<MessageFilter>> messageFilters = Protocol.getLinkedAttributeMessageFilters(attribute);
+                Optional<List<ValueFilter>> messageFilters = Protocol.getLinkedAttributeMessageFilters(attribute);
                 messageFilters.ifPresent(mFilters -> {
                     linkedAttributeFilters.put(attributeRef, mFilters);
                 });
@@ -309,7 +309,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     /**
      * Update the value of a linked attribute. Call this to publish new sensor values. This will apply any
-     * {@link MessageFilter}s that have been set for the {@link Attribute} against the {@link AttributeState#getValue}
+     * {@link ValueFilter}s that have been set for the {@link Attribute} against the {@link AttributeState#getValue}
      * before sending on the sensor queue.
      */
     @SuppressWarnings("unchecked")
@@ -324,7 +324,7 @@ public abstract class AbstractProtocol implements Protocol {
             }
 
             if (state.getValue().isPresent()) {
-                List<MessageFilter> filters;
+                List<ValueFilter> filters;
                 Value value = state.getValue().get();
 
                 filters = linkedAttributeFilters.get(state.getAttributeRef());
@@ -332,7 +332,7 @@ public abstract class AbstractProtocol implements Protocol {
                 if (filters != null) {
                     LOG.fine("Applying message filters to sensor value...");
 
-                    for (MessageFilter filter : filters) {
+                    for (ValueFilter filter : filters) {
                         boolean filterOk = filter.getMessageType() == value.getType().getModelType();
 
                         if (!filterOk) {

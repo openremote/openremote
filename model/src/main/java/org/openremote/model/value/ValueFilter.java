@@ -17,18 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.filter;
+package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.openremote.container.Container;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
-
-import java.util.Optional;
 
 /**
  * Interface for a filter that can be applied to messages of type &lt;T&gt; the filter can return a different
@@ -42,11 +34,11 @@ import java.util.Optional;
  */
 @JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(name = RegexFilter.NAME, value = RegexFilter.class),
-    @JsonSubTypes.Type(name = SubStringFilter.NAME, value = SubStringFilter.class),
-    @JsonSubTypes.Type(name = JsonFilter.NAME, value = JsonFilter.class)
+    @JsonSubTypes.Type(name = RegexValueFilter.NAME, value = RegexValueFilter.class),
+    @JsonSubTypes.Type(name = SubStringValueFilter.NAME, value = SubStringValueFilter.class),
+    @JsonSubTypes.Type(name = JsonValueFilter.NAME, value = JsonValueFilter.class)
 })
-public abstract class MessageFilter<T extends Value> {
+public abstract class ValueFilter<T extends Value> {
 
     /**
      * Get the message type
@@ -58,14 +50,4 @@ public abstract class MessageFilter<T extends Value> {
      */
     public abstract Value process(T message);
 
-    /**
-     * Convert this filter to an {@link ObjectValue}
-     */
-    public Optional<ObjectValue> toValue() {
-        try {
-            String json = Container.JSON.writeValueAsString(this);
-            return Values.parse(json);
-        } catch (JsonProcessingException ignore) {}
-        return Optional.empty();
-    }
 }

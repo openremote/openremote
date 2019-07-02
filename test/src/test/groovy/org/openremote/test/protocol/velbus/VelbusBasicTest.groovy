@@ -2143,7 +2143,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
 //        }
 //
 //        when: "a output channel is set to last"
-//        device.writeProperty("OUTPUT4", AnalogOutputProcessor.ChannelState.LAST.toValue(ValueType.STRING))
+//        device.writeProperty("OUTPUT4", AnalogOutputProcessor.ChannelState.LAST.objectToValue(ValueType.STRING))
 //
 //        then: "the output should go to 5V"
 //        conditions.eventually {

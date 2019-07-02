@@ -17,19 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.filter;
+package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import org.openremote.model.value.StringValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
 
-import static org.openremote.agent.protocol.filter.SubStringFilter.NAME;
+import static org.openremote.model.value.SubStringValueFilter.NAME;
 
 @JsonTypeName(NAME)
-public class SubStringFilter extends MessageFilter<StringValue> {
+public class SubStringValueFilter extends ValueFilter<StringValue> {
 
     public static final String NAME = "substring";
 
@@ -39,12 +36,12 @@ public class SubStringFilter extends MessageFilter<StringValue> {
     protected Integer endIndex;
 
     @JsonCreator
-    public SubStringFilter(@JsonProperty("beginIndex") int beginIndex, @JsonProperty("endIndex") Integer endIndex) {
+    public SubStringValueFilter(@JsonProperty("beginIndex") int beginIndex, @JsonProperty("endIndex") Integer endIndex) {
         this.beginIndex = beginIndex;
         this.endIndex = endIndex;
     }
 
-    public SubStringFilter(int beginIndex) {
+    public SubStringValueFilter(int beginIndex) {
         this.beginIndex = beginIndex;
     }
 

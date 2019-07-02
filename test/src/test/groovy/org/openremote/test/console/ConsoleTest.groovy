@@ -372,7 +372,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         }
 // TODO: Update once console permissions model finalised
 //        when: "an anonymous user updates the location of a console linked to users"
-//        anonymousAssetResource.writeAttributeValue(null, testUser3Console1.id, LOCATION.name, new GeoJSONPoint(0d, 0d, 0d).toValue().toJson())
+//        anonymousAssetResource.writeAttributeValue(null, testUser3Console1.id, LOCATION.name, new GeoJSONPoint(0d, 0d, 0d).objectToValue().toJson())
 //
 //        then: "the result should be forbidden"
 //        ex = thrown()

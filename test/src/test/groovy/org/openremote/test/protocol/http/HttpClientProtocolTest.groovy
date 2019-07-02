@@ -22,7 +22,7 @@ package org.openremote.test.protocol.http
 import org.jboss.resteasy.spi.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.Protocol
-import org.openremote.agent.protocol.filter.RegexFilter
+import org.openremote.container.util.Util
 import org.openremote.agent.protocol.http.*
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -39,6 +39,7 @@ import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.AttributeValueType
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.value.ObjectValue
+import org.openremote.model.value.RegexValueFilter
 import org.openremote.model.value.Value
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
@@ -494,7 +495,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     new MetaItem(HttpClientProtocol.META_POLLING_MILLIS, Values.create(50)), // This is ms in testing
                     new MetaItem(
                         Protocol.META_VALUE_FILTERS,
-                        Values.createArray().add(new RegexFilter("\\d+", 0, 0).toValue().get())
+                        Values.createArray().add(Util.objectToValue(new RegexValueFilter("\\d+", 0, 0)).get())
                     )
                 ),
             // attribute that polls the server using GET and uses regex filter on response
@@ -505,7 +506,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     new MetaItem(HttpClientProtocol.META_POLLING_MILLIS, Values.create(40)), // This is ms in testing
                     new MetaItem(
                         Protocol.META_VALUE_FILTERS,
-                        Values.createArray().add(new RegexFilter("\\d+", 0, 1).toValue().get())
+                        Values.createArray().add(Util.objectToValue(new RegexValueFilter("\\d+", 0, 1)).get())
                     )
                 )
         )

@@ -21,7 +21,7 @@ package org.openremote.agent.protocol;
 
 import org.apache.commons.codec.binary.BinaryCodec;
 import org.apache.commons.codec.binary.Hex;
-import org.openremote.agent.protocol.filter.MessageFilter;
+import org.openremote.model.value.ValueFilter;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.model.AbstractValueHolder;
@@ -199,10 +199,10 @@ public interface Protocol extends ContainerService {
             null);
 
     /**
-     * {@link MetaItem} for defining {@link MessageFilter}s to apply to values before they are sent on the
+     * {@link MetaItem} for defining {@link ValueFilter}s to apply to values before they are sent on the
      * {@link #SENSOR_QUEUE} (i.e. before it is used to update a protocol linked attribute); this is particularly
      * useful for generic protocols. The {@link MetaItem} value should be an {@link ArrayValue} of {@link ObjectValue}s
-     * where each {@link ObjectValue} represents a serialised {@link MessageFilter}. The message should pass through the
+     * where each {@link ObjectValue} represents a serialised {@link ValueFilter}. The message should pass through the
      * filters in array order.
      */
     MetaItemDescriptor META_VALUE_FILTERS = metaItemArray(
@@ -289,9 +289,9 @@ public interface Protocol extends ContainerService {
     AttributeValidationResult validateProtocolConfiguration(AssetAttribute protocolConfiguration);
 
     /**
-     * Extract the {@link MessageFilter}s from the specified {@link Attribute}
+     * Extract the {@link ValueFilter}s from the specified {@link Attribute}
      */
-    static Optional<List<MessageFilter>> getLinkedAttributeMessageFilters(Attribute attribute) {
+    static Optional<List<ValueFilter>> getLinkedAttributeMessageFilters(Attribute attribute) {
         if (attribute == null) {
             return Optional.empty();
         }
@@ -305,11 +305,11 @@ public interface Protocol extends ContainerService {
 
         try {
             ArrayValue arrayValue = arrayValueOptional.get();
-            List<MessageFilter> messageFilters = new ArrayList<>(arrayValue.length());
+            List<ValueFilter> messageFilters = new ArrayList<>(arrayValue.length());
             for (int i = 0; i < arrayValue.length(); i++) {
                 ObjectValue objValue = arrayValue.getObject(i).orElseThrow(() ->
                     new IllegalArgumentException("Attribute protocol filters meta item is invalid"));
-                MessageFilter filter = deserialiseMessageFilter(objValue);
+                ValueFilter filter = deserialiseMessageFilter(objValue);
                 messageFilters.add(filter);
             }
             return messageFilters.isEmpty() ? Optional.empty() : Optional.of(messageFilters);
@@ -321,12 +321,12 @@ public interface Protocol extends ContainerService {
     }
 
     /**
-     * Deserialise a {@link MessageFilter} from an {@link ObjectValue}
+     * Deserialise a {@link ValueFilter} from an {@link ObjectValue}
      */
-    static MessageFilter deserialiseMessageFilter(ObjectValue objectValue) throws IllegalArgumentException {
+    static ValueFilter deserialiseMessageFilter(ObjectValue objectValue) throws IllegalArgumentException {
         String json = objectValue.toJson();
         try {
-            return Container.JSON.readValue(json, MessageFilter.class);
+            return Container.JSON.readValue(json, ValueFilter.class);
         } catch (IOException ioException) {
             LOG.log(Level.WARNING, "Failed to deserialise message filter", ioException);
             throw new IllegalArgumentException(ioException);

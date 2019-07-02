@@ -21,8 +21,7 @@ package org.openremote.test.protocol
 
 import org.openremote.agent.protocol.AbstractProtocol
 import org.openremote.agent.protocol.Protocol
-import org.openremote.agent.protocol.filter.RegexFilter
-import org.openremote.agent.protocol.filter.SubStringFilter
+import org.openremote.container.util.Util
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -32,6 +31,8 @@ import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.agent.ProtocolConfiguration
 import org.openremote.model.attribute.*
+import org.openremote.model.value.RegexValueFilter
+import org.openremote.model.value.SubStringValueFilter
 import org.openremote.model.value.Values
 import org.openremote.test.GwtClientTrait
 import org.openremote.test.ManagerContainerTrait
@@ -311,7 +312,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                 ),
                 new MetaItem(
                     Protocol.META_VALUE_FILTERS,
-                    Values.createArray().add(new RegexFilter("\\w(\\d+)", 1, 2).toValue().get())
+                    Values.createArray().add(Util.objectToValue(new RegexValueFilter("\\w(\\d+)", 1, 2)).get())
                 )
             ),
             new AssetAttribute("filterSubstring", AttributeValueType.STRING)
@@ -323,7 +324,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                 ),
                 new MetaItem(
                     Protocol.META_VALUE_FILTERS,
-                    Values.createArray().add(new SubStringFilter(10, 12).toValue().get())
+                    Values.createArray().add(Util.objectToValue(new SubStringValueFilter(10, 12)).get())
                 )
             ),
             new AssetAttribute("filterRegexSubstring", AttributeValueType.NUMBER)
@@ -336,8 +337,8 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                 new MetaItem(
                     Protocol.META_VALUE_FILTERS,
                     Values.createArray()
-                        .add(new SubStringFilter(23).toValue().get())
-                        .add(new RegexFilter("[a-z|\\s]+(\\d+)%\"}", 1, 0).toValue().get())
+                        .add(Util.objectToValue(new SubStringValueFilter(23)).get())
+                        .add(Util.objectToValue(new RegexValueFilter("[a-z|\\s]+(\\d+)%\"}", 1, 0)).get())
                 )
             )
         )

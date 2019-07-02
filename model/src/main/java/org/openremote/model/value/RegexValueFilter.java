@@ -17,23 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.filter;
+package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import org.openremote.model.value.StringValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import static org.openremote.agent.protocol.filter.RegexFilter.NAME;
+import static org.openremote.model.value.RegexValueFilter.NAME;
 
 @JsonTypeName(NAME)
-public class RegexFilter extends MessageFilter<StringValue> {
+public class RegexValueFilter extends ValueFilter<StringValue> {
 
     public static final String NAME = "regex";
 
@@ -45,9 +42,9 @@ public class RegexFilter extends MessageFilter<StringValue> {
     protected int matchIndex;
 
     @JsonCreator
-    public RegexFilter(@JsonProperty("pattern") String regex,
-                       @JsonProperty("matchGroup") int matchGroup,
-                       @JsonProperty("matchIndex") int matchIndex) {
+    public RegexValueFilter(@JsonProperty("pattern") String regex,
+                            @JsonProperty("matchGroup") int matchGroup,
+                            @JsonProperty("matchIndex") int matchIndex) {
         try {
             pattern = Pattern.compile(regex);
             this.matchGroup = matchGroup;
@@ -55,7 +52,7 @@ public class RegexFilter extends MessageFilter<StringValue> {
         } catch (PatternSyntaxException ignore) {}
     }
 
-    public RegexFilter(Pattern pattern, int matchGroup, int matchIndex) {
+    public RegexValueFilter(Pattern pattern, int matchGroup, int matchIndex) {
         this.pattern = pattern;
         this.matchGroup = matchGroup;
         this.matchIndex = matchIndex;
