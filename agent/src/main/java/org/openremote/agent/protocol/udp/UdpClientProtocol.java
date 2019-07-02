@@ -173,7 +173,7 @@ public class UdpClientProtocol extends AbstractProtocol {
 
 
             client.sendMessage(str);
-            responseMonitor = executorService.scheduleWithFixedDelay(failureAction, 0, timeoutMillis);
+            responseMonitor = executorService.scheduleWithFixedDelay(failureAction, timeoutMillis, timeoutMillis);
         }
     }
 
@@ -400,7 +400,7 @@ public class UdpClientProtocol extends AbstractProtocol {
             return;
         }
 
-        final String writeValue = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_WRITE_VALUE, true, true)
+        final String writeValue = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_WRITE_VALUE, false, true)
                 .map(Object::toString).orElse(null);
 
         final Integer pollingMillis = Values.getMetaItemValueOrThrow(attribute, META_POLLING_MILLIS, false, true)
@@ -529,7 +529,7 @@ public class UdpClientProtocol extends AbstractProtocol {
             if (!TextUtil.isNullOrEmpty(writeValue)) {
                 if (str.isEmpty()) {
                     str = writeValue;
-                } else {
+                } else if (writeValue.contains(DYNAMIC_VALUE_PLACEHOLDER)) {
                     str = writeValue.replaceAll(DYNAMIC_VALUE_PLACEHOLDER_REGEXP, str);
                 }
             }
