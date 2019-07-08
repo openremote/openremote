@@ -177,6 +177,39 @@ public class JsonRulesBuilder extends RulesBuilder {
                 return;
             }
 
+            //Check if rule is still valid
+            if (ruleCondition.datetime != null) {
+                long currentMillis = timerService.getCurrentTimeMillis();
+
+                Pair<Long, Long> fromAndTo = AssetQueryPredicate.asFromAndTo(currentMillis, ruleCondition.datetime);
+                boolean isValid = false;
+                switch (ruleCondition.datetime.operator) {
+                    case BETWEEN:
+                        isValid = currentMillis >= fromAndTo.key && currentMillis < fromAndTo.value;
+                        break;
+                    case EQUALS:
+                        isValid = currentMillis == fromAndTo.key;
+                        break;
+                    case LESS_THAN:
+                        isValid = currentMillis < fromAndTo.key;
+                        break;
+                    case LESS_EQUALS:
+                        isValid = currentMillis <= fromAndTo.key;
+                        break;
+                    case GREATER_THAN:
+                        isValid = currentMillis > fromAndTo.key;
+                        break;
+                    case GREATER_EQUALS:
+                        isValid = currentMillis >= fromAndTo.key;
+                        break;
+                }
+                if (!isValid) {
+                    log(Level.FINEST, "Rule trigger is no longer valid so no match");
+                    lastTriggerResult = new RuleTriggerResult(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+                    return;
+                }
+            }
+
             if (!TextUtil.isNullOrEmpty(ruleCondition.timer)) {
                 lastTriggerResult = null;
 
