@@ -5,10 +5,14 @@ import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.attribute.MetaItem
+import org.openremote.model.attribute.MetaItemDescriptor
+import org.openremote.model.attribute.MetaItemDescriptorImpl
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TenantRuleset
+import org.openremote.model.value.Values
 
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
@@ -78,7 +82,8 @@ class BasicRulesImport {
         apartment1RulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new AssetRuleset(
-                "Some apartment 2 demo rules", GROOVY, getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text,
+                "Some apartment 2 demo rules", GROOVY, Values.createObject().put("visible", true),
+                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text,
                 managerDemoSetup.apartment2Id, false
         )
         apartment2RulesetId = rulesetStorageService.merge(ruleset).id

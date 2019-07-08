@@ -19,6 +19,8 @@
  */
 package org.openremote.model.rules;
 
+import org.openremote.model.value.ObjectValue;
+
 import javax.persistence.Entity;
 import javax.persistence.Table;
 import java.util.Date;
@@ -35,12 +37,16 @@ public class GlobalRuleset extends Ruleset {
     public GlobalRuleset() {
     }
 
-    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, boolean enabled, String name, Lang lang, String rules) {
-        super(id, version, createdOn, lastModified, name, enabled, rules, lang);
+    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, boolean enabled, String name, Lang lang, ObjectValue meta, String rules) {
+        super(id, version, createdOn, lastModified, name, enabled, rules, lang, meta);
     }
 
     public GlobalRuleset(String name, Lang lang, String rules) {
         super(name, rules, lang);
+    }
+
+    public GlobalRuleset(String name, Lang lang, String rules, ObjectValue meta) {
+        super(name, rules, lang, meta);
     }
 
     @Override

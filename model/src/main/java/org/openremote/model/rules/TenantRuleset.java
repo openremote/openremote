@@ -19,6 +19,8 @@
  */
 package org.openremote.model.rules;
 
+import org.openremote.model.value.ObjectValue;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -49,8 +51,14 @@ public class TenantRuleset extends Ruleset {
         this.accessPublicRead = accessPublicRead;
     }
 
-    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, boolean enabled, String name, Lang lang, String rules, String realm, boolean accessPublicRead) {
-        super(id, version, createdOn, lastModified, name, enabled, rules, lang);
+    public TenantRuleset(String name, Lang lang, ObjectValue meta, String rules, String realm, boolean accessPublicRead) {
+        super(name, rules, lang, meta);
+        this.realm = realm;
+        this.accessPublicRead = accessPublicRead;
+    }
+
+    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, boolean enabled, String name, Lang lang, ObjectValue meta, String rules, String realm, boolean accessPublicRead) {
+        super(id, version, createdOn, lastModified, name, enabled, rules, lang, meta);
         this.realm = realm;
         this.accessPublicRead = accessPublicRead;
     }

@@ -73,7 +73,7 @@ public class RulesetStorageService implements ContainerService {
     public List<GlobalRuleset> findGlobalRulesets(boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
 
         String query = "select new org.openremote.model.rules.GlobalRuleset(" +
-                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.enabled, rs.name, rs.lang";
+                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.enabled, rs.name, rs.lang, rs.meta";
 
         query += fullyPopulate ? ", rs.rules" : ", cast(null as string)";
 
@@ -111,7 +111,7 @@ public class RulesetStorageService implements ContainerService {
     public List<TenantRuleset> findTenantRulesets(String realm, boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
 
         String query = "select new org.openremote.model.rules.TenantRuleset(" +
-                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.enabled, rs.name, rs.lang";
+                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.enabled, rs.name, rs.lang, rs.meta";
 
         query += fullyPopulate ? ", rs.rules" : ", cast(null as string)";
 
@@ -166,7 +166,7 @@ public class RulesetStorageService implements ContainerService {
     public List<AssetRuleset> findAssetRulesets(String realm, String assetId, boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
 
         String query = "select new org.openremote.model.rules.AssetRuleset(" +
-                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.enabled, rs.name, rs.lang";
+                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.enabled, rs.name, rs.lang, rs.meta";
 
         query += fullyPopulate ? ", rs.rules" : ", cast(null as string)";
 

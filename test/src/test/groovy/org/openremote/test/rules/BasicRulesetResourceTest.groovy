@@ -9,6 +9,7 @@ import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.RulesResource
 import org.openremote.model.rules.TenantRuleset
+import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -86,6 +87,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ruleDefinitions.length == 1
         ruleDefinitions[0].name == "Some apartment 2 demo rules"
         ruleDefinitions[0].lang == GROOVY
+        ruleDefinitions[0].meta.getBoolean("visible").orElse(false)
 
         /* ############################################## WRITE ####################################### */
 
@@ -793,7 +795,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "an asset ruleset is created in the authenticated realm"
-        def assetRuleset = new AssetRuleset("Test asset definition", GROOVY, "SomeRulesCode", managerDemoSetup.apartment1Id, false)
+        def assetRuleset = new AssetRuleset("Test asset definition", GROOVY, Values.createObject().put("visible", true), "SomeRulesCode", managerDemoSetup.apartment1Id, false)
         rulesetResource.createAssetRuleset(null, assetRuleset)
         def rulesetId = rulesetResource.getAssetRulesets(null, managerDemoSetup.apartment1Id, null, false)[1].id
         assetRuleset = rulesetResource.getAssetRuleset(null, rulesetId)
@@ -807,6 +809,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         assetRuleset.name == "Test asset definition"
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerDemoSetup.apartment1Id
+        assetRuleset.meta.getBoolean("visible").orElse(false)
 
         when: "an asset ruleset is updated"
         assetRuleset.name = "Renamed test asset definition"

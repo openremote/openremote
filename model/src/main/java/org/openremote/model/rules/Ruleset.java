@@ -19,17 +19,17 @@
  */
 package org.openremote.model.rules;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.openremote.model.value.ObjectValue;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
-
 import java.util.Date;
 import java.util.Optional;
 
+import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 /**
@@ -185,6 +185,10 @@ public abstract class Ruleset {
     @Column(name = "RULES_LANG", nullable = false)
     protected Lang lang = Lang.GROOVY;
 
+    @Column(name = "META", columnDefinition = "jsonb")
+    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_OBJECT_TYPE)
+    protected ObjectValue meta;
+
     @Transient
     protected RulesetStatus status;
 
@@ -195,10 +199,10 @@ public abstract class Ruleset {
     }
 
     public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, Lang lang) {
-        this(id, version, createdOn, lastModified, name, enabled, null, lang);
+        this(id, version, createdOn, lastModified, name, enabled, null, lang, null);
     }
 
-    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang) {
+    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang, ObjectValue meta) {
         this.id = id;
         this.version = version;
         this.createdOn = createdOn;
@@ -207,6 +211,12 @@ public abstract class Ruleset {
         this.enabled = enabled;
         this.rules = rules;
         this.lang = lang;
+        this.meta = meta;
+    }
+
+    public Ruleset(String name, String rules, Lang lang, ObjectValue meta) {
+        this(name, rules, lang);
+        this.meta = meta;
     }
 
     public Ruleset(String name, String rules, Lang lang) {
@@ -275,6 +285,14 @@ public abstract class Ruleset {
 
     public void setLang(Lang lang) {
         this.lang = lang;
+    }
+
+    public ObjectValue getMeta() {
+        return meta;
+    }
+
+    public void setMeta(ObjectValue meta) {
+        this.meta = meta;
     }
 
     public RulesetStatus getStatus() {

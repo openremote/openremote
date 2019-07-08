@@ -19,6 +19,8 @@
  */
 package org.openremote.model.rules;
 
+import org.openremote.model.value.ObjectValue;
+
 import javax.persistence.*;
 import java.util.Date;
 
@@ -50,8 +52,14 @@ public class AssetRuleset extends Ruleset {
         this.accessPublicRead = accessPublicRead;
     }
 
-    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, boolean enabled, String name, Lang lang, String rules, String realm, String assetId, boolean accessPublicRead) {
-        super(id, version, createdOn, lastModified, name, enabled, rules, lang);
+    public AssetRuleset(String name, Lang lang, ObjectValue meta, String rules, String assetId, boolean accessPublicRead) {
+        super(name, rules, lang, meta);
+        this.assetId = assetId;
+        this.accessPublicRead = accessPublicRead;
+    }
+
+    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, boolean enabled, String name, Lang lang, ObjectValue meta, String rules, String realm, String assetId, boolean accessPublicRead) {
+        super(id, version, createdOn, lastModified, name, enabled, rules, lang, meta);
         this.assetId = assetId;
         this.realm = realm;
         this.accessPublicRead = accessPublicRead;

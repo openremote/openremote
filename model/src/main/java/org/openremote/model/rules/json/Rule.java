@@ -20,6 +20,7 @@
 package org.openremote.model.rules.json;
 
 import org.openremote.model.query.NewAssetQuery;
+import org.openremote.model.value.ObjectValue;
 
 /**
  * A declarative rule definition a.k.a. JSON rules; consists of:
@@ -68,4 +69,5 @@ public class Rule {
     public RuleConditionReset reset;
     public RuleAction[] onStart;
     public RuleAction[] onStop;
+    public ObjectValue meta;
 }
