@@ -19,6 +19,9 @@
  */
 package org.openremote.model.rules.json;
 
+import org.openremote.model.value.ObjectValue;
+
 public class JsonRulesetDefinition {
     public Rule[] rules;
+    public ObjectValue meta;
 }
