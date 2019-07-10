@@ -65,6 +65,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -82,6 +83,8 @@ public class MainActivity extends Activity {
 
     protected final ConnectivityChangeReceiver connectivityChangeReceiver = new ConnectivityChangeReceiver();
     protected WebView webView;
+    protected Handler timeOutHandler;
+    protected Runnable timeOutRunnable;
     protected ProgressBar progressBar;
     protected int webViewTimeout = WEBVIEW_LOAD_TIMEOUT_DEFAULT;
     protected boolean webViewLoaded;
@@ -374,24 +377,40 @@ public class MainActivity extends Activity {
 
                 progressBar.setVisibility(View.VISIBLE);
 
-                Runnable run = new Runnable() {
+                timeOutRunnable = new Runnable() {
                     public void run() {
                         if (!webViewLoaded) {
                             handleError(ERROR_TIMEOUT, "Connection timed out", url, true);
                         }
                     }
                 };
-                Handler myHandler = new Handler(Looper.myLooper());
-                myHandler.postDelayed(run, 5000);
+                timeOutHandler = new Handler(Looper.myLooper());
+                timeOutHandler.postDelayed(timeOutRunnable, 5000);
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
                 webViewLoaded = true;
                 progressBar.setVisibility(View.GONE);
+                timeOutHandler.removeCallbacks(timeOutRunnable);
             }
 
             @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                Uri uri = Uri.parse(url);
+                if (uri.getScheme().equalsIgnoreCase("webbrowser")) {
+                    String newUrl = uri.buildUpon().scheme("https").build().toString();
+                    Intent i = new Intent(Intent.ACTION_VIEW);
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    i.setData(Uri.parse(newUrl));
+                    startActivity(i);
+                    return true;
+                }
+                return super.shouldOverrideUrlLoading(view, url);
+            }
+
+            @Override
+            @RequiresApi(Build.VERSION_CODES.N)
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 if (request.getUrl().getScheme().equalsIgnoreCase("webbrowser")) {
                     String newUrl = request.getUrl().buildUpon().scheme("https").build().toString();
