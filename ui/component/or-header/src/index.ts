@@ -46,7 +46,8 @@ class OrHeader extends LitElement {
                   }
                  
                   #logo {
-                    height: 60px;
+                    margin: var(--header-logo-margin, 0);
+                    height: var(--header-logo-height, 60px);
                     display: block;
                   }
                   

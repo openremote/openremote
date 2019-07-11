@@ -107,6 +107,9 @@ export class OrMapMarker extends LitElement {
     @property({type: Number, reflect: true})
     public lng?: number;
 
+    @property({type: Number, reflect: true})
+    public radius?: number;
+
     @property({type: Boolean})
     public visible: boolean = true;
 

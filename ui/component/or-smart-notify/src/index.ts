@@ -92,6 +92,7 @@ class OrSmartNotify extends LitElement {
             this.smartNotify.attributes.SMART_NOTIFY_ENABLED.value = null;
             this.isActive = false;
         }
+
         REST.api.AssetResource.update(this.smartNotify.id, this.smartNotify).then((response: any) => {
             console.log("Setting Smart Notify");
             this.smartNotify.version = this.smartNotify.version + 1;

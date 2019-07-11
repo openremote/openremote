@@ -12,7 +12,7 @@ export const orInputStyle = css`
         font-size: 14px;
 
         border-bottom: 2px solid #d5d5d5;
-        background-color: #f2f2f2;
+        background-color: var(--or-input-background, #f2f2f2);
     }
 
     input:invalid { border-bottom: 2px solid red;}
