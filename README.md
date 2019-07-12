@@ -10,8 +10,8 @@ If you want to try OpenRemote v2, [read the OpenRemote v2 documentation](https:/
 
 Before following this quickstart make sure you have [prepared your environment](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Preparing-the-environment). There are two options how to start with OpenRemote:
 
-1. Use the images from Docker Hub (easiest)
-2. Checkout this project and build the images locally first
+1. Starting OpenRemote with images from Docker Hub (easiest)
+2. Starting OpenRemote with source-build images
 
 ### 1. Starting OpenRemote with images from Docker Hub
 
@@ -50,7 +50,7 @@ Alternatively you can build the Docker images locally from source, please see [h
 ./gradlew clean installDist
 ```
 
-Next, build the Docker images and start the stack with:
+Next, if you are using Docker Community Edition build the Docker images and start the stack with:
 
 ```
 docker-compose up --build
