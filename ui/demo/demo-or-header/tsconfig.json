@@ -1,9 +1,0 @@
-{
-  "extends": "../../tsconfig",
-  "include": [
-    "./src"
-  ],
-  "references": [
-    { "path": "../../component/or-header" }
-  ]
-}
