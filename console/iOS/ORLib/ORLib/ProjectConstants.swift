@@ -19,6 +19,7 @@
  */
 
 import Foundation
+import UIKit
 
 public enum ORServer {
     public static var scheme = "https"

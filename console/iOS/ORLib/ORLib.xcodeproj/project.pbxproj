@@ -12,7 +12,6 @@
 		4C56E5E520C583FB004483C7 /* ORAssetResoure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C56E5E420C583FB004483C7 /* ORAssetResoure.swift */; };
 		4C77278520BC13E800322CBC /* PushNotificationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C77278320BC13E800322CBC /* PushNotificationProvider.swift */; };
 		4C77278620BC13E800322CBC /* GeofenceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C77278420BC13E800322CBC /* GeofenceProvider.swift */; };
-		4C82D73F1FC58ED2009DE853 /* ORLib.h in Headers */ = {isa = PBXBuildFile; fileRef = 4C82D73D1FC58ED2009DE853 /* ORLib.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4C82D74A1FC58F4E009DE853 /* ORViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7451FC58F4E009DE853 /* ORViewController.swift */; };
 		4C82D74B1FC58F4E009DE853 /* ORAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7461FC58F4E009DE853 /* ORAppDelegate.swift */; };
 		4C82D74C1FC58F4E009DE853 /* ProjectConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7471FC58F4E009DE853 /* ProjectConstants.swift */; };
@@ -34,7 +33,6 @@
 		4C77278320BC13E800322CBC /* PushNotificationProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PushNotificationProvider.swift; sourceTree = "<group>"; };
 		4C77278420BC13E800322CBC /* GeofenceProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GeofenceProvider.swift; sourceTree = "<group>"; };
 		4C82D73A1FC58ED2009DE853 /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		4C82D73D1FC58ED2009DE853 /* ORLib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ORLib.h; sourceTree = "<group>"; };
 		4C82D73E1FC58ED2009DE853 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4C82D7451FC58F4E009DE853 /* ORViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORViewController.swift; sourceTree = "<group>"; };
 		4C82D7461FC58F4E009DE853 /* ORAppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORAppDelegate.swift; sourceTree = "<group>"; };
@@ -47,9 +45,9 @@
 		4C9FC2F0211B2F8100D8FD18 /* ORPushNotificationAction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORPushNotificationAction.swift; sourceTree = "<group>"; };
 		4C9FC2F1211B2F8100D8FD18 /* ORNotificationResource.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORNotificationResource.swift; sourceTree = "<group>"; };
 		4CBC0D461FD6DDA1000BE8B1 /* Reachability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reachability.swift; sourceTree = "<group>"; };
-		572EED7F064AF79DDABE9FC8 /* Pods-ORLib.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.release.xcconfig"; path = "Pods/Target Support Files/Pods-ORLib/Pods-ORLib.release.xcconfig"; sourceTree = "<group>"; };
+		572EED7F064AF79DDABE9FC8 /* Pods-ORLib.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.release.xcconfig"; path = "../../../../console/eindhoven/iOS/Eindhoven/Pods/Target Support Files/Pods-ORLib/Pods-ORLib.release.xcconfig"; sourceTree = "<group>"; };
 		978B95045017E64853668497 /* Pods_ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		C641D9E59892499E90E68616 /* Pods-ORLib.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.debug.xcconfig"; path = "Pods/Target Support Files/Pods-ORLib/Pods-ORLib.debug.xcconfig"; sourceTree = "<group>"; };
+		C641D9E59892499E90E68616 /* Pods-ORLib.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.debug.xcconfig"; path = "../../../../console/eindhoven/iOS/Eindhoven/Pods/Target Support Files/Pods-ORLib/Pods-ORLib.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,7 +95,6 @@
 				4C82D7451FC58F4E009DE853 /* ORViewController.swift */,
 				4C82D7471FC58F4E009DE853 /* ProjectConstants.swift */,
 				4C82D7491FC58F4E009DE853 /* ORLoginViewController.swift */,
-				4C82D73D1FC58ED2009DE853 /* ORLib.h */,
 				4C82D73E1FC58ED2009DE853 /* Info.plist */,
 				4C4C2FB71FD8044A0071CBDA /* ORNotificationService.swift */,
 				4C56E5E420C583FB004483C7 /* ORAssetResoure.swift */,
@@ -139,7 +136,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4C82D73F1FC58ED2009DE853 /* ORLib.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -150,6 +146,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4C82D7421FC58ED2009DE853 /* Build configuration list for PBXNativeTarget "ORLib" */;
 			buildPhases = (
+				4DCB6F19236B769A719A2323 /* [CP] Check Pods Manifest.lock */,
 				4C82D7351FC58ED2009DE853 /* Sources */,
 				4C82D7361FC58ED2009DE853 /* Frameworks */,
 				4C82D7371FC58ED2009DE853 /* Headers */,
@@ -175,7 +172,7 @@
 				TargetAttributes = {
 					4C82D7391FC58ED2009DE853 = {
 						CreatedOnToolsVersion = 9.1;
-						LastSwiftMigration = 0910;
+						LastSwiftMigration = 1020;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -206,6 +203,31 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		4DCB6F19236B769A719A2323 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-ORLib-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		4C82D7351FC58ED2009DE853 /* Sources */ = {
@@ -353,6 +375,7 @@
 		};
 		4C82D7431FC58ED2009DE853 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C641D9E59892499E90E68616 /* Pods-ORLib.debug.xcconfig */;
 			buildSettings = {
 				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;
 				CLANG_ENABLE_MODULES = YES;
@@ -377,24 +400,26 @@
 				);
 				INFOPLIST_FILE = ORLib/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.3;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.2;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = "";
 				MODULEMAP_FILE = "";
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = org.openremote.ORLib;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
 				SWIFT_INCLUDE_PATHS = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
 		4C82D7441FC58ED2009DE853 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 572EED7F064AF79DDABE9FC8 /* Pods-ORLib.release.xcconfig */;
 			buildSettings = {
 				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;
 				CLANG_ENABLE_MODULES = YES;
@@ -419,17 +444,18 @@
 				);
 				INFOPLIST_FILE = ORLib/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.3;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.2;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = "";
 				MODULEMAP_FILE = "";
 				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = org.openremote.ORLib;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
 				SWIFT_INCLUDE_PATHS = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "";
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
