@@ -1,10 +1,5 @@
 import {css, customElement, LitElement, property, PropertyValues, query, html} from "lit-element";
 
-export enum OrMapMarkerEvent {
-    CLICKED = "or-map-marker-clicked",
-    CHANGED = "or-map-marker-changed"
-}
-
 export class OrMapMarkerChangedEvent extends CustomEvent<MarkerChangedEventDetail> {
 
     public static readonly NAME = "or-map-marker-changed";

@@ -4,7 +4,7 @@ import {css, customElement, html, LitElement, property, query, PropertyValues, C
 import {LngLat, LngLatBoundsLike, LngLatLike} from "mapbox-gl";
 import {MapWidget} from "./mapwidget";
 import {
-    OrMapMarker, OrMapMarkerEvent, OrMapMarkerChangedEvent, MarkerStyle
+    OrMapMarker, OrMapMarkerClickedEvent, OrMapMarkerChangedEvent, MarkerStyle
 } from "./markers/or-map-marker";
 import {getLngLat} from "./util";
 
