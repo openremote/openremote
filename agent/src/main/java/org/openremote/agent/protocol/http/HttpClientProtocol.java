@@ -939,7 +939,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                                         boolean pagingEnabled,
                                         Value body,
                                         String contentType,
-                                        Integer pollingSeconds) {
+                                        Integer pollingMillis) {
 
         AttributeRef protocolConfigurationRef = protocolConfiguration.getReferenceOrThrow();
         Pair<ResteasyWebTarget, List<Integer>> clientAndFailureCodes = clientMap.get(protocolConfigurationRef);
@@ -982,7 +982,7 @@ public class HttpClientProtocol extends AbstractProtocol {
 
         requestMap.put(attributeRef, clientRequest);
 
-        Optional.ofNullable(pollingSeconds).ifPresent(seconds -> pollingMap.put(attributeRef, schedulePollingRequest(
+        Optional.ofNullable(pollingMillis).ifPresent(seconds -> pollingMap.put(attributeRef, schedulePollingRequest(
                 attributeRef,
                 protocolConfigurationRef,
                 clientRequest,
