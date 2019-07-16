@@ -30,6 +30,7 @@ declare module "mapbox.js" {
         public getBoundsZoom(bounds: LatLngBoundsLike, inside?: boolean): number;
         public setMaxZoom(zoom: number): this;
         public setMinZoom(zoom: number): this;
+        public on(type: string, func: any): this;
         public getContainer(): HTMLElement;
         public setView(center: LatLngLike, zoom?: number, options?: ZoomPanOptions): this;
         public setZoom(zoom: number, options?: ZoomOptions): this;

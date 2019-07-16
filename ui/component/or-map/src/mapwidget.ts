@@ -1,16 +1,19 @@
 import openremote from "@openremote/core";
 import rest from "@openremote/rest";
-import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL, Style as StyleGL, LngLat, MapEventType,
+import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL, Style as StyleGL, LngLat,
     MapMouseEvent} from "mapbox-gl";
 import L, {Map as MapJS, MapOptions as OptionsJS, Marker as MarkerJS} from "mapbox.js";
-import {Type, ViewSettings} from "./index";
-import {OrMapMarker, OrMapMarkerChangedEvent, OrMapMarkerClickedEvent} from "./markers/or-map-marker";
-import {getLatLng, getLatLngBounds, getLngLat, getLngLatBounds} from "./util";
+import {OrMapClickedEvent, Type, ViewSettings} from "./index";
+import {
+    OrMapMarker
+} from "./markers/or-map-marker";
+import {getLatLng, getLatLngBounds, getLngLat} from "./util";
 
 // TODO were to place this
 // fix any type
 const metersToPixelsAtMaxZoom = (meters:number, latitude:number) =>
     meters / 0.075 / Math.cos(latitude * Math.PI / 180);
+
 
 export class MapWidget {
     protected static _mapboxGlStyle?: any;
@@ -143,6 +146,10 @@ export class MapWidget {
 
             this._mapJs = L.mapbox.map(this._mapContainer, settings, options);
 
+            this._mapJs.on("click", (e: any)=> {
+                this._onMapClick(e.latlng);
+            });
+
             if (options && options.maxBounds) {
                 const minZoom = this._mapJs.getBoundsZoom(options.maxBounds, true);
                 if (!options.minZoom || options.minZoom < minZoom) {
@@ -193,9 +200,17 @@ export class MapWidget {
             }
 
             this._mapGl = new map.Map(options);
+            this._mapGl.on("click", (e: MapMouseEvent)=> {
+                this._onMapClick(e.lngLat);
+            });
+
         }
 
         this._loaded = true;
+    }
+
+    protected _onMapClick(lngLat: LngLatLike) {
+        this._mapContainer.dispatchEvent(new OrMapClickedEvent(lngLat));
     }
 
     public addMarker(marker: OrMapMarker) {
