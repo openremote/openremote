@@ -306,21 +306,21 @@ public class JsonRulesBuilder extends RulesBuilder {
                     }
                     return expired;
                 });
+            }
 
-                if (ruleCondition.reset.timestampChanges) {
-                    previouslyMatchedAssetStates.removeIf(previousAssetState -> {
-                        int index = matchedAssetStates.indexOf(previousAssetState);
-                        if (index < 0) {
-                            return false;
-                        }
+            if (ruleCondition.reset.timestampChanges) {
+                previouslyMatchedAssetStates.removeIf(previousAssetState -> {
+                    int index = matchedAssetStates.indexOf(previousAssetState);
+                    if (index < 0) {
+                        return false;
+                    }
 
-                        boolean timestampChanged = previousAssetState.getTimestamp() != matchedAssetStates.get(index).getTimestamp();
-                        if (timestampChanged) {
-                            log(Level.FINER, "Rule trigger previously matched asset state timestamp has changed so resetting: " + previousAssetState);
-                        }
-                        return timestampChanged;
-                    });
-                }
+                    boolean timestampChanged = previousAssetState.getTimestamp() != matchedAssetStates.get(index).getTimestamp();
+                    if (timestampChanged) {
+                        log(Level.FINER, "Rule trigger previously matched asset state timestamp has changed so resetting: " + previousAssetState);
+                    }
+                    return timestampChanged;
+                });
             }
 
             if (ruleCondition.reset != null && ruleCondition.reset.valueChanges) {
@@ -559,9 +559,6 @@ public class JsonRulesBuilder extends RulesBuilder {
                         if (ruleConditionState.resetDurationMillis > 0) {
                             ruleConditionState.lastTriggerResult.matchedAssetStates.forEach(assetState ->
                                 ruleConditionState.previouslyMatchedExpiryTimes.put(assetState, timerService.getCurrentTimeMillis() + ruleConditionState.resetDurationMillis));
-                        } else if (reset.timestampChanges) {
-                            ruleConditionState.lastTriggerResult.matchedAssetStates.forEach(assetState ->
-                                ruleConditionState.previouslyMatchedExpiryTimes.put(assetState, assetState.getTimestamp()));
                         }
                     }
                     if (ruleConditionState.trackUnmatched) {
@@ -932,7 +929,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     }
 
     protected static boolean ruleConditionResetHasTimer(RuleConditionReset reset) {
-        return reset != null && (!TextUtil.isNullOrEmpty(reset.timer) || reset.timestampChanges);
+        return reset != null && (!TextUtil.isNullOrEmpty(reset.timer));
     }
 
     protected static boolean targetIsNotAssets(RuleActionTarget target) {
