@@ -122,7 +122,8 @@
       "reset": {
         "noLongerMatches": true,
         "valueChanges": true,
-        "timestampChanges": true
+        "timestampChanges": true,
+        "timer": "4h"
       }
     }
   ]

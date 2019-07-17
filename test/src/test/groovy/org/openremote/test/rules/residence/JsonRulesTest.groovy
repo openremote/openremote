@@ -3,6 +3,7 @@ package org.openremote.test.rules.residence
 import com.google.common.collect.Lists
 import com.google.firebase.messaging.Message
 import org.openremote.container.timer.TimerService
+import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.RulesEngine
@@ -12,7 +13,7 @@ import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
-import org.openremote.model.asset.AssetResource
+import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
@@ -27,6 +28,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.MINUTES
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_CUSTOMER_A
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
@@ -70,6 +72,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def timerService = container.getService(TimerService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
         RulesEngine tenantAEngine
 
         and: "some rules"
@@ -109,7 +112,6 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "a console is registered by that user"
         def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm, accessToken).proxy(ConsoleResource.class)
-        def authenticatedAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm, accessToken).proxy(AssetResource.class)
         def consoleRegistration = new ConsoleRegistration(null,
                 "Test Console",
                 "1.0",
@@ -144,7 +146,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         assert consoleRegistration.id != null
 
         when: "the console location is set to the apartment"
-        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue().toJson())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue()), AttributeEvent.Source.CLIENT)
 
         then: "the consoles location should have been updated"
         conditions.eventually {
@@ -169,7 +171,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the console device moves outside the home geofence (as defined in the rule)"
-        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(0d,0d).toValue().toJson())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(0d, 0d).toValue()), AttributeEvent.Source.CLIENT)
 
         then: "the apartment lights should be switched off"
         conditions.eventually {
@@ -194,7 +196,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
         def lastFireTimestamp = tenantAEngine.lastFireTimestamp
-        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue().toJson())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue()), AttributeEvent.Source.CLIENT)
 
         and: "the engine fires at least one more time"
         conditions.eventually {
@@ -202,7 +204,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         and: "the console device moves outside the home geofence again (as defined in the rule)"
-        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(0d,0d).toValue().toJson())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(0d, 0d).toValue()), AttributeEvent.Source.CLIENT)
 
         then: "another notification should have been sent to the console"
         conditions.eventually {
@@ -212,7 +214,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the console sends a location update with the same location but a newer timestamp"
         advancePseudoClock(35, MINUTES, container)
-        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(0d,0d).toValue().toJson())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(0d, 0d).toValue()), AttributeEvent.Source.CLIENT)
 
         then: "another notification should have been sent to the console (because the reset condition includes reset on timestampChanges)"
         conditions.eventually {
@@ -221,12 +223,25 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the console sends a location update with a new location but still outside the geofence"
-        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(10d,10d).toValue().toJson())
+        def attributeEvent = new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(10d, 10d).toValue(), timerService.getCurrentTimeMillis())
+        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
 
         then: "another notification should have been sent to the console (because the reset condition includes reset on valueChanges)"
         conditions.eventually {
             assert notificationMessages.size() == 4
             assert targetIds[3] == consoleRegistration.id
+        }
+
+        when: "when time advances 5 hours"
+        advancePseudoClock(5, HOURS, container)
+
+        and: "the same AttributeEvent is send"
+        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+
+        then: "another notification should have been sent to the console (because the reset condition includes reset on timer)"
+        conditions.eventually {
+            assert notificationMessages.size() == 5
+            assert targetIds[4] == consoleRegistration.id
         }
 
         cleanup: "stop the container"
