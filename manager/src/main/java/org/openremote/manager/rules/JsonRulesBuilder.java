@@ -308,7 +308,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 });
             }
 
-            if (ruleCondition.reset.timestampChanges) {
+            if (ruleCondition.reset != null && ruleCondition.reset.timestampChanges) {
                 previouslyMatchedAssetStates.removeIf(previousAssetState -> {
                     int index = matchedAssetStates.indexOf(previousAssetState);
                     if (index < 0) {
