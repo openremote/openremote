@@ -19,6 +19,8 @@
  */
 package org.openremote.agent.protocol.http;
 
+import org.apache.http.client.utils.URIBuilder;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.core.Headers;
 import org.jboss.resteasy.specimpl.BuiltResponse;
@@ -49,6 +51,8 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
@@ -57,12 +61,13 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.agent.protocol.http.WebTargetBuilder.createClient;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
 import static org.openremote.model.attribute.MetaItemDescriptorImpl.*;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-import static org.openremote.model.util.TextUtil.*;
+import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY;
 
 /**
  * This is a HTTP client protocol for communicating with HTTP servers; it uses the {@link WebTargetBuilder} factory to
@@ -336,9 +341,9 @@ public class HttpClientProtocol extends AbstractProtocol {
     public static final String DEFAULT_HTTP_METHOD = HttpMethod.GET;
     public static final String DEFAULT_CONTENT_TYPE = MediaType.TEXT_PLAIN;
     protected static final String HEADER_LINK = "Link";
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, HttpClientProtocol.class.getName());
-    private static int MIN_POLLING_MILLIS = 1000;
-    private static int MIN_PING_MILLIS = 10000;
+    protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, HttpClientProtocol.class.getName());
+    protected static int MIN_POLLING_MILLIS = 1000;
+    protected static int MIN_PING_MILLIS = 10000;
 
     /*--------------- META ITEMS TO BE USED ON PROTOCOL CONFIGURATIONS ---------------*/
     /**
@@ -573,6 +578,7 @@ public class HttpClientProtocol extends AbstractProtocol {
     protected final Map<AttributeRef, Pair<ResteasyWebTarget, List<Integer>>> clientMap = new HashMap<>();
     protected final Map<AttributeRef, HttpClientRequest> requestMap = new HashMap<>();
     protected final Map<AttributeRef, ScheduledFuture> pollingMap = new HashMap<>();
+    protected ResteasyClient client;
 
     public static Optional<OAuthGrant> getOAuthGrant(AssetAttribute attribute) throws IllegalArgumentException {
         return !attribute.hasMetaItem(META_PROTOCOL_OAUTH_GRANT)
@@ -666,7 +672,7 @@ public class HttpClientProtocol extends AbstractProtocol {
     @Override
     public void init(Container container) throws Exception {
         super.init(container);
-        WebTargetBuilder.setExecutorService(executorService);
+        client = createClient(executorService);
     }
 
     @Override
@@ -675,7 +681,6 @@ public class HttpClientProtocol extends AbstractProtocol {
         pollingMap.clear();
         requestMap.clear();
         clientMap.clear();
-        WebTargetBuilder.close();
     }
 
     @Override
@@ -690,6 +695,14 @@ public class HttpClientProtocol extends AbstractProtocol {
         String baseUri = protocolConfiguration.getMetaItem(META_PROTOCOL_BASE_URI)
                 .flatMap(AbstractValueHolder::getValueAsString).orElseThrow(() ->
                         new IllegalArgumentException("Missing or invalid require meta item: " + META_PROTOCOL_BASE_URI));
+
+        URI uri = null;
+
+        try {
+            uri = new URIBuilder(baseUri).build();
+        } catch (URISyntaxException e) {
+            LOG.log(Level.SEVERE, "Invalid URI", e);
+        }
 
         /* We're going to fail hard and fast if optional meta items are incorrectly configured */
 
@@ -737,7 +750,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                 .flatMap(Values::getString)
                 .orElse(null);
 
-        WebTargetBuilder webTargetBuilder = new WebTargetBuilder(baseUri);
+        WebTargetBuilder webTargetBuilder = new WebTargetBuilder(client, uri);
         if (oAuthGrant.isPresent()) {
             LOG.info("Adding OAuth");
             webTargetBuilder.setOAuthAuthentication(oAuthGrant.get());

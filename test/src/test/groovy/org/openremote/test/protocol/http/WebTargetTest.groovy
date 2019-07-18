@@ -19,6 +19,8 @@
  */
 package org.openremote.test.protocol.http
 
+import org.apache.http.client.utils.URIBuilder
+import org.jboss.resteasy.client.jaxrs.ResteasyClient
 import org.jboss.resteasy.spi.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.http.*
@@ -204,14 +206,13 @@ class WebTargetTest extends Specification {
         }
     }
 
+    @Shared
+    ResteasyClient client
+
     def setupSpec() {
         // Initialise the web target builder and load in the mock 'server'
-        WebTargetBuilder.initClient()
-        WebTargetBuilder.client.register(mockServer, Integer.MAX_VALUE)
-    }
-
-    def cleanupSpec() {
-        WebTargetBuilder.close()
+        client = WebTargetBuilder.createClient(null)
+        client.register(mockServer, Integer.MAX_VALUE)
     }
 
     def cleanup() {
@@ -251,7 +252,7 @@ class WebTargetTest extends Specification {
     def "Check Basic authentication"() {
 
         given: "a web target for a server requiring basic authentication"
-        def target = new WebTargetBuilder("https://basicserver")
+        def target = new WebTargetBuilder(client, new URIBuilder("https://basicserver").build())
             .setBasicAuthentication("testuser", "password1")
             .build()
 
@@ -265,7 +266,7 @@ class WebTargetTest extends Specification {
     def "Check OAuth resource owner credentials (password) grant authentication"() {
 
         given: "a web target for a server requiring OAuth 'password' grant authentication"
-        def target = new WebTargetBuilder("https://oauthserver")
+        def target = new WebTargetBuilder(client, new URIBuilder("https://oauthserver").build())
             .setOAuthAuthentication(
                 new OAuthPasswordGrant(
                     "https://oauthserver/token",
@@ -320,7 +321,7 @@ class WebTargetTest extends Specification {
     def "Check OAuth client credentials grant authentication"() {
 
         given: "a web target for a server requiring OAuth 'client_credentials' grant authentication"
-        def target = new WebTargetBuilder("https://oauthserver")
+        def target = new WebTargetBuilder(client, new URIBuilder("https://oauthserver").build())
             .setOAuthAuthentication(
             new OAuthClientCredentialsGrant(
                 "https://oauthserver/token",
@@ -351,7 +352,7 @@ class WebTargetTest extends Specification {
     def "Check OAuth token reuse functionality"() {
 
         given: "a web target for a server requiring OAuth 'client_credentials' grant authentication"
-        def target = new WebTargetBuilder("https://oauthserver/get")
+        def target = new WebTargetBuilder(client, new URIBuilder("https://oauthserver/get").build())
             .setOAuthAuthentication(
                 new OAuthClientCredentialsGrant(
                     "https://oauthreuseserver/token",
@@ -381,7 +382,7 @@ class WebTargetTest extends Specification {
     def "Check permanent failure functionality"() {
 
         given: "a web target for a server set to permanently fail on 403 errors"
-        def target = new WebTargetBuilder("https://forbiddenserver")
+        def target = new WebTargetBuilder(client, new URIBuilder("https://forbiddenserver").build())
             .addPermanentFailureResponse(Response.Status.FORBIDDEN)
             .build()
 
@@ -408,7 +409,7 @@ class WebTargetTest extends Specification {
         headers.put("MyMultiHeader", ["MyMultiHeaderValue1","MyMultiHeaderValue2"])
 
         and: "a web target for a server"
-        def target = new WebTargetBuilder("https://headerserver")
+        def target = new WebTargetBuilder(client, new URIBuilder("https://headerserver").build())
             .setInjectHeaders(headers)
             .build()
 
@@ -435,7 +436,7 @@ class WebTargetTest extends Specification {
     def "Check redirect handling"() {
 
         given: "a web target for a server"
-        def target = new WebTargetBuilder("https://redirectserver")
+        def target = new WebTargetBuilder(client, new URIBuilder("https://redirectserver").build())
             .followRedirects(true)
             .build()
 
@@ -455,7 +456,7 @@ class WebTargetTest extends Specification {
         params.put("param2", ["param2Value1","param2Value2"])
 
         and: "a web target for a server"
-        def target = new WebTargetBuilder("https://paramserver")
+        def target = new WebTargetBuilder(client, new URIBuilder("https://paramserver").build())
             .setInjectQueryParameters(params)
             .build()
 
@@ -486,7 +487,7 @@ class WebTargetTest extends Specification {
         params.put("param2", ["param2Value1","param2Value2"])
 
         and: "a web target for a server"
-        def target = new WebTargetBuilder("https://dynamicparamserver")
+        def target = new WebTargetBuilder(client, new URIBuilder("https://dynamicparamserver").build())
             .build()
             .register(new QueryParameterInjectorFilter(params, /"{0,1}\{\$(value)\}"{0,1}/))
 
@@ -503,7 +504,7 @@ class WebTargetTest extends Specification {
 //    def "Check real OAuth resource owner credentials (password) grant authentication"() {
 //
 //        given: "A web target for a server requiring OAuth 'password' grant authentication"
-//        def target = new WebTargetBuilder("https://www.telecontrolnet.nl/api/v1")
+//        def target = new WebTargetBuilder("client, new URIBuilder(https://www.telecontrolnet.nl/api/v1").build())
 //            .setOAuthAuthentication(
 //            new OAuthPasswordGrant(
 //                "https://www.telecontrolnet.nl/oauth/token",

@@ -19,7 +19,9 @@
  */
 package org.openremote.agent.protocol.controller;
 
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.HttpHostConnectException;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.controller.command.ControllerCommandBasic;
@@ -36,7 +38,10 @@ import org.openremote.model.value.*;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 import java.net.ConnectException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
@@ -45,6 +50,8 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.agent.protocol.http.WebTargetBuilder.CONNECTION_POOL_SIZE;
+import static org.openremote.agent.protocol.http.WebTargetBuilder.createClient;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
@@ -170,23 +177,17 @@ public class ControllerProtocol extends AbstractProtocol {
     public static final String PROTOCOL_DISPLAY_NAME = "Controller Client";
     public static final String PROTOCOL_VERSION = "1.0";
 
+    protected ResteasyClient client;
     private Map<PollingKey, ScheduledFuture> pollingSensorList = new HashMap<>();
-
     private Map<AttributeRef, Controller> controllersMap = new HashMap<>();
     private Map<AttributeRef, ResteasyWebTarget> controllersTargetMap = new HashMap<>();
     private Map<AttributeRef, ScheduledFuture> controllerHeartbeat = new HashMap<>();
-
     private Map<AttributeRef, Boolean> initStatusDone = new HashMap<>();
 
     @Override
     public void init(Container container) throws Exception {
         super.init(container);
-        WebTargetBuilder.setExecutorService(executorService);
-    }
-
-    @Override
-    protected void doStop(Container container) {
-        WebTargetBuilder.close();
+        client = createClient(executorService, CONNECTION_POOL_SIZE, 70000);
     }
 
     @Override
@@ -208,24 +209,29 @@ public class ControllerProtocol extends AbstractProtocol {
         String baseURL = protocolConfiguration.getMetaItem(META_PROTOCOL_BASE_URI).flatMap(AbstractValueHolder::getValueAsString)
                 .orElseThrow(() -> new IllegalArgumentException("Missing or invalid required meta item: " + META_PROTOCOL_BASE_URI));
 
-        WebTargetBuilder webTargetBuilder = new WebTargetBuilder(baseURL, 70000);
+        try {
+            URI uri = new URIBuilder(baseURL).build();
+            WebTargetBuilder webTargetBuilder = new WebTargetBuilder(client, uri);
+            String username = protocolConfiguration.getMetaItem(META_PROTOCOL_USERNAME).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
+            String password = protocolConfiguration.getMetaItem(META_PROTOCOL_PASSWORD).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
 
-        String username = protocolConfiguration.getMetaItem(META_PROTOCOL_USERNAME).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
-        String password = protocolConfiguration.getMetaItem(META_PROTOCOL_PASSWORD).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
+            if (username != null && password != null) {
+                webTargetBuilder.setBasicAuthentication(username, password);
+            }
 
-        if (username != null && password != null) {
-            webTargetBuilder.setBasicAuthentication(username, password);
-        }
+            controllersTargetMap.put(protocolConfiguration.getReferenceOrThrow(), webTargetBuilder.build());
 
-        controllersTargetMap.put(protocolConfiguration.getReferenceOrThrow(), webTargetBuilder.build());
+            controllersMap.put(protocolConfiguration.getReferenceOrThrow(), new Controller(protocolConfiguration.getReferenceOrThrow()));
 
-        controllersMap.put(protocolConfiguration.getReferenceOrThrow(), new Controller(protocolConfiguration.getReferenceOrThrow()));
+            this.updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.DISCONNECTED);
 
-        this.updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.DISCONNECTED);
-
-        controllerHeartbeat.put(protocolConfiguration.getReferenceOrThrow(), this.executorService.scheduleWithFixedDelay(() -> this.executeHeartbeat(protocolConfiguration.getReferenceOrThrow(),
+            controllerHeartbeat.put(protocolConfiguration.getReferenceOrThrow(), this.executorService.scheduleWithFixedDelay(() -> this.executeHeartbeat(protocolConfiguration.getReferenceOrThrow(),
                 response -> onHeartbeatResponse(protocolConfiguration.getReferenceOrThrow(), response)), 0, HEARTBEAT_DELAY_SECONDS,
                 TimeUnit.SECONDS));
+        } catch (URISyntaxException e) {
+            LOG.log(Level.SEVERE, "Invalid URI", e);
+            updateConnectionStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.ERROR);
+        }
     }
 
     @Override

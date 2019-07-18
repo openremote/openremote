@@ -23,14 +23,12 @@ import org.jboss.resteasy.client.jaxrs.BasicAuthentication;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
-import org.jboss.resteasy.specimpl.ResteasyUriBuilder;
 import org.openremote.container.json.JacksonConfig;
 
 import javax.ws.rs.Priorities;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,55 +50,22 @@ import java.util.stream.Collectors;
 // TODO: This should probably be amalgamated with WebClient somehow to provide a unified JAX-RS Client API
 public class WebTargetBuilder {
 
-    public static final int CONNECTION_POOL_SIZE = 200;
+    public static final int CONNECTION_POOL_SIZE = 10;
     public static final long CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS = 5000;
     public static final long CONNECTION_TIMEOUT_MILLISECONDS = 10000;
-    protected static ResteasyClient client;
-    protected static ExecutorService asyncExecutorService;
+    protected ResteasyClient client;
+    protected static ExecutorService executorService;
     protected BasicAuthentication basicAuthentication;
     protected OAuthGrant oAuthGrant;
-    protected UriBuilder uri;
+    protected URI baseUri;
     protected List<Integer> failureResponses = new ArrayList<>();
     protected MultivaluedMap<String, String> injectHeaders;
     protected MultivaluedMap<String, String> injectQueryParameters;
     protected boolean followRedirects = false;
 
-    public WebTargetBuilder(String uri) {
-        this(ResteasyUriBuilder.fromUri(uri));
-    }
-
-    public WebTargetBuilder(String uri, long overrideSocketTimeout) {
-        this(ResteasyUriBuilder.fromUri(uri), overrideSocketTimeout);
-    }
-
-    public WebTargetBuilder(URI uri) {
-        this(ResteasyUriBuilder.fromUri(uri));
-    }
-
-    public WebTargetBuilder(UriBuilder uri) {
-        if (client == null) {
-            initClient(null);
-        }
-        this.uri = uri;
-    }
-
-    public WebTargetBuilder(UriBuilder uri, long overrideSocketTimeout) {
-        if (client == null) {
-            initClient(overrideSocketTimeout);
-        }
-        this.uri = uri;
-    }
-
-    /**
-     * Set the executor service to be used for async operations (if none is supplied then one will be created
-     * automatically), this allows fine grained thread management at the application level.
-     */
-    public static void setExecutorService(ExecutorService executorService) {
-        if (client != null) {
-            throw new IllegalStateException("Executor service must be set before any call to create");
-        }
-
-        asyncExecutorService = executorService;
+    public WebTargetBuilder(ResteasyClient client, URI baseUri) {
+        this.client = client;
+        this.baseUri = baseUri;
     }
 
     /**
@@ -121,7 +86,6 @@ public class WebTargetBuilder {
         this.oAuthGrant = oAuthGrant;
         return this;
     }
-
 
     public WebTargetBuilder setInjectHeaders(MultivaluedMap<String, String> injectHeaders) {
         this.injectHeaders = injectHeaders;
@@ -149,6 +113,7 @@ public class WebTargetBuilder {
         );
         return this;
     }
+
     public WebTargetBuilder addPermanentFailureResponse(Integer...responseStatus) {
         Collections.addAll(failureResponses, responseStatus);
         return this;
@@ -174,7 +139,7 @@ public class WebTargetBuilder {
     }
 
     public ResteasyWebTarget build() {
-        ResteasyWebTarget target = client.target(uri);
+        ResteasyWebTarget target = client.target(baseUri);
 
         if (!failureResponses.isEmpty()) {
             // Put a filter with max priority in the filter chain
@@ -204,30 +169,22 @@ public class WebTargetBuilder {
         return target;
     }
 
-    protected static void initClient(Long overrideSocketTimeout) {
-        if (client != null) {
-            return;
-        }
+    public static ResteasyClient createClient(ExecutorService executorService) {
+        return createClient(executorService, CONNECTION_POOL_SIZE, CONNECTION_TIMEOUT_MILLISECONDS);
+    }
+
+    public static ResteasyClient createClient(ExecutorService executorService, int connectionPoolSize, long overrideSocketTimeout) {
         ResteasyClientBuilder clientBuilder = new ResteasyClientBuilder()
-            .connectionPoolSize(CONNECTION_POOL_SIZE)
+            .connectionPoolSize(connectionPoolSize)
             .connectionCheckoutTimeout(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
-            .socketTimeout(overrideSocketTimeout == null ? CONNECTION_TIMEOUT_MILLISECONDS : overrideSocketTimeout, TimeUnit.MILLISECONDS)
+            .socketTimeout(overrideSocketTimeout, TimeUnit.MILLISECONDS)
             .establishConnectionTimeout(CONNECTION_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
             .register(new JacksonConfig());
 
-        if (asyncExecutorService != null) {
-            clientBuilder.asyncExecutor(asyncExecutorService);
+        if (executorService != null) {
+            clientBuilder.asyncExecutor(executorService);
         }
 
-        client = clientBuilder.build();
-    }
-
-    public static void close() {
-        if (client == null) {
-            return;
-        }
-
-        client.close();
-        client = null;
+        return clientBuilder.build();
     }
 }

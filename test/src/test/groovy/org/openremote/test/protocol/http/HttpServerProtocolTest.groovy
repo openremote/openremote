@@ -248,10 +248,6 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         }
     }
 
-    def cleanupSpec() {
-        WebTargetBuilder.close()
-    }
-
     def cleanup() {
         mockServer.supportsRefresh = false
         mockServer.accessToken = null

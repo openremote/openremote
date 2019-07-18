@@ -163,10 +163,6 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
         }
     }
 
-    def cleanupSpec() {
-        WebTargetBuilder.close()
-    }
-
     def cleanup() {
         mockServer.commandCount = 0
         mockServer.pollCount = 0
@@ -190,10 +186,8 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
         }
 
         when: "the web target builder is configured to use the mock server"
-        // Need to do this here as HTTP protocol must be initialised first
-        WebTargetBuilder.initClient()
-        if (!WebTargetBuilder.client.configuration.isRegistered(mockServer)) {
-            WebTargetBuilder.client.register(mockServer, Integer.MAX_VALUE)
+        if (!controllerProtocol.client.configuration.isRegistered(mockServer)) {
+            controllerProtocol.client.register(mockServer, Integer.MAX_VALUE)
         }
 
         and: "an agent with a Controller protocol configuration is created"
@@ -356,5 +350,8 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
             assert mockServer.commandCount == 2
             assert true
         }
+
+        cleanup: "the server should be stopped"
+        stopContainer(container)
     }
 }

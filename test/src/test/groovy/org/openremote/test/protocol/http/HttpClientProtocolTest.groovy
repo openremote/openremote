@@ -252,10 +252,6 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         }
     }
 
-    def cleanupSpec() {
-        WebTargetBuilder.close()
-    }
-
     def cleanup() {
         mockServer.supportsRefresh = false
         mockServer.accessToken = null
@@ -292,10 +288,8 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         }
 
         when: "the web target builder is configured to use the mock server"
-        // Need to do this here as HTTP protocol must be initialised first
-        WebTargetBuilder.initClient()
-        if (!WebTargetBuilder.client.configuration.isRegistered(mockServer)) {
-            WebTargetBuilder.client.register(mockServer, Integer.MAX_VALUE)
+        if (!httpClientProtocol.client.configuration.isRegistered(mockServer)) {
+            httpClientProtocol.client.register(mockServer, Integer.MAX_VALUE)
         }
 
         and: "an agent with a HTTP client protocol configuration is created"
