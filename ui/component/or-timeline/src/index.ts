@@ -77,9 +77,13 @@ class OrTimeline extends LitElement {
                 if (range) {
                     range.style.left = newPlace + "px";
                 }
+                //Needed to move the slider after clicking the input itself
+                const sliderInput = (<HTMLInputElement>this.shadowRoot.getElementById("or-timeline-slider"));
+                if (sliderInput) {
+                    sliderInput.value = String(this.current);
+                }
             }
         }
-
     }
 
     public valueChange(e: any) {
@@ -154,6 +158,11 @@ class OrTimeline extends LitElement {
                       pointer-events: all;
                       margin-top: -2px;
                     }
+                    .slider::-moz-range-progress {
+                        background-color: var(--timeline-accent,  #1D5632);
+                        height: 12px;
+                        border-radius: 6px;
+                    }
                     
                     .slider::-ms-track {
                       cursor: pointer;
@@ -172,6 +181,17 @@ class OrTimeline extends LitElement {
                       background-color: var(--timeline-accent,  currentColor); /* Bug in Edge set colour on slider itself */
                       pointer-events: all;
                       margin-top: -2px;
+                    }
+                    
+                    .slider::-ms-fill-lower {
+                      background-color:  var(--timeline-accent,  currentColor);
+                      border: 0 none;
+                      border-radius: 6px;
+                    }
+                    
+                    .slider::-ms-fill-upper {
+                      background: transparent;
+                      border: 0 none;
                     }
                     
                     #timelineHourMarkers {
