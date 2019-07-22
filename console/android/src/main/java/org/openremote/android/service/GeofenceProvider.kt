@@ -39,12 +39,14 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
     }
 
     companion object {
+        val locationPermissionAskedKey = "LocationPermissionAsked"
         val baseUrlKey = "baseUrl"
         val consoleIdKey = MainActivity.CONSOLE_ID_KEY
         val geofencesKey = "geofences"
         val geofenceDisabledKey = "geofenceDisabled"
-        var locationReponseCode = 101
-        var JSON = ObjectMapper()
+        val locationReponseCode = 101
+
+        val JSON = ObjectMapper()
         val LOG = Logger.getLogger(GeofenceProvider::class.java.name)
 
         fun getGeofences(context: Context): Array<GeofenceDefinition> {
@@ -186,7 +188,8 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
                 .remove(geofenceDisabledKey)
                 .apply()
 
-        if (ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && !sharedPreferences.getBoolean(locationPermissionAskedKey, false)) {
+            sharedPreferences.edit().putBoolean(locationPermissionAskedKey, true).apply()
             enableCallback = callback
             registerPermissions(activity)
             return
