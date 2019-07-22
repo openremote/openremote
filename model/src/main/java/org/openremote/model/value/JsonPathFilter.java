@@ -22,41 +22,28 @@ package org.openremote.model.value;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.openremote.model.util.TextUtil;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.openremote.model.value.RegexValueFilter.NAME;
 
 @JsonTypeName(NAME)
-public class RegexValueFilter extends ValueFilter<StringValue> {
+public class JsonPathFilter extends ValueFilter<Value> {
 
-    public static final String NAME = "regex";
+    public static final String NAME = "jsonPath";
 
-    public Pattern pattern;
-    public int matchGroup;
-    public int matchIndex;
+    @JsonProperty
+    public String path;
 
     @JsonCreator
-    public RegexValueFilter(@JsonProperty("pattern") String regex,
-                            @JsonProperty("matchGroup") int matchGroup,
-                            @JsonProperty("matchIndex") int matchIndex) {
-        try {
-            pattern = Pattern.compile(regex);
-            this.matchGroup = matchGroup;
-            this.matchIndex = matchIndex;
-        } catch (PatternSyntaxException ignore) {}
-    }
-
-    public RegexValueFilter(Pattern pattern, int matchGroup, int matchIndex) {
-        this.pattern = pattern;
-        this.matchGroup = matchGroup;
-        this.matchIndex = matchIndex;
+    public JsonPathFilter(@JsonProperty("path") String path) {
+        this.path = path;
     }
 
     @Override
-    public Class<StringValue> getValueType() {
-        return StringValue.class;
+    public Class<Value> getValueType() {
+        return Value.class;
     }
 }

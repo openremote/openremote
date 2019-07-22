@@ -91,7 +91,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
 
         if (query.names != null && query.names.length > 0) {
             if (Arrays.stream(query.names)
-                    .map(AssetQueryPredicate::asPredicate)
+                    .map(StringPredicate::asPredicate)
                     .noneMatch(np -> np.test(assetState.getName()))) {
                 return false;
             }
@@ -107,7 +107,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
 
         if (query.types != null && query.types.length > 0) {
             if (Arrays.stream(query.types)
-                    .map(AssetQueryPredicate::asPredicate)
+                    .map(StringPredicate::asPredicate)
                     .noneMatch(np -> np.test(assetState.getTypeString()))) {
                 return false;
             }
@@ -142,30 +142,6 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
         }
 
         return true;
-    }
-
-    public static Predicate<String> asPredicate(StringPredicate predicate) {
-        return string -> {
-            if (string == null && predicate.value == null)
-                return true;
-            if (string == null)
-                return false;
-            if (predicate.value == null)
-                return false;
-
-            String shouldMatch = predicate.caseSensitive ? predicate.value : predicate.value.toUpperCase(Locale.ROOT);
-            String have = predicate.caseSensitive ? string : string.toUpperCase(Locale.ROOT);
-
-            switch (predicate.match) {
-                case BEGIN:
-                    return predicate.negate != have.startsWith(shouldMatch);
-                case END:
-                    return predicate.negate != have.endsWith(shouldMatch);
-                case CONTAINS:
-                    return predicate.negate != have.contains(shouldMatch);
-            }
-            return predicate.negate != have.equals(shouldMatch);
-        };
     }
 
     public static Predicate<ArrayValue> asPredicate(ArrayPredicate predicate) {
@@ -235,7 +211,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                 return false;
             for (int i = 0; i < predicate.predicates.length; i++) {
                 StringPredicate p = predicate.predicates[i];
-                if (!asPredicate(p).test(strings[i]))
+                if (!StringPredicate.asPredicate(p).test(strings[i]))
                     return false;
             }
             return true;
@@ -397,7 +373,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
     public static Predicate<AssetState> asPredicate(Supplier<Long> currentMillisProducer, AttributePredicate predicate) {
 
         Predicate<String> namePredicate = predicate.name != null
-                ? asPredicate(predicate.name) : str -> true;
+                ? StringPredicate.asPredicate(predicate.name) : str -> true;
 
         Predicate<Value> valuePredicate = value -> {
             if (predicate.value == null) {
@@ -455,7 +431,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             } else if (predicate instanceof StringPredicate) {
 
                 StringPredicate p = (StringPredicate) predicate;
-                return asPredicate(p).test(Values.getString(value).orElse(null));
+                return StringPredicate.asPredicate(p).test(Values.getString(value).orElse(null));
 
             } else if (predicate instanceof BooleanPredicate) {
 
@@ -503,7 +479,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
 
         Predicate<MetaItem> metaItemPredicate = metaItem -> {
             if (predicate.itemNamePredicate != null) {
-                if (!metaItem.getName().map(name -> asPredicate(predicate.itemNamePredicate).test(name)).orElse(false)) {
+                if (!metaItem.getName().map(name -> StringPredicate.asPredicate(predicate.itemNamePredicate).test(name)).orElse(false)) {
                     return false;
                 }
             }

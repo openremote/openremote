@@ -24,16 +24,16 @@ import org.openremote.model.asset.AssetModelProvider;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.TemporaryFact;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.value.*;
 
 import java.util.Optional;
 import java.util.function.Function;
 
 import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
+import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_VALUE_MISMATCH;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
+import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemArray;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_DOUBLE;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO;
 
@@ -396,6 +396,23 @@ public enum MetaItemType implements MetaItemDescriptor {
      */
     ALLOWED_VALUES(
         ASSET_META_NAMESPACE + ":allowedValues",
+        new Access(true, false, true),
+        ValueType.ARRAY,
+        null,
+        null,
+        null,
+        false),
+
+    /**
+     * {@link MetaItem} for defining {@link ValueFilter}s to apply to values before they are sent through the system
+     * (e.g. before it is used to update a protocol linked attribute or to filter value  when updating an attribute
+     * linked attribute see {@link #ATTRIBUTE_LINK}); this is particularly useful for generic protocols.
+     * The {@link MetaItem} value should be an {@link ArrayValue} of {@link ObjectValue}s
+     * where each {@link ObjectValue} represents a serialised {@link ValueFilter}. The message should pass through the
+     * filters in array order.
+     */
+    VALUE_FILTERS(
+        ASSET_META_NAMESPACE + ":valueFilters",
         new Access(true, false, true),
         ValueType.ARRAY,
         null,

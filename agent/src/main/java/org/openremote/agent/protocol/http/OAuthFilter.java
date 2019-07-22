@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.http;
 
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.TextUtil;
 
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
@@ -55,7 +56,12 @@ public class OAuthFilter implements ClientRequestFilter {
     }
 
     public String getAuthHeader() {
-        return AUTH_TYPE + " " + getAccessToken();
+        String accessToken = getAccessToken();
+        if (!TextUtil.isNullOrEmpty(accessToken)) {
+            return AUTH_TYPE + " " + getAccessToken();
+        }
+
+        return null;
     }
 
     protected synchronized String getAccessToken() {

@@ -21,6 +21,7 @@ package org.openremote.manager.asset;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.manager.agent.AgentService;
 import org.openremote.manager.asset.AssetProcessingException.Reason;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
@@ -32,9 +33,11 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.value.*;
 
 import javax.persistence.EntityManager;
+import java.io.IOException;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.model.query.AssetQuery.Include;
@@ -89,6 +92,7 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
     private static final Logger LOG = Logger.getLogger(AssetAttributeLinkingService.class.getName());
     protected AssetProcessingService assetProcessingService;
     protected AssetStorageService assetStorageService;
+    protected AgentService agentService;
 
     @Override
     public int getPriority() {
@@ -99,6 +103,7 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
     public void init(Container container) throws Exception {
         assetProcessingService = container.getService(AssetProcessingService.class);
         assetStorageService = container.getService(AssetStorageService.class);
+        agentService = container.getService(AgentService.class);
     }
 
     @Override
@@ -135,9 +140,16 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
         if (attributeState == null)
             return;
         LOG.fine("Processing attribute state for linked attribute");
-        Optional<AttributeLink> attributeLink = metaItem.getValue().flatMap(AttributeLink::fromValue);
 
-        if (!attributeLink.isPresent()) {
+        AttributeLink attributeLink = null;
+
+        try {
+            attributeLink = Container.JSON.readValue(metaItem.getValue().map(Value::toJson).orElse(""), AttributeLink.class);
+        } catch (IOException e) {
+            LOG.log(Level.WARNING, "Failed to deserialize AttributeLink", e);
+        }
+
+        if (attributeLink == null) {
             throw new AssetProcessingException(Reason.INVALID_ATTRIBUTE_LINK);
         }
 
@@ -146,7 +158,7 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
             em,
             assetStorageService,
             attributeState.getValue().orElse(null),
-            attributeLink.get()
+            attributeLink
         );
 
         if (!sendConvertedValue.key) {
@@ -154,14 +166,14 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
             return;
         }
 
-        sendAttributeEvent(new AttributeEvent(attributeLink.get().getAttributeRef(), sendConvertedValue.value));
+        sendAttributeEvent(new AttributeEvent(attributeLink.getAttributeRef(), sendConvertedValue.value));
     }
 
-    protected static Pair<Boolean, Value> convertValueForLinkedAttribute(EntityManager em,
+    protected Pair<Boolean, Value> convertValueForLinkedAttribute(EntityManager em,
                                                                          AssetStorageService assetStorageService,
                                                                          Value originalValue,
                                                                          AttributeLink attributeLink) throws AssetProcessingException {
-        return attributeLink.getConverter()
+        Pair<Boolean, Value> ignoreValuePair = attributeLink.getConverter()
             .map(
                 converter -> {
                     String converterKey = originalValue == null ? "NULL" : originalValue.toString().toUpperCase(Locale.ROOT);
@@ -175,6 +187,12 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
                         .orElseGet(() -> new Pair<>(true, originalValue)); // use the original value
                 })
             .orElse(new Pair<>(true, originalValue)); // use the original value
+
+        if (ignoreValuePair.key && attributeLink.getFilters() != null) {
+            ignoreValuePair.value = agentService.applyValueFilters(ignoreValuePair.value, attributeLink.getFilters());
+        }
+
+        return ignoreValuePair;
     }
 
     protected static Optional<AttributeLink.ConverterType> getSpecialConverter(Value value) {
@@ -234,9 +252,9 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
         }
     }
 
-    protected static Value getCurrentValue(EntityManager em,
-                                           AssetStorageService assetStorageService,
-                                           AttributeRef attributeRef) throws NoSuchElementException {
+    protected static Optional<AssetAttribute> getAttribute(EntityManager em,
+                                                 AssetStorageService assetStorageService,
+                                                 AttributeRef attributeRef) {
         Asset asset = assetStorageService.find(
             em,
             new AssetQuery()
@@ -244,12 +262,20 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
                 .select(new Select(Include.ALL, false, attributeRef.getAttributeName()))
         );
 
-        Optional<AssetAttribute> attribute;
-        if (asset == null || !(attribute = asset.getAttribute(attributeRef.getAttributeName())).isPresent()) {
-            throw new NoSuchElementException("Attribute or asset could not be found: " + attributeRef);
+        AssetAttribute attribute = asset != null ? asset.getAttribute(attributeRef.getAttributeName()).orElse(null) : null;
+
+        if (attribute == null) {
+            LOG.warning("Attribute or asset could not be found: " + attributeRef);
         }
 
-        return attribute.get().getValue().orElse(null);
+        return Optional.ofNullable(attribute);
+    }
+
+    protected static Value getCurrentValue(EntityManager em,
+                                           AssetStorageService assetStorageService,
+                                           AttributeRef attributeRef) {
+        Optional<AssetAttribute> attribute = getAttribute(em, assetStorageService, attributeRef);
+        return attribute.flatMap(AssetAttribute::getValue).orElse(null);
     }
 
     @Override

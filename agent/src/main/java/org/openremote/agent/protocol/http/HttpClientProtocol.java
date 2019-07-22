@@ -48,7 +48,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.net.URI;
@@ -78,7 +77,7 @@ import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY
  * <p>
  * {@link Attribute}s that are configured as {@link ProtocolConfiguration}s for this protocol support the following meta
  * items: <ul> <li>{@link #META_PROTOCOL_BASE_URI} (<b>required</b>)</li> <li>{@link #META_PROTOCOL_USERNAME}</li>
- * <li>{@link #META_PROTOCOL_PASSWORD}</li> <li>{@link #META_PROTOCOL_OAUTH_GRANT}</li> <li>{@link
+ * <li>{@link #META_PROTOCOL_PASSWORD}</li> <li>{@link Protocol#META_PROTOCOL_OAUTH_GRANT}</li> <li>{@link
  * #META_PROTOCOL_PING_PATH}</li> <li>{@link #META_PROTOCOL_PING_METHOD}</li> <li>{@link #META_PROTOCOL_PING_BODY}</li>
  * <li>{@link #META_PROTOCOL_PING_QUERY_PARAMETERS}</li> <li>{@link #META_PROTOCOL_PING_MILLIS}</li> <li>{@link
  * #META_PROTOCOL_FOLLOW_REDIRECTS}</li> <li>{@link #META_FAILURE_CODES}</li> <li>{@link #META_HEADERS}</li> </ul>
@@ -91,13 +90,13 @@ import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY
  * the response received from this endpoint</b>)</li> <li>{@link #META_QUERY_PARAMETERS}</li>
  * <li>{@link #META_FAILURE_CODES}</li>
  * <li>{@link #META_HEADERS}</li>
- * <li>{@link Protocol#META_VALUE_FILTERS}</li>
+ * <li>{@link MetaItemType#META_VALUE_FILTERS}</li>
  * </ul>
  * <p>
  * <h1>Response filtering</h1>
  * <p>
  * Any {@link Attribute} whose value is to be set by the HTTP server response (i.e. it has an {@link
- * #META_POLLING_MILLIS} {@link MetaItem}) can use the standard {@link Protocol#META_VALUE_FILTERS} in
+ * #META_POLLING_MILLIS} {@link MetaItem}) can use the standard {@link MetaItemType#META_VALUE_FILTERS} in
  * order to filter the received HTTP response.
  * <p>
  * <h1>Connection Status</h1>
@@ -370,18 +369,9 @@ public class HttpClientProtocol extends AbstractProtocol {
     public static final MetaItemDescriptor META_PROTOCOL_PASSWORD = metaItemString(
             PROTOCOL_NAME + ":password",
             ACCESS_PRIVATE,
-            true,
+            false,
             REGEXP_PATTERN_STRING_NON_EMPTY,
             MetaItemDescriptor.PatternFailure.STRING_EMPTY);
-
-    /**
-     * OAuth grant ({@link OAuthGrant} stored as {@link ObjectValue})
-     */
-    public static final MetaItemDescriptor META_PROTOCOL_OAUTH_GRANT = metaItemObject(
-            PROTOCOL_NAME + ":oAuthGrant",
-            ACCESS_PRIVATE,
-            false,
-            null);
 
     /**
      * Relative path to endpoint that should be used for connection status ping (string)
@@ -580,22 +570,6 @@ public class HttpClientProtocol extends AbstractProtocol {
     protected final Map<AttributeRef, ScheduledFuture> pollingMap = new HashMap<>();
     protected ResteasyClient client;
 
-    public static Optional<OAuthGrant> getOAuthGrant(AssetAttribute attribute) throws IllegalArgumentException {
-        return !attribute.hasMetaItem(META_PROTOCOL_OAUTH_GRANT)
-                ? Optional.empty()
-                : Optional.of(attribute.getMetaItem(META_PROTOCOL_OAUTH_GRANT)
-                .flatMap(AbstractValueHolder::getValueAsObject)
-                .map(objValue -> {
-                    String json = objValue.toJson();
-                    try {
-                        return Container.JSON.readValue(json, OAuthGrant.class);
-                    } catch (IOException e) {
-                        throw new IllegalArgumentException("OAuth Grant meta item is not valid", e);
-                    }
-                })
-                .orElseThrow(() -> new IllegalArgumentException("OAuth grant meta item must be an ObjectValue")));
-    }
-
     public static Optional<Pair<StringValue, StringValue>> getUsernameAndPassword(AssetAttribute attribute) throws IllegalArgumentException {
         Optional<StringValue> username = Values.getMetaItemValueOrThrow(
                 attribute,
@@ -706,7 +680,7 @@ public class HttpClientProtocol extends AbstractProtocol {
 
         /* We're going to fail hard and fast if optional meta items are incorrectly configured */
 
-        Optional<OAuthGrant> oAuthGrant = getOAuthGrant(protocolConfiguration);
+        Optional<OAuthGrant> oAuthGrant = Protocol.getOAuthGrant(protocolConfiguration);
         Optional<Pair<StringValue, StringValue>> usernameAndPassword = getUsernameAndPassword(protocolConfiguration);
 
         boolean followRedirects = Values.getMetaItemValueOrThrow(
@@ -770,7 +744,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         ResteasyWebTarget client = webTargetBuilder.build();
 
         clientMap.put(protocolRef, new Pair<>(client, failureCodes));
-        updateStatus(protocolRef, ConnectionStatus.UNKNOWN);
+        updateStatus(protocolRef, ConnectionStatus.CONNECTED);
 
         if (pingPath == null) {
             return;
@@ -1072,7 +1046,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         AttributeValidationResult result = super.validateProtocolConfiguration(protocolConfiguration);
         if (result.isValid()) {
             try {
-                getOAuthGrant(protocolConfiguration);
+                Protocol.getOAuthGrant(protocolConfiguration);
                 getUsernameAndPassword(protocolConfiguration);
                 getPingMillis(protocolConfiguration);
             } catch (IllegalArgumentException e) {
@@ -1220,7 +1194,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         });
     }
 
-    protected void updateConnectionStatus(HttpClientRequest request, AttributeRef protocolConfigurationRef, int responseCode) {
+    public static ConnectionStatus getStatusFromResponseCode(int responseCode) {
         Response.Status status = Response.Status.fromStatusCode(responseCode);
         ConnectionStatus connectionStatus = ConnectionStatus.CONNECTED;
         if (status == null) {
@@ -1247,6 +1221,11 @@ public class HttpClientProtocol extends AbstractProtocol {
             }
         }
 
+        return connectionStatus;
+    }
+
+    protected void updateConnectionStatus(HttpClientRequest request, AttributeRef protocolConfigurationRef, int responseCode) {
+        ConnectionStatus connectionStatus = getStatusFromResponseCode(responseCode);
         LOG.fine("Updating connection status based on polling response code: URI=" + request +
                 ", ResponseCode=" + responseCode + ", Status=" + connectionStatus);
         updateStatus(protocolConfigurationRef, connectionStatus);

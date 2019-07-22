@@ -35,7 +35,7 @@ import spock.util.concurrent.PollingConditions
  */
 class TcpClientTest extends Specification implements ManagerContainerTrait {
 
-    def "Check socket client"() {
+    def "Check client"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 1)

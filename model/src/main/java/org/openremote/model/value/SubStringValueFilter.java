@@ -30,10 +30,8 @@ public class SubStringValueFilter extends ValueFilter<StringValue> {
 
     public static final String NAME = "substring";
 
-    @JsonProperty
-    protected int beginIndex;
-    @JsonProperty
-    protected Integer endIndex;
+    public int beginIndex;
+    public Integer endIndex;
 
     @JsonCreator
     public SubStringValueFilter(@JsonProperty("beginIndex") int beginIndex, @JsonProperty("endIndex") Integer endIndex) {
@@ -46,26 +44,7 @@ public class SubStringValueFilter extends ValueFilter<StringValue> {
     }
 
     @Override
-    public Class<StringValue> getMessageType() {
+    public Class<StringValue> getValueType() {
         return StringValue.class;
-    }
-
-    @Override
-    public Value process(StringValue value) {
-        if (value == null) {
-            return null;
-        }
-
-        String result = null;
-
-        try {
-            if (endIndex != null) {
-                result = value.getString().substring(beginIndex, endIndex);
-            } else {
-                result = value.getString().substring(beginIndex);
-            }
-        } catch (IndexOutOfBoundsException ignored) {}
-
-        return result == null ? null : Values.create(result);
     }
 }

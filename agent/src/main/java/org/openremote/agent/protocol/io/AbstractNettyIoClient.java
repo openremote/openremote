@@ -90,6 +90,7 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
             AbstractNettyIoClient.this.encode(msg, out);
         }
 
+        @SuppressWarnings("deprecation")
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             super.exceptionCaught(ctx, cause);
@@ -111,6 +112,7 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
     protected ProtocolExecutorService executorService;
     protected ScheduledFuture reconnectTask;
     protected int reconnectDelayMilliseconds = INITIAL_RECONNECT_DELAY_MILLIS;
+    protected boolean permanentError;
 
     public AbstractNettyIoClient(ProtocolExecutorService executorService) {
         this.executorService = executorService;
@@ -193,13 +195,13 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
 
     @Override
     public synchronized void disconnect() {
-        if (connectionStatus == ConnectionStatus.DISCONNECTING || connectionStatus == ConnectionStatus.DISCONNECTED) {
+        if ((permanentError && connectionStatus == ConnectionStatus.ERROR) || connectionStatus == ConnectionStatus.DISCONNECTING || connectionStatus == ConnectionStatus.DISCONNECTED) {
             LOG.finest("Already disconnecting or disconnected: " + getSocketAddressString());
             return;
         }
 
         LOG.finest("Disconnecting IO client: " + getSocketAddressString());
-        onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
+        onConnectionStatusChanged(permanentError ? ConnectionStatus.ERROR : ConnectionStatus.DISCONNECTING);
 
         try {
             if (reconnectTask != null) {
@@ -396,6 +398,16 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
     protected abstract void decode(ByteBuf buf, List<T> messages);
 
     protected abstract void encode(T message, ByteBuf buf);
+
+    protected synchronized void setPermanentError(String message) {
+        if (permanentError) {
+            return;
+        }
+
+        LOG.info("An unrecoverable error has occurred with client '" + getSocketAddressString() + "' is no longer usable: " + message);
+        this.permanentError = true;
+        disconnect();
+    }
 
     @Override
     public String toString() {

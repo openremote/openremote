@@ -307,6 +307,7 @@ public abstract class AbstractNettyIoServer<T, U extends Channel, V extends Abst
         });
 
         channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
+            @SuppressWarnings("deprecation")
             @Override
             public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
                 onEncodeException(ctx, cause);
@@ -326,6 +327,7 @@ public abstract class AbstractNettyIoServer<T, U extends Channel, V extends Abst
         });
     }
 
+    @SuppressWarnings("unchecked")
     protected void handleMessageReceived(U channel, T message) {
         onMessageReceived(message, channel, (W)channel.remoteAddress());
     }

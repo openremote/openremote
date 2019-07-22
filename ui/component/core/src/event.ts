@@ -8,7 +8,8 @@ import {
     SharedEvent,
     ReadAssetAttributesEvent,
     AssetEvent,
-    ReadAssetEvent
+    ReadAssetEvent,
+    TriggeredEventSubscription
 } from "@openremote/model";
 
 export enum EventProviderStatus {
@@ -501,20 +502,11 @@ export class WebSocketEventProvider extends EventProviderImpl {
                 }
             } else if (msg.startsWith(EVENT_MESSAGE_PREFIX)) {
                 let str = msg.substring(EVENT_MESSAGE_PREFIX.length);
-                let seperatorPos = str.indexOf(":");
-                if (seperatorPos > 0) {
-                    let strArr = [str.substring(0, seperatorPos), str.substring(seperatorPos + 1)];
-                    let subscriptionId = strArr[0];
-                    let jsonStr = strArr[1];
-                    if (jsonStr.startsWith("[")) {
-                        let events = JSON.parse(jsonStr) as SharedEvent[];
-                        events.forEach(event => {
-                            this._onMessageReceived(subscriptionId, event);
-                        });
-                    } else {
-                        let event = JSON.parse(jsonStr) as SharedEvent;
-                        this._onMessageReceived(subscriptionId, event);
-                    }
+                let triggered = JSON.parse(str) as TriggeredEventSubscription<SharedEvent>;
+                if (triggered.events) {
+                    triggered.events.forEach(event => {
+                        this._onMessageReceived(triggered.subscriptionId!, event);
+                    });
                 }
             }
         };

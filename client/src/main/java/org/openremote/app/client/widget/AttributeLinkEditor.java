@@ -318,7 +318,7 @@ public class AttributeLinkEditor extends FlowPanel {
         if (!validationResult.isValid()) {
             onValueModified.accept(null);
         } else {
-            onValueModified.accept(new AttributeLink(attributeRef, convertMetaToConverter(converterAttribute.getMeta())));
+            onValueModified.accept(new AttributeLink(attributeRef, convertMetaToConverter(converterAttribute.getMeta()), null));
         }
     }
 

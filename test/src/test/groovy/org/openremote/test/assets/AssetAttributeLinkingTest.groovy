@@ -1,5 +1,6 @@
 package org.openremote.test.assets
 
+import org.openremote.container.Container
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 
@@ -8,6 +9,8 @@ import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetType
 import org.openremote.model.attribute.*
+import org.openremote.model.value.JsonPathFilter
+import org.openremote.model.value.ValueFilter
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -37,13 +40,15 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
         when: "assets are created"
         def asset1 = new Asset("Asset 1", AssetType.THING, null, Constants.MASTER_REALM)
         asset1.setAttributes(
-            new AssetAttribute("button", AttributeValueType.STRING, Values.create("RELEASED"), getClockTimeOf(container))
+            new AssetAttribute("button", AttributeValueType.STRING, Values.create("RELEASED"), getClockTimeOf(container)),
+            new AssetAttribute("array", AttributeValueType.ARRAY, null)
         )
         asset1 = assetStorageService.merge(asset1)
         def asset2 = new Asset("Asset 2", AssetType.THING, null, Constants.MASTER_REALM)
         asset2.setAttributes(
-                new AssetAttribute("lightOnOff", AttributeValueType.BOOLEAN, Values.create(false), getClockTimeOf(container)),
-                new AssetAttribute("counter", AttributeValueType.NUMBER, Values.create(0), getClockTimeOf(container))
+            new AssetAttribute("lightOnOff", AttributeValueType.BOOLEAN, Values.create(false), getClockTimeOf(container)),
+            new AssetAttribute("counter", AttributeValueType.NUMBER, Values.create(0), getClockTimeOf(container)),
+            new AssetAttribute("item2Prop1", AttributeValueType.BOOLEAN, null)
         )
         asset2 = assetStorageService.merge(asset2)
 
@@ -51,7 +56,7 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
         assert asset1.id != null
         assert asset2.id != null
 
-        when: "an attribute from one asset is linked to an attribute on the other"
+        when: "attributes from one asset is linked to attributes on the other"
         def converterOnOff = Values.createObject()
         converterOnOff.put("PRESSED", "@TOGGLE")
         converterOnOff.put("RELEASED", "@IGNORE")
@@ -68,8 +73,14 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
         attributeLinkCounter.put("attributeRef", new AttributeRef(asset2.id, "counter").toArrayValue())
         attributeLinkCounter.put("converter", converterCounter)
 
+        def attributeLinkProp = Values.parse(Container.JSON.writeValueAsString(new AttributeLink(
+            new AttributeRef(asset2.id, "item2Prop1"), null, [
+            new JsonPathFilter("\$[1].prop1")
+        ] as ValueFilter[]))).orElse(null)
+
         asset1.getAttribute("button").get().addMeta(new MetaItem(MetaItemType.ATTRIBUTE_LINK, attributeLinkOnOff))
         asset1.getAttribute("button").get().addMeta(new MetaItem(MetaItemType.ATTRIBUTE_LINK, attributeLinkCounter))
+        asset1.getAttribute("array").get().addMeta(new MetaItem(MetaItemType.ATTRIBUTE_LINK, attributeLinkProp))
         asset1 = assetStorageService.merge(asset1)
 
         and: "the button is pressed for a short period"
@@ -188,6 +199,15 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
             assert noEventProcessedIn(assetProcessingService, 500)
         }
         */
+
+        when: "the array attribute is written to"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset1.id, "array", Values.parse("[{\"prop1\": true, \"prop2\": \"a\"},{\"prop1\": false, \"prop2\": \"b\"}]").orElse(null)))
+
+        then: "the linked attribute on the other asset should contain the value from the json path"
+        conditions.eventually {
+            asset2 = assetStorageService.find(asset2.id, true)
+            assert !asset2.getAttribute("item2Prop1").get().getValueAsBoolean().orElse(true)
+        }
 
         cleanup: "the server should be stopped"
         stopContainer(container)

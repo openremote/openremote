@@ -24,6 +24,7 @@ import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
 import java.util.Locale;
+import java.util.function.Predicate;
 
 public class StringPredicate implements ValuePredicate {
 
@@ -66,6 +67,30 @@ public class StringPredicate implements ValuePredicate {
             stringPredicate.value = value;
         });
         return stringPredicate;
+    }
+
+    public static Predicate<String> asPredicate(StringPredicate predicate) {
+        return string -> {
+            if (string == null && predicate.value == null)
+                return true;
+            if (string == null)
+                return false;
+            if (predicate.value == null)
+                return false;
+
+            String shouldMatch = predicate.caseSensitive ? predicate.value : predicate.value.toUpperCase(Locale.ROOT);
+            String have = predicate.caseSensitive ? string : string.toUpperCase(Locale.ROOT);
+
+            switch (predicate.match) {
+                case BEGIN:
+                    return predicate.negate != have.startsWith(shouldMatch);
+                case END:
+                    return predicate.negate != have.endsWith(shouldMatch);
+                case CONTAINS:
+                    return predicate.negate != have.contains(shouldMatch);
+            }
+            return predicate.negate != have.equals(shouldMatch);
+        };
     }
 
     public StringPredicate match(BaseAssetQuery.Match match) {

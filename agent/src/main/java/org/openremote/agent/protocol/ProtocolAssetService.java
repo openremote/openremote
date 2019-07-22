@@ -23,6 +23,8 @@ import org.openremote.container.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueFilter;
 
 import java.util.function.Predicate;
 
@@ -140,4 +142,9 @@ public interface ProtocolAssetService extends ContainerService {
      * belongs to.
      */
     Asset getAgent(AssetAttribute protocolConfiguration);
+
+    /**
+     * Apply the specified set of {@link ValueFilter}s to the specified {@link Value}
+     */
+    Value applyValueFilters(Value value, ValueFilter... filters);
 }

@@ -19,6 +19,12 @@
  */
 package org.openremote.manager.agent;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.ParseContext;
+import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
+import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.ProtocolAssetService;
@@ -37,18 +43,19 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributeRefPredicate;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.ObjectValue;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.*;
 
 import javax.persistence.EntityManager;
 import java.util.*;
@@ -56,6 +63,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -95,6 +103,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     protected final Map<AttributeRef, List<AttributeRef>> linkedAttributes = new HashMap<>();
     protected LocalAgentConnector localAgentConnector;
     protected Map<String, Asset> agentMap;
+    protected ParseContext jsonPathParser;
 
     /**
      * It's important that {@link Protocol}s have a lower priority than this service so they are fully initialized
@@ -128,6 +137,13 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 container.getService(ManagerIdentityService.class),
                 assetStorageService,
                 this)
+        );
+
+        jsonPathParser = JsonPath.using(
+            new Configuration.ConfigurationBuilder()
+                .jsonProvider(new JacksonJsonNodeJsonProvider())
+                .mappingProvider(new JacksonMappingProvider())
+                .build()
         );
     }
 
@@ -755,5 +771,115 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             }
             return agentMap;
         });
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Value applyValueFilters(Value value, ValueFilter... filters) {
+
+        LOG.fine("Applying value filters to value...");
+
+        for (ValueFilter filter : filters) {
+            boolean filterOk = filter.getValueType() == Value.class || filter.getValueType() == value.getType().getModelType();
+
+            if (!filterOk) {
+                // Try and convert the value
+                ValueType filterValueType = ValueType.fromModelType(filter.getValueType());
+                if (filterValueType == null) {
+                    LOG.fine("Value filter type unknown: " + filter.getValueType().getName());
+                    value = null;
+                } else {
+                    Optional<Value> val = Values.convert(value, filterValueType);
+                    if (!val.isPresent()) {
+                        LOG.fine("Value filter type '" + filter.getValueType().getName()
+                            + "' is not compatible with actual value type '" + value.getType().getModelType().getName()
+                            + "': " + filter.getClass().getName());
+                    } else {
+                        filterOk = true;
+                    }
+                    value = val.orElse(null);
+                }
+            }
+
+            if (filterOk) {
+                try {
+                    Protocol.LOG.finest("Applying value filter: " + filter.getClass().getName());
+                    if (filter instanceof RegexValueFilter) {
+                        value = applyRegexFilter((StringValue)value, (RegexValueFilter)filter);
+                    } else if (filter instanceof SubStringValueFilter) {
+                        value = applySubstringFilter((StringValue)value, (SubStringValueFilter)filter);
+                    } else if (filter instanceof JsonPathFilter) {
+                        value = applyJsonPathFilter(value, (JsonPathFilter)filter);
+                    } else {
+                        throw new UnsupportedOperationException("Unsupported filter: " + filter);
+                    }
+                } catch (Exception e) {
+                    LOG.log(
+                        Level.SEVERE,
+                        "Value filter threw an exception during processing: "
+                            + filter.getClass().getName(),
+                        e);
+                    value = null;
+                }
+            }
+
+            if (value == null) {
+                break;
+            }
+        }
+
+        return value;
+    }
+
+    protected Value applySubstringFilter(StringValue value, SubStringValueFilter filter) {
+        if (value == null) {
+            return null;
+        }
+
+        String result = null;
+
+        try {
+            if (filter.endIndex != null) {
+                result = value.getString().substring(filter.beginIndex, filter.endIndex);
+            } else {
+                result = value.getString().substring(filter.beginIndex);
+            }
+        } catch (IndexOutOfBoundsException ignored) {}
+
+        return result == null ? null : Values.create(result);
+    }
+
+    protected Value applyRegexFilter(StringValue value, RegexValueFilter filter) {
+        if (value == null || filter.pattern == null) {
+            return null;
+        }
+
+        String filteredStr = null;
+        Matcher matcher = filter.pattern.matcher(value.getString());
+        int matchIndex = 0;
+        boolean matched = matcher.find();
+
+        while(matched && matchIndex<filter.matchIndex) {
+            matched = matcher.find();
+            matchIndex++;
+        }
+
+        if (matched) {
+            if (filter.matchGroup <= matcher.groupCount()) {
+                filteredStr = matcher.group(filter.matchGroup);
+            }
+        }
+
+        return filteredStr == null ? null : Values.create(filteredStr);
+    }
+
+    protected Value applyJsonPathFilter(Value value, JsonPathFilter filter) {
+        if (value == null || TextUtil.isNullOrEmpty(filter.path)) {
+            return null;
+        }
+
+        JsonNode node = jsonPathParser.parse(value.toJson()).read(filter.path);
+        String pathJson = node != null ? node.toString() : null;
+        return TextUtil.isNullOrEmpty(pathJson) ? null : Values.parse(pathJson).orElse(null);
     }
 }

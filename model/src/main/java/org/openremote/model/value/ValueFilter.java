@@ -32,22 +32,16 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  * <li>If filter throws an exception then handle and treat as if filter returned null</li>
  * </ul>
  */
-@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
     @JsonSubTypes.Type(name = RegexValueFilter.NAME, value = RegexValueFilter.class),
     @JsonSubTypes.Type(name = SubStringValueFilter.NAME, value = SubStringValueFilter.class),
-    @JsonSubTypes.Type(name = JsonValueFilter.NAME, value = JsonValueFilter.class)
+    @JsonSubTypes.Type(name = JsonPathFilter.NAME, value = JsonPathFilter.class)
 })
 public abstract class ValueFilter<T extends Value> {
 
     /**
-     * Get the message type
+     * Get the value type
      */
-    public abstract Class<T> getMessageType();
-
-    /**
-     * Apply this filter to the supplied message
-     */
-    public abstract Value process(T message);
-
+    public abstract Class<T> getValueType();
 }

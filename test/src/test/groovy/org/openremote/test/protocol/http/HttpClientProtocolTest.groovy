@@ -305,7 +305,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                         Values.create("https://mockapi")
                     ),
                     new MetaItem(
-                        HttpClientProtocol.META_PROTOCOL_OAUTH_GRANT,
+                        Protocol.META_PROTOCOL_OAUTH_GRANT,
                         new OAuthPasswordGrant("https://mockapi/token",
                             "TestClient",
                             "TestSecret",
@@ -376,7 +376,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     Values.create("https://mockapi")
                 ),
                 new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_OAUTH_GRANT,
+                    Protocol.META_PROTOCOL_OAUTH_GRANT,
                     new OAuthPasswordGrant("https://mockapi/token",
                         "TestClient",
                         "TestSecret",
@@ -488,7 +488,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_poll_slow")),
                     new MetaItem(HttpClientProtocol.META_POLLING_MILLIS, Values.create(50)), // This is ms in testing
                     new MetaItem(
-                        Protocol.META_VALUE_FILTERS,
+                        MetaItemType.META_VALUE_FILTERS,
                         Values.createArray().add(Util.objectToValue(new RegexValueFilter("\\d+", 0, 0)).get())
                     )
                 ),
@@ -499,7 +499,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_poll_fast")),
                     new MetaItem(HttpClientProtocol.META_POLLING_MILLIS, Values.create(40)), // This is ms in testing
                     new MetaItem(
-                        Protocol.META_VALUE_FILTERS,
+                        MetaItemType.META_VALUE_FILTERS,
                         Values.createArray().add(Util.objectToValue(new RegexValueFilter("\\d+", 0, 1)).get())
                     )
                 )
@@ -548,7 +548,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     Values.create("https://mockapi")
                 ),
                 new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_OAUTH_GRANT,
+                    Protocol.META_PROTOCOL_OAUTH_GRANT,
                     new OAuthPasswordGrant("https://mockapi/token",
                         "TestClient",
                         "TestSecret",
@@ -570,7 +570,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     Values.create("https://mockapi")
                 ),
                 new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_OAUTH_GRANT,
+                    Protocol.META_PROTOCOL_OAUTH_GRANT,
                     new OAuthPasswordGrant("https://mockapi/token",
                         "TestClient",
                         "TestSecret",
@@ -592,7 +592,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     Values.create("https://mockapi")
                 ),
                 new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_OAUTH_GRANT,
+                    Protocol.META_PROTOCOL_OAUTH_GRANT,
                     new OAuthPasswordGrant("https://mockapi/token",
                         "TestClient",
                         "TestSecret",
@@ -609,12 +609,12 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         def protocolCount = httpClientProtocol.linkedProtocolConfigurations.size()
         agent = assetStorageService.merge(agent)
 
-        then: "the protocol configuration should be linked with a connection status of unknown"
+        then: "the protocol configuration should be linked with a connection status of connected"
         conditions.eventually {
             assert httpClientProtocol.linkedProtocolConfigurations.size() == protocolCount + 3
-            assert agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig2")) == ConnectionStatus.UNKNOWN
-            assert agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig3")) == ConnectionStatus.UNKNOWN
-            assert agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig4")) == ConnectionStatus.UNKNOWN
+            assert agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig2")) == ConnectionStatus.CONNECTED
+            assert agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig3")) == ConnectionStatus.CONNECTED
+            assert agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig4")) == ConnectionStatus.CONNECTED
         }
 
         when: "attributes are linked to these protocol configurations"

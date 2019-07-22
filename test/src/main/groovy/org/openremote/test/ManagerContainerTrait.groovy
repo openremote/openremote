@@ -26,8 +26,7 @@ trait ManagerContainerTrait extends ContainerTrait {
     static Map<String, String> defaultConfig(int serverPort) {
         [
                 (WEBSERVER_LISTEN_PORT)          : Integer.toString(serverPort),
-                (IDENTITY_NETWORK_HOST)          : KeycloakIdentityProvider.KEYCLOAK_HOST_DEFAULT,
-                (IDENTITY_NETWORK_WEBSERVER_PORT): Integer.toString(KeycloakIdentityProvider.KEYCLOAK_PORT_DEFAULT),
+                (IDENTITY_NETWORK_WEBSERVER_PORT): Integer.toString(serverPort),
                 (SETUP_IMPORT_DEMO_SCENES)       : "false",
                 (SETUP_IMPORT_DEMO_RULES)        : "false"
         ]

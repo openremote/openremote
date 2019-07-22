@@ -19,6 +19,7 @@
  */
 package org.openremote.model.event.shared;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.event.Event;
 import org.openremote.model.event.TriggeredEventSubscription;
 
@@ -48,6 +49,7 @@ public class EventSubscription<E extends SharedEvent> {
     /**
      * Optional only set when an internal subscription is made
      */
+    @JsonIgnore
     protected Consumer<TriggeredEventSubscription<E>> internalConsumer;
 
     protected EventSubscription() {
@@ -116,7 +118,7 @@ public class EventSubscription<E extends SharedEvent> {
         return getClass().getSimpleName() + "{" +
             "eventType='" + eventType + '\'' +
             ", filter=" + filter +
-            "subscriptionId='" + subscriptionId + '\'' +
+            ", subscriptionId='" + subscriptionId + '\'' +
             '}';
     }
 }

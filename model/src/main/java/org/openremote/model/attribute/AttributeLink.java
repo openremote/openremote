@@ -19,10 +19,9 @@
  */
 package org.openremote.model.attribute;
 
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.value.*;
 
 import java.util.Optional;
 
@@ -87,17 +86,15 @@ public class AttributeLink {
 
     protected AttributeRef attributeRef;
     protected ObjectValue converter;
+    protected ValueFilter[] filters;
 
-    public AttributeLink(String entityId, String attributeName, ObjectValue converter) {
-        this(new AttributeRef(entityId, attributeName), converter);
-    }
-
-    /**
-     * @param converter can be <code>null</code> if no conversions are defined (i.e. value is direct write through).
-     */
-    public AttributeLink(AttributeRef attributeRef, ObjectValue converter) {
+    @JsonCreator
+    public AttributeLink(@JsonProperty("attributeRef") AttributeRef attributeRef,
+                         @JsonProperty("converter") ObjectValue converter,
+                         @JsonProperty("filters") ValueFilter[] filters) {
         this.attributeRef = requireNonNull(attributeRef);
         this.converter = converter;
+        this.filters = filters;
     }
 
     public AttributeRef getAttributeRef() {
@@ -112,11 +109,16 @@ public class AttributeLink {
         this.converter = converter;
     }
 
-    public ObjectValue toObjectValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("attributeRef", getAttributeRef().toArrayValue());
-        objectValue.put("converter", converter);
-        return objectValue;
+    public void setAttributeRef(AttributeRef attributeRef) {
+        this.attributeRef = attributeRef;
+    }
+
+    public ValueFilter[] getFilters() {
+        return filters;
+    }
+
+    public void setFilters(ValueFilter[] filters) {
+        this.filters = filters;
     }
 
     @Override
@@ -134,15 +136,5 @@ public class AttributeLink {
                     objectValue.get("converter").map(v -> v.getType() == ValueType.OBJECT).orElse(true);
             })
             .orElse(false);
-    }
-
-    @SuppressWarnings("ConstantConditions")
-    public static Optional<AttributeLink> fromValue(Value value) {
-        return Values.getObject(value)
-            .filter(AttributeLink::isAttributeLink)
-            .flatMap(objectValue ->
-                AttributeRef.fromValue(objectValue.get("attributeRef").get())
-                    .map(attrRef -> new AttributeLink(attrRef, objectValue.getObject("converter").orElse(null)))
-            );
     }
 }

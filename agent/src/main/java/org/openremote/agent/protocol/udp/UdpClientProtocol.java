@@ -31,6 +31,7 @@ import org.openremote.model.attribute.*;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueFilter;
 import org.openremote.model.value.Values;
 
 import java.nio.charset.Charset;
@@ -49,30 +50,35 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 /**
  * This is a UDP client protocol for communicating with UDP servers; it uses the {@link AbstractUdpClient} to handle the
  * communication, it is important that all data (sent and received) fits in a single datagram packet.
- * <p>
- * This is a generic protocol that supports
- * {@link org.openremote.agent.protocol.Protocol#META_PROTOCOL_CONVERT_HEX} or
- * {@link org.openremote.agent.protocol.Protocol#META_PROTOCOL_CONVERT_BINARY} to facilitate working with UDP servers
- * that handle binary data.
- * <p>
  * <h1>Protocol Configurations</h1>
- * An instance is created by defining a {@link ProtocolConfiguration} with the following {@link MetaItem}s:
- * <ul>
- * <li>{@link #META_PROTOCOL_HOST} <b>(required)</b></li>
- * <li>{@link #META_PROTOCOL_PORT} <b>(required)</b></li>
- * <li>{@link #META_PROTOCOL_BIND_PORT}</li>
- * <li>{@link #META_PROTOCOL_CHARSET} (defaults to UTF8 if not specified)</li>
- * </ul>
  * <p>
+ * {@link Attribute}s that are configured as {@link ProtocolConfiguration}s for this protocol support the meta
+ * items defined in {@link #PROTOCOL_META_ITEM_DESCRIPTORS}.
  * <h1>Linked Attributes</h1>
+ * <p>
  * {@link Attribute}s that are linked to this protocol using an {@link MetaItemType#AGENT_LINK} {@link MetaItem} support
- * the following meta items:
- * <ul>
- * <li>{@link #META_ATTRIBUTE_WRITE_VALUE} (if specified also supports dynamic value injection as described in {@link Protocol})</li>
- * <li>{@link #META_VALUE_FILTERS}</li>
- * <li>{@link #META_POLLING_MILLIS}</li>
- * </ul>
- *
+ * the meta items defined in {@link #ATTRIBUTE_META_ITEM_DESCRIPTORS}.
+ * <h1>Protocol -> Attribute</h1>
+ * <p>
+ * When a new value comes from the protocol destined for a linked {@link Attribute} the actual value written to the
+ * attribute can be filtered in the standard way using {@link ValueFilter}s via the{@link MetaItemType#META_VALUE_FILTERS}
+ * {@link MetaItem}.
+ * <h1>Attribute -> Protocol</h1>
+ * <p>
+ * When a linked {@link Attribute} is written to, the actual value written to the protocol can either be the exact value
+ * written to the linked {@link Attribute} or the {@link Protocol#META_ATTRIBUTE_WRITE_VALUE} {@link MetaItem} can be
+ * used to inject the written value into a bigger payload using the {@link Protocol#DYNAMIC_VALUE_PLACEHOLDER} and then
+ * this bigger payload will be written to the protocol.
+ * <h1>Executable Attributes</h1>
+ * When a linked {@link Attribute} that has an {@link MetaItemType#EXECUTABLE} {@link MetaItem} is executed the
+ * {@link Value} stored in the {@link Protocol#META_ATTRIBUTE_WRITE_VALUE} {@link MetaItem} is actually written to the
+ * protocol (note dynamic value injection doesn't work in this scenario as there is no dynamic value to inject).
+ * <p>
+ * <h1>Protocol Specifics</h1>
+ * <p>
+ * This is a generic protocol that supports:
+ * {@link Protocol#META_PROTOCOL_CONVERT_HEX} or {@link Protocol#META_PROTOCOL_CONVERT_BINARY} to facilitate working
+ * with UDP servers that handle binary data.
  */
 public class UdpClientProtocol extends AbstractProtocol {
 
@@ -264,7 +270,7 @@ public class UdpClientProtocol extends AbstractProtocol {
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
         META_ATTRIBUTE_WRITE_VALUE,
-        META_VALUE_FILTERS,
+        MetaItemType.VALUE_FILTERS,
         META_POLLING_MILLIS,
         META_RESPONSE_TIMEOUT_MILLIS,
         META_SEND_RETRIES,
@@ -400,9 +406,6 @@ public class UdpClientProtocol extends AbstractProtocol {
             return;
         }
 
-        final String writeValue = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_WRITE_VALUE, false, true)
-                .map(Object::toString).orElse(null);
-
         final Integer pollingMillis = Values.getMetaItemValueOrThrow(attribute, META_POLLING_MILLIS, false, true)
                 .flatMap(Values::getIntegerCoerced)
                 .orElse(null);
@@ -439,19 +442,22 @@ public class UdpClientProtocol extends AbstractProtocol {
         AttributeInfo info = new AttributeInfo(attribute.getReferenceOrThrow(), sendRetries, responseTimeoutMillis);
 
         if (!attribute.isReadOnly()) {
-            sendConsumer = createWriteConsumer(
-                    clientAndQueue,
-                    info,
-                    writeValue,
-                    serverAlwaysResponds ? str -> {
+            sendConsumer = Protocol.createDynamicAttributeWriteConsumer(attribute, str ->
+                clientAndQueue.send(
+                    str,
+                    serverAlwaysResponds ? responseStr -> {
                         // Just drop the response; something in the future could be used to verify send was successful
-                    } : null);
+                    } : null,
+                    info));
         }
 
         if (pollingMillis != null && pollingMillis < MIN_POLLING_MILLIS) {
             LOG.warning("Polling ms must be >= " + MIN_POLLING_MILLIS);
             return;
         }
+
+        final String writeValue = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_WRITE_VALUE, false, true)
+            .map(Object::toString).orElse(null);
 
         if (pollingMillis != null && TextUtil.isNullOrEmpty(writeValue)) {
             LOG.warning("Polling requires the META_ATTRIBUTE_WRITE_VALUE meta item to be set");
@@ -466,8 +472,8 @@ public class UdpClientProtocol extends AbstractProtocol {
                         attribute.getReferenceOrThrow(),
                         str != null ? Values.create(str) : null));
             };
-            Consumer<Value> pollingWriter = createWriteConsumer(clientAndQueue, info, null, responseConsumer);
-            Runnable pollingRunnable = () -> pollingWriter.accept(Values.create(writeValue));
+
+            Runnable pollingRunnable = () -> clientAndQueue.send(writeValue, responseConsumer, info);
             pollingTask = schedulePollingRequest(clientAndQueue, attribute.getReferenceOrThrow(), pollingRunnable, pollingMillis);
         }
 
@@ -519,23 +525,6 @@ public class UdpClientProtocol extends AbstractProtocol {
 
     protected void onConnectionStatusChanged(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
         updateStatus(protocolRef, connectionStatus);
-    }
-
-    protected Consumer<Value> createWriteConsumer(ClientAndQueue clientAndQueue, AttributeInfo attributeInfo, String writeValue, Consumer<String> responseConsumer) {
-        return value -> {
-
-            String str = value != null ? value.toString() : "";
-
-            if (!TextUtil.isNullOrEmpty(writeValue)) {
-                if (str.isEmpty()) {
-                    str = writeValue;
-                } else if (writeValue.contains(DYNAMIC_VALUE_PLACEHOLDER)) {
-                    str = writeValue.replaceAll(DYNAMIC_VALUE_PLACEHOLDER_REGEXP, str);
-                }
-            }
-
-            clientAndQueue.send(str, responseConsumer, attributeInfo);
-        };
     }
 
     protected ScheduledFuture schedulePollingRequest(ClientAndQueue clientAndQueue,

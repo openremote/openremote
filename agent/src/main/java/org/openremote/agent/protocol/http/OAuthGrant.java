@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.container.Container;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
@@ -52,12 +53,15 @@ public abstract class OAuthGrant {
         requireNonNullAndNonEmpty(tokenEndpointUri);
         requireNonNullAndNonEmpty(grantType);
         requireNonNullAndNonEmpty(clientId);
-        requireNonNullAndNonEmpty(clientSecret);
         this.tokenEndpointUri = tokenEndpointUri;
         valueMap.add(VALUE_KEY_GRANT_TYPE, grantType);
         valueMap.add(VALUE_KEY_CLIENT_ID, clientId);
-        valueMap.add(VALUE_KEY_CLIENT_SECRET, clientSecret);
-        valueMap.add(VALUE_KEY_SCOPE, scope);
+        if(!TextUtil.isNullOrEmpty(clientSecret)) {
+            valueMap.add(VALUE_KEY_CLIENT_SECRET, clientSecret);
+        }
+        if(!TextUtil.isNullOrEmpty(scope)) {
+            valueMap.add(VALUE_KEY_SCOPE, scope);
+        }
     }
 
     public MultivaluedMap<String, String> getValueMap() {

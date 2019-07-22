@@ -54,6 +54,7 @@ import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
+import org.openremote.model.value.Values;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -83,6 +84,7 @@ public class AssetEditActivity
     protected final FileInfoMapper fileInfoMapper;
     protected final AttributeValidationResultMapper attributeValidationResultMapper;
     protected final AssetAttributeMapper assetAttributeMapper;
+    protected final AttributeLinkMapper attributeLinkMapper;
     protected final Consumer<ConstraintViolation[]> validationErrorHandler;
     protected List<ProtocolDescriptor> protocolDescriptors = new ArrayList<>();
     protected List<MetaItemDescriptor> metaItemDescriptors = new ArrayList<>(Arrays.asList(MetaItemType.values())); // TODO Get meta item descriptors from server
@@ -105,6 +107,7 @@ public class AssetEditActivity
                              AttributeValidationResultMapper attributeValidationResultMapper,
                              AssetAttributeMapper assetAttributeMapper,
                              FileInfoMapper fileInfoMapper,
+                             AttributeLinkMapper attributeLinkMapper,
                              MapResource mapResource,
                              ObjectValueMapper objectValueMapper) {
         super(environment, assetBrowserPresenter, objectValueMapper, mapResource, true);
@@ -122,6 +125,7 @@ public class AssetEditActivity
         this.attributeValidationResultMapper = attributeValidationResultMapper;
         this.assetAttributeMapper = assetAttributeMapper;
         this.fileInfoMapper = fileInfoMapper;
+        this.attributeLinkMapper = attributeLinkMapper;
 
         validationErrorHandler = violations -> {
             for (ConstraintViolation violation : violations) {
@@ -448,8 +452,8 @@ public class AssetEditActivity
                             parentView,
                             this::createValueEditor,
                             this::showValidationError,
-                            valueHolder.getValue().flatMap(AttributeLink::fromValue).orElse(null),
-                            attrLink -> onValueModified.accept(attrLink != null ? attrLink.toObjectValue() : null),
+                            valueHolder.getValueAsString().map(attributeLinkMapper::read).orElse(null),
+                            attrLink -> onValueModified.accept(attrLink != null ? Values.create(attributeLinkMapper.write(attrLink)) : null),
                             isReadOnly,
                             assetAttributeConsumer -> getLinkableAssetsAndAttributes(valueHolder, assetAttributeConsumer),
                             assetWatermark,

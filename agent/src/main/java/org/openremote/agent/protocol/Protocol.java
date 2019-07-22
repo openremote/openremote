@@ -21,7 +21,8 @@ package org.openremote.agent.protocol;
 
 import org.apache.commons.codec.binary.BinaryCodec;
 import org.apache.commons.codec.binary.Hex;
-import org.openremote.model.value.ValueFilter;
+import org.openremote.agent.protocol.http.OAuthGrant;
+import org.openremote.model.value.*;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.model.AbstractValueHolder;
@@ -33,15 +34,10 @@ import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.ArrayValue;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.ValueType;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -96,7 +92,7 @@ import static org.openremote.model.attribute.MetaItemDescriptorImpl.*;
  * receive and send value change messages with values of that type.
  * <p>
  * Generic protocols should implement support for filtering state messages from devices (or services) before the
- * protocol updates the linked attribute, to implement this protocols should use the {@link #META_VALUE_FILTERS}
+ * protocol updates the linked attribute, to implement this protocols should use the {@link MetaItemType#VALUE_FILTERS}
  * {@link MetaItem}.
  * <p>
  * <h1>Dynamic value injection</h1>
@@ -176,8 +172,18 @@ public interface Protocol extends ContainerService {
     );
 
     /**
+     * OAuth grant ({@link OAuthGrant} stored as {@link ObjectValue})
+     */
+    MetaItemDescriptor META_PROTOCOL_OAUTH_GRANT = metaItemObject(
+        PROTOCOL_NAMESPACE + ":oAuthGrant",
+        ACCESS_PRIVATE,
+        false,
+        null);
+
+    /**
      * Value to be used for attribute writes, protocols that support this should also support dynamic value insertion,
-     * see interface javadoc for more details
+     * see interface javadoc for more details; use the {@link #createDynamicAttributeWriteConsumer} helper method where
+     * possible.
      */
     MetaItemDescriptor META_ATTRIBUTE_WRITE_VALUE = metaItemAny(
             PROTOCOL_NAMESPACE + ":writeValue",
@@ -198,19 +204,6 @@ public interface Protocol extends ContainerService {
             1000,
             null);
 
-    /**
-     * {@link MetaItem} for defining {@link ValueFilter}s to apply to values before they are sent on the
-     * {@link #SENSOR_QUEUE} (i.e. before it is used to update a protocol linked attribute); this is particularly
-     * useful for generic protocols. The {@link MetaItem} value should be an {@link ArrayValue} of {@link ObjectValue}s
-     * where each {@link ObjectValue} represents a serialised {@link ValueFilter}. The message should pass through the
-     * filters in array order.
-     */
-    MetaItemDescriptor META_VALUE_FILTERS = metaItemArray(
-            PROTOCOL_NAMESPACE + ":valueFilters",
-            ACCESS_PRIVATE,
-            false,
-            null);
-
     // TODO: Some of these options should be configurable depending on expected load etc.
     // Message topic for communicating from asset/thing to protocol layer (asset attribute changed, trigger actuator)
     String ACTUATOR_TOPIC = "seda://ActuatorTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
@@ -221,7 +214,6 @@ public interface Protocol extends ContainerService {
     String DYNAMIC_VALUE_PLACEHOLDER = "{$value}";
 
     String DYNAMIC_VALUE_PLACEHOLDER_REGEXP = "\"?\\{\\$value}\"?";
-
 
     /**
      * Get the name for this protocol
@@ -291,12 +283,12 @@ public interface Protocol extends ContainerService {
     /**
      * Extract the {@link ValueFilter}s from the specified {@link Attribute}
      */
-    static Optional<List<ValueFilter>> getLinkedAttributeMessageFilters(Attribute attribute) {
+    static Optional<ValueFilter[]> getLinkedAttributeMessageFilters(Attribute attribute) {
         if (attribute == null) {
             return Optional.empty();
         }
 
-        Optional<ArrayValue> arrayValueOptional = attribute.getMetaItem(META_VALUE_FILTERS)
+        Optional<ArrayValue> arrayValueOptional = attribute.getMetaItem(MetaItemType.VALUE_FILTERS)
             .flatMap(AbstractValueHolder::getValueAsArray);
 
         if (!arrayValueOptional.isPresent()) {
@@ -304,33 +296,29 @@ public interface Protocol extends ContainerService {
         }
 
         try {
-            ArrayValue arrayValue = arrayValueOptional.get();
-            List<ValueFilter> messageFilters = new ArrayList<>(arrayValue.length());
-            for (int i = 0; i < arrayValue.length(); i++) {
-                ObjectValue objValue = arrayValue.getObject(i).orElseThrow(() ->
-                    new IllegalArgumentException("Attribute protocol filters meta item is invalid"));
-                ValueFilter filter = deserialiseMessageFilter(objValue);
-                messageFilters.add(filter);
-            }
-            return messageFilters.isEmpty() ? Optional.empty() : Optional.of(messageFilters);
-        } catch (IllegalArgumentException e) {
+            String json = arrayValueOptional.get().toJson();
+            return Optional.of(Container.JSON.readValue(json, ValueFilter[].class));
+        } catch (Exception e) {
             LOG.log(Level.WARNING, e.getMessage(), e);
         }
 
         return Optional.empty();
     }
 
-    /**
-     * Deserialise a {@link ValueFilter} from an {@link ObjectValue}
-     */
-    static ValueFilter deserialiseMessageFilter(ObjectValue objectValue) throws IllegalArgumentException {
-        String json = objectValue.toJson();
-        try {
-            return Container.JSON.readValue(json, ValueFilter.class);
-        } catch (IOException ioException) {
-            LOG.log(Level.WARNING, "Failed to deserialise message filter", ioException);
-            throw new IllegalArgumentException(ioException);
-        }
+    static Optional<OAuthGrant> getOAuthGrant(AssetAttribute attribute) throws IllegalArgumentException {
+        return !attribute.hasMetaItem(META_PROTOCOL_OAUTH_GRANT)
+            ? Optional.empty()
+            : Optional.of(attribute.getMetaItem(META_PROTOCOL_OAUTH_GRANT)
+            .flatMap(AbstractValueHolder::getValueAsObject)
+            .map(objValue -> {
+                String json = objValue.toJson();
+                try {
+                    return Container.JSON.readValue(json, OAuthGrant.class);
+                } catch (IOException e) {
+                    throw new IllegalArgumentException("OAuth Grant meta item is not valid", e);
+                }
+            })
+            .orElseThrow(() -> new IllegalArgumentException("OAuth grant meta item must be an ObjectValue")));
     }
 
     static String bytesToHexString(byte[] bytes) {
@@ -357,5 +345,26 @@ public interface Protocol extends ContainerService {
             LOG.log(Level.WARNING, "Failed to convert hex string to bytes", e);
             return new byte[0];
         }
+    }
+
+    static Consumer<Value> createDynamicAttributeWriteConsumer(AssetAttribute attribute, Consumer<String> writeConsumer) {
+
+        final String writeValue = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_WRITE_VALUE, false, true)
+            .map(Object::toString).orElse(null);
+
+        return value -> {
+
+            String str = value != null ? value.toString() : "";
+
+            if (!TextUtil.isNullOrEmpty(writeValue)) {
+                if (str.isEmpty()) {
+                    str = writeValue;
+                } else if (writeValue.contains(DYNAMIC_VALUE_PLACEHOLDER)) {
+                    str = writeValue.replaceAll(DYNAMIC_VALUE_PLACEHOLDER_REGEXP, str);
+                }
+            }
+
+            writeConsumer.accept(str);
+        };
     }
 }
