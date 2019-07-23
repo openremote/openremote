@@ -24,6 +24,7 @@ import io.netty.util.CharsetUtil;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.io.IoClient;
+import org.openremote.container.Container;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
@@ -288,6 +289,11 @@ public class UdpClientProtocol extends AbstractProtocol {
         META_SEND_RETRIES,
         META_SERVER_ALWAYS_RESPONDS
     );
+
+    @Override
+    protected void doStop(Container container) {
+        clientMap.forEach((ref, clientAndQueue) -> clientAndQueue.disconnect());
+    }
 
     @Override
     public String getProtocolName() {

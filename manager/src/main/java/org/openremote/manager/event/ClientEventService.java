@@ -48,7 +48,7 @@ import static org.apache.camel.builder.PredicateBuilder.or;
  * <p>
  * The following messages can be sent by a client:
  * <dl>
- * <dt><code>SUBSCRIBE{...}</code><dt>
+ * <dt><code>SUBSCRIBE:{...}</code><dt>
  * <dd><p>
  * The payload is a serialized representation of {@link EventSubscription} with an optional
  * {@link org.openremote.model.event.shared.EventFilter}. Clients can subscribe to receive {@link SharedEvent}s
@@ -59,12 +59,12 @@ import static org.apache.camel.builder.PredicateBuilder.or;
  * time is {@link EventSubscription#RENEWAL_PERIOD_SECONDS}; it is recommended clients renew the subscription
  * in shorter periods to allow for processing time of the renewal.
  * </p></dd>
- * <dt><code>UNSUBSCRIBE{...}</code></dt>
+ * <dt><code>UNSUBSCRIBE:{...}</code></dt>
  * <dd><p>
  * The payload is a serialized representation of {@link CancelEventSubscription}. If a client
  * does not want to wait for expiration of its subscriptions, it can cancel a subscription.
  * </p></dd>
- * <dt><code>EVENT{...}</code></dt>
+ * <dt><code>EVENT:{...}</code></dt>
  * <dd><p>
  * The payload is a serialized representation of a subtype of {@link SharedEvent}. If the server
  * does not recognize the event, it is silently ignored.
@@ -73,15 +73,15 @@ import static org.apache.camel.builder.PredicateBuilder.or;
  * <p>
  * The following messages can be published/returned by the server:
  * <dl>
- * <dt><code>UNAUTHORIZED{...}</code></dt>
+ * <dt><code>UNAUTHORIZED:{...}</code></dt>
  * <dd><p>
  * The payload is a serialized representation of {@link UnauthorizedEventSubscription}.
  * </p></dd>
- * <dt><code>EVENT{...}</code></dt>
+ * <dt><code>EVENT:{...}</code></dt>
  * <dd><p>
  * The payload is a serialized representation of a subtype of {@link SharedEvent}.
  * </p></dd>
- * <dt><code>EVENT[...]</code></dt>
+ * <dt><code>EVENT:[...]</code></dt>
  * <dd><p>
  * The payload is an array of {@link SharedEvent}s.
  * </p></dd>

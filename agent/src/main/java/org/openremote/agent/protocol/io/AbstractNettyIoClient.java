@@ -234,7 +234,7 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
     @Override
     public void sendMessage(T message) {
         if (connectionStatus != ConnectionStatus.CONNECTED) {
-            LOG.fine("Cannot send message: Status = " + connectionStatus + ": " + getSocketAddressString());
+            LOG.warning("Cannot send message: Status = " + connectionStatus + ": " + getSocketAddressString());
             return;
         }
 

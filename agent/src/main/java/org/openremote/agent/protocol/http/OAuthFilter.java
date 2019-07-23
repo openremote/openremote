@@ -64,7 +64,7 @@ public class OAuthFilter implements ClientRequestFilter {
         return null;
     }
 
-    protected synchronized String getAccessToken() {
+    public synchronized String getAccessToken() {
         LocalDateTime expiryDateTime = authServerResponse == null ? null : authServerResponse.getExpiryDateTime();
         boolean updateRequired = expiryDateTime == null || expiryDateTime.minusSeconds(10).isBefore(LocalDateTime.now());
 

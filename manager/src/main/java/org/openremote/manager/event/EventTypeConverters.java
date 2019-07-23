@@ -45,7 +45,6 @@ import org.apache.camel.TypeConverters;
 import org.openremote.container.Container;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.*;
-import org.openremote.model.util.TextUtil;
 
 import java.util.logging.Logger;
 

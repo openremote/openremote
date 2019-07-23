@@ -29,6 +29,6 @@ import java.util.List;
 
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = AgentStatusEvent.class, mixIn = DefaultJsonMixin.class)})
 public interface AgentStatusEventMapper
-    extends ObjectMapper<List<AgentStatusEvent>>,
-    EntityReader<List<AgentStatusEvent>> {
+    extends ObjectMapper<AgentStatusEvent[]>,
+    EntityReader<AgentStatusEvent[]> {
 }

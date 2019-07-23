@@ -809,7 +809,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                     } else if (filter instanceof SubStringValueFilter) {
                         value = applySubstringFilter((StringValue)value, (SubStringValueFilter)filter);
                     } else if (filter instanceof JsonPathFilter) {
-                        value = applyJsonPathFilter(value, (JsonPathFilter)filter);
+                        value = applyJsonPathFilter(value, (JsonPathFilter) filter);
                     } else {
                         throw new UnsupportedOperationException("Unsupported filter: " + filter);
                     }
@@ -878,8 +878,21 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             return null;
         }
 
-        JsonNode node = jsonPathParser.parse(value.toJson()).read(filter.path);
-        String pathJson = node != null ? node.toString() : null;
+        if (value.getType() == ValueType.STRING) {
+            try {
+                // Assume value is actually a JSON payload
+                value = Values.parse(((StringValue) value).getString()).orElse(null);
+            } catch (Exception e) {
+                value = null;
+            }
+        }
+
+        if (value == null) {
+            return null;
+        }
+
+        Object obj = jsonPathParser.parse(value.toJson()).read(filter.path);
+        String pathJson = obj != null ? obj.toString() : null;
         return TextUtil.isNullOrEmpty(pathJson) ? null : Values.parse(pathJson).orElse(null);
     }
 }

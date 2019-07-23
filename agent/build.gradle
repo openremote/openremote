@@ -7,6 +7,7 @@ dependencies {
 
     compile "io.netty:netty-transport-rxtx:$nettyVersion"
     compile "io.netty:netty-codec:$nettyVersion"
+    compile "io.netty:netty-codec-http:$nettyVersion"
     compile "com.neuronrobotics:nrjavaserial:$nrjavaserialVersion"
 
     compile "com.luckycatlabs:SunriseSunsetCalculator:$sunriseSunsetCalculatorVersion"
