@@ -19,23 +19,11 @@
  */
 package org.openremote.test.protocol.websocket
 
-import io.netty.buffer.Unpooled
-import io.netty.channel.ChannelHandlerContext
-import io.netty.channel.socket.DatagramChannel
-import io.netty.handler.codec.FixedLengthFrameDecoder
-import io.netty.handler.codec.MessageToMessageEncoder
-import io.netty.handler.codec.bytes.ByteArrayDecoder
-import org.jboss.resteasy.spi.ResteasyUriInfo
-import org.jboss.resteasy.util.BasicAuthHelper
+
 import org.openremote.agent.protocol.Protocol
 import org.openremote.agent.protocol.ProtocolExecutorService
-import org.openremote.agent.protocol.http.OAuthGrant
 import org.openremote.agent.protocol.http.OAuthPasswordGrant
-import org.openremote.agent.protocol.http.OAuthRefreshTokenGrant
-import org.openremote.agent.protocol.http.OAuthServerResponse
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
-import org.openremote.agent.protocol.udp.AbstractUdpServer
-import org.openremote.agent.protocol.udp.UdpClientProtocol
 import org.openremote.agent.protocol.websocket.WebsocketClientProtocol
 import org.openremote.agent.protocol.websocket.WebsocketHttpSubscription
 import org.openremote.agent.protocol.websocket.WebsocketSubscription
@@ -46,11 +34,7 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.Constants
-import org.openremote.model.asset.Asset
-import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetEvent
-import org.openremote.model.asset.AssetType
-import org.openremote.model.asset.ReadAssetAttributesEvent
+import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.*
 import org.openremote.model.event.shared.EventSubscription
@@ -58,11 +42,7 @@ import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.BaseAssetQuery
 import org.openremote.model.query.filter.StringPredicate
-import org.openremote.model.value.JsonPathFilter
-import org.openremote.model.value.ObjectValue
-import org.openremote.model.value.SubStringValueFilter
-import org.openremote.model.value.ValueFilter
-import org.openremote.model.value.Values
+import org.openremote.model.value.*
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -71,11 +51,9 @@ import spock.util.concurrent.PollingConditions
 import javax.ws.rs.HttpMethod
 import javax.ws.rs.client.ClientRequestContext
 import javax.ws.rs.client.ClientRequestFilter
-import javax.ws.rs.core.Form
 import javax.ws.rs.core.HttpHeaders
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
-import javax.ws.rs.core.UriInfo
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
@@ -224,58 +202,59 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                             "targetTemperature",
                             Values.create(0.12345))).replace("0.12345", Protocol.DYNAMIC_VALUE_PLACEHOLDER))),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MESSAGE_MATCH_FILTERS,
-                        Values.parse(Container.JSON.writeValueAsString(
+                        Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..attributeState.attributeRef")
                             ] as ValueFilter[]
-                        )).orElse(null)),
+                        , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MESSAGE_MATCH_PREDICATE,
                         new StringPredicate(BaseAssetQuery.Match.CONTAINS, true, "targetTemperature").toModelValue()),
                     new MetaItem(MetaItemType.VALUE_FILTERS,
-                        Values.parse(Container.JSON.writeValueAsString(
+                        Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"targetTemperature\")].attributeState.value"),
                                 new JsonPathFilter("\$.min()")
                             ] as ValueFilter[]
-                        )).orElse(null)),
+                        , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_SUBSCRIPTIONS,
-                        Values.parse(
-                            Container.JSON.writeValueAsString(Arrays.asList(
+                        Values.convert(
+                            [
                                 new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(
                                     new ReadAssetAttributesEvent(managerDemoSetup.apartment1LivingroomId, "targetTemperature")
-                                )))
-                            )).orElse(null))
+                                ))
+                            ], Container.JSON).orElse(null))
                 ),
             new AssetAttribute("readCo2Level", AttributeValueType.NUMBER)
                 .addMeta(
                     new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
                         new MetaItem(MetaItemType.READ_ONLY),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MESSAGE_MATCH_FILTERS,
-                        Values.parse(Container.JSON.writeValueAsString(
+                        Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..attributeState.attributeRef")
                             ] as ValueFilter[]
-                        )).orElse(null)),
+                        , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MESSAGE_MATCH_PREDICATE,
                         new StringPredicate(BaseAssetQuery.Match.CONTAINS, "co2Level").toModelValue()),
                     new MetaItem(MetaItemType.VALUE_FILTERS,
-                        Values.parse(Container.JSON.writeValueAsString(
+                        Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"co2Level\")].attributeState.value"),
                                 new JsonPathFilter("\$.min()")
                             ] as ValueFilter[]
-                        )).orElse(null)),
+                        , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_SUBSCRIPTIONS,
-                        Values.parse(
-                            Container.JSON.writeValueAsString(Arrays.asList(
+                        Values.convert(
+                            [
                                 new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(
                                     new ReadAssetAttributesEvent(managerDemoSetup.apartment1LivingroomId, "co2Level")
-                                )))
-                            )).orElse(null))
+                                ))
+                            ]
+                            , Container.JSON).orElse(null))
                 )
         )
 

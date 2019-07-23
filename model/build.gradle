@@ -7,6 +7,7 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     compile("com.google.gwt:gwt-user:$gwtVersion") {
         exclude group: "javax.servlet"
+        exclude group: "org.sonatype.sisu.inject"
     }
     compile "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:$javaxPersistenceVersion"
     compile "org.hibernate:hibernate-core:$hibernateVersion"
@@ -22,10 +23,6 @@ dependencies {
     compile "org.keycloak:keycloak-core:$keycloakVersion:sources"
 
     compile "org.jeasy:easy-rules-core:$easyRulesVersion"
-
-    compile("com.google.inject:guice:4.2.2") {
-        force = true
-    }
 }
 
 jar {

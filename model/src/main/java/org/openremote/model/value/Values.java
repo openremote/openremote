@@ -15,6 +15,10 @@
  */
 package org.openremote.model.value;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gwt.core.shared.GwtIncompatible;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.base.Any;
 import org.openremote.model.asset.AssetAttribute;
@@ -285,9 +289,38 @@ public class Values {
                             break;
                     }
                     break;
+                case ARRAY:
+
+                    // Only works when the array has a single value
+                    ArrayValue arrayValue = (ArrayValue)value;
+                    if (arrayValue.length() == 1) {
+
+                        Value firstValue = arrayValue.get(0).orElse(null);
+
+                        if (firstValue != null) {
+                            return convert(firstValue, toType);
+                        }
+                    }
             }
         }
 
         return Optional.ofNullable(outputValue);
+    }
+
+    @SuppressWarnings("unchecked")
+    @JsIgnore
+    @GwtIncompatible
+    public static <T extends Value> Optional<T> convert(Object object, ObjectMapper objectMapper) {
+        if (object == null || objectMapper == null) {
+            return Optional.empty();
+        }
+
+        try {
+            Value v = parse(objectMapper.writeValueAsString(object)).orElse(null);
+            return Optional.ofNullable((T)v);
+        } catch (Exception ignored) {
+        }
+
+        return Optional.empty();
     }
 }

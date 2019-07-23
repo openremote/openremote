@@ -3,7 +3,6 @@ package org.openremote.test.assets
 import org.openremote.container.Container
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-
 import org.openremote.model.Constants
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
@@ -61,18 +60,18 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
         converterOnOff.put("PRESSED", "@TOGGLE")
         converterOnOff.put("RELEASED", "@IGNORE")
         converterOnOff.put("LONG_PRESSED", "@IGNORE")
-        def attributeLinkOnOff = Values.parse(Container.JSON.writeValueAsString(new AttributeLink(new AttributeRef(asset2.id, "lightOnOff"), converterOnOff, null))).orElse(null)
+        def attributeLinkOnOff = Values.convert(new AttributeLink(new AttributeRef(asset2.id, "lightOnOff"), converterOnOff, null), Container.JSON).orElse(null)
 
         def converterCounter = Values.createObject()
         converterCounter.put("PRESSED", "@INCREMENT")
         converterCounter.put("RELEASED", "@DECREMENT")
         converterCounter.put("LONG_PRESSED", "@IGNORE")
-        def attributeLinkCounter = Values.parse(Container.JSON.writeValueAsString(new AttributeLink(new AttributeRef(asset2.id, "counter"), converterCounter, null))).orElse(null)
+        def attributeLinkCounter = Values.convert(new AttributeLink(new AttributeRef(asset2.id, "counter"), converterCounter, null), Container.JSON).orElse(null)
 
-        def attributeLinkProp = Values.parse(Container.JSON.writeValueAsString(new AttributeLink(
+        def attributeLinkProp = Values.convert(new AttributeLink(
             new AttributeRef(asset2.id, "item2Prop1"), null, [
             new JsonPathFilter("\$[1].prop1")
-        ] as ValueFilter[]))).orElse(null)
+        ] as ValueFilter[]), Container.JSON).orElse(null)
 
         asset1.getAttribute("button").get().addMeta(new MetaItem(MetaItemType.ATTRIBUTE_LINK, attributeLinkOnOff))
         asset1.getAttribute("button").get().addMeta(new MetaItem(MetaItemType.ATTRIBUTE_LINK, attributeLinkCounter))
