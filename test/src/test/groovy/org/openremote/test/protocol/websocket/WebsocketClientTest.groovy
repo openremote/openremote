@@ -19,7 +19,6 @@
  */
 package org.openremote.test.protocol.websocket
 
-
 import org.apache.http.client.utils.URIBuilder
 import org.openremote.agent.protocol.http.OAuthPasswordGrant
 import org.openremote.agent.protocol.websocket.WebsocketClient

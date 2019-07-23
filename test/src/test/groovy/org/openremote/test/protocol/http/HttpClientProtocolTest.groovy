@@ -488,7 +488,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_poll_slow")),
                     new MetaItem(HttpClientProtocol.META_POLLING_MILLIS, Values.create(50)), // This is ms in testing
                     new MetaItem(
-                        MetaItemType.META_VALUE_FILTERS,
+                        MetaItemType.VALUE_FILTERS,
                         Values.createArray().add(Util.objectToValue(new RegexValueFilter("\\d+", 0, 0)).get())
                     )
                 ),
@@ -499,7 +499,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_poll_fast")),
                     new MetaItem(HttpClientProtocol.META_POLLING_MILLIS, Values.create(40)), // This is ms in testing
                     new MetaItem(
-                        MetaItemType.META_VALUE_FILTERS,
+                        MetaItemType.VALUE_FILTERS,
                         Values.createArray().add(Util.objectToValue(new RegexValueFilter("\\d+", 0, 1)).get())
                     )
                 )

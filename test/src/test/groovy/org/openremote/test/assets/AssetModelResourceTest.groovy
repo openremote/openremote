@@ -22,6 +22,7 @@ package org.openremote.test.assets
 import org.openremote.container.Container
 import org.openremote.model.asset.AssetModelResource
 import org.openremote.model.attribute.AttributeType
+import org.openremote.model.attribute.MetaItemType
 import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
@@ -105,6 +106,6 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
         def metaItemDescriptors = assetModelResource.getMetaItemDescriptors(null)
 
         then: "the default MetaItem types should be present"
-        metaItemDescriptors.size() == 25
+        metaItemDescriptors.size() == MetaItemType.values().length
     }
 }

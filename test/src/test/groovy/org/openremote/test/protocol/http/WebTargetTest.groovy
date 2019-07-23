@@ -75,7 +75,7 @@ class WebTargetTest extends Specification {
                         accessToken = "accesstoken" + accessTokenCount++
                         def response = new OAuthServerResponse()
                         response.accessToken = accessToken
-                        response.expiresIn = requestPath == "https://oauthserver/token" ? 1 : 100
+                        response.expiresIn = requestPath == "https://oauthserver/token" ? 5 : 100
                         response.tokenType = "Bearer"
 
                         // Include refresh token if configured to support it

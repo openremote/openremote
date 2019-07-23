@@ -22,6 +22,7 @@ package org.openremote.test
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.openremote.app.client.event.SubscriptionFailureEvent
 import org.openremote.app.client.event.EventService
+import org.openremote.model.event.TriggeredEventSubscription
 import org.openremote.model.event.bus.EventBus
 import org.openremote.model.event.shared.*
 
@@ -57,28 +58,17 @@ class ClientEventService implements EventService {
                             data = data.substring(SharedEvent.MESSAGE_PREFIX.length())
 
                             if (data.startsWith("{")) {
-                                SharedEvent event = objectMapper.readValue(data, SharedEvent.class)
-                                eventBus.dispatch(event)
+                                TriggeredEventSubscription event = objectMapper.readValue(data, TriggeredEventSubscription.class)
+                                if (event.events != null) {
+                                    for (SharedEvent evt : event.events) {
+                                        eventBus.dispatch(evt)
+                                    }
+                                }
                             } else if (data.startsWith("[")) {
                                 // Handle array of events
                                 SharedEvent[] events = objectMapper.readValue(data, SharedEvent[].class)
                                 for (SharedEvent event : events) {
                                     eventBus.dispatch(event)
-                                }
-                            } else {
-                                String[] dataArr = data.split(":(.+)")
-                                if (dataArr.length == 2) {
-                                    String subscriptionId = dataArr[0]
-                                    if (dataArr[1].startsWith("[")) {
-                                        // Handle array of events
-                                        SharedEvent[] events = objectMapper.readValue(data, SharedEvent[].class)
-                                        for (SharedEvent event : events) {
-                                            eventBus.dispatch(event)
-                                        }
-                                    } else {
-                                        SharedEvent event = objectMapper.readValue(data, SharedEvent.class)
-                                        eventBus.dispatch(event)
-                                    }
                                 }
                             }
                         }

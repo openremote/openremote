@@ -310,7 +310,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                     new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                 ),
                 new MetaItem(
-                    MetaItemType.META_VALUE_FILTERS,
+                    MetaItemType.VALUE_FILTERS,
                     Values.createArray().add(Util.objectToValue(new RegexValueFilter("\\w(\\d+)", 1, 2)).get())
                 )
             ),
@@ -322,7 +322,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                     new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                 ),
                 new MetaItem(
-                    MetaItemType.META_VALUE_FILTERS,
+                    MetaItemType.VALUE_FILTERS,
                     Values.createArray().add(Util.objectToValue(new SubStringValueFilter(10, 12)).get())
                 )
             ),
@@ -334,7 +334,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                     new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                 ),
                 new MetaItem(
-                    MetaItemType.META_VALUE_FILTERS,
+                    MetaItemType.VALUE_FILTERS,
                     Values.createArray()
                         .add(Util.objectToValue(new SubStringValueFilter(23)).get())
                         .add(Util.objectToValue(new RegexValueFilter("[a-z|\\s]+(\\d+)%\"}", 1, 0)).get())
