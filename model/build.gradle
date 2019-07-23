@@ -22,6 +22,10 @@ dependencies {
     compile "org.keycloak:keycloak-core:$keycloakVersion:sources"
 
     compile "org.jeasy:easy-rules-core:$easyRulesVersion"
+
+    compile("com.google.inject:guice:4.2.2") {
+        force = true
+    }
 }
 
 jar {
