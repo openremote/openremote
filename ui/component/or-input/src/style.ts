@@ -15,5 +15,5 @@ export const orInputStyle = css`
         background-color: var(--or-input-background, #f2f2f2);
     }
 
-    input:invalid { border-bottom: 2px solid red;}
+    input.invalid { border-bottom: 2px solid red;}
 `;

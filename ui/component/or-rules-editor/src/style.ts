@@ -187,31 +187,37 @@ export const ruleListStyle = css`
         flex: 1;
     }
 
-    .list-container {
-    }
 
     .list-title {
         display: block;
-        padding: 17px 33px 10px 33px;
+        padding: 30px 30px 5px 20px;
         text-transform: uppercase;
-        color: var(--app-grey-color);
+        color: var(--app-grey-color, #808080);
         opacity: 0.87;
+        font-size:14px;
+        font-weight: bold;
+        text-align: left;
     }
 
     .list-item {
         text-decoration: none;
         height: 24px;
         font-size: 15px;
-        padding: 17px 0;
+        padding: 17px 0 17px 17px;
         border-left: 5px solid transparent;
-        color: var(--app-grey-color);
+        color: var(--app-grey-color, #808080);
         cursor: pointer;
 
-        transition: all 300ms ease-in;
+        transition: all 200ms ease-in;
     }
 
-    .list-item[selected],
-    .list-item:hover  {
+    .list-item:hover {
+        border-left-color: transparent;
+        background-color: #f7f7f7;
+        color: #000000;
+    }
+
+    .list-item[selected] {
         border-left-color: var(--app-primary-color);
         background-color: #f7f7f7;
         color: #000000;
