@@ -57,8 +57,9 @@ public class OAuthFilter implements ClientRequestFilter {
 
     public String getAuthHeader() {
         String accessToken = getAccessToken();
+
         if (!TextUtil.isNullOrEmpty(accessToken)) {
-            return AUTH_TYPE + " " + getAccessToken();
+            return AUTH_TYPE + " " + accessToken;
         }
 
         return null;
