@@ -524,7 +524,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             ruleEvaluationResult.conditionStateMap.values().forEach(RuleTriggerState::update);
 
             // Check triggers for matches
-            matches(rule.when, ruleEvaluationResult);
+            matches(rule.when, ruleEvaluationResult, rule.otherwise != null);
 
             return ruleEvaluationResult.thenMatched || ruleEvaluationResult.otherwiseMatched;
         };
@@ -897,7 +897,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         return Collections.emptyList();
     }
 
-    protected static void matches(LogicGroup<RuleCondition> ruleConditionGroup, RuleEvaluationResult ruleEvaluationResult) {
+    protected static void matches(LogicGroup<RuleCondition> ruleConditionGroup, RuleEvaluationResult ruleEvaluationResult, boolean trackUnmatched) {
 
         if (conditionIsEmpty(ruleConditionGroup)) {
             return;
@@ -918,9 +918,11 @@ public class JsonRulesBuilder extends RulesBuilder {
                     .stream()
                     .anyMatch(entry -> entry.getValue() == ruleConditionGroup.items.length);//If at least one of the assets appear in all the rule conditions, then fire
 
-                ruleEvaluationResult.otherwiseMatched = Arrays.stream(ruleConditionGroup.items)
-                    .map(ruleCondition -> ruleEvaluationResult.conditionStateMap.get(ruleCondition.tag))
-                    .anyMatch(ruleConditionState -> ruleConditionState.trackUnmatched && ruleConditionState.lastTriggerResult != null && ruleConditionState.lastTriggerResult.matches);
+                if (trackUnmatched) {
+                    ruleEvaluationResult.otherwiseMatched = Arrays.stream(ruleConditionGroup.items)
+                        .map(ruleCondition -> ruleEvaluationResult.conditionStateMap.get(ruleCondition.tag))
+                        .anyMatch(ruleConditionState -> ruleConditionState.trackUnmatched && ruleConditionState.lastTriggerResult != null && ruleConditionState.lastTriggerResult.matches);
+                }
 
                 if (!ruleEvaluationResult.thenMatched) {
                     return;
@@ -929,7 +931,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             if (ruleConditionGroup.groups != null) {
                 Arrays.stream(ruleConditionGroup.groups)
-                    .forEach(condition -> matches(condition, ruleEvaluationResult));
+                    .forEach(condition -> matches(condition, ruleEvaluationResult, trackUnmatched));
             }
         }
 
@@ -939,15 +941,17 @@ public class JsonRulesBuilder extends RulesBuilder {
                     .map(ruleCondition -> ruleEvaluationResult.conditionStateMap.get(ruleCondition.tag))
                         .anyMatch(ruleConditionState -> ruleConditionState.lastTriggerResult != null && ruleConditionState.lastTriggerResult.matches);
 
-                ruleEvaluationResult.otherwiseMatched = Arrays.stream(ruleConditionGroup.items)
-                    .map(ruleCondition -> ruleEvaluationResult.conditionStateMap.get(ruleCondition.tag))
-                    .filter(ruleConditionState -> ruleConditionState.lastTriggerResult != null && ruleConditionState.lastTriggerResult.matches) //Only trigger results which matches
-                    .map(RuleTriggerState::getUnmatchedAssetIds)//Get all unmatched assetIds
-                    .flatMap(Collection::stream)
-                    .collect(Collectors.groupingBy(assetId -> assetId, Collectors.counting()))//Group them and count the number of times appearing in the rule conditions
-                    .entrySet()
-                    .stream()
-                    .anyMatch(entry -> entry.getValue() == ruleConditionGroup.items.length);//If at least one of the assets appear in all the rule conditions, then fire
+                if (trackUnmatched) {
+                    ruleEvaluationResult.otherwiseMatched = Arrays.stream(ruleConditionGroup.items)
+                        .map(ruleCondition -> ruleEvaluationResult.conditionStateMap.get(ruleCondition.tag))
+                        .filter(ruleConditionState -> ruleConditionState.trackUnmatched && ruleConditionState.lastTriggerResult != null && ruleConditionState.lastTriggerResult.matches) //Only trigger results which matches
+                        .map(RuleTriggerState::getUnmatchedAssetIds)//Get all unmatched assetIds
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.groupingBy(assetId -> assetId, Collectors.counting()))//Group them and count the number of times appearing in the rule conditions
+                        .entrySet()
+                        .stream()
+                        .anyMatch(entry -> entry.getValue() == ruleConditionGroup.items.length);//If at least one of the assets appear in all the rule conditions, then fire
+                }
 
                 if (ruleEvaluationResult.thenMatched) {
                     return;
@@ -956,7 +960,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             if (ruleConditionGroup.groups != null) {
                 Arrays.stream(ruleConditionGroup.groups)
-                    .forEach(condition -> matches(condition, ruleEvaluationResult));
+                    .forEach(condition -> matches(condition, ruleEvaluationResult, trackUnmatched));
             }
         }
     }
