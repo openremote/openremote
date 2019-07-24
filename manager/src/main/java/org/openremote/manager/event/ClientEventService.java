@@ -138,7 +138,8 @@ public class ClientEventService implements ContainerService {
                     .choice()
                     .when(header(WebsocketConstants.SESSION_OPEN))
                     .process(exchange -> {
-                        // Do nothing except stop the exchanges
+                        String sessionKey = getSessionKey(exchange);
+                        sendToSession(sessionKey, "CONNECTED");
                     })
                     .stop()
                     .when(or(

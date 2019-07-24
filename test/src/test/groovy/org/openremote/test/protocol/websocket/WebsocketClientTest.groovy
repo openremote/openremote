@@ -92,6 +92,12 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             assert connectionStatus == ConnectionStatus.CONNECTED
         }
 
+        and: "the server should have sent a CONNECTED message"
+        conditions.eventually {
+            assert lastMessage != null
+            assert lastMessage == "CONNECTED"
+        }
+
         when: "we subscribe to events produced by the server"
         client.sendMessage(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX + Container.JSON.writeValueAsString(
             new EventSubscription(
