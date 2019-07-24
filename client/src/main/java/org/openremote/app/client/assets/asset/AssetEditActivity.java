@@ -52,6 +52,7 @@ import org.openremote.model.query.filter.BooleanPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
+import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
@@ -452,8 +453,11 @@ public class AssetEditActivity
                             parentView,
                             this::createValueEditor,
                             this::showValidationError,
-                            valueHolder.getValueAsString().map(attributeLinkMapper::read).orElse(null),
-                            attrLink -> onValueModified.accept(attrLink != null ? Values.create(attributeLinkMapper.write(attrLink)) : null),
+                            valueHolder.getValue().map(Value::toJson).map(attributeLinkMapper::read).orElse(null),
+                            attrLink -> {
+                                Value attrLinkObj = attrLink != null ? Values.parse(attributeLinkMapper.write(attrLink)).orElse(null) : null;
+                                onValueModified.accept(attrLinkObj);
+                            },
                             isReadOnly,
                             assetAttributeConsumer -> getLinkableAssetsAndAttributes(valueHolder, assetAttributeConsumer),
                             assetWatermark,

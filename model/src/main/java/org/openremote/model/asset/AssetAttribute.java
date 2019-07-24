@@ -453,7 +453,7 @@ public class AssetAttribute extends Attribute {
 
     public static Optional<AssetAttribute> attributeFromJson(ObjectValue objectValue, String assetId, String name) {
         if (objectValue == null) {
-            return Optional.empty();
+            return Optional.of(new AssetAttribute(name));
         }
 
         AssetAttribute attribute = new AssetAttribute(objectValue);
@@ -533,9 +533,8 @@ public class AssetAttribute extends Attribute {
         //noinspection ConstantConditions
         return Arrays
             .stream(objectValue.keys())
-            .map(key -> new Pair<>(key, objectValue.getObject(key)))
-            .filter(pair -> pair.value.isPresent())
-            .map(pair -> attributeFromJson(pair.value.get(), assetId, pair.key))
+            .map(key -> new Pair<>(key, objectValue.getObject(key).orElse(null)))
+            .map(pair -> attributeFromJson(pair.value, assetId, pair.key))
             .filter(Optional::isPresent)
             .map(Optional::get);
     }

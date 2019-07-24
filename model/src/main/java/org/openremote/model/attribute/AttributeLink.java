@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.value.*;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
@@ -126,15 +127,17 @@ public class AttributeLink {
         return getClass().getSimpleName() + "{" +
             "attributeRef=" + attributeRef +
             ", converter=" + converter +
+            ", filters=" + (filters != null ? Arrays.toString(filters) : "null") +
             '}';
     }
 
     public static boolean isAttributeLink(Value value) {
-        return Values.getObject(value)
-            .map(objectValue -> {
-                return AttributeRef.isAttributeRef(objectValue.get("attributeRef").orElse(null)) &&
-                    objectValue.get("converter").map(v -> v.getType() == ValueType.OBJECT).orElse(true);
-            })
+        boolean result = Values.getObject(value)
+            .map(objectValue -> AttributeRef.isAttributeRef(objectValue.get("attributeRef").orElse(null)) &&
+                objectValue.get("converter").map(v -> v.getType() == ValueType.OBJECT).orElse(true) &&
+                objectValue.get("filters").map(v -> v.getType() == ValueType.ARRAY).orElse(true)
+            )
             .orElse(false);
+        return result;
     }
 }

@@ -96,12 +96,20 @@ public class AttributeRef {
     }
 
     public static boolean isAttributeRef(Value value) {
-        return Values.getArray(value)
-            .filter(arrayValue ->
+        boolean result = Values.getArray(value)
+            .map(arrayValue ->
                 arrayValue.length() == 2
                     && arrayValue.getString(0).filter(s -> !s.isEmpty()).isPresent()
                     && arrayValue.getString(1).filter(s -> !s.isEmpty()).isPresent()
-            ).isPresent();
+            )
+            .orElse(
+                Values.getObject(value)
+                    .map(objectValue ->
+                        objectValue.getString("entityId").isPresent() && objectValue.getString("attributeName").isPresent()
+                    ).orElse(false)
+            );
+
+        return result;
     }
 
     @SuppressWarnings("ConstantConditions")

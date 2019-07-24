@@ -19,12 +19,14 @@
  */
 package org.openremote.app.client.widget;
 
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.assets.attributes.AttributeView;
 import org.openremote.app.client.assets.attributes.MetaEditor;
+import org.openremote.app.client.assets.attributes.ValueFilterArrayMapper;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.MetaItemType;
@@ -32,14 +34,14 @@ import org.openremote.model.attribute.*;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.value.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.openremote.app.client.widget.ValueEditors.createArrayEditor;
+import static org.openremote.app.client.widget.ValueEditors.createObjectEditor;
 
 public class AttributeLinkEditor extends FlowPanel {
 
@@ -53,6 +55,7 @@ public class AttributeLinkEditor extends FlowPanel {
     protected final Environment environment;
     protected final AttributeRefEditor attributeRefEditor;
     protected final MetaEditor converterEditor;
+    protected final IsWidget filterEditor;
     protected final Consumer<AttributeLink> onValueModified;
     protected final AttributeView parentView;
     protected final AttributeView.ValidationErrorConsumer validationErrorConsumer;
@@ -60,6 +63,8 @@ public class AttributeLinkEditor extends FlowPanel {
     // This is used to map converter values to attribute meta so we can use the meta editor
     protected final AssetAttribute converterAttribute;
     protected AttributeRef attributeRef;
+    protected ValueFilter[] filters;
+    ValueFilterArrayMapper filterMapper = GWT.create(ValueFilterArrayMapper.class);
 
     public AttributeLinkEditor(Environment environment,
                                AttributeView.Style viewStyle,
@@ -251,6 +256,35 @@ public class AttributeLinkEditor extends FlowPanel {
         converterEditor.setValidationErrorConsumer(this::showConverterEditorValidationError);
 
         add(converterEditor);
+
+        ArrayValue filterObj = null;
+
+        if (currentValue != null && currentValue.getFilters() != null) {
+            filters = currentValue.getFilters();
+            filterObj = Values.parse(filterMapper.write(currentValue.getFilters())).flatMap(Values::getArray).orElse(null);
+        }
+
+        filterEditor = createArrayEditor(
+            filterObj,
+            this::onFiltersModified,
+            Optional.empty(),
+            readOnly,
+            environment.getWidgetStyle(),
+            environment.getMessages()
+        );
+
+        add(filterEditor);
+    }
+
+    private void onFiltersModified(ArrayValue arrayValue) {
+
+        if (arrayValue != null) {
+            filters = filterMapper.read(arrayValue.toJson());
+        } else {
+            filters = null;
+        }
+
+        updateAttributeLink();
     }
 
     protected void onAttributeRefModified(AttributeRef attributeRef) {
@@ -318,7 +352,7 @@ public class AttributeLinkEditor extends FlowPanel {
         if (!validationResult.isValid()) {
             onValueModified.accept(null);
         } else {
-            onValueModified.accept(new AttributeLink(attributeRef, convertMetaToConverter(converterAttribute.getMeta()), null));
+            onValueModified.accept(new AttributeLink(attributeRef, convertMetaToConverter(converterAttribute.getMeta()), filters));
         }
     }
 
