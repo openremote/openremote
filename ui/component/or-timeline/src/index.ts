@@ -77,11 +77,6 @@ class OrTimeline extends LitElement {
                 if (range) {
                     range.style.left = newPlace + "px";
                 }
-                //Needed to move the slider after clicking the input itself
-                const sliderInput = (<HTMLInputElement>this.shadowRoot.getElementById("or-timeline-slider"));
-                if (sliderInput) {
-                    sliderInput.value = String(this.current);
-                }
             }
         }
     }
