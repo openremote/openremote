@@ -62,9 +62,7 @@ public class ORMessagingActionService extends IntentService {
                 // Do silent HTTP request
                 tokenService.executeRequest(httpMethod, appUrl, data);
             } else {
-                Intent activityIntent = new Intent("android.intent.action.MAIN");
-                activityIntent.setAction(Intent.ACTION_MAIN);
-                activityIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                Intent activityIntent = getApplicationContext().getPackageManager().getLaunchIntentForPackage(getApplicationContext().getPackageName());
                 activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
                         Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 activityIntent.putExtra("appUrl", appUrl);
