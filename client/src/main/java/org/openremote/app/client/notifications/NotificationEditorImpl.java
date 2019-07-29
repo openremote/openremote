@@ -19,6 +19,7 @@
  */
 package org.openremote.app.client.notifications;
 
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InlineLabel;
 import com.google.gwt.user.client.ui.IsWidget;
@@ -30,14 +31,13 @@ import org.openremote.model.interop.Consumer;
 import org.openremote.model.notification.*;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
+import org.openremote.model.value.Values;
 
 import javax.inject.Inject;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 
 import static org.openremote.app.client.widget.ValueEditors.createValueEditor;
 
@@ -81,6 +81,8 @@ public class NotificationEditorImpl implements NotificationEditor {
     protected Runnable onSend;
     protected Runnable onClose;
     protected AbstractNotificationMessage message;
+    PushNotificationButtonArrayMapper pushNotificationButtonArrayMapper = GWT.create(PushNotificationButtonArrayMapper.class);
+
 
     @Inject
     public NotificationEditorImpl(WidgetStyle widgetStyle,
@@ -343,18 +345,40 @@ public class NotificationEditorImpl implements NotificationEditor {
         createActionEditor(actionField, null, message.getAction(), null, this::onMessageActionChanged);
         messagePanel.add(actionGroup);
 
+        FormGroup buttonsGroup = new FormGroup();
+        FormLabel buttonsLabel = new FormLabel(managerMessages.buttons());
+        buttonsGroup.setFormLabel(buttonsLabel);
+        FormField buttonsField = new FormField();
+        buttonsGroup.setFormField(buttonsField);
+        Optional<Long> timestamp = Optional.empty();
+        ArrayValue buttonsArray = null;
+
+        if (message.getButtons() != null && message.getButtons().size() > 0) {
+            List<PushNotificationButton> buttonList = message.getButtons();
+            buttonsArray = Values.parse(pushNotificationButtonArrayMapper.write(buttonList)).flatMap(Values::getArray).orElse(null);
+        }
+
+        buttonsField.add(ValueEditors.createArrayEditor(
+            buttonsArray,
+            arrayValue -> {
+                message.setButtons(pushNotificationButtonArrayMapper.read(arrayValue.toJson()));
+            },
+            timestamp,
+            false,
+            widgetStyle,
+            managerMessages
+        ));
+        messagePanel.add(buttonsGroup);
+
         FormGroup dataGroup = new FormGroup();
         FormLabel dataLabel = new FormLabel(managerMessages.notificationData());
         dataGroup.setFormLabel(dataLabel);
         FormField dataField = new FormField();
         dataGroup.setFormField(dataField);
         messagePanel.add(dataGroup);
-        Optional<Long> timestamp = Optional.empty();
         dataField.add(ValueEditors.createObjectEditor(
             message.getData(),
-            objectValue -> {
-
-            },
+            message::setData,
             timestamp,
             false,
             widgetStyle,

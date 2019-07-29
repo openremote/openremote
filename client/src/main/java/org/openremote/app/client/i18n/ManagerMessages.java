@@ -524,6 +524,8 @@ public interface ManagerMessages extends Messages {
 
     String action();
 
+    String buttons();
+
     String notificationsDeleted();
 
     String refresh();

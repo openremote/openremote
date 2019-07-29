@@ -22,11 +22,13 @@ package org.openremote.app.client.notifications;
 import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.app.client.interop.jackson.DefaultJsonMixin;
-import org.openremote.app.client.rest.EntityReader;
-import org.openremote.model.notification.SentNotification;
+import org.openremote.app.client.rest.EntityWriter;
+import org.openremote.model.notification.PushNotificationButton;
 
-@JsonMixIns({@JsonMixIns.JsonMixIn(target = SentNotification.class, mixIn = DefaultJsonMixin.class)})
-public interface SentNotificationArrayMapper
-    extends ObjectMapper<SentNotification[]>,
-    EntityReader<SentNotification[]> {
+import java.util.List;
+
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = PushNotificationButton.class, mixIn = DefaultJsonMixin.class)})
+public interface PushNotificationButtonArrayMapper
+    extends ObjectMapper<List<PushNotificationButton>>,
+    EntityWriter<List<PushNotificationButton>> {
 }

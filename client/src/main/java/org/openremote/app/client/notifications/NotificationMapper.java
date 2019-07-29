@@ -24,7 +24,6 @@ import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.app.client.interop.jackson.DefaultJsonMixin;
 import org.openremote.app.client.rest.EntityWriter;
 import org.openremote.model.notification.Notification;
-import org.openremote.model.notification.PushNotificationMessage;
 
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = Notification.class, mixIn = DefaultJsonMixin.class)})
 public interface NotificationMapper

@@ -29,7 +29,6 @@ import org.openremote.app.client.assets.attributes.MetaEditor;
 import org.openremote.app.client.assets.attributes.ValueFilterArrayMapper;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.attribute.*;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.util.EnumUtil;
@@ -41,7 +40,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.openremote.app.client.widget.ValueEditors.createArrayEditor;
-import static org.openremote.app.client.widget.ValueEditors.createObjectEditor;
 
 public class AttributeLinkEditor extends FlowPanel {
 

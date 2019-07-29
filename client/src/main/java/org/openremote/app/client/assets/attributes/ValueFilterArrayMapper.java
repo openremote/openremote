@@ -22,9 +22,6 @@ package org.openremote.app.client.assets.attributes;
 import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.app.client.interop.jackson.DefaultJsonMixin;
-import org.openremote.app.client.rest.EntityReader;
-import org.openremote.app.client.rest.EntityWriter;
-import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.value.ValueFilter;
 
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = ValueFilter.class, mixIn = DefaultJsonMixin.class)})
