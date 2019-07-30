@@ -44,7 +44,11 @@ export const rulesEditorStyle = css`
         border-top: 1px solid var(--app-lightgrey-color);
         background-color: var(--internal-or-rule-toolbar-background-color);
     }
-
+    
+    .bottom-toolbar or-icon {
+        --or-icon-height: 16px;
+    }
+    
     icon {
         cursor: pointer;
         padding: 5px;
@@ -193,7 +197,6 @@ export const ruleListStyle = css`
         padding: 30px 30px 5px 20px;
         text-transform: uppercase;
         color: var(--app-grey-color, #808080);
-        opacity: 0.87;
         font-size:14px;
         font-weight: bold;
         text-align: left;
@@ -201,9 +204,8 @@ export const ruleListStyle = css`
 
     .list-item {
         text-decoration: none;
-        height: 24px;
-        font-size: 15px;
-        padding: 17px 0 17px 17px;
+        font-size: 14px;
+        padding: 13px 0 13px 15px;
         border-left: 5px solid transparent;
         color: var(--app-grey-color, #808080);
         cursor: pointer;
@@ -235,7 +237,7 @@ export const ruleListStyle = css`
         width: 8px;
         height: 8px;
         border-radius: 8px;
-        margin: 8px 10px;
+        margin: 6px 10px 0 0;
     }
 
     .bg-green {
@@ -260,7 +262,7 @@ export const headerStyle = css`
     }
 
     .rule-container {
-        padding: 20px;
+       padding: 20px 30px;
     }
 
     .layout.horizontal {
@@ -275,6 +277,9 @@ export const headerStyle = css`
         background-color: transparent;
         border-bottom: 2px solid transparent;
         transition: all 150ms ease-in;
+        
+        width: 350px;
+        max-width: 100%;
     }
 
     input:hover {

@@ -22,8 +22,25 @@ export interface ViewSettings {
     "boxZoom": boolean;
 }
 
+export interface MapLoadedEventDetail {
+
+}
+
 export interface MapEventDetail {
     lngLat: LngLatLike;
+}
+
+export class OrMapLoadedEvent extends CustomEvent<MapLoadedEventDetail> {
+
+    public static readonly NAME = "or-map-loaded";
+
+    constructor() {
+        super(OrMapLoadedEvent.NAME, {
+            detail: {},
+            bubbles: true,
+            composed: true
+        });
+    }
 }
 
 export class OrMapClickedEvent extends CustomEvent<MapEventDetail> {
@@ -44,6 +61,7 @@ export class OrMapClickedEvent extends CustomEvent<MapEventDetail> {
 declare global {
     export interface HTMLElementEventMap {
         [OrMapClickedEvent.NAME]: OrMapClickedEvent;
+        [OrMapLoadedEvent.NAME]: OrMapLoadedEvent;
     }
 }
 

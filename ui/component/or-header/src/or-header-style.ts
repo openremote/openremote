@@ -11,7 +11,6 @@ export const OrHeaderStyle = css`
         color: rgba(255, 255, 255, 0.8);
         line-height: 60px;
         padding: 0 5px;
-        text-transform: uppercase;
         font-size: 14px;
         text-decoration: none !important;
         cursor: pointer;
@@ -32,7 +31,8 @@ export const OrHeaderStyle = css`
     }
 
     or-header or-icon {
-        margin-right: 10px;
+        margin-right: 5px;
+        --or-icon-width: 18px;
     }
 
     [slot="mobile-top"] > a,
@@ -70,7 +70,7 @@ export const OrHeaderStyle = css`
     [slot="desktop-left"] > a {
         display: none;
         line-height: 60px;
-        padding: 0 24px;
+        padding: 0 20px;
     }
 
 

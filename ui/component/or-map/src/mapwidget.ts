@@ -3,7 +3,7 @@ import rest from "@openremote/rest";
 import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL, Style as StyleGL, LngLat,
     MapMouseEvent} from "mapbox-gl";
 import L, {Map as MapJS, MapOptions as OptionsJS, Marker as MarkerJS} from "mapbox.js";
-import {OrMapClickedEvent, Type, ViewSettings} from "./index";
+import {OrMapClickedEvent, OrMapLoadedEvent, Type, ViewSettings} from "./index";
 import {
     OrMapMarker
 } from "./markers/or-map-marker";
@@ -200,13 +200,29 @@ export class MapWidget {
             }
 
             this._mapGl = new map.Map(options);
+
+            await this.styleLoaded();
+
             this._mapGl.on("click", (e: MapMouseEvent)=> {
                 this._onMapClick(e.lngLat);
             });
 
+
         }
 
+        this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
         this._loaded = true;
+    }
+
+    protected styleLoaded(): Promise<void> {
+        return new Promise(resolve => {
+            if (this._mapGl) {
+
+                this._mapGl.once('style.load', () => {
+                    resolve();
+                });
+            }
+        });
     }
 
     protected _onMapClick(lngLat: LngLatLike) {
@@ -234,14 +250,12 @@ export class MapWidget {
                 if (marker.lat && marker.lng) {
                     if (marker._actualMarkerElement) {
                         this._updateMarkerPosition(marker);
-                        this._createMarkerRadius(marker);
                     } else {
                         this._updateMarkerElement(marker, true);
-
                     }
+
                 } else if (marker._actualMarkerElement) {
                     this._updateMarkerElement(marker, false);
-
                 }
                 break;
         }
@@ -262,6 +276,7 @@ export class MapWidget {
                 }
                 break;
         }
+        this._createMarkerRadius(marker);
     }
 
     protected _updateMarkerElement(marker: OrMapMarker, doAdd: boolean) {
@@ -289,6 +304,9 @@ export class MapWidget {
 
                         this._markersJs.set(marker, m);
                     }
+                }
+                if(marker.radius) {
+                    this._createMarkerRadius(marker);
                 }
                 break;
             case Type.VECTOR:
@@ -319,48 +337,60 @@ export class MapWidget {
                             this._addMarkerClickHandler(marker, mGl.getElement());
                         }
 
+
+
                     }
+                }
+
+                if(marker.radius) {
+                    this._createMarkerRadius(marker);
                 }
                 break;
         }
     }
 
     protected _createMarkerRadius(marker:OrMapMarker){
-        if(this._mapGl && marker.radius && marker.lat && marker.lng){
-            // this._mapGl.addSource('circleData', {
-            //     type: 'geojson',
-            //     data: {
-            //         type: 'FeatureCollection',
-            //         features: [{
-            //             type: "Feature",
-            //             geometry: {
-            //                 "type": "Point",
-            //                 "coordinates": [marker.lng, marker.lat]
-            //             },
-            //             properties: {
-            //                 "title": "You Found Me",
-            //             }
-            //         }]
-            //     }
-            // });
-            //
-            // this._mapGl.addLayer({
-            //     "id":"marker-radius-circle",
-            //     "type": "circle",
-            //     "source": "circleData",
-            //     "paint": {
-            //         "circle-radius": {
-            //             stops: [
-            //                 [5, 1],
-            //                 [15, 1024]
-            //             ],
-            //             base: 2
-            //         },
-            //         "circle-color": "red",
-            //         "circle-opacity": 0.6
-            //     }
-            // });
-        }
+        if(this._mapGl && this._loaded && marker.radius && marker.lat && marker.lng){
+
+            if (this._mapGl.getSource('circleData')) {
+                this._mapGl.removeLayer('marker-radius-circle');
+                this._mapGl.removeSource('circleData');
+            }
+
+                this._mapGl.addSource('circleData', {
+                    type: 'geojson',
+                    data: {
+                        type: 'FeatureCollection',
+                        features: [{
+                            type: "Feature",
+                            geometry: {
+                                "type": "Point",
+                                "coordinates": [marker.lng, marker.lat]
+                            },
+                            properties: {
+                                "title": "You Found Me",
+                            }
+                        }]
+                    }
+                });
+
+                this._mapGl.addLayer({
+                    "id": "marker-radius-circle",
+                    "type": "circle",
+                    "source": "circleData",
+                    "paint": {
+                        "circle-radius": {
+                            stops: [
+                                [0, 0],
+                                [20, metersToPixelsAtMaxZoom(marker.radius, marker.lat)]
+                            ],
+                            base: 2
+                        },
+                        "circle-color": "red",
+                        "circle-opacity": 0.3
+                    }
+                });
+            }
     }
 
     protected _addMarkerClickHandler(marker: OrMapMarker, elem: HTMLElement) {
