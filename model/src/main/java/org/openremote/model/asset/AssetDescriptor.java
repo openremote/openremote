@@ -32,8 +32,14 @@ public interface AssetDescriptor {
     String getName();
     @JsonProperty
     String getType();
+
+    /**
+     * A HEX RGB color value {@link org.openremote.model.attribute.AttributeValueType#COLOR_HEX}
+     */
     @JsonProperty
     String getIcon();
+    @JsonProperty
+    String getColor();
     @JsonProperty
     boolean getAccessPublicRead();
     @JsonProperty

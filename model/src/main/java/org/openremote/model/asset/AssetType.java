@@ -34,39 +34,41 @@ import static org.openremote.model.attribute.AttributeType.*;
  */
 public enum AssetType implements AssetDescriptor {
 
-    CUSTOM(null, "cube"),
+    CUSTOM(null, "cube", null),
 
-    BUILDING(ASSET_NAMESPACE + ":building", "building",
+    BUILDING(ASSET_NAMESPACE + ":building", "building", null,
             SURFACE_AREA,
             GEO_STREET,
             GEO_CITY,
             GEO_COUNTRY,
             GEO_POSTAL_CODE),
 
-    FLOOR(ASSET_NAMESPACE + ":floor", "bars"),
+    FLOOR(ASSET_NAMESPACE + ":floor", "bars", null),
 
-    RESIDENCE(ASSET_NAMESPACE + ":residence", "home"),
+    RESIDENCE(ASSET_NAMESPACE + ":residence", "home", null),
 
-    ROOM(ASSET_NAMESPACE + ":room", "door-open"),
+    ROOM(ASSET_NAMESPACE + ":room", "door-open", null),
 
-    AGENT(ASSET_NAMESPACE + ":agent", "cogs"),
+    AGENT(ASSET_NAMESPACE + ":agent", "cogs", null),
 
-    CONSOLE(ASSET_NAMESPACE + ":console", "bullseye"),
+    CONSOLE(ASSET_NAMESPACE + ":console", "bullseye", null),
 
-    THING(ASSET_NAMESPACE + ":thing", "cube");
+    THING(ASSET_NAMESPACE + ":thing", "cube", null);
 
     final protected String type;
     final protected String icon;
+    final protected String color;
     final protected boolean accessPublicRead;
     final protected AttributeDescriptor[] attributeDescriptors;
 
-    AssetType(String type, String icon, AttributeDescriptor... attributeDescriptors) {
-        this(type, icon, false, attributeDescriptors);
+    AssetType(String type, String icon, String color, AttributeDescriptor... attributeDescriptors) {
+        this(type, icon, color, false, attributeDescriptors);
     }
 
-    AssetType(String type, String icon, boolean accessPublicRead, AttributeDescriptor... attributeDescriptors) {
+    AssetType(String type, String icon, String color, boolean accessPublicRead, AttributeDescriptor... attributeDescriptors) {
         this.type = type;
         this.icon = icon;
+        this.color = color;
         this.accessPublicRead = accessPublicRead;
         this.attributeDescriptors = attributeDescriptors;
     }
@@ -95,6 +97,11 @@ public enum AssetType implements AssetDescriptor {
     @Override
     public String getIcon() {
         return icon;
+    }
+
+    @Override
+    public String getColor() {
+        return null;
     }
 
     @Override

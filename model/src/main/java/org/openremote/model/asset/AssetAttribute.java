@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.*;
@@ -144,6 +145,7 @@ public class AssetAttribute extends Attribute {
         return getReference().orElseThrow(() -> new IllegalStateException("Attribute doesn't have an attribute ref"));
     }
 
+    @JsonIgnore
     public Optional<AttributeState> getState() {
         return getReference().map(ref -> new AttributeState(ref, getValue().orElse(null)));
     }
@@ -210,6 +212,7 @@ public class AssetAttribute extends Attribute {
         }
     }
 
+    @JsonIgnore
     public boolean isExecutable() {
         return getMetaStream()
             .filter(isMetaNameEqualTo(EXECUTABLE))
@@ -226,10 +229,12 @@ public class AssetAttribute extends Attribute {
         }
     }
 
+    @JsonIgnore
     public boolean hasAgentLink() {
         return getMetaStream().anyMatch(isMetaNameEqualTo(AGENT_LINK));
     }
 
+    @JsonIgnore
     public boolean isProtocolConfiguration() {
         return getMetaStream()
             .filter(isMetaNameEqualTo(PROTOCOL_CONFIGURATION))
@@ -238,6 +243,7 @@ public class AssetAttribute extends Attribute {
             .orElse(false);
     }
 
+    @JsonIgnore
     public boolean isShowOnDashboard() {
         return getMetaStream()
             .filter(isMetaNameEqualTo(SHOW_ON_DASHBOARD))
@@ -254,6 +260,7 @@ public class AssetAttribute extends Attribute {
         }
     }
 
+    @JsonIgnore
     public boolean hasFormat() {
         return getMetaStream().anyMatch(isMetaNameEqualTo(FORMAT));
     }
