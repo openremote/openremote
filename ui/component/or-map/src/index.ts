@@ -1,11 +1,10 @@
 import openremote, {EventCallback, OREvent} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
-import {css, customElement, html, LitElement, property, query, PropertyValues, CSSResult} from "lit-element";
+import {CSSResult, customElement, html, LitElement, property, PropertyValues, query} from "lit-element";
 import {LngLat, LngLatBoundsLike, LngLatLike} from "mapbox-gl";
 import {MapWidget} from "./mapwidget";
-import {
-    OrMapMarker, OrMapMarkerClickedEvent, OrMapMarkerChangedEvent, MarkerStyle
-} from "./markers/or-map-marker";
+import {style} from "./style";
+import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
 import {getLngLat} from "./util";
 
 export enum Type {
@@ -68,32 +67,7 @@ declare global {
 @customElement("or-map")
 export class OrMap extends LitElement {
 
-    public static styles = [
-        MarkerStyle,
-        css`
-        :host {
-            display: block;
-            overflow: hidden;
-        }
-        
-        #map {            
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-        
-        slot {
-            display: none;
-        }
-        
-        :host([hidden]) {
-            display: none;
-        }
-        
-        .leaflet-marker-icon, .mapboxgl-marker {
-            pointer-events: none !important;
-        }
-    `];
+    public static styles = style;
 
     @property({type: String})
     public type: Type = Type.VECTOR;
@@ -274,3 +248,6 @@ export class OrMap extends LitElement {
         `;
     }
 }
+
+export * from "./markers/or-map-marker";
+export * from "./markers/or-map-marker-asset";

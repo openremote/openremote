@@ -1,4 +1,5 @@
-import {css, customElement, LitElement, property, PropertyValues, query, html} from "lit-element";
+import {customElement, html, LitElement, property, PropertyValues, query} from "lit-element";
+import {markerActiveColorVar, markerColorVar} from "../style";
 
 export class OrMapMarkerChangedEvent extends CustomEvent<MarkerChangedEventDetail> {
 
@@ -46,43 +47,6 @@ declare global {
     }
 }
 
-export const MarkerStyle = css`
-        .or-map-marker {
-            position: absolute; /* This makes mapboxJS behave like mapboxGL */
-        }
-        
-        .marker-container {
-            position: relative;
-            transform: var(--or-map-marker-transform, translate(-24px, -45px));
-            cursor: pointer;
-            --or-icon-width: var(--or-map-marker-width, 48px);
-            --or-icon-height: var(--or-map-marker-height, 48px);
-            --or-icon-fill: var(--or-map-marker-fill, #1D5632);
-            --or-icon-stroke: var(--or-map-marker-stroke, none);
-        }
-        
-        .or-map-marker.interactive .marker-container {            
-            pointer-events: all;            
-        }
-        
-        .or-map-marker-default.interactive .marker-container {
-            pointer-events: none;
-            --or-icon-pointer-events: visible;
-        }
-                       
-        .or-map-marker .marker-icon {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            z-index: 1000;
-            --or-icon-fill: var(--or-map-marker-icon-fill, #FFF);
-            --or-icon-stroke: var(--or-map-marker-icon-stroke, none);
-            --or-icon-width: var(--or-map-marker-icon-width, 24px);
-            --or-icon-height: var(--or-map-marker-icon-height, 24px);
-            transform: var(--or-map-marker-icon-transform, translate(-50%, -19px));            
-        }
-`;
-
 /**
  * Base class for all map markers.
  *
@@ -110,6 +74,12 @@ export class OrMapMarker extends LitElement {
 
     @property({type: String})
     public icon?: string;
+
+    @property({type: String})
+    public color?: string;
+
+    @property({type: String})
+    public activeColor?: string;
 
     @property({type: Boolean})
     public interactive: boolean = true;
@@ -148,6 +118,7 @@ export class OrMapMarker extends LitElement {
         markerContainerElem.appendChild(content);
         this.updateInteractive(markerElem);
         this.updateVisibility(markerElem);
+        this.updateColor(markerContainerElem);
         this.updateActive(markerElem);
         return markerElem;
     }
@@ -183,6 +154,10 @@ export class OrMapMarker extends LitElement {
             this.refreshMarkerContent();
         }
 
+        if (_changedProperties.has("color") || _changedProperties.has("activeColor")) {
+            this.updateColor(this.markerContainer);
+        }
+
         if (_changedProperties.has("visible")) {
             this.updateVisibility(this._actualMarkerElement);
         }
@@ -193,6 +168,7 @@ export class OrMapMarker extends LitElement {
 
         if (_changedProperties.has("active")) {
             this.updateActive(this._actualMarkerElement);
+            this.updateColor(this.markerContainer);
         }
 
         _changedProperties.forEach((oldValue, prop) => this._raisePropertyChange(prop as string));
@@ -205,6 +181,32 @@ export class OrMapMarker extends LitElement {
                 container.removeAttribute("hidden");
             } else {
                 container.setAttribute("hidden", "true");
+            }
+        }
+    }
+
+
+    protected getColor() {
+        return this.color && this.color !== "unset" ? "#" + this.color : undefined;
+    }
+
+    protected getActiveColor() {
+        return this.activeColor && this.activeColor !== "unset" ? "#" + this.activeColor : undefined;
+    }
+
+    protected updateColor(container?: HTMLDivElement) {
+        if (container) {
+            container.style.removeProperty(markerColorVar);
+            container.style.removeProperty(markerActiveColorVar);
+
+            const color = this.getColor();
+            const activeColor = this.getActiveColor();
+
+            if (color) {
+                container.style.setProperty(markerColorVar, color);
+            }
+            if (activeColor) {
+                container.style.setProperty(markerActiveColorVar, activeColor);
             }
         }
     }

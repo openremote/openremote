@@ -142,6 +142,9 @@ export class MapWidget {
                 if (this._center) {
                     options.center = getLatLng(this._center);
                 }
+                if (this._zoom) {
+                    options.zoom = this._zoom + 1;
+                }
             }
 
             this._mapJs = L.mapbox.map(this._mapContainer, settings, options);
@@ -197,6 +200,9 @@ export class MapWidget {
             }
             if (this._center) {
                 options.center = this._center;
+            }
+            if (this._zoom) {
+                options.zoom = this._zoom;
             }
 
             this._mapGl = new map.Map(options);

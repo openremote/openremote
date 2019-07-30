@@ -39,7 +39,7 @@ openremote.init({
         if (apartment1) {
             // Add an or-map-marker-asset to the vector map
             const assetMarker = document.createElement("or-map-marker-asset");
-            assetMarker.setAttribute("asset", apartment1.id!);
+            assetMarker.setAttribute("assetid", apartment1.id!);
             vectorMap.appendChild(assetMarker);
         }
 });
