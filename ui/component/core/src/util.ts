@@ -5,8 +5,13 @@ import {
     PushNotificationMessage,
     RuleActionUnion,
     RuleCondition,
-    LogicGroup
+    LogicGroup,
+    Asset,
+    AssetAttribute,
+    AttributeEvent,
+    MetaItem
 } from "@openremote/model";
+import {Util} from "./index";
 
 export class Deferred<T> {
 
@@ -190,4 +195,52 @@ export function getEnumKeyAsString(enm: object, val: string): string {
     // @ts-ignore
     const key = Object.keys(enm).find((k) => enm[k] === val);
     return key!;
+}
+
+export function getQueryParameter(name: string): string {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    const regex = new RegExp("[\\?&]" + name + "=([^&#]*)");
+    const results = regex.exec(location.search);
+    return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
+export function getAssetAttribute(asset: Asset, attributeName: string): AssetAttribute | undefined {
+    if (asset.attributes && asset.attributes.hasOwnProperty(attributeName)) {
+        const attr = asset.attributes[attributeName] as AssetAttribute;
+        attr.name = attributeName;
+        return attr;
+    }
+}
+
+export function getAssetAttributes(asset: Asset): AssetAttribute[] {
+    if (asset.attributes) {
+        return Object.entries(asset.attributes as {[s: string]: AssetAttribute}).map(([name, attr]) => {
+            attr.name = name;
+            return attr;
+        });
+    }
+
+    return [];
+}
+
+/**
+ * Immutable update of an asset using the supplied attribute event
+ */
+export function updateAsset(asset: Asset, event: AttributeEvent): Asset {
+
+    const attributeName = event.attributeState!.attributeRef!.attributeName!;
+
+    if (asset.attributes) {
+        if (event.attributeState!.deleted) {
+            delete asset.attributes![attributeName];
+        } else {
+            const attribute = getAssetAttribute(asset, attributeName);
+            if (attribute) {
+                attribute.value = event.attributeState!.value;
+                attribute.valueTimestamp = event.timestamp;
+            }
+        }
+    }
+
+    return Object.assign({}, asset);
 }

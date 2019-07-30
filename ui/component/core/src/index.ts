@@ -7,6 +7,17 @@ import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEvent
 import i18next from "i18next";
 import i18nextXhr from "i18next-xhr-backend";
 import {AssetDescriptor, AttributeDescriptor, AttributeValueDescriptor, MetaItemDescriptor} from "@openremote/model";
+import * as Util from "./util";
+
+export {Util}
+
+export const DefaultColor1: string = "#FFF"; // Header and panels
+export const DefaultColor2: string = "#F9F9F9"; // Background
+export const DefaultColor3: string = "#202020"; // Text
+export const DefaultColor4: string = "#1B5630"; // Buttons
+export const DefaultColor5: string = "#CCC"; // Borders and lines
+export const DefaultBoxShadow: string = "0 5px 5px -5px rgba(0,0,0,0.57)";
+export const DefaultHeaderHeight: string = "60px";
 
 export enum ORError {
     NONE = "NONE",
