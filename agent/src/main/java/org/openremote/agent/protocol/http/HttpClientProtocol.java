@@ -670,6 +670,10 @@ public class HttpClientProtocol extends AbstractProtocol {
                 .flatMap(AbstractValueHolder::getValueAsString).orElseThrow(() ->
                         new IllegalArgumentException("Missing or invalid require meta item: " + META_PROTOCOL_BASE_URI));
 
+        if (baseUri.endsWith("/")) {
+            baseUri = baseUri.substring(0, baseUri.length() - 1);
+        }
+
         URI uri = null;
 
         try {
