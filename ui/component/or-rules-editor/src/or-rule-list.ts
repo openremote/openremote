@@ -32,7 +32,7 @@ class OrRulesList extends LitElement {
                         <a ?selected="${this.ruleset && ruleset.id === this.ruleset.id}" class="d-flex list-item" @click="${() => this.setActiveRule(this.rulesets[index])}">
                             <span class="rule-status ${ruleset.enabled ? "bg-green" : "bg-red"}"></span>
                             <div class="flex">
-                                <span>${ruleset.name}<span style="color: var(--app-grey-color);">${!ruleset.id ? " [concept]" : ""}</span></span>
+                                <span>${ruleset.name}<span>${!ruleset.id ? " [concept]" : ""}</span></span>
                             </div>
                         </a>
                     `;

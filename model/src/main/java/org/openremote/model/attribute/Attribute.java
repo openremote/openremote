@@ -20,6 +20,8 @@
 package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.gwt.regexp.shared.RegExp;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.HasUniqueResourceName;
@@ -135,6 +137,7 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
             .isPresent();
     }
 
+    @JsonProperty
     public Meta getMeta() {
         if (meta == null) {
             return new Meta(getObjectValue()
@@ -178,6 +181,7 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return getMetaItem(hasUniqueResourceName.getUrn());
     }
 
+    @JsonProperty
     public void setMeta(List<MetaItem> metaItems) {
         Meta meta;
         if (metaItems == null) {

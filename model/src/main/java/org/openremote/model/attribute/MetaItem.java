@@ -19,6 +19,7 @@
  */
 package org.openremote.model.attribute;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gwt.regexp.shared.RegExp;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.HasUniqueResourceName;
@@ -77,10 +78,12 @@ public class MetaItem extends AbstractValueHolder {
         this(hasUniqueResourceName.getUrn(), value);
     }
 
+    @JsonProperty
     public Optional<String> getName() {
         return getObjectValue().getString("name");
     }
 
+    @JsonProperty
     public void setName(String name) {
         getObjectValue().put("name", TextUtil.requireNonNullAndNonEmpty(name));
     }

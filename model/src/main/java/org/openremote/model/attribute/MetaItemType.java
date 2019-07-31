@@ -19,6 +19,7 @@
  */
 package org.openremote.model.attribute;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetModelProvider;
 import org.openremote.model.asset.UserAsset;
@@ -432,6 +433,7 @@ public enum MetaItemType implements MetaItemDescriptor {
     final protected boolean required = false; // All asset meta so far are not mandatory
     final protected String pattern;
     final protected String patternFailureMessage;
+    @JsonIgnore
     final protected Function<Value, Optional<ValidationFailure>> validator;
 
     MetaItemType(String urn, Access access, ValueType valueType, String pattern, String patternFailureMessage, Value initialValue, boolean valueFixed) {

@@ -19,6 +19,7 @@
  */
 package org.openremote.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
@@ -38,20 +39,17 @@ public abstract class AbstractValueHolder implements ValueHolder {
 
     protected static final String VALUE_FIELD_NAME = "value";
 
+    @JsonIgnore
     protected ObjectValue objectValue;
 
     public AbstractValueHolder(ObjectValue objectValue) {
         this.objectValue = Objects.requireNonNull(objectValue);
     }
 
-    // JsonProperty needed by GWT jackson
-    @JsonProperty
     public ObjectValue getObjectValue() {
         return objectValue;
     }
 
-    // JsonProperty needed by GWT jackson
-    @JsonProperty
     private void setObjectValue(ObjectValue objectValue) {
         this.objectValue = objectValue;
     }
@@ -61,6 +59,7 @@ public abstract class AbstractValueHolder implements ValueHolder {
         objectValue.remove(VALUE_FIELD_NAME);
     }
 
+    @JsonIgnore
     @Override
     public Optional<Value> getValue() {
         return objectValue.get(VALUE_FIELD_NAME);
@@ -96,6 +95,13 @@ public abstract class AbstractValueHolder implements ValueHolder {
         return objectValue.getArray(VALUE_FIELD_NAME);
     }
 
+
+    @JsonProperty("value")
+    private Value getValueInternal() {
+        return getValue().orElse(null);
+    }
+
+    @JsonProperty("value")
     @Override
     public void setValue(Value value) {
         if (value != null) {

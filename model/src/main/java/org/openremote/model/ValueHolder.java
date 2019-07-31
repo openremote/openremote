@@ -19,6 +19,7 @@
  */
 package org.openremote.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -45,6 +46,7 @@ public interface ValueHolder {
 
     void clearValue();
 
+    @JsonProperty
     Optional<Value> getValue();
 
     Optional<String> getValueAsString();

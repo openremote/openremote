@@ -21,7 +21,7 @@ dependencies {
     compile "org.jboss.gwt.elemento:elemento-core:$elementoCoreVersion"
 
     // TODO Built from https://github.com/richturner/gwt-jackson
-    compile files(['lib/gwt-jackson-0.14.3-SNAPSHOT.jar'])
+    compile files(['lib/gwt-jackson-0.15.5-SNAPSHOT.jar'])
     //compile "com.github.nmorel.gwtjackson:gwt-jackson:$gwtJacksonVersion"
 
     // This is not on regular classpath, only used when compiling GWT/running codeserver

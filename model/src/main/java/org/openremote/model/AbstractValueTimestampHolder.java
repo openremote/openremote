@@ -19,6 +19,7 @@
  */
 package org.openremote.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -39,6 +40,11 @@ public abstract class AbstractValueTimestampHolder extends AbstractValueHolder {
         super(objectValue);
     }
 
+    @JsonProperty("valueTimestamp")
+    private Long getValueTimestampInternal() {
+        return getValueTimestamp().orElse(null);
+    }
+
     public Optional<Long> getValueTimestamp() {
         return getObjectValue().getNumber(VALUE_TIMESTAMP_FIELD_NAME).map(Double::longValue);
     }
@@ -46,6 +52,7 @@ public abstract class AbstractValueTimestampHolder extends AbstractValueHolder {
     /**
      * Sets the value timestamp to given time.
      */
+    @JsonProperty
     @SuppressWarnings("unchecked")
     public void setValueTimestamp(long timestamp) {
         getObjectValue().put(VALUE_TIMESTAMP_FIELD_NAME, Values.create(timestamp));

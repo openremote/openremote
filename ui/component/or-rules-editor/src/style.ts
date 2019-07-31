@@ -1,4 +1,5 @@
-import {css} from "lit-element";
+import {css, unsafeCSS} from "lit-element";
+import {DefaultColor1, DefaultColor2, DefaultColor5} from "@openremote/core";
 
 // language=CSS
 export const rulesEditorStyle = css`
@@ -8,12 +9,14 @@ export const rulesEditorStyle = css`
         height: 100%;
         width: 100%;
         
-        --internal-or-rule-section-background-color: var(--or-rule-section-background-color, white);
-        --internal-or-rule-list-background-color: var(--or-rule-list-background-color, white);
-        --internal-or-rule-header-background-color: var(--or-rule-header-background-color, white);
-        --internal-or-rule-toolbar-background-color: var(--or-rule-toolbar-background-color, white);
-        --internal-or-rule-editor-background-color: var(--or-rule-editor-background-color, #f5f5f5);
-        --internal-or-rule-foreground-color: var(--or-rule-foreground-color, green);
+        --internal-or-rule-background-color: var(--or-rule-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
+        --internal-or-rule-panel-color: var(--or-rule-panel-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+        --internal-or-rule-list-background-color: var(--or-rule-list-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
+        --internal-or-rule-list-foreground-color: var(--or-rule-list-foreground-color, var(--app-foreground-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)})));
+        --internal-or-rule-header-background-color: var(--or-rule-header-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+        --internal-or-rule-toolbar-background-color: var(--or-rule-toolbar-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+        --internal-or-rule-editor-background-color: var(--or-rule-editor-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
+        --internal-or-rule-text-color: var(--or-rule-text-color, inherit);
     }
 
     .shadow {
@@ -41,7 +44,7 @@ export const rulesEditorStyle = css`
 
     .bottom-toolbar {
         display: flex;
-        border-top: 1px solid var(--app-lightgrey-color);
+        border-top: 1px solid var(--app-tertiary-color);
         background-color: var(--internal-or-rule-toolbar-background-color);
     }
     
@@ -53,7 +56,7 @@ export const rulesEditorStyle = css`
         cursor: pointer;
         padding: 5px;
         margin: 10px;
-        border: 1px solid var(--app-lightgrey-color);
+        border: 1px solid var(--app-tertiary-color);
         border-radius: 3px;
     }
 
@@ -163,7 +166,7 @@ export const ruleSectionStyle = css`
         padding: 20px;
         display: flex;
         flex-direction: column;
-        background-color: var(--internal-or-rule-section-background-color);
+        background-color: var(--internal-or-rule-panel-color);
         box-shadow: rgba(0, 0, 0, 0.11) 0 1px 2px 0;
     }
     
@@ -199,7 +202,7 @@ export const ruleListStyle = css`
         display: block;
         padding: 30px 30px 5px 20px;
         text-transform: uppercase;
-        color: var(--app-grey-color, #808080);
+        color: var(, #808080);
         font-size:14px;
         font-weight: bold;
         text-align: left;
@@ -210,7 +213,7 @@ export const ruleListStyle = css`
         font-size: 14px;
         padding: 13px 15px;
         border-left: 5px solid transparent;
-        color: var(--app-grey-color, #808080);
+        color: var(--internal-or-rule-list-foreground-color);
         cursor: pointer;
 
         transition: all 200ms ease-in;

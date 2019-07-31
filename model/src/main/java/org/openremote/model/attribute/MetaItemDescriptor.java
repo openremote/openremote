@@ -190,6 +190,7 @@ public interface MetaItemDescriptor extends HasUniqueResourceName {
     @JsonProperty
     Value[] getAllowedValues();
 
+    @JsonIgnore
     /**
      * Get optional validation function; this allows {@link MetaItemDescriptor} implementations to do more advanced
      * validation. If defined this takes priority over all other value checks.

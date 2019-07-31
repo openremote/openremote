@@ -19,6 +19,10 @@
  */
 package org.openremote.model.attribute;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.Values;
 
@@ -31,6 +35,7 @@ import java.util.*;
  */
 public class Meta extends AbstractList<MetaItem> {
 
+    @JsonIgnore
     final protected ArrayValue arrayValue;
 
     public Meta() {
@@ -44,6 +49,10 @@ public class Meta extends AbstractList<MetaItem> {
 
     public Meta(ArrayValue arrayValue) {
         this.arrayValue = Objects.requireNonNull(arrayValue);
+    }
+
+    public MetaItem[] getItems() {
+        return this.toArray(new MetaItem[0]);
     }
 
     public ArrayValue getArrayValue() {

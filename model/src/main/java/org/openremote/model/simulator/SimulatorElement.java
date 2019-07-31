@@ -19,6 +19,7 @@
  */
 package org.openremote.model.simulator;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.ValidationFailure;
@@ -54,6 +55,7 @@ public abstract class SimulatorElement implements ValueHolder {
     public AttributeRef attributeRef;
     public AttributeValueDescriptor expectedType;
     // TODO GWT jackson doesn't like fields with the same name as getters in the hierarchy
+    @JsonProperty("value")
     public Value elementValue = null;
 
     protected SimulatorElement() {
