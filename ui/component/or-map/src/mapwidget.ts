@@ -253,6 +253,7 @@ export class MapWidget {
         switch (prop) {
             case "lat":
             case "lng":
+            case "radius":
                 if (marker.lat && marker.lng) {
                     if (marker._actualMarkerElement) {
                         this._updateMarkerPosition(marker);

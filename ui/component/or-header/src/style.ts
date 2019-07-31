@@ -89,7 +89,6 @@ export const style = css`
         #desktop-right {
             margin-left: auto;
             display: none;
-            margin-left: auto;
             margin-right: 20px;
         }
         
@@ -104,7 +103,6 @@ export const style = css`
         ::slotted(*) {
             opacity: 0.8;
             cursor: pointer;
-            text-transform: uppercase;
             text-decoration: none !important;                       
         }
 

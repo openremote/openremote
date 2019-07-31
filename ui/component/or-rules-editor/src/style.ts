@@ -175,6 +175,9 @@ export const ruleSectionStyle = css`
 
 // language=CSS
 export const ruleListStyle = css`
+    :host {
+        overflow: auto;
+    }
     .d-flex {
         display: -webkit-box;
         display: -moz-box;
@@ -205,7 +208,7 @@ export const ruleListStyle = css`
     .list-item {
         text-decoration: none;
         font-size: 14px;
-        padding: 13px 0 13px 15px;
+        padding: 13px 15px;
         border-left: 5px solid transparent;
         color: var(--app-grey-color, #808080);
         cursor: pointer;
