@@ -43,30 +43,26 @@ class OrRuleHeader extends LitElement {
         if (this.ruleset) {
             this.ruleset.enabled = !this.ruleset.enabled;
             this.dispatchEvent(new OrRuleChangedEvent());
+            this.requestUpdate();
         }
     }
 
     protected render() {
 
         return html`
-            <div class="rule-container">
-              
-                    <div class="layout horizontal">
-                        <input ?disabled="${this.readonly}" required placeholder=" " @change="${this.changeName}" type="text" minlength="3" maxlength="255" .value="${this.ruleset ? this.ruleset.name : null}" />
-                        
-                        <div class="layout horizontal" style="margin-left: auto;">
-                            <span style="margin: 9px 0;" class="toggle-label" ?data-disabled="${!this.ruleset!.id}"><or-translate value="active"></or-translate></span>
-                            <label class="switch" ?data-disabled="${!this.ruleset!.id}">
-                                <input @change="${this.toggleEnabled}" ?disabled="${!this.ruleset!.id || this.readonly}" ?checked="${this.ruleset!.enabled}" type="checkbox">
-                                <span class="slider round"></span>
-                            </label>                    
+            <div id="container">
+                    <input id="title" ?disabled="${this.readonly}" required placeholder=" " @change="${this.changeName}" type="text" minlength="3" maxlength="255" .value="${this.ruleset ? this.ruleset.name : null}" />
+                    
+                    <div id="controls">
+                        <span id="toggle-label" ?data-disabled="${!this.ruleset!.id}"><or-translate value="active"></or-translate></span>
+                        <label id="toggle" ?data-disabled="${!this.ruleset!.id}" @click="${this.toggleEnabled}" ?data-checked="${this.ruleset!.enabled}">
+                            <span></span>
+                        </label>                    
 
-                            ${this.ruleset ? html`
-                                <button ?disabled="${!this.saveEnabled}" @click="${this.saveRuleset}"><or-translate value="save"></or-translate></button>
-                            ` : ``}
-                        </div>
-                        
-                    </div>
+                        ${this.ruleset ? html`
+                            <button id="save-btn" ?disabled="${!this.saveEnabled}" @click="${this.saveRuleset}"><or-translate value="save"></or-translate></button>
+                        ` : ``}
+                    </div>                        
             </div>
         `;
     }

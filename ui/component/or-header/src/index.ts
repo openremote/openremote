@@ -22,7 +22,7 @@ class OrHeader extends LitElement {
     protected render() {
         return html`
            <!-- Header -->
-            <div id="header">
+            <div id="header" class="shadow">
                 <div id="toolbar-top">
                     <div><img id="logo" src="${this.logo}" /></div>
                     <!-- This gets hidden on a small screen-->

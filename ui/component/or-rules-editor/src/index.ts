@@ -409,15 +409,15 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
     protected render() {
 
         return html`
-          <side-menu class="bg-white shadow">
+          <div id="rule-list-container" class="shadow">
                 <or-rule-list .rulesets="${this._rulesets}" .ruleset="${this.activeRuleset}" ></or-rule-list>
-                <div class="bottom-toolbar">
+                <div id="bottom-toolbar">
                     ${openremote.hasRole("write:rules") ? html`
-                      <icon @click="${this.deleteRuleset}"><or-icon icon="delete"></or-icon></icon>
-                      <icon style="margin-left: auto;" @click="${this.createRuleset}"><or-icon icon="plus"></or-icon></icon>
+                      <button @click="${this.deleteRuleset}"><or-icon icon="delete"></or-icon></button>
+                      <button style="margin-left: auto;" @click="${this.createRuleset}"><or-icon icon="plus"></or-icon></button>
                     ` : ``}
                 </div>
-          </side-menu>
+          </div>
           ${this.activeRule ? html`
                 <div class="rule-container">
                     <or-rule-header class="shadow" .readonly="${this.isReadonly("header")}" .ruleset="${this.activeRuleset}" .rule="${this.activeRule}" .saveEnabled="${!this._saveInProgress && this.isValidRule && this._activeModified}"></or-rule-header>

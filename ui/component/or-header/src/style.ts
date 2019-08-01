@@ -1,5 +1,5 @@
 import {css, unsafeCSS} from "lit-element";
-import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, DefaultBoxShadow, DefaultHeaderHeight} from "@openremote/core";
+import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, DefaultBoxShadowBottom, DefaultHeaderHeight} from "@openremote/core";
 
 // language=CSS
 export const style = css`
@@ -44,7 +44,12 @@ export const style = css`
             --or-icon-height: calc(var(--internal-or-header-item-size) - 10px);
             --or-icon-width: calc(var(--internal-or-header-item-size) - 10px);
             z-index: 9999999;
-            box-shadow: ${unsafeCSS(DefaultBoxShadow)};
+        }
+
+        .shadow {
+            -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
+            -moz-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
+            box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
         }
                 
         #drawer {

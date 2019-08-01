@@ -1,5 +1,5 @@
 import {css, unsafeCSS} from "lit-element";
-import {DefaultColor1, DefaultColor2, DefaultColor5} from "@openremote/core";
+import {DefaultColor1, DefaultColor2, DefaultColor5, DefaultColor3, DefaultBoxShadow, DefaultColor4, DefaultColor6, DefaultDisabledOpacity} from "@openremote/core";
 
 // language=CSS
 export const rulesEditorStyle = css`
@@ -9,60 +9,56 @@ export const rulesEditorStyle = css`
         height: 100%;
         width: 100%;
         
-        --internal-or-rule-background-color: var(--or-rule-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
-        --internal-or-rule-panel-color: var(--or-rule-panel-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
-        --internal-or-rule-list-background-color: var(--or-rule-list-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
-        --internal-or-rule-list-foreground-color: var(--or-rule-list-foreground-color, var(--app-foreground-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)})));
-        --internal-or-rule-header-background-color: var(--or-rule-header-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
-        --internal-or-rule-toolbar-background-color: var(--or-rule-toolbar-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
-        --internal-or-rule-editor-background-color: var(--or-rule-editor-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
-        --internal-or-rule-text-color: var(--or-rule-text-color, inherit);
+        --internal-or-rules-editor-background-color: var(--or-rules-editor-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
+        --internal-or-rules-editor-text-color: var(--or-rules-editor-text-color, inherit);
+        --internal-or-rules-editor-panel-color: var(--or-rules-editor-panel-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+        --internal-or-rules-editor-button-color: var(--or-rules-editor-button-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
+        --internal-or-rules-editor-invalid-color: var(--or-rules-editor-invalid-color, var(--or-app-color6, ${unsafeCSS(DefaultColor6)}));        
+        --internal-or-rules-editor-panel-color: var(--or-rules-editor-panel-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+        --internal-or-rules-editor-line-color: var(--or-rules-editor-line-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
+        
+        --internal-or-rules-editor-list-selected-color: var(--or-rules-editor-list-selected-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
+        --internal-or-rules-editor-list-text-color: var(--or-rules-editor-list-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
+        --internal-or-rules-editor-list-text-size: var(--or-rules-editor-list-text-size, 15px);
+
+        --internal-or-rules-editor-list-button-size: var(--or-rules-editor-list-button-size, 24px);
+        
+        --internal-or-rules-editor-header-background-color: var(--or-rules-editor-header-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+        --internal-or-rules-editor-header-height: var(--or-rules-editor-header-height, 80px);
     }
 
     .shadow {
-        -webkit-box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.21);
-        -moz-box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.21);
-        box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.21);
+        -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadow)};
+        -moz-box-shadow: ${unsafeCSS(DefaultBoxShadow)};
+        box-shadow: ${unsafeCSS(DefaultBoxShadow)};
     }
 
-    side-menu {
+    #rule-list-container {
         min-width: 300px;
         width: 300px;
         z-index: 2;
         display: flex;
         flex-direction: column;
+        background-color: var(--internal-or-rules-editor-panel-color);
+        color: var(--internal-or-rules-editor-list-text-color);
+
     }
 
-    or-rule-list {
-        flex-grow: 1;
-        background-color: var(--internal-or-rule-list-background-color);
-    }
-    
-    or-rule-header {
-        background-color: var(--internal-or-rule-header-background-color);
-    }
-
-    .bottom-toolbar {
+    #rule-list-container #bottom-toolbar {
         display: flex;
-        border-top: 1px solid var(--app-tertiary-color);
-        background-color: var(--internal-or-rule-toolbar-background-color);
+        border-top: 1px solid var(--internal-or-rules-editor-line-color);
+        --or-icon-fill: var(--internal-or-rules-editor-panel-color);
+        --or-icon-width: var(--internal-or-rules-editor-list-button-size);
+        --or-icon-height: var(--internal-or-rules-editor-list-button-size);        
     }
     
-    .bottom-toolbar or-icon {
-        --or-icon-height: 16px;
-    }
-    
-    icon {
-        cursor: pointer;
+    #bottom-toolbar button {
         padding: 5px;
         margin: 10px;
-        border: 1px solid var(--app-tertiary-color);
+        cursor: pointer;
+        border: 1px solid var(--internal-or-rules-editor-line-color);
         border-radius: 3px;
-    }
-
-    icon:hover {
-        background-color: var(--app-primary-color);
-        color: var(--app-white-color, #FFF);
+        background-color: var(--internal-or-rules-editor-button-color);
     }
 
     .rule-container {
@@ -71,10 +67,14 @@ export const rulesEditorStyle = css`
         flex-grow: 1;
     }
     
+    or-rule-header {
+        height: var(--internal-or-rules-editor-header-height);
+    }
+    
     .rule-editor-panel {
         display: flex;
         flex-grow: 1;
-        background-color: var(--internal-or-rule-editor-background-color);
+        background-color: var(--internal-or-rules-editor-background-color);
     }
     
     .rule-editor-panel > * {
@@ -111,7 +111,7 @@ export const rulesEditorStyle = css`
 // language=CSS
 export const invalidStyle = css`
     *:invalid {
-        border-bottom: 2px solid red;
+        border-bottom: 2px solid var(--internal-or-rules-editor-invalid-color);
     }
 `;
 
@@ -119,7 +119,8 @@ export const invalidStyle = css`
 export const buttonStyle = css`
     .button-clear {
         background: none;
-        color: var(--internal-or-rule-foreground-color);
+        color: var(--internal-or-rules-editor-button-color);
+        --or-icon-fill: var(--internal-or-rules-editor-button-color);
         border: none;
         padding: 0;
         display: inline-block;
@@ -128,10 +129,6 @@ export const buttonStyle = css`
 
     .button-clear:focus {
         outline: 0;
-    }
-    
-    .button-clear > or-icon {
-        fill: var(--internal-or-rule-foreground-color);
     }
 
     .add-button {
@@ -148,7 +145,7 @@ export const buttonStyle = css`
         padding-top: 5px;
         border-top-width: 1px;
         border-top-style: solid;
-        border-color: var(--internal-or-rule-foreground-color);
+        border-color: var(--internal-or-rules-editor-line-color);
     }
 
     .add-buttons-container > button {
@@ -166,7 +163,7 @@ export const ruleSectionStyle = css`
         padding: 20px;
         display: flex;
         flex-direction: column;
-        background-color: var(--internal-or-rule-panel-color);
+        background-color: var(--internal-or-rules-editor-panel-color);
         box-shadow: rgba(0, 0, 0, 0.11) 0 1px 2px 0;
     }
     
@@ -180,7 +177,10 @@ export const ruleSectionStyle = css`
 export const ruleListStyle = css`
     :host {
         overflow: auto;
+        flex-grow: 1;
+        font-size: var(--internal-or-rules-editor-list-text-size);
     }
+    
     .d-flex {
         display: -webkit-box;
         display: -moz-box;
@@ -197,7 +197,6 @@ export const ruleListStyle = css`
         flex: 1;
     }
 
-
     .list-title {
         display: block;
         padding: 30px 30px 5px 20px;
@@ -210,36 +209,25 @@ export const ruleListStyle = css`
 
     .list-item {
         text-decoration: none;
-        font-size: 14px;
         padding: 13px 15px;
         border-left: 5px solid transparent;
-        color: var(--internal-or-rule-list-foreground-color);
         cursor: pointer;
-
         transition: all 200ms ease-in;
+        opacity: 0.8;
     }
 
     .list-item:hover {
-        border-left-color: transparent;
-        background-color: #f7f7f7;
-        color: #000000;
+        border-left-color: var(--internal-or-rules-editor-list-selected-color);
+        background-color: var(--internal-or-rules-editor-list-selected-color);
     }
 
     .list-item[selected] {
-        border-left-color: var(--app-primary-color);
-        background-color: #f7f7f7;
-        color: #000000;
-    }
-
-    .list-item:hover {
-        opacity: 0.77;
+        border-left-color: var(--internal-or-rules-editor-button-color);
+        background-color: var(--internal-or-rules-editor-list-selected-color);
+        opacity: 1;
     }
 
     .list-item > span {
-        font-size: 18px;
-    }
-
-    .rule-status {
         width: 8px;
         height: 8px;
         border-radius: 8px;
@@ -263,66 +251,64 @@ export const headerStyle = css`
     :host {
         display: block;
         width: 100%;
-
         z-index: 1;
+        background-color: var(--internal-or-rules-editor-header-background-color);
+        --or-icon-fill: var(--internal-or-rules-editor-panel-color);
     }
 
-    .rule-container {
-       padding: 20px 30px;
-    }
-
-    .layout.horizontal {
+    #container {
         display: flex;
+        height: 100%;
         flex-direction: row;
+        padding: 0 20px;
     }
 
-    input {
+    #title {
         font-size: 18px;
         font-weight: bold;
-        border: none;
+        border: 2px solid transparent;
         background-color: transparent;
-        border-bottom: 2px solid transparent;
-        transition: all 150ms ease-in;
-        
+        transition: all 150ms ease-in;        
         width: 350px;
         max-width: 100%;
     }
 
-    input:hover {
-        border-bottom: 2px solid #d5d5d5;
+    #title:hover {
+        border-bottom-color: 2px solid var(--internal-or-rules-editor-line-color);
     }
-
-    button {
+    
+    #title:focus {
+        outline: none;
+    }
+    
+    #controls {
+        margin: 0 0 0 auto;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        height: 100%;    
+    }
+    
+    #save-btn {
         padding: 0 20px;
         font-size: 14px;
         height: 40px;
-
         border-radius: 5px;
         border: none;
-        background-color: var(--internal-or-rule-foreground-color);
+        background-color: var(--internal-or-rules-editor-button-color);
         margin-left: auto;
-        color: var(--app-white-color, #FFF);
+        color: var(--internal-or-rules-editor-panel-color);
         font-weight: bold;
         cursor: pointer;
     }
     
-    button[disabled] {
-        background-color: #e4e4e4;
+    #save-btn[disabled] {
+        opacity: ${unsafeCSS(DefaultDisabledOpacity)};
+        pointer-events: none;
     }
-    
-    .button-simple {
-        border: none;
-        color: var(--internal-or-rule-foreground-color);
-        background-color: var(--internal-or-rule-header-background-color);
-    }
-
-    or-input {
-        padding: 10px;
-    }
-
 
     /* The switch - the box around the slider */
-    .switch {
+    #toggle {
         position: relative;
         display: inline-block;
         width: 36px;
@@ -330,15 +316,8 @@ export const headerStyle = css`
         margin: 13px 30px 13px 10px;
     }
 
-    /* Hide default HTML checkbox */
-    .switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-
     /* The slider */
-    .slider {
+    #toggle > span {
         position: absolute;
         cursor: pointer;
         top: 0;
@@ -348,53 +327,32 @@ export const headerStyle = css`
         background-color: #ccc;
         -webkit-transition: .4s;
         transition: .4s;
-    }
-    
-    .switch[data-disabled] {
-        cursor: auto;
-    }
-    
-    .toggle-label[data-disabled] {
-        color:  #e4e4e4;
-    }
-    
-    .switch[data-disabled] .slider::before {
-        background-color: #e4e4e4;
+        border-radius: 34px;
     }
 
-    .slider:before {
+    #toggle-label[data-disabled], #toggle[data-disabled] {
+        opacity: ${unsafeCSS(DefaultDisabledOpacity)};
+        pointer-events: none;
+    }
+
+    #toggle > span:before {
         position: absolute;
         content: "";
         height: 20px;
         width: 20px;
         left: 0;
         top: -3px;
+        opacity: 1;
         background-color: white;
+        border-radius: 50%;
         -webkit-transition: .4s;
         transition: .4s;
-        box-shadow: 0 1px 5px 0 rgba(0, 0, 0, 0.6);
+        box-shadow: ${unsafeCSS(DefaultBoxShadow)};
     }
 
-    input:checked + .slider:before {
-        background-color: var(--internal-or-rule-foreground-color);
-    }
-
-    input:focus + .slider {
-    }
-
-    input:checked + .slider:before {
-        -webkit-transform: translateX(20px);
-        -ms-transform: translateX(20px);
+    #toggle[data-checked] > span:before {
+        background-color: var(--internal-or-rules-editor-button-color);
         transform: translateX(20px);
-    }
-
-    /* Rounded sliders */
-    .slider.round {
-        border-radius: 34px;
-    }
-
-    .slider.round:before {
-        border-radius: 50%;
     }
 `;
 
@@ -414,7 +372,7 @@ export const whenStyle = css`
         padding: 20px 20px 10px 20px;
         border-width: 2px;
         border-style: solid;
-        border-color: var(--internal-or-rule-foreground-color);    
+        border-color: var(--internal-or-rules-editor-line-color);    
     }
         
     .rule-group > .remove-button {
@@ -459,16 +417,12 @@ export const whenStyle = css`
         left: 0;
         top: 100%;
         padding: 2px;
-        border: 2px solid var(--internal-or-rule-foreground-color);
+        border: 2px solid var(--internal-or-rules-editor-button-color);
         border-radius: 3px;
         font-weight: bold;
-    }
-    
-    .operator * {
         font-size: small;
-        color: var(--internal-or-rule-foreground-color);    
-    }
-    
+    }    
+        
     .rule-condition > * {
         flex-grow: 0;
     }
@@ -573,14 +527,14 @@ export const assetQueryEditorStyle = css`
         left: 0;
         top: 100%;
         padding: 2px;
-        border: 2px solid var(--internal-or-rule-foreground-color);
+        border: 2px solid var(--internal-or-rules-editor-button-color);
         border-radius: 3px;
         font-weight: bold;
     }
     
     .operator * {
         font-size: small;
-        color: var(--internal-or-rule-foreground-color);    
+        color: var(--internal-or-rules-editor-button-color);    
     }
     
     .attribute > * {
