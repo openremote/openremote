@@ -11,7 +11,7 @@ services:
       file: deploy.yml
       service: map
     ports:
-      - "127.0.0.1:8082:80"
+      - "8082:80"
     volumes:
       - ${DEPLOYMENT_DIRECTORY:-../deployment}:/deployment
       - ${DEPLOYMENT_DIRECTORY:-../deployment}/map:/data
