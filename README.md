@@ -30,7 +30,19 @@ To run OpenRemote using Docker Hub images, execute the following command from th
 docker-compose up --no-build
 ```
 
-***NOTE:*** If you are not using Docker Community Edition but the older **Docker Toolbox (Virtual Box),** you must specify the `IDENTITY_NETWORK_HOST` environment variable as the IP address of the Docker VM when executing `docker-compose` commands:
+***NOTE:*** If you are not using Docker Community Edition but the older **Docker Toolbox (Virtual Box),** please follow the following steps:
+ 
+ 1. Open VirtualBox and select the `docker` VM (called `default` unless specified otherwise) then go to Settings -> Network -> Adapter 1 -> Advanced -> Port Forwarding
+ 2. Add the following rules:
+ | Name | Protocol | Host IP | Host Port | Guest IP | Guest Port |
+ | --- | --- | --- | --- | --- | --- |
+ | postgresql | TCP |  | 5432 |  | 5432 |
+ | keycloak | TCP |  | 8081 |  | 8081 |
+ | map | TCP |  | 8082 |  | 8082 |
+ | proxy http | TCP |  | 80 |  | 80 |
+ | proxy https | TCP |  | 443 |  | 443 |
+  
+Alternatively you will have to replace `localhost` with your docker VM IP address (typically `192.168.99.100` but type `docker-machine ip default` if unsure) in all URLs below and also you must specify the `IDENTITY_NETWORK_HOST` environment variable as the IP address of the Docker VM when executing `docker-compose` commands:
 
 Windows Command Prompt (quotes are essential):
 ```
@@ -56,7 +68,19 @@ Next, if you are using Docker Community Edition build the Docker images and star
 docker-compose up --build
 ```
 
-***NOTE:*** If you are not using Docker Community Edition but the older **Docker Toolbox (Virtual Box),** you must specify the `IDENTITY_NETWORK_HOST` environment variable as the IP address of the Docker VM when executing `docker-compose` commands:
+***NOTE:*** If you are not using Docker Community Edition but the older **Docker Toolbox (Virtual Box),** please follow the following steps:
+ 
+ 1. Open VirtualBox and select the `docker` VM (called `default` unless specified otherwise) then go to Settings -> Network -> Adapter 1 -> Advanced -> Port Forwarding
+ 2. Add the following rules:
+ | Name | Protocol | Host IP | Host Port | Guest IP | Guest Port |
+ | --- | --- | --- | --- | --- | --- |
+ | postgresql | TCP |  | 5432 |  | 5432 |
+ | keycloak | TCP |  | 8081 |  | 8081 |
+ | map | TCP |  | 8082 |  | 8082 |
+ | proxy http | TCP |  | 80 |  | 80 |
+ | proxy https | TCP |  | 443 |  | 443 |
+  
+Alternatively you will have to replace `localhost` with your docker VM IP address (typically `192.168.99.100` but type `docker-machine ip default` if unsure) in all URLs below and also you must specify the `IDENTITY_NETWORK_HOST` environment variable as the IP address of the Docker VM when executing `docker-compose` commands:
 
 Windows Command Prompt (quotes are essential):
 ```
@@ -71,7 +95,7 @@ A first build will download many dependencies (and cache them locally for future
 
 ### Using the OpenRemote demo
 
-When all Docker containers are ready, you can access the OpenRemote UI and API with a webbrowser (if you are using Docker Toolbox replace `localhost` with `192.168.99.100`):
+When all Docker containers are ready, you can access the OpenRemote UI and API with a web browser (if you are using Docker Toolbox replace `localhost` with `192.168.99.100`):
 
 **OpenRemote Manager:** https://localhost  
 Username: admin  
