@@ -34,9 +34,10 @@ docker-compose up --no-build
  
  1. Open VirtualBox and select the `docker` VM (called `default` unless specified otherwise) then go to Settings -> Network -> Adapter 1 -> Advanced -> Port Forwarding
  2. Add the following rules:
+ 
  | Name | Protocol | Host IP | Host Port | Guest IP | Guest Port |
  | --- | --- | --- | --- | --- | --- |
- | postgresql | TCP |  | 5432 |  | 5432 |
+ |postgresql|TCP||5432||5432|
  | keycloak | TCP |  | 8081 |  | 8081 |
  | map | TCP |  | 8082 |  | 8082 |
  | proxy http | TCP |  | 80 |  | 80 |
@@ -72,6 +73,7 @@ docker-compose up --build
  
  1. Open VirtualBox and select the `docker` VM (called `default` unless specified otherwise) then go to Settings -> Network -> Adapter 1 -> Advanced -> Port Forwarding
  2. Add the following rules:
+ 
  | Name | Protocol | Host IP | Host Port | Guest IP | Guest Port |
  | --- | --- | --- | --- | --- | --- |
  | postgresql | TCP |  | 5432 |  | 5432 |
