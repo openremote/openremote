@@ -68,6 +68,7 @@ export const rulesEditorStyle = css`
     }
     
     or-rule-header {
+        min-height: var(--internal-or-rules-editor-header-height);
         height: var(--internal-or-rules-editor-header-height);
     }
     
@@ -235,11 +236,19 @@ export const ruleListStyle = css`
     }
 
     .bg-green {
-        background-color: green;
+        background-color: #28b328;
     }
 
     .bg-red {
         background-color: red
+    }
+    
+    .bg-blue {
+        background-color: #3e92dc;
+    }
+
+    .bg-grey {
+        background-color: #b7b7b7;
     }
 `;
 

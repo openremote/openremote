@@ -27,7 +27,7 @@ export class MapWidget {
     protected _markersJs: Map<OrMapMarker, MarkerJS> = new Map();
     protected _markersGl: Map<OrMapMarker, MarkerGL> = new Map();
     protected _viewSettings?: ViewSettings;
-    protected _center?: LngLat;
+    protected _center?: LngLat | LngLatLike;
     protected _zoom?: number;
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
 
@@ -60,7 +60,7 @@ export class MapWidget {
         return this;
     }
 
-    public flyTo(LngLat:LngLatLike): this {
+    public flyTo(coordinates?:LngLatLike, zoom?: number): this {
         switch (this._type) {
             case Type.RASTER:
                 if (this._mapJs) {
@@ -68,11 +68,25 @@ export class MapWidget {
                 }
                 break;
             case Type.VECTOR:
-                if (this._mapGl && LngLat) {
-                    this._mapGl.flyTo({
-                        center: LngLat,
-                        zoom: 15
-                    });
+                if (this._mapGl) {
+                    if(this._viewSettings) {
+                        if (!coordinates) {
+                            coordinates = this._center ? this._center : this._viewSettings.center;
+                        }
+
+                        if (!zoom) {
+                            zoom = this._zoom ? this._zoom : this._viewSettings.zoom ? this._viewSettings.zoom : 18;
+                        }
+                    }
+
+                    // Only do flyTo if it has valid LngLat value
+                    if(coordinates) {
+                        this._mapGl.flyTo({
+                            center: coordinates,
+                            zoom: zoom
+                        });
+                    }
+
                 }
                 break;
         }
@@ -200,6 +214,10 @@ export class MapWidget {
             }
             if (this._center) {
                 options.center = this._center;
+            } else {
+                if(this._viewSettings) {
+                    this._center = this._viewSettings.center;
+                }
             }
             if (this._zoom) {
                 options.zoom = this._zoom;
@@ -242,6 +260,7 @@ export class MapWidget {
     }
 
     public removeMarker(marker: OrMapMarker) {
+        this._removeMarkerRadius(marker);
         this._updateMarkerElement(marker, false);
     }
 
@@ -311,10 +330,11 @@ export class MapWidget {
 
                         this._markersJs.set(marker, m);
                     }
+                    if(marker.radius) {
+                        this._createMarkerRadius(marker);
+                    }
                 }
-                if(marker.radius) {
-                    this._createMarkerRadius(marker);
-                }
+
                 break;
             case Type.VECTOR:
                 let mGl = this._markersGl.get(marker);
@@ -347,22 +367,32 @@ export class MapWidget {
 
 
                     }
+                    if(marker.radius) {
+                        this._createMarkerRadius(marker);
+                    }
                 }
 
-                if(marker.radius) {
-                    this._createMarkerRadius(marker);
-                }
+
                 break;
         }
     }
 
-    protected _createMarkerRadius(marker:OrMapMarker){
-        if(this._mapGl && this._loaded && marker.radius && marker.lat && marker.lng){
+    protected _removeMarkerRadius(marker:OrMapMarker){
+
+        if(this._mapGl && this._loaded && marker.radius && marker.lat && marker.lng) {
 
             if (this._mapGl.getSource('circleData')) {
                 this._mapGl.removeLayer('marker-radius-circle');
                 this._mapGl.removeSource('circleData');
             }
+        }
+
+    }
+
+    protected _createMarkerRadius(marker:OrMapMarker){
+        if(this._mapGl && this._loaded && marker.radius && marker.lat && marker.lng){
+
+              this._removeMarkerRadius(marker);
 
                 this._mapGl.addSource('circleData', {
                     type: 'geojson',

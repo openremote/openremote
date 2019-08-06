@@ -169,9 +169,9 @@ export class OrMap extends LitElement {
         this._loaded = true;
     }
 
-    public flyTo(LngLat: LngLatLike) {
+    public flyTo(coordinates?: LngLatLike, zoom?: number) {
         if (this._map) {
-            this._map.flyTo(LngLat);
+            this._map.flyTo(coordinates, zoom);
         }
     }
 
