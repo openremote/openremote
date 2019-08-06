@@ -573,8 +573,13 @@ public class JsonRulesBuilder extends RulesBuilder {
                     RuleConditionReset reset = ruleConditionState.ruleCondition.reset;
                     if (ruleConditionResetHasTimer(reset)) {
                         if (ruleConditionState.resetDurationMillis > 0) {
-                            ruleConditionState.lastTriggerResult.matchedAssetStates.forEach(assetState ->
-                                ruleConditionState.previouslyMatchedExpiryTimes.put(assetState, timerService.getCurrentTimeMillis() + ruleConditionState.resetDurationMillis));
+                            if (ruleConditionState.resetDurationMillis == Long.MAX_VALUE) {
+                                ruleConditionState.lastTriggerResult.matchedAssetStates.forEach(assetState ->
+                                    ruleConditionState.previouslyMatchedExpiryTimes.put(assetState, ruleConditionState.resetDurationMillis));
+                            } else {
+                                ruleConditionState.lastTriggerResult.matchedAssetStates.forEach(assetState ->
+                                    ruleConditionState.previouslyMatchedExpiryTimes.put(assetState, timerService.getCurrentTimeMillis() + ruleConditionState.resetDurationMillis));
+                            }
                         }
                     }
                     if (ruleConditionState.trackUnmatched) {
