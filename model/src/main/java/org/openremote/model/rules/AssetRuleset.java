@@ -21,7 +21,10 @@ package org.openremote.model.rules;
 
 import org.openremote.model.value.ObjectValue;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import javax.persistence.Transient;
 import java.util.Date;
 
 /**
@@ -46,20 +49,20 @@ public class AssetRuleset extends Ruleset {
     public AssetRuleset() {
     }
 
-    public AssetRuleset(String name, Lang lang, String rules, String assetId, boolean accessPublicRead) {
-        super(name, rules, lang);
+    public AssetRuleset(String name, Lang lang, String rules, String assetId, boolean accessPublicRead, boolean continueOnError) {
+        super(name, rules, lang, continueOnError);
         this.assetId = assetId;
         this.accessPublicRead = accessPublicRead;
     }
 
-    public AssetRuleset(String name, Lang lang, ObjectValue meta, String rules, String assetId, boolean accessPublicRead) {
-        super(name, rules, lang, meta);
+    public AssetRuleset(String name, Lang lang, ObjectValue meta, String rules, String assetId, boolean accessPublicRead, boolean continueOnError) {
+        super(name, rules, lang, meta, continueOnError);
         this.assetId = assetId;
         this.accessPublicRead = accessPublicRead;
     }
 
-    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, boolean enabled, String name, Lang lang, ObjectValue meta, String rules, String realm, String assetId, boolean accessPublicRead) {
-        super(id, version, createdOn, lastModified, name, enabled, rules, lang, meta);
+    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, boolean enabled, String name, Lang lang, ObjectValue meta, String rules, String realm, String assetId, boolean accessPublicRead, boolean continueOnError) {
+        super(id, version, createdOn, lastModified, name, enabled, rules, lang, meta, continueOnError);
         this.assetId = assetId;
         this.realm = realm;
         this.accessPublicRead = accessPublicRead;

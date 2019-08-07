@@ -30,7 +30,9 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
                 "Failure Ruleset", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureConditionInvalidReturn.groovy").text,
-                managerDemoSetup.apartment2Id, false
+                managerDemoSetup.apartment2Id,
+                false,
+                false
         )
         ruleset = rulesetStorageService.merge(ruleset)
 
@@ -64,7 +66,9 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
                 "Failure Ruleset", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureConditionThrowsException.groovy").text,
-                managerDemoSetup.apartment2Id, false
+                managerDemoSetup.apartment2Id,
+                false,
+                false
         )
         ruleset = rulesetStorageService.merge(ruleset)
 
@@ -98,7 +102,9 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
                 "Failure Ruleset", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureActionThrowsException.groovy").text,
-                managerDemoSetup.apartment2Id, false
+                managerDemoSetup.apartment2Id,
+                false,
+                false
         )
         ruleset = rulesetStorageService.merge(ruleset)
 
@@ -132,7 +138,9 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
                 "Failure Ruleset", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text,
-                managerDemoSetup.apartment2Id, false
+                managerDemoSetup.apartment2Id,
+                false,
+                false
         )
         ruleset = rulesetStorageService.merge(ruleset)
 

@@ -130,7 +130,9 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "a LHS filtering test rule definition is loaded into the Smart Building asset"
         def assetRuleset = new AssetRuleset(
                 "Some Smart Building asset rules", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/rules/BasicSmartHomeMatchAllAssetStates.groovy").text,
-                managerDemoSetup.smartBuildingId, false
+                managerDemoSetup.smartBuildingId,
+                false,
+                false
         )
         rulesetStorageService.merge(assetRuleset)
         RulesEngine smartHomeEngine = null
@@ -376,8 +378,9 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "a broken RHS rule is loaded into the tenantA engine"
         def ruleset = new TenantRuleset(
                 "Some broken test rules", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/rules/BasicBrokenRules.groovy").text,
-                keycloakDemoSetup.tenantA.realm
-                , false
+                keycloakDemoSetup.tenantA.realm,
+                false,
+                false
         )
         rulesetStorageService.merge(ruleset)
 

@@ -98,8 +98,9 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         and: "the demo location predicate console rules are loaded"
         Ruleset ruleset = new TenantRuleset(
                 "Demo Tenant A - Console Location", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoConsoleLocation.groovy").text,
-                keycloakDemoSetup.tenantA.realm
-                , false
+                keycloakDemoSetup.tenantA.realm,
+                false,
+                false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -500,7 +501,9 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         when: "a new ruleset is deployed on the console parent asset with multiple location predicate rules (including a duplicate and a rectangular predicate)"
         def newRuleset = new AssetRuleset(
                 "Console test location predicates", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.groovy").text,
-                testUser3Console1.parentId, false
+                testUser3Console1.parentId,
+                false,
+                false
         )
         newRuleset = rulesetStorageService.merge(newRuleset)
         RulesEngine consoleParentEngine = null

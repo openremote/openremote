@@ -55,35 +55,35 @@ public class RulesDemoSetup extends AbstractManagerSetup {
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidencePresenceDetection.groovy")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             Ruleset ruleset = new AssetRuleset(
-                "Demo Residence - Presence Detection with motion and CO2 sensors", Ruleset.Lang.GROOVY, rules, managerDemoSetup.apartment1Id, false
+                "Demo Residence - Presence Detection with motion and CO2 sensors", Ruleset.Lang.GROOVY, rules, managerDemoSetup.apartment1Id, false, false
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceVacationMode.groovy")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             Ruleset ruleset = new AssetRuleset(
-                "Demo Residence - Vacation Mode", Ruleset.Lang.GROOVY, rules, managerDemoSetup.apartment1Id, false
+                "Demo Residence - Vacation Mode", Ruleset.Lang.GROOVY, rules, managerDemoSetup.apartment1Id, false, false
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceAutoVentilation.groovy")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             Ruleset ruleset = new AssetRuleset(
-                "Demo Residence - Auto Ventilation", Ruleset.Lang.GROOVY, rules, managerDemoSetup.apartment1Id, false
+                "Demo Residence - Auto Ventilation", Ruleset.Lang.GROOVY, rules, managerDemoSetup.apartment1Id, false, false
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceNotifyAlarmTrigger.groovy")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             Ruleset ruleset = new AssetRuleset(
-                "Demo Residence - Notify Alarm Trigger", Ruleset.Lang.GROOVY, rules, managerDemoSetup.apartment1Id, false
+                "Demo Residence - Notify Alarm Trigger", Ruleset.Lang.GROOVY, rules, managerDemoSetup.apartment1Id, false, false
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceSmartSwitch.groovy")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             Ruleset ruleset = new AssetRuleset(
-                "Demo Residence - Smart Start Switch", Ruleset.Lang.GROOVY, rules, managerDemoSetup.apartment1Id, false
+                "Demo Residence - Smart Start Switch", Ruleset.Lang.GROOVY, rules, managerDemoSetup.apartment1Id, false, false
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
@@ -92,7 +92,7 @@ public class RulesDemoSetup extends AbstractManagerSetup {
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceAllLightsOff.js")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             Ruleset ruleset = new AssetRuleset(
-                "Demo Residence - All Lights Off", Ruleset.Lang.JAVASCRIPT, rules, managerDemoSetup.apartment2Id, false
+                "Demo Residence - All Lights Off", Ruleset.Lang.JAVASCRIPT, rules, managerDemoSetup.apartment2Id, false, false
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
@@ -100,7 +100,7 @@ public class RulesDemoSetup extends AbstractManagerSetup {
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoConsoleLocation.groovy")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             Ruleset ruleset = new TenantRuleset(
-                "Demo Console Location", Ruleset.Lang.GROOVY, rules, keycloakDemoSetup.tenantA.getRealm(), true
+                "Demo Console Location", Ruleset.Lang.GROOVY, rules, keycloakDemoSetup.tenantA.getRealm(), true, false
             );
             tenantARulesetId = rulesetStorageService.merge(ruleset).getId();
         }

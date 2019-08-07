@@ -26,7 +26,6 @@ import org.openremote.manager.security.UserConfiguration;
 import org.openremote.manager.setup.AbstractManagerSetup;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.geo.GeoJSONPoint;
@@ -44,10 +43,10 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.openremote.model.attribute.MetaItemType.*;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 import static org.openremote.model.attribute.AttributeValueType.*;
+import static org.openremote.model.attribute.MetaItemType.*;
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY;
 
 public class ManagerDemoSetup extends AbstractManagerSetup {
@@ -875,6 +874,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         AssetRuleset camera3Rules = new AssetRuleset(
             "Camera3_Rules",
                 GROOVY, IOUtils.toString(getClass().getResource("/demo/rules/DemoSmartCityCamera.groovy"), "UTF-8"), camera3Asset.getId(),
+                false,
                 false
         );
         camera3Rules = rulesetStorageService.merge(camera3Rules);

@@ -9,6 +9,7 @@ import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
+import org.openremote.model.rules.RulesetStatus
 import org.openremote.model.rules.TenantRuleset
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -73,8 +74,9 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         when: "a new tenant rule definition is added to Tenant A"
         ruleset = new TenantRuleset(
                 "Some more tenantA tenant rules", GROOVY, getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text,
-                keycloakDemoSetup.tenantA.realm
-                , false
+                keycloakDemoSetup.tenantA.realm,
+                false,
+                false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -91,8 +93,9 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         when: "a new tenant rule definition is added to Tenant B"
         ruleset = new TenantRuleset(
                 "Some more tenantB tenant rules", GROOVY, getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text,
-                keycloakDemoSetup.tenantB.realm
-                , false
+                keycloakDemoSetup.tenantB.realm,
+                false,
+                false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -226,6 +229,24 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             assert tenantAEngine.deployments.values().any({ it.name == "Some more tenantA tenant rules" && it.status == DEPLOYED})
             assert apartment3Engine.deployments.size() == 1
             assert apartment3Engine.deployments.values().any({ it.name == "Some apartment 3 demo rules" && it.status == DEPLOYED})
+        }
+
+        when: "a new tenant rule definition is added to Tenant A"
+        ruleset = new TenantRuleset(
+                "Looping error", GROOVY, getClass().getResource("/org/openremote/test/rules/BasicLoopingErrorRules.groovy").text,
+                keycloakDemoSetup.tenantA.realm,
+                false,
+                true
+        )
+        rulesetStorageService.merge(ruleset)
+
+        then: "the tenants A rule engine should run with one deployment as error"
+        conditions.eventually {
+            tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm)
+            assert tenantAEngine != null
+            assert tenantAEngine.isRunning()
+            assert tenantAEngine.deployments.size() == 3
+            assert tenantAEngine.deployments.values().any({it.status == EXECUTION_ERROR})
         }
 
 //TODO: Reinstate the tenant delete test once tenant delete mechanism is finalised

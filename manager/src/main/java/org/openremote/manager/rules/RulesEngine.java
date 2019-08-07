@@ -32,8 +32,8 @@ import org.openremote.manager.rules.facade.NotificationsFacade;
 import org.openremote.manager.rules.facade.UsersFacade;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
@@ -434,10 +434,12 @@ public class RulesEngine<T extends Ruleset> {
 
                 // TODO We always stop on any error, good idea?
                 // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
-                stop();
 
-                // TODO We skip any other deployment when we hit the first error, good idea?
-                break;
+                if (!deployment.ruleset.isContinueOnError()) {
+                    stop();
+                    // TODO We skip any other deployment when we hit the first error, good idea?
+                    break;
+                }
             } finally {
                 // Reset facts after this firing (loop detection etc.)
                 facts.reset();

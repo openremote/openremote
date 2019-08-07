@@ -189,6 +189,9 @@ public abstract class Ruleset {
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_OBJECT_TYPE)
     protected ObjectValue meta;
 
+    @Column(name = "CONTINUE_ON_ERROR", nullable = false)
+    protected boolean continueOnError = false;
+
     @Transient
     protected RulesetStatus status;
 
@@ -199,10 +202,10 @@ public abstract class Ruleset {
     }
 
     public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, Lang lang) {
-        this(id, version, createdOn, lastModified, name, enabled, null, lang, null);
+        this(id, version, createdOn, lastModified, name, enabled, null, lang, null, false);
     }
 
-    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang, ObjectValue meta) {
+    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang, ObjectValue meta, boolean continueOnError) {
         this.id = id;
         this.version = version;
         this.createdOn = createdOn;
@@ -212,17 +215,19 @@ public abstract class Ruleset {
         this.rules = rules;
         this.lang = lang;
         this.meta = meta;
+        this.continueOnError = continueOnError;
     }
 
-    public Ruleset(String name, String rules, Lang lang, ObjectValue meta) {
-        this(name, rules, lang);
+    public Ruleset(String name, String rules, Lang lang, ObjectValue meta, boolean continueOnError) {
+        this(name, rules, lang, continueOnError);
         this.meta = meta;
     }
 
-    public Ruleset(String name, String rules, Lang lang) {
+    public Ruleset(String name, String rules, Lang lang, boolean continueOnError) {
         this.name = name;
         this.rules = rules;
         this.lang = lang;
+        this.continueOnError = continueOnError;
     }
 
     public Long getId() {
@@ -309,5 +314,13 @@ public abstract class Ruleset {
 
     public void setError(String error) {
         this.error = error;
+    }
+
+    public boolean isContinueOnError() {
+        return continueOnError;
+    }
+
+    public void setContinueOnError(boolean continueOnError) {
+        this.continueOnError = continueOnError;
     }
 }

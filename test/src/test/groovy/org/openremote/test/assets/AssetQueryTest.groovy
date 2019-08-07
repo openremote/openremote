@@ -861,7 +861,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         def lobby = assetStorageService.find(managerDemoSetup.lobbyId, true)
 
         lobby.addAttributes(
-                new AssetAttribute("openingDate", DATETIME, Values.create("2018-01-28T15:00:00"))
+                new AssetAttribute("openingDate", DATETIME, Values.create("2018-01-28T15:00:00+00:00"))
         )
         lobby = assetStorageService.merge(lobby)
 
