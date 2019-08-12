@@ -22,6 +22,8 @@ package org.openremote.app.client.interop.jackson;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.github.nmorel.gwtjackson.client.AbstractConfiguration;
 import org.openremote.model.ValidationFailure;
+import org.openremote.model.attribute.AttributeDescriptor;
+import org.openremote.model.attribute.AttributeValueDescriptor;
 import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.geo.Position;
 import org.openremote.model.value.*;
@@ -48,5 +50,7 @@ public class SerializationConfiguration extends AbstractConfiguration {
         type(StringValue.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
         type(BooleanValue.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
         type(Position.class).serializer(PositionSerializer.class).deserializer(PositionDeserializer.class);
+        type(AttributeValueDescriptor.class).deserializer(AttributeValueDescriptorDeserializer.class);
+        type(AttributeDescriptor.class).deserializer(AttributeDescriptorDeserializer.class);
     }
 }

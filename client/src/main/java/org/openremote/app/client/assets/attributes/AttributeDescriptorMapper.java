@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2016, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,24 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.attribute;
+package org.openremote.app.client.assets.attributes;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import org.openremote.model.value.Value;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.app.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.model.attribute.AttributeDescriptorImpl;
+import org.openremote.model.attribute.AttributeValueDescriptorImpl;
 
-@JsonDeserialize(as = AttributeDescriptorImpl.class)
-public interface AttributeDescriptor {
-
-    @JsonProperty
-    String getAttributeName();
-
-    @JsonProperty
-    AttributeValueDescriptor getValueDescriptor();
-
-    @JsonProperty
-    MetaItemDescriptor[] getMetaItemDescriptors();
-
-    @JsonProperty
-    Value getInitialValue();
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = AttributeDescriptorImpl.class, mixIn = DefaultJsonMixin.class)})
+public interface AttributeDescriptorMapper
+    extends ObjectMapper<AttributeDescriptorImpl> {
 }

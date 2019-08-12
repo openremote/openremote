@@ -19,6 +19,7 @@
  */
 package org.openremote.model.attribute;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
@@ -40,6 +41,7 @@ import static org.openremote.model.attribute.AttributeValueType.AttributeValueTy
  * Additional constraints and integrity rules upon attribute values can be declared by
  * adding arbitrary {@link Meta} to an {@link Attribute}.
  */
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum AttributeValueType implements AttributeValueDescriptor {
 
     STRING("edit", ValueType.STRING),

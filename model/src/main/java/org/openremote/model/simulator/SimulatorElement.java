@@ -22,11 +22,13 @@ package org.openremote.model.simulator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.attribute.AttributeValueDescriptor;
+import org.openremote.model.attribute.AttributeValueDescriptorImpl;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
 import org.openremote.model.simulator.element.NumberSimulatorElement;
 import org.openremote.model.simulator.element.SwitchSimulatorElement;
@@ -47,7 +49,6 @@ import java.util.Optional;
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
     property = "elementType"
 )
 public abstract class SimulatorElement implements ValueHolder {
