@@ -210,17 +210,15 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
 
             if (channelFuture != null) {
                 channelFuture.cancel(true);
-                channelFuture.sync();
                 channelFuture = null;
             }
 
             // Close the channel
             if (channel != null) {
-                channel.close().sync();
+                channel.disconnect();
+                channel.close();
                 channel = null;
             }
-
-        } catch (InterruptedException ignored) {
 
         } finally {
             if (workerGroup != null) {
