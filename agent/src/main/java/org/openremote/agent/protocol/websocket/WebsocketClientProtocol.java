@@ -125,26 +125,6 @@ public class WebsocketClientProtocol extends AbstractProtocol {
     );
 
     /**
-     * Basic authentication username (string)
-     */
-    public static final MetaItemDescriptor META_PROTOCOL_USERNAME = metaItemString(
-        PROTOCOL_NAME + ":username",
-        ACCESS_PRIVATE,
-        false,
-        REGEXP_PATTERN_STRING_NON_EMPTY,
-        PatternFailure.STRING_EMPTY);
-
-    /**
-     * Basic authentication password (string)
-     */
-    public static final MetaItemDescriptor META_PROTOCOL_PASSWORD = metaItemString(
-        PROTOCOL_NAME + ":password",
-        ACCESS_PRIVATE,
-        false,
-        REGEXP_PATTERN_STRING_NON_EMPTY,
-        PatternFailure.STRING_EMPTY);
-
-    /**
      * Headers for websocket connect call (see {@link HttpClientProtocol#META_HEADERS} for details)
      */
     public static final MetaItemDescriptor META_PROTOCOL_CONNECT_HEADERS = metaItemObject(
@@ -193,7 +173,8 @@ public class WebsocketClientProtocol extends AbstractProtocol {
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
         META_ATTRIBUTE_MESSAGE_MATCH_FILTERS,
         META_ATTRIBUTE_MESSAGE_MATCH_PREDICATE,
-        META_ATTRIBUTE_WRITE_VALUE);
+        META_ATTRIBUTE_WRITE_VALUE,
+        META_SUBSCRIPTIONS);
 
     public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
         META_PROTOCOL_CONNECT_URI,
@@ -203,6 +184,7 @@ public class WebsocketClientProtocol extends AbstractProtocol {
         META_PROTOCOL_OAUTH_GRANT,
         META_SUBSCRIPTIONS);
 
+    public static final int CONNECTED_SEND_DELAY_MILLIS = 2000;
     protected ResteasyClient client;
     protected Map<AttributeRef, WebsocketClient> websocketClients = new HashMap<>();
     protected Map<AttributeRef, List<Pair<AttributeRef, Consumer<String>>>> protocolMessageConsumers = new HashMap<>();
@@ -490,9 +472,7 @@ public class WebsocketClientProtocol extends AbstractProtocol {
 
     @Override
     protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
-        List<MetaItemDescriptor> descriptors = new ArrayList<>(super.getLinkedAttributeMetaItemDescriptors());
-        descriptors.addAll(ATTRIBUTE_META_ITEM_DESCRIPTORS);
-        return descriptors;
+        return new ArrayList<>(ATTRIBUTE_META_ITEM_DESCRIPTORS);
     }
 
     @Override
@@ -542,7 +522,7 @@ public class WebsocketClientProtocol extends AbstractProtocol {
             }
             if (connectedTasks != null) {
                 // Execute after a delay to ensure connection is properly initialised
-                executorService.schedule(() -> connectedTasks.forEach(Runnable::run), 500);
+                executorService.schedule(() -> connectedTasks.forEach(Runnable::run), CONNECTED_SEND_DELAY_MILLIS);
             }
         }
     }

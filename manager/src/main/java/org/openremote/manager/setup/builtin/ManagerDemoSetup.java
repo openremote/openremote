@@ -22,6 +22,7 @@ package org.openremote.manager.setup.builtin;
 import org.apache.commons.io.IOUtils;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
+import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.security.UserConfiguration;
 import org.openremote.manager.setup.AbstractManagerSetup;
 import org.openremote.model.asset.Asset;
@@ -78,7 +79,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String smartBuildingId;
     public String apartment1Id;
     public String apartment1ServiceAgentId;
-    public String apartment1LivingroomId;
+    public String apartment1LivingroomId = UniqueIdentifierGenerator.generateId("apartment1LivingroomId");
     public String apartment1KitchenId;
     public String apartment1HallwayId;
     public String apartment1Bedroom1Id;
@@ -469,6 +470,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
 
+        apartment1Livingroom.setId(apartment1LivingroomId);
         apartment1Livingroom = assetStorageService.merge(apartment1Livingroom);
         apartment1LivingroomId = apartment1Livingroom.getId();
 

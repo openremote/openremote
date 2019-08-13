@@ -90,13 +90,13 @@ import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY
  * the response received from this endpoint</b>)</li> <li>{@link #META_QUERY_PARAMETERS}</li>
  * <li>{@link #META_FAILURE_CODES}</li>
  * <li>{@link #META_HEADERS}</li>
- * <li>{@link MetaItemType#META_VALUE_FILTERS}</li>
+ * <li>{@link MetaItemType#VALUE_FILTERS}</li>
  * </ul>
  * <p>
  * <h1>Response filtering</h1>
  * <p>
  * Any {@link Attribute} whose value is to be set by the HTTP server response (i.e. it has an {@link
- * #META_POLLING_MILLIS} {@link MetaItem}) can use the standard {@link MetaItemType#META_VALUE_FILTERS} in
+ * #META_POLLING_MILLIS} {@link MetaItem}) can use the standard {@link MetaItemType#VALUE_FILTERS} in
  * order to filter the received HTTP response.
  * <p>
  * <h1>Connection Status</h1>
@@ -352,24 +352,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             PROTOCOL_NAME + ":baseUri",
             ACCESS_PRIVATE,
             true,
-            REGEXP_PATTERN_STRING_NON_EMPTY,
-            MetaItemDescriptor.PatternFailure.STRING_EMPTY);
-
-    /**
-     * Basic authentication username (string)
-     */
-    public static final MetaItemDescriptor META_PROTOCOL_USERNAME = metaItemString(
-            PROTOCOL_NAME + ":username",
-            ACCESS_PRIVATE,
-            false,
-            REGEXP_PATTERN_STRING_NON_EMPTY);
-    /**
-     * Basic authentication password (string)
-     */
-    public static final MetaItemDescriptor META_PROTOCOL_PASSWORD = metaItemString(
-            PROTOCOL_NAME + ":password",
-            ACCESS_PRIVATE,
-            false,
             REGEXP_PATTERN_STRING_NON_EMPTY,
             MetaItemDescriptor.PatternFailure.STRING_EMPTY);
 
@@ -1032,9 +1014,7 @@ public class HttpClientProtocol extends AbstractProtocol {
 
     @Override
     protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
-        List<MetaItemDescriptor> descriptors = new ArrayList<>(super.getLinkedAttributeMetaItemDescriptors());
-        descriptors.addAll(ATTRIBUTE_META_ITEM_DESCRIPTORS);
-        return descriptors;
+        return new ArrayList<>(ATTRIBUTE_META_ITEM_DESCRIPTORS);
     }
 
     @Override

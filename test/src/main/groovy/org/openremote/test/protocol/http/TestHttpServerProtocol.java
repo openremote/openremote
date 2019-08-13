@@ -46,7 +46,7 @@ public class TestHttpServerProtocol extends AbstractHttpServerProtocol {
 
     @Override
     protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
-        return super.getLinkedAttributeMetaItemDescriptors();
+        return Collections.emptyList();
     }
 
     @Override

@@ -271,7 +271,6 @@ public class UdpClientProtocol extends AbstractProtocol {
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
         META_ATTRIBUTE_WRITE_VALUE,
-        MetaItemType.VALUE_FILTERS,
         META_POLLING_MILLIS,
         META_RESPONSE_TIMEOUT_MILLIS,
         META_SEND_RETRIES,

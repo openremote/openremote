@@ -173,9 +173,7 @@ public class MacroProtocol extends AbstractProtocol {
 
     @Override
     protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
-        List<MetaItemDescriptor> descriptors = new ArrayList<>(super.getLinkedAttributeMetaItemDescriptors());
-        descriptors.addAll(ATTRIBUTE_META_ITEM_DESCRIPTORS);
-        return descriptors;
+        return new ArrayList<>(ATTRIBUTE_META_ITEM_DESCRIPTORS);
     }
 
     @Override

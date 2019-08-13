@@ -22,6 +22,7 @@ package org.openremote.agent.protocol;
 import org.apache.commons.codec.binary.BinaryCodec;
 import org.apache.commons.codec.binary.Hex;
 import org.openremote.agent.protocol.http.OAuthGrant;
+import org.openremote.agent.protocol.websocket.WebsocketClientProtocol;
 import org.openremote.model.value.*;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -43,9 +44,12 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.agent.protocol.http.HttpClientProtocol.PROTOCOL_NAME;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
 import static org.openremote.model.attribute.MetaItemDescriptorImpl.*;
+import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemString;
+import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY;
 
 /**
  * A protocol is a thread-safe singleton {@link ContainerService} that connects devices and
@@ -179,6 +183,27 @@ public interface Protocol extends ContainerService {
         ACCESS_PRIVATE,
         false,
         null);
+
+
+    /**
+     * Basic authentication username (string)
+     */
+    MetaItemDescriptor META_PROTOCOL_USERNAME = metaItemString(
+        PROTOCOL_NAMESPACE + ":username",
+        ACCESS_PRIVATE,
+        false,
+        REGEXP_PATTERN_STRING_NON_EMPTY,
+        PatternFailure.STRING_EMPTY);
+
+    /**
+     * Basic authentication password (string)
+     */
+    MetaItemDescriptor META_PROTOCOL_PASSWORD = metaItemString(
+        PROTOCOL_NAMESPACE + ":password",
+        ACCESS_PRIVATE,
+        false,
+        REGEXP_PATTERN_STRING_NON_EMPTY,
+        PatternFailure.STRING_EMPTY);
 
     /**
      * Value to be used for attribute writes, protocols that support this should also support dynamic value insertion,

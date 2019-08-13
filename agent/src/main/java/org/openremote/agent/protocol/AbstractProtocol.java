@@ -112,18 +112,11 @@ public abstract class AbstractProtocol implements Protocol {
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected final Map<AttributeRef, LinkedProtocolInfo> linkedProtocolConfigurations = new HashMap<>();
     protected final Map<AttributeRef, ValueFilter[]> linkedAttributeFilters = new HashMap<>();
-    protected static final List<MetaItemDescriptor> attributeMetaItemDescriptors;
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
     protected TimerService timerService;
     protected ProtocolExecutorService executorService;
     protected ProtocolAssetService assetService;
-
-    static {
-        attributeMetaItemDescriptors = Arrays.asList(
-                MetaItemType.VALUE_FILTERS
-        );
-    }
 
     @Override
     public int getPriority() {
@@ -420,7 +413,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     @Override
     public AssetAttribute getProtocolConfigurationTemplate() {
-        return ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute(), getProtocolName());
+        return ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("protocolConfig"), getProtocolName());
     }
 
     @Override
@@ -466,9 +459,7 @@ public abstract class AbstractProtocol implements Protocol {
      * Get list of {@link MetaItemDescriptor}s that describe the {@link MetaItem}s an {@link Attribute} linked to this
      * protocol supports
      */
-    protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
-        return attributeMetaItemDescriptors;
-    }
+    abstract protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors();
 
     /**
      * Link the protocol configuration.
