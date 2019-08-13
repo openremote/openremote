@@ -54,8 +54,12 @@ public abstract class AbstractValueTimestampHolder extends AbstractValueHolder {
      */
     @JsonProperty
     @SuppressWarnings("unchecked")
-    public void setValueTimestamp(long timestamp) {
-        getObjectValue().put(VALUE_TIMESTAMP_FIELD_NAME, Values.create(timestamp));
+    public void setValueTimestamp(Long timestamp) {
+        if (timestamp == null) {
+            clearTimestamp();
+        } else {
+            getObjectValue().put(VALUE_TIMESTAMP_FIELD_NAME, Values.create(timestamp));
+        }
     }
 
     @Override

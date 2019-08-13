@@ -114,6 +114,11 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return getObjectValue().getString(TYPE_FIELD_NAME).flatMap(AssetModelUtil::getAttributeValueDescriptor);
     }
 
+    @JsonProperty("type")
+    private AttributeValueDescriptor getTypeInternal() {
+        return getType().orElse(null);
+    }
+
     /**
      * The below is used in a sufficient number of places to provide it here as a utility method
      * with a standardised exception message.
@@ -123,6 +128,7 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return getType().orElseThrow(() -> new IllegalStateException("Attribute doesn't have a type"));
     }
 
+    @JsonProperty
     public void setType(AttributeValueDescriptor type) {
         Objects.requireNonNull(type);
         getObjectValue().put(TYPE_FIELD_NAME, Values.create(type.getName()));
@@ -186,6 +192,18 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return getMetaItem(hasUniqueResourceName.getUrn());
     }
 
+    @JsonIgnore
+    public Attribute setMeta(Meta meta) {
+        setMeta((List<MetaItem>) meta);
+        return this;
+    }
+
+    @JsonIgnore
+    public Attribute setMeta(MetaItem... meta) {
+        setMeta(Arrays.asList(meta));
+        return this;
+    }
+
     @JsonProperty("meta")
     public void setMeta(List<MetaItem> metaItems) {
         Meta meta;
@@ -203,16 +221,6 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         getObjectValue().put(META_FIELD_NAME, meta.getArrayValue());
     }
 
-    public Attribute setMeta(Meta meta) {
-        setMeta((List<MetaItem>) meta);
-        return this;
-    }
-
-    public Attribute setMeta(MetaItem... meta) {
-        setMeta(Arrays.asList(meta));
-        return this;
-    }
-
     @Override
     public List<ValidationFailure> getValidationFailures() {
         return getValidationFailures(true);
@@ -227,8 +235,9 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         if (!getType().isPresent())
             failures.add(new ValidationFailure(ATTRIBUTE_TYPE_MISSING));
 
-        if (!getValueTimestamp().isPresent())
-            failures.add(new ValidationFailure(ATTRIBUTE_VALUE_TIMESTAMP_MISSING));
+        // Timestamp can be null to be set by the server
+//        if (!getValueTimestamp().isPresent())
+//            failures.add(new ValidationFailure(ATTRIBUTE_VALUE_TIMESTAMP_MISSING));
 
         // Value can be empty, if it's not it must validate with the type
         getValue().flatMap(value ->

@@ -19,7 +19,9 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.*;
@@ -120,6 +122,21 @@ public class AssetAttribute extends Attribute {
         setAssetId(assetId);
     }
 
+    @JsonCreator
+    private AssetAttribute(@JsonProperty("assetId") String assetId,
+                          @JsonProperty("name") String name,
+                          @JsonProperty("type") AttributeValueDescriptor type,
+                          @JsonProperty("meta") List<MetaItem> metaItems,
+                          @JsonProperty("value") Value value,
+                          @JsonProperty("timestamp") Long timestamp) {
+        super(name, type, value);
+        setValueTimestamp(timestamp);
+        if (assetId != null) {
+            setAssetId(assetId);
+        }
+        setMeta(metaItems);
+    }
+
     public Optional<String> getAssetId() {
         return Optional.ofNullable(assetId);
     }
@@ -155,16 +172,24 @@ public class AssetAttribute extends Attribute {
         return super.getMetaItemValidationFailures(item, metaItemDescriptor);
     }
 
+    @JsonIgnore
     @Override
     public AssetAttribute setMeta(Meta meta) {
         super.setMeta(meta);
         return this;
     }
 
+    @JsonIgnore
     @Override
     public AssetAttribute setMeta(MetaItem... meta) {
         super.setMeta(meta);
         return this;
+    }
+
+    @JsonProperty("meta")
+    @Override
+    public void setMeta(List<MetaItem> metaItems) {
+        super.setMeta(metaItems);
     }
 
     public AssetAttribute addMeta(MetaItem... meta) {
