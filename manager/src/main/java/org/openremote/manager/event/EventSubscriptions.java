@@ -118,13 +118,16 @@ public class EventSubscriptions {
     public EventSubscriptions(TimerService timerService, ManagerExecutorService executorService) {
         LOG.info("Starting background task checking for expired event subscriptions from clients");
         this.timerService = timerService;
-        executorService.scheduleAtFixedRate(() -> {
-            synchronized (this.sessionSubscriptionIdMap) {
-                for (SessionSubscriptions subscriptions : sessionSubscriptionIdMap.values()) {
-                    subscriptions.removeExpired();
-                }
-            }
-        }, 5000, 1000);
+        // This puts a burden on clients and generates noise; subscriptions are removed when the socket is closed
+        // so clients should actively add/remove subscriptions as they require rather than let them expire and/or
+        // have to renew them continually
+//        executorService.scheduleAtFixedRate(() -> {
+//            synchronized (this.sessionSubscriptionIdMap) {
+//                for (SessionSubscriptions subscriptions : sessionSubscriptionIdMap.values()) {
+//                    subscriptions.removeExpired();
+//                }
+//            }
+//        }, 5000, 1000);
     }
 
     public void createOrUpdate(String sessionKey, boolean restrictedUser, EventSubscription subscription) {
