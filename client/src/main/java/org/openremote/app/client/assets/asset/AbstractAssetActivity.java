@@ -299,7 +299,7 @@ public abstract class AbstractAssetActivity<V
                                 .getReference()
                                 .map(attributeRef -> {
                                     // Clear timestamp and let the server set it
-                                    attribute.setValueTimestamp(0);
+                                    attribute.setValueTimestamp(null);
                                     return new AttributeState(attributeRef, attribute.getValue().orElse(null));
                                 })
                                 .map(attributeState -> new AttributeEvent(attributeState, attribute.getValueTimestamp().orElse(0L)))

@@ -259,7 +259,7 @@ public class AssetEditActivity
         attribute.setName(name);
 
         // Tell the server to set the timestamp when saving because we don't want to use browser time
-        attribute.setValueTimestamp(0);
+        attribute.setValueTimestamp(null);
 
         asset.getAttributesList().add(attribute);
         writeAttributeToView(attribute, true);

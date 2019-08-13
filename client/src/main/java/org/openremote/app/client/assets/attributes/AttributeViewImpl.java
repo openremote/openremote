@@ -138,6 +138,12 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
         setError(!validationResult.isValid());
         setErrorInExtension(validationResult.getMetaFailures() != null && validationResult.getMetaFailures().size() > 0);
 
+        if (validationResult.hasAttributeFailures() && validationErrorConsumer != null) {
+            validationResult.getAttributeFailures().forEach(validationFailure ->
+                    validationErrorConsumer.accept(this.attribute.getName().orElse(null), null, validationFailure)
+            );
+        }
+
         // Notify extensions
         getExtensions().forEach(viewExtension -> viewExtension.onValidationStateChange(validationResult));
     }
