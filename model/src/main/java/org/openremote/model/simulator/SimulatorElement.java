@@ -19,15 +19,14 @@
  */
 package org.openremote.model.simulator;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeValueDescriptor;
-import org.openremote.model.attribute.AttributeValueDescriptorImpl;
 import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
 import org.openremote.model.simulator.element.NumberSimulatorElement;
@@ -55,8 +54,7 @@ public abstract class SimulatorElement implements ValueHolder {
 
     public AttributeRef attributeRef;
     public AttributeValueDescriptor expectedType;
-    // TODO GWT jackson doesn't like fields with the same name as getters in the hierarchy
-    @JsonProperty("value")
+    @JsonIgnore
     public Value elementValue = null;
 
     protected SimulatorElement() {
@@ -75,11 +73,18 @@ public abstract class SimulatorElement implements ValueHolder {
         return expectedType;
     }
 
+    @JsonIgnore
     @Override
     public Optional<Value> getValue() {
         return Optional.ofNullable(elementValue);
     }
 
+    @JsonProperty("value")
+    private Value getValueInternal() {
+        return getValue().orElse(null);
+    }
+
+    @JsonProperty("value")
     @Override
     public void setValue(Value value) {
         this.elementValue = value;

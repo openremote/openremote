@@ -95,7 +95,6 @@ public abstract class AbstractValueHolder implements ValueHolder {
         return objectValue.getArray(VALUE_FIELD_NAME);
     }
 
-
     @JsonProperty("value")
     private Value getValueInternal() {
         return getValue().orElse(null);

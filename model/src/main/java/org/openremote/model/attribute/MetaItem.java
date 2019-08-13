@@ -19,6 +19,9 @@
  */
 package org.openremote.model.attribute;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gwt.regexp.shared.RegExp;
 import org.openremote.model.AbstractValueHolder;
@@ -62,7 +65,8 @@ public class MetaItem extends AbstractValueHolder {
         super(objectValue);
     }
 
-    public MetaItem(String name, Value value) {
+    @JsonCreator
+    public MetaItem(@JsonProperty("name") String name, @JsonProperty("value") Value value) {
         super(Values.createObject());
         setName(name);
         setValue(value);
@@ -78,12 +82,17 @@ public class MetaItem extends AbstractValueHolder {
         this(hasUniqueResourceName.getUrn(), value);
     }
 
-    @JsonProperty
+    @JsonIgnore
     public Optional<String> getName() {
         return getObjectValue().getString("name");
     }
 
-    @JsonProperty
+    @JsonProperty("name")
+    // This has to be after the ignored getter or it won't work with GWT-JACKSON
+    private String getNameInternal() {
+        return getName().orElse(null);
+    }
+
     public void setName(String name) {
         getObjectValue().put("name", TextUtil.requireNonNullAndNonEmpty(name));
     }

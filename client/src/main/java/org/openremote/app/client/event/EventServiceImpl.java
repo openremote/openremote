@@ -21,9 +21,11 @@ package org.openremote.app.client.event;
 
 import elemental2.dom.DomGlobal;
 import org.openremote.app.client.OpenRemoteApp;
+import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.shared.*;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,6 +38,7 @@ public class EventServiceImpl implements EventService {
     final protected EventSubscriptionMapper eventSubscriptionMapper;
     final protected CancelEventSubscriptionMapper cancelEventSubscriptionMapper;
     final protected UnauthorizedEventSubscriptionMapper unauthorizedEventSubscriptionMapper;
+    final protected TriggeredEventSubscriptionMapper triggeredEventSubscriptionMapper;
 
     final protected Map<String, Double> activeSubscriptions = new HashMap<>();
 
@@ -45,7 +48,8 @@ public class EventServiceImpl implements EventService {
                             SharedEventArrayMapper sharedEventArrayMapper,
                             EventSubscriptionMapper eventSubscriptionMapper,
                             CancelEventSubscriptionMapper cancelEventSubscriptionMapper,
-                            UnauthorizedEventSubscriptionMapper unauthorizedEventSubscriptionMapper) {
+                            UnauthorizedEventSubscriptionMapper unauthorizedEventSubscriptionMapper,
+                            TriggeredEventSubscriptionMapper triggeredEventSubscriptionMapper) {
         this.app = app;
         this.eventBus = eventBus;
         this.sharedEventMapper = sharedEventMapper;
@@ -53,6 +57,7 @@ public class EventServiceImpl implements EventService {
         this.eventSubscriptionMapper = eventSubscriptionMapper;
         this.cancelEventSubscriptionMapper = cancelEventSubscriptionMapper;
         this.unauthorizedEventSubscriptionMapper = unauthorizedEventSubscriptionMapper;
+        this.triggeredEventSubscriptionMapper = triggeredEventSubscriptionMapper;
 
         this.app.addServiceMessageConsumer(this::onServiceMessageReceived);
 
@@ -123,8 +128,13 @@ public class EventServiceImpl implements EventService {
         } else if (data.startsWith(SharedEvent.MESSAGE_PREFIX)) {
             data = data.substring(SharedEvent.MESSAGE_PREFIX.length());
             if (data.startsWith("{")) {
-                SharedEvent event = sharedEventMapper.read(data);
-                eventBus.dispatch(event);
+                TriggeredEventSubscription triggered = triggeredEventSubscriptionMapper.read(data);
+                if (triggered.getEvents() == null) {
+                    SharedEvent event = sharedEventMapper.read(data);
+                    eventBus.dispatch(event);
+                } else {
+                    Arrays.stream(triggered.getEvents()).forEach(eventBus::dispatch);
+                }
             } else if (data.startsWith("[")) {
                 // Handle array of events
                 SharedEvent[] events = sharedEventArrayMapper.read(data);

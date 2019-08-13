@@ -1540,13 +1540,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .toArray(AttributeEvent[]::new);
-        TriggeredEventSubscription<AttributeEvent> triggeredEventSubscription = new TriggeredEventSubscription<>(events, subscriptionId);
+        TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription(events, subscriptionId);
         clientEventService.sendToSession(sessionKey, triggeredEventSubscription);
     }
 
     protected void replyWithAssetEvent(String sessionKey, String subscriptionId, Asset asset) {
         AssetEvent event = new AssetEvent(AssetEvent.Cause.READ,asset, null);
-        TriggeredEventSubscription<AssetEvent> triggeredEventSubscription = new TriggeredEventSubscription<>(new AssetEvent[] {event}, subscriptionId);
+        TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription(new AssetEvent[] {event}, subscriptionId);
         clientEventService.sendToSession(sessionKey, triggeredEventSubscription);
     }
 

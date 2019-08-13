@@ -34,6 +34,7 @@ import org.openremote.app.client.event.EventService;
 import org.openremote.app.client.event.EventServiceImpl;
 import org.openremote.app.client.style.WidgetStyle;
 import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.security.TenantResource;
 
 public class ManagerModule extends AbstractGinModule {
@@ -91,7 +92,8 @@ public class ManagerModule extends AbstractGinModule {
                                         SharedEventArrayMapper sharedEventArrayMapper,
                                         EventSubscriptionMapper eventSubscriptionMapper,
                                         CancelEventSubscriptionMapper cancelEventSubscriptionMapper,
-                                        UnauthorizedEventSubscriptionMapper unauthorizedEventSubscriptionMapper) {
+                                        UnauthorizedEventSubscriptionMapper unauthorizedEventSubscriptionMapper,
+                                        TriggeredEventSubscriptionMapper triggeredEventSubscriptionMapper) {
         return new EventServiceImpl(
             app,
             eventBus,
@@ -99,7 +101,8 @@ public class ManagerModule extends AbstractGinModule {
             sharedEventArrayMapper,
             eventSubscriptionMapper,
             cancelEventSubscriptionMapper,
-            unauthorizedEventSubscriptionMapper
+            unauthorizedEventSubscriptionMapper,
+            triggeredEventSubscriptionMapper
         );
     }
 

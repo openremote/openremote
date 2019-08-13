@@ -57,13 +57,6 @@ import org.openremote.model.syslog.SyslogEvent;
     include = JsonTypeInfo.As.PROPERTY,
     property = "eventType"
 )
-@JsonAutoDetect(
-    fieldVisibility = JsonAutoDetect.Visibility.ANY,
-    creatorVisibility= JsonAutoDetect.Visibility.NONE,
-    getterVisibility= JsonAutoDetect.Visibility.NONE,
-    setterVisibility= JsonAutoDetect.Visibility.NONE,
-    isGetterVisibility= JsonAutoDetect.Visibility.NONE
-)
 public abstract class SharedEvent extends Event {
 
     public static final String MESSAGE_PREFIX = "EVENT:";

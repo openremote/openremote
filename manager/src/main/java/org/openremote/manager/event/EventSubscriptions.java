@@ -198,7 +198,7 @@ public class EventSubscriptions {
                     LOG.fine("Creating message for subscribed session '" + sessionKey + "': " + event);
                     SharedEvent[] events = (SharedEvent[])Array.newInstance(event.getClass(), 1);
                     events[0] = event;
-                    TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription<>(events, sessionSubscription.subscriptionId);
+                    TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription(events, sessionSubscription.subscriptionId);
 
                     if (sessionSubscription.subscription.getInternalConsumer() == null) {
                         Message msg = new DefaultMessage();
