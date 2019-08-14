@@ -26,13 +26,11 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.inject.Provider;
 import elemental.client.Browser;
 import elemental.html.AnchorElement;
 import elemental.html.Blob;
 import elemental.html.FileReader;
 import org.openremote.app.client.Environment;
-import org.openremote.app.client.app.dialog.Confirmation;
 import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.widget.*;
 import org.openremote.model.rules.Ruleset;
@@ -65,6 +63,8 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
     FormGroup optionsGroup;
     @UiField
     FormCheckBox enabledCheckBox;
+    @UiField
+    FormCheckBox continueOnErrorCheckBox;
     @UiField
     FormButton rulesFileDownload;
     @UiField
@@ -158,6 +158,7 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
             nameGroup.setError(false);
             nameInput.setValue(null);
             enabledCheckBox.setValue(true);
+            continueOnErrorCheckBox.setValue(false);
             rulesTextArea.setValue(null);
             createButton.setVisible(false);
             updateButton.setVisible(false);
@@ -204,6 +205,16 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
     @Override
     public boolean getRulesetEnabled() {
         return enabledCheckBox.getValue();
+    }
+
+    @Override
+    public void setContinueOnError(Boolean continueOnError) {
+        continueOnErrorCheckBox.setValue(continueOnError != null ? continueOnError : false);
+    }
+
+    @Override
+    public boolean getContinueOnError() {
+        return continueOnErrorCheckBox.getValue();
     }
 
     @Override

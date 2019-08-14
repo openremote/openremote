@@ -200,6 +200,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
         view.setName(ruleset.getName());
         view.setLang(ruleset.getLang());
         view.setRulesetEnabled(ruleset.isEnabled());
+        view.setContinueOnError(ruleset.isContinueOnError());
         view.setRules(ruleset.getRules());
         view.enableCreate(rulesetId == null);
         view.enableUpdate(rulesetId != null);
@@ -209,6 +210,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
     protected void readFromView() {
         ruleset.setName(view.getName());
         ruleset.setEnabled(view.getRulesetEnabled());
+        ruleset.setContinueOnError(view.getContinueOnError());
         ruleset.setLang(view.getLang());
         ruleset.setRules(view.getRules());
     }

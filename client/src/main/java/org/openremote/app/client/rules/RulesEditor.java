@@ -53,6 +53,10 @@ public interface RulesEditor extends RulesView, FormView {
 
     boolean getRulesetEnabled();
 
+    void setContinueOnError(Boolean continueOnError);
+
+    boolean getContinueOnError();
+
     void setRules(String rules);
 
     String getRules();

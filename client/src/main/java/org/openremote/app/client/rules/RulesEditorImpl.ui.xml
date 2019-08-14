@@ -77,6 +77,10 @@
                             </w:field>
                             <w:actions>
                                 <w:FormGroupActions>
+                                    <w:FormLabel text="{managerMessages.continueOnError}"/>
+                                    <w:FormField>
+                                        <w:FormCheckBox ui:field="continueOnErrorCheckBox"/>
+                                    </w:FormField>
                                     <w:FormButton ui:field="rulesFileDownload"
                                                        icon="download"
                                                        text="{managerMessages.downloadRulesFile}"/>

@@ -60,6 +60,8 @@ public interface ManagerMessages extends Messages {
 
     String enabled();
 
+    String continueOnError();
+
     String editTenant();
 
     String tenantDisplayName();
