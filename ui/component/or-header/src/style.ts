@@ -6,7 +6,7 @@ export const style = css`
     
         :host {
             --internal-or-header-color: var(--or-header-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));    
-            --internal-or-header-selected-color: var(--or-header-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
+            --internal-or-header-selected-color: var(--or-header-selected-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
             --internal-or-header-text-color: var(--or-header-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
             --internal-or-header-height: var(--or-header-height, ${unsafeCSS(DefaultHeaderHeight)});
             --internal-or-header-logo-margin: var(--or-header-logo-margin, 0);
@@ -32,6 +32,7 @@ export const style = css`
         }
                                         
         #header {
+            opacity: 1;
             position: absolute;
             top: 0;
             left: 0;
@@ -115,21 +116,22 @@ export const style = css`
             color: inherit;
         }
         
-        ::slotted(*[selected]), ::slotted([slot="desktop-right"]) {
+        ::slotted(*[selected]), #desktop-right ::slotted(*) {
             font-weight: 400;
             opacity: 1;
         }
                 
-        #header ::slotted(*) {
+        #desktop-left ::slotted(*), #desktop-right ::slotted(*) {
             padding: 0 30px;
             font-size: 14px;
         }
         
-        ::slotted([slot="desktop-left"]) {
+        #desktop-left ::slotted(*) {
+            display: none;
             line-height: calc(var(--internal-or-header-height) - 4px);
         }
         
-        ::slotted([slot="desktop-right"]) {
+        #desktop-right ::slotted(*) {
             line-height: var(--internal-or-header-height);
         }
         
@@ -139,11 +141,7 @@ export const style = css`
             margin: 10px 0;
         }
         
-        ::slotted([slot="desktop-left"]) {
-            display: none;
-        }
-        
-        ::slotted([slot="desktop-left"][selected]) {
+        #desktop-left ::slotted(*[selected]) {
             display: inline-block;
         }
         
@@ -158,11 +156,11 @@ export const style = css`
                 display: block;
             }
             
-            ::slotted([slot="desktop-left"]) {
+            #desktop-left ::slotted(*) {
                 display: inline-block;
             }
 
-            ::slotted([slot="desktop-left"][selected]) {                
+            #desktop-left ::slotted(*[selected]) {                
                 border-bottom: 4px solid var(--internal-or-header-selected-color);
             }
         }

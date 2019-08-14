@@ -212,7 +212,7 @@ export class OrMap extends LitElement {
                             } else {
                                 this._mapContainer!.appendChild(styleElem);
                             }
-                        })
+                        });
                     }
 
                     this._markerStyles.push(className);
