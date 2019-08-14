@@ -187,7 +187,7 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
 
         // Add closed callback
         channel.closeFuture().addListener(future -> {
-            if (connectionStatus != ConnectionStatus.DISCONNECTING) {
+            if (connectionStatus != ConnectionStatus.DISCONNECTING && connectionStatus != ConnectionStatus.DISCONNECTED) {
                 scheduleReconnect();
             }
         });
