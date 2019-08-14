@@ -174,6 +174,7 @@ public abstract class AbstractRulesList<P extends RulesList.Presenter<R>, R exte
                     matchFound = true;
                     existingRuleset.setName(ruleset.getName());
                     existingRuleset.setEnabled(ruleset.isEnabled());
+                    existingRuleset.setContinueOnError(ruleset.isContinueOnError());
                     existingRuleset.setLang(ruleset.getLang());
                     existingRuleset.setLastModified(ruleset.getLastModified());
                     existingRuleset.setStatus(ruleset.getStatus());

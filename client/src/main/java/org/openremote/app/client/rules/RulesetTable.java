@@ -106,6 +106,13 @@ public class RulesetTable<R extends Ruleset> extends FormTable<R> {
         }
     };
 
+    final protected Column<R, String> continueOnErrorColumn = new Column<R, String>(new IconCell()) {
+        @Override
+        public String getValue(R ruleset) {
+            return ruleset.isContinueOnError() ? "check-circle" : "circle-thin";
+        }
+    };
+
     final protected TextColumn<R> statusColumn = new TextColumn<R>() {
         @Override
         public String getValue(R ruleset) {
@@ -154,6 +161,10 @@ public class RulesetTable<R extends Ruleset> extends FormTable<R> {
         addColumn(enabledColumn, createHeader(managerMessages.enabled()));
         addColumnStyleName(i++, style.enabledColumn());
         enabledColumn.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
+
+        addColumn(continueOnErrorColumn, createHeader(managerMessages.continueOnError()));
+        addColumnStyleName(i++, style.createOnColumn());
+        continueOnErrorColumn.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
     }
 
     @Override

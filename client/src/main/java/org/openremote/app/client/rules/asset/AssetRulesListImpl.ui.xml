@@ -28,6 +28,9 @@
         .enabledColumn {
         }
 
+        .continueOnErrorColumn{
+        }
+
         .statusColumn {
         }
     </ui:style>
