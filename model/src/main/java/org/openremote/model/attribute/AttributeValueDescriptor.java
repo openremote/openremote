@@ -19,6 +19,7 @@
  */
 package org.openremote.model.attribute;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -30,6 +31,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 @JsonDeserialize(as = AttributeValueDescriptorImpl.class)
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public interface AttributeValueDescriptor {
 
     @JsonProperty

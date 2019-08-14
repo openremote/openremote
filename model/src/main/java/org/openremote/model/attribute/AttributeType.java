@@ -19,13 +19,11 @@
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
 import static org.openremote.model.attribute.MetaItemType.*;
 
-@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum AttributeType implements AttributeDescriptor {
 
     CONSOLE_NAME("consoleName", AttributeValueType.STRING),

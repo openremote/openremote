@@ -19,7 +19,6 @@
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
@@ -30,8 +29,8 @@ import org.openremote.model.value.Values;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static org.openremote.model.attribute.MetaItemType.*;
 import static org.openremote.model.attribute.AttributeValueType.AttributeValueTypeFailureReason.ATTRIBUTE_TYPE_VALUE_DOES_NOT_MATCH;
+import static org.openremote.model.attribute.MetaItemType.*;
 
 /**
  * The type of an {@link Attribute}, how its {@link Value} should be
@@ -41,7 +40,6 @@ import static org.openremote.model.attribute.AttributeValueType.AttributeValueTy
  * Additional constraints and integrity rules upon attribute values can be declared by
  * adding arbitrary {@link Meta} to an {@link Attribute}.
  */
-@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum AttributeValueType implements AttributeValueDescriptor {
 
     STRING("edit", ValueType.STRING),

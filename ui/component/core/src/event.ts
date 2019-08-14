@@ -502,7 +502,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
                 }
             } else if (msg.startsWith(EVENT_MESSAGE_PREFIX)) {
                 let str = msg.substring(EVENT_MESSAGE_PREFIX.length);
-                let triggered = JSON.parse(str) as TriggeredEventSubscription<SharedEvent>;
+                let triggered = JSON.parse(str) as TriggeredEventSubscription;
                 if (triggered.events) {
                     triggered.events.forEach(event => {
                         this._onMessageReceived(triggered.subscriptionId!, event);
