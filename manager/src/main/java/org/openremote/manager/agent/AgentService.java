@@ -777,6 +777,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     @Override
     public Value applyValueFilters(Value value, ValueFilter... filters) {
 
+        if (filters == null) {
+            return value;
+        }
+
         LOG.fine("Applying value filters to value...");
 
         for (ValueFilter filter : filters) {

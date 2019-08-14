@@ -368,8 +368,8 @@ public class WebsocketClientProtocol extends AbstractProtocol {
             LOG.warning("Readonly attribute doesn't have any message filters and will therefore display nothing: " + attribute.getReferenceOrThrow());
         }
 
-        if (hasFilters && (filters == null || matchPredicate == null)) {
-            LOG.warning("Invalid or missing '" + META_ATTRIBUTE_MESSAGE_MATCH_FILTERS.getUrn() + "' and/or '" + META_ATTRIBUTE_MESSAGE_MATCH_PREDICATE.getUrn() + "': " + attribute.getReferenceOrThrow());
+        if (hasFilters && matchPredicate == null) {
+            LOG.warning("Invalid or missing '" + META_ATTRIBUTE_MESSAGE_MATCH_PREDICATE.getUrn() + "': " + attribute.getReferenceOrThrow());
             return;
         }
 

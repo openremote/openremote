@@ -438,13 +438,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                             .setMeta(
                                     new MetaItem(RANGE_MIN, Values.create(0)),
                                     new MetaItem(RANGE_MAX, Values.create(100)),
-                                    new MetaItem(LABEL, Values.create("Living room ceiling")),
+                                    new MetaItem(LABEL, Values.create("Ceiling lights (range)")),
                                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true))
                             ),
                     new AssetAttribute("lightsStand", AttributeValueType.BOOLEAN, Values.create(true))
                             .setMeta(
-                                    new MetaItem(LABEL, Values.create("Living room stand")),
+                                    new MetaItem(LABEL, Values.create("Floor stand lights (on/off)")),
                                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true))
                             )
