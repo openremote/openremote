@@ -12,7 +12,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/model": "^1.0.0",
-    "axios": "^0.18.0"
+    "axios": "0.18.1"
   },
   "devDependencies": {
     "@types/es6-promise": "^3.3.0",

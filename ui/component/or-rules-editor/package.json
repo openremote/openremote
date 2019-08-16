@@ -19,7 +19,7 @@
     "@openremote/rest": "^1.0.2",
     "@types/lodash-es": "^4.17.3",
     "lit-element": "^2.1.0",
-    "lodash-es": "^4.17.11",
+    "lodash-es": "4.17.14",
     "moment": "^2.24.0"
   },
   "devDependencies": {
