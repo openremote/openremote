@@ -19,7 +19,9 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.hibernate.annotations.Check;
 import org.hibernate.annotations.Formula;
 import org.openremote.model.AbstractValueHolder;
@@ -319,9 +321,19 @@ public class Asset implements IdentifiableEntity {
         }
     }
 
-    public Asset(String id, long version, Date createdOn, String name, String type, boolean accessPublicRead,
-                 String parentId, String parentName, String parentType,
-                 String realm, String[] path, ObjectValue attributes) {
+    @JsonCreator
+    public Asset(@JsonProperty("id") String id,
+                 @JsonProperty("version") long version,
+                 @JsonProperty("createdOn") Date createdOn,
+                 @JsonProperty("name") String name,
+                 @JsonProperty("type") String type,
+                 @JsonProperty("accessPublicRead") boolean accessPublicRead,
+                 @JsonProperty("parentId") String parentId,
+                 @JsonProperty("parentName") String parentName,
+                 @JsonProperty("parentType") String parentType,
+                 @JsonProperty("realm") String realm,
+                 @JsonProperty("path") String[] path,
+                 @JsonProperty("attributes") ObjectValue attributes) {
         this(name, type, accessPublicRead, null, realm);
         this.id = id;
         this.version = version;

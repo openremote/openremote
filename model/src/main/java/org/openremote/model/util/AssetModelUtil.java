@@ -106,7 +106,7 @@ public class AssetModelUtil {
         if (isNullOrEmpty(urn))
             return Optional.empty();
         for (MetaItemDescriptor metaItemDescriptor : metaItemDescriptors) {
-            if (metaItemDescriptor.getUrn().equals(urn))
+            if (metaItemDescriptor.getUrn().equalsIgnoreCase(urn))
                 return Optional.of(metaItemDescriptor);
         }
         return Optional.empty();
@@ -128,7 +128,7 @@ public class AssetModelUtil {
             return Optional.empty();
 
         for (AttributeDescriptor attributeDescriptor : attributeDescriptors) {
-            if (name.equals(attributeDescriptor.getAttributeName()))
+            if (name.equalsIgnoreCase(attributeDescriptor.getAttributeName()))
                 return Optional.of(attributeDescriptor);
         }
         return Optional.empty();
@@ -139,7 +139,7 @@ public class AssetModelUtil {
             return Optional.empty();
 
         for (AttributeValueDescriptor attributeValueDescriptor : attributeValueDescriptors) {
-            if (name.equals(attributeValueDescriptor.getName()))
+            if (name.equalsIgnoreCase(attributeValueDescriptor.getName()))
                 return Optional.of(attributeValueDescriptor);
         }
         return Optional.empty();

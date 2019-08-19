@@ -19,20 +19,22 @@
  */
 package org.openremote.model;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.asset.AssetDescriptorImpl;
+import org.openremote.model.attribute.*;
 import org.openremote.model.geo.Position;
+import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.value.*;
 
 import java.io.IOException;
+import java.util.function.Function;
 
 public class ModelModule extends SimpleModule {
 
@@ -84,6 +86,34 @@ public class ModelModule extends SimpleModule {
         }
     }
 
+    public static class AttributeValueDescriptorSerializer extends JsonSerializer<Position> {
+
+        @Override
+        public void serialize(Position value, JsonGenerator gen, SerializerProvider serializers) throws IOException, JsonProcessingException {
+            gen.writeArray(value.getValues(), 0, value.getValues().length);
+        }
+    }
+
+    public static class DescriptorDeserializer<T, U extends T> extends JsonDeserializer<T> {
+
+        protected Function<String, T> descriptorNameFinder;
+        protected Class<U> implClass;
+
+        public DescriptorDeserializer(Function<String, T> descriptorNameFinder, Class<U> implClass) {
+            this.descriptorNameFinder = descriptorNameFinder;
+            this.implClass = implClass;
+        }
+
+        @Override
+        public T deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+            JsonNode node = p.getCodec().readTree(p);
+            if (node instanceof TextNode) {
+                return descriptorNameFinder.apply(node.textValue());
+            } else {
+                return p.getCodec().treeToValue(node, implClass);
+            }
+        }
+    }
 
     @SuppressWarnings("unchecked")
     public ModelModule() {
@@ -101,5 +131,21 @@ public class ModelModule extends SimpleModule {
         PositionDeserializer positionDeserializer = new PositionDeserializer();
         this.addSerializer(Position.class, positionSerializer);
         this.addDeserializer(Position.class, positionDeserializer);
+        this.addDeserializer(AssetDescriptor.class, new DescriptorDeserializer<>(
+            name -> AssetModelUtil.getAssetDescriptor(name).orElse(null),
+            AssetDescriptorImpl.class
+        ));
+        this.addDeserializer(AttributeDescriptor.class, new DescriptorDeserializer<>(
+            name -> AssetModelUtil.getAttributeDescriptor(name).orElse(null),
+            AttributeDescriptorImpl.class
+        ));
+        this.addDeserializer(AttributeValueDescriptor.class, new DescriptorDeserializer<>(
+            name -> AssetModelUtil.getAttributeValueDescriptor(name).orElse(null),
+            AttributeValueDescriptorImpl.class
+        ));
+        this.addDeserializer(MetaItemDescriptor.class, new DescriptorDeserializer<>(
+            urn -> AssetModelUtil.getMetaItemDescriptor(urn).orElse(null),
+            MetaItemDescriptorImpl.class
+        ));
     }
 }
