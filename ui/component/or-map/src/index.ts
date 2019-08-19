@@ -244,6 +244,7 @@ export class OrMap extends LitElement {
     protected render() {
         return html`
           <div id="map"></div>
+          <a id="openremote" href="https://openremote.io/" target="_blank"><img src="https://openremote.io/wp-content/uploads/2018/06/cropped-OpenRemote-favicon-32x32.png" /></a>
           <slot></slot>
         `;
     }

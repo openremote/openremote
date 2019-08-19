@@ -99,4 +99,18 @@ export const style = css`
         --or-icon-width: var(--internal-or-map-marker-icon-active-width);
         --or-icon-height: var(--internal-or-map-marker-icon-active-height);
     }
+    
+    #openremote {
+        position: absolute;
+        bottom: 30px;
+        right: 12px;
+        height: 20px;
+        width: 20px;
+        cursor: pointer;
+    }
+    
+    #openremote img {
+        height: 20px;
+        width: 20px;
+    }
 `;
