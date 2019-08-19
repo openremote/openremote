@@ -54,3 +54,9 @@ extension UIColor {
     public static var mainColorAccent = UIColor(red:0.75, green:0.84, blue:0.18, alpha:1.0)
 }
 
+public enum LocalizableString {
+    public static var LocationPermissionTitle = "Location Services disabled"
+    public static var LocationPermissionMessage = "Please enable Location Services for this app"
+    public static var LocationPermissionNotNow = "Not now"
+}
+

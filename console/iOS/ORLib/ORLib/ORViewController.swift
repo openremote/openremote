@@ -260,8 +260,11 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                     geofenceProvider?.refreshGeofences()
                                 case Actions.getLocation:
                                     geofenceProvider?.getLocation(callback: { locationData in
-                                        if locationData.isEmpty {
-                                            let alertController = UIAlertController(title: "Location Services disabled", message: "Please enable Location Services for this app", preferredStyle: .alert)
+                                        if let coordinates =  locationData["data"], coordinates == nil {//weird comparion needed for nil value in dict where key does exist.
+                                        } else {
+                                            let alertController = UIAlertController(title: NSLocalizedString(LocalizableString.LocationPermissionTitle, comment: ""),
+                                                                                    message: NSLocalizedString(LocalizableString.LocationPermissionMessage, comment: ""),
+                                                                                    preferredStyle: .alert)
                                             if let settingsUrl = URL(string: UIApplication.openSettingsURLString), UIApplication.shared.canOpenURL(settingsUrl) {
                                                 alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { alertAction in
                                                     if UIApplication.shared.canOpenURL(settingsUrl) {
@@ -270,7 +273,7 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                                         })
                                                     }
                                                 }))
-                                                alertController.addAction(UIAlertAction(title: "Not now", style: .cancel, handler: nil))
+                                                alertController.addAction(UIAlertAction(title: NSLocalizedString(LocalizableString.LocationPermissionNotNow, comment: ""), style: .cancel, handler: nil))
                                             } else {
                                                 alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                                             }

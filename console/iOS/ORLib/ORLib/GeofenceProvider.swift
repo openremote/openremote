@@ -132,7 +132,11 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
 
     public func getLocation(callback:@escaping ([String: Any]) -> (Void)) {
         if CLLocationManager.authorizationStatus() == .denied {
-            callback([:])
+            callback([
+                DefaultsKey.actionKey: Actions.getLocation,
+                DefaultsKey.providerKey: Providers.geofence,
+                DefaultsKey.dataKey: nil
+            ])
         } else {
             getLocationCallback = callback
             locationManager.startUpdatingLocation()
