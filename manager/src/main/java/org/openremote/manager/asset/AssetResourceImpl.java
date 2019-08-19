@@ -160,7 +160,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         // Restricted users or regular users in a different realm can not create links
         if (isRestrictedUser()
-            || !getAuthenticatedTenant().getId().equals(realm))
+            || !getAuthenticatedTenant().getRealm().equals(realm))
             throw new WebApplicationException(FORBIDDEN);
 
         assetStorageService.storeUserAsset(userAsset);
@@ -178,7 +178,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         // Restricted users or regular users in a different realm can not delete links
         if (isRestrictedUser()
-            || !getAuthenticatedTenant().getId().equals(realm))
+            || !getAuthenticatedTenant().getRealm().equals(realm))
             throw new WebApplicationException(FORBIDDEN);
 
         assetStorageService.deleteUserAsset(realm, userId, assetId);
@@ -439,7 +439,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // If there was no realm provided (create was called by regular user in manager UI), use the auth realm
             if (asset.getRealm() == null || asset.getRealm().length() == 0) {
-                asset.setRealm(getAuthenticatedTenant().getId());
+                asset.setRealm(getAuthenticatedTenant().getRealm());
             }
 
             if (!isTenantActiveAndAccessible(asset)) {

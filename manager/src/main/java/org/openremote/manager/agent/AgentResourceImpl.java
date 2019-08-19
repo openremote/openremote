@@ -77,7 +77,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
             new TenantFilter<AgentStatusEvent>() {
                 @Override
                 public boolean apply(AgentStatusEvent event) {
-                    return event.getRealm().equals(getAuthenticatedTenant().getId());
+                    return event.getRealm().equals(getAuthenticatedTenant().getRealm());
                 }
             }
         )) {
