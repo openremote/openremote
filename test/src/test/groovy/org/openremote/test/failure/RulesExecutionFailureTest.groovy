@@ -3,6 +3,7 @@ package org.openremote.test.failure
 
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesFacts
+import org.openremote.manager.rules.RulesLoopException
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
@@ -140,7 +141,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
                 "Failure Ruleset", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text,
                 managerDemoSetup.apartment2Id,
                 false,
-                false
+                true
         )
         ruleset = rulesetStorageService.merge(ruleset)
 
@@ -149,7 +150,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
             apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
             assert apartment2Engine != null
             assert apartment2Engine.deployments[ruleset.id].status == RulesetStatus.EXECUTION_ERROR
-            assert apartment2Engine.deployments[ruleset.id].error instanceof IllegalStateException
+            assert apartment2Engine.deployments[ruleset.id].error instanceof RulesLoopException
             assert apartment2Engine.deployments[ruleset.id].error.message == "Possible rules loop detected, exceeded max trigger count of " + RulesFacts.MAX_RULES_TRIGGERED_PER_EXECUTION +  " for rule: Condition loops"
             assert apartment2Engine.isError()
             assert apartment2Engine.getError() instanceof RuntimeException

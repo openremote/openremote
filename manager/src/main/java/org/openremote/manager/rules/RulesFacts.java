@@ -348,11 +348,7 @@ public class RulesFacts extends Facts implements RuleListener {
         if (evaluationResult) {
             triggerCount++;
             if (triggerCount >= MAX_RULES_TRIGGERED_PER_EXECUTION) {
-                throw new IllegalStateException(
-                        "Possible rules loop detected, exceeded max trigger count of "
-                                + MAX_RULES_TRIGGERED_PER_EXECUTION
-                                + " for rule: " + rule.getName()
-                );
+                throw new RulesLoopException(MAX_RULES_TRIGGERED_PER_EXECUTION, rule.getName());
             }
         }
     }

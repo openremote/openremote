@@ -195,7 +195,7 @@ public class RulesEngine<T extends Ruleset> {
      * started.
      */
     public boolean isDeployed() {
-        return deployments.values().stream().allMatch(rd -> rd.getStatus() == DEPLOYED);
+        return deployments.values().stream().allMatch(rd -> rd.getStatus() == DEPLOYED || rd.getRuleset().isContinueOnError());
     }
 
     public void addRuleset(T ruleset) {
@@ -432,12 +432,9 @@ public class RulesEngine<T extends Ruleset> {
                 deployment.setError(ex);
                 publishRulesetStatus(deployment.getRuleset(), deployment.getStatus(), deployment.getErrorMessage());
 
-                // TODO We always stop on any error, good idea?
                 // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
-
-                if (!deployment.ruleset.isContinueOnError()) {
+                if (ex instanceof RulesLoopException || !deployment.ruleset.isContinueOnError()) {
                     stop();
-                    // TODO We skip any other deployment when we hit the first error, good idea?
                     break;
                 }
             } finally {

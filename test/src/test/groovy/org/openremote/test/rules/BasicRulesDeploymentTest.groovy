@@ -1,6 +1,8 @@
 package org.openremote.test.rules
 
 import org.openremote.container.web.ClientRequestInfo
+import org.openremote.manager.rules.RulesFacts
+import org.openremote.manager.rules.RulesLoopException
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.security.ManagerIdentityService
@@ -233,12 +235,12 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         when: "a new tenant rule definition is added to Tenant A"
         ruleset = new TenantRuleset(
-                "Looping error", GROOVY, getClass().getResource("/org/openremote/test/rules/BasicLoopingErrorRules.groovy").text,
+                "Throw Failure Exception", GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureActionThrowsException.groovy").text,
                 keycloakDemoSetup.tenantA.realm,
                 false,
                 true
         )
-        rulesetStorageService.merge(ruleset)
+        ruleset = rulesetStorageService.merge(ruleset)
 
         then: "the tenants A rule engine should run with one deployment as error"
         conditions.eventually {
@@ -246,7 +248,30 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             assert tenantAEngine != null
             assert tenantAEngine.isRunning()
             assert tenantAEngine.deployments.size() == 3
-            assert tenantAEngine.deployments.values().any({it.status == EXECUTION_ERROR})
+            assert tenantAEngine.deployments[ruleset.id].status == EXECUTION_ERROR
+            assert tenantAEngine.isError()
+        }
+
+        when: "a new tenant rule definition is added to Tenant A"
+        ruleset = new TenantRuleset(
+                "Looping error", GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text,
+                keycloakDemoSetup.tenantA.realm,
+                false,
+                true
+        )
+        ruleset = rulesetStorageService.merge(ruleset)
+
+        then: "the tenants A rule engine should have an error"
+        conditions.eventually {
+            tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm)
+            assert tenantAEngine != null
+            assert !tenantAEngine.isRunning()
+            assert tenantAEngine.deployments.size() == 4
+            assert tenantAEngine.deployments[ruleset.id].status == EXECUTION_ERROR
+            assert tenantAEngine.deployments[ruleset.id].error instanceof RulesLoopException
+            assert tenantAEngine.deployments[ruleset.id].error.message == "Possible rules loop detected, exceeded max trigger count of " + RulesFacts.MAX_RULES_TRIGGERED_PER_EXECUTION +  " for rule: Condition loops"
+            assert tenantAEngine.isError()
+            assert tenantAEngine.getError() instanceof RuntimeException
         }
 
 //TODO: Reinstate the tenant delete test once tenant delete mechanism is finalised

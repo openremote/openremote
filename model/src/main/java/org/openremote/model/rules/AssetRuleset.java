@@ -102,6 +102,7 @@ public class AssetRuleset extends Ruleset {
                 ", createdOn='" + createdOn + '\'' +
                 ", lastModified='" + lastModified + '\'' +
                 ", enabled='" + enabled + '\'' +
+                ", continueOnError='" + continueOnError + '\'' +
                 ", realm='" + realm + '\'' +
                 ", assetId='" + assetId + '\'' +
                 ", accessPublicRead='" + accessPublicRead + '\'' +

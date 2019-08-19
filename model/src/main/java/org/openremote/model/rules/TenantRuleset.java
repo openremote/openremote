@@ -89,6 +89,7 @@ public class TenantRuleset extends Ruleset {
             ", createdOn='" + createdOn + '\'' +
             ", lastModified='" + lastModified + '\'' +
             ", enabled='" + enabled + '\'' +
+            ", continueOnError='" + continueOnError + '\'' +
             ", realm='" + realm + '\'' +
             ", accessPublicRead='" + accessPublicRead + '\'' +
             '}';

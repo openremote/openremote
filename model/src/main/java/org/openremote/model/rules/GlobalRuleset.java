@@ -59,6 +59,7 @@ public class GlobalRuleset extends Ruleset {
             ", createdOn='" + createdOn + '\'' +
             ", lastModified='" + lastModified + '\'' +
             ", enabled='" + enabled + '\'' +
+            ", continueOnError='" + continueOnError + '\'' +
             '}';
     }
 
