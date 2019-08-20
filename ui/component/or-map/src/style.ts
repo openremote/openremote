@@ -102,8 +102,8 @@ export const style = css`
     
     #openremote {
         position: absolute;
-        bottom: 30px;
-        right: 12px;
+        bottom: 25px;
+        right: 5px;
         height: 20px;
         width: 20px;
         cursor: pointer;
@@ -112,5 +112,13 @@ export const style = css`
     #openremote img {
         height: 20px;
         width: 20px;
+    }
+    
+    @media only screen and (max-width: 768px) {
+        #openremote {
+            bottom: 40px;
+            right: 12px;
+        }
+    }
     }
 `;
