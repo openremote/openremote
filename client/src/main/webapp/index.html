@@ -19,8 +19,8 @@
             let app = e.detail.app;
 
             Promise.all([
-                app.load.css("/shared/map/mapbox-gl-js/0.42.2/mapbox-gl.css"),
-                app.load.js("/shared/map/mapbox-gl-js/0.42.2/mapbox-gl.js"),
+                app.load.css("/shared/map/mapbox-gl-js/1.2.1/mapbox-gl.css"),
+                app.load.js("/shared/map/mapbox-gl-js/1.2.1/mapbox-gl.js"),
 
                 app.load.js("/static/node_modules/chart.js/dist/Chart.js"),
 
@@ -31,6 +31,15 @@
                 app.set("error", e);
             });
         });
+
+        window.transformMapRequest = function(security) {
+            return (url, resourceType) => {
+                return {
+                    url: url,
+                    headers: {Authorization: 'Bearer ' + security.keycloak.token}
+                }
+            };
+        };
     </script>
 
     <style type="text/css">

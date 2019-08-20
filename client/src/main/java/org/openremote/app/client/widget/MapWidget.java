@@ -19,13 +19,10 @@
  */
 package org.openremote.app.client.widget;
 
-import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.user.client.ui.FlowPanel;
-import elemental2.dom.DomGlobal;
 import jsinterop.base.Any;
 import org.openremote.app.client.AppSecurity;
-import org.openremote.app.client.OpenRemoteApp;
 import org.openremote.app.client.interop.mapbox.*;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.geo.GeoJSONFeatureCollection;
@@ -174,9 +171,8 @@ public class MapWidget extends FlowPanel {
         mapOptions.put("container", hostElementId);
         mapOptions.put("attributionControl", true);
         Any mapOptionsAny = mapOptions.asAny();
-        addAuthorization(mapOptionsAny, security);
 
-        mapboxMap = new MapboxMap(mapOptionsAny);
+        mapboxMap = initMap(mapOptionsAny, security);
 
         mapboxMap.on(EventType.LOAD, eventData -> {
             initFeatureLayers();
@@ -287,12 +283,17 @@ public class MapWidget extends FlowPanel {
         return sourceOptions;
     }
 
-    public static native void addAuthorization(Any mapOptions, AppSecurity security) /*-{
-        mapOptions.transformRequest = function(url, resourceType) {
-            return {
-                url: url,
-                headers: { 'Authorization': 'Bearer ' + security.keycloak.token }
-            }
+    public static native MapboxMap initMap(Any mapOptions, AppSecurity security) /*-{
+
+        // No explanation for this without adding transform outside of JSNI map fails to load
+        mapOptions.transformRequest = $wnd.transformMapRequest(security);
+
+        // No explanation for this without doing this map fails to load with certain styles
+        for (var i=0; i<mapOptions.style.layers.length; i++) {
+            var layer = mapOptions.style.layers[i];
+            delete layer.metadata;
         }
+
+        return new $wnd.mapboxgl.Map(mapOptions)
     }-*/;
 }
