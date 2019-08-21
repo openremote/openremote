@@ -628,7 +628,11 @@ public class HttpClientProtocol extends AbstractProtocol {
     @Override
     public void init(Container container) throws Exception {
         super.init(container);
-        client = createClient(executorService);
+        client = createClient();
+    }
+
+    protected ResteasyClient createClient() {
+        return WebTargetBuilder.createClient(executorService);
     }
 
     @Override

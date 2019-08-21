@@ -187,7 +187,7 @@ public class ControllerProtocol extends AbstractProtocol {
     @Override
     public void init(Container container) throws Exception {
         super.init(container);
-        client = createClient(executorService, CONNECTION_POOL_SIZE, 70000);
+        client = createClient(executorService, CONNECTION_POOL_SIZE, 70000, null);
     }
 
     @Override

@@ -65,6 +65,61 @@ import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 
 public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
+// TODO: Below is here ready for Resteasy 4.x but their maven packages are a mess at the moment
+//    protected static class EngineBuilder extends ClientHttpEngineBuilder43 {
+//
+//        protected final UnaryOperator<HttpClientBuilder> httpClientBuilderConfigurator;
+//
+//        public EngineBuilder(UnaryOperator<HttpClientBuilder> httpClientBuilderConfigurator) {
+//            this.httpClientBuilderConfigurator = httpClientBuilderConfigurator;
+//        }
+//
+//        @Override
+//        protected ClientHttpEngine createEngine(HttpClientConnectionManager cm, RequestConfig.Builder rcBuilder, HttpHost defaultProxy, int responseBufferSize, HostnameVerifier verifier, SSLContext theContext) {
+//            final HttpClient httpClient;
+//            rcBuilder.setProxy(defaultProxy);
+//            if (System.getSecurityManager() == null)
+//            {
+//                HttpClientBuilder clientBuilder = HttpClientBuilder.create()
+//                .setConnectionManager(cm)
+//                .setDefaultRequestConfig(rcBuilder.build())
+//                .disableContentCompression();
+//
+//                if (httpClientBuilderConfigurator != null) {
+//                    clientBuilder = httpClientBuilderConfigurator.apply(clientBuilder);
+//                }
+//
+//                httpClient = clientBuilder.build();
+//            }
+//            else {
+//                httpClient = AccessController.doPrivileged(new PrivilegedAction<HttpClient>()
+//                {
+//                    @Override
+//                    public HttpClient run()
+//                    {
+//                        HttpClientBuilder clientBuilder = HttpClientBuilder.create()
+//                            .setConnectionManager(cm)
+//                            .setDefaultRequestConfig(rcBuilder.build())
+//                            .disableContentCompression();
+//
+//                        if (httpClientBuilderConfigurator != null) {
+//                            clientBuilder = httpClientBuilderConfigurator.apply(clientBuilder);
+//                        }
+//
+//                        return clientBuilder.build();
+//                    }
+//                });
+//            }
+//
+//            ApacheHttpClient43Engine engine = new ApacheHttpClient43Engine(httpClient, true);
+//            engine.setResponseBufferSize(responseBufferSize);
+//            engine.setHostnameVerifier(verifier);
+//            // this may be null.  We can't really support this with Apache Client.
+//            engine.setSslContext(theContext);
+//            return engine;
+//        }
+//    }
+
     private static final Logger LOG = Logger.getLogger(KeycloakIdentityProvider.class.getName());
 
     public static final String KEYCLOAK_HOST = "KEYCLOAK_HOST";
@@ -156,6 +211,28 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 .connectionPoolSize(
                     getInteger(container.getConfig(), KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT)
                 );
+//        ResteasyClientBuilder clientBuilder = (ResteasyClientBuilder) ResteasyClientBuilder.newBuilder();
+//        clientBuilder.httpEngine(
+//            new EngineBuilder(httpClientBuilder ->
+//                httpClientBuilder.addInterceptorLast((HttpRequestInterceptor) (request, context) ->
+//                    request.setHeader(HTTP.TARGET_HOST, new HttpHost(externalServerUri.build().getHost(), externalServerUri.build().getPort()).toHostString())
+//                )
+//            ).build()
+//        );
+//
+//        clientBuilder
+//            .connectionCheckoutTimeout(
+//                getInteger(container.getConfig(), KEYCLOAK_CONNECT_TIMEOUT, KEYCLOAK_CONNECT_TIMEOUT_DEFAULT),
+//                TimeUnit.MILLISECONDS
+//            )
+//            .readTimeout(
+//                getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
+//                TimeUnit.MILLISECONDS
+//            )
+//            .connectionPoolSize(
+//                getInteger(container.getConfig(), KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT)
+//            );
+
 
         httpClient = WebClient.registerDefaults(clientBuilder).build();
 

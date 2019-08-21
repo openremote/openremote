@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 /**
@@ -170,10 +171,10 @@ public class WebTargetBuilder {
     }
 
     public static ResteasyClient createClient(ExecutorService executorService) {
-        return createClient(executorService, CONNECTION_POOL_SIZE, CONNECTION_TIMEOUT_MILLISECONDS);
+        return createClient(executorService, CONNECTION_POOL_SIZE, CONNECTION_TIMEOUT_MILLISECONDS, null);
     }
 
-    public static ResteasyClient createClient(ExecutorService executorService, int connectionPoolSize, long overrideSocketTimeout) {
+    public static ResteasyClient createClient(ExecutorService executorService, int connectionPoolSize, long overrideSocketTimeout, UnaryOperator<ResteasyClientBuilder> builderConfigurator) {
         ResteasyClientBuilder clientBuilder = new ResteasyClientBuilder()
             .connectionPoolSize(connectionPoolSize)
             .connectionCheckoutTimeout(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
@@ -183,6 +184,10 @@ public class WebTargetBuilder {
 
         if (executorService != null) {
             clientBuilder.asyncExecutor(executorService);
+        }
+
+        if (builderConfigurator != null) {
+            clientBuilder = builderConfigurator.apply(clientBuilder);
         }
 
         return clientBuilder.build();

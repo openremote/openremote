@@ -272,7 +272,7 @@ public class WebsocketClient extends AbstractNettyIoClient<String, InetSocketAdd
         if (oAuthGrant != null) {
             LOG.fine("Retrieving OAuth access token: "  + getSocketAddressString());
 
-            ResteasyClient client = createClient(executorService, 1, CONNECTION_TIMEOUT_MILLISECONDS);
+            ResteasyClient client = createClient(executorService, 1, CONNECTION_TIMEOUT_MILLISECONDS, null);
 
             try {
                 WebTarget authTarget = client.target(oAuthGrant.getTokenEndpointUri());

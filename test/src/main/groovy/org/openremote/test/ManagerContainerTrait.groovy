@@ -1,11 +1,9 @@
 package org.openremote.test
 
-import com.google.common.collect.Lists
 import org.apache.camel.spi.BrowsableEndpoint
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerSetupService
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetProcessingService
 import spock.util.concurrent.PollingConditions
@@ -14,7 +12,6 @@ import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 
 import static java.util.stream.StreamSupport.stream
-import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_HOST
 import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_WEBSERVER_PORT
 import static org.openremote.container.timer.TimerService.Clock.PSEUDO
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
