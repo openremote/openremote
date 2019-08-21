@@ -162,11 +162,12 @@ public class WebsocketClient extends AbstractNettyIoClient<String, InetSocketAdd
             port = uri.getPort();
         }
 
-        if (!"ws".equalsIgnoreCase(scheme) && !"wss".equalsIgnoreCase(scheme)) {
-            LOG.warning("Only WS(S) is supported: " + getSocketAddressString());
-            setPermanentError("Only WS(S) is supported");
-            return;
-        }
+        // Our own manager uses HTTP(S) and upgrades to WS(S) so this is not appropriate
+//        if (!"ws".equalsIgnoreCase(scheme) && !"wss".equalsIgnoreCase(scheme)) {
+//            LOG.warning("Only WS(S) is supported: " + getSocketAddressString());
+//            setPermanentError("Only WS(S) is supported");
+//            return;
+//        }
 
         useSsl = "wss".equalsIgnoreCase(scheme);
     }
@@ -262,6 +263,12 @@ public class WebsocketClient extends AbstractNettyIoClient<String, InetSocketAdd
 
     @Override
     public synchronized void connect() {
+
+        if (permanentError) {
+            LOG.fine("Unable to connect as permanent error has been set");
+            return;
+        }
+
         if (oAuthGrant != null) {
             LOG.fine("Retrieving OAuth access token: "  + getSocketAddressString());
 
