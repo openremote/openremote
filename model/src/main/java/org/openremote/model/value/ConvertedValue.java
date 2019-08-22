@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2019, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,32 +19,32 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+public class ConvertedValue {
 
-import static org.openremote.model.value.RegexValueFilter.NAME;
 
-@JsonTypeName(NAME)
-public class JsonPathFilter extends ValueFilter<Value> {
+    /**
+     * Ignore this value (do not send to the linked attribute)
+     */
+    public static final String IGNORE = "@IGNORE";
 
-    public static final String NAME = "jsonPath";
+    /**
+     * Send a null value to the linked attribute
+     */
+    public static final String NULL = "@NULL";
 
-    @JsonProperty
-    public String path;
+    protected boolean ignore;
+    protected Value value;
 
-    @JsonProperty
-    public boolean returnFirst;
-
-    @JsonCreator
-    public JsonPathFilter(@JsonProperty("path") String path,
-                          @JsonProperty("returnFirst") boolean returnFirst) {
-        this.path = path;
-        this.returnFirst = returnFirst;
+    public ConvertedValue(boolean ignore, Value value) {
+        this.ignore = ignore;
+        this.value = value;
     }
 
-    @Override
-    public Class<Value> getValueType() {
-        return Value.class;
+    public boolean isIgnore() {
+        return ignore;
+    }
+
+    public Value getValue() {
+        return value;
     }
 }

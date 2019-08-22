@@ -72,11 +72,11 @@ public class StringPredicate implements ValuePredicate {
     public static Predicate<String> asPredicate(StringPredicate predicate) {
         return string -> {
             if (string == null && predicate.value == null)
-                return true;
+                return !predicate.negate;
             if (string == null)
-                return false;
+                return predicate.negate;
             if (predicate.value == null)
-                return false;
+                return predicate.negate;
 
             String shouldMatch = predicate.caseSensitive ? predicate.value : predicate.value.toUpperCase(Locale.ROOT);
             String have = predicate.caseSensitive ? string : string.toUpperCase(Locale.ROOT);
@@ -123,10 +123,14 @@ public class StringPredicate implements ValuePredicate {
     public ObjectValue toModelValue() {
         ObjectValue objectValue = Values.createObject();
         objectValue.put("predicateType", name);
-        objectValue.put("match", Values.create(match.toString()));
+        if (match != null) {
+            objectValue.put("match", Values.create(match.toString()));
+        }
         objectValue.put("caseSensitive", Values.create(caseSensitive));
         objectValue.put("negate", Values.create(negate));
-        objectValue.put("value", Values.create(value));
+        if (value != null) {
+            objectValue.put("value", Values.create(value));
+        }
         return objectValue;
     }
 

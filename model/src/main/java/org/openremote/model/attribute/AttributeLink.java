@@ -37,16 +37,6 @@ public class AttributeLink {
     public enum ConverterType {
 
         /**
-         * Ignore this value (do not send to the linked attribute)
-         */
-        IGNORE("@IGNORE"),
-
-        /**
-         * Send a null vale to the linked attribute
-         */
-        NULL("@NULL"),
-
-        /**
          * Toggle the value of the linked attribute; the linked attribute's type must be
          * {@link AttributeValueType#BOOLEAN}
          */

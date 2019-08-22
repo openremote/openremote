@@ -60,7 +60,6 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.agent.protocol.http.WebTargetBuilder.createClient;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
@@ -90,13 +89,13 @@ import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY
  * the response received from this endpoint</b>)</li> <li>{@link #META_QUERY_PARAMETERS}</li>
  * <li>{@link #META_FAILURE_CODES}</li>
  * <li>{@link #META_HEADERS}</li>
- * <li>{@link MetaItemType#VALUE_FILTERS}</li>
+ * <li>{@link Protocol#META_ATTRIBUTE_VALUE_FILTERS}</li>
  * </ul>
  * <p>
  * <h1>Response filtering</h1>
  * <p>
  * Any {@link Attribute} whose value is to be set by the HTTP server response (i.e. it has an {@link
- * #META_POLLING_MILLIS} {@link MetaItem}) can use the standard {@link MetaItemType#VALUE_FILTERS} in
+ * #META_POLLING_MILLIS} {@link MetaItem}) can use the standard {@link Protocol#META_ATTRIBUTE_VALUE_FILTERS} in
  * order to filter the received HTTP response.
  * <p>
  * <h1>Connection Status</h1>
@@ -474,6 +473,18 @@ public class HttpClientProtocol extends AbstractProtocol {
             REGEXP_PATTERN_STRING_NON_EMPTY,
             MetaItemDescriptor.PatternFailure.STRING_EMPTY);
 
+    /**
+     * Allows the incoming value to come from another attribute within the same asset; this allows for a polling
+     * attribute to be created that retrieves all data in a single request and this data can then be consumed
+     * by many attributes which minimises the number of requests sent to the server.
+     */
+    public static final MetaItemDescriptor META_ATTRIBUTE_POLLING_ATTRIBUTE = metaItemString(
+        PROTOCOL_NAME + ":pollingAttribute",
+        ACCESS_PRIVATE,
+        false,
+        REGEXP_PATTERN_STRING_NON_EMPTY,
+        MetaItemDescriptor.PatternFailure.STRING_EMPTY);
+
     /*--------------- META ITEMS TO BE USED ON PROTOCOL CONFIGURATIONS OR LINKED ATTRIBUTES ---------------*/
     /**
      * HTTP response codes that will automatically disable the {@link ProtocolConfiguration} and in the process
@@ -530,6 +541,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             META_ATTRIBUTE_METHOD,
             META_ATTRIBUTE_WRITE_VALUE,
             META_ATTRIBUTE_CONTENT_TYPE,
+            META_ATTRIBUTE_POLLING_ATTRIBUTE,
             META_HEADERS,
             META_POLLING_MILLIS,
             META_QUERY_PARAMETERS,
@@ -557,6 +569,7 @@ public class HttpClientProtocol extends AbstractProtocol {
     protected final Map<AttributeRef, Pair<ResteasyWebTarget, List<Integer>>> clientMap = new HashMap<>();
     protected final Map<AttributeRef, HttpClientRequest> requestMap = new HashMap<>();
     protected final Map<AttributeRef, ScheduledFuture> pollingMap = new HashMap<>();
+    protected final Map<AttributeRef, Set<AttributeRef>> pollingLinkedAttributeMap = new HashMap<>();
     protected ResteasyClient client;
 
     public static Optional<Pair<StringValue, StringValue>> getUsernameAndPassword(AssetAttribute attribute) throws IllegalArgumentException {
@@ -820,6 +833,8 @@ public class HttpClientProtocol extends AbstractProtocol {
 
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+        AttributeRef attributeRef = attribute.getReferenceOrThrow();
+
         String method = Values.getMetaItemValueOrThrow(
                 attribute,
                 META_ATTRIBUTE_METHOD,
@@ -898,7 +913,27 @@ public class HttpClientProtocol extends AbstractProtocol {
                 .flatMap(Values::getBoolean)
                 .orElse(false);
 
-        final AttributeRef attributeRef = attribute.getReferenceOrThrow();
+        String pollingAttribute = Values.getMetaItemValueOrThrow(
+            attribute,
+            META_ATTRIBUTE_POLLING_ATTRIBUTE,
+            false,
+            true)
+            .flatMap(Values::getString)
+            .orElse(null);
+
+        if (!TextUtil.isNullOrEmpty(pollingAttribute)) {
+            synchronized (pollingLinkedAttributeMap) {
+                AttributeRef pollingSourceRef = new AttributeRef(attributeRef.getEntityId(), pollingAttribute);
+                pollingLinkedAttributeMap.compute(pollingSourceRef, (ref, links) -> {
+                    if (links == null) {
+                        links = new HashSet<>();
+                    }
+                    links.add(attributeRef);
+
+                    return links;
+                });
+            }
+        }
 
         addHttpClientRequest(protocolConfiguration,
                 attributeRef,
@@ -978,6 +1013,21 @@ public class HttpClientProtocol extends AbstractProtocol {
         AttributeRef attributeRef = attribute.getReferenceOrThrow();
         requestMap.remove(attributeRef);
         cancelPolling(attributeRef);
+
+        String pollingAttribute = Values.getMetaItemValueOrThrow(
+            attribute,
+            META_ATTRIBUTE_POLLING_ATTRIBUTE,
+            false,
+            true)
+            .flatMap(Values::getString)
+            .orElse(null);
+
+        if (!TextUtil.isNullOrEmpty(pollingAttribute)) {
+            synchronized (pollingLinkedAttributeMap) {
+                pollingLinkedAttributeMap.remove(attributeRef);
+                pollingLinkedAttributeMap.values().forEach(links -> links.remove(attributeRef));
+            }
+        }
     }
 
     @Override
@@ -1162,6 +1212,15 @@ public class HttpClientProtocol extends AbstractProtocol {
 
         if (attributeRef != null) {
             updateLinkedAttribute(new AttributeState(attributeRef, value));
+
+            // Look for any attributes that also want to use this polling response
+            synchronized (pollingLinkedAttributeMap) {
+                Set<AttributeRef> linkedRefs = pollingLinkedAttributeMap.get(attributeRef);
+                if (linkedRefs != null) {
+                    Value finalValue = value;
+                    linkedRefs.forEach(ref -> updateLinkedAttribute(new AttributeState(ref, finalValue)));
+                }
+            }
         }
     }
 

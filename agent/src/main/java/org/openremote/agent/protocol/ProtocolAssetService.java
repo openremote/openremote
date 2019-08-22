@@ -23,9 +23,12 @@ import org.openremote.container.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.value.ConvertedValue;
+import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueFilter;
 
+import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
@@ -147,4 +150,9 @@ public interface ProtocolAssetService extends ContainerService {
      * Apply the specified set of {@link ValueFilter}s to the specified {@link Value}
      */
     Value applyValueFilters(Value value, ValueFilter... filters);
+
+    /**
+     * Apply the specified value converter map to the specified value
+     */
+    ConvertedValue applyValueConverter(Value value, ObjectValue converter);
 }

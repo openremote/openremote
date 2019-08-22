@@ -62,8 +62,8 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <h1>Protocol -> Attribute</h1>
  * <p>
  * When a new value comes from the protocol destined for a linked {@link Attribute} the actual value written to the
- * attribute can be filtered in the standard way using {@link ValueFilter}s via the{@link MetaItemType#META_VALUE_FILTERS}
- * {@link MetaItem}.
+ * attribute can be filtered in the standard way using {@link ValueFilter}s via the
+ * {@link Protocol#META_ATTRIBUTE_VALUE_FILTERS} {@link MetaItem}.
  * <h1>Attribute -> Protocol</h1>
  * <p>
  * When a linked {@link Attribute} is written to, the actual value written to the protocol can either be the exact value

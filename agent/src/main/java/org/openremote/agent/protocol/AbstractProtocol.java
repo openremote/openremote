@@ -21,7 +21,7 @@ package org.openremote.agent.protocol;
 
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.model.value.ValueFilter;
+import org.openremote.model.value.*;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.concurrent.GlobalLock;
@@ -38,9 +38,6 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -111,7 +108,6 @@ public abstract class AbstractProtocol implements Protocol {
     public static final int PRIORITY = ContainerService.DEFAULT_PRIORITY - 100;
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected final Map<AttributeRef, LinkedProtocolInfo> linkedProtocolConfigurations = new HashMap<>();
-    protected final Map<AttributeRef, ValueFilter[]> linkedAttributeFilters = new HashMap<>();
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
     protected TimerService timerService;
@@ -210,17 +206,11 @@ public abstract class AbstractProtocol implements Protocol {
                 // linking process and without entry in the map any update would be blocked
                 linkedAttributes.put(attributeRef, attribute);
 
-                Optional<ValueFilter[]> messageFilters = Protocol.getLinkedAttributeMessageFilters(attribute);
-                messageFilters.ifPresent(mFilters -> {
-                    linkedAttributeFilters.put(attributeRef, mFilters);
-                });
-
                 try {
                     doLinkAttribute(attribute, protocolConfiguration);
                 } catch (Exception e) {
                     LOG.log(Level.SEVERE, "Failed to link attribute to protocol: " + attribute, e);
                     linkedAttributes.remove(attributeRef);
-                    linkedAttributeFilters.remove(attributeRef);
                 }
             });
         });
@@ -233,7 +223,6 @@ public abstract class AbstractProtocol implements Protocol {
                 LOG.fine("Unlinking attribute on '" + getProtocolName() + "': " + attribute);
                 AttributeRef attributeRef = attribute.getReferenceOrThrow();
                 linkedAttributes.remove(attributeRef);
-                linkedAttributeFilters.remove(attributeRef);
                 doUnlinkAttribute(attribute, protocolConfiguration);
             })
         );
@@ -270,6 +259,28 @@ public abstract class AbstractProtocol implements Protocol {
             if (attribute == null) {
                 LOG.warning("Attribute doesn't exist on this protocol: " + event.getAttributeRef());
             } else {
+
+                // Do outbound value conversion
+                ObjectValue converter = Values.getMetaItemValueOrThrow(
+                    attribute,
+                    META_ATTRIBUTE_WRITE_VALUE_CONVERTER,
+                    false,
+                    false)
+                    .flatMap(Values::getObject)
+                    .orElse(null);
+
+                if (converter != null) {
+                    LOG.fine("Applying attribute value converter to attribute write: " + event.getAttributeRef());
+
+                    ConvertedValue convertedValue = assetService.applyValueConverter(event.getValue().orElse(null), converter);
+
+                    if (convertedValue.isIgnore()) {
+                        LOG.info("Value converter returned '" + ConvertedValue.IGNORE + "' so ignoring attribute value");
+                        return;
+                    }
+                    event.getAttributeState().setValue(convertedValue.getValue());
+                }
+
                 AssetAttribute protocolConfiguration = getLinkedProtocolConfiguration(attribute);
                 processLinkedAttributeWrite(event, protocolConfiguration);
             }
@@ -318,13 +329,33 @@ public abstract class AbstractProtocol implements Protocol {
 
             if (state.getValue().isPresent()) {
                 Value value = state.getValue().get();
-                ValueFilter[] filters = linkedAttributeFilters.get(state.getAttributeRef());
+                ValueFilter[] filters = Protocol.getLinkedAttributeValueFilters(attribute).orElse(null);
 
                 if (filters != null) {
                     value = assetService.applyValueFilters(value, filters);
                 }
 
-                // Do basic value conversion
+                ObjectValue converter = Values.getMetaItemValueOrThrow(
+                    attribute,
+                    META_ATTRIBUTE_VALUE_CONVERTER,
+                    false,
+                    false)
+                    .flatMap(Values::getObject)
+                    .orElse(null);
+
+                if (converter != null) {
+                    LOG.fine("Applying attribute value converter to attribute: " + state.getAttributeRef());
+
+                    ConvertedValue convertedValue = assetService.applyValueConverter(value, converter);
+
+                    if (convertedValue.isIgnore()) {
+                        LOG.info("Value converter returned '" + ConvertedValue.IGNORE + "' so ignoring attribute value");
+                        return;
+                    }
+                    value = convertedValue.getValue();
+                }
+
+                // Do built in value conversion
                 Optional<ValueType> attributeValueType = attribute.getType().map(AttributeValueDescriptor::getValueType);
 
                 if (value != null && attributeValueType.isPresent()) {
@@ -407,8 +438,26 @@ public abstract class AbstractProtocol implements Protocol {
             this instanceof ProtocolLinkedAttributeImport,
             getProtocolConfigurationTemplate(),
             getProtocolConfigurationMetaItemDescriptors(),
-            getLinkedAttributeMetaItemDescriptors()
+            buildLinkedAttributeMetaItemDescriptors()
         );
+    }
+
+    protected List<MetaItemDescriptor> buildLinkedAttributeMetaItemDescriptors() {
+        List<MetaItemDescriptor> descriptors = getLinkedAttributeMetaItemDescriptors();
+        descriptors = descriptors != null ? new ArrayList<>(descriptors) : new ArrayList<>();
+
+        // Add standard meta item descriptors that all protocols support
+        if (descriptors.stream().noneMatch(d -> d.getUrn().equalsIgnoreCase(META_ATTRIBUTE_VALUE_FILTERS.getUrn()))) {
+            descriptors.add(META_ATTRIBUTE_VALUE_FILTERS);
+        }
+        if (descriptors.stream().noneMatch(d -> d.getUrn().equalsIgnoreCase(META_ATTRIBUTE_VALUE_CONVERTER.getUrn()))) {
+            descriptors.add(META_ATTRIBUTE_VALUE_CONVERTER);
+        }
+        if (descriptors.stream().noneMatch(d -> d.getUrn().equalsIgnoreCase(META_ATTRIBUTE_WRITE_VALUE_CONVERTER.getUrn()))) {
+            descriptors.add(META_ATTRIBUTE_WRITE_VALUE_CONVERTER);
+        }
+
+        return descriptors;
     }
 
     @Override
@@ -451,9 +500,7 @@ public abstract class AbstractProtocol implements Protocol {
      * Get list of {@link MetaItemDescriptor}s that describe the {@link MetaItem}s a {@link ProtocolConfiguration} for this
      * protocol supports
      */
-    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
-        return Collections.emptyList();
-    }
+    protected abstract List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors();
 
     /**
      * Get list of {@link MetaItemDescriptor}s that describe the {@link MetaItem}s an {@link Attribute} linked to this

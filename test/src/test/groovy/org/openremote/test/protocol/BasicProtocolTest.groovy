@@ -20,6 +20,7 @@
 package org.openremote.test.protocol
 
 import org.openremote.agent.protocol.AbstractProtocol
+import org.openremote.agent.protocol.Protocol
 import org.openremote.container.util.Util
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -310,7 +311,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                     new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                 ),
                 new MetaItem(
-                    MetaItemType.VALUE_FILTERS,
+                    Protocol.META_ATTRIBUTE_VALUE_FILTERS,
                     Values.createArray().add(Util.objectToValue(new RegexValueFilter("\\w(\\d+)", 1, 2)).get())
                 )
             ),
@@ -322,7 +323,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                     new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                 ),
                 new MetaItem(
-                    MetaItemType.VALUE_FILTERS,
+                    Protocol.META_ATTRIBUTE_VALUE_FILTERS,
                     Values.createArray().add(Util.objectToValue(new SubStringValueFilter(10, 12)).get())
                 )
             ),
@@ -334,7 +335,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                     new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                 ),
                 new MetaItem(
-                    MetaItemType.VALUE_FILTERS,
+                    Protocol.META_ATTRIBUTE_VALUE_FILTERS,
                     Values.createArray()
                         .add(Util.objectToValue(new SubStringValueFilter(23)).get())
                         .add(Util.objectToValue(new RegexValueFilter("[a-z|\\s]+(\\d+)%\"}", 1, 0)).get())

@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.agent;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.ParseContext;
@@ -773,6 +772,31 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         });
     }
 
+    public ConvertedValue applyValueConverter(Value value, ObjectValue converter) {
+
+        if (converter == null) {
+            return new ConvertedValue(false, value);
+        }
+
+        String converterKey = value == null ? "@NULL" : value.toString().toUpperCase(Locale.ROOT);
+        return converter.get(converterKey)
+            .map(v -> {
+                if (v.getType() == ValueType.STRING) {
+                    String valStr = v.toString();
+                    if (ConvertedValue.IGNORE.equalsIgnoreCase(valStr)) {
+                        return new ConvertedValue(true, null);
+                    }
+
+                    if (ConvertedValue.NULL.equalsIgnoreCase(valStr)) {
+                        return new ConvertedValue(false, null);
+                    }
+                }
+
+                return new ConvertedValue(false, v);
+            })
+            .orElse(new ConvertedValue(true, value));
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public Value applyValueFilters(Value value, ValueFilter... filters) {
@@ -897,6 +921,18 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
         Object obj = jsonPathParser.parse(value.toJson()).read(filter.path);
         String pathJson = obj != null ? obj.toString() : null;
-        return TextUtil.isNullOrEmpty(pathJson) ? null : Values.parse(pathJson).orElse(null);
+        if (TextUtil.isNullOrEmpty(pathJson)) {
+            return null;
+        }
+
+        if (filter.returnFirst) {
+            Value pathValue = Values.parse(pathJson).orElse(null);
+            if (pathValue != null && pathValue.getType() == ValueType.ARRAY) {
+                pathValue = Values.getArray(pathValue).flatMap(arr -> arr.length() > 0 ? arr.get(0) : Optional.empty()).orElse(null);
+            }
+            return pathValue;
+        }
+
+        return Values.parse(pathJson).orElse(null);
     }
 }

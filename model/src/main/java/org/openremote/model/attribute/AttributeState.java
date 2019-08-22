@@ -76,6 +76,10 @@ public class AttributeState {
         return Optional.ofNullable(value);
     }
 
+    public void setValue(Value value) {
+        this.value = value;
+    }
+
     public boolean isDeleted() {
         return deleted;
     }

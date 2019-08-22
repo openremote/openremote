@@ -80,7 +80,7 @@ import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY
  * <h1>Protocol -> Attribute</h1>
  * <p>
  * When a new value comes from the protocol destined for a linked {@link Attribute} the actual value written to the
- * attribute can be filtered in the standard way using {@link ValueFilter}s via the{@link MetaItemType#VALUE_FILTERS}
+ * attribute can be filtered in the standard way using {@link ValueFilter}s via the{@link Protocol#META_ATTRIBUTE_VALUE_FILTERS}
  * {@link MetaItem}.
  * <h1>Attribute -> Protocol</h1>
  * <p>
@@ -150,7 +150,7 @@ public class WebsocketClientProtocol extends AbstractProtocol {
      * {@link ValueFilter}s to apply to incoming messages with the final result being compared to the
      * {@link #META_ATTRIBUTE_MESSAGE_MATCH_PREDICATE}, if they are equal (e.g. {@link String#equals}) then the message
      * is intended for this linked attribute and the message can be once again filtered using the
-     * {@link MetaItemType#VALUE_FILTERS} {@link MetaItem}. The {@link MetaItem} value should be an {@link ArrayValue}
+     * {@link Protocol#META_ATTRIBUTE_VALUE_FILTERS} {@link MetaItem}. The {@link MetaItem} value should be an {@link ArrayValue}
      * of {@link ObjectValue}s where each {@link ObjectValue} represents a serialised {@link ValueFilter}. The message
      * will pass through the filters in array order
      */

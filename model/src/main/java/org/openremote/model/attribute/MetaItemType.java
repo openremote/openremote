@@ -402,23 +402,6 @@ public enum MetaItemType implements MetaItemDescriptor {
         null,
         null,
         null,
-        false),
-
-    /**
-     * {@link MetaItem} for defining {@link ValueFilter}s to apply to values before they are sent through the system
-     * (e.g. before it is used to update a protocol linked attribute or to filter value  when updating an attribute
-     * linked attribute see {@link #ATTRIBUTE_LINK}); this is particularly useful for generic protocols.
-     * The {@link MetaItem} value should be an {@link ArrayValue} of {@link ObjectValue}s
-     * where each {@link ObjectValue} represents a serialised {@link ValueFilter}. The message should pass through the
-     * filters in array order.
-     */
-    VALUE_FILTERS(
-        ASSET_META_NAMESPACE + ":valueFilters",
-        new Access(true, false, true),
-        ValueType.ARRAY,
-        null,
-        null,
-        null,
         false);
 
     final protected String urn;

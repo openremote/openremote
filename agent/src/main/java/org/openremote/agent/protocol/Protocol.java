@@ -22,8 +22,6 @@ package org.openremote.agent.protocol;
 import org.apache.commons.codec.binary.BinaryCodec;
 import org.apache.commons.codec.binary.Hex;
 import org.openremote.agent.protocol.http.OAuthGrant;
-import org.openremote.agent.protocol.websocket.WebsocketClientProtocol;
-import org.openremote.model.value.*;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.model.AbstractValueHolder;
@@ -35,6 +33,7 @@ import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.*;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -44,11 +43,9 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.agent.protocol.http.HttpClientProtocol.PROTOCOL_NAME;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
 import static org.openremote.model.attribute.MetaItemDescriptorImpl.*;
-import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemString;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY;
 
 /**
@@ -96,7 +93,7 @@ import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY
  * receive and send value change messages with values of that type.
  * <p>
  * Generic protocols should implement support for filtering state messages from devices (or services) before the
- * protocol updates the linked attribute, to implement this protocols should use the {@link MetaItemType#VALUE_FILTERS}
+ * protocol updates the linked attribute, to implement this protocols should use the {@link #META_ATTRIBUTE_VALUE_FILTERS}
  * {@link MetaItem}.
  * <p>
  * <h1>Dynamic value injection</h1>
@@ -206,6 +203,41 @@ public interface Protocol extends ContainerService {
         PatternFailure.STRING_EMPTY);
 
     /**
+     * Defines {@link ValueFilter}s to apply to values before they are sent through the system (e.g. before it is used
+     * to update a protocol linked attribute); this is particularly useful for generic protocols.
+     * The {@link MetaItem} value should be an {@link ArrayValue} of {@link ObjectValue}s
+     * where each {@link ObjectValue} represents a serialised {@link ValueFilter}. The message should pass through the
+     * filters in array order.
+     */
+    MetaItemDescriptor META_ATTRIBUTE_VALUE_FILTERS = metaItemArray(
+        PROTOCOL_NAMESPACE + ":valueFilters",
+        ACCESS_PRIVATE,
+        false,
+        null);
+
+    /**
+     * Defines a value converter map to allow for basic value type conversion; the incoming value will be converted
+     * to JSON and if this string matches a key in the converter then the value of that key will be pushed through to
+     * the attribute. An example use case is an API that returns "ACTIVE"/"DISABLED" strings but you want to connect
+     * this to a {@link AttributeValueType#BOOLEAN} attribute.
+     */
+    MetaItemDescriptor META_ATTRIBUTE_VALUE_CONVERTER = metaItemObject(
+        PROTOCOL_NAMESPACE + ":valueConverter",
+        ACCESS_PRIVATE,
+        false,
+        null);
+
+    /**
+     * Similar to {@link #META_ATTRIBUTE_VALUE_CONVERTER} but will applied to outgoing values allowing for the opposite
+     * conversion.
+     */
+    MetaItemDescriptor META_ATTRIBUTE_WRITE_VALUE_CONVERTER = metaItemObject(
+        PROTOCOL_NAMESPACE + ":writeValueConverter",
+        ACCESS_PRIVATE,
+        false,
+        null);
+
+    /**
      * Value to be used for attribute writes, protocols that support this should also support dynamic value insertion,
      * see interface javadoc for more details; use the {@link #createDynamicAttributeWriteConsumer} helper method where
      * possible.
@@ -308,12 +340,12 @@ public interface Protocol extends ContainerService {
     /**
      * Extract the {@link ValueFilter}s from the specified {@link Attribute}
      */
-    static Optional<ValueFilter[]> getLinkedAttributeMessageFilters(Attribute attribute) {
+    static Optional<ValueFilter[]> getLinkedAttributeValueFilters(Attribute attribute) {
         if (attribute == null) {
             return Optional.empty();
         }
 
-        Optional<ArrayValue> arrayValueOptional = attribute.getMetaItem(MetaItemType.VALUE_FILTERS)
+        Optional<ArrayValue> arrayValueOptional = attribute.getMetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS)
             .flatMap(AbstractValueHolder::getValueAsArray);
 
         if (!arrayValueOptional.isPresent()) {

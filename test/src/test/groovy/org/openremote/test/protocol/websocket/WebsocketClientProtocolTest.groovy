@@ -210,7 +210,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MESSAGE_MATCH_PREDICATE,
                         new StringPredicate(BaseAssetQuery.Match.CONTAINS, true, "targetTemperature").toModelValue()),
-                    new MetaItem(MetaItemType.VALUE_FILTERS,
+                    new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
                         Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
@@ -239,7 +239,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MESSAGE_MATCH_PREDICATE,
                         new StringPredicate(BaseAssetQuery.Match.CONTAINS, "co2Level").toModelValue()),
-                    new MetaItem(MetaItemType.VALUE_FILTERS,
+                    new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
                         Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),

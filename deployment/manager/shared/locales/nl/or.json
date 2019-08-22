@@ -1,6 +1,6 @@
 {
-  "asset": "Asset",
-  "asset_plural": "Assets",
+  "asset": "asset",
+  "asset_plural": "assets",
   "scenes": "Scenes",
   "settings": "Instellingen",
   "selectLanguage": "Taal kiezen",

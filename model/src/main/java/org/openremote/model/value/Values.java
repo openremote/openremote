@@ -15,16 +15,14 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gwt.core.shared.GwtIncompatible;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.base.Any;
-import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaItemDescriptor;
-import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.impl.ValueFactoryImpl;
 
 import java.util.List;
@@ -178,7 +176,7 @@ public class Values {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T extends Value> Optional<T> getMetaItemValueOrThrow(AssetAttribute attribute,
+    public static <T extends Value> Optional<T> getMetaItemValueOrThrow(Attribute attribute,
                                                                         MetaItemDescriptor metaItemDescriptor,
                                                                         boolean throwIfMetaMissing,
                                                                         boolean throwIfValueMissing)
@@ -192,7 +190,7 @@ public class Values {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T extends Value> Optional<T> getMetaItemValueOrThrow(AssetAttribute attribute,
+    public static <T extends Value> Optional<T> getMetaItemValueOrThrow(Attribute attribute,
                                                                         String name,
                                                                         Class<T> valueClazz,
                                                                         boolean throwIfMetaMissing,
@@ -257,7 +255,13 @@ public class Values {
                             }
                             break;
                         case BOOLEAN:
-                            outputValue = (T) Values.create(Boolean.parseBoolean(value.toString()));
+                            if ("ON".equalsIgnoreCase(value.toString())) {
+                                outputValue = (T) Values.create(true);
+                            } else if ("OFF".equalsIgnoreCase(value.toString())) {
+                                outputValue = (T) Values.create(false);
+                            } else {
+                                outputValue = (T) Values.create(Boolean.parseBoolean(value.toString()));
+                            }
                             break;
                         case ARRAY:
                         case OBJECT:
