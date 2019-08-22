@@ -205,7 +205,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..attributeState.attributeRef")
+                                new JsonPathFilter("\$..attributeState.attributeRef", false)
                             ] as ValueFilter[]
                         , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MESSAGE_MATCH_PREDICATE,
@@ -214,8 +214,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"targetTemperature\")].attributeState.value"),
-                                new JsonPathFilter("\$.min()")
+                                new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"targetTemperature\")].attributeState.value", true)
                             ] as ValueFilter[]
                         , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_SUBSCRIPTIONS,
@@ -234,7 +233,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..attributeState.attributeRef")
+                                new JsonPathFilter("\$..attributeState.attributeRef", false)
                             ] as ValueFilter[]
                         , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MESSAGE_MATCH_PREDICATE,
@@ -243,8 +242,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"co2Level\")].attributeState.value"),
-                                new JsonPathFilter("\$.min()")
+                                new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"co2Level\")].attributeState.value", true),
                             ] as ValueFilter[]
                         , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_SUBSCRIPTIONS,

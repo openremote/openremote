@@ -70,7 +70,7 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
 
         def attributeLinkProp = Values.convert(new AttributeLink(
             new AttributeRef(asset2.id, "item2Prop1"), null, [
-            new JsonPathFilter("\$[1].prop1")
+            new JsonPathFilter("\$[1].prop1", true)
         ] as ValueFilter[]), Container.JSON).orElse(null)
 
         asset1.getAttribute("button").get().addMeta(new MetaItem(MetaItemType.ATTRIBUTE_LINK, attributeLinkOnOff))
