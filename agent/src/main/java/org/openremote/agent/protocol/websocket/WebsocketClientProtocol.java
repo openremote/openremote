@@ -214,14 +214,14 @@ public class WebsocketClientProtocol extends AbstractProtocol {
 
         String uriStr = protocolConfiguration.getMetaItem(META_PROTOCOL_CONNECT_URI)
                 .flatMap(AbstractValueHolder::getValueAsString).orElseThrow(() ->
-                        new IllegalArgumentException("Missing or invalid require meta item: " + META_PROTOCOL_CONNECT_URI));
+                        new IllegalArgumentException("Missing or invalid required meta item: " + META_PROTOCOL_CONNECT_URI));
 
         URI uri;
 
         try {
             uri = new URI(uriStr);
         } catch (URISyntaxException e) {
-            LOG.log(Level.WARNING, "META_PROTOCOL_CONNECT_URI value is not a valid URI");
+            LOG.log(Level.WARNING, "Missing or invalid required meta item: " + META_PROTOCOL_CONNECT_URI, e);
             updateStatus(protocolRef, ConnectionStatus.ERROR_CONFIGURATION);
             return;
         }
@@ -275,7 +275,7 @@ public class WebsocketClientProtocol extends AbstractProtocol {
             MultivaluedMap<String, String> finalHeaders = headers;
             clientHeaders.put(protocolRef, headers);
             subscriptions.ifPresent(websocketSubscriptions ->
-                protocolConnectedTasks.put(protocolRef, new ArrayList<>(Collections.singleton(() -> doSubscriptions(websocketClient, finalHeaders, websocketSubscriptions))))
+                addConnectedTask(protocolRef, () -> doSubscriptions(protocolRef, websocketClient, finalHeaders, websocketSubscriptions))
             );
 
             websocketClient.connect();
@@ -387,19 +387,11 @@ public class WebsocketClientProtocol extends AbstractProtocol {
 
         subscriptions.ifPresent(websocketSubscriptions -> {
             MultivaluedMap<String, String> headers = clientHeaders.get(protocolRef);
-            Runnable task = () -> doSubscriptions(client, headers, websocketSubscriptions);
+            Runnable task = () -> doSubscriptions(protocolRef, client, headers, websocketSubscriptions);
             if (client.getConnectionStatus() == ConnectionStatus.CONNECTED) {
                 executorService.schedule(task, 1000);
             } else {
-                synchronized (protocolConnectedTasks) {
-                    protocolConnectedTasks.compute(protocolRef, (ref, tasks) -> {
-                        if (tasks == null) {
-                            tasks = new ArrayList<>();
-                        }
-                        tasks.add(task);
-                        return tasks;
-                    });
-                }
+                addConnectedTask(protocolRef, task);
             }
         });
     }
@@ -499,7 +491,7 @@ public class WebsocketClientProtocol extends AbstractProtocol {
         return result;
     }
 
-    private void onClientMessage(AttributeRef protocolRef, String msg) {
+    protected void onClientMessage(AttributeRef protocolRef, String msg) {
         List<Pair<AttributeRef, Consumer<String>>> consumers = protocolMessageConsumers.get(protocolRef);
         if (consumers != null) {
             consumers.forEach(c -> {
@@ -514,20 +506,36 @@ public class WebsocketClientProtocol extends AbstractProtocol {
         updateStatus(protocolRef, connectionStatus);
 
         if (connectionStatus == ConnectionStatus.CONNECTED) {
-            // Look for any subscriptions that need to be processed
-            List<Runnable> connectedTasks;
-
-            synchronized (protocolConnectedTasks) {
-                connectedTasks = protocolConnectedTasks.remove(protocolRef);
-            }
-            if (connectedTasks != null) {
-                // Execute after a delay to ensure connection is properly initialised
-                executorService.schedule(() -> connectedTasks.forEach(Runnable::run), CONNECTED_SEND_DELAY_MILLIS);
-            }
+            onConnected(protocolRef);
         }
     }
 
-    protected void doSubscriptions(WebsocketClient websocketClient, MultivaluedMap<String, String> headers, WebsocketSubscription[] subscriptions) {
+    protected void onConnected(AttributeRef protocolRef) {
+        // Look for any subscriptions that need to be processed
+        List<Runnable> connectedTasks;
+
+        synchronized (protocolConnectedTasks) {
+            connectedTasks = protocolConnectedTasks.remove(protocolRef);
+        }
+        if (connectedTasks != null) {
+            // Execute after a delay to ensure connection is properly initialised
+            executorService.schedule(() -> connectedTasks.forEach(Runnable::run), CONNECTED_SEND_DELAY_MILLIS);
+        }
+    }
+
+    protected void addConnectedTask(AttributeRef protocolRef, Runnable task) {
+        synchronized (protocolConnectedTasks) {
+            protocolConnectedTasks.compute(protocolRef, (ref, tasks) -> {
+                if (tasks == null) {
+                    tasks = new ArrayList<>();
+                }
+                tasks.add(task);
+                return tasks;
+            });
+        }
+    }
+
+    protected void doSubscriptions(AttributeRef protocolRef, WebsocketClient websocketClient, MultivaluedMap<String, String> headers, WebsocketSubscription[] subscriptions) {
         LOG.info("Executing subscriptions for websocket: " + websocketClient.getSocketAddressString());
 
         // Inject OAuth header
@@ -541,11 +549,11 @@ public class WebsocketClientProtocol extends AbstractProtocol {
 
         MultivaluedMap<String, String> finalHeaders = headers;
         Arrays.stream(subscriptions).forEach(
-            subscription -> processSubscription(websocketClient, finalHeaders, subscription)
+            subscription -> doSubscription(websocketClient, finalHeaders, subscription)
         );
     }
 
-    protected void processSubscription(WebsocketClient websocketClient, MultivaluedMap<String, String> headers, WebsocketSubscription subscription) {
+    protected void doSubscription(WebsocketClient websocketClient, MultivaluedMap<String, String> headers, WebsocketSubscription subscription) {
         if (subscription instanceof WebsocketHttpSubscription) {
             WebsocketHttpSubscription httpSubscription = (WebsocketHttpSubscription)subscription;
 

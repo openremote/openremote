@@ -186,6 +186,13 @@ public class HttpClientProtocol extends AbstractProtocol {
                                  boolean pagingEnabled,
                                  Value bodyValue,
                                  String contentType) {
+
+            if (!TextUtil.isNullOrEmpty(path)) {
+                if (path.startsWith("/")) {
+                    path = path.substring(1);
+                }
+            }
+
             this.client = client;
             this.path = path;
             this.method = method;
