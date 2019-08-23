@@ -144,6 +144,7 @@ public abstract class AbstractUdpServer<T> extends AbstractNettyIoServer<T, Data
         }
 
         MessageToMessageEncoder mEncoder = (MessageToMessageEncoder)encoder;
+        //noinspection unchecked
         super.addEncoder(channel, new DatagramPacketEncoder(mEncoder));
     }
 

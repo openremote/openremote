@@ -65,6 +65,7 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
             AbstractNettyIoClient.this.decode(in, messages);
 
             if (!messages.isEmpty()) {
+                @SuppressWarnings("unchecked")
                 U address = (U)ctx.channel().remoteAddress();
                 // Don't pass them along the channel pipeline just consume them
                 messages.forEach(m -> AbstractNettyIoClient.this.onMessageReceived(address, m));

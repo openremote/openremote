@@ -380,7 +380,7 @@ public class UdpClientProtocol extends AbstractProtocol {
                 true
         ).flatMap(Values::getString).map(Charset::forName).orElse(CharsetUtil.UTF_8);
 
-        IoClient client = addClient(host, port, bindPort, charset, binaryMode, hexMode);
+        IoClient<String> client = addClient(host, port, bindPort, charset, binaryMode, hexMode);
         ClientAndQueue clientAndQueue = new ClientAndQueue(client, protocolRef);
         clientMap.put(protocolRef, clientAndQueue);
         clientAndQueue.connect();
