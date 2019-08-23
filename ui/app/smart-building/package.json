@@ -25,7 +25,6 @@
     "@polymer/iron-demo-helpers": "^3.0.0-pre.19",
     "@polymer/polymer": "^3.0.0",
     "@webcomponents/html-imports": "^1.2.0",
-    "@webcomponents/webcomponentsjs": "^2.0.0",
     "bootstrap": "4.3.1",
     "i18next": "^15.0.9",
     "i18next-xhr-backend": "^2.0.1",

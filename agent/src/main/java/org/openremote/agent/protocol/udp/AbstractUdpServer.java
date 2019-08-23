@@ -132,6 +132,7 @@ public abstract class AbstractUdpServer<T> extends AbstractNettyIoServer<T, Data
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected void addEncoder(DatagramChannel channel, ChannelOutboundHandler encoder) {
         if (encoder instanceof DatagramPacketEncoder) {
@@ -144,7 +145,6 @@ public abstract class AbstractUdpServer<T> extends AbstractNettyIoServer<T, Data
         }
 
         MessageToMessageEncoder mEncoder = (MessageToMessageEncoder)encoder;
-        //noinspection unchecked
         super.addEncoder(channel, new DatagramPacketEncoder(mEncoder));
     }
 
