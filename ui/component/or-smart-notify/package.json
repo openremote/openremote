@@ -11,21 +11,16 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/rest": "^1.0.0",
-    "@openremote/model": "^1.0.0",
-    "lit-element": "^2.1.0",
     "@fortawesome/fontawesome-svg-core": "^1.2.12",
-    "@fortawesome/free-solid-svg-icons": "^5.6.3",
     "@fortawesome/free-regular-svg-icons": "^5.6.3",
+    "@fortawesome/free-solid-svg-icons": "^5.6.3",
+    "@openremote/model": "^1.0.0",
+    "@openremote/rest": "^1.0.0",
+    "lit-element": "^2.1.0",
     "moment": "^2.24.0"
   },
   "devDependencies": {
-    "@polymer/decorators": "^3.0.0",
-    "@polymer/iron-demo-helpers": "^3.0.0-pre.19",
-    "@webcomponents/webcomponentsjs": "^2.2.10",
-    "style-loader": "^0.23.1",
     "tslint": "^5.11.0",
-    "typescript": "^3.4.5",
-    "wct-browser-legacy": "^1.0.0"
+    "typescript": "^3.4.5"
   }
 }

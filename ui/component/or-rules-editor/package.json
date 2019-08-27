@@ -17,18 +17,11 @@
     "@openremote/or-select": "^1.0.0",
     "@openremote/or-translate": "^1.0.0",
     "@openremote/rest": "^1.0.2",
-    "@types/lodash-es": "^4.17.3",
     "lit-element": "^2.1.0",
-    "lodash-es": "4.17.14",
     "moment": "^2.24.0"
   },
   "devDependencies": {
-    "@polymer/decorators": "^3.0.0",
-    "@polymer/iron-demo-helpers": "^3.0.0-pre.19",
-    "@webcomponents/webcomponentsjs": "^2.2.10",
-    "style-loader": "^0.23.1",
     "tslint": "^5.11.0",
-    "typescript": "^3.4.5",
-    "wct-browser-legacy": "^1.0.0"
+    "typescript": "^3.4.5"
   }
 }

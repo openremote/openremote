@@ -14,11 +14,7 @@
     "lit-element": "^2.1.0"
   },
   "devDependencies": {
-    "@webcomponents/webcomponentsjs": "^2.2.10",
-    "css-loader": "^2.0.0",
-    "style-loader": "^0.23.1",
     "tslint": "^5.11.0",
-    "typescript": "^3.4.5",
-    "wct-browser-legacy": "^1.0.0"
+    "typescript": "^3.4.5"
   }
 }

@@ -15,7 +15,6 @@
     "axios": "0.18.1"
   },
   "devDependencies": {
-    "@types/es6-promise": "^3.3.0",
     "tslint": "^5.11.0",
     "typescript": "^3.4.5"
   },
