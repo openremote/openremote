@@ -260,8 +260,7 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                     geofenceProvider?.refreshGeofences()
                                 case Actions.getLocation:
                                     geofenceProvider?.getLocation(callback: { locationData in
-                                        if let coordinates =  locationData["data"], coordinates == nil {//weird comparion needed for nil value in dict where key does exist.
-                                        } else {
+                                        if (locationData["data"] as? [String:Any]) == nil {
                                             let alertController = UIAlertController(title: NSLocalizedString(LocalizableString.LocationPermissionTitle, comment: ""),
                                                                                     message: NSLocalizedString(LocalizableString.LocationPermissionMessage, comment: ""),
                                                                                     preferredStyle: .alert)
