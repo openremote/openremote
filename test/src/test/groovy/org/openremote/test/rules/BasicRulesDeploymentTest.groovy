@@ -249,7 +249,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             assert tenantAEngine.isRunning()
             assert tenantAEngine.deployments.size() == 3
             assert tenantAEngine.deployments[ruleset.id].status == EXECUTION_ERROR
-            assert tenantAEngine.isError()
+            assert !tenantAEngine.isError()
         }
 
         when: "a new tenant rule definition is added to Tenant A"

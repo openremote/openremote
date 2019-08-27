@@ -160,7 +160,8 @@ public class RulesEngine<T extends Ruleset> {
 
     public boolean isError() {
         for (RulesetDeployment deployment : deployments.values()) {
-            if (deployment.status == COMPILATION_ERROR || deployment.getStatus() == EXECUTION_ERROR) {
+            if (((deployment.status == COMPILATION_ERROR || deployment.getStatus() == EXECUTION_ERROR) &&
+                !deployment.getRuleset().isContinueOnError()) || deployment.error instanceof RulesLoopException) {
                 return true;
             }
         }
