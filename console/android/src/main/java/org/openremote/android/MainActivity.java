@@ -308,6 +308,7 @@ public class MainActivity extends Activity {
         webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
         webSettings.setDomStorageEnabled(true);
         webSettings.setDatabaseEnabled(true);
+        webSettings.setSupportMultipleWindows(true);
         webView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
@@ -317,7 +318,6 @@ public class MainActivity extends Activity {
         webView.setLongClickable(false);
 
         webView.setWebViewClient(new WebViewClient() {
-
 
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
@@ -476,6 +476,27 @@ public class MainActivity extends Activity {
 
             public void onProgressChanged(WebView view, int progress) {
                 progressBar.setProgress(progress);
+            }
+
+            @Override
+            public boolean onCreateWindow(WebView view, boolean dialog, boolean userGesture, android.os.Message resultMsg)
+            {
+                WebView newWebView = new WebView(MainActivity.this);
+                view.addView(newWebView);
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(newWebView);
+                resultMsg.sendToTarget();
+
+                newWebView.setWebViewClient(new WebViewClient() {
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                        Intent browserIntent = new Intent(Intent.ACTION_VIEW);
+                        browserIntent.setData(Uri.parse(url));
+                        startActivity(browserIntent);
+                        return true;
+                    }
+                });
+                return true;
             }
         });
 
