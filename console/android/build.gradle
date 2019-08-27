@@ -59,6 +59,7 @@ dependencies {
     implementation "com.squareup.okhttp3:okhttp:$okhttp3Version"
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
     implementation "androidx.core:core:1.0.2"
+    implementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
     implementation "com.google.firebase:firebase-core:$firebaseCoreVersion"
     implementation "com.google.firebase:firebase-messaging:$fcmMessagingVersion"
     implementation "com.squareup.retrofit2:converter-jackson:$jacksonVersion"
