@@ -35,6 +35,7 @@ import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.query.NewAssetQuery;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.AttributePredicate;
+import org.openremote.model.query.filter.DateTimePredicate;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Users;
@@ -164,8 +165,15 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 // Use this opportunity to notify RulesFacts about any location predicates
                 if (facts.trackLocationRules) {
-                    List<AttributePredicate> flattenedAttributePredicates = LogicGroup.flatten(Collections.singletonList(attributePredicates));
-                    facts.storeLocationPredicates(getLocationPredicates(flattenedAttributePredicates));
+                    boolean isValid = true;
+                    if (ruleCondition.datetime != null) {
+                        //Check if rule is still valid
+                        isValid = checkRuleValidity(timerService.getCurrentTimeMillis(), ruleCondition.datetime);
+                    }
+                    if (isValid) {
+                        List<AttributePredicate> flattenedAttributePredicates = LogicGroup.flatten(Collections.singletonList(attributePredicates));
+                        facts.storeLocationPredicates(getLocationPredicates(flattenedAttributePredicates));
+                    }
                 }
             }
         }
@@ -179,31 +187,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             //Check if rule is still valid
             if (ruleCondition.datetime != null) {
-                long currentMillis = timerService.getCurrentTimeMillis();
-
-                Pair<Long, Long> fromAndTo = AssetQueryPredicate.asFromAndTo(currentMillis, ruleCondition.datetime);
-                boolean isValid = false;
-                switch (ruleCondition.datetime.operator) {
-                    case BETWEEN:
-                        isValid = currentMillis >= fromAndTo.key && currentMillis < fromAndTo.value;
-                        break;
-                    case EQUALS:
-                        isValid = currentMillis == fromAndTo.key;
-                        break;
-                    case LESS_THAN:
-                        isValid = currentMillis < fromAndTo.key;
-                        break;
-                    case LESS_EQUALS:
-                        isValid = currentMillis <= fromAndTo.key;
-                        break;
-                    case GREATER_THAN:
-                        isValid = currentMillis > fromAndTo.key;
-                        break;
-                    case GREATER_EQUALS:
-                        isValid = currentMillis >= fromAndTo.key;
-                        break;
-                }
-                if (!isValid) {
+                if (!checkRuleValidity(timerService.getCurrentTimeMillis(), ruleCondition.datetime)) {
                     log(Level.FINEST, "Rule trigger is no longer valid so no match");
                     lastTriggerResult = new RuleTriggerResult(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
                     return;
@@ -976,6 +960,32 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     protected static boolean targetIsNotAssets(RuleActionTarget target) {
         return target != null && target.users != null;
+    }
+
+    protected static boolean checkRuleValidity(long currentMillis, DateTimePredicate dateTimePredicate) {
+        Pair<Long, Long> fromAndTo = AssetQueryPredicate.asFromAndTo(currentMillis, dateTimePredicate);
+        boolean isValid = false;
+        switch (dateTimePredicate.operator) {
+            case BETWEEN:
+                isValid = currentMillis >= fromAndTo.key && currentMillis < fromAndTo.value;
+                break;
+            case EQUALS:
+                isValid = currentMillis == fromAndTo.key;
+                break;
+            case LESS_THAN:
+                isValid = currentMillis < fromAndTo.key;
+                break;
+            case LESS_EQUALS:
+                isValid = currentMillis <= fromAndTo.key;
+                break;
+            case GREATER_THAN:
+                isValid = currentMillis > fromAndTo.key;
+                break;
+            case GREATER_EQUALS:
+                isValid = currentMillis >= fromAndTo.key;
+                break;
+        }
+        return isValid;
     }
 
     protected static void log(Level level, String message) {
