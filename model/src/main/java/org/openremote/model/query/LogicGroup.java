@@ -19,7 +19,9 @@
  */
 package org.openremote.model.query;
 
-import java.util.ArrayList;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -51,12 +53,34 @@ public class LogicGroup<T> {
     /**
      * Defines the items that the {@link #operator} should be applied to
      */
+    @JsonIgnore
     public T[] items;
 
     /**
      * Nested groups allow for more complex logic with a mix of operators
      */
+    @JsonIgnore
     public LogicGroup<T>[] groups;
+
+    @JsonProperty("items")
+    public T[] getItems() {
+        return items;
+    }
+
+    @JsonProperty("items")
+    public void setItems(List<T> items) {
+        this.items = items == null ? null : items.toArray((T[])new Object[0]);
+    }
+
+    @JsonProperty("groups")
+    public LogicGroup<T>[] getGroups() {
+        return groups;
+    }
+
+    @JsonProperty("groups")
+    public void setGroups(List<LogicGroup<T>> groups) {
+        this.groups = groups == null ? null : groups.toArray((LogicGroup<T>[])new Object[0]);
+    }
 
     @Override
     public String toString() {
