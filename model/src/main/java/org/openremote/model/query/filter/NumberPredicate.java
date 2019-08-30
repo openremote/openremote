@@ -19,7 +19,7 @@
  */
 package org.openremote.model.query.filter;
 
-import org.openremote.model.query.BaseAssetQuery;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
@@ -28,8 +28,8 @@ public class NumberPredicate implements ValuePredicate {
     public static final String name = "number";
     public double value;
     public double rangeValue; // Used as upper bound when Operator.BETWEEN
-    public BaseAssetQuery.Operator operator = BaseAssetQuery.Operator.EQUALS;
-    public BaseAssetQuery.NumberType numberType = BaseAssetQuery.NumberType.DOUBLE;
+    public AssetQuery.Operator operator = AssetQuery.Operator.EQUALS;
+    public AssetQuery.NumberType numberType = AssetQuery.NumberType.DOUBLE;
     public boolean negate;
 
     public NumberPredicate() {
@@ -39,17 +39,17 @@ public class NumberPredicate implements ValuePredicate {
         this.value = value;
     }
 
-    public NumberPredicate(double value, BaseAssetQuery.Operator operator) {
+    public NumberPredicate(double value, AssetQuery.Operator operator) {
         this.value = value;
         this.operator = operator;
     }
 
-    public NumberPredicate(double value, BaseAssetQuery.NumberType numberType) {
+    public NumberPredicate(double value, AssetQuery.NumberType numberType) {
         this.value = value;
         this.numberType = numberType;
     }
 
-    public NumberPredicate(double value, BaseAssetQuery.Operator operator, BaseAssetQuery.NumberType numberType) {
+    public NumberPredicate(double value, AssetQuery.Operator operator, AssetQuery.NumberType numberType) {
         this.value = value;
         this.operator = operator;
         this.numberType = numberType;
@@ -67,7 +67,7 @@ public class NumberPredicate implements ValuePredicate {
             numberPredicate.negate = negate;
         });
         objectValue.getString("operator").ifPresent(operator -> {
-            numberPredicate.operator = BaseAssetQuery.Operator.valueOf(operator);
+            numberPredicate.operator = AssetQuery.Operator.valueOf(operator);
         });
         return numberPredicate;
     }
@@ -77,18 +77,18 @@ public class NumberPredicate implements ValuePredicate {
         return this;
     }
 
-    public NumberPredicate numberMatch(BaseAssetQuery.Operator operator) {
+    public NumberPredicate numberMatch(AssetQuery.Operator operator) {
         this.operator = operator;
         return this;
     }
 
-    public NumberPredicate numberType(BaseAssetQuery.NumberType numberType) {
+    public NumberPredicate numberType(AssetQuery.NumberType numberType) {
         this.numberType = numberType;
         return this;
     }
 
     public NumberPredicate rangeValue(double rangeValue) {
-        this.operator = BaseAssetQuery.Operator.BETWEEN;
+        this.operator = AssetQuery.Operator.BETWEEN;
         this.rangeValue = rangeValue;
         return this;
     }

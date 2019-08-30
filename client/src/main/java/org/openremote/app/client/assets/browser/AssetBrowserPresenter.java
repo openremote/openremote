@@ -258,12 +258,12 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                         requestParams,
                         new AssetQuery()
                             .tenant(new TenantPredicate(parent.getId()))
-                            .parent(new ParentPredicate(true))
+                            .parents(new ParentPredicate(true))
                     );
                 } else if (parent instanceof RootTreeNode) {
                     assetResource.getCurrentUserAssets(requestParams);
                 } else {
-                    assetResource.queryAssets(requestParams, new AssetQuery().parent(parent.getId()));
+                    assetResource.queryAssets(requestParams, new AssetQuery().parents(parent.getId()));
                 }
             },
             200,

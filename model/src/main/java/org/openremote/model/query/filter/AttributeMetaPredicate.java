@@ -20,7 +20,7 @@
 package org.openremote.model.query.filter;
 
 import org.openremote.model.attribute.MetaItemDescriptor;
-import org.openremote.model.query.BaseAssetQuery;
+import org.openremote.model.query.AssetQuery;
 
 public class AttributeMetaPredicate {
 

@@ -40,7 +40,6 @@ import org.openremote.model.attribute.*
 import org.openremote.model.event.shared.EventSubscription
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.query.AssetQuery
-import org.openremote.model.query.BaseAssetQuery
 import org.openremote.model.query.filter.StringPredicate
 import org.openremote.model.value.*
 import org.openremote.test.ManagerContainerTrait
@@ -167,7 +166,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                                     .headers(Values.<ObjectValue>parse(/{"header1": "header1Value1", "header2": ["header2Value1","header2Value2"]}/).get())
                                     .uri("https://mockapi/assets")
                                     .body(
-                                        Container.JSON.writeValueAsString(new AssetQuery().id(managerDemoSetup.apartment1LivingroomId))
+                                        Container.JSON.writeValueAsString(new AssetQuery().ids(managerDemoSetup.apartment1LivingroomId))
                                     )
                             ))
                         ).orElse(null)
@@ -209,7 +208,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                             ] as ValueFilter[]
                         , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MESSAGE_MATCH_PREDICATE,
-                        new StringPredicate(BaseAssetQuery.Match.CONTAINS, true, "targetTemperature").toModelValue()),
+                        new StringPredicate(AssetQuery.Match.CONTAINS, true, "targetTemperature").toModelValue()),
                     new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
                         Values.convert(
                             [
@@ -237,7 +236,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                             ] as ValueFilter[]
                         , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MESSAGE_MATCH_PREDICATE,
-                        new StringPredicate(BaseAssetQuery.Match.CONTAINS, "co2Level").toModelValue()),
+                        new StringPredicate(AssetQuery.Match.CONTAINS, "co2Level").toModelValue()),
                     new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
                         Values.convert(
                             [

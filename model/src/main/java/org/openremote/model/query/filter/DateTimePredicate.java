@@ -19,7 +19,7 @@
  */
 package org.openremote.model.query.filter;
 
-import org.openremote.model.query.BaseAssetQuery;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
@@ -33,19 +33,19 @@ public class DateTimePredicate implements ValuePredicate {
     public static final String name = "datetime";
     public String value; // Sliding window value e.g. 1h or fixed date time
     public String rangeValue; // Sliding window value e.g. 1h or fixed date time (used as upper bound when Operator.BETWEEN)
-    public BaseAssetQuery.Operator operator = BaseAssetQuery.Operator.EQUALS;
+    public AssetQuery.Operator operator = AssetQuery.Operator.EQUALS;
     public boolean negate;
 
     public DateTimePredicate() {
     }
 
-    public DateTimePredicate(BaseAssetQuery.Operator operator, String value) {
+    public DateTimePredicate(AssetQuery.Operator operator, String value) {
         this.operator = operator;
         this.value = value;
     }
 
     public DateTimePredicate(String rangeStart, String rangeEnd) {
-        this.operator = BaseAssetQuery.Operator.BETWEEN;
+        this.operator = AssetQuery.Operator.BETWEEN;
         this.value = rangeStart;
         this.rangeValue = rangeEnd;
     }
@@ -60,7 +60,7 @@ public class DateTimePredicate implements ValuePredicate {
             dateTimePredicate.rangeValue = rangeValue;
         });
         objectValue.getString("operator").ifPresent(operator -> {
-            dateTimePredicate.operator = BaseAssetQuery.Operator.valueOf(operator);
+            dateTimePredicate.operator = AssetQuery.Operator.valueOf(operator);
         });
         objectValue.getBoolean("negate").ifPresent(negate -> {
             dateTimePredicate.negate = negate;
@@ -68,7 +68,7 @@ public class DateTimePredicate implements ValuePredicate {
         return dateTimePredicate;
     }
 
-    public DateTimePredicate operator(BaseAssetQuery.Operator dateMatch) {
+    public DateTimePredicate operator(AssetQuery.Operator dateMatch) {
         this.operator = dateMatch;
         return this;
     }
@@ -79,7 +79,7 @@ public class DateTimePredicate implements ValuePredicate {
     }
 
     public DateTimePredicate rangeValue(String rangeEnd) {
-        this.operator = BaseAssetQuery.Operator.BETWEEN;
+        this.operator = AssetQuery.Operator.BETWEEN;
         this.rangeValue = rangeEnd;
         return this;
     }

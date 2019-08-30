@@ -31,7 +31,6 @@ import org.openremote.model.notification.EmailNotificationMessage;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.security.User;
@@ -52,7 +51,6 @@ import java.util.stream.Collectors;
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.model.Constants.*;
-import static org.openremote.model.query.BaseAssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES;
 
 public class EmailNotificationHandler implements NotificationHandler {
 
@@ -183,11 +181,9 @@ public class EmailNotificationHandler implements NotificationHandler {
                 // Find descendant assets with email attribute
                 List<Asset> assets = assetStorageService.findAll(
                         new AssetQuery()
-                                .select(new BaseAssetQuery.Select(
-                                        ONLY_ID_AND_NAME_AND_ATTRIBUTES,
-                                        false,
-                                        AttributeType.EMAIL.getAttributeName()))
-                                .path(new PathPredicate(targetId))
+                                .select(AssetQuery.Select.selectExcludePathAndParentAndRealm()
+                                    .attributes(AttributeType.EMAIL.getAttributeName()))
+                                .paths(new PathPredicate(targetId))
                                 .attributes(new AttributePredicate(
                                         new StringPredicate(AttributeType.EMAIL.getAttributeName()),
                                         new ValueNotEmptyPredicate())));

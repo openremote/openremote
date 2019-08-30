@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2019, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -26,3 +26,4 @@ import jsinterop.annotations.JsFunction;
 public interface Function<T,U> {
     U apply(T object);
 }
+

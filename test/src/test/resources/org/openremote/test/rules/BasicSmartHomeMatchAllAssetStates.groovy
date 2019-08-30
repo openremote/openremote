@@ -12,7 +12,7 @@ rules.add()
         .when(
         { facts ->
             !facts.matchFirst("Living Room All").isPresent() &&
-                    facts.matchFirstAssetState(new AssetQuery().name("Living Room")).isPresent()
+                    facts.matchFirstAssetState(new AssetQuery().names("Living Room")).isPresent()
         })
         .then(
         { facts ->
@@ -24,7 +24,7 @@ rules.add()
         .when(
         { facts ->
             !facts.matchFirst("Kitchen All").isPresent() &&
-                    facts.matchFirstAssetState(new AssetQuery().name("Kitchen")).isPresent()
+                    facts.matchFirstAssetState(new AssetQuery().names("Kitchen")).isPresent()
         })
         .then(
         { facts ->
@@ -36,7 +36,7 @@ rules.add()
         .when(
         { facts ->
             !facts.matchFirst("Kitchen Number Attributes").isPresent() &&
-                    facts.matchAssetState(new AssetQuery().name("Kitchen"))
+                    facts.matchAssetState(new AssetQuery().names("Kitchen"))
                             .filter({ assetState -> assetState.attributeValueType == AttributeValueType.NUMBER })
                             .findFirst().isPresent()
         })
@@ -92,7 +92,7 @@ rules.add()
         .when(
         { facts ->
             !facts.matchFirst("Parent Type Residence").isPresent() &&
-                    facts.matchAssetState(new AssetQuery().parent(AssetType.RESIDENCE))
+                    facts.matchAssetState(new AssetQuery().parents(AssetType.RESIDENCE))
                             .findFirst().isPresent()
         })
         .then(
@@ -105,7 +105,7 @@ rules.add()
         .when(
         { facts ->
             !facts.matchFirst("Asset Type Room").isPresent() &&
-                    facts.matchAssetState(new AssetQuery().type(AssetType.ROOM))
+                    facts.matchAssetState(new AssetQuery().types(AssetType.ROOM))
                             .findFirst().isPresent()
         })
         .then(

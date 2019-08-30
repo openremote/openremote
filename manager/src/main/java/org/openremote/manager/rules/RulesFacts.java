@@ -27,14 +27,10 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.BaseAssetQuery;
-import org.openremote.model.query.NewAssetQuery;
-import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.TemporaryFact;
-import org.openremote.model.rules.json.LogicGroup;
 import org.openremote.model.util.TimeUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -432,20 +428,10 @@ public class RulesFacts extends Facts implements RuleListener {
         return matchAssetState(assetQuery).findFirst();
     }
 
-    public Stream<AssetState> matchAssetState(NewAssetQuery assetQuery) {
-        if (trackLocationRules && assetQuery.attributes != null) {
-            List<AttributePredicate> attributePredicates = LogicGroup.flatten(Collections.singletonList(assetQuery.attributes));
-            storeLocationPredicates(getLocationPredicates(attributePredicates));
-        }
-
-        Predicate<AssetState> p = new AssetQueryPredicate(timerService, assetStorageService, assetQuery);
-        return matchAssetState(p);
-    }
-
     public Stream<AssetState> matchAssetState(AssetQuery assetQuery) {
 
-        if (trackLocationRules && assetQuery.attribute != null && assetQuery.attribute.length > 0) {
-            storeLocationPredicates(getLocationPredicates(Arrays.asList(assetQuery.attribute)));
+        if (trackLocationRules && assetQuery.attributes != null) {
+            storeLocationPredicates(getLocationPredicates(assetQuery.attributes));
         }
 
         Predicate<AssetState> p = new AssetQueryPredicate(timerService, assetStorageService, assetQuery);
@@ -593,7 +579,7 @@ public class RulesFacts extends Facts implements RuleListener {
         return haveLog;
     }
 
-    public static Comparator<AssetState> asComparator(BaseAssetQuery.OrderBy orderBy) {
+    public static Comparator<AssetState> asComparator(AssetQuery.OrderBy orderBy) {
 
         Function<AssetState, String> keyExtractor = AssetState::getName;
         boolean reverse = orderBy.descending;

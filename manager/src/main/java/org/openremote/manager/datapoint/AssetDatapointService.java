@@ -22,7 +22,6 @@ import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.query.filter.AttributeMetaPredicate;
 import org.openremote.model.value.Values;
 import org.postgresql.util.PGInterval;
@@ -296,7 +295,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                         .attributeMeta(
                                 new AttributeMetaPredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS),
                                 new AttributeMetaPredicate(MetaItemType.STORE_DATA_POINTS))
-                        .select(new BaseAssetQuery.Select(BaseAssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES)));
+                        .select(AssetQuery.Select.selectExcludePathAndParentAndRealm()));
 
         List<AssetAttribute> attributes = assets.stream()
                 .map(asset -> asset

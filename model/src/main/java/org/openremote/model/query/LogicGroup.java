@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.rules.json;
+package org.openremote.model.query;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,19 +25,28 @@ import java.util.List;
 
 public class LogicGroup<T> {
 
+    public enum Operator {
+        AND,
+        OR
+    }
+
     public LogicGroup() {
     }
 
-    public LogicGroup(RuleOperator operator, T[] items, LogicGroup<T>[] groups) {
+    public LogicGroup(T[] items) {
+        this.items = items;
+    }
+
+    public LogicGroup(Operator operator, T[] items, LogicGroup<T>[] groups) {
         this.operator = operator;
         this.items = items;
         this.groups = groups;
     }
 
     /**
-     * If not specified then {@link RuleOperator#AND} is assumed.
+     * If not specified then {@link Operator#AND} is assumed.
      */
-    public RuleOperator operator;
+    public Operator operator;
 
     /**
      * Defines the items that the {@link #operator} should be applied to
@@ -49,14 +58,12 @@ public class LogicGroup<T> {
      */
     public LogicGroup<T>[] groups;
 
-    public static <T> List<T> flatten(List<LogicGroup<T>> conditions) {
-        List<T> flattened = new ArrayList<>();
-        for (LogicGroup<T> ruleCondition : conditions) {
-            flattened.addAll(Arrays.asList(ruleCondition.items));
-            if (ruleCondition.groups != null) {
-                flattened.addAll(flatten(Arrays.asList(ruleCondition.groups)));
-            }
-        }
-        return flattened;
+    @Override
+    public String toString() {
+        return LogicGroup.class.getSimpleName() + "{" +
+            "operator=" + operator +
+            ", items=" + Arrays.toString(items) +
+            ", groups=" + Arrays.toString(groups) +
+            '}';
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.openremote.model.query.filter;
 
-import org.openremote.model.query.BaseAssetQuery;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
@@ -29,7 +29,7 @@ import java.util.function.Predicate;
 public class StringPredicate implements ValuePredicate {
 
     public static final String name = "string";
-    public BaseAssetQuery.Match match = BaseAssetQuery.Match.EXACT;
+    public AssetQuery.Match match = AssetQuery.Match.EXACT;
     public boolean caseSensitive = true;
     public String value;
     public boolean negate;
@@ -41,12 +41,12 @@ public class StringPredicate implements ValuePredicate {
         this.value = value;
     }
 
-    public StringPredicate(BaseAssetQuery.Match match, String value) {
+    public StringPredicate(AssetQuery.Match match, String value) {
         this.match = match;
         this.value = value;
     }
 
-    public StringPredicate(BaseAssetQuery.Match match, boolean caseSensitive, String value) {
+    public StringPredicate(AssetQuery.Match match, boolean caseSensitive, String value) {
         this.match = match;
         this.caseSensitive = caseSensitive;
         this.value = value;
@@ -55,7 +55,7 @@ public class StringPredicate implements ValuePredicate {
     public static StringPredicate fromObjectValue(ObjectValue objectValue) {
         StringPredicate stringPredicate = new StringPredicate();
         objectValue.getString("match").ifPresent(match -> {
-            stringPredicate.match = BaseAssetQuery.Match.valueOf(match);
+            stringPredicate.match = AssetQuery.Match.valueOf(match);
         });
         objectValue.getBoolean("caseSensitive").ifPresent(caseSensitive -> {
             stringPredicate.caseSensitive = caseSensitive;
@@ -93,7 +93,7 @@ public class StringPredicate implements ValuePredicate {
         };
     }
 
-    public StringPredicate match(BaseAssetQuery.Match match) {
+    public StringPredicate match(AssetQuery.Match match) {
         this.match = match;
         return this;
     }

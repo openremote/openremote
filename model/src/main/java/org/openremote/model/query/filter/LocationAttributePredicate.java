@@ -20,8 +20,11 @@
 package org.openremote.model.query.filter;
 
 import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.query.BaseAssetQuery;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.LogicGroup;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,13 +36,23 @@ public class LocationAttributePredicate extends AttributePredicate {
         super(new StringPredicate(AttributeType.LOCATION.getAttributeName()), geofencePredicate);
     }
 
-    public static List<GeofencePredicate> getLocationPredicates(List<AttributePredicate> attributePredicates) {
-        return attributePredicates.stream()
+    public static List<GeofencePredicate> getLocationPredicates(LogicGroup<AttributePredicate> attributePredicates) {
+        List<GeofencePredicate> geofences = new ArrayList<>();
+
+        Arrays.stream(attributePredicates.items)
                 .filter(attributePredicate -> attributePredicate.name != null
-                        && attributePredicate.name.match == BaseAssetQuery.Match.EXACT
+                        && attributePredicate.name.match == AssetQuery.Match.EXACT
                         && LOCATION.getAttributeName().equals(attributePredicate.name.value)
                         && attributePredicate.value instanceof GeofencePredicate)
                 .map(attributePredicate -> (GeofencePredicate) attributePredicate.value)
-                .collect(Collectors.toList());
+                .forEach(geofences::add);
+
+        if (attributePredicates.groups != null) {
+            Arrays.stream(attributePredicates.groups).forEach(group ->
+                geofences.addAll(getLocationPredicates(group))
+            );
+        }
+
+        return geofences;
     }
 }

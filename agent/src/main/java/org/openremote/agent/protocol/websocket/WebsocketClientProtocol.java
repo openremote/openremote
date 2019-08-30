@@ -36,7 +36,7 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.*;
-import org.openremote.model.query.BaseAssetQuery;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
@@ -168,7 +168,7 @@ public class WebsocketClientProtocol extends AbstractProtocol {
         PROTOCOL_NAME + ":messageMatchPredicate",
         ACCESS_PRIVATE,
         false,
-        new StringPredicate(BaseAssetQuery.Match.EXACT, false, "").toModelValue());
+        new StringPredicate(AssetQuery.Match.EXACT, false, "").toModelValue());
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
         META_ATTRIBUTE_MESSAGE_MATCH_FILTERS,

@@ -1,4 +1,4 @@
-{
+ {
   "rules": [
     {
       "name": "Test Rule",
@@ -87,6 +87,13 @@
                   "match": "EXACT",
                   "value": "urn:openremote:asset:room"
                 }
+              ],
+              "names": [
+                {
+                  "predicateType": "string",
+                  "match": "EXACT",
+                  "value": "Living Room"
+                }
               ]
             }
           },
@@ -109,6 +116,13 @@
                   "predicateType": "string",
                   "match": "EXACT",
                   "value": "urn:openremote:asset:room"
+                }
+              ],
+              "names": [
+                {
+                  "predicateType": "string",
+                  "match": "EXACT",
+                  "value": "Living Room"
                 }
               ]
             }

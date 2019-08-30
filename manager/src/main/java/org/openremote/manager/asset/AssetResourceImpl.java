@@ -24,11 +24,14 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.*;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetResource;
+import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.BaseAssetQuery.Select;
+import org.openremote.model.query.AssetQuery.Select;
 import org.openremote.model.query.filter.ParentPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.Tenant;
@@ -48,8 +51,8 @@ import java.util.logging.Logger;
 import static javax.ws.rs.core.Response.Status.*;
 import static org.openremote.container.Container.JSON;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
+import static org.openremote.model.attribute.MetaItemType.ACCESS_RESTRICTED_READ;
 import static org.openremote.model.query.AssetQuery.Access;
-import static org.openremote.model.query.AssetQuery.Include;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
@@ -79,16 +82,16 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (!isRestrictedUser()) {
                 List<Asset> result = assetStorageService.findAll(
                     new AssetQuery()
-                        .parent(new ParentPredicate(true))
+                        .parents(new ParentPredicate(true))
                         .tenant(new TenantPredicate(getAuthenticatedRealm()))
                 );
                 return result.toArray(new Asset[result.size()]);
             }
 
             List<Asset> assets = assetStorageService.findAll(
-                new AssetQuery().select(
-                    new Select(Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES, Access.RESTRICTED_READ)
-                ).userId(getUserId())
+                new AssetQuery()
+                    .select(Select.selectExcludePathAndAttributes().meta(ACCESS_RESTRICTED_READ))
+                    .userIds(getUserId())
             );
 
             // Filter assets that might have been moved into a different realm and can no longer be accessed by user
@@ -203,7 +206,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 if (!assetStorageService.isUserAsset(getUserId(), assetId)) {
                     throw new WebApplicationException(FORBIDDEN);
                 }
-                asset = assetStorageService.find(assetId, loadComplete, Access.RESTRICTED_READ);
+                asset = assetStorageService.find(assetId, loadComplete, Access.PROTECTED);
             } else {
                 asset = assetStorageService.find(assetId, loadComplete);
             }
@@ -309,7 +312,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
                         // An attribute added by a restricted user must be readable by restricted users
                         if (!updatedAttribute.isAccessRestrictedRead()) {
-                            updatedAttribute.addMeta(new MetaItem(MetaItemType.ACCESS_RESTRICTED_READ, Values.create(true)));
+                            updatedAttribute.addMeta(new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)));
                         }
 
                         // An attribute added by a restricted user must be writable by restricted users
@@ -532,13 +535,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             if (isRestrictedUser()) {
                 // A restricted user can only query linked assets
-                query = query.userId(getUserId());
+                query = query.userIds(getUserId());
 
                 // A restricted user may not query private asset data, only restricted or public
-                if (query.select == null)
-                    query.select = new Select();
-                if (query.select.access == null || query.select.access == Access.PRIVATE_READ)
-                    query.select.filterAccess(Access.RESTRICTED_READ);
+                if (query.access == null || query.access == Access.PRIVATE)
+                    query.access(Access.PROTECTED);
             }
 
             Tenant tenant = query.tenant != null
@@ -556,7 +557,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             // This replicates behaviour of old getRoot and getChildren methods
-            if (!isSuperUser() || query.parent == null || query.parent.noParent) {
+            if (!isSuperUser()) {
                 query.tenant(new TenantPredicate(tenant.getRealm()));
             }
 
@@ -589,10 +590,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
 
         // Force public access filter on query
-        if (query.select == null) {
-            query.select(new Select().filterAccess(Access.PUBLIC_READ));
+        if (query.access == null) {
+            query.access(Access.PUBLIC);
         } else {
-            query.select.filterAccess(Access.PUBLIC_READ);
+            query.access(Access.PUBLIC);
         }
 
         try {

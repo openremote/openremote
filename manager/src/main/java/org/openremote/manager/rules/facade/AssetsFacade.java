@@ -24,14 +24,17 @@ import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
-import org.openremote.model.query.BaseAssetQuery;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
-import org.openremote.model.rules.*;
+import org.openremote.model.rules.AssetRuleset;
+import org.openremote.model.rules.Assets;
+import org.openremote.model.rules.Ruleset;
+import org.openremote.model.rules.TenantRuleset;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -42,76 +45,6 @@ import java.util.stream.Stream;
 public class AssetsFacade<T extends Ruleset> extends Assets {
 
     private static final Logger LOG = Logger.getLogger(AssetsFacade.class.getName());
-
-
-    public class AssetsRestrictedQueryFacade extends Assets.RestrictedQuery {
-
-        public AssetsRestrictedQueryFacade() {
-            if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-                tenant = new TenantPredicate(
-                    rulesEngineId.getRealm().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
-                );
-            }
-            if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-                Asset restrictedAsset = assetStorageService.find(
-                    rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId)),
-                    true);
-
-                if (restrictedAsset == null) {
-                    throw new IllegalStateException("Asset is no longer available: " + rulesEngineId);
-                }
-                path = new PathPredicate(restrictedAsset.getPath());
-            }
-        }
-
-        @Override
-        public Assets.RestrictedQuery select(Select select) {
-            throw new IllegalArgumentException("Overriding query projection is not allowed in this rules scope");
-        }
-
-        @Override
-        public Assets.RestrictedQuery id(String id) {
-            throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-        }
-
-        @Override
-        public Assets.RestrictedQuery tenant(TenantPredicate tenantPredicate) {
-            if (GlobalRuleset.class.isAssignableFrom(rulesEngineId.getScope()))
-                return super.tenant(tenantPredicate);
-            throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-        }
-
-        @Override
-        public Assets.RestrictedQuery userId(String userId) {
-            throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-        }
-
-        @Override
-        public Assets.RestrictedQuery orderBy(OrderBy orderBy) {
-            throw new IllegalArgumentException("Overriding query result order is not allowed in this rules scope");
-        }
-
-        @Override
-        public Asset getResult() {
-            // TODO: 'Security' checks must be done here as AssetQuery fields can easily be set by a rule
-            return assetStorageService.find(this);
-        }
-
-        @Override
-        public Stream<Asset> stream() {
-            // TODO: 'Security' checks must be done here as AssetQuery fields can easily be set by a rule
-
-            if (this.select == null)
-                this.select = new Select();
-            Include oldValue = this.select.include;
-            this.select.include = Include.ONLY_ID_AND_NAME;
-            try {
-                return assetStorageService.findAll(this).stream();
-            } finally {
-                this.select.include = oldValue;
-            }
-        }
-    }
 
     protected final RulesEngineId<T> rulesEngineId;
     protected final AssetStorageService assetStorageService;
@@ -124,54 +57,85 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
     }
 
     @Override
-    public Assets.RestrictedQuery query() {
-        return new AssetsRestrictedQueryFacade();
+    public Stream<Asset> getResults(AssetQuery assetQuery) {
+
+        if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+            // Realm is restricted to rules
+            assetQuery.tenant = new TenantPredicate(
+                rulesEngineId.getRealm().orElseThrow(() -> new IllegalArgumentException("Realm missing: " + rulesEngineId))
+            );
+        } else if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+            // Realm is restricted to assets'
+            assetQuery.tenant = new TenantPredicate(
+                rulesEngineId.getRealm().orElseThrow(() -> new IllegalArgumentException("Realm missing: " + rulesEngineId))
+            );
+
+            Asset restrictedAsset = assetStorageService.find(
+                rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId)),
+                true);
+
+            if (restrictedAsset == null) {
+                throw new IllegalStateException("Asset is no longer available: " + rulesEngineId);
+            }
+            assetQuery.paths(new PathPredicate(restrictedAsset.getPath()));
+        }
+
+        AssetQuery.Select oldValue = assetQuery.select;
+
+        if (assetQuery.select == null)
+            assetQuery.select = new AssetQuery.Select();
+
+        assetQuery.select = AssetQuery.Select.selectExcludeAll();
+
+        try {
+            return assetStorageService.findAll(assetQuery).stream();
+        } finally {
+            assetQuery.select = oldValue;
+        }
     }
 
-    @Override
-    public Assets dispatch(AttributeEvent... events) {
-        if (events == null)
+    public AssetsFacade<T> dispatch(AttributeEvent... events) {
+        if (events == null || events.length == 0)
             return this;
+
+        // Check if the asset ID of every event can be found with the default security of this facade
+        String[] ids = Arrays.stream(events).map(AttributeEvent::getEntityId).toArray(String[]::new);
+
+        AssetQuery query = new AssetQuery().ids(ids);
+        long count = this.getResults(query).count();
+
+        if (ids.length != count) {
+            LOG.warning("Access to asset(s) not allowed for this rule engine scope " + rulesEngineId + " for asset IDs: " + String.join(", ", ids));
+            return this;
+        }
+
         for (AttributeEvent event : events) {
-            // Check if the asset ID of the event can be found with the default query of this facade
-            BaseAssetQuery<RestrictedQuery> checkQuery = query();
-            checkQuery.ids = Collections.singletonList(event.getEntityId()); // Set directly on field, as modifying query restrictions is not allowed
-            if (assetStorageService.find(checkQuery) == null) {
-                LOG.warning("Access to asset not allowed for this rule engine scope " + rulesEngineId + " for event: " + event);
-                continue;
-            }
             eventConsumer.accept(event);
         }
         return this;
     }
 
-    @Override
-    public Assets dispatch(String assetId, String attributeName, Value value) {
+    public AssetsFacade<T> dispatch(String assetId, String attributeName, Value value) {
         return dispatch(new AttributeEvent(assetId, attributeName, value));
     }
 
-    @Override
-    public Assets dispatch(String assetId, String attributeName, String value) {
+    public AssetsFacade<T> dispatch(String assetId, String attributeName, String value) {
         return dispatch(assetId, attributeName, Values.create(value));
     }
 
-    @Override
-    public Assets dispatch(String assetId, String attributeName, double value) {
+    public AssetsFacade<T> dispatch(String assetId, String attributeName, double value) {
         return dispatch(assetId, attributeName, Values.create(value));
     }
 
-    @Override
-    public Assets dispatch(String assetId, String attributeName, boolean value) {
+    public AssetsFacade<T> dispatch(String assetId, String attributeName, boolean value) {
         return dispatch(assetId, attributeName, Values.create(value));
     }
 
-    @Override
-    public Assets dispatch(String assetId, String attributeName, AttributeExecuteStatus status) {
+    public AssetsFacade<T> dispatch(String assetId, String attributeName, AttributeExecuteStatus status) {
         return dispatch(assetId, attributeName, status.asValue());
     }
 
-    @Override
-    public Assets dispatch(String assetId, String attributeName) {
+    public AssetsFacade<T> dispatch(String assetId, String attributeName) {
         return dispatch(new AttributeEvent(assetId, attributeName));
     }
 }

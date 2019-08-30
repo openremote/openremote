@@ -4,7 +4,7 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import org.openremote.model.http.RequestParams;
-import java.util.function.Consumer;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.interop.Runnable;
 
 /**

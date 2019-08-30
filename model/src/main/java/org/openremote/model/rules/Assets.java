@@ -20,9 +20,12 @@
 package org.openremote.model.rules;
 
 import org.openremote.model.asset.Asset;
-import org.openremote.model.query.BaseAssetQuery;
+import org.openremote.model.asset.AssetType;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.query.LogicGroup;
+import org.openremote.model.query.filter.*;
 import org.openremote.model.value.Value;
 
 import java.util.stream.Stream;
@@ -33,14 +36,7 @@ import java.util.stream.Stream;
  */
 public abstract class Assets {
 
-    public abstract class RestrictedQuery extends BaseAssetQuery<RestrictedQuery> {
-
-        abstract public Asset getResult();
-
-        abstract public Stream<Asset> stream();
-    }
-
-    abstract public RestrictedQuery query();
+    abstract public Stream<Asset> getResults(AssetQuery assetQuery);
 
     abstract public Assets dispatch(AttributeEvent... event);
 

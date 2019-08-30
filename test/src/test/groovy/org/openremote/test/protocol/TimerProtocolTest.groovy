@@ -45,7 +45,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
             assert noEventProcessedIn(assetProcessingService, 500)
 
             apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id, true)
-            sceneAgent = assetStorageService.find(new AssetQuery().name("Scene Agent").type(AssetType.AGENT).parent(managerDemoSetup.apartment1Id))
+            sceneAgent = assetStorageService.find(new AssetQuery().names("Scene Agent").types(AssetType.AGENT).parents(managerDemoSetup.apartment1Id))
             sceneAgent = assetStorageService.find(sceneAgent.id, true)
             assert apartment1.getAttribute("daySceneTimeFRIDAY").get().getValueAsString().orElse("") == "08:30:00"
             assert sceneAgent != null

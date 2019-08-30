@@ -27,13 +27,11 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.attribute.Meta;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.query.BaseAssetQuery;
-import org.openremote.model.query.BaseAssetQuery.NumberType;
-import org.openremote.model.query.NewAssetQuery;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.AssetQuery.NumberType;
+import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.rules.AssetState;
-import org.openremote.model.rules.json.LogicGroup;
-import org.openremote.model.rules.json.RuleOperator;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TimeUtil;
 import org.openremote.model.value.ArrayValue;
@@ -48,33 +46,15 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Test an {@link AssetState} with a {@link BaseAssetQuery}.
+ * Test an {@link AssetState} with a {@link AssetQuery}.
  */
 public class AssetQueryPredicate implements Predicate<AssetState> {
 
-    final protected NewAssetQuery query;
+    final protected AssetQuery query;
     final protected TimerService timerService;
     final protected AssetStorageService assetStorageService;
 
-    // TODO: Remove this ctor once asset queries merged
-    @SuppressWarnings("unchecked")
-    public AssetQueryPredicate(TimerService timerService, AssetStorageService assetStorageService, BaseAssetQuery query) {
-        this.timerService = timerService;
-        this.assetStorageService = assetStorageService;
-        this.query = new NewAssetQuery();
-        this.query.ids = query.ids != null ? (String[])query.ids.toArray(new String[0]) : null;
-        this.query.names = query.name != null ? new StringPredicate[] {query.name} : null;
-        this.query.parents = query.parent != null ? new ParentPredicate[] {query.parent} : null;
-        this.query.paths = query.path != null ? new PathPredicate[] {query.path} : null;
-        this.query.attributes = query.attribute != null ? new LogicGroup<>(RuleOperator.AND, query.attribute, null) : null;
-        this.query.types = query.type != null ? new StringPredicate[] {query.type} : null;
-        this.query.userIds = query.userId != null ? new String[] {query.userId} : null;
-        this.query.tenant = query.tenant;
-        this.query.orderBy = query.orderBy;
-        this.query.limit = query.limit;
-    }
-    
-    public AssetQueryPredicate(TimerService timerService, AssetStorageService assetStorageService, NewAssetQuery query) {
+    public AssetQueryPredicate(TimerService timerService, AssetStorageService assetStorageService, AssetQuery query) {
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
         this.query = query;
@@ -499,7 +479,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             return as -> true;
         }
 
-        RuleOperator operator = condition.operator == null ? RuleOperator.AND : condition.operator;
+        LogicGroup.Operator operator = condition.operator == null ? LogicGroup.Operator.AND : condition.operator;
 
         List<Predicate<AssetState>> assetStatePredicates = new ArrayList<>();
 
@@ -530,7 +510,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                 && (condition.groups == null || condition.groups.length == 0);
     }
 
-    protected static <T> Predicate<T> asPredicate(Collection<Predicate<T>> predicates, RuleOperator operator) {
+    protected static <T> Predicate<T> asPredicate(Collection<Predicate<T>> predicates, LogicGroup.Operator operator) {
         return in -> {
             boolean matched = false;
 
@@ -539,13 +519,13 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                 if (p.test(in)) {
                     matched = true;
 
-                    if (operator == RuleOperator.OR) {
+                    if (operator == LogicGroup.Operator.OR) {
                         break;
                     }
                 } else {
                     matched = false;
 
-                    if (operator == RuleOperator.AND) {
+                    if (operator == LogicGroup.Operator.AND) {
                         break;
                     }
                 }
@@ -567,7 +547,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                 from = ZonedDateTime.parse(dateTimePredicate.value).toInstant().toEpochMilli();
             }
 
-            if (dateTimePredicate.operator == BaseAssetQuery.Operator.BETWEEN) {
+            if (dateTimePredicate.operator == AssetQuery.Operator.BETWEEN) {
                 if (TimeUtil.isTimeDuration(dateTimePredicate.rangeValue)) {
                     to = currentMillis + TimeUtil.parseTimeDuration(dateTimePredicate.rangeValue);
                 } else {

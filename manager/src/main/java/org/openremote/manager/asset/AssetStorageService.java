@@ -53,7 +53,7 @@ import org.openremote.model.calendar.RecurrenceRule;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.BaseAssetQuery;
+import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
@@ -75,6 +75,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.joining;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
@@ -82,10 +83,10 @@ import static org.openremote.container.persistence.PersistenceEvent.isPersistenc
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
 import static org.openremote.manager.event.ClientEventService.getSessionKey;
 import static org.openremote.model.asset.AssetAttribute.*;
-import static org.openremote.model.query.BaseAssetQuery.*;
-import static org.openremote.model.query.BaseAssetQuery.Access.PRIVATE_READ;
-import static org.openremote.model.query.BaseAssetQuery.Access.RESTRICTED_READ;
-import static org.openremote.model.query.BaseAssetQuery.Include.*;
+import static org.openremote.model.attribute.MetaItemType.ACCESS_RESTRICTED_READ;
+import static org.openremote.model.query.AssetQuery.*;
+import static org.openremote.model.query.AssetQuery.Access.PRIVATE;
+import static org.openremote.model.query.AssetQuery.Access.PROTECTED;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetStorageService extends RouteBuilder implements ContainerService {
@@ -120,6 +121,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         void acceptStatement(PreparedStatement st) throws SQLException;
     }
+
     private static final Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
     protected static String META_ITEM_RESTRICTED_READ_SQL_FRAGMENT;
     protected static String META_ITEM_PUBLIC_READ_SQL_FRAGMENT;
@@ -130,9 +132,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     protected static boolean calendarEventPredicateMatches(CalendarEventActivePredicate eventActivePredicate, Asset asset) {
         return CalendarEventConfiguration.getCalendarEvent(asset)
-                .map(calendarEvent -> calendarEventActiveOn(calendarEvent,
-                        new Date(1000L * eventActivePredicate.timestampSeconds)))
-                .orElse(true);
+            .map(calendarEvent -> calendarEventActiveOn(calendarEvent,
+                new Date(1000L * eventActivePredicate.timestampSeconds)))
+            .orElse(true);
     }
 
     protected static boolean calendarEventActiveOn(CalendarEvent calendarEvent, Date when) {
@@ -147,7 +149,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             recurrence = new Recur(recurrenceRule.getFrequency().name(), recurrenceRule.getCount());
         } else if (recurrenceRule.getUntil() != null) {
             recurrence = new Recur(recurrenceRule.getFrequency().name(),
-                    new net.fortuna.ical4j.model.Date(recurrenceRule.getUntil()));
+                new net.fortuna.ical4j.model.Date(recurrenceRule.getUntil()));
         } else {
             recurrence = new Recur(recurrenceRule.getFrequency().name(), null);
         }
@@ -158,7 +160,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         RRule rRule = new RRule(recurrence);
         VEvent vEvent = new VEvent(new DateTime(calendarEvent.getStart()),
-                new DateTime(calendarEvent.getEnd()), "");
+            new DateTime(calendarEvent.getEnd()), "");
         vEvent.getProperties().add(rRule);
         Period period = new Period(new DateTime(when), new Dur(0, 0, 1, 0));
         PeriodRule periodRule = new PeriodRule(period);
@@ -178,39 +180,39 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         clientEventService = container.getService(ClientEventService.class);
 
         META_ITEM_RESTRICTED_READ_SQL_FRAGMENT =
-                " ('" + Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).filter(i -> i.getAccess().restrictedRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
+            " ('" + Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).filter(i -> i.getAccess().restrictedRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
 
         META_ITEM_PUBLIC_READ_SQL_FRAGMENT =
-                " ('" + Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).filter(i -> i.getAccess().publicRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
+            " ('" + Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).filter(i -> i.getAccess().publicRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
 
         clientEventService.addSubscriptionAuthorizer((auth, subscription) ->
-                (subscription.isEventType(AssetTreeModifiedEvent.class))
-                        && identityService.getIdentityProvider().canSubscribeWith(
-                        auth,
-                        subscription.getFilter() instanceof TenantFilter ? ((TenantFilter) subscription.getFilter()) : null,
-                        ClientRole.READ_ASSETS)
+            (subscription.isEventType(AssetTreeModifiedEvent.class))
+                && identityService.getIdentityProvider().canSubscribeWith(
+                auth,
+                subscription.getFilter() instanceof TenantFilter ? ((TenantFilter) subscription.getFilter()) : null,
+                ClientRole.READ_ASSETS)
         );
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
-                new AssetModelResourceImpl(
-                        container.getService(TimerService.class),
-                        identityService
-                )
+            new AssetModelResourceImpl(
+                container.getService(TimerService.class),
+                identityService
+            )
         );
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
-                new AssetResourceImpl(
-                        container.getService(TimerService.class),
-                        identityService,
-                        this,
-                        container.getService(MessageBrokerService.class)
-                )
+            new AssetResourceImpl(
+                container.getService(TimerService.class),
+                identityService,
+                this,
+                container.getService(MessageBrokerService.class)
+            )
         );
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
-                new ConsoleResourceImpl(container.getService(TimerService.class),
-                        identityService,
-                        this)
+            new ConsoleResourceImpl(container.getService(TimerService.class),
+                identityService,
+                this)
         );
 
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
@@ -230,53 +232,54 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public void configure() throws Exception {
         // If any asset was modified in the database, publish events
         from(PERSISTENCE_TOPIC)
-                .routeId("AssetPersistenceChanges")
-                .filter(isPersistenceEventForEntityType(Asset.class))
-                .process(exchange -> publishModificationEvents(exchange.getIn().getBody(PersistenceEvent.class)));
+            .routeId("AssetPersistenceChanges")
+            .filter(isPersistenceEventForEntityType(Asset.class))
+            .process(exchange -> publishModificationEvents(exchange.getIn().getBody(PersistenceEvent.class)));
 
         // React if a client wants to read assets and attributes
         from(CLIENT_EVENT_TOPIC)
-                .routeId("FromClientReadRequests")
-                .filter(exchange ->
-                    (exchange.getIn().getBody() instanceof ReadAssetAttributesEvent) || (exchange.getIn().getBody() instanceof ReadAssetEvent))
-                .process(exchange -> {
-                    ReadAssetEvent event = exchange.getIn().getBody(ReadAssetEvent.class);
-                    LOG.fine("Handling from client: " + event);
-                    boolean isAttributeRead = event instanceof ReadAssetAttributesEvent;
+            .routeId("FromClientReadRequests")
+            .filter(exchange ->
+                (exchange.getIn().getBody() instanceof ReadAssetAttributesEvent) || (exchange.getIn().getBody() instanceof ReadAssetEvent))
+            .process(exchange -> {
+                ReadAssetEvent event = exchange.getIn().getBody(ReadAssetEvent.class);
+                LOG.fine("Handling from client: " + event);
+                boolean isAttributeRead = event instanceof ReadAssetAttributesEvent;
 
-                    if (event.getAssetId() == null || event.getAssetId().isEmpty())
-                        return;
+                if (event.getAssetId() == null || event.getAssetId().isEmpty())
+                    return;
 
-                    String sessionKey = getSessionKey(exchange);
-                    AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+                String sessionKey = getSessionKey(exchange);
+                AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
 
 
-                    // Superuser can get all, User must have role
-                    if (!authContext.isSuperUser() && !authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
-                        return;
+                // Superuser can get all, User must have role
+                if (!authContext.isSuperUser() && !authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                    return;
+                }
+
+                Access access = authContext.isSuperUser() || !identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId()) ? PRIVATE : PROTECTED;
+
+                Asset asset = find(
+                    new AssetQuery()
+                        .select(Select.selectAll())
+                        .ids(event.getAssetId())
+                        .access(access));
+
+                if (asset != null) {
+                    if (isAttributeRead) {
+                        replyWithAttributeEvents(sessionKey, event.getSubscriptionId(), asset, ((ReadAssetAttributesEvent) event).getAttributeNames());
+                    } else {
+                        replyWithAssetEvent(sessionKey, event.getSubscriptionId(), asset);
                     }
-
-                    Access access = authContext.isSuperUser() || !identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId()) ? PRIVATE_READ : RESTRICTED_READ;
-
-                    Asset asset = find(
-                            new AssetQuery()
-                                    .select(new Select(ALL, access))
-                                    .id(event.getAssetId()));
-
-                    if (asset != null) {
-                        if (isAttributeRead) {
-                            replyWithAttributeEvents(sessionKey, event.getSubscriptionId(), asset, ((ReadAssetAttributesEvent)event).getAttributeNames());
-                        } else {
-                            replyWithAssetEvent(sessionKey, event.getSubscriptionId(), asset);
-                        }
-                    }
-                });
+                }
+            });
     }
 
     public Asset find(String assetId) {
         if (assetId == null)
             throw new IllegalArgumentException("Can't query null asset identifier");
-        return find(new AssetQuery().id(assetId));
+        return find(new AssetQuery().ids(assetId));
     }
 
     /**
@@ -285,14 +288,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public Asset find(String assetId, boolean loadComplete) {
         if (assetId == null)
             throw new IllegalArgumentException("Can't query null asset identifier");
-        return find(new AssetQuery().select(new Select(loadComplete ? ALL : ALL_EXCEPT_PATH_AND_ATTRIBUTES)).id(assetId));
+        return find(new AssetQuery().select(loadComplete ? Select.selectAll() : Select.selectExcludePathAndAttributes()).ids(assetId));
     }
 
     /**
      * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
      */
     public Asset find(EntityManager em, String assetId, boolean loadComplete) {
-        return find(em, assetId, loadComplete, PRIVATE_READ);
+        return find(em, assetId, loadComplete, PRIVATE);
     }
 
     /**
@@ -302,15 +305,19 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public Asset find(String assetId, boolean loadComplete, Access access) {
         if (assetId == null)
             throw new IllegalArgumentException("Can't query null asset identifier");
-        return find(new AssetQuery().select(new Select(loadComplete ? ALL : ALL_EXCEPT_PATH_AND_ATTRIBUTES, access)).id(
-                assetId));
+        return find(new AssetQuery()
+            .select(loadComplete
+                ? Select.selectAll()
+                : Select.selectExcludePathAndAttributes())
+            .ids(assetId)
+            .access(access));
     }
 
-    public Asset find(BaseAssetQuery query) {
+    public Asset find(AssetQuery query) {
         return persistenceService.doReturningTransaction(em -> find(em, query));
     }
 
-    public Asset find(EntityManager em, BaseAssetQuery query) {
+    public Asset find(EntityManager em, AssetQuery query) {
         List<Asset> result = findAll(em, query);
         if (result.size() == 0)
             return null;
@@ -321,7 +328,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     }
 
-    public List<Asset> findAll(BaseAssetQuery query) {
+    public List<Asset> findAll(AssetQuery query) {
         return persistenceService.doReturningTransaction(em -> findAll(em, query));
     }
 
@@ -332,9 +339,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         // TODO: Do this in a loop in reasonably sized batches
         return persistenceService.doReturningTransaction(em -> {
             List<Object[]> result = em.createQuery("select a.id, a.name from Asset a where a.id in :ids",
-                    Object[].class)
-                    .setParameter("ids", Arrays.asList(ids))
-                    .getResultList();
+                Object[].class)
+                .setParameter("ids", Arrays.asList(ids))
+                .getResultList();
             List<String> names = new ArrayList<>();
             for (String id : ids) {
                 for (Object[] tuple : result) {
@@ -472,7 +479,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             Asset asset = em.find(Asset.class, assetId);
             if (asset != null) {
                 List<Asset> children = findAll(em, new AssetQuery()
-                        .parent(new ParentPredicate(asset.getId()))
+                    .parents(new ParentPredicate(asset.getId()))
                 );
                 if (children.size() > 0)
                     return false;
@@ -494,12 +501,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 String queryStr = TextUtil.isNullOrEmpty(userId) ?
-                        "select count(ua) from UserAsset ua where ua.id.assetId = :assetId" :
-                        "select count(ua) from UserAsset ua where ua.id.userId = :userId and ua.id.assetId = :assetId";
+                    "select count(ua) from UserAsset ua where ua.id.assetId = :assetId" :
+                    "select count(ua) from UserAsset ua where ua.id.userId = :userId and ua.id.assetId = :assetId";
 
                 TypedQuery<Long> query = entityManager.createQuery(
-                        queryStr,
-                        Long.class).setParameter("assetId", assetId);
+                    queryStr,
+                    Long.class).setParameter("assetId", assetId);
 
                 if (!TextUtil.isNullOrEmpty(userId)) {
                     query.setParameter("userId", userId);
@@ -519,11 +526,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 return entityManager.createQuery(
-                        "select count(ua) from UserAsset ua where ua.id.userId in :userIds and ua.id.assetId = :assetId",
-                        Long.class)
-                        .setParameter("userIds", userIds)
-                        .setParameter("assetId", assetId)
-                        .getSingleResult() > 0;
+                    "select count(ua) from UserAsset ua where ua.id.userId in :userIds and ua.id.assetId = :assetId",
+                    Long.class)
+                    .setParameter("userIds", userIds)
+                    .setParameter("assetId", assetId)
+                    .getSingleResult() > 0;
             } catch (NoResultException ex) {
                 return false;
             }
@@ -537,11 +544,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 return entityManager.createQuery(
-                        "select count(ua) from UserAsset ua where ua.id.userId = :userId and ua.id.assetId in :assetIds",
-                        Long.class)
-                        .setParameter("userId", userId)
-                        .setParameter("assetIds", assetIds)
-                        .getSingleResult() == assetIds.size();
+                    "select count(ua) from UserAsset ua where ua.id.userId = :userId and ua.id.assetId in :assetIds",
+                    Long.class)
+                    .setParameter("userId", userId)
+                    .setParameter("assetIds", assetIds)
+                    .getSingleResult() == assetIds.size();
             } catch (NoResultException ex) {
                 return false;
             }
@@ -565,11 +572,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 return entityManager.createQuery(
-                        "select count(a) from Asset a where a.realm = :realm and a.id in :assetIds",
-                        Long.class)
-                        .setParameter("realm", realm)
-                        .setParameter("assetIds", assetIds)
-                        .getSingleResult() == assetIds.size();
+                    "select count(a) from Asset a where a.realm = :realm and a.id in :assetIds",
+                    Long.class)
+                    .setParameter("realm", realm)
+                    .setParameter("assetIds", assetIds)
+                    .getSingleResult() == assetIds.size();
             } catch (NoResultException ex) {
                 return false;
             }
@@ -655,22 +662,23 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         if (assetId == null)
             throw new IllegalArgumentException("Can't query null asset identifier");
         return find(
-                em,
-                new AssetQuery().select(
-                        new Select(loadComplete ? ALL : ALL_EXCEPT_PATH_AND_ATTRIBUTES, access)
-                ).id(assetId)
+            em,
+            new AssetQuery()
+                .select(loadComplete
+                    ? Select.selectAll()
+                    : Select.selectExcludePathAndAttributes())
+                .ids(assetId)
+                .access(access)
         );
     }
 
-    protected List<Asset> findAll(EntityManager em, BaseAssetQuery query) {
+    protected List<Asset> findAll(EntityManager em, AssetQuery query) {
 
         // Use a default projection if it's missing
         if (query.select == null)
             query.select = new Select();
-        if (query.select.include == null)
-            query.select.include = ALL_EXCEPT_PATH_AND_ATTRIBUTES;
-        if (query.select.access == null)
-            query.select.access = PRIVATE_READ;
+        if (query.access == null)
+            query.access = PRIVATE;
 
         // Default to order by creation date if the query may return multiple results
         if (query.orderBy == null && query.ids == null)
@@ -706,10 +714,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         });
     }
 
-    protected PreparedAssetQuery buildQuery(BaseAssetQuery query) {
+    protected PreparedAssetQuery buildQuery(AssetQuery query) {
         LOG.fine("Building: " + query);
         StringBuilder sb = new StringBuilder();
-        boolean recursive = query.select.recursive;
+        boolean recursive = query.recursive;
         List<ParameterBinder> binders = new ArrayList<>();
         sb.append(buildSelectString(query, 1, binders));
         sb.append(buildFromString(query, 1));
@@ -732,49 +740,40 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return new PreparedAssetQuery(sb.toString(), binders);
     }
 
-    protected String buildSelectString(BaseAssetQuery query, int level, List<ParameterBinder> binders) {
+    protected String buildSelectString(AssetQuery query, int level, List<ParameterBinder> binders) {
         // level = 1 is main query select
         // level = 2 is union select
         // level = 3 is CTE select
         StringBuilder sb = new StringBuilder();
-        AssetQuery.Include include = query.select.include;
-        boolean recursive = query.select.recursive;
+        AssetQuery.Select select = query.select;
 
         sb.append("select A.ID as ID, A.NAME as NAME, A.ACCESS_PUBLIC_READ as ACCESS_PUBLIC_READ");
-        sb.append(
-                ", A.CREATED_ON AS CREATED_ON, A.ASSET_TYPE AS ASSET_TYPE, A.PARENT_ID AS PARENT_ID, A.REALM AS REALM");
+        sb.append(", A.CREATED_ON AS CREATED_ON, A.ASSET_TYPE AS ASSET_TYPE, A.PARENT_ID AS PARENT_ID");
+        sb.append(", A.REALM AS REALM, A.OBJ_VERSION as OBJ_VERSION");
 
-        if (include == AssetQuery.Include.ONLY_ID_AND_NAME) {
-            return sb.toString();
-        }
-        switch (include) {
-            case ALL_EXCEPT_PATH_AND_ATTRIBUTES:
-            case ALL_EXCEPT_ATTRIBUTES:
-            case ALL_EXCEPT_PATH:
-            case ALL:
-                sb.append(", A.OBJ_VERSION as OBJ_VERSION");
-                sb.append(", P.NAME as PARENT_NAME, P.ASSET_TYPE as PARENT_TYPE");
-                if (!recursive || level == 3) {
-                    sb.append(", R.NAME as TENANT_NAME");
-                }
-                break;
+        if (!select.excludeParentInfo) {
+            sb.append(", P.NAME as PARENT_NAME, P.ASSET_TYPE as PARENT_TYPE");
         }
 
-        if (!recursive || level == 3) {
-            if (include == ALL || include == ALL_EXCEPT_ATTRIBUTES) {
+        if (!select.excludeRealm) {
+            if (!query.recursive || level == 3) {
+                sb.append(", R.NAME as TENANT_NAME");
+            }
+        }
+
+        if (!query.recursive || level == 3) {
+            if (!select.excludePath) {
                 sb.append(", get_asset_tree_path(A.ID) as PATH");
             } else {
                 sb.append(", NULL as PATH");
             }
         }
 
-        if (include != ALL_EXCEPT_PATH_AND_ATTRIBUTES && include != ALL_EXCEPT_ATTRIBUTES) {
-
-            if (recursive && level != 3) {
+        if (!select.excludeAttributes) {
+            if (query.recursive && level != 3) {
                 sb.append(", A.ATTRIBUTES as ATTRIBUTES");
             } else {
-                boolean namesOnly = include == AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES;
-                sb.append(buildAttributeSelect(query.select.attributeNames, query.select.access, namesOnly, binders));
+                sb.append(buildAttributeSelect(query, binders));
             }
         } else {
             sb.append(", NULL as ATTRIBUTES");
@@ -783,37 +782,67 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return sb.toString();
     }
 
-    protected String buildAttributeSelect(String[] attributeNames, Access access, boolean namesOnly, List<ParameterBinder> binders) {
-        if (attributeNames == null && access == PRIVATE_READ && !namesOnly) {
+    protected String buildAttributeSelect(AssetQuery query, List<ParameterBinder> binders) {
+
+        Select select = query.select;
+        boolean hasMetaFilter = !select.excludeAttributeMeta && select.meta != null && select.meta.length > 0;
+        boolean fullyPopulateAttributes = !(select.excludeAttributeMeta || select.excludeAttributeValue || select.excludeAttributeTimestamp || select.meta != null);
+
+        if (select.attributes == null && query.access == PRIVATE && fullyPopulateAttributes) {
             return ", A.ATTRIBUTES as ATTRIBUTES";
+        }
+
+        StringBuilder attributeBuilder = new StringBuilder();
+
+        if (select.excludeAttributeMeta) {
+            attributeBuilder.append(" - 'meta'");
+        }
+        if (select.excludeAttributeTimestamp) {
+            attributeBuilder.append(" - 'valueTimestamp'");
+        }
+        if (select.excludeAttributeValue) {
+            attributeBuilder.append(" - 'value'");
+        }
+        if (select.excludeAttributeType) {
+            attributeBuilder.append(" - 'type'");
         }
 
         StringBuilder sb = new StringBuilder();
         sb.append(", (");
 
-        if (namesOnly) {
-            sb.append("select json_object_agg(AX.key, jsonb_set('{}'::jsonb, '{meta}', (");
-            sb.append("select jsonb_agg(AM.VALUE)");
-            sb.append(" from jsonb_array_elements(AX.VALUE #> '{meta}') as AM");
-            sb.append(" where AM.VALUE #>> '{name}' = '");
-            sb.append(MetaItemType.LABEL.getUrn());
-            sb.append("'))) from jsonb_each(A.attributes) as AX");
-            if (access != PRIVATE_READ) {
+        if (select.excludeAttributeMeta) {
+            sb.append("select json_object_agg(AX.key, AX.value");
+            sb.append(attributeBuilder);
+            sb.append(") from jsonb_each(A.attributes) as AX");
+            if (query.access != PRIVATE) {
                 // Use implicit inner join on meta array set to only select non-private attributes
                 sb.append(", jsonb_array_elements(AX.VALUE #> '{meta}') as AM");
             }
-        } else if (access != PRIVATE_READ) {
+        } else if (query.access != PRIVATE || hasMetaFilter) {
             // Use sub-select for processing the attributes the meta inside each attribute is replaced with filtered meta
             // (coalesce null to empty array because jsonb_set() with null will clear the whole object)
             sb.append(
-                    "select json_object_agg(AX.key, jsonb_set(AX.value, '{meta}', coalesce(AMF.VALUE, jsonb_build_array()), false)) from jsonb_each(A.attributes) as AX");
+                "select json_object_agg(AX.key, jsonb_set(AX.value, '{meta}', coalesce(AMF.VALUE, jsonb_build_array()), false)) from jsonb_each(A.attributes) as AX");
             // Use implicit inner join on meta array set to only select attributes with a non-private access meta item
             sb.append(", jsonb_array_elements(AX.VALUE #> '{meta}') as AM");
             // Use subquery to filter out meta items not marked as non-private access
             sb.append(" INNER JOIN LATERAL (");
             sb.append("select jsonb_agg(AM.value) AS VALUE from jsonb_array_elements(AX.VALUE #> '{meta}') as AM");
             sb.append(" where AM.VALUE #>> '{name}' IN");
-            sb.append(access == RESTRICTED_READ ? META_ITEM_RESTRICTED_READ_SQL_FRAGMENT : META_ITEM_PUBLIC_READ_SQL_FRAGMENT);
+
+            if (query.access != PRIVATE) {
+                sb.append(query.access == PROTECTED ? META_ITEM_RESTRICTED_READ_SQL_FRAGMENT : META_ITEM_PUBLIC_READ_SQL_FRAGMENT);
+                if (hasMetaFilter) {
+                    sb.append(" AND  AM.VALUE #>> '{name}' IN");
+                }
+            }
+
+            if (hasMetaFilter) {
+                sb.append(" ('");
+                sb.append(String.join("','", select.meta));
+                sb.append("')");
+            }
+
             sb.append(") as AMF ON true");
         } else {
             sb.append("select json_object_agg(AX.key, AX.value) from jsonb_each(A.attributes) as AX");
@@ -821,36 +850,38 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         sb.append(" where true");
 
-        if (attributeNames != null && attributeNames.length > 0) {
+        // Filter attributes
+        if (select.attributes != null && select.attributes.length > 0) {
             sb.append(" AND AX.key IN (");
-            for (int i = 0; i < attributeNames.length; i++) {
-                sb.append(i == attributeNames.length - 1 ? "?" : "?,");
-                final String attributeName = attributeNames[i];
+            for (int i = 0; i < select.attributes.length; i++) {
+                sb.append(i == select.attributes.length - 1 ? "?" : "?,");
+                final String attributeName = select.attributes[i];
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, attributeName));
             }
-            sb.append(") ");
+            sb.append(")");
         }
 
-        if (access != PRIVATE_READ) {
+        if (query.access != PRIVATE) {
             // Filter non-private access attributes
             AttributeMetaPredicate accessPredicate =
-                    new AttributeMetaPredicate()
-                            .itemName(access == RESTRICTED_READ ? MetaItemType.ACCESS_RESTRICTED_READ : MetaItemType.ACCESS_PUBLIC_READ)
-                            .itemValue(new BooleanPredicate(true));
-            sb.append(buildAttributeMetaFilter(accessPredicate, binders));
+                new AttributeMetaPredicate()
+                    .itemName(query.access == PROTECTED ? ACCESS_RESTRICTED_READ : MetaItemType.ACCESS_PUBLIC_READ)
+                    .itemValue(new BooleanPredicate(true));
+            sb.append(buildAttributeMetaFilter(binders, accessPredicate));
         }
 
         sb.append(") AS ATTRIBUTES");
         return sb.toString();
     }
 
-    protected String buildFromString(BaseAssetQuery query, int level) {
+    protected String buildFromString(AssetQuery query, int level) {
         // level = 1 is main query
         // level = 2 is union
         // level = 3 is CTE
         StringBuilder sb = new StringBuilder();
-        boolean recursive = query.select.recursive;
+        boolean recursive = query.recursive;
+        boolean includeRealmInfo = !query.select.excludeRealm;
 
         if (level == 1) {
             sb.append(" from ASSET A ");
@@ -861,20 +892,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             sb.append(" from top_level_assets A ");
         }
 
-        boolean includeRealmInfo = query.select.include != AssetQuery.Include.ONLY_ID_AND_NAME &&
-                query.select.include != AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES &&
-                query.select.include != AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES;
-
         if ((!recursive || level == 3) && (includeRealmInfo || query.tenant != null)) {
             sb.append("join PUBLIC.REALM R on R.NAME = A.REALM ");
         }
 
-        if ((!recursive || level == 3) && query.ids == null && query.userId != null) {
+        if ((!recursive || level == 3) && query.ids == null && query.userIds != null && query.userIds.length > 0) {
             sb.append("cross join USER_ASSET ua ");
         }
 
         if (level == 1) {
-            if (query.parent != null && !query.parent.noParent && (query.parent.id != null || query.parent.type != null || query.parent.name != null)) {
+            if (hasParentConstraint(query.parents)) {
                 sb.append("cross join ASSET P ");
             } else {
                 sb.append("left outer join ASSET P on A.PARENT_ID = P.ID ");
@@ -884,10 +911,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return sb.toString();
     }
 
-    protected String buildOrderByString(BaseAssetQuery query) {
+    protected boolean hasParentConstraint(ParentPredicate[] parentPredicates) {
+        if (parentPredicates == null || parentPredicates.length == 0) {
+            return false;
+        }
+
+        return Arrays.stream(parentPredicates)
+            .anyMatch(p -> !p.noParent && (p.id != null || p.type != null || p.name != null));
+    }
+
+
+    protected String buildOrderByString(AssetQuery query) {
         StringBuilder sb = new StringBuilder();
 
-        if (query.ids != null && !query.select.recursive) {
+        if (query.ids != null && !query.recursive) {
             return sb.toString();
         }
 
@@ -917,75 +954,115 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return sb.toString();
     }
 
-    protected String buildLimitString(BaseAssetQuery query) {
+    protected String buildLimitString(AssetQuery query) {
         if (query.limit > 0) {
             return " LIMIT " + query.limit;
         }
         return "";
     }
 
-    protected String buildWhereClause(BaseAssetQuery query, int level, List<ParameterBinder> binders) {
+    protected String buildWhereClause(AssetQuery query, int level, List<ParameterBinder> binders) {
         // level = 1 is main query
         // level = 2 is union
         // level = 3 is CTE
         StringBuilder sb = new StringBuilder();
-        boolean recursive = query.select.recursive;
+        boolean recursive = query.recursive;
         sb.append(" where true");
 
         if (level == 2) {
             return sb.toString();
         }
 
-        if (level == 1 && query.ids != null && !query.ids.isEmpty()) {
+        if (level == 1 && query.ids != null && query.ids.length > 0) {
             sb.append(" and A.ID IN (?");
             final int pos = binders.size() + 1;
-            binders.add(st -> st.setString(pos, (String) query.ids.get(0)));
+            binders.add(st -> st.setString(pos, query.ids[0]));
 
-            for (int i = 1; i < query.ids.size(); i++) {
+            for (int i = 1; i < query.ids.length; i++) {
                 sb.append(",?");
                 final int pos2 = binders.size() + 1;
                 final int index = i;
-                binders.add(st -> st.setString(pos2, (String) query.ids.get(index)));
+                binders.add(st -> st.setString(pos2, query.ids[index]));
             }
             sb.append(")");
         }
 
-        if (level == 1 && query.name != null) {
-            sb.append(query.name.caseSensitive ? " and A.NAME " : " and upper(A.NAME)");
-            sb.append(buildMatchFilter(query.name));
-            final int pos = binders.size() + 1;
-            binders.add(st -> st.setString(pos, query.name.prepareValue()));
-        }
+        if (level == 1 && query.names != null && query.names.length > 0) {
 
-        if (query.parent != null) {
-            if (level == 1 && query.parent.id != null) {
-                sb.append(" and p.ID = a.PARENT_ID");
-                sb.append(" and A.PARENT_ID = ?");
+            sb.append(" and (");
+            boolean isFirst = true;
+
+            for (StringPredicate pred : query.names) {
+                if (!isFirst) {
+                    sb.append(" or ");
+                }
+                isFirst = false;
+                sb.append(pred.caseSensitive ? "A.NAME " : "upper(A.NAME)");
+                sb.append(buildMatchFilter(pred));
                 final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, query.parent.id));
-            } else if (level == 1 && query.parent.noParent) {
-                sb.append(" and A.PARENT_ID is null");
-            } else if (query.parent.type != null || query.parent.name != null) {
-
-                sb.append(" and p.ID = a.PARENT_ID");
-
-                if (query.parent.type != null) {
-                    sb.append(" and P.ASSET_TYPE = ?");
-                    final int pos = binders.size() + 1;
-                    binders.add(st -> st.setString(pos, query.parent.type));
-                }
-                if (query.parent.name != null) {
-                    sb.append(" and P.NAME = ?");
-                    final int pos = binders.size() + 1;
-                    binders.add(st -> st.setString(pos, query.parent.name));
-                }
+                binders.add(st -> st.setString(pos, pred.prepareValue()));
             }
+            sb.append(")");
         }
 
-        if (level == 1 && query.path != null && query.path.hasPath()) {
-            sb.append(" and ? <@ get_asset_tree_path(A.ID)");
-            final int pos = binders.size() + 1;
-            binders.add(st -> st.setArray(pos, st.getConnection().createArrayOf("text", query.path.path)));
+        if (query.parents != null && query.parents.length > 0) {
+
+            sb.append(" and (");
+            boolean isFirst = true;
+
+            for (ParentPredicate pred : query.parents) {
+                if (!isFirst) {
+                    sb.append(" or (");
+                } else {
+                    sb.append("(");
+                }
+                isFirst = false;
+
+                if (level == 1 && pred.id != null) {
+                    sb.append("p.ID = a.PARENT_ID");
+                    sb.append(" and A.PARENT_ID = ?");
+                    final int pos = binders.size() + 1;
+                    binders.add(st -> st.setString(pos, pred.id));
+                } else if (level == 1 && pred.noParent) {
+                    sb.append("A.PARENT_ID is null");
+                } else if (pred.type != null || pred.name != null) {
+
+                    sb.append("p.ID = a.PARENT_ID");
+
+                    if (pred.type != null) {
+                        sb.append(" and P.ASSET_TYPE = ?");
+                        final int pos = binders.size() + 1;
+                        binders.add(st -> st.setString(pos, pred.type));
+                    }
+                    if (pred.name != null) {
+                        sb.append(" and P.NAME = ?");
+                        final int pos = binders.size() + 1;
+                        binders.add(st -> st.setString(pos, pred.name));
+                    }
+                }
+
+                sb.append(")");
+            }
+
+            sb.append(")");
+        }
+
+        if (level == 1 && hasPathConstraint(query.paths)) {
+            sb.append(" and (");
+            boolean isFirst = true;
+
+            for (PathPredicate pred : query.paths) {
+                if (!isFirst) {
+                    sb.append(" or ");
+                }
+                isFirst = false;
+
+                sb.append("? <@ get_asset_tree_path(A.ID)");
+                final int pos = binders.size() + 1;
+                binders.add(st -> st.setArray(pos, st.getConnection().createArrayOf("text", pred.path)));
+            }
+
+            sb.append(")");
         }
 
         if (!recursive || level == 3) {
@@ -995,26 +1072,49 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 binders.add(st -> st.setString(pos, query.tenant.realm));
             }
 
-            if (query.ids == null && query.userId != null) {
-                sb.append(" and ua.ASSET_ID = a.ID and ua.USER_ID = ?");
+            if (query.ids == null && query.userIds != null && query.userIds.length > 0) {
+                sb.append(" and ua.ASSET_ID = a.ID and ua.USER_ID IN (?");
                 final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, query.userId));
+                binders.add(st -> st.setString(pos, query.userIds[0]));
+
+                for (int i = 1; i < query.userIds.length; i++) {
+                    sb.append(",?");
+                    final int pos2 = binders.size() + 1;
+                    final int index = i;
+                    binders.add(st -> st.setString(pos2, query.userIds[index]));
+                }
+                sb.append(")");
             }
 
-            if (level == 1 && query.select.access == Access.PUBLIC_READ) {
+            if (level == 1 && query.access == Access.PUBLIC) {
                 sb.append(" and A.ACCESS_PUBLIC_READ is true");
             }
 
-            if (query.type != null) {
-                sb.append(query.type.caseSensitive ? " and A.ASSET_TYPE" : " and upper(A.ASSET_TYPE)");
-                sb.append(buildMatchFilter(query.type));
-                final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, query.type.prepareValue()));
+            if (query.types != null && query.types.length > 0) {
+                sb.append(" and (");
+                boolean isFirst = true;
+
+                for (StringPredicate pred : query.types) {
+                    if (!isFirst) {
+                        sb.append(" or (");
+                    } else {
+                        sb.append("(");
+                    }
+                    isFirst = false;
+
+                    sb.append(pred.caseSensitive ? "A.ASSET_TYPE" : " and upper(A.ASSET_TYPE)");
+                    sb.append(buildMatchFilter(pred));
+                    final int pos = binders.size() + 1;
+                    binders.add(st -> st.setString(pos, pred.prepareValue()));
+                    sb.append(")");
+                }
+
+                sb.append(")");
             }
 
             if (query.attributeMeta != null) {
                 for (AttributeMetaPredicate attributeMetaPredicate : query.attributeMeta) {
-                    String attributeMetaFilter = buildAttributeMetaFilter(attributeMetaPredicate, binders);
+                    String attributeMetaFilter = buildAttributeMetaFilter(binders, attributeMetaPredicate);
 
                     if (attributeMetaFilter.length() > 0) {
                         sb.append(" and A.ID in (select A.ID from");
@@ -1027,68 +1127,121 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             }
 
-            if (query.attribute != null) {
-                for (AttributePredicate attributePredicate : query.attribute) {
-                    StringBuilder attributeFilterBuilder = new StringBuilder();
-                    attributeFilterBuilder.append(buildAttributeFilter(attributePredicate, binders));
-
-                    if (attributeFilterBuilder.length() > 0) {
-                        sb.append(" and A.ID in (select A.ID from");
-                        sb.append(" jsonb_each(A.ATTRIBUTES) as AX");
-                        sb.append(" where true");
-                        sb.append(attributeFilterBuilder.toString());
-                        sb.append(")");
-                    }
-                }
+            if (query.attributes != null) {
+                sb.append(" and A.ID in (select A.ID from");
+                sb.append(" jsonb_each(A.ATTRIBUTES) as AX");
+                sb.append(" where true AND ");
+                addAttributePredicateGroupQuery(sb, binders, query.attributes);
+                sb.append(")");
             }
         }
         return sb.toString();
     }
 
-    protected String buildAttributeMetaFilter(AttributeMetaPredicate attributeMetaPredicate, List<ParameterBinder> binders) {
-        StringBuilder attributeMetaBuilder = new StringBuilder();
+    protected void addAttributePredicateGroupQuery(StringBuilder sb, List<ParameterBinder> binders, LogicGroup<AttributePredicate> attributePredicateGroup) {
 
-        if (attributeMetaPredicate.itemNamePredicate != null) {
-            attributeMetaBuilder.append(attributeMetaPredicate.itemNamePredicate.caseSensitive
-                    ? " and AM.VALUE #>> '{name}'"
-                    : " and upper(AM.VALUE #>> '{name}')"
-            );
-            attributeMetaBuilder.append(buildMatchFilter(attributeMetaPredicate.itemNamePredicate));
-            final int pos = binders.size() + 1;
-            binders.add(st -> st.setString(pos, attributeMetaPredicate.itemNamePredicate.prepareValue()));
+        LogicGroup.Operator operator = attributePredicateGroup.operator;
+
+        if (operator == null) {
+            operator = LogicGroup.Operator.OR;
         }
-        if (attributeMetaPredicate.itemValuePredicate != null) {
-            if (attributeMetaPredicate.itemValuePredicate instanceof StringPredicate) {
-                StringPredicate stringPredicate = (StringPredicate) attributeMetaPredicate.itemValuePredicate;
-                attributeMetaBuilder.append(stringPredicate.caseSensitive
-                        ? " and AM.VALUE #>> '{value}'"
-                        : " and upper(AM.VALUE #>> '{value}')"
-                );
-                attributeMetaBuilder.append(buildMatchFilter(stringPredicate));
 
-                final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
-            } else if (attributeMetaPredicate.itemValuePredicate instanceof BooleanPredicate) {
-                BooleanPredicate booleanPredicate = (BooleanPredicate) attributeMetaPredicate.itemValuePredicate;
-                attributeMetaBuilder.append(" and AM.VALUE #> '{value}' = to_jsonb(")
-                        .append(booleanPredicate.value)
-                        .append(")");
-            } else if (attributeMetaPredicate.itemValuePredicate instanceof StringArrayPredicate) {
-                StringArrayPredicate stringArrayPredicate = (StringArrayPredicate) attributeMetaPredicate.itemValuePredicate;
-                for (int i = 0; i < stringArrayPredicate.predicates.length; i++) {
-                    StringPredicate stringPredicate = stringArrayPredicate.predicates[i];
-                    attributeMetaBuilder.append(stringPredicate.caseSensitive
-                            ? " and AM.VALUE #> '{value}' ->> " + i
-                            : " and upper(AM.VALUE #> '{value}' ->> " + i + ")"
-                    );
-                    attributeMetaBuilder.append(buildMatchFilter(stringPredicate));
-                    final int pos = binders.size() + 1;
-                    binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
+        sb.append("(");
+        boolean isFirst = true;
+
+        if (attributePredicateGroup.items != null) {
+            for (AttributePredicate attributePredicate : attributePredicateGroup.items) {
+
+                if (!isFirst) {
+                    sb.append(operator == LogicGroup.Operator.OR ? " or " : " and ");
                 }
+                isFirst = false;
+
+                sb.append("(");
+                sb.append(buildAttributeFilter(attributePredicate, binders));
+                sb.append(")");
             }
         }
 
-        return attributeMetaBuilder.toString();
+        if (attributePredicateGroup.groups != null) {
+            for (LogicGroup<AttributePredicate> group : attributePredicateGroup.groups) {
+                addAttributePredicateGroupQuery(sb, binders, group);
+            }
+        }
+        sb.append(")");
+    }
+
+    protected boolean hasPathConstraint(PathPredicate[] pathPredicates) {
+        if (pathPredicates == null || pathPredicates.length == 0) {
+            return false;
+        }
+
+        return Arrays.stream(pathPredicates).anyMatch(p -> p.path != null);
+    }
+
+    protected String buildAttributeMetaFilter(List<ParameterBinder> binders, AttributeMetaPredicate...attributeMetaPredicates) {
+        StringBuilder sb = new StringBuilder();
+
+        if (attributeMetaPredicates == null || attributeMetaPredicates.length == 0) {
+            return "";
+        }
+
+        sb.append(" AND (");
+
+        boolean isFirst = true;
+        for (AttributeMetaPredicate attributeMetaPredicate : attributeMetaPredicates) {
+
+            if (!isFirst) {
+                sb.append(" OR (true");
+            } else {
+                sb.append("(true");
+            }
+            isFirst = false;
+
+            if (attributeMetaPredicate.itemNamePredicate != null) {
+                sb.append(attributeMetaPredicate.itemNamePredicate.caseSensitive
+                    ? " and AM.VALUE #>> '{name}'"
+                    : " and upper(AM.VALUE #>> '{name}')"
+                );
+                sb.append(buildMatchFilter(attributeMetaPredicate.itemNamePredicate));
+                final int pos = binders.size() + 1;
+                binders.add(st -> st.setString(pos, attributeMetaPredicate.itemNamePredicate.prepareValue()));
+            }
+
+            if (attributeMetaPredicate.itemValuePredicate != null) {
+                if (attributeMetaPredicate.itemValuePredicate instanceof StringPredicate) {
+                    StringPredicate stringPredicate = (StringPredicate) attributeMetaPredicate.itemValuePredicate;
+                    sb.append(stringPredicate.caseSensitive
+                        ? " and AM.VALUE #>> '{value}'"
+                        : " and upper(AM.VALUE #>> '{value}')"
+                    );
+                    sb.append(buildMatchFilter(stringPredicate));
+
+                    final int pos = binders.size() + 1;
+                    binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
+                } else if (attributeMetaPredicate.itemValuePredicate instanceof BooleanPredicate) {
+                    BooleanPredicate booleanPredicate = (BooleanPredicate) attributeMetaPredicate.itemValuePredicate;
+                    sb.append(" and AM.VALUE #> '{value}' = to_jsonb(")
+                        .append(booleanPredicate.value)
+                        .append(")");
+                } else if (attributeMetaPredicate.itemValuePredicate instanceof StringArrayPredicate) {
+                    StringArrayPredicate stringArrayPredicate = (StringArrayPredicate) attributeMetaPredicate.itemValuePredicate;
+                    for (int i = 0; i < stringArrayPredicate.predicates.length; i++) {
+                        StringPredicate stringPredicate = stringArrayPredicate.predicates[i];
+                        sb.append(stringPredicate.caseSensitive
+                            ? " and AM.VALUE #> '{value}' ->> " + i
+                            : " and upper(AM.VALUE #> '{value}' ->> " + i + ")"
+                        );
+                        sb.append(buildMatchFilter(stringPredicate));
+                        final int pos = binders.size() + 1;
+                        binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
+                    }
+                }
+            }
+            sb.append(")");
+        }
+        sb.append(")");
+        return sb.toString();
     }
 
     protected String buildAttributeFilter(AttributePredicate attributePredicate, List<ParameterBinder> binders) {
@@ -1096,8 +1249,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         if (attributePredicate.name != null) {
             attributeBuilder.append(attributePredicate.name.caseSensitive
-                    ? " and AX.key"
-                    : " and upper(AX.key)"
+                ? "AX.key"
+                : "upper(AX.key)"
             );
             attributeBuilder.append(buildMatchFilter(attributePredicate.name));
 
@@ -1105,27 +1258,32 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             binders.add(st -> st.setString(pos, attributePredicate.name.prepareValue()));
         }
         if (attributePredicate.value != null) {
+
+            if (attributePredicate.name != null) {
+                attributeBuilder.append(" and ");
+            }
+
             if (attributePredicate.value instanceof StringPredicate) {
                 StringPredicate stringPredicate = (StringPredicate) attributePredicate.value;
                 attributeBuilder.append(stringPredicate.caseSensitive
-                        ? " and AX.VALUE #>> '{value}'"
-                        : " and upper(AX.VALUE #>> '{value}')"
+                    ? "AX.VALUE #>> '{value}'"
+                    : "upper(AX.VALUE #>> '{value}')"
                 );
                 attributeBuilder.append(buildMatchFilter(stringPredicate));
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
             } else if (attributePredicate.value instanceof BooleanPredicate) {
                 BooleanPredicate booleanPredicate = (BooleanPredicate) attributePredicate.value;
-                attributeBuilder.append(" and AX.VALUE #> '{value}' = to_jsonb(")
-                        .append(booleanPredicate.value)
-                        .append(")");
+                attributeBuilder.append("AX.VALUE #> '{value}' = to_jsonb(")
+                    .append(booleanPredicate.value)
+                    .append(")");
             } else if (attributePredicate.value instanceof StringArrayPredicate) {
                 StringArrayPredicate stringArrayPredicate = (StringArrayPredicate) attributePredicate.value;
                 for (int i = 0; i < stringArrayPredicate.predicates.length; i++) {
                     StringPredicate stringPredicate = stringArrayPredicate.predicates[i];
                     attributeBuilder.append(stringPredicate.caseSensitive
-                            ? " and AX.VALUE #> '{value}' ->> " + i
-                            : " and upper(AX.VALUE #> '{value}' ->> " + i + ")"
+                        ? "AX.VALUE #> '{value}' ->> " + i
+                        : "upper(AX.VALUE #> '{value}' ->> " + i + ")"
                     );
                     attributeBuilder.append(buildMatchFilter(stringPredicate));
                     final int pos = binders.size() + 1;
@@ -1133,7 +1291,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             } else if (attributePredicate.value instanceof DateTimePredicate) {
                 DateTimePredicate dateTimePredicate = (DateTimePredicate) attributePredicate.value;
-                attributeBuilder.append(" and (AX.Value #>> '{value}')::timestamp");
+                attributeBuilder.append("(AX.Value #>> '{value}')::timestamp");
 
                 Pair<Long, Long> fromAndTo = AssetQueryPredicate.asFromAndTo(timerService.getCurrentTimeMillis(), dateTimePredicate);
 
@@ -1147,7 +1305,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             } else if (attributePredicate.value instanceof NumberPredicate) {
                 NumberPredicate numberPredicate = (NumberPredicate) attributePredicate.value;
-                attributeBuilder.append(" and (AX.VALUE #>> '{value}')::numeric");
+                attributeBuilder.append("(AX.VALUE #>> '{value}')::numeric");
                 attributeBuilder.append(buildOperatorFilter(numberPredicate.operator, numberPredicate.negate));
 
                 final int pos = binders.size() + 1;
@@ -1171,24 +1329,24 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             } else if (attributePredicate.value instanceof ObjectValueKeyPredicate) {
                 ObjectValueKeyPredicate keyPredicate = (ObjectValueKeyPredicate) attributePredicate.value;
                 if (keyPredicate.negated) {
-                    attributeBuilder.append(" and NOT(AX.VALUE #> '{value}' ?? ? ) ");
+                    attributeBuilder.append("NOT(AX.VALUE #> '{value}' ?? ? ) ");
                 } else {
-                    attributeBuilder.append(" and AX.VALUE #> '{value}' ?? ? ");
+                    attributeBuilder.append("AX.VALUE #> '{value}' ?? ? ");
                 }
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, keyPredicate.key));
             } else if (attributePredicate.value instanceof ArrayPredicate) {
                 ArrayPredicate arrayPredicate = (ArrayPredicate) attributePredicate.value;
-                attributeBuilder.append(" and 1=1");
+                attributeBuilder.append("true");
                 if (arrayPredicate.negated) {
                     attributeBuilder.append(" and NOT(");
                 }
                 if (arrayPredicate.value != null) {
                     if (arrayPredicate.index != null) {
-                        attributeBuilder.append(" and AX.VALUE -> ");
+                        attributeBuilder.append("AX.VALUE -> ");
                         attributeBuilder.append(arrayPredicate.index);
                     } else {
-                        attributeBuilder.append(" and AX.VALUE");
+                        attributeBuilder.append("AX.VALUE");
                     }
                     attributeBuilder.append(" @> ?");
                     final int pos = binders.size() + 1;
@@ -1220,7 +1378,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             } else if (attributePredicate.value instanceof GeofencePredicate) {
                 if (attributePredicate.value instanceof RadialGeofencePredicate) {
                     RadialGeofencePredicate location = (RadialGeofencePredicate) attributePredicate.value;
-                    attributeBuilder.append(" and ST_Distance_Sphere(ST_MakePoint(");
+                    attributeBuilder.append("ST_Distance_Sphere(ST_MakePoint(");
                     attributeBuilder.append("(AX.VALUE #>> '{value,coordinates,0}')::numeric");
                     attributeBuilder.append(", (AX.VALUE #>> '{value,coordinates,1}')::numeric");
                     attributeBuilder.append("), ST_MakePoint(");
@@ -1231,7 +1389,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     attributeBuilder.append(location.radius);
                 } else if (attributePredicate.value instanceof RectangularGeofencePredicate) {
                     RectangularGeofencePredicate location = (RectangularGeofencePredicate) attributePredicate.value;
-                    attributeBuilder.append(location.negated ? " and NOT" : " and");
+                    if (location.negated) {
+                        attributeBuilder.append("NOT");
+                    }
                     attributeBuilder.append(" ST_Within(ST_MakePoint(");
                     attributeBuilder.append("(AX.VALUE #>> '{value,coordinates,0}')::numeric");
                     attributeBuilder.append(", (AX.VALUE #>> '{value,coordinates,1}')::numeric");
@@ -1246,13 +1406,19 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     attributeBuilder.append(location.latMax);
                     attributeBuilder.append("))");
                 }
+            } else if (attributePredicate.value instanceof ValueNotEmptyPredicate) {
+                attributeBuilder.append("AX.VALUE ->> 'value' IS NOT NULL");
+            } else if (attributePredicate.value instanceof ValueEmptyPredicate) {
+                attributeBuilder.append("AX.VALUE ->> 'value' IS NULL");
+            } else {
+                throw new UnsupportedOperationException("Attribute value predicate is not supported: " + attributePredicate.value);
             }
         }
 
         return attributeBuilder.toString();
     }
 
-    protected String buildOperatorFilter(BaseAssetQuery.Operator operator, boolean negate) {
+    protected String buildOperatorFilter(AssetQuery.Operator operator, boolean negate) {
         switch (operator) {
             case EQUALS:
                 if (negate) {
@@ -1306,56 +1472,60 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
     }
 
-    protected Asset mapResultTuple(BaseAssetQuery query, ResultSet rs) throws SQLException {
-        switch (query.select.include) {
-            case ONLY_ID_AND_NAME:
-            case ONLY_ID_AND_NAME_AND_ATTRIBUTES:
-            case ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES:
-                Asset asset = new Asset();
-                asset.setId(rs.getString("ID"));
-                asset.setType(rs.getString("ASSET_TYPE"));
-                asset.setName(rs.getString("NAME"));
-                asset.setAccessPublicRead(rs.getBoolean("ACCESS_PUBLIC_READ"));
-                if (query.select.include != AssetQuery.Include.ONLY_ID_AND_NAME) {
-                    if (rs.getString("ATTRIBUTES") != null) {
-                        asset.setAttributes(Values.instance().<ObjectValue>parse(rs.getString("ATTRIBUTES")).orElse(null));
-                    }
-                }
-                return asset;
-            default:
-                Array path = rs.getArray("PATH");
-                String attributes = rs.getString("ATTRIBUTES");
-                return new Asset(
-                        rs.getString("ID"), rs.getLong("OBJ_VERSION"), rs.getTimestamp("CREATED_ON"), rs.getString("NAME"),
-                        rs.getString("ASSET_TYPE"), rs.getBoolean("ACCESS_PUBLIC_READ"),
-                        rs.getString("PARENT_ID"), rs.getString("PARENT_NAME"), rs.getString("PARENT_TYPE"),
-                        rs.getString("REALM"),
-                        path != null ? (String[]) path.getArray() : null,
-                        attributes != null && attributes.length() > 0 ? Values.instance().<ObjectValue>parse(attributes).orElse(
-                                null)
-                                : null);
+    protected Asset mapResultTuple(AssetQuery query, ResultSet rs) throws SQLException {
+        Asset asset = new Asset();
+        asset.setId(rs.getString("ID"));
+        asset.setType(rs.getString("ASSET_TYPE"));
+        asset.setName(rs.getString("NAME"));
+        asset.setVersion(rs.getLong("OBJ_VERSION"));
+        asset.setCreatedOn(rs.getTimestamp("CREATED_ON"));
+        asset.setAccessPublicRead(rs.getBoolean("ACCESS_PUBLIC_READ"));
+
+        if (!query.select.excludeParentInfo) {
+            asset.setParentId(rs.getString("PARENT_ID"));
+            asset.setParentName(rs.getString("PARENT_NAME"));
+            asset.setParentType(rs.getString("PARENT_TYPE"));
         }
+
+        if (!query.select.excludeRealm) {
+            asset.setRealm(rs.getString("REALM"));
+        }
+
+        if (!query.select.excludeAttributes) {
+            if (rs.getString("ATTRIBUTES") != null) {
+                asset.setAttributes(Values.instance().<ObjectValue>parse(rs.getString("ATTRIBUTES")).orElse(null));
+            }
+        }
+
+        if (!query.select.excludePath) {
+            Array path = rs.getArray("PATH");
+            if (path != null) {
+                asset.setPath((String[]) path.getArray());
+            }
+        }
+
+        return asset;
     }
 
     public boolean storeAttributeValue(EntityManager em, String assetId, String attributeName, Value value, String timestamp) {
         return em.unwrap(Session.class).doReturningWork(connection -> {
             String update =
-                    "update ASSET" +
-                            " set ATTRIBUTES = jsonb_set(jsonb_set(ATTRIBUTES, ?, ?, true), ?, ?, true)" +
-                            " where ID = ? and ATTRIBUTES -> ? is not null";
+                "update ASSET" +
+                    " set ATTRIBUTES = jsonb_set(jsonb_set(ATTRIBUTES, ?, ?, true), ?, ?, true)" +
+                    " where ID = ? and ATTRIBUTES -> ? is not null";
             try (PreparedStatement statement = connection.prepareStatement(update)) {
 
                 // Bind the value (and check we don't have a SQL injection hole in attribute name!)
                 if (!AssetAttribute.ATTRIBUTE_NAME_VALIDATOR.test(attributeName)) {
                     LOG.fine(
-                            "Invalid attribute name (must match '" + AssetAttribute.ATTRIBUTE_NAME_PATTERN + "'): " + attributeName
+                        "Invalid attribute name (must match '" + AssetAttribute.ATTRIBUTE_NAME_PATTERN + "'): " + attributeName
                     );
                     return false;
                 }
 
                 Array attributeValuePath = connection.createArrayOf(
-                        "text",
-                        new String[]{attributeName, "value"}
+                    "text",
+                    new String[]{attributeName, "value"}
                 );
                 statement.setArray(1, attributeValuePath);
 
@@ -1367,8 +1537,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                 // Bind the value timestamp
                 Array attributeValueTimestampPath = connection.createArrayOf(
-                        "text",
-                        new String[]{attributeName, "valueTimestamp"}
+                    "text",
+                    new String[]{attributeName, "valueTimestamp"}
                 );
                 statement.setArray(3, attributeValueTimestampPath);
                 PGobject pgJsonValueTimestamp = new PGobject();
@@ -1382,9 +1552,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                 int updatedRows = statement.executeUpdate();
                 LOG.fine("Stored asset '" + assetId
-                        + "' attribute '" + attributeName
-                        + "' (affected rows: " + updatedRows + ") value: "
-                        + (value != null ? value.toJson() : "null"));
+                    + "' attribute '" + attributeName
+                    + "' (affected rows: " + updatedRows + ") value: "
+                    + (value != null ? value.toJson() : "null"));
                 return updatedRows == 1;
             }
         });
@@ -1396,38 +1566,38 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         switch (persistenceEvent.getCause()) {
             case CREATE:
                 // Fully load the asset (excluding attributes)
-                Asset loadedAsset = find(new AssetQuery().select(new Select(ALL_EXCEPT_ATTRIBUTES)).id(asset.getId()));
+                Asset loadedAsset = find(new AssetQuery().select(Select.selectAll().excludeAttributes(true)).ids(asset.getId()));
 
                 clientEventService.publishEvent(
-                        new AssetEvent(AssetEvent.Cause.CREATE, loadedAsset, null)
+                    new AssetEvent(AssetEvent.Cause.CREATE, loadedAsset, null)
                 );
 
                 clientEventService.publishEvent(
-                        new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealm(), asset.getId())
+                    new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealm(), asset.getId())
                 );
                 if (asset.getParentId() != null) {
                     // Child asset created
                     clientEventService.publishEvent(
-                            new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
-                                    asset.getRealm(),
-                                    asset.getParentId(),
-                                    true)
+                        new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
+                            asset.getRealm(),
+                            asset.getParentId(),
+                            true)
                     );
                 } else {
                     // Child asset created (root asset)
                     clientEventService.publishEvent(
-                            new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealm(), true)
+                        new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealm(), true)
                     );
                 }
 
                 // Raise attribute event for each attribute
                 asset.getAttributesStream().forEach(newAttribute ->
-                        clientEventService.publishEvent(
-                                new AttributeEvent(asset.getId(),
-                                        newAttribute.getNameOrThrow(),
-                                        newAttribute.getValue().orElse(null),
-                                        newAttribute.getValueTimestamp().orElse(timerService.getCurrentTimeMillis()))
-                        ));
+                    clientEventService.publishEvent(
+                        new AttributeEvent(asset.getId(),
+                            newAttribute.getNameOrThrow(),
+                            newAttribute.getValue().orElse(null),
+                            newAttribute.getValueTimestamp().orElse(timerService.getCurrentTimeMillis()))
+                    ));
                 break;
             case UPDATE:
 
@@ -1442,10 +1612,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }).toArray(String[]::new);
 
                 // Fully load the asset (excluding attributes)
-                loadedAsset = find(new AssetQuery().select(new Select(ALL_EXCEPT_ATTRIBUTES)).id(asset.getId()));
+                loadedAsset = find(new AssetQuery().select(Select.selectAll().excludeAttributes(true)).ids(asset.getId()));
 
                 clientEventService.publishEvent(
-                            new AssetEvent(AssetEvent.Cause.UPDATE, loadedAsset, updatedProperties)
+                    new AssetEvent(AssetEvent.Cause.UPDATE, loadedAsset, updatedProperties)
                 );
 
                 // Did the name change?
@@ -1453,9 +1623,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 String currentName = persistenceEvent.getCurrentState("name");
                 if (!Objects.equals(previousName, currentName)) {
                     clientEventService.publishEvent(
-                            new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
-                                    asset.getRealm(),
-                                    asset.getId())
+                        new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
+                            asset.getRealm(),
+                            asset.getId())
                     );
                     break;
                 }
@@ -1465,9 +1635,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 String currentParentId = persistenceEvent.getCurrentState("parentId");
                 if (!Objects.equals(previousParentId, currentParentId)) {
                     clientEventService.publishEvent(
-                            new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
-                                    asset.getRealm(),
-                                    asset.getId())
+                        new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
+                            asset.getRealm(),
+                            asset.getId())
                     );
                     break;
                 }
@@ -1477,54 +1647,54 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 String currentRealm = persistenceEvent.getCurrentState("realm");
                 if (!Objects.equals(previousRealm, currentRealm)) {
                     clientEventService.publishEvent(
-                            new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
-                                    asset.getRealm(),
-                                    asset.getId())
+                        new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
+                            asset.getRealm(),
+                            asset.getId())
                     );
                     break;
                 }
 
                 // Did any attributes change if so raise attribute events on the event bus
                 List<AssetAttribute> oldAttributes = attributesFromJson(persistenceEvent.getPreviousState("attributes"),
-                        asset.getId()).collect(Collectors.toList());
+                    asset.getId()).collect(Collectors.toList());
                 List<AssetAttribute> newAttributes = attributesFromJson(persistenceEvent.getCurrentState(
-                        "attributes"), asset.getId()).collect(Collectors.toList());
+                    "attributes"), asset.getId()).collect(Collectors.toList());
 
                 // Get removed attributes and raise an attribute event with deleted flag in attribute state
                 getAddedAttributes(newAttributes, oldAttributes).forEach(obsoleteAttribute ->
-                        clientEventService.publishEvent(
-                                new AttributeEvent(asset.getId(), obsoleteAttribute.getNameOrThrow(), true)
-                        ));
+                    clientEventService.publishEvent(
+                        new AttributeEvent(asset.getId(), obsoleteAttribute.getNameOrThrow(), true)
+                    ));
 
 
                 // Get new or modified attributes
                 getAddedOrModifiedAttributes(oldAttributes,
-                        newAttributes)
-                        .forEach(newOrModifiedAttribute ->
-                                clientEventService.publishEvent(
-                                        new AttributeEvent(
-                                                asset.getId(),
-                                                newOrModifiedAttribute.getNameOrThrow(),
-                                                newOrModifiedAttribute.getValue().orElse(null),
-                                                newOrModifiedAttribute.getValueTimestamp().orElse(timerService.getCurrentTimeMillis()))
-                                ));
+                    newAttributes)
+                    .forEach(newOrModifiedAttribute ->
+                        clientEventService.publishEvent(
+                            new AttributeEvent(
+                                asset.getId(),
+                                newOrModifiedAttribute.getNameOrThrow(),
+                                newOrModifiedAttribute.getValue().orElse(null),
+                                newOrModifiedAttribute.getValueTimestamp().orElse(timerService.getCurrentTimeMillis()))
+                        ));
                 break;
             case DELETE:
 
                 clientEventService.publishEvent(
-                        new AssetEvent(AssetEvent.Cause.DELETE, asset, null)
+                    new AssetEvent(AssetEvent.Cause.DELETE, asset, null)
                 );
 
                 clientEventService.publishEvent(
-                        new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealm(), asset.getId())
+                    new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealm(), asset.getId())
                 );
 
                 // Raise attribute event with deleted flag for each attribute
                 attributesFromJson(persistenceEvent.getPreviousState("attributes"), asset.getId())
-                        .forEach(obsoleteAttribute ->
-                                clientEventService.publishEvent(
-                                        new AttributeEvent(asset.getId(), obsoleteAttribute.getNameOrThrow(), true)
-                                ));
+                    .forEach(obsoleteAttribute ->
+                        clientEventService.publishEvent(
+                            new AttributeEvent(asset.getId(), obsoleteAttribute.getNameOrThrow(), true)
+                        ));
 
                 break;
         }
@@ -1535,23 +1705,23 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         // Client may want to read a subset or all attributes of the asset
         AttributeEvent[] events = asset.getAttributesStream()
-                .filter(attribute -> names.isEmpty() || attribute.getName().filter(names::contains).isPresent())
-                .map(AssetAttribute::getStateEvent)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toArray(AttributeEvent[]::new);
+            .filter(attribute -> names.isEmpty() || attribute.getName().filter(names::contains).isPresent())
+            .map(AssetAttribute::getStateEvent)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .toArray(AttributeEvent[]::new);
         TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription(events, subscriptionId);
         clientEventService.sendToSession(sessionKey, triggeredEventSubscription);
     }
 
     protected void replyWithAssetEvent(String sessionKey, String subscriptionId, Asset asset) {
-        AssetEvent event = new AssetEvent(AssetEvent.Cause.READ,asset, null);
-        TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription(new AssetEvent[] {event}, subscriptionId);
+        AssetEvent event = new AssetEvent(AssetEvent.Cause.READ, asset, null);
+        TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription(new AssetEvent[]{event}, subscriptionId);
         clientEventService.sendToSession(sessionKey, triggeredEventSubscription);
     }
 
     public String toString() {
         return getClass().getSimpleName() + "{" +
-                '}';
+            '}';
     }
 }

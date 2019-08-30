@@ -16,6 +16,7 @@ import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.calendar.RecurrenceRule
 import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.query.AssetQuery
+import org.openremote.model.query.AssetQuery.OrderBy
 import org.openremote.model.query.filter.*
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
@@ -32,11 +33,11 @@ import java.util.function.Function
 import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME
 import static org.openremote.model.asset.AssetType.THING
 import static org.openremote.model.attribute.AttributeValueType.DATETIME
-import static org.openremote.model.query.BaseAssetQuery.*
-import static org.openremote.model.query.BaseAssetQuery.Access.PRIVATE_READ
-import static org.openremote.model.query.BaseAssetQuery.Access.RESTRICTED_READ
-import static org.openremote.model.query.BaseAssetQuery.OrderBy.Property.CREATED_ON
-import static org.openremote.model.query.BaseAssetQuery.OrderBy.Property.NAME
+import static org.openremote.model.query.AssetQuery.*
+import static org.openremote.model.query.AssetQuery.Access.PRIVATE
+import static org.openremote.model.query.AssetQuery.Access.PROTECTED
+import static org.openremote.model.query.AssetQuery.OrderBy.Property.CREATED_ON
+import static org.openremote.model.query.AssetQuery.OrderBy.Property.NAME
 
 class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
@@ -74,8 +75,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "an agent filtering query is executed"
         def assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES))
-                        .type(AssetType.AGENT)
+                        .select(Select.selectExcludePathAndParentAndRealm())
+                        .types(AssetType.AGENT)
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
         )
 
@@ -90,11 +91,11 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[0].realm == null
         assets[0].path == null
 
-        when: "a user filtering query is executed that returns only IDs, names and attribute names"
+        when: "a user filtering query is executed that returns only IDs, names and attribute names and label meta"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES))
-                        .userId(keycloakDemoSetup.testuser3Id)
+                        .select(Select.selectExcludeAll().excludeAttributes(false).excludeAttributeMeta(false).meta(MetaItemType.LABEL))
+                        .userIds(keycloakDemoSetup.testuser3Id)
         )
 
         then: "only the users assets should be retrieved"
@@ -112,11 +113,15 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(4).id == managerDemoSetup.apartment1Bedroom1Id
         assets.get(5).id == managerDemoSetup.apartment1BathroomId
 
-        when: "a user filtering query is executed that returns only IDs, names and attribute names and limits to protected attributes and meta"
+        when: "a user filtering query is executed that returns only IDs, names and attribute names with labels and limits to protected attributes"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES, RESTRICTED_READ))
-                        .userId(keycloakDemoSetup.testuser3Id)
+                    .select(Select.selectExcludeAll()
+                        .excludeAttributes(false)
+                        .excludeAttributeMeta(false)
+                        .meta(MetaItemType.LABEL))
+                    .userIds(keycloakDemoSetup.testuser3Id)
+                    .access(PROTECTED)
         )
 
         then: "only the users assets should be retrieved"
@@ -127,6 +132,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         !assets.get(1).getAttribute("motionSensor").isPresent()
         !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
         assets.get(1).getAttribute("currentTemperature").get().meta.size() == 1
+        assets[1].getAttribute("currentTemperature").get().getMetaItem(MetaItemType.LABEL).isPresent()
+        assets[1].getAttribute("currentTemperature").get().getLabelOrName().get() == "Current temperature"
         !assets.get(1).getAttribute("targetTemperature").get().getValue().isPresent()
         assets.get(1).getAttribute("targetTemperature").get().meta.size() == 1
         assets.get(2).id == managerDemoSetup.apartment1KitchenId
@@ -137,8 +144,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed that returns a protected attribute without any other meta items"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .select(new Select(Include.ALL_EXCEPT_PATH, RESTRICTED_READ))
-                        .id(managerDemoSetup.apartment2LivingroomId)
+                    .select(Select.selectAll().excludePath(true))
+                    .ids(managerDemoSetup.apartment2LivingroomId)
+                    .access(PROTECTED)
         )
 
         then: "only one asset should be retrieved"
@@ -152,19 +160,21 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a recursive query is executed to select asset id, name and attribute names for apartment 1 assets"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .id(managerDemoSetup.smartBuildingId)
-                        .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES, true, RESTRICTED_READ))
-                        .orderBy(new OrderBy(CREATED_ON))
+                    .ids(managerDemoSetup.smartBuildingId)
+                    .select(Select.selectExcludeAll().excludeAttributes(false))
+                    .orderBy(new OrderBy(CREATED_ON))
+                    .recursive(true)
+                    .access(PROTECTED)
         )
 
-        then: "result should contain only ids, names and attribute names and label meta"
+        then: "result should contain only basic info and attribute names"
         assets.size() == 13
         assets[0].id == managerDemoSetup.smartBuildingId
         assets[0].name == "Smart Building"
         assets[1].id == managerDemoSetup.apartment1Id
-        assets[1].createdOn == null
         assets[1].name == "Apartment 1"
         assets[1].type == AssetType.RESIDENCE.getType()
+        assets[1].createdOn != null
         assets[1].parentId == null
         assets[1].parentName == null
         assets[1].parentType == null
@@ -178,9 +188,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[1].getAttribute("lastExecutedScene").isPresent()
         assets[1].getAttribute("presenceDetected").isPresent()
         assets[1].getAttribute("location").isPresent()
-        assets[1].getAttribute("alarmEnabled").get().meta.size() == 1
-        assets[1].getAttribute("alarmEnabled").get().getMetaItem(MetaItemType.LABEL).isPresent()
-        assets[1].getAttribute("alarmEnabled").get().getLabelOrName().get() == "Alarm enabled"
+        assets[1].getAttribute("alarmEnabled").get().meta.size() == 0
         assets[2].id == managerDemoSetup.apartment1ServiceAgentId
         assets[3].id == managerDemoSetup.apartment1LivingroomId
         assets[4].id == managerDemoSetup.apartment1KitchenId
@@ -219,7 +227,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         asset = assetStorageService.find(
                 new AssetQuery()
-                        .id(managerDemoSetup.smartOfficeId)
+                        .ids(managerDemoSetup.smartOfficeId)
         )
 
         then: "result should match"
@@ -238,8 +246,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         asset = assetStorageService.find(
                 new AssetQuery()
-                        .select(new Select(Include.ALL))
-                        .id(managerDemoSetup.smartOfficeId)
+                        .select(Select.selectAll())
+                        .ids(managerDemoSetup.smartOfficeId)
         )
 
         then: "result should match"
@@ -259,7 +267,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .parent(new ParentPredicate(true))
+                        .parents(new ParentPredicate(true))
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
         )
 
@@ -280,8 +288,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .select(new Select(Include.ALL))
-                        .parent(new ParentPredicate(true))
+                        .select(Select.selectAll())
+                        .parents(new ParentPredicate(true))
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
         )
 
@@ -303,7 +311,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .parent(new ParentPredicate(managerDemoSetup.smartBuildingId))
+                        .parents(new ParentPredicate(managerDemoSetup.smartBuildingId))
         )
 
         then: "result should match"
@@ -324,7 +332,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .parent(new ParentPredicate(managerDemoSetup.smartBuildingId))
+                        .parents(new ParentPredicate(managerDemoSetup.smartBuildingId))
                         .tenant(new TenantPredicate(keycloakDemoSetup.tenantA.realm))
         )
 
@@ -337,7 +345,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .parent(new ParentPredicate(managerDemoSetup.smartBuildingId))
+                        .parents(new ParentPredicate(managerDemoSetup.smartBuildingId))
                         .tenant(new TenantPredicate(keycloakDemoSetup.tenantA.realm))
                         .orderBy(new OrderBy(NAME, true))
         )
@@ -351,7 +359,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .parent(new ParentPredicate(managerDemoSetup.smartBuildingId))
+                        .parents(new ParentPredicate(managerDemoSetup.smartBuildingId))
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
         )
 
@@ -361,7 +369,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .path(new PathPredicate(assetStorageService.find(managerDemoSetup.apartment1Id, true).getPath()))
+                        .paths(new PathPredicate(assetStorageService.find(managerDemoSetup.apartment1Id, true).getPath()))
         )
 
         then: "result should match"
@@ -377,8 +385,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .path(new PathPredicate(assetStorageService.find(managerDemoSetup.apartment1Id, true).getPath()))
-                        .type(AssetType.ROOM)
+                        .paths(new PathPredicate(assetStorageService.find(managerDemoSetup.apartment1Id, true).getPath()))
+                        .types(AssetType.ROOM)
         )
 
         then: "result should match"
@@ -391,7 +399,10 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
-                new AssetQuery().select(new Select(Include.ALL, RESTRICTED_READ)).userId(keycloakDemoSetup.testuser3Id)
+                new AssetQuery()
+                    .select(Select.selectAll())
+                    .userIds(keycloakDemoSetup.testuser3Id)
+                    .access(PROTECTED)
         )
 
         then: "result should match"
@@ -410,7 +421,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
-                new AssetQuery().select(new Select(Include.ALL, RESTRICTED_READ)).userId(keycloakDemoSetup.testuser2Id)
+                new AssetQuery().select(Select.selectAll())
+                    .userIds(keycloakDemoSetup.testuser2Id)
+                    .access(PROTECTED)
         )
 
         then: "result should match"
@@ -433,7 +446,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed"
         def assets = assetStorageService.findAll(
-                new AssetQuery().type(AssetType.AGENT)
+                new AssetQuery().types(AssetType.AGENT)
         )
 
         then: "result should match"
@@ -444,8 +457,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed"
         assets = assetStorageService.findAll(new AssetQuery()
-                .type(THING)
-                .parent(new ParentPredicate(managerDemoSetup.agentId))
+                .types(THING)
+                .parents(new ParentPredicate(managerDemoSetup.agentId))
         )
 
         then: "result should match"
@@ -454,8 +467,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed"
         assets = assetStorageService.findAll(new AssetQuery()
-                .type(THING)
-                .parent(new ParentPredicate().type(AssetType.AGENT))
+                .types(THING)
+                .parents(new ParentPredicate().type(AssetType.AGENT))
         )
 
         then: "result should match"
@@ -507,7 +520,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                                 managerDemoSetup.agentId,
                                 managerDemoSetup.agentProtocolConfigName
                         )
-                ).name(new StringPredicate(Match.CONTAINS, false, "thing"))
+                ).names(new StringPredicate(Match.CONTAINS, false, "thing"))
         )
 
         then: "result should match"
@@ -522,7 +535,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                                 managerDemoSetup.agentId,
                                 managerDemoSetup.agentProtocolConfigName
                         )
-                ).name(new StringPredicate(Match.CONTAINS, true, "thing"))
+                ).names(new StringPredicate(Match.CONTAINS, true, "thing"))
         )
 
         then: "result should match"
@@ -536,7 +549,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                                 managerDemoSetup.agentId,
                                 managerDemoSetup.agentProtocolConfigName
                         )
-                ).parent(new ParentPredicate(managerDemoSetup.agentId))
+                ).parents(new ParentPredicate(managerDemoSetup.agentId))
         )
 
         then: "result should match"
@@ -551,7 +564,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                                 managerDemoSetup.agentId,
                                 managerDemoSetup.agentProtocolConfigName
                         )
-                ).parent(new ParentPredicate(managerDemoSetup.apartment1LivingroomId))
+                ).parents(new ParentPredicate(managerDemoSetup.apartment1LivingroomId))
         )
 
         then: "result should match"
@@ -574,8 +587,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed to select a subset of attributes"
         def asset = assetStorageService.find(
                 new AssetQuery()
-                        .id(managerDemoSetup.apartment1LivingroomId)
-                        .select(new Select(Include.ALL, false, PRIVATE_READ, "co2Level", "lastPresenceDetected", "motionSensor"))
+                    .ids(managerDemoSetup.apartment1LivingroomId)
+                    .select(Select.selectAll().attributes("co2Level", "lastPresenceDetected", "motionSensor"))
+                    .access(PRIVATE)
         )
 
         then: "result should match"
@@ -600,8 +614,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed to select a subset of protected attributes"
         asset = assetStorageService.find(
                 new AssetQuery()
-                        .id(managerDemoSetup.apartment1LivingroomId)
-                        .select(new Select(Include.ALL, false, RESTRICTED_READ, "co2Level", "lastPresenceDetected", "motionSensor"))
+                        .ids(managerDemoSetup.apartment1LivingroomId)
+                        .select(Select.selectAll().attributes("co2Level", "lastPresenceDetected", "motionSensor"))
+                        .access(PROTECTED)
         )
 
         then: "result should contain only matches that are protected"
@@ -623,7 +638,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed to select an asset with an attribute of a certain value"
         asset = assetStorageService.find(
-                new AssetQuery().select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES)).attributes(
+                new AssetQuery().select(Select.selectExcludePathAndParentAndRealm()).attributes(
                         new AttributePredicate(
                                 new StringPredicate("windowOpen"), new BooleanPredicate(false)
                         ),
@@ -650,7 +665,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a location filtering query is executed"
         def assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new Select(Include.ONLY_ID_AND_NAME))
+                .select(Select.selectExcludeAll())
                 .attributes(new LocationAttributePredicate(new RadialGeofencePredicate(10, 51.44541688237109d, 5.460315214821094d)))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                 .orderBy(new OrderBy(NAME))
@@ -682,7 +697,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "the same query is run again"
         assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new Select(Include.ONLY_ID_AND_NAME))
+                .select(Select.selectExcludeAll())
                 .attributes(new LocationAttributePredicate(new RadialGeofencePredicate(10, 51.44541688237109d, 5.460315214821094d)))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                 .orderBy(new OrderBy(NAME))
@@ -695,7 +710,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a rectangular region is used that includes previous assets and moved asset"
         assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new Select(Include.ONLY_ID_AND_NAME))
+                .select(Select.selectExcludeAll())
                 .attributes(new LocationAttributePredicate(new RectangularGeofencePredicate(51.44540d, 5.46031d, 51.44594d, 5.46110d)))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                 .orderBy(new OrderBy(NAME))
@@ -717,7 +732,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a rectangular region is used that doesn't cover any assets"
         assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new Select(Include.ONLY_ID_AND_NAME))
+                .select(Select.selectExcludeAll())
                 .attributes(new LocationAttributePredicate(new RectangularGeofencePredicate(51.44542d,  5.46032d, 51.44590d, 5.46100d)))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                 .orderBy(new OrderBy(NAME))
@@ -729,7 +744,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "the same region is used but negated"
         assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new Select(Include.ONLY_ID_AND_NAME))
+                .select(Select.selectExcludeAll())
                 .attributes(new LocationAttributePredicate(new RectangularGeofencePredicate(51.44542d,  5.46032d, 51.44590d, 5.46100d).negate()))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                 .orderBy(new OrderBy(NAME))
@@ -775,7 +790,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a calendar event filtering query is executed for the correct date and time of the event"
         def assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new Select(Include.ALL_EXCEPT_PATH)) // Need attributes to do calendar filtering
+                .select(Select.selectAll().excludePath(true)) // Need attributes to do calendar filtering
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                 .calendarEventActive(1517155200) // 28/01/2018 @ 4:00pm (UTC)
                 .orderBy(new OrderBy(NAME))
@@ -797,7 +812,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a calendar event filtering query is executed for future event on a correct day but wrong time"
         assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new Select(Include.ALL_EXCEPT_PATH))
+                .select(Select.selectAll().excludePath(true))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                 .calendarEventActive(1517335200) // 30/01/2018 @ 6:00pm (UTC)
                 .orderBy(new OrderBy(NAME))
@@ -810,7 +825,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a calendar event filtering query is executed for a future event on a wrong day but correct time"
         assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new Select(Include.ALL_EXCEPT_PATH))
+                .select(Select.selectAll().excludePath(true))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                 .calendarEventActive(1517238600) // 29/01/2018 @ 3:10pm (UTC)
                 .orderBy(new OrderBy(NAME))
@@ -823,7 +838,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a calendar event filtering query is executed inside a valid future event date and time"
         assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new Select(Include.ALL_EXCEPT_PATH)) // Need attributes to do calendar filtering
+                .select(Select.selectAll().excludePath(true)) // Need attributes to do calendar filtering
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                 .calendarEventActive(1517849400) // 05/02/2018 @ 4:50pm (UTC))
                 .orderBy(new OrderBy(NAME))
@@ -845,7 +860,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a calendar event filtering query is executed for some time after the last occurrence"
         assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new Select(Include.ALL_EXCEPT_PATH))
+                .select(Select.selectAll().excludePath(true))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                 .calendarEventActive(1518017520) // 02/07/2018 @ 3:32pm (UTC)
                 .orderBy(new OrderBy(NAME))

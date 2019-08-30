@@ -21,8 +21,7 @@ import static org.openremote.model.attribute.MetaItemType.ACCESS_PUBLIC_READ
 import static org.openremote.model.attribute.MetaItemType.LABEL
 import static org.openremote.model.asset.AssetType.THING
 import static org.openremote.model.attribute.AttributeValueType.NUMBER
-import static org.openremote.model.query.BaseAssetQuery.Include
-import static org.openremote.model.query.BaseAssetQuery.Select
+import static org.openremote.model.query.AssetQuery.Select
 
 class AssetPublicQueryTest extends Specification implements ManagerContainerTrait {
 
@@ -84,8 +83,8 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
 
         when: "a query for a specific public asset is executed"
         def query = new AssetQuery()
-                .select(new Select(Include.ALL))
-                .id(returnedAssets.get(0).id)
+                .select(Select.selectAll())
+                .ids(returnedAssets.get(0).id)
         def assets = assetResource.queryPublicAssets(null, query)
 
         then: "the result should match"

@@ -52,7 +52,6 @@ import org.openremote.model.query.filter.BooleanPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
@@ -67,6 +66,7 @@ import static org.openremote.model.asset.AssetType.CUSTOM;
 import static org.openremote.model.attribute.Attribute.ATTRIBUTE_NAME_VALIDATOR;
 import static org.openremote.model.attribute.Attribute.isAttributeNameEqualTo;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
+import static org.openremote.model.attribute.MetaItemType.LABEL;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetEditActivity
@@ -362,9 +362,9 @@ public class AssetEditActivity
         // Is it agent or attribute link?
         if ((valueHolder instanceof MetaItem) && AgentLink.isAgentLink((MetaItem) valueHolder)) {
             query = new AssetQuery()
-                .select(new AssetQuery.Select(AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES))
+                .select(AssetQuery.Select.selectExcludePathAndParentAndRealm())
                 // Limit to agents
-                .type(AssetType.AGENT);
+                .types(AssetType.AGENT);
 
             // Retrieve agents in the same realm as the asset (if it has been assigned a realm otherwise
             // the query will be automatically restricted to the logged in users realm)
@@ -379,7 +379,11 @@ public class AssetEditActivity
             attributeFilter = ProtocolConfiguration::isProtocolConfiguration;
         } else {
             query = new AssetQuery()
-                .select(new AssetQuery.Select(AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES));
+                .select(AssetQuery.Select
+                    .selectExcludeAll()
+                    .excludeAttributes(false)
+                    .excludeAttributeMeta(false)
+                    .meta(LABEL));
 
             // Limit to assets that have the same realm as the asset being edited (if it has been assigned a realm
             // otherwise the query will be automatically restricted to the logged in users realm)

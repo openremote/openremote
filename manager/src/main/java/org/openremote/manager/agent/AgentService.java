@@ -493,7 +493,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             // Get all assets that have attributes that use this protocol configuration
             List<Asset> assets = assetStorageService.findAll(
                 new AssetQuery()
-                    .select(new AssetQuery.Select(AssetQuery.Include.ALL))
+                    .select(AssetQuery.Select.selectAll())
                     .attributeMeta(
                         new AttributeRefPredicate(
                             MetaItemType.AGENT_LINK,
@@ -523,7 +523,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             // Get all assets that have attributes that use this protocol configuration
             List<Asset> assets = assetStorageService.findAll(
                 new AssetQuery()
-                    .select(new AssetQuery.Select(AssetQuery.Include.ALL))
+                    .select(AssetQuery.Select.selectAll())
                     .attributeMeta(
                         new AttributeRefPredicate(
                             MetaItemType.AGENT_LINK,
@@ -763,8 +763,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         return withLockReturning(getClass().getSimpleName() + "::getAgents", () -> {
             if (agentMap == null) {
                 agentMap = assetStorageService.findAll(new AssetQuery()
-                    .select(new AssetQuery.Select(AssetQuery.Include.ALL))
-                    .type(AssetType.AGENT))
+                    .select(AssetQuery.Select.selectAll())
+                    .types(AssetType.AGENT))
                     .stream()
                     .collect(Collectors.toMap(Asset::getId, agent -> agent));
             }

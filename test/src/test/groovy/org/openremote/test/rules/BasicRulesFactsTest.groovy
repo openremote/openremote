@@ -8,7 +8,7 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.rules.RulesClock
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesFacts
-import org.openremote.model.rules.Assets
+import org.openremote.manager.rules.facade.AssetsFacade
 import spock.lang.Specification
 
 import java.util.stream.Collectors
@@ -50,7 +50,7 @@ class BasicRulesFactsTest extends Specification {
 
     def setup() {
         given: "some rule facts"
-        assetsFacade = Mock(Assets)
+        assetsFacade = Mock(AssetsFacade)
         def timerService = new TimerService()
         def assetStorageService = new AssetStorageService()
         timerService.clock = TimerService.Clock.PSEUDO

@@ -3,7 +3,7 @@ package demo.rules
 import org.openremote.manager.rules.RulesBuilder
 import org.openremote.manager.rules.RulesFacts
 import org.openremote.model.query.AssetQuery
-import org.openremote.model.query.BaseAssetQuery.Operator
+import org.openremote.model.query.AssetQuery.Operator
 import org.openremote.model.rules.AssetState
 
 import java.util.logging.Logger
@@ -11,7 +11,7 @@ import java.util.stream.Stream
 
 import static org.openremote.model.asset.AssetType.RESIDENCE
 import static org.openremote.model.asset.AssetType.ROOM
-import static org.openremote.model.query.BaseAssetQuery.Operator.*
+import static org.openremote.model.query.AssetQuery.Operator.*
 
 Logger LOG = binding.LOG
 RulesBuilder rules = binding.rules
@@ -37,14 +37,14 @@ Closure<Stream<AssetState>> residenceWithVentilationAutoMatch =
         { RulesFacts facts, Operator operator, double ventilationLevelThreshold ->
             // Any residence where auto ventilation is on
             facts.matchAssetState(
-                    new AssetQuery().type(RESIDENCE).attributeValue("ventilationAuto", true)
+                    new AssetQuery().types(RESIDENCE).attributeValue("ventilationAuto", true)
             ).filter { residenceWithVentilationAuto ->
 
                 // and ventilation level is above/below/equal/etc. threshold
                 if (operator == LESS_THAN) {
                     // Used to have an implicit "OR NULL" which has now been removed
                     def isNull = facts.matchFirstAssetState(
-                            new AssetQuery().id(residenceWithVentilationAuto.id).attributeName("ventilationLevel")
+                            new AssetQuery().ids(residenceWithVentilationAuto.id).attributeName("ventilationLevel")
                     ).map {!it.value.isPresent()}.orElse(false)
 
                     if (isNull) {
@@ -53,7 +53,7 @@ Closure<Stream<AssetState>> residenceWithVentilationAutoMatch =
                 }
 
                 return facts.matchFirstAssetState(
-                    new AssetQuery().id(residenceWithVentilationAuto.id)
+                    new AssetQuery().ids(residenceWithVentilationAuto.id)
                             .attributeValue("ventilationLevel", operator, ventilationLevelThreshold)
                     ).isPresent()
             }
@@ -63,7 +63,7 @@ Closure<Boolean> roomThresholdMatch =
         { RulesFacts facts, AssetState residence, String attribute, boolean above, double threshold, String timeWindow ->
             // Any room of the residence which has a level greater than zero
             def roomWithMaxLevel = facts.matchAssetState(
-                    new AssetQuery().type(ROOM).parent(residence.id).attributeValue(attribute, GREATER_THAN, 0)
+                    new AssetQuery().types(ROOM).parents(residence.id).attributeValue(attribute, GREATER_THAN, 0)
             ).max { roomA, roomB ->
                 // get the room with the highest level
                 Double.compare(roomA.valueAsNumber.orElse(0), roomB.valueAsNumber.orElse(0))
@@ -78,7 +78,7 @@ Closure<Boolean> roomThresholdMatch =
                     // and no level above/below threshold in the time window
                     facts.matchAssetEvent(
                             new AssetQuery()
-                                    .id(roomAboveBelowThreshold.id)
+                                    .ids(roomAboveBelowThreshold.id)
                                     .attributeValue(attribute, above ? LESS_EQUALS : GREATER_THAN, threshold)
                     ).filter(facts.clock.last(timeWindow)).count() == 0
                 }.isPresent()

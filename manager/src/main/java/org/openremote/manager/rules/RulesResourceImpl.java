@@ -26,7 +26,6 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.rules.*;
@@ -394,8 +393,8 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
         asset = assetStorageService.find(
             new AssetQuery()
-                .select(new BaseAssetQuery.Select(BaseAssetQuery.Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES))
-                .id(assetId));
+                .select(AssetQuery.Select.selectExcludePathAndAttributes())
+                .ids(assetId));
 
         if (asset == null)
             return new GeofenceDefinition[0];

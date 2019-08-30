@@ -30,13 +30,5 @@ import java.util.stream.Stream;
  */
 public abstract class Users {
 
-    public abstract class RestrictedQuery extends UserQuery<RestrictedQuery> {
-
-        abstract public List<String> getResults();
-
-        abstract public Stream<String> stream();
-    }
-
-    abstract public RestrictedQuery query();
-
+    abstract public Stream<String> getResults(UserQuery userQuery);
 }

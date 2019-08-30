@@ -56,7 +56,7 @@ public abstract class Ruleset {
             "        description: \"An example rule that sets 'bar' on someAttribute when it is 'foo'\",\n" +
             "        when: function(facts) {\n" +
             "            return facts.matchAssetState(\n" +
-            "                new AssetQuery().type(AssetType.THING).attributeValue(\"someAttribute\", \"foo\")\n" +
+            "                new AssetQuery().types(AssetType.THING).attributeValue(\"someAttribute\", \"foo\")\n" +
             "            ).map(function(thing) {\n" +
             "                facts.bind(\"assetId\", thing.id);\n" +
             "                return true;\n" +
@@ -89,7 +89,7 @@ public abstract class Ruleset {
                 "        .when(\n" +
                 "        { facts ->\n" +
                 "            facts.matchFirstAssetState(\n" +
-                "                    new AssetQuery().type(AssetType.THING).attributeValue(\"someAttribute\", \"foo\")\n" +
+                "                    new AssetQuery().types(AssetType.THING).attributeValue(\"someAttribute\", \"foo\")\n" +
                 "            ).map { thing ->\n" +
                 "                facts.bind(\"assetId\", thing.id)\n" +
                 "                true\n" +

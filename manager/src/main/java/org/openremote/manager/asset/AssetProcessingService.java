@@ -198,7 +198,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                         // Restricted users can only get events for their linked assets
                         if (!assetStorageService.isUserAsset(auth.getUserId(), assetId))
                             return false;
-                        // TODO Restricted clients should only receive events for RESTRICTED_READ attributes!
+                        // TODO Restricted clients should only receive events for PROTECTED attributes!
                     } else {
                         // Regular users can only get events for assets in their realm
                         if (!asset.getRealm().equals(auth.getAuthenticatedRealm()))

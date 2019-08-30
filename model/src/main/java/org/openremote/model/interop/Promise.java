@@ -23,6 +23,10 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "Promise")
 @SuppressWarnings("unchecked")
 public class Promise<T,U> {

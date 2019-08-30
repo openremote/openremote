@@ -39,7 +39,6 @@ import java.util.logging.Logger;
 
 import static org.openremote.model.attribute.AttributeEvent.Source.ATTRIBUTE_LINKING_SERVICE;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
-import static org.openremote.model.query.AssetQuery.Include;
 import static org.openremote.model.query.AssetQuery.Select;
 
 /**
@@ -258,8 +257,8 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
         Asset asset = assetStorageService.find(
             em,
             new AssetQuery()
-                .id(attributeRef.getEntityId())
-                .select(new Select(Include.ALL, false, attributeRef.getAttributeName()))
+                .ids(attributeRef.getEntityId())
+                .select(Select.selectAll().attributes(attributeRef.getAttributeName()))
         );
 
         AssetAttribute attribute = asset != null ? asset.getAttribute(attributeRef.getAttributeName()).orElse(null) : null;

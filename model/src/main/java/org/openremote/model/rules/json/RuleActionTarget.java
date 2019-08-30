@@ -19,7 +19,7 @@
  */
 package org.openremote.model.rules.json;
 
-import org.openremote.model.query.NewAssetQuery;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
 
 /**
@@ -32,6 +32,6 @@ import org.openremote.model.query.UserQuery;
  */
 public class RuleActionTarget {
     public String ruleConditionTag;
-    public NewAssetQuery assets;
+    public AssetQuery assets;
     public UserQuery users;
 }

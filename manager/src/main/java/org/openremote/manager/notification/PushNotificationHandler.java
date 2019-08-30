@@ -40,7 +40,6 @@ import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.query.filter.ObjectValueKeyPredicate;
 import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
@@ -59,8 +58,6 @@ import static org.openremote.container.persistence.PersistenceEvent.*;
 import static org.openremote.model.asset.AssetType.CONSOLE;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.DEVICE;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.TOPIC;
-import static org.openremote.model.query.BaseAssetQuery.Include.ONLY_ID_AND_NAME;
-import static org.openremote.model.query.BaseAssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES;
 
 public class PushNotificationHandler extends RouteBuilder implements NotificationHandler {
 
@@ -124,10 +121,9 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         // Find all console assets that use this adapter
         assetStorageService.findAll(
             new AssetQuery()
-                .select(new BaseAssetQuery.Select(BaseAssetQuery.Include.ALL_EXCEPT_PATH,
-                    false,
-                    AttributeType.CONSOLE_PROVIDERS.getAttributeName()))
-                .type(CONSOLE)
+                .select(AssetQuery.Select.selectAll().excludePath(true)
+                    .attributes(AttributeType.CONSOLE_PROVIDERS.getAttributeName()))
+                .types(CONSOLE)
                 .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
                     new ObjectValueKeyPredicate("push")))
             .stream()
@@ -182,14 +178,14 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
         // Check if message is going to a topic if so then filter consoles subscribed to that topic
         PushNotificationMessage pushMessage = (PushNotificationMessage) message;
-        BaseAssetQuery.Select select;
+        AssetQuery.Select select;
         boolean forTopic = pushMessage.getTargetType() == TOPIC;
         List<Asset> mappedConsoles;
 
         if (forTopic) {
-            select = new BaseAssetQuery.Select(ONLY_ID_AND_NAME_AND_ATTRIBUTES, false, AttributeType.CONSOLE_PROVIDERS.getAttributeName());
+            select = AssetQuery.Select.selectExcludePathAndParentAndRealm().attributes(AttributeType.CONSOLE_PROVIDERS.getAttributeName());
         } else {
-            select = new BaseAssetQuery.Select(ONLY_ID_AND_NAME);
+            select = AssetQuery.Select.selectExcludeAll();
         }
 
         switch (targetType) {
@@ -200,7 +196,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                     new AssetQuery()
                         .select(select)
                         .tenant(new TenantPredicate(targetId))
-                        .type(AssetType.CONSOLE)
+                        .types(AssetType.CONSOLE)
                         .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
                             new ObjectValueKeyPredicate(PushNotificationMessage.TYPE))
                 );
@@ -220,17 +216,17 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
             case USER:
 
                 // Get all console assets linked to the specified user
-                List<String> ids = assetStorageService.findUserAssets(null, targetId, null)
+                String[] ids = assetStorageService.findUserAssets(null, targetId, null)
                     .stream()
-                    .map(userAsset -> userAsset.getId().getAssetId()).collect(Collectors.toList());
+                    .map(userAsset -> userAsset.getId().getAssetId()).toArray(String[]::new);
 
-                if (!ids.isEmpty()) {
+                if (ids.length > 0) {
 
                     mappedConsoles = assetStorageService.findAll(
                         new AssetQuery()
                             .select(select)
                             .ids(ids)
-                            .type(AssetType.CONSOLE)
+                            .types(AssetType.CONSOLE)
                             .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
                                 new ObjectValueKeyPredicate(PushNotificationMessage.TYPE))
                     );
@@ -254,8 +250,8 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                 mappedConsoles = assetStorageService.findAll(
                     new AssetQuery()
                         .select(select)
-                        .path(new PathPredicate(targetId))
-                        .type(AssetType.CONSOLE)
+                        .paths(new PathPredicate(targetId))
+                        .types(AssetType.CONSOLE)
                         .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
                             new ObjectValueKeyPredicate(PushNotificationMessage.TYPE))
                 );

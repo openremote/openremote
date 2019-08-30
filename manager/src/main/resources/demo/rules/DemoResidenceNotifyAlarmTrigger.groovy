@@ -8,12 +8,14 @@ import org.openremote.model.notification.PushNotificationAction
 import org.openremote.model.notification.PushNotificationButton
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.notification.PushNotificationMessage
+import org.openremote.model.query.UserQuery
 import org.openremote.model.query.filter.UserAssetPredicate
 import org.openremote.model.rules.Notifications
 import org.openremote.model.rules.Users
 import org.openremote.model.value.Values
 
 import java.util.logging.Logger
+import java.util.stream.Collectors
 
 import static org.openremote.model.asset.AssetType.RESIDENCE
 import static org.openremote.model.asset.AssetType.ROOM
@@ -45,7 +47,7 @@ rules.add()
         .when(
         { facts ->
             facts.matchAssetState(
-                    new AssetQuery().type(RESIDENCE).attributeValue("alarmEnabled", true)
+                    new AssetQuery().types(RESIDENCE).attributeValue("alarmEnabled", true)
             ).filter { residenceWithAlarmEnabled ->
                 !facts.matchFirst(AlarmTrigger) { alarmTrigger ->
                     alarmTrigger.residenceId == residenceWithAlarmEnabled.id
@@ -53,8 +55,8 @@ rules.add()
             }.map { residenceWithoutAlarmTrigger ->
                 // Map to Optional<AssetState> of the "first" room in the residence with presence detected
                 facts.matchFirstAssetState(
-                        new AssetQuery().type(ROOM)
-                                .parent(residenceWithoutAlarmTrigger.id)
+                        new AssetQuery().types(ROOM)
+                                .parents(residenceWithoutAlarmTrigger.id)
                                 .attributeValue("presenceDetected", true)
                 )
             }.filter {
@@ -85,8 +87,8 @@ rules.add()
         { facts ->
             facts.matchFirst(AlarmTrigger) { alarmTrigger ->
                 !facts.matchFirstAssetState(
-                        new AssetQuery().type(ROOM)
-                                .parent(alarmTrigger.residenceId)
+                        new AssetQuery().types(ROOM)
+                                .parents(alarmTrigger.residenceId)
                                 .attributeValue("presenceDetected", true)
                 ).isPresent()
             }.map { alarmTrigger ->
@@ -107,8 +109,8 @@ rules.add()
         { facts ->
             facts.matchFirst(AlarmTrigger) { alarmTrigger ->
                 facts.matchFirstAssetState(
-                        new AssetQuery().type(RESIDENCE)
-                                .id(alarmTrigger.residenceId)
+                        new AssetQuery().types(RESIDENCE)
+                                .ids(alarmTrigger.residenceId)
                                 .attributeValue("alarmEnabled", false)
                 ).isPresent()
             }.map { alarmTrigger ->
@@ -127,7 +129,7 @@ rules.add()
         .when(
         { facts ->
             facts.matchAssetState(
-                    new AssetQuery().type(RESIDENCE).attributeValue("alarmEnabled", true)
+                    new AssetQuery().types(RESIDENCE).attributeValue("alarmEnabled", true)
             ).map { residenceWithAlarmEnabled ->
                 facts.matchFirst(AlarmTrigger, { alarmTrigger ->
                     alarmTrigger.residenceId == residenceWithAlarmEnabled.id
@@ -149,10 +151,10 @@ rules.add()
             AlarmTrigger alarmTrigger = facts.bound("alarmTrigger")
 
             // Get users linked to this residence
-            List<String> userIds = users
-                    .query()
+            UserQuery query = new UserQuery()
                     .asset(new UserAssetPredicate(alarmTrigger.residenceId))
-                    .getResults()
+
+            Collection<String> userIds = users.getResults(query).collect(Collectors.toList())
 
             LOG.info("Alerting users of " + alarmTrigger + ": " + userIds)
 
@@ -183,7 +185,7 @@ rules.add()
         .when(
         { facts ->
             facts.matchAssetState(
-                    new AssetQuery().type(RESIDENCE).attributeValue("alarmEnabled", false)
+                    new AssetQuery().types(RESIDENCE).attributeValue("alarmEnabled", false)
             ).map { residenceWithAlarmEnabled ->
                 facts.matchFirst(AlertSilence) { alertSilence ->
                     alertSilence.residenceId == residenceWithAlarmEnabled.id

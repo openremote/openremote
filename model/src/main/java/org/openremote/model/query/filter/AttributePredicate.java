@@ -26,6 +26,7 @@ import org.openremote.model.value.Values;
 public class AttributePredicate {
 
     public StringPredicate name;
+    public boolean exists;
     public ValuePredicate value;
 
     public AttributePredicate() {

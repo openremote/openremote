@@ -5,7 +5,7 @@ import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.query.filter.UserAssetPredicate;
 
-public class UserQuery<CHILD extends UserQuery<CHILD>> {
+public class UserQuery {
 
     // Restriction predicates
     public TenantPredicate tenantPredicate;
@@ -16,27 +16,23 @@ public class UserQuery<CHILD extends UserQuery<CHILD>> {
     public UserQuery() {
     }
 
-    @SuppressWarnings("unchecked")
-    public CHILD tenant(TenantPredicate tenantPredicate) {
+    public UserQuery tenant(TenantPredicate tenantPredicate) {
         this.tenantPredicate = tenantPredicate;
-        return (CHILD) this;
+        return this;
     }
 
-    @SuppressWarnings("unchecked")
-    public CHILD asset(UserAssetPredicate assetPredicate) {
+    public UserQuery asset(UserAssetPredicate assetPredicate) {
         this.assetPredicate = assetPredicate;
-        return (CHILD) this;
+        return this;
     }
 
-    @SuppressWarnings("unchecked")
-    public CHILD assetPath(PathPredicate pathPredicate) {
+    public UserQuery assetPath(PathPredicate pathPredicate) {
         this.pathPredicate = pathPredicate;
-        return (CHILD) this;
+        return this;
     }
 
-    @SuppressWarnings("unchecked")
-    public CHILD limit(int limit) {
+    public UserQuery limit(int limit) {
         this.limit = limit;
-        return (CHILD) this;
+        return this;
     }
 }

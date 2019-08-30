@@ -19,7 +19,7 @@
  */
 package org.openremote.model.rules.json;
 
-import org.openremote.model.query.NewAssetQuery;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.DateTimePredicate;
 
 /**
@@ -38,7 +38,7 @@ public class RuleCondition {
 
     public String timer;
     public DateTimePredicate datetime;
-    public NewAssetQuery assets;
+    public AssetQuery assets;
     public String tag;
     public RuleConditionReset reset;
 }

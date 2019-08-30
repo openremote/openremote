@@ -29,7 +29,7 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationResource;
 import org.openremote.model.notification.SentNotification;
-import org.openremote.model.query.BaseAssetQuery;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.value.Value;
 
 import javax.ws.rs.WebApplicationException;
@@ -178,7 +178,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             }
 
             // Check asset is public read amd not linked to any users
-            Asset asset = assetStorageService.find(sentNotification.getTargetId(), false, BaseAssetQuery.Access.PUBLIC_READ);
+            Asset asset = assetStorageService.find(sentNotification.getTargetId(), false, AssetQuery.Access.PUBLIC);
             if (asset == null) {
                 LOG.fine("DENIED: Anonymous request to update a notification sent to an asset that doesn't exist or isn't public");
                 throw new WebApplicationException("Anonymous request can only update public assets not linked to a user", FORBIDDEN);

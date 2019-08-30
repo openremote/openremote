@@ -405,6 +405,10 @@ public class Asset implements IdentifiableEntity {
         return createdOn;
     }
 
+    public void setCreatedOn(Date createdOn) {
+        this.createdOn = createdOn;
+    }
+
     public String getName() {
         return name;
     }
@@ -506,6 +510,10 @@ public class Asset implements IdentifiableEntity {
      */
     public String[] getPath() {
         return path;
+    }
+
+    public void setPath(String[] path) {
+        this.path = path;
     }
 
     /**

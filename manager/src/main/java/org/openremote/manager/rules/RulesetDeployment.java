@@ -35,6 +35,7 @@ import org.openremote.container.Container;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
+import org.openremote.manager.rules.facade.AssetsFacade;
 import org.openremote.manager.rules.facade.NotificationsFacade;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Ruleset;
@@ -288,9 +289,9 @@ public class RulesetDeployment {
                 "    \"org.openremote.model.rules\",\n" +
                 "    \"org.openremote.model.query\"\n" +
                 ");\n" +
-                "var Match = Java.type(\"org.openremote.model.query.BaseAssetQuery$Match\");\n" +
-                "var Operator = Java.type(\"org.openremote.model.query.BaseAssetQuery$Operator\");\n" +
-                "var NumberType = Java.type(\"org.openremote.model.query.BaseAssetQuery$NumberType\");\n" +
+                "var Match = Java.type(\"org.openremote.model.query.AssetQuery$Match\");\n" +
+                "var Operator = Java.type(\"org.openremote.model.query.AssetQuery$Operator\");\n" +
+                "var NumberType = Java.type(\"org.openremote.model.query.AssetQuery$NumberType\");\n" +
                 "var StringPredicate = Java.type(\"org.openremote.model.query.filter.StringPredicate\");\n" +
                 "var BooleanPredicate = Java.type(\"org.openremote.model.query.filter.BooleanPredicate\");\n" +
                 "var StringArrayPredicate = Java.type(\"org.openremote.model.query.filter.StringArrayPredicate\");\n" +

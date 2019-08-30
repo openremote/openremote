@@ -19,7 +19,8 @@
  */
 package org.openremote.model.rules.json;
 
-import org.openremote.model.query.NewAssetQuery;
+import org.openremote.model.query.LogicGroup;
+import org.openremote.model.query.AssetQuery;
 
 /**
  * A declarative rule definition a.k.a. JSON rules; consists of:
@@ -35,9 +36,7 @@ import org.openremote.model.query.NewAssetQuery;
  * re-trigger a rule if it is matched by a different {@link RuleCondition})
  * <p>
  * The {@link #otherwise} {@link RuleAction}s are applied to the {@link org.openremote.model.asset.Asset}s filtered by
- * the query that don't match the {@link NewAssetQuery#attributes} predicates.
- * {@link #and} - Optional condition that can be used to further restrict the LHS but without affecting the
- * {@link org.openremote.model.rules.AssetState}s that form the context for the RHS. If this is specified then the
+ * the query that don't match the {@link AssetQuery#attributes} predicates.
  * {@link #when} must evaluate to true and this condition must evaluate to true.
  * <h2>RHS</h2>
  * <p>
@@ -45,9 +44,9 @@ import org.openremote.model.query.NewAssetQuery;
  * {@link RuleCondition}s in the {@link #when} is true.
  * <p>
  * {@link #otherwise} - Defines a series of {@link RuleAction}s to perform when there is one or more asset that matched  rule doesn't match the assets specified
- * in the {@link Rule#when}. The list of assets this applies to is the assets filtered by applying the
- * {@link Rule#when} but excluding the {@link NewAssetQuery#attributes} predicates and excluding any assets that match
- * the entire {@link Rule#when}. If the number of these assets is greater than 0 then these {@link RuleAction}s will be
+ * in the {@link JsonRule#when}. The list of assets this applies to is the assets filtered by applying the
+ * {@link JsonRule#when} but excluding the {@link AssetQuery#attributes} predicates and excluding any assets that match
+ * the entire {@link JsonRule#when}. If the number of these assets is greater than 0 then these {@link RuleAction}s will be
  * executed.
  * <h2>Reset</h2>
  * <p>
@@ -57,7 +56,7 @@ import org.openremote.model.query.NewAssetQuery;
  * <b>NOTE: Rule trigger history is not persisted so on system restart this information is lost and a rule will be
  * able to fire again.</b>
  */
-public class Rule {
+public class JsonRule {
 
     public String name;
     public String description;

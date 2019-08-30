@@ -4,7 +4,7 @@ rules = [{
 
         var roomWithLightOn = facts.matchFirstAssetState( // Find asset state
             new AssetQuery()
-                .type(AssetType.ROOM) // for a room
+                .types(AssetType.ROOM) // for a room
                 .attributeValue("lightSwitch", true) // where the light switch is on
         );
 
@@ -14,8 +14,8 @@ rules = [{
 
             var residenceWithLightOff = facts.matchFirstAssetEvent( // Find asset event
                 new AssetQuery()
-                    .type(AssetType.RESIDENCE) // for a residence
-                    .id(room.parentId) // that is the parent asset of the room
+                    .types(AssetType.RESIDENCE) // for a residence
+                    .ids(room.parentId) // that is the parent asset of the room
                     .attributeValue("allLightsOffSwitch", true) // where the "all lights off" switch has been triggered
             );
 

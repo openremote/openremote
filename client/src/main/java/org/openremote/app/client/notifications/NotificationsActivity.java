@@ -41,7 +41,7 @@ import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.notification.*;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.BaseAssetQuery;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.TenantResource;
@@ -399,8 +399,7 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
             assetQueryMapper,
             requestParams -> assetResource.queryAssets(requestParams,
                 new AssetQuery()
-                    .select(new BaseAssetQuery
-                        .Select(BaseAssetQuery.Include.ONLY_ID_AND_NAME))
+                    .select(AssetQuery.Select.selectExcludeAll())
                     .tenant(new TenantPredicate(realm))),
             200,
             assetConsumer::accept);

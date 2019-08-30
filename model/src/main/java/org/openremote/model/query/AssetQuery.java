@@ -19,11 +19,452 @@
  */
 package org.openremote.model.query;
 
-/**
- * This was only done to allow GWT jackson to compile it; don't think GWT jackson
- * likes self referencing generic type parameters but hard to tell as the errors
- * generated are not helpful.
- */
-public class AssetQuery extends BaseAssetQuery<AssetQuery> {
+import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.CalendarEventConfiguration;
+import org.openremote.model.attribute.MetaItemDescriptor;
+import org.openremote.model.query.filter.*;
 
+import java.util.Arrays;
+
+/**
+ * Encapsulate asset query restriction, projection, and ordering of results.
+ */
+// TODO: Add AssetQuery support for arbitrary attribute property path amd value (e.g. attributes.consoleProviders.geofence.version == "ORConsole")
+public class AssetQuery {
+
+    public static class Select {
+
+        public String[] attributes;
+        public String[] meta;
+        public boolean excludePath = true;
+        public boolean excludeAttributeMeta = true;
+        public boolean excludeAttributes = true;
+        public boolean excludeAttributeValue = true;
+        public boolean excludeAttributeTimestamp = true;
+        public boolean excludeAttributeType = true;
+        public boolean excludeParentInfo;
+        public boolean excludeRealm;
+
+        public Select() {
+        }
+
+        public static Select selectAll() {
+            return new Select()
+                .excludeAttributes(false)
+                .excludeAttributeMeta(false)
+                .excludeAttributeType(false)
+                .excludeAttributeTimestamp(false)
+                .excludeAttributeValue(false)
+                .excludePath(false)
+                .excludeParentInfo(false)
+                .excludeRealm(false);
+        }
+
+        public static Select selectExcludePathAndParentAndRealm() {
+            return new Select()
+                .excludeAttributes(false)
+                .excludeAttributeMeta(false)
+                .excludeAttributeType(false)
+                .excludeAttributeTimestamp(false)
+                .excludeAttributeValue(false)
+                .excludePath(true)
+                .excludeParentInfo(true)
+                .excludeRealm(true);
+        }
+
+        public static Select selectExcludePathAndAttributes() {
+            return new Select()
+                .excludePath(true)
+                .excludeAttributes(true);
+        }
+
+        public static Select selectExcludeAll() {
+            return new Select()
+                .excludeAttributes(true)
+                .excludeAttributeMeta(true)
+                .excludeAttributeType(true)
+                .excludeAttributeValue(true)
+                .excludeAttributeTimestamp(true)
+                .excludePath(true)
+                .excludeParentInfo(true)
+                .excludeRealm(true);
+        }
+
+        public Select attributes(String... attributeNames) {
+            this.attributes = attributeNames;
+            return this;
+        }
+
+        public Select meta(String... metaUrns) {
+            this.meta = metaUrns;
+            return this;
+        }
+
+        public Select meta(MetaItemDescriptor... meta) {
+            if (meta == null) {
+                this.meta = null;
+                return this;
+            }
+
+            return meta(Arrays.stream(meta).map(MetaItemDescriptor::getUrn).toArray(String[]::new));
+        }
+
+        public Select excludeAttributes(boolean exclude) {
+            this.excludeAttributes = exclude;
+            return this;
+        }
+
+        public Select excludeAttributeMeta(boolean exclude) {
+            this.excludeAttributeMeta = exclude;
+            return this;
+        }
+
+        public Select excludeAttributeType(boolean exclude) {
+            this.excludeAttributeType = exclude;
+            return this;
+        }
+
+        public Select excludeAttributeValue(boolean exclude) {
+            this.excludeAttributeValue = exclude;
+            return this;
+        }
+
+        public Select excludeAttributeTimestamp(boolean exclude) {
+            this.excludeAttributeTimestamp = exclude;
+            return this;
+        }
+
+        public Select excludePath(boolean exclude) {
+            this.excludePath = exclude;
+            return this;
+        }
+
+        public Select excludeParentInfo(boolean exclude) {
+            this.excludeParentInfo = exclude;
+            return this;
+        }
+
+        public Select excludeRealm(boolean exclude) {
+            this.excludeRealm = exclude;
+            return this;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                ", excludeAttributes=" + excludeAttributes +
+                ", excludeAttributeMeta=" + excludeAttributeMeta +
+                ", excludeAttributeValue=" + excludeAttributeValue +
+                ", excludeAttributeTimestamp=" + excludeAttributeTimestamp +
+                ", excludeAttributeType=" + excludeAttributeType +
+                ", excludePath=" + excludePath +
+                ", excludeParentInfo=" + excludeParentInfo +
+                ", excludeRealm=" + excludeRealm +
+                ", attributeNames=" + Arrays.toString(attributes) +
+                '}';
+        }
+    }
+
+    public static class OrderBy {
+
+        public enum Property {
+            CREATED_ON,
+            NAME,
+            ASSET_TYPE,
+            PARENT_ID,
+            REALM
+        }
+
+        public Property property;
+        public boolean descending;
+
+        public OrderBy() {
+        }
+
+        public OrderBy(Property property) {
+            this.property = property;
+        }
+
+        public OrderBy(Property property, boolean descending) {
+            this.property = property;
+            this.descending = descending;
+        }
+
+        public OrderBy property(Property property) {
+            this.property = property;
+            return this;
+        }
+
+        public OrderBy descending(boolean descending) {
+            this.descending = descending;
+            return this;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "property=" + property +
+                ", descending=" + descending +
+                '}';
+        }
+    }
+
+    public enum Access {
+        PRIVATE,
+        PROTECTED,
+        PUBLIC
+    }
+
+    /**
+     * String matching options
+     */
+    public enum Match {
+        EXACT,
+        BEGIN,
+        END,
+        CONTAINS;
+
+        public String prepare(String string) {
+            if (string == null)
+                return null;
+            switch (this) {
+                case BEGIN:
+                    return string + "%";
+                case CONTAINS:
+                    return "%" + string + "%";
+                case END:
+                    return "%" + string;
+            }
+            return string;
+        }
+    }
+
+    /**
+     * Binary operators
+     */
+    public enum Operator {
+        EQUALS,
+        GREATER_THAN,
+        GREATER_EQUALS,
+        LESS_THAN,
+        LESS_EQUALS,
+        BETWEEN
+    }
+
+    public enum NumberType {
+        DOUBLE,
+        INTEGER
+    }
+
+    public boolean recursive;
+    // Projection
+    public Select select;
+    // Restriction predicates
+    public Access access = Access.PRIVATE;
+    public String[] ids;
+    public StringPredicate[] names;
+    public ParentPredicate[] parents;
+    public PathPredicate[] paths;
+    public TenantPredicate tenant;
+    public String[] userIds;
+    public StringPredicate[] types;
+    public LogicGroup<AttributePredicate> attributes;
+    public AttributeMetaPredicate[] attributeMeta;
+    public CalendarEventActivePredicate calendarEventActive;
+    // Ordering
+    public OrderBy orderBy;
+    public int limit;
+
+    public AssetQuery() {
+    }
+
+    public AssetQuery recursive(boolean recursive) {
+        this.recursive = recursive;
+        return this;
+    }
+
+    public AssetQuery access(Access access) {
+        this.access = access;
+        return this;
+    }
+
+    public AssetQuery select(Select select) {
+        if (select == null) {
+            select = new Select();
+        }
+
+        this.select = select;
+        return this;
+    }
+
+    public AssetQuery ids(String... ids) {
+        this.ids = ids;
+        return this;
+    }
+
+    public AssetQuery names(String... names) {
+        if (names == null || names.length == 0) {
+            this.names = null;
+            return this;
+        }
+        this.names = Arrays.stream(names).map(StringPredicate::new).toArray(StringPredicate[]::new);
+        return this;
+    }
+
+    public AssetQuery names(StringPredicate... names) {
+        this.names = names;
+        return this;
+    }
+
+    public AssetQuery parents(String... ids) {
+        if (ids == null || ids.length == 0) {
+            this.names = null;
+            return this;
+        }
+        this.parents = Arrays.stream(ids).map(ParentPredicate::new).toArray(ParentPredicate[]::new);
+        return this;
+    }
+
+    public AssetQuery parents(AssetType... assetTypes) {
+        if (assetTypes == null || assetTypes.length == 0) {
+            this.names = null;
+            return this;
+        }
+        this.parents = Arrays.stream(assetTypes).map(id -> new ParentPredicate().type(id)).toArray(ParentPredicate[]::new);
+        return this;
+    }
+
+    public AssetQuery parents(ParentPredicate... parentPredicates) {
+        this.parents = parentPredicates;
+        return this;
+    }
+
+    public AssetQuery paths(PathPredicate... pathPredicates) {
+        this.paths = pathPredicates;
+        return this;
+    }
+
+    public AssetQuery tenant(TenantPredicate tenantPredicate) {
+        this.tenant = tenantPredicate;
+        return this;
+    }
+
+    public AssetQuery userIds(String... userIds) {
+        this.userIds = userIds;
+        return this;
+    }
+
+    public AssetQuery types(StringPredicate... typePredicates) {
+        this.types = typePredicates;
+        return this;
+    }
+
+    public AssetQuery types(String... types) {
+        if (types == null || types.length == 0) {
+            this.types = null;
+            return this;
+        }
+
+        this.types = Arrays.stream(types).map(StringPredicate::new).toArray(StringPredicate[]::new);
+        return this;
+    }
+
+    public AssetQuery types(AssetType... types) {
+        if (types == null || types.length == 0) {
+            this.types = null;
+            return this;
+        }
+
+        this.types = Arrays.stream(types).map(at -> new StringPredicate(at.getType())).toArray(StringPredicate[]::new);
+        return this;
+    }
+
+    public AssetQuery attributes(AttributePredicate... attributePredicates) {
+        if (attributePredicates == null || attributePredicates.length == 0) {
+            this.attributes = null;
+            return this;
+        }
+
+        this.attributes = new LogicGroup<>(attributePredicates);
+        return this;
+    }
+
+    public AssetQuery attributes(LogicGroup<AttributePredicate> attributePredicateGroup) {
+        this.attributes = attributePredicateGroup;
+        return this;
+    }
+
+    public AssetQuery attributeName(String attributeName) {
+        return attributes(new AttributePredicate(attributeName));
+    }
+
+    public AssetQuery attributeValue(String name, ValuePredicate valuePredicate) {
+        return attributes(new AttributePredicate(new StringPredicate(name), valuePredicate));
+    }
+
+    public AssetQuery attributeValue(String name, boolean b) {
+        return attributeValue(name, new BooleanPredicate(b));
+    }
+
+    public AssetQuery attributeValue(String name, String s) {
+        return attributeValue(name, new StringPredicate(s));
+    }
+
+    public AssetQuery attributeValue(String name, Match match, String s) {
+        return attributeValue(name, new StringPredicate(match, s));
+    }
+
+    public AssetQuery attributeValue(String name, Match match, boolean caseSensitive, String s) {
+        return attributeValue(name, new StringPredicate(match, caseSensitive, s));
+    }
+
+    public AssetQuery attributeValue(String name, double d) {
+        return attributeValue(name, new NumberPredicate(d));
+    }
+
+    public AssetQuery attributeValue(String name, Operator operator, double d) {
+        return attributeValue(name, new NumberPredicate(d, operator));
+    }
+
+    public AssetQuery attributeMeta(AttributeMetaPredicate... attributeMetaPredicates) {
+        this.attributeMeta = attributeMetaPredicates;
+        return this;
+    }
+
+    public AssetQuery orderBy(OrderBy orderBy) {
+        this.orderBy = orderBy;
+        return this;
+    }
+
+    /**
+     * Will filter out assets that have a {@link CalendarEventConfiguration} attribute that results in the event not
+     * being 'active/in progress' at the specified time. Assets without a {@link CalendarEventConfiguration} attribute
+     * are assumed to always be in progress (i.e. will always pass this check).
+     *
+     * <b>
+     * NOTE: This predicate is applied in memory and the results should be limited as much as possible by applying other
+     * predicates to the query to avoid performance issues.
+     * </b>
+     */
+    public AssetQuery calendarEventActive(long timestampSeconds) {
+        calendarEventActive = new CalendarEventActivePredicate(timestampSeconds);
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "select=" + select +
+            ", id='" + ids + '\'' +
+            ", name=" + names +
+            ", parent=" + parents +
+            ", path=" + paths +
+            ", tenant=" + tenant +
+            ", userId='" + userIds + '\'' +
+            ", type=" + types +
+            ", attribute=" + (attributes != null ? attributes.toString() : "null" ) +
+            ", attributeMeta=" + Arrays.toString(attributeMeta) +
+            ", orderBy=" + orderBy +
+            '}';
+    }
 }
