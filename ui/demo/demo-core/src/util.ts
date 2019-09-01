@@ -1,20 +1,20 @@
-import {Asset, AssetQuery, BaseAssetQueryMatch, BaseAssetQueryInclude} from "@openremote/model";
+import {Asset, AssetQuery, AssetQueryMatch, AssetQueryInclude} from "@openremote/model";
 import rest from "@openremote/rest";
 
 export async function getApartment1Asset(): Promise<Asset | undefined> {
     const query: AssetQuery = {
         name: {
             predicateType: "string",
-            match: BaseAssetQueryMatch.EXACT,
+            match: AssetQueryMatch.EXACT,
             value: "Apartment 1"
         },
         type: {
             predicateType: "string",
-            match: BaseAssetQueryMatch.EXACT,
+            match: AssetQueryMatch.EXACT,
             value: "urn:openremote:asset:residence"
         },
         select: {
-            include: BaseAssetQueryInclude.ONLY_ID_AND_NAME
+            include: AssetQueryInclude.ONLY_ID_AND_NAME
         }
     };
 

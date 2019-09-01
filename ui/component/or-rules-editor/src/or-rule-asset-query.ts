@@ -3,8 +3,8 @@ import {
     AttributeDescriptor,
     AttributePredicate,
     AttributeValueType,
-    BaseAssetQueryMatch,
-    BaseAssetQueryOperator,
+    AssetQueryMatch,
+    AssetQueryOperator,
     NewAssetQuery,
     ValuePredicateUnion,
     ValueType,
@@ -87,7 +87,7 @@ class OrRuleAssetQuery extends LitElement {
             case "datetime":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "number":
-                if (valuePredicate.operator === BaseAssetQueryOperator.BETWEEN) {
+                if (valuePredicate.operator === AssetQueryOperator.BETWEEN) {
                     return html`
                         <or-input required type="${InputType.NUMBER}" @or-input-changed="${(e: OrInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", e.detail.value)}" .assetType="${getAssetTypeFromQuery(this.query)}" .attributeName="${attributeName}" .attributeDescriptor="${descriptor}" .value="${valuePredicate.value ? valuePredicate.value : null}" ?readonly="${this.readonly}"></or-input>
                         <span style="display: inline-flex; align-items: center;">&</span>
@@ -200,7 +200,7 @@ class OrRuleAssetQuery extends LitElement {
             };
         }
 
-        attributePredicate!.name.match = BaseAssetQueryMatch.EXACT;
+        attributePredicate!.name.match = AssetQueryMatch.EXACT;
         attributePredicate!.name.value = attributeName;
         this.dispatchEvent(new OrRuleChangedEvent());
         this.requestUpdate();
@@ -277,13 +277,13 @@ class OrRuleAssetQuery extends LitElement {
         switch (valuePredicate.predicateType) {
             case "string":
                 switch (valuePredicate.match) {
-                    case BaseAssetQueryMatch.EXACT:
+                    case AssetQueryMatch.EXACT:
                         return valuePredicate.negate ? AssetQueryOperator.NOT_EQUALS : AssetQueryOperator.EQUALS;
-                    case BaseAssetQueryMatch.BEGIN:
+                    case AssetQueryMatch.BEGIN:
                         return valuePredicate.negate ? AssetQueryOperator.NOT_STARTS_WITH : AssetQueryOperator.STARTS_WITH;
-                    case BaseAssetQueryMatch.END:
+                    case AssetQueryMatch.END:
                         return valuePredicate.negate ? AssetQueryOperator.NOT_ENDS_WITH : AssetQueryOperator.ENDS_WITH;
-                    case BaseAssetQueryMatch.CONTAINS:
+                    case AssetQueryMatch.CONTAINS:
                         return valuePredicate.negate ? AssetQueryOperator.NOT_CONTAINS : AssetQueryOperator.CONTAINS;
                 }
                 return;
@@ -294,17 +294,17 @@ class OrRuleAssetQuery extends LitElement {
             case "datetime":
             case "number":
                 switch (valuePredicate.operator) {
-                    case BaseAssetQueryOperator.EQUALS:
+                    case AssetQueryOperator.EQUALS:
                         return valuePredicate.negate ? AssetQueryOperator.NOT_EQUALS : AssetQueryOperator.EQUALS;
-                    case BaseAssetQueryOperator.GREATER_THAN:
+                    case AssetQueryOperator.GREATER_THAN:
                         return valuePredicate.negate ? AssetQueryOperator.LESS_EQUALS : AssetQueryOperator.GREATER_THAN;
-                    case BaseAssetQueryOperator.GREATER_EQUALS:
+                    case AssetQueryOperator.GREATER_EQUALS:
                         return valuePredicate.negate ? AssetQueryOperator.LESS_THAN : AssetQueryOperator.GREATER_EQUALS;
-                    case BaseAssetQueryOperator.LESS_THAN:
+                    case AssetQueryOperator.LESS_THAN:
                         return valuePredicate.negate ? AssetQueryOperator.GREATER_EQUALS : AssetQueryOperator.LESS_THAN;
-                    case BaseAssetQueryOperator.LESS_EQUALS:
+                    case AssetQueryOperator.LESS_EQUALS:
                         return valuePredicate.negate ? AssetQueryOperator.GREATER_THAN : AssetQueryOperator.LESS_EQUALS;
-                    case BaseAssetQueryOperator.BETWEEN:
+                    case AssetQueryOperator.BETWEEN:
                         return valuePredicate.negate ? AssetQueryOperator.NOT_BETWEEN : AssetQueryOperator.BETWEEN;
                 }
                 return;
@@ -438,7 +438,7 @@ class OrRuleAssetQuery extends LitElement {
                     predicate = {
                         predicateType: "string",
                         negate: value === AssetQueryOperator.NOT_STARTS_WITH,
-                        match: BaseAssetQueryMatch.BEGIN
+                        match: AssetQueryMatch.BEGIN
                     };
                 }
                 break;
@@ -448,7 +448,7 @@ class OrRuleAssetQuery extends LitElement {
                     predicate = {
                         predicateType: "string",
                         negate: value === AssetQueryOperator.NOT_ENDS_WITH,
-                        match: BaseAssetQueryMatch.END
+                        match: AssetQueryMatch.END
                     };
                 }
                 break;
@@ -458,14 +458,14 @@ class OrRuleAssetQuery extends LitElement {
                 if (valueType === ValueType.NUMBER) {
                     predicate = {
                         predicateType: "number",
-                        operator: BaseAssetQueryOperator.BETWEEN,
+                        operator: AssetQueryOperator.BETWEEN,
                         negate: true
                     };
                 } else {
                     // Assume datetime
                     predicate = {
                         predicateType: "datetime",
-                        operator: BaseAssetQueryOperator.BETWEEN,
+                        operator: AssetQueryOperator.BETWEEN,
                         negate: true
                     };
                 }
@@ -480,13 +480,13 @@ class OrRuleAssetQuery extends LitElement {
                 if (valueType === ValueType.NUMBER) {
                     predicate = {
                         predicateType: "number",
-                        operator: key as BaseAssetQueryOperator
+                        operator: key as AssetQueryOperator
                     };
                 } else {
                     // Assume datetime
                     predicate = {
                         predicateType: "datetime",
-                        operator: key as BaseAssetQueryOperator
+                        operator: key as AssetQueryOperator
                     };
                 }
                 break;
@@ -498,19 +498,19 @@ class OrRuleAssetQuery extends LitElement {
                     predicate = {
                         predicateType: "datetime",
                         negate: value === AssetQueryOperator.NOT_EQUALS,
-                        operator: BaseAssetQueryOperator.EQUALS
+                        operator: AssetQueryOperator.EQUALS
                     };
                 } else if (valueType === ValueType.NUMBER) {
                     predicate = {
                         predicateType: "number",
                         negate: value === AssetQueryOperator.NOT_EQUALS,
-                        operator: BaseAssetQueryOperator.EQUALS
+                        operator: AssetQueryOperator.EQUALS
                     };
                 } else if (valueType === ValueType.STRING) {
                     predicate = {
                         predicateType: "string",
                         negate: value === AssetQueryOperator.NOT_EQUALS,
-                        match: BaseAssetQueryMatch.EXACT
+                        match: AssetQueryMatch.EXACT
                     };
                 }
                 break;
@@ -535,7 +535,7 @@ class OrRuleAssetQuery extends LitElement {
                 predicate = {
                     predicateType: "string",
                     negate: value === AssetQueryOperator.NOT_CONTAINS,
-                    match: BaseAssetQueryMatch.CONTAINS
+                    match: AssetQueryMatch.CONTAINS
                 };
             }
         }

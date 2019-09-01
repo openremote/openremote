@@ -7,7 +7,7 @@ import {faClock} from "@fortawesome/free-regular-svg-icons";
 import {faTimes} from "@fortawesome/free-solid-svg-icons";
 
 import REST from "@openremote/rest";
-import {AssetQuery, BaseAssetQueryInclude} from "@openremote/model";
+import {AssetQuery, AssetQueryInclude} from "@openremote/model";
 import openremote from "@openremote/core";
 
 @customElement("or-smart-notify")
@@ -51,7 +51,7 @@ class OrSmartNotify extends LitElement {
         return new Promise((resolve: any, reject: any) => {
             const smartNotifyQuery: AssetQuery = {
                 name: {predicateType: "string", value: "SMART_NOTIFY_ASSET"},
-                select: {include: BaseAssetQueryInclude.ALL_EXCEPT_PATH}
+                select: {include: AssetQueryInclude.ALL_EXCEPT_PATH}
             };
             REST.api.AssetResource.queryAssets(smartNotifyQuery).then((response: any) => {
                 console.log("Setting Smart Notify");

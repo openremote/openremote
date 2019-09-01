@@ -1,6 +1,6 @@
 import {customElement, html, LitElement, TemplateResult, property} from "lit-element";
 import {
-    BaseAssetQueryMatch,
+    AssetQueryMatch,
     RuleCondition,
     AssetDescriptor,
 } from "@openremote/model";
@@ -163,7 +163,7 @@ class OrRuleCondition extends LitElement {
         if (!this.ruleCondition!.assets!.types || this.ruleCondition!.assets!.types.length === 0) {
             this.ruleCondition!.assets!.types = [{
                 predicateType: "string",
-                match: BaseAssetQueryMatch.EXACT
+                match: AssetQueryMatch.EXACT
             }];
         }
 

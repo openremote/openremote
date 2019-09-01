@@ -5,8 +5,8 @@ import "@openremote/or-thermostat";
 import {
     AssetQuery,
     AttributeEvent,
-    BaseAssetQueryInclude,
-    BaseAssetQueryMatch,
+    AssetQueryInclude,
+    AssetQueryMatch,
     EventSubscription,
     Asset
 } from "@openremote/model";
@@ -17,7 +17,7 @@ async function initApartment1Asset(): Promise<string|undefined> {
     let query: AssetQuery = {
         name: {
             predicateType: "string",
-            match: BaseAssetQueryMatch.EXACT,
+            match: AssetQueryMatch.EXACT,
             value: "Living Room"
         },
         parent: {
@@ -25,11 +25,11 @@ async function initApartment1Asset(): Promise<string|undefined> {
         },
         type: {
             predicateType: "string",
-            match: BaseAssetQueryMatch.EXACT,
+            match: AssetQueryMatch.EXACT,
             value: "urn:openremote:asset:room"
         },
         select: {
-            include: BaseAssetQueryInclude.ONLY_ID_AND_NAME
+            include: AssetQueryInclude.ONLY_ID_AND_NAME
         }
     };
 

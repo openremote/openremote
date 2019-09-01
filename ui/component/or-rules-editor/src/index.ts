@@ -6,7 +6,7 @@ import {
     AssetDescriptor,
     AttributeDescriptor,
     AttributeValueDescriptor,
-    BaseAssetQueryOperator,
+    AssetQueryOperator,
     JsonRulesetDefinition,
     LogicGroup,
     MetaItemDescriptor,
@@ -646,7 +646,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
                 return valuePredicate.predicates !== undefined && valuePredicate.predicates.length > 0 && valuePredicate.predicates.findIndex((p) => !p.match || p.value === undefined) === 0;
             case "datetime":
             case "number":
-                return valuePredicate.operator !== undefined && valuePredicate.value !== undefined && (valuePredicate.operator !== BaseAssetQueryOperator.BETWEEN || valuePredicate.rangeValue !== undefined);
+                return valuePredicate.operator !== undefined && valuePredicate.value !== undefined && (valuePredicate.operator !== AssetQueryOperator.BETWEEN || valuePredicate.rangeValue !== undefined);
             case "radial":
                 return valuePredicate.radius !== undefined && valuePredicate.lat !== undefined && valuePredicate.lng !== undefined;
             case "rect":
