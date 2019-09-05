@@ -92,3 +92,8 @@ For more information and how to set up a development environment, see the [Devel
 ## Discuss OpenRemote
 
 Join us on the [community group](https://groups.google.com/forum/#!forum/openremotecommunity).
+
+## See also
+
+- [Next 'Get Started' step: Connecting to an HTTP API](https://github.com/openremote/openremote/wiki/User-Guide%3A-Connecting-to-a-HTTP-API)
+- [Get Started](https://openremote.io/get-started-manager/)
