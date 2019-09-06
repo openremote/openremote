@@ -36,24 +36,24 @@ public enum AssetType implements AssetDescriptor {
 
     CUSTOM(null, "cube", null),
 
-    BUILDING(ASSET_NAMESPACE + ":building", "building", null,
+    BUILDING(ASSET_NAMESPACE + ":building", "office-building", null,
             SURFACE_AREA,
             GEO_STREET,
             GEO_CITY,
             GEO_COUNTRY,
             GEO_POSTAL_CODE),
 
-    FLOOR(ASSET_NAMESPACE + ":floor", "bars", null),
+    FLOOR(ASSET_NAMESPACE + ":floor", "stairs", null),
 
     RESIDENCE(ASSET_NAMESPACE + ":residence", "home", null),
 
-    ROOM(ASSET_NAMESPACE + ":room", "door-open", null),
+    ROOM(ASSET_NAMESPACE + ":room", "door", null),
 
     AGENT(ASSET_NAMESPACE + ":agent", "cogs", null),
 
-    CONSOLE(ASSET_NAMESPACE + ":console", "bullseye", null),
+    CONSOLE(ASSET_NAMESPACE + ":console", "monitor-cellphone", null),
 
-    THING(ASSET_NAMESPACE + ":thing", "cube", null);
+    THING(ASSET_NAMESPACE + ":thing", "cube-outline", null);
 
     final protected String type;
     final protected String icon;

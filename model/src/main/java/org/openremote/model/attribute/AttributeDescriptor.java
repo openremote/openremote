@@ -24,6 +24,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.openremote.model.value.Value;
 
+/**
+ * Describes an {@link Attribute} that can be added to an {@link org.openremote.model.asset.Asset};
+ * the {@link #getAttributeName} is the unique identifier.
+ * <p>
+ * A custom project can add its own descriptors through {@link org.openremote.model.asset.AssetModelProvider}.
+ * <p>
+ */
 @JsonDeserialize(as = AttributeDescriptorImpl.class)
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public interface AttributeDescriptor {

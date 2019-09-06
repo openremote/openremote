@@ -24,6 +24,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.openremote.model.attribute.AttributeDescriptor;
 
+/**
+ * Describes an {@link Asset} that can be added to the manager; the {@link #getType()} is the unique identifier.
+ * <p>
+ * A custom project can add its own descriptors through {@link org.openremote.model.asset.AssetModelProvider}.
+ * <p>
+ */
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
 @JsonDeserialize(as = AssetDescriptorImpl.class)
 public interface AssetDescriptor {
@@ -32,10 +38,6 @@ public interface AssetDescriptor {
     String getName();
     @JsonProperty
     String getType();
-
-    /**
-     * A HEX RGB color value {@link org.openremote.model.attribute.AttributeValueType#COLOR_HEX}
-     */
     @JsonProperty
     String getIcon();
     @JsonProperty

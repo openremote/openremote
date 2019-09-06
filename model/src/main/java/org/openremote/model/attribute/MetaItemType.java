@@ -39,12 +39,7 @@ import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_DOUBLE;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO;
 
 /**
- * Asset attribute meta item name is an arbitrary string. It should be URI. This enum contains the well-known URIs for
- * functionality we can depend on in our platform.
- * <p>
- * A custom project can add its own asset meta items through {@link AssetModelProvider}.
- * <p>
- * TODO https://people.eecs.berkeley.edu/~arka/papers/buildsys2015_metadatasurvey.pdf
+ * This describes generic {@link MetaItem}s that can be used on any {@link Attribute}.
  */
 public enum MetaItemType implements MetaItemDescriptor {
 

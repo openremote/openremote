@@ -34,7 +34,14 @@ import org.openremote.model.value.ValueType;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-
+/**
+ * Describes a {@link MetaItem} that can be added to an {@link Attribute}; the URN should be URI and is the unique
+ * identifier.
+ * <p>
+ * A custom project can add its own descriptors through {@link org.openremote.model.asset.AssetModelProvider}.
+ * <p>
+ * TODO https://people.eecs.berkeley.edu/~arka/papers/buildsys2015_metadatasurvey.pdf
+ */
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
 @JsonDeserialize(as = MetaItemDescriptorImpl.class)
 public interface MetaItemDescriptor extends HasUniqueResourceName {

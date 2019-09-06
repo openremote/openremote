@@ -20,10 +20,16 @@
 package org.openremote.model.attribute;
 
 import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
+import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
+import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemObject;
 import static org.openremote.model.attribute.MetaItemType.*;
 
+/**
+ *  This describes generic {@link Attribute}s that can be used on any {@link org.openremote.model.asset.Asset}.
+ */
 public enum AttributeType implements AttributeDescriptor {
 
     CONSOLE_NAME("consoleName", AttributeValueType.STRING),
@@ -37,30 +43,37 @@ public enum AttributeType implements AttributeDescriptor {
     EMAIL("email", AttributeValueType.EMAIL, LABEL.withInitialValue(Values.create("Email"))),
 
     GEO_CITY("city", AttributeValueType.STRING,
-            LABEL.withInitialValue(Values.create("City")),
-            ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoCity"))),
+        LABEL.withInitialValue(Values.create("City")),
+        ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoCity"))),
 
     GEO_COUNTRY("country", AttributeValueType.STRING,
-            LABEL.withInitialValue(Values.create("Country")),
-            ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoCountry"))),
+        LABEL.withInitialValue(Values.create("Country")),
+        ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoCountry"))),
 
     GEO_POSTAL_CODE("postalCode", AttributeValueType.NUMBER,
-            LABEL.withInitialValue(Values.create("Postal Code")),
-            ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoPostalCode"))),
+        LABEL.withInitialValue(Values.create("Postal Code")),
+        ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoPostalCode"))),
 
     GEO_STREET("street", AttributeValueType.STRING,
-            LABEL.withInitialValue(Values.create("Street")),
-            ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoStreet"))),
+        LABEL.withInitialValue(Values.create("Street")),
+        ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoStreet"))),
 
     LOCATION("location", AttributeValueType.GEO_JSON_POINT, LABEL.withInitialValue(Values.create("Location"))),
 
-    SURFACE_AREA(
-            "surfaceArea",
-        AttributeValueType.NUMBER,
-            LABEL.withInitialValue(Values.create("Surface Area")),
-            DESCRIPTION.withInitialValue(Values.create("Floor area of building measured in m²")),
-            ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/area")));
+    SURFACE_AREA("surfaceArea", AttributeValueType.NUMBER,
+        LABEL.withInitialValue(Values.create("Surface Area")),
+        DESCRIPTION.withInitialValue(Values.create("Floor area of building measured in m²")),
+        ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/area"))),
 
+    STATUS(
+        "status", AttributeValueType.ASSET_STATUS,
+        LABEL.withInitialValue(Values.create("Asset Status")),
+        DESCRIPTION.withInitialValue(Values.create("Defines an arbitrary status for the containing asset")),
+        metaItemObject(
+            ASSET_META_NAMESPACE + ":assetStatusColors",
+            new Access(true, false, true),
+            false,
+            null));
 
     final protected String attributeName;
     final protected AttributeValueDescriptor valueDescriptor;

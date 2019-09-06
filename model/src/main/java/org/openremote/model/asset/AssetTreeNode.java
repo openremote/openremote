@@ -24,9 +24,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
-/**
- * This is used to store {@link Asset} hierarchy information before {@link Asset}s have been assigned IDs
- */
 public class AssetTreeNode {
 
     public Asset asset;
