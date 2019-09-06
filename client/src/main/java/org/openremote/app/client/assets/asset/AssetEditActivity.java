@@ -340,7 +340,7 @@ public class AssetEditActivity
                 view.setFormBusy(true);
                 clearViewMessages();
                 environment.getApp().getRequests().send(
-                    requestParams -> assetResource.delete(requestParams, this.assetId),
+                    requestParams -> assetResource.delete(requestParams, Collections.singletonList(this.assetId)),
                     204,
                     () -> {
                         view.setFormBusy(false);

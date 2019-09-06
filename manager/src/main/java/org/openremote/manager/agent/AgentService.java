@@ -289,7 +289,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     @Override
     public boolean deleteAsset(String assetId) {
         LOG.fine("Deleting protocol-provided: " + assetId);
-        return assetStorageService.delete(assetId);
+        return assetStorageService.delete(Collections.singletonList(assetId));
     }
 
     @Override

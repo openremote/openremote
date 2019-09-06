@@ -75,7 +75,6 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.joining;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
@@ -472,22 +471,25 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     /**
-     * @return <code>true</code> if the asset was deleted, false if the asset still has children and can't be deleted.
+     * @return <code>true</code> if the assets were deleted, false if any of the assets still have children and can't be deleted.
      */
-    public boolean delete(String assetId) {
-        return persistenceService.doReturningTransaction(em -> {
-            Asset asset = em.find(Asset.class, assetId);
-            if (asset != null) {
-                List<Asset> children = findAll(em, new AssetQuery()
-                    .parents(new ParentPredicate(asset.getId()))
-                );
-                if (children.size() > 0)
-                    return false;
-                LOG.fine("Removing: " + asset);
-                em.remove(asset);
-            }
-            return true;
-        });
+    public boolean delete(List<String> assetIds) {
+        try {
+            persistenceService.doTransaction(em -> {
+                LOG.fine("Removing: " + String.join(", ", assetIds));
+                int count = em
+                    .createQuery("delete from Asset a where not exists(select child.id from Asset child where child.parentId = a.id) and a.id in :ids")
+                    .setParameter("ids", assetIds)
+                    .executeUpdate();
+                if (assetIds.size() != count) {
+                    throw new IllegalArgumentException("Cannot delete one or more requested assets as they have children");
+                }
+            });
+        } catch (Exception e) {
+            return false;
+        }
+
+        return true;
     }
 
     public boolean isUserAsset(String assetId) {

@@ -505,20 +505,27 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public void delete(RequestParams requestParams, String assetId) {
+    public void delete(RequestParams requestParams, List<String> assetIds) {
         try {
+            if (assetIds == null || assetIds.isEmpty()) {
+                throw new WebApplicationException(BAD_REQUEST);
+            }
+
             if (isRestrictedUser()) {
                 throw new WebApplicationException(FORBIDDEN);
             }
-            Asset asset = assetStorageService.find(assetId, true);
-            if (asset == null)
+            List<Asset> assets = assetStorageService.findAll(new AssetQuery().ids(assetIds.toArray(new String[0])).select(Select.selectExcludePathAndAttributes()));
+            if (assets == null || assets.size() != assetIds.size()) {
+                LOG.fine("Request to delete one or more invalid assets");
                 return;
+            }
 
-            if (!isTenantActiveAndAccessible(asset)) {
-                LOG.fine("Forbidden access for user '" + getUsername() + "', can't delete: " + asset);
+            if (assets.stream().anyMatch(asset -> !isTenantActiveAndAccessible(asset))) {
+                LOG.fine("Forbidden access for user '" + getUsername() + "', can't delete requested assets");
                 throw new WebApplicationException(FORBIDDEN);
             }
-            if (!assetStorageService.delete(assetId)) {
+
+            if (!assetStorageService.delete(assetIds)) {
                 throw new WebApplicationException(BAD_REQUEST);
             }
         } catch (IllegalStateException ex) {

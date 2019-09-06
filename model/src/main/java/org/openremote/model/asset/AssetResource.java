@@ -30,6 +30,8 @@ import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
 import javax.ws.rs.*;
 
+import java.util.List;
+
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
@@ -236,12 +238,11 @@ public interface AssetResource {
      * has children and therefore can't be deleted.
      */
     @DELETE
-    @Path("{assetId}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:assets"})
     @SuppressWarnings("unusable-by-js")
-    void delete(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
+    void delete(@BeanParam RequestParams requestParams, @QueryParam("assetId") List<String> assetIds);
 
     /**
      * Retrieve assets using an {@link AssetQuery}.
