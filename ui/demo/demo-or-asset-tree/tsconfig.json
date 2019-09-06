@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./.tsbuildinfo"
+  },
+  "include": [
+    "./src"
+  ],
+  "references": [
+    { "path": "../../component/core" },
+    { "path": "../../component/rest" },
+    { "path": "../../component/or-asset-tree" }
+  ]
+}

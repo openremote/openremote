@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>Demo</title>
+
+    <!--
+    Feature detect Custom Elements support. If the browser DOES support Custom
+    Elements then we need to load the custom-elements-es5-adapter because
+    our project code has been transpiled from ES2015 to ES5 and native Custom
+    Elements expect elements will be registered as classes.
+    -->
+    <script>if (!window.customElements) { document.write('<!--'); }</script>
+    <script src="./modules/@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js"></script>
+    <!--! DO NOT REMOVE THIS COMMENT, WE NEED ITS CLOSING MARKER -->
+
+    <style>
+        body {
+            font-family: Arial, "Open Sans", sans-serif;
+        }
+    </style>
+</head>
+<body>
+<div class="vertical-section-container centered">
+    <h3>Demo</h3>
+    <or-demo-app></or-demo-app>
+</div>
+
+<!--
+Use the webcomponents-loader script which will feature detect which Web
+Components features are missing and lazy load the appropriate polyfills.
+When we hear the 'WebComponentsReady' event from the polyfill bundle we can
+insert our 'bundle.js'.
+-->
+<script>
+    (function () {
+        document.addEventListener('WebComponentsReady', function componentsReady() {
+            document.removeEventListener('WebComponentsReady', componentsReady, false);
+            var script = document.createElement('script');
+            script.src = '<%= htmlWebpackPlugin.files.js[0] %>';
+            var refScript = document.getElementsByTagName('script')[0];
+            refScript.parentNode.insertBefore(script, refScript);
+        }, false);
+    })();
+</script>
+<script src="modules/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
+</body>
+</html>
