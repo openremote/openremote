@@ -12,9 +12,11 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/model": "^1.0.0",
-    "axios": "0.18.1"
+    "axios": "0.18.1",
+    "qs": "^6.8.0"
   },
   "devDependencies": {
+    "@types/qs": "^6.5.3",
     "tslint": "^5.11.0",
     "typescript": "^3.4.5"
   },

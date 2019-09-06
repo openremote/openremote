@@ -4,6 +4,9 @@
   "description": "Displays s vector or raster map",
   "main": "dist/index.js",
   "types": "src/index.ts",
+  "exports": {
+    "./": "./dist/"
+  },
   "scripts": {
     "generate": "node mdi-iconset-generator.js",
     "build": "node mdi-iconset-generator.js && npx tsc -b",

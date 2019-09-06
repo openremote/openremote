@@ -1,5 +1,6 @@
 import axios, {AxiosInstance, AxiosRequestConfig} from "axios";
 import {ApiClient} from "./restclient";
+import Qs from "qs";
 
 export class RestApi {
 
@@ -12,6 +13,10 @@ export class RestApi {
 
     constructor() {
         this._axiosInstance = axios.create();
+        this._axiosInstance.interceptors.request.use((config) => {
+            config.paramsSerializer = params => Qs.stringify(params, {arrayFormat: 'repeat'});
+            return config;
+        })
     }
 
     get axiosInstance() {

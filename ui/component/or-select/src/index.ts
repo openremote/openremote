@@ -1,5 +1,5 @@
 import {html, LitElement, property, customElement, PropertyValues, query} from "lit-element";
-import {selectStyle} from "./style";
+import {optionColorVar, selectStyle} from "./style";
 
 export class OrSelectChangedEvent extends CustomEvent<OrSelectChangedEventDetail> {
 
@@ -41,64 +41,120 @@ export class OrSelect extends LitElement {
     public value?: string;
 
     @property({type: Boolean})
-    public readonly: boolean = false;
+    public readonly?: boolean;
 
     @property({type: Boolean})
-    public required: boolean = true;
+    public required?: boolean;
 
     @property({type: Boolean})
-    public addEmpty: boolean = true;
+    public autoSize?: boolean = true;
+
+    @property({type: Boolean, attribute: true})
+    public noEmpty?: boolean = false;
 
     @property({type: Array})
-    public options: string[] | [string, string][] = [];
+    public options!: string[] | [string, string][];
 
     @query("#or-select")
     protected _select!: HTMLSelectElement;
 
+    @query("#width_tmp_select")
+    protected _tmpSelect!: HTMLSelectElement;
+
+    protected _optColor?: string;
+
+    connectedCallback(): void {
+        super.connectedCallback();
+
+        // Take color from host as select will override color inheritance otherwise
+        const style = window.getComputedStyle(this);
+
+        if(style.getPropertyValue("--internal-or-select-option-text-color").indexOf("inherit") >= 0) {
+            this._optColor = style.getPropertyValue("color");
+        }
+    }
+
     protected onChange() {
+        if (this._select.value == this.value) {
+            return;
+        }
+
+        if (this.autoSize) {
+            this._resize();
+        }
         const previousValue = this.value;
         this.value = this._select.value && this._select.value.length > 0 ? this._select.value : undefined;
         this.dispatchEvent(new OrSelectChangedEvent(this.value, previousValue));
     }
 
-    protected firstUpdated(_changedProperties: PropertyValues) {
-        super.firstUpdated(_changedProperties);
-        if (this.options.length === 1) {
-            const opt = this.options[0];
-            const val = Array.isArray(opt) ? opt[0] : opt;
-            if (this.value !== val) {
-                window.setTimeout(() => {
-                    if (this._select) {
-                        this._select.value = val;
-                    }
+    protected updated(_changedProperties: PropertyValues): void {
+        super.updated(_changedProperties);
+
+        if (_changedProperties.has("options") || _changedProperties.has("value")) {
+            let val = this.value;
+
+            if (this.options.length === 1 || (this.noEmpty && !val)) {
+                const opt = this.options[0];
+                const firstValue = Array.isArray(opt) ? opt[0] : opt;
+                if (this.value !== firstValue) {
+                    val = firstValue;
+                }
+            }
+
+            let index: number;
+            if (this.options.length === 1 || (this.noEmpty && !val)) {
+                index = 0;
+            } else {
+                index = this.options.findIndex((opt: string | [string, string]) => {
+                    const value = Array.isArray(opt) ? opt[0] : opt;
+                    return value == val;
                 });
+            }
+
+            const indexChanged = this._select.selectedIndex != index;
+            this._select.selectedIndex = index;
+            if (indexChanged) {
+                this.onChange();
+            } else {
+                if (this.autoSize) {
+                    this._resize();
+                }
             }
         }
     }
 
     protected render() {
-        if (this._select) {
-            // If we don't do this then selected attribute on option is not respected when a select is updated
-            if (!this.value) {
-                this._select.selectedIndex = this.addEmpty ? 0 : -1;
-            }
-        }
         const isSingular = this.options.length === 1;
 
         return html`
                <div class="mdc-select">
                       <select id="or-select" ?required="${this.required}" @change="${this.onChange}" ?disabled="${this.readonly || isSingular}">
-                        ${this.addEmpty && !isSingular ? html`<option value="" ?selected="${!this.value}"></option>` : ``};
+                        ${!this.noEmpty && !isSingular ? html`<option value=""></option>` : ``};
                         ${this.options.length > 0 && Array.isArray(this.options[0]) ?
                             (this.options as [string, string][]).map((option: [string, string]) => {
-                                return html`<option ?selected="${this.value === option[0]}" value="${option[0]}">${option[1]}</option>`;                            
+                                return html`<option style="color: ${this._optColor || optionColorVar};" value="${option[0]}">${option[1]}</option>`;                            
                             }) :
                             (this.options as string[]).map((option: string) => {
-                                return html`<option ?selected="${this.value === option}" value="${option}">${option}</option>`;
+                                return html`<option style="color: ${this._optColor || optionColorVar};" value="${option}">${option}</option>`;
                             })
                         }
                       </select>
+                      <svg viewBox="0 0 24 24">
+                        <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" />
+                      </svg>
+                      <select id="width_tmp_select">
+                        <option id="width_tmp_option"></option>
+                      </select>
                 </div>
         `;
+    }
+
+    protected _resize() {
+        let width = 20;
+        if (this._select.selectedOptions.length > 0) {
+            (this._tmpSelect.options.item(0)! as HTMLOptionElement).innerHTML = this._select.selectedOptions.item(0)!.text;
+            width = this._tmpSelect.offsetWidth;
+        }
+        this._select.style.setProperty("width",  width + "px");
     }
 }

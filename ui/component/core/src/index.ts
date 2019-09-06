@@ -9,14 +9,36 @@ import i18nextXhr from "i18next-xhr-backend";
 import {AssetDescriptor, AttributeDescriptor, AttributeValueDescriptor, MetaItemDescriptor} from "@openremote/model";
 import * as Util from "./util";
 
+export declare type KeycloakPromise<T> = {
+    success<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | KeycloakPromise<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | KeycloakPromise<TResult2>) | undefined | null): KeycloakPromise<TResult1 | TResult2>;
+    error<TResult = never>(onrejected?: ((reason: any) => TResult | KeycloakPromise<TResult>) | undefined | null): Promise<T | TResult>;
+}
+
+export declare type Keycloak = {
+    token: string;
+    refreshToken: string;
+    tokenParsed: any;
+    refreshTokenParsed: any;
+    resourceAccess: any;
+    onAuthSuccess: () => void;
+    onAuthError: () => void;
+    init(options?: any): KeycloakPromise<boolean>;
+    login(options?: any): void;
+    hasRealmRole(role: string): boolean;
+    logout(options?: any): void;
+    updateToken(expiry: number): KeycloakPromise<boolean>;
+    clearToken(): void;
+}
+
 export {Util};
 
-export const DefaultColor1: string = "#FFF"; // Header and panels
+export const DefaultColor1: string = "#FFF"; // Header
 export const DefaultColor2: string = "#F9F9F9"; // Background
-export const DefaultColor3: string = "#202020"; // Text
+export const DefaultColor3: string = "#4c4c4c"; // Text
 export const DefaultColor4: string = "#1B5630"; // Buttons
 export const DefaultColor5: string = "#CCC"; // Borders and lines
 export const DefaultColor6: string = "#be0000"; // Invalid/Error
+export const DefaultColor7: string = "#FFF"; // Panels
 export const DefaultBoxShadowBottom: string = "0 5px 5px -5px rgba(0,0,0,0.57)";
 export const DefaultBoxShadow: string = "0 1px 3px 0 rgba(0,0,0,0.21)";
 export const DefaultHeaderHeight: string = "60px";
@@ -70,6 +92,7 @@ export interface ManagerConfig {
     appVersion?: string;
     auth?: Auth;
     realm: string;
+    clientId?: string;
     autoLogin?: boolean;
     credentials?: Credentials;
     consoleAutoEnable?: boolean;
@@ -233,7 +256,17 @@ export class Manager implements EventProviderFactory {
     }
 
     get roles() {
-        return this._roles;
+        if (!this._keycloak || !this._keycloak.resourceAccess) {
+            return [];
+        }
+
+        let roles: String[];
+        if (this._config.clientId && this._keycloak!.resourceAccess.hasOwnProperty(this._config.clientId)) {
+            roles = this._keycloak!.resourceAccess[this._config.clientId].roles;
+        } else {
+            roles = this._keycloak!.resourceAccess.account.roles;
+        }
+        return roles || [];
     }
 
     get managerVersion() {
@@ -323,6 +356,10 @@ export class Manager implements EventProviderFactory {
             normalisedConfig.loadDescriptors = true;
         }
 
+        if (normalisedConfig.clientId === undefined) {
+            normalisedConfig.clientId = "openremote";
+        }
+
         return normalisedConfig;
     }
 
@@ -332,8 +369,7 @@ export class Manager implements EventProviderFactory {
     private _ready: boolean = false;
     private _name: string = "";
     private _username: string = "";
-    private _keycloak: any = null;
-    private _roles: string[] = [];
+    private _keycloak?: Keycloak;
     private _keycloakUpdateTokenInterval?: number = undefined;
     private _managerVersion: string = "";
     private _listeners: EventCallback[] = [];
@@ -648,7 +684,7 @@ export class Manager implements EventProviderFactory {
     }
 
     public isSuperUser() {
-        return this.hasRole("admin");
+        return this.getRealm() && this.getRealm() === "master" && this.hasRealmRole("admin");
     }
 
     public getApiBaseUrl() {
@@ -662,8 +698,12 @@ export class Manager implements EventProviderFactory {
         return pathArr.length >= 1 ? pathArr[1] : "";
     }
 
+    public hasRealmRole(role: string) {
+        return this._keycloak && this._keycloak.hasRealmRole(role);
+    }
+
     public hasRole(role: string) {
-        return this._roles && this._roles.indexOf(role) >= 0;
+        return this.roles && this.roles.indexOf(role) >= 0;
     }
 
     public getAuthorizationHeader(): string | undefined {
@@ -696,9 +736,9 @@ export class Manager implements EventProviderFactory {
         // If native shell is enabled, we need an offline refresh token
         if (this.console && this.console.isMobile && this.config.auth === Auth.KEYCLOAK) {
 
-            if (this._keycloak.refreshTokenParsed.typ === "Offline") {
+            if (this._keycloak && this._keycloak.refreshTokenParsed.typ === "Offline") {
                 console.debug("Storing offline refresh token");
-                this.console.storeData("REFRESH_TOKEN", this._keycloak.refreshToken);
+                this.console.storeData("REFRESH_TOKEN", this._keycloak!.refreshToken);
             } else {
                 this.login();
             }
@@ -730,18 +770,18 @@ export class Manager implements EventProviderFactory {
 
             // Initialise keycloak
             this._keycloak = (window as any).Keycloak({
-                clientId: "openremote",
+                clientId: this._config.clientId,
                 realm: this._config.realm,
                 url: this._config.keycloakUrl
             });
 
-            this._keycloak.onAuthSuccess = () => {
+            this._keycloak!.onAuthSuccess = () => {
                 if (keycloakPromise) {
                     keycloakPromise(true);
                 }
             };
 
-            this._keycloak.onAuthError = () => {
+            this._keycloak!.onAuthError = () => {
                 this._setAuthenticated(false);
             };
 
@@ -754,7 +794,7 @@ export class Manager implements EventProviderFactory {
 
                 const authenticated = await new Promise<boolean>(((resolve, reject) => {
                     keycloakPromise = resolve;
-                    this._keycloak.init({
+                    this._keycloak!.init({
                         checkLoginIframe: false, // Doesn't work well with offline tokens or periodic token updates
                         onLoad: this._config.autoLogin ? "login-required" : "check-sso",
                         refreshToken: offlineToken
@@ -769,13 +809,8 @@ export class Manager implements EventProviderFactory {
 
                 if (authenticated) {
 
-                    this._name = this._keycloak.tokenParsed.name;
-                    this._username = this._keycloak.tokenParsed.preferred_username;
-                    if (this._keycloak.resourceAccess.openremote) {
-                        this._roles = this._keycloak.resourceAccess.openremote.roles;
-                    } else {
-                        this._roles = this._keycloak.resourceAccess.account.roles;
-                    }
+                    this._name = this._keycloak!.tokenParsed.name;
+                    this._username = this._keycloak!.tokenParsed.preferred_username;
 
                     // Update the access token every 10s (note keycloak will only update if expiring within configured
                     // time period.
@@ -805,7 +840,7 @@ export class Manager implements EventProviderFactory {
     protected updateKeycloakAccessToken(): Promise<boolean> {
         // Access token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
         return new Promise<boolean>(() => {
-            this._keycloak.updateToken(30)
+            this._keycloak!.updateToken(30)
                 .success((tokenRefreshed: boolean) => {
                     // If refreshed from server, it means the refresh token was still good for another access token
                     console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
@@ -815,8 +850,8 @@ export class Manager implements EventProviderFactory {
                     // Refresh token expired (either SSO max session duration or offline idle timeout), see
                     // IDENTITY_SESSION_MAX_MINUTES and IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES server config
                     console.info("Access token update failed, refresh token expired, login required");
-                    this._keycloak.clearToken();
-                    this._keycloak.login();
+                    this._keycloak!.clearToken();
+                    this._keycloak!.login();
                 });
         });
     }

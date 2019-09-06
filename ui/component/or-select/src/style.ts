@@ -1,38 +1,69 @@
-import {css} from "lit-element";
+import {css, unsafeCSS} from "lit-element";
+import {DefaultColor2, DefaultColor5, DefaultColor7} from "@openremote/core";
 
 // TODO this is temp work, should be replaced with material design components / styling
+
+export const optionColorVar = "--internal-or-select-option-text-color";
+
 // language=CSS
 export const selectStyle = css`
+    
+    :host {
+        display: inline-block;
+        
+        --internal-or-select-background-color: var(--or-select-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor2)}));     
+        --internal-or-select-border-color: var(--or-select-border-color, var(--or-app-color1, ${unsafeCSS(DefaultColor5)}));
+        --internal-or-select-text-color: var(--or-select-text-color, inherit);
+        --internal-or-select-padding: var(--or-select-padding, 10px 40px 10px 10px);
+        --internal-or-select-option-text-color: var(--or-select-option-text-color, inherit);
+        --internal-or-select-option-background-color: var(--or-select-option-background-color, var(--or-app-color7, ${unsafeCSS(DefaultColor7)}));
+    }
     
     select:invalid {
         border-bottom: 2px solid red;
     }
     
     .mdc-select {
-        font-family:
-                'Roboto','Helvetica','Arial',sans-serif;
+        font-family: 'Roboto','Helvetica','Arial',sans-serif;
         position: relative;
         display: inline-block;
+        fill: var(--internal-or-select-text-color);
     }
 
     select {
+        cursor: pointer;
         position: relative;
         font-family: inherit;
-        padding: 10px 40px 10px 10px;
+        padding: var(--internal-or-select-padding);
         border-radius: 0;
         border: none;
         -webkit-appearance: none;
         -moz-appearance: none;
         appearance: none;
         font-size: 14px;
-
-        border-bottom: 2px solid #d5d5d5;
-        background-color: #f2f2f2;
-
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M7.41 7.84L12 12.42l4.59-4.58L18 9.25l-6 6-6-6z'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-size: 20px;
-        background-position:  right 10px center;
+        outline: none;
+        color: var(--internal-or-select-text-color);
+        border-bottom: 2px solid var(--internal-or-select-border-color);
+        background-color: var(--internal-or-select-background-color);
+    }
+    
+    #width_tmp_select {
+        position: absolute;
+        visibility: hidden;
+        pointer-events: none;
+    }
+    
+    select > option {
+        background-color: var(--internal-or-select-option-background-color);
+    }
+    
+    svg {
+        width: 20px;
+        height: 100%;
+        position: absolute;
+        right: 0;
+        top: 0;
+        pointer-events: none;
     }
 
 `;

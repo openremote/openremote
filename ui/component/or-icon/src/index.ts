@@ -37,13 +37,21 @@ export class OrIcon extends LitElement {
 
     static styles = css`
         :host {
+        
+            --internal-or-icon-width: var(--or-icon-width, 24px);
+            --internal-or-icon-height: var(--or-icon-height, 24px);
+            --internal-or-icon-fill: var(--or-icon-fill, currentColor);
+            --internal-or-icon-stroke: var(--or-icon-fill, none);
+            --internal-or-icon-stroke-width: var(--or-icon-stroke-width, 0);
+        
             display: inline-block;
             position: relative;
             vertical-align: middle;
-            fill: var(--or-icon-fill, currentcolor);
-            stroke: var(--or-icon-stroke, none);
-            width: var(--or-icon-width, 24px);
-            height: var(--or-icon-height, 24px);
+            fill: var(--internal-or-icon-fill);
+            stroke: var(--internal-or-icon-stroke);
+            stroke-width: var(--internal-or-icon-stroke-width);
+            width: var(--internal-or-icon-width);
+            height: var(--internal-or-icon-height);
         }
         
         :host([hidden]) {
