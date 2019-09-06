@@ -6,13 +6,13 @@ import {
     AssetDescriptor,
     AttributeDescriptor,
     AttributeValueDescriptor,
-    AssetQueryOperator,
+    AssetQueryOperator as AQO,
     JsonRulesetDefinition,
     LogicGroup,
     MetaItemDescriptor,
     MetaItemType,
-    NewAssetQuery,
-    Rule,
+    AssetQuery,
+    JsonRule,
     RuleActionTarget,
     RuleActionUnion,
     RuleCondition,
@@ -115,11 +115,11 @@ export interface RulesConfig {
         action?: RulesDescriptorSection;
     };
     templates?: {
-        rule?: Rule;
+        rule?: JsonRule;
         rulesetName?: string;
         whenGroup?: LogicGroup<RuleCondition>;
         whenCondition?: RuleCondition;
-        whenAssetQuery?: NewAssetQuery;
+        whenAssetQuery?: AssetQuery;
         then?: RuleActionUnion;
     };
 }
@@ -178,7 +178,7 @@ export function getDescriptorValueType(descriptor?: AttributeDescriptor) {
     return descriptor.valueDescriptor.valueType;
 }
 
-export function getAssetTypeFromQuery(query?: NewAssetQuery) {
+export function getAssetTypeFromQuery(query?: AssetQuery) {
     return query && query.types && query.types.length > 0 && query.types[0] ? query.types[0].value : undefined;
 }
 
@@ -346,7 +346,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
     private isValidRule?: boolean;
 
     private _activeRuleset?: TenantRuleset;
-    private _activeRules?: Rule[];
+    private _activeRules?: JsonRule[];
     private _activeModified: boolean = false;
     private _whenAssetDescriptors?: AssetDescriptor[];
     private _actionAssetDescriptors?: AssetDescriptor[];
@@ -384,7 +384,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
         this.addEventListener("rules:delete-rule", this.deleteRuleset);
     }
 
-    protected ruleEditorPanelTemplate(rule: Rule) {
+    protected ruleEditorPanelTemplate(rule: JsonRule) {
         const thenTemplate = this.config && this.config.templates && this.config.templates.then ? this.config.templates.then : undefined;
         const targetTypeMap = this.getTargetTypeMap();
         const whenDescriptors = this.getAssetDescriptors(false);
@@ -538,7 +538,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
         return true;
     }
 
-    protected validateRuleActions(rule: Rule, actions?: RuleActionUnion[]): boolean {
+    protected validateRuleActions(rule: JsonRule, actions?: RuleActionUnion[]): boolean {
         if (!actions) {
             return true;
         }
@@ -580,7 +580,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
         return true;
     }
 
-    protected validateAssetTarget(rule: Rule, target?: RuleActionTarget): boolean {
+    protected validateAssetTarget(rule: JsonRule, target?: RuleActionTarget): boolean {
         if (!target) {
             return true;
         }
@@ -601,7 +601,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
         return true;
     }
 
-    protected validateAssetQuery(query?: NewAssetQuery): boolean {
+    protected validateAssetQuery(query?: AssetQuery): boolean {
         if (!query) {
             return true;
         }
@@ -646,7 +646,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
                 return valuePredicate.predicates !== undefined && valuePredicate.predicates.length > 0 && valuePredicate.predicates.findIndex((p) => !p.match || p.value === undefined) === 0;
             case "datetime":
             case "number":
-                return valuePredicate.operator !== undefined && valuePredicate.value !== undefined && (valuePredicate.operator !== AssetQueryOperator.BETWEEN || valuePredicate.rangeValue !== undefined);
+                return valuePredicate.operator !== undefined && valuePredicate.value !== undefined && (valuePredicate.operator !== AQO.BETWEEN || valuePredicate.rangeValue !== undefined);
             case "radial":
                 return valuePredicate.radius !== undefined && valuePredicate.lat !== undefined && valuePredicate.lng !== undefined;
             case "rect":
@@ -688,7 +688,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
 
         if (this._rulesets) {
 
-            let rule = this.config && this.config.templates && this.config.templates.rule ? JSON.parse(JSON.stringify(this.config.templates.rule)) as Rule : undefined;
+            let rule = this.config && this.config.templates && this.config.templates.rule ? JSON.parse(JSON.stringify(this.config.templates.rule)) as JsonRule : undefined;
 
             if (!rule) {
                 rule = {};

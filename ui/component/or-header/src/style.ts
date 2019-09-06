@@ -7,7 +7,7 @@ export const style = css`
         :host {
             --internal-or-header-color: var(--or-header-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));    
             --internal-or-header-selected-color: var(--or-header-selected-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
-            --internal-or-header-text-color: var(--or-header-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
+            --internal-or-header-text-color: var(--or-header-text-color, var(--or-app-color3, inherit));
             --internal-or-header-height: var(--or-header-height, ${unsafeCSS(DefaultHeaderHeight)});
             --internal-or-header-logo-margin: var(--or-header-logo-margin, 0);
             --internal-or-header-logo-height: var(--or-header-logo-height, var(--internal-or-header-height, ${unsafeCSS(DefaultHeaderHeight)}));

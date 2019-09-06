@@ -165,10 +165,11 @@ export const style = css`
     .modal-btns .btn {
         font-weight: bolder;
         cursor: pointer;
+        text-transform: uppercase;
     }
     
     .modal-btns .btn + .btn {
-        margin-left: 30px;
+        margin-left: 15px;
     }    
             
     #sort-menu {
@@ -221,7 +222,7 @@ export const style = css`
     .node-container {
         display: flex;
         flex-direction: row;
-        border-left: 4px solid transparent;
+        border-left: 6px solid transparent;
         user-select: none;
         cursor: pointer;
         height: var(--internal-or-asset-tree-item-height);

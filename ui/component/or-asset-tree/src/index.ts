@@ -238,7 +238,7 @@ export class OrAssetTree extends LitElement {
                                     <or-translate value="deleteAssetsNoChildrenAllowed"></or-translate>
                                 </p>
                                 <div class="modal-btns">
-                                    <span class="btn" @click="${() => this._deleteNotAllowedModal.toggleAttribute("data-visible")}">OK</span>                                
+                                    <span class="btn" @click="${() => this._deleteNotAllowedModal.toggleAttribute("data-visible")}"><or-translate value="ok"></or-translate></span>                                
                                 </div>
                             </div>
                         </div>
@@ -250,8 +250,8 @@ export class OrAssetTree extends LitElement {
                                     <or-translate value="confirmDeleteAssets"></or-translate>
                                 </p>
                                 <div class="modal-btns">
-                                    <span class="btn" @click="${() => this._deleteConfirmModal.toggleAttribute("data-visible")}">CANCEL</span>
-                                    <span class="btn" @click="${() => this._doDelete()}">OK</span>                                
+                                    <span class="btn" @click="${() => this._deleteConfirmModal.toggleAttribute("data-visible")}"><or-translate value="cancel"></or-translate></span>
+                                    <span class="btn" @click="${() => this._doDelete()}"><or-translate value="ok"></or-translate></span>                                
                                 </div>
                             </div>
                         </div>

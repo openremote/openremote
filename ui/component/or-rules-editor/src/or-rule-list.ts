@@ -1,5 +1,5 @@
 import {html, LitElement, property} from "lit-element";
-import {TenantRuleset, Rule, RuleCondition} from "@openremote/model";
+import {TenantRuleset, JsonRule, RuleCondition} from "@openremote/model";
 import {ruleListStyle} from "./style";
 import moment from "moment";
 
@@ -47,7 +47,7 @@ class OrRulesList extends LitElement {
         let status = ruleset.enabled ? "bg-green" : "bg-red";
 
         if(ruleset.rules && ruleset.enabled) {
-            const rule: Rule = JSON.parse(ruleset.rules).rules[0];
+            const rule: JsonRule = JSON.parse(ruleset.rules).rules[0];
 
             // HACK/WIP: the status of a rule should be better thought over see issue #95
             // currently only checks the date of the first whenCondition

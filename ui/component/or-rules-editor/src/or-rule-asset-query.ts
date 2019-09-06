@@ -4,13 +4,13 @@ import {
     AttributePredicate,
     AttributeValueType,
     AssetQueryMatch,
-    AssetQueryOperator,
-    NewAssetQuery,
+    AssetQueryOperator as AQO,
+    AssetQuery,
     ValuePredicateUnion,
     ValueType,
     AttributeValueDescriptor,
     AssetDescriptor,
-    RuleOperator,
+    LogicGroupOperator,
     LogicGroup
 } from "@openremote/model";
 import {
@@ -31,7 +31,7 @@ import i18next from "i18next";
 class OrRuleAssetQuery extends LitElement {
 
     @property({type: Object})
-    public query?: NewAssetQuery;
+    public query?: AssetQuery;
 
     public readonly?: boolean;
 
@@ -87,7 +87,7 @@ class OrRuleAssetQuery extends LitElement {
             case "datetime":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "number":
-                if (valuePredicate.operator === AssetQueryOperator.BETWEEN) {
+                if (valuePredicate.operator === AQO.BETWEEN) {
                     return html`
                         <or-input required type="${InputType.NUMBER}" @or-input-changed="${(e: OrInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", e.detail.value)}" .assetType="${getAssetTypeFromQuery(this.query)}" .attributeName="${attributeName}" .attributeDescriptor="${descriptor}" .value="${valuePredicate.value ? valuePredicate.value : null}" ?readonly="${this.readonly}"></or-input>
                         <span style="display: inline-flex; align-items: center;">&</span>
@@ -157,7 +157,7 @@ class OrRuleAssetQuery extends LitElement {
                         
                         return html`
                            <div class="attribute-item">
-                                <button @click="${() => this.toggleAttributeGroup(this.query!.attributes!)}" class="button-clear operator"><span>${i18next.t(!this.query!.attributes!.operator || this.query!.attributes!.operator === RuleOperator.AND ? "and" : "or")}</span></button>
+                                <button @click="${() => this.toggleAttributeGroup(this.query!.attributes!)}" class="button-clear operator"><span>${i18next.t(!this.query!.attributes!.operator || this.query!.attributes!.operator === LogicGroupOperator.AND ? "and" : "or")}</span></button>
                                 <div class="attribute">
                                     ${this.attributePredicateEditorTemplate(assetDescriptor, attributePredicate)}
                                     ${showRemoveAttribute ? html`
@@ -294,17 +294,17 @@ class OrRuleAssetQuery extends LitElement {
             case "datetime":
             case "number":
                 switch (valuePredicate.operator) {
-                    case AssetQueryOperator.EQUALS:
+                    case AQO.EQUALS:
                         return valuePredicate.negate ? AssetQueryOperator.NOT_EQUALS : AssetQueryOperator.EQUALS;
-                    case AssetQueryOperator.GREATER_THAN:
+                    case AQO.GREATER_THAN:
                         return valuePredicate.negate ? AssetQueryOperator.LESS_EQUALS : AssetQueryOperator.GREATER_THAN;
-                    case AssetQueryOperator.GREATER_EQUALS:
+                    case AQO.GREATER_EQUALS:
                         return valuePredicate.negate ? AssetQueryOperator.LESS_THAN : AssetQueryOperator.GREATER_EQUALS;
-                    case AssetQueryOperator.LESS_THAN:
+                    case AQO.LESS_THAN:
                         return valuePredicate.negate ? AssetQueryOperator.GREATER_EQUALS : AssetQueryOperator.LESS_THAN;
-                    case AssetQueryOperator.LESS_EQUALS:
+                    case AQO.LESS_EQUALS:
                         return valuePredicate.negate ? AssetQueryOperator.GREATER_THAN : AssetQueryOperator.LESS_EQUALS;
-                    case AssetQueryOperator.BETWEEN:
+                    case AQO.BETWEEN:
                         return valuePredicate.negate ? AssetQueryOperator.NOT_BETWEEN : AssetQueryOperator.BETWEEN;
                 }
                 return;
@@ -458,14 +458,14 @@ class OrRuleAssetQuery extends LitElement {
                 if (valueType === ValueType.NUMBER) {
                     predicate = {
                         predicateType: "number",
-                        operator: AssetQueryOperator.BETWEEN,
+                        operator: AQO.BETWEEN,
                         negate: true
                     };
                 } else {
                     // Assume datetime
                     predicate = {
                         predicateType: "datetime",
-                        operator: AssetQueryOperator.BETWEEN,
+                        operator: AQO.BETWEEN,
                         negate: true
                     };
                 }
@@ -480,13 +480,13 @@ class OrRuleAssetQuery extends LitElement {
                 if (valueType === ValueType.NUMBER) {
                     predicate = {
                         predicateType: "number",
-                        operator: key as AssetQueryOperator
+                        operator: key as AQO
                     };
                 } else {
                     // Assume datetime
                     predicate = {
                         predicateType: "datetime",
-                        operator: key as AssetQueryOperator
+                        operator: key as AQO
                     };
                 }
                 break;
@@ -498,13 +498,13 @@ class OrRuleAssetQuery extends LitElement {
                     predicate = {
                         predicateType: "datetime",
                         negate: value === AssetQueryOperator.NOT_EQUALS,
-                        operator: AssetQueryOperator.EQUALS
+                        operator: AQO.EQUALS
                     };
                 } else if (valueType === ValueType.NUMBER) {
                     predicate = {
                         predicateType: "number",
                         negate: value === AssetQueryOperator.NOT_EQUALS,
-                        operator: AssetQueryOperator.EQUALS
+                        operator: AQO.EQUALS
                     };
                 } else if (valueType === ValueType.STRING) {
                     predicate = {
@@ -578,10 +578,10 @@ class OrRuleAssetQuery extends LitElement {
     }
 
     protected toggleAttributeGroup(group: LogicGroup<AttributePredicate>) {
-        if (group.operator === RuleOperator.OR) {
-            group.operator = RuleOperator.AND;
+        if (group.operator === LogicGroupOperator.OR) {
+            group.operator = LogicGroupOperator.AND;
         } else {
-            group.operator = RuleOperator.OR;
+            group.operator = LogicGroupOperator.OR;
         }
         this.dispatchEvent(new OrRuleChangedEvent());
         this.requestUpdate();

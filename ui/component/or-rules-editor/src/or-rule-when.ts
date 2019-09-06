@@ -1,5 +1,5 @@
 import {customElement, html, LitElement, TemplateResult, property} from "lit-element";
-import {LogicGroup, Rule, RuleCondition, RuleOperator, AssetDescriptor} from "@openremote/model";
+import {LogicGroup, JsonRule, RuleCondition, AssetDescriptor, LogicGroupOperator} from "@openremote/model";
 import {OrRuleChangedEvent, RulesConfig} from "./index";
 import {whenStyle} from "./style";
 import "./or-rule-condition";
@@ -13,7 +13,7 @@ class OrRuleWhen extends LitElement {
     }
 
     @property({type: Object})
-    public rule?: Rule;
+    public rule?: JsonRule;
 
     public readonly?: boolean;
 
@@ -21,7 +21,7 @@ class OrRuleWhen extends LitElement {
 
     public assetDescriptors?: AssetDescriptor[];
 
-    protected groupAddTemplate(parent: Rule | LogicGroup<RuleCondition>) {
+    protected groupAddTemplate(parent: JsonRule | LogicGroup<RuleCondition>) {
         return html`<button class="button-clear add-button" @click="${() => this.addGroup(parent)}"><or-icon icon="plus-circle"></or-icon><or-translate value="rulesEditorAddGroup"></or-translate></button>`;
     }
 
@@ -49,7 +49,7 @@ class OrRuleWhen extends LitElement {
                     ${group.items && group.items.length > 0 ? group.items.map((condition: RuleCondition) => {
                         return html `
                             <div class="rule-group-item">
-                                <button @click="${() => this.toggleGroup(group)}" class="button-clear operator"><span>${i18next.t(!group.operator || group.operator === RuleOperator.AND ? "and" : "or")}</span></button>
+                                <button @click="${() => this.toggleGroup(group)}" class="button-clear operator"><span>${i18next.t(!group.operator || group.operator === LogicGroupOperator.AND ? "and" : "or")}</span></button>
                                 <div class="rule-condition">
                                     <or-rule-condition .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .ruleCondition="${condition}" .readonly="${this.readonly}" ></or-rule-condition>
                                     ${showRemoveCondition ? html`
@@ -63,7 +63,7 @@ class OrRuleWhen extends LitElement {
                     ${group.groups && group.groups.length > 0 ? html`
                         ${group.groups.map((childGroup: LogicGroup<RuleCondition>) => html`
                             <div class="rule-group-item">
-                                <button @click="${() => this.toggleGroup(group)}" class="button-clear operator"><span>${i18next.t(!group.operator || group.operator === RuleOperator.AND ? "and" : "or")}</span></button>
+                                <button @click="${() => this.toggleGroup(group)}" class="button-clear operator"><span>${i18next.t(!group.operator || group.operator === LogicGroupOperator.AND ? "and" : "or")}</span></button>
                                 ${this.ruleGroupTemplate(childGroup, group)}
                             </div>
                         `)}
@@ -93,16 +93,16 @@ class OrRuleWhen extends LitElement {
     }
 
     private toggleGroup(group: LogicGroup<RuleCondition>) {
-        if (group.operator === RuleOperator.OR) {
-            group.operator = RuleOperator.AND;
+        if (group.operator === LogicGroupOperator.OR) {
+            group.operator = LogicGroupOperator.AND;
         } else {
-            group.operator = RuleOperator.OR;
+            group.operator = LogicGroupOperator.OR;
         }
         this.dispatchEvent(new OrRuleChangedEvent());
         this.requestUpdate();
     }
 
-    private addGroup(parent: Rule | LogicGroup<RuleCondition>) {
+    private addGroup(parent: JsonRule | LogicGroup<RuleCondition>) {
         if (!parent) {
             return;
         }
@@ -113,8 +113,8 @@ class OrRuleWhen extends LitElement {
             newGroup = JSON.parse(JSON.stringify(this.config.templates.whenGroup)) as LogicGroup<RuleCondition>;
         }
 
-        if ((parent as Rule).name !== undefined) {
-            const rule = parent as Rule;
+        if ((parent as JsonRule).name !== undefined) {
+            const rule = parent as JsonRule;
             rule.when = newGroup;
         } else {
             const condition = parent as LogicGroup<RuleCondition>;

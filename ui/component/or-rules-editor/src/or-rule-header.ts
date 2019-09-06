@@ -1,9 +1,9 @@
-import {html, LitElement, property, customElement} from "lit-element";
+import {customElement, html, LitElement, property} from "lit-element";
 import "@openremote/or-translate";
 import "@openremote/or-input";
 import "@openremote/or-select";
 import "@openremote/or-icon";
-import {TenantRuleset, Rule} from "@openremote/model";
+import {TenantRuleset} from "@openremote/model";
 
 import {headerStyle} from "./style";
 import {OrRuleChangedEvent} from "./index";
