@@ -385,7 +385,7 @@ public class AssetQuery {
             return this;
         }
 
-        this.attributes = new LogicGroup<>(attributePredicates);
+        this.attributes = new LogicGroup<>(Arrays.asList(attributePredicates));
         return this;
     }
 
@@ -398,8 +398,13 @@ public class AssetQuery {
         return attributes(new AttributePredicate(attributeName));
     }
 
+
     public AssetQuery attributeValue(String name, ValuePredicate valuePredicate) {
         return attributes(new AttributePredicate(new StringPredicate(name), valuePredicate));
+    }
+
+    public AssetQuery attributeValue(String name) {
+        return attributeValue(name, new ValueNotEmptyPredicate());
     }
 
     public AssetQuery attributeValue(String name, boolean b) {

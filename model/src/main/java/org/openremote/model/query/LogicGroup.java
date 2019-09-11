@@ -19,10 +19,7 @@
  */
 package org.openremote.model.query;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 public class LogicGroup<T> {
@@ -35,11 +32,11 @@ public class LogicGroup<T> {
     public LogicGroup() {
     }
 
-    public LogicGroup(T[] items) {
+    public LogicGroup(List<T> items) {
         this.items = items;
     }
 
-    public LogicGroup(Operator operator, T[] items, LogicGroup<T>[] groups) {
+    public LogicGroup(Operator operator, List<T> items, List<LogicGroup<T>> groups) {
         this.operator = operator;
         this.items = items;
         this.groups = groups;
@@ -53,41 +50,24 @@ public class LogicGroup<T> {
     /**
      * Defines the items that the {@link #operator} should be applied to
      */
-    @JsonIgnore
-    public T[] items;
+    public List<T> items;
 
     /**
      * Nested groups allow for more complex logic with a mix of operators
      */
-    @JsonIgnore
-    public LogicGroup<T>[] groups;
+    public List<LogicGroup<T>> groups;
 
-    @JsonProperty("items")
-    public T[] getItems() {
-        return items;
-    }
 
-    @JsonProperty("items")
-    public void setItems(List<T> items) {
-        this.items = items == null ? null : items.toArray((T[])new Object[0]);
-    }
-
-    @JsonProperty("groups")
-    public LogicGroup<T>[] getGroups() {
-        return groups;
-    }
-
-    @JsonProperty("groups")
-    public void setGroups(List<LogicGroup<T>> groups) {
-        this.groups = groups == null ? null : groups.toArray((LogicGroup<T>[])new Object[0]);
+    public List<T> getItems() {
+        return items == null ? new ArrayList<T>() : items;
     }
 
     @Override
     public String toString() {
         return LogicGroup.class.getSimpleName() + "{" +
             "operator=" + operator +
-            ", items=" + Arrays.toString(items) +
-            ", groups=" + Arrays.toString(groups) +
+            ", items=" + items +
+            ", groups=" + groups +
             '}';
     }
 }

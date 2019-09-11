@@ -24,9 +24,7 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.openremote.model.attribute.AttributeType.LOCATION;
 
@@ -39,7 +37,7 @@ public class LocationAttributePredicate extends AttributePredicate {
     public static List<GeofencePredicate> getLocationPredicates(LogicGroup<AttributePredicate> attributePredicates) {
         List<GeofencePredicate> geofences = new ArrayList<>();
 
-        Arrays.stream(attributePredicates.items)
+        attributePredicates.getItems().stream()
                 .filter(attributePredicate -> attributePredicate.name != null
                         && attributePredicate.name.match == AssetQuery.Match.EXACT
                         && LOCATION.getAttributeName().equals(attributePredicate.name.value)
@@ -47,8 +45,8 @@ public class LocationAttributePredicate extends AttributePredicate {
                 .map(attributePredicate -> (GeofencePredicate) attributePredicate.value)
                 .forEach(geofences::add);
 
-        if (attributePredicates.groups != null) {
-            Arrays.stream(attributePredicates.groups).forEach(group ->
+        if (attributePredicates.groups != null && attributePredicates.groups.size() > 0) {
+            attributePredicates.groups.forEach(group ->
                 geofences.addAll(getLocationPredicates(group))
             );
         }
