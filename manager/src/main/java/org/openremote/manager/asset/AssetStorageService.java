@@ -1151,9 +1151,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         sb.append("(");
         boolean isFirst = true;
 
-        if (attributePredicateGroup.items != null) {
-            for (AttributePredicate attributePredicate : attributePredicateGroup.items) {
-
+        for (AttributePredicate attributePredicate : attributePredicateGroup.getItems()) {
                 if (!isFirst) {
                     sb.append(operator == LogicGroup.Operator.OR ? " or " : " and ");
                 }
@@ -1163,9 +1161,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 sb.append(buildAttributeFilter(attributePredicate, binders));
                 sb.append(")");
             }
-        }
 
-        if (attributePredicateGroup.groups != null) {
+        if (attributePredicateGroup.groups != null && attributePredicateGroup.groups.size() > 0) {
             for (LogicGroup<AttributePredicate> group : attributePredicateGroup.groups) {
                 addAttributePredicateGroupQuery(sb, binders, group);
             }

@@ -483,9 +483,9 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
 
         List<Predicate<AssetState>> assetStatePredicates = new ArrayList<>();
 
-        if (condition.items != null && condition.items.length > 0) {
+        if (condition.getItems().size() > 0) {
             assetStatePredicates.addAll(
-                    Arrays.stream(condition.items)
+                condition.getItems().stream()
                             .map(p -> {
                                 if (p instanceof NewAttributePredicate) {
                                     return asPredicate(currentMillisProducer, (NewAttributePredicate)p);
@@ -495,9 +495,9 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             );
         }
 
-        if (condition.groups != null && condition.groups.length > 0) {
+        if (condition.groups != null && condition.groups.size() > 0) {
             assetStatePredicates.addAll(
-                    Arrays.stream(condition.groups)
+                condition.groups.stream()
                             .map(c -> asPredicate(currentMillisProducer, c)).collect(Collectors.toList())
             );
         }
@@ -506,8 +506,8 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
     }
 
     protected static boolean conditionIsEmpty(LogicGroup condition) {
-        return (condition.items == null || condition.items.length == 0)
-                && (condition.groups == null || condition.groups.length == 0);
+        return condition.getItems().size() == 0
+            && (condition.groups != null && condition.groups.size() > 0);
     }
 
     protected static <T> Predicate<T> asPredicate(Collection<Predicate<T>> predicates, LogicGroup.Operator operator) {
