@@ -9,12 +9,12 @@ export const style = css`
             --internal-or-header-selected-color: var(--or-header-selected-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
             --internal-or-header-text-color: var(--or-header-text-color, var(--or-app-color3, inherit));
             --internal-or-header-height: var(--or-header-height, ${unsafeCSS(DefaultHeaderHeight)});
-            --internal-or-header-logo-margin: var(--or-header-logo-margin, 0);
+            --internal-or-header-logo-margin: var(--or-header-logo-margin, 0 40px 0 0);
             --internal-or-header-logo-height: var(--or-header-logo-height, var(--internal-or-header-height, ${unsafeCSS(DefaultHeaderHeight)}));
             --internal-or-header-item-size: var(--or-header-item-size, calc(${unsafeCSS(DefaultHeaderHeight)} - 20px));
             --internal-or-header-drawer-color: var(--or-header-drawer-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
             --internal-or-header-drawer-text-color: var(--or-header-drawer-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
-            --internal-or-header-drawer-item-size: var(--or-header-drawer-item-size, 40px);
+            --internal-or-header-drawer-item-size: var(--or-header-drawer-item-size, 30px);
             --internal-or-header-drawer-separator-color: var(--or-header-drawer-separator-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
             
             display: block;
@@ -25,10 +25,14 @@ export const style = css`
             padding: 0;
         }
         
-        #logo {
-            margin: var(--internal-or-header-logo-margin);
-            height: var(--internal-or-header-logo-height);
+        #logo-mobile {
+            margin: 8px;
+            height: calc(var(--internal-or-header-logo-height) - 16px);
             display: block;
+        }
+
+        #logo {
+            display: none;
         }
                                         
         #header {
@@ -42,8 +46,8 @@ export const style = css`
             background-color: var(--internal-or-header-color);
             color: var(--internal-or-header-text-color);
             --or-icon-fill: var(--internal-or-header-text-color);
-            --or-icon-height: calc(var(--internal-or-header-item-size) - 10px);
-            --or-icon-width: calc(var(--internal-or-header-item-size) - 10px);
+            --or-icon-height: calc(var(--internal-or-header-item-size) - 12px);
+            --or-icon-width: calc(var(--internal-or-header-item-size) - 12px);
             z-index: 9999999;
         }
 
@@ -95,7 +99,6 @@ export const style = css`
         #desktop-right {
             margin-left: auto;
             display: none;
-            margin-right: 20px;
         }
         
         #mobile-bottom {
@@ -107,7 +110,7 @@ export const style = css`
         }
          
         ::slotted(*) {
-            opacity: 0.8;
+            opacity: 0.7;
             cursor: pointer;
             text-decoration: none !important;                       
         }
@@ -116,13 +119,12 @@ export const style = css`
             color: inherit;
         }
         
-        ::slotted(*[selected]), #desktop-right ::slotted(*) {
-            font-weight: 400;
+        ::slotted(*[selected]), ::slotted(*:hover), #desktop-right ::slotted(*) {
             opacity: 1;
         }
                 
         #desktop-left ::slotted(*), #desktop-right ::slotted(*) {
-            padding: 0 30px;
+            padding: 0 20px;
             font-size: 14px;
         }
         
@@ -143,13 +145,29 @@ export const style = css`
         
         #desktop-left ::slotted(*[selected]) {
             display: inline-block;
+            line-height: var(--internal-or-header-height);
         }
         
         /* Wide layout: when the viewport width is bigger than 460px, layout
         changes to a wide layout. */
-        @media (min-width: 460px) {
+        @media (min-width: 640px) {
+
+            #logo {
+                margin: var(--internal-or-header-logo-margin);
+                height: var(--internal-or-header-logo-height);
+                display: block;
+            }
+
+            #logo-mobile {
+                display: none;
+            }
+
             #menu-btn {
-              display: none;
+                display: none;
+            }
+
+            #drawer {
+                display: none;
             }
             
             #desktop-right {
@@ -162,6 +180,7 @@ export const style = css`
 
             #desktop-left ::slotted(*[selected]) {                
                 border-bottom: 4px solid var(--internal-or-header-selected-color);
+                line-height: calc(var(--internal-or-header-height) - 4px);
             }
         }
 `;

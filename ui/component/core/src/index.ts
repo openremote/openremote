@@ -39,9 +39,9 @@ export const DefaultColor4: string = "#1B5630"; // Buttons
 export const DefaultColor5: string = "#CCC"; // Borders and lines
 export const DefaultColor6: string = "#be0000"; // Invalid/Error
 export const DefaultColor7: string = "#FFF"; // Panels
-export const DefaultBoxShadowBottom: string = "0 5px 5px -5px rgba(0,0,0,0.57)";
+export const DefaultBoxShadowBottom: string = "0 5px 5px -5px rgba(0,0,0,0.3)";
 export const DefaultBoxShadow: string = "0 1px 3px 0 rgba(0,0,0,0.21)";
-export const DefaultHeaderHeight: string = "60px";
+export const DefaultHeaderHeight: string = "50px";
 export const DefaultDisabledOpacity: string = "0.3";
 
 export enum ORError {

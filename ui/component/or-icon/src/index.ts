@@ -46,7 +46,7 @@ export class OrIcon extends LitElement {
         
             display: inline-block;
             position: relative;
-            vertical-align: middle;
+            vertical-align: text-bottom;
             fill: var(--internal-or-icon-fill);
             stroke: var(--internal-or-icon-stroke);
             stroke-width: var(--internal-or-icon-stroke-width);

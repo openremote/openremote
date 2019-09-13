@@ -1,5 +1,5 @@
 import {css, unsafeCSS} from "lit-element";
-import {DefaultColor1, DefaultColor4} from "@openremote/core";
+import { DefaultColor1, DefaultColor4, DefaultBoxShadow} from "@openremote/core";
 
 export const markerColorVar = "--internal-or-map-marker-color";
 export const markerActiveColorVar = "--internal-or-map-marker-active-color";
@@ -7,26 +7,26 @@ export const markerActiveColorVar = "--internal-or-map-marker-active-color";
 // language=CSS
 export const style = css`
     :host {
-        --internal-or-map-marker-transform: var(--or-map-marker-transform, translate(-24px, -45px));
-        --internal-or-map-marker-width: var(--or-map-marker-width, 48px);
-        --internal-or-map-marker-height: var(--or-map-marker-height, 48px);
+        --internal-or-map-marker-transform: var(--or-map-marker-transform, translate(-16px, -29px));
+        --internal-or-map-marker-width: var(--or-map-marker-width, 32px);
+        --internal-or-map-marker-height: var(--or-map-marker-height, 32px);
         --internal-or-map-marker-color: var(--or-map-marker-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
         --internal-or-map-marker-stroke: var(--or-map-marker-stroke, none);
         --internal-or-map-marker-icon-color: var(--or-map-marker-icon-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
         --internal-or-map-marker-icon-stroke: var(--or-map-marker-icon-stroke, none);
-        --internal-or-map-marker-icon-width: var(--or-map-marker-icon-width, 24px);
-        --internal-or-map-marker-icon-height: var(--or-map-marker-icon-height, 24px);
-        --internal-or-map-marker-icon-transform: var(--or-map-marker-icon-transform, translate(-50%, -19px));
-        --internal-or-map-marker-active-transform: var(--or-map-marker-active-transform, translate(-30px, -57px));
-        --internal-or-map-marker-active-width: var(--or-map-marker-active-width, 60px);
-        --internal-or-map-marker-active-height: var(--or-map-marker-active-height, 60px);
+        --internal-or-map-marker-icon-width: var(--or-map-marker-icon-width, 16px);
+        --internal-or-map-marker-icon-height: var(--or-map-marker-icon-height, 16px);
+        --internal-or-map-marker-icon-transform: var(--or-map-marker-icon-transform, translate(-50%, -14px));
+        --internal-or-map-marker-active-transform: var(--or-map-marker-active-transform, translate(-24px, -44px));
+        --internal-or-map-marker-active-width: var(--or-map-marker-active-width, 48px);
+        --internal-or-map-marker-active-height: var(--or-map-marker-active-height, 48px);
         --internal-or-map-marker-active-color: var(--or-map-marker-active-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
-        --internal-or-map-marker-active-stroke: var(--or-map-marker-active-stroke, none);
+        --internal-or-map-marker-active-stroke: var(--or-map-marker-active-stroke, 2px);
         --internal-or-map-marker-icon-active-color: var(--or-map-marker-icon-active-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
         --internal-or-map-marker-icon-active-stroke: var(--or-map-marker-icon-active-stroke, none);
-        --internal-or-map-marker-icon-active-width: var(--or-map-marker-icon-active-width, 32px);
-        --internal-or-map-marker-icon-active-height: var(--or-map-marker-icon-active-height, 32px);
-        --internal-or-map-marker-icon-active-transform: var(--or-map-marker-icon-active-transform, translate(-50%, -24px));
+        --internal-or-map-marker-icon-active-width: var(--or-map-marker-icon-active-width, 24px);
+        --internal-or-map-marker-icon-active-height: var(--or-map-marker-icon-active-height, 24px);
+        --internal-or-map-marker-icon-active-transform: var(--or-map-marker-icon-active-transform, translate(-50%, -20px));
         display: block;
         overflow: hidden;
     }
@@ -119,6 +119,5 @@ export const style = css`
             bottom: 40px;
             right: 12px;
         }
-    }
     }
 `;

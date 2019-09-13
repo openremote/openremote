@@ -11,10 +11,10 @@ export const style = css`
         --internal-or-asset-tree-header-text-color: var(--or-asset-tree-header-text-color, var(--or-app-color7, ${unsafeCSS(DefaultColor7)}));
         --internal-or-asset-tree-header-menu-background-color: var(--or-asset-tree-header-menu-background-color, var(--internal-or-asset-tree-header-text-color));
         --internal-or-asset-tree-header-menu-text-color: var(--or-asset-tree-header-menu-text-color, inherit);
-        --internal-or-asset-tree-header-height: var(--or-asset-tree-header-height, 70px);
+        --internal-or-asset-tree-header-height: var(--or-asset-tree-header-height, 40px);
         --internal-or-asset-tree-background-color: var(--or-asset-tree-background-color, var(--or-app-color7, ${unsafeCSS(DefaultColor7)}));
         --internal-or-asset-tree-text-color: var(--or-asset-tree-text-color, inherit);
-        --internal-or-asset-tree-item-height: var(--or-asset-tree-item-height, 28px);
+        --internal-or-asset-tree-item-height: var(--or-asset-tree-item-height, 24px);
         --internal-or-asset-tree-item-padding: var(--or-asset-tree-item-padding, 10px);
         --internal-or-asset-tree-selected-background-color: var(--or-asset-tree-selected-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
         --internal-or-asset-tree-selected-color: var(--or-asset-tree-selected-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
@@ -35,18 +35,19 @@ export const style = css`
     button {
         background-color: var(--internal-or-asset-tree-button-color);
         color: var(--internal-or-asset-tree-background-color);
-        --or-icon-width: 26px;
-        --or-icon-height: 26px;
+        --or-icon-width: 20px;
+        --or-icon-height: 20px;
         --or-icon-fill: var(--internal-or-asset-tree-background-color);
-        margin: 0 8px;
         border: none;
-        padding: 0;
+        padding: 0 6px;
         display: inline-block;
         cursor: pointer;
+        opacity: 0.8;
     }
 
-    button:focus {
+    button:focus, button:hover {
         outline: 0;
+        opacity: 1;
     }
     
     #header {
@@ -55,9 +56,6 @@ export const style = css`
         width: 100%;        
         height: var(--internal-or-asset-tree-header-height);
         border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};
-        -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
-        -moz-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
-        box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
         z-index: 1000;
     }
     
@@ -69,7 +67,7 @@ export const style = css`
         flex: 1 0 auto;
         flex-direction: row;
         text-transform: capitalize;
-        padding-left: 30px;
+        padding-left: 15px;
         
         --or-select-text-color: var(--internal-or-asset-tree-header-text-color);
         --or-select-option-text-color: var(--internal-or-asset-tree-header-menu-text-color);
@@ -80,8 +78,8 @@ export const style = css`
     }
     
     #title {
-        font-weight: bold;
-        font-size: 20px;
+        font-weight: 500;
+        font-size: 16px;
         color: var(--internal-or-asset-tree-header-text-color);
     }
     
@@ -95,7 +93,7 @@ export const style = css`
     #header-btns {
         display: flex;
         flex-direction: row;
-        padding-right: 10px;
+        padding-right: 5px;
     }
     
     .modal-container {
@@ -122,27 +120,31 @@ export const style = css`
         -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadow)};
         color: var(--internal-or-asset-tree-header-menu-text-color);
         background-color: var(--internal-or-asset-tree-header-menu-background-color);
-        padding: 20px 25px 10px 25px;
+        padding: 5px 0;
+        font-size: 14px;
     }
 
     .modal-content > ul {
         list-style-type: none;
         padding: 0;
-        margin-bottom: 0;
+        margin: 0;
         white-space: nowrap;
     }
     
     .modal-content > ul > li {
-        font-weight: bolder;
-        line-height: 40px;
+        padding: 8px 10px;
         cursor: pointer;
+    }
+
+    .modal-content > ul > li:hover {
+        background-color: var(--internal-or-asset-tree-selected-background-color);
     }
     
     .modal-content > ul > li > or-icon {
         visibility: hidden;
-        width: 18px;
-        height: 18px;
-        margin-right: 10px;
+        width: 16px;
+        height: 16px;
+        margin-right: 8px;
         --or-icon-fill: var(--internal-or-asset-tree-header-color);
         --or-icon-stroke: var(--internal-or-asset-tree-header-color);
         --or-icon-stroke-width: 2px;
@@ -152,18 +154,18 @@ export const style = css`
         visibility: visible;
     }
     
-    .modal-content > h2 {
-        opacity: 0.6;
-        font-size: 0.9em;
-        margin: 0;
+    .modal-content > p {
+        padding: 0 15px;
+        margin: 10px 0;
     }
     
     .modal-btns {
         text-align: right;
+        padding: 5px 15px;
     }
     
     .modal-btns .btn {
-        font-weight: bolder;
+        font-weight: 500;
         cursor: pointer;
         text-transform: uppercase;
     }
@@ -173,30 +175,31 @@ export const style = css`
     }    
             
     #sort-menu {
-        left: -173px;
-        top: var(--internal-or-asset-tree-header-height);
+        left: -130px;
+        top: calc(var(--internal-or-asset-tree-header-height) - 5px);
     }
     
     #delete-not-allowed-modal {
-        left: -400px;
-        top: var(--internal-or-asset-tree-header-height);
+        left: -200px;
+        top: calc(var(--internal-or-asset-tree-header-height) - 5px);
     }
     
     #delete-confirm-modal {
-        left: -300px;
-        top: var(--internal-or-asset-tree-header-height);
+        left: -200px;
+        top: calc(var(--internal-or-asset-tree-header-height) - 5px);
     }
     
     #list-container {
-        flex: 1 0 auto;
+        height: 0px;
+        flex: 1 1 auto;
         overflow: auto;
+        font-size: 14px;
     }
     
     #list {
         margin: 0;
         color: var(--internal-or-asset-tree-text-color);
-        padding: 15px 0;
-        font-weight: bolder;
+        padding: 5px 0;
     }
     
     #list, ol {
@@ -222,7 +225,7 @@ export const style = css`
     .node-container {
         display: flex;
         flex-direction: row;
-        border-left: 6px solid transparent;
+        border-left: 4px solid transparent;
         user-select: none;
         cursor: pointer;
         height: var(--internal-or-asset-tree-item-height);
@@ -240,12 +243,12 @@ export const style = css`
         height: 100%;
         display: inline-block;
         background-repeat: no-repeat;                
-        background-size: 100%;
+        background-size: 18px;
         background-position: center;
     }
     
     .expander[data-expandable] {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='${unsafeCSS(mdi.icons["chevron-right"])}'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='rgb(204, 204, 204)' viewBox='0 0 24 24'%3E%3Cpath d='${unsafeCSS(mdi.icons["chevron-right"])}'/%3E%3C/svg%3E");
     }
     
     li[data-expanded] > .node-container .expander {
@@ -264,9 +267,9 @@ export const style = css`
     }
     
     .node-name > or-icon {
-        --or-icon-width: var(--internal-or-asset-tree-item-height);
-        --or-icon-height: var(--internal-or-asset-tree-item-height);
-        margin-right: 10px;
+        --or-icon-width: 18px;
+        --or-icon-height: 18px;
+        margin-right: 8px;
     }
     
     #loading {

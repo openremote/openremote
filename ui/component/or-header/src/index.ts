@@ -11,6 +11,9 @@ class OrHeader extends LitElement {
     @property({type: String})
     private logo = "";
 
+    @property({ type: String })
+    private logoMobile = "";
+
     @query("slot[name=mobile-bottom]")
     protected _mobileBottomSlot?: HTMLSlotElement;
 
@@ -24,7 +27,7 @@ class OrHeader extends LitElement {
            <!-- Header -->
             <div id="header" class="shadow">
                 <div id="toolbar-top">
-                    <div><img id="logo" src="${this.logo}" /></div>
+                    <div><img id="logo" src="${this.logo}" /><img id="logo-mobile" src="${this.logoMobile}" /></div>
                     <!-- This gets hidden on a small screen-->
                     
                     <nav id="toolbar-list">

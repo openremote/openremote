@@ -221,7 +221,6 @@ export class OrAssetTree extends LitElement {
                     <div class="modal-container">
                         <div class="modal" id="sort-menu">
                             <div class="modal-content">
-                                <h2><or-translate value="sortBy"></or-translate></h2>
                                 <ul>
                                     <li @click="${() => this.sortBy = "name"}" ?data-selected="${!this.sortBy || this.sortBy === "name"}"><or-icon icon="check"></or-icon><or-translate value="name"></or-translate></li>
                                     <li @click="${() => this.sortBy = "type"}" ?data-selected="${this.sortBy === "type"}"><or-icon icon="check"></or-icon><or-translate value="assetType"></or-translate></li>
@@ -413,9 +412,11 @@ export class OrAssetTree extends LitElement {
 
     protected _onSortClicked() {
         // Do open on next task to prevent click handler closing it immediately
-        window.setTimeout(() => {
-            this._sortMenu.toggleAttribute("data-visible");
-        });
+        if (!this._sortMenu.hasAttribute("data-visible")) {
+            window.setTimeout(() => {
+                this._sortMenu.toggleAttribute("data-visible");
+            });
+        }
     }
 
     protected _doSelect(detail: NodeClickEventDetail) {
