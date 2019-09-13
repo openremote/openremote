@@ -114,7 +114,7 @@ export const style = css`
         width: 20px;
     }
     
-    @media only screen and (max-width: 768px) {
+    @media only screen and (max-width: 640px) {
         #openremote {
             bottom: 40px;
             right: 12px;

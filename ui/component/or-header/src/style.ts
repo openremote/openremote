@@ -84,7 +84,7 @@ export const style = css`
             box-sizing: border-box;
             width: 100%;
             height: 100%;
-            padding: 24px;            
+            padding: 6px 24px;            
             position: relative;
         }
           
@@ -92,7 +92,7 @@ export const style = css`
             background: none;
             border: none;
             cursor: pointer;
-            padding: 0;
+            padding: 0 6px;
             margin: 10px 10px 10px auto;
         }
         
