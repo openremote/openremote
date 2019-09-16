@@ -1,6 +1,6 @@
 import axios, {AxiosInstance, AxiosRequestConfig} from "axios";
 import {ApiClient} from "./restclient";
-import Qs from "qs";
+import * as Qs from "qs";
 
 export class RestApi {
 

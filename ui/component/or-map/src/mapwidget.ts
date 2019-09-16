@@ -1,5 +1,5 @@
-import openremote from "@openremote/core";
-import rest from "@openremote/rest";
+import ORCore from "@openremote/core";
+import ORRest from "@openremote/rest";
 import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL, Style as StyleGL, LngLat,
     MapMouseEvent} from "mapbox-gl";
 import L, {Map as MapJS, MapOptions as OptionsJS, Marker as MarkerJS} from "mapbox.js";
@@ -131,11 +131,11 @@ export class MapWidget {
             style.id = "mapboxJsStyle";
             style.textContent = MapWidget._mapboxJsStyle.default.toString();
             this._styleParent.appendChild(style);
-            const settingsResponse = await rest.api.MapResource.getSettingsJs();
+            const settingsResponse = await ORRest.api.MapResource.getSettingsJs();
             const settings = settingsResponse.data as any;
 
             // Load options for current realm or fallback to default if exist
-            this._viewSettings = settings.options ? settings.options[openremote.getRealm() || "default"] ? settings.options[openremote.getRealm() || "default"] : settings.options.default : null;
+            this._viewSettings = settings.options ? settings.options[ORCore.manager.getRealm() || "default"] ? settings.options[ORCore.manager.getRealm() || "default"] : settings.options.default : null;
             let options: OptionsJS | undefined;
             if (this._viewSettings) {
                 options = {};
@@ -187,18 +187,18 @@ export class MapWidget {
             this._styleParent.appendChild(style);
 
             const map: typeof import("mapbox-gl") = await import(/* webpackChunkName: "mapbox-gl" */ "mapbox-gl");
-            const settingsResponse = await rest.api.MapResource.getSettings();
+            const settingsResponse = await ORRest.api.MapResource.getSettings();
             const settings = settingsResponse.data as any;
 
             // Load options for current realm or fallback to default if exist
-            this._viewSettings = settings.options ? settings.options[openremote.getRealm() || "default"] ? settings.options[openremote.getRealm() || "default"] : settings.options.default : null;
+            this._viewSettings = settings.options ? settings.options[ORCore.manager.getRealm() || "default"] ? settings.options[ORCore.manager.getRealm() || "default"] : settings.options.default : null;
             const options: OptionsGL = {
                 attributionControl: true,
                 container: this._mapContainer,
                 style: settings as StyleGL,
                 transformRequest: (url, resourceType) => {
                     return {
-                        headers: {Authorization: openremote.getAuthorizationHeader()},
+                        headers: {Authorization: ORCore.manager.getAuthorizationHeader()},
                         url
                     };
                 }

@@ -174,6 +174,7 @@ export class OrInput extends LitElement {
                     if (isExecutable) {
                         return html`<span>EXECUTABLE BUTTON NOT IMPLEMENTED</span>`;
                     }
+                    break;
                 case InputType.SWITCH_MOMENTARY:
                     if (!valueType || valueType === ValueType.BOOLEAN) {
                         return html`<input type="button" @onmousedown="${() => this.onValueChange(true)}" @onmouseup="${() => this.onValueChange(false)}" value="" ?readonly="${this.readonly}" />`;
@@ -186,12 +187,19 @@ export class OrInput extends LitElement {
                     if (valueType && valueType !== ValueType.NUMBER) {
                         break;
                     }
+                    const step = this.type === InputType.INTEGER ? "1" : undefined;
+                    const min = this.getMinValue();
+                    const max = this.getMaxValue();
+
+                    return html`<input ?required="${this.required}" type="${this.type}" step="${step}" min="${min}" max="${max}" value="${this.value}" @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement).value)}" />`;
+                    break;
                 case InputType.DATE:
                 case InputType.DATETIME:
                 case InputType.TIME:
                     if (valueType && valueType !== ValueType.NUMBER && valueType !== ValueType.STRING) {
                         break;
                     }
+                    break;
                 case InputType.SWITCH_TOGGLE:
                 case InputType.CHECKBOX:
                 case InputType.COLOUR:
@@ -210,11 +218,7 @@ export class OrInput extends LitElement {
                         }
                     }
 
-                    const step = this.type === InputType.INTEGER ? "1" : undefined;
-                    const min = this.getMinValue();
-                    const max = this.getMaxValue();
-
-                    return html`<input ?required="${this.required}" type="${this.type}" step="${step}" min="${min}" max="${max}" value="${this.value}" @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement).value)}" />`;
+                    return html`<input ?required="${this.required}" type="${this.type}" value="${this.value}" @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement).value)}" />`;
                 case InputType.GEO_JSON_POINT:
                     break;
             }

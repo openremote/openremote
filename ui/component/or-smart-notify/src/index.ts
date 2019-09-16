@@ -8,7 +8,7 @@ import {faTimes} from "@fortawesome/free-solid-svg-icons";
 
 import REST from "@openremote/rest";
 import {AssetQuery} from "@openremote/model";
-import openremote from "@openremote/core";
+import ORCore from "@openremote/core";
 
 @customElement("or-smart-notify")
 class OrSmartNotify extends LitElement {
@@ -341,7 +341,7 @@ class OrSmartNotify extends LitElement {
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
-        this.isDisabled = !openremote.hasRole("write:assets");
+        this.isDisabled = !ORCore.manager.hasRole("write:assets");
     }
 
 }

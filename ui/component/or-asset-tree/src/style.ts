@@ -1,25 +1,24 @@
 import {css, unsafeCSS} from "lit-element";
-import {DefaultColor1, DefaultColor2, DefaultColor5, DefaultColor3, DefaultColor4, DefaultColor7, DefaultBoxShadow, DefaultDisabledOpacity,
-    DefaultBoxShadowBottom} from "@openremote/core";
+import ORCore from "@openremote/core";
 import mdi from "@openremote/or-icon/dist/mdi-icons";
 
 // language=CSS
 export const style = css`
 
     :host {       
-        --internal-or-asset-tree-header-color: var(--or-asset-tree-header-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));     
-        --internal-or-asset-tree-header-text-color: var(--or-asset-tree-header-text-color, var(--or-app-color7, ${unsafeCSS(DefaultColor7)}));
+        --internal-or-asset-tree-header-color: var(--or-asset-tree-header-color, var(--or-app-color4, ${unsafeCSS(ORCore.DefaultColor4)}));     
+        --internal-or-asset-tree-header-text-color: var(--or-asset-tree-header-text-color, var(--or-app-color7, ${unsafeCSS(ORCore.DefaultColor7)}));
         --internal-or-asset-tree-header-menu-background-color: var(--or-asset-tree-header-menu-background-color, var(--internal-or-asset-tree-header-text-color));
         --internal-or-asset-tree-header-menu-text-color: var(--or-asset-tree-header-menu-text-color, inherit);
         --internal-or-asset-tree-header-height: var(--or-asset-tree-header-height, 70px);
-        --internal-or-asset-tree-background-color: var(--or-asset-tree-background-color, var(--or-app-color7, ${unsafeCSS(DefaultColor7)}));
+        --internal-or-asset-tree-background-color: var(--or-asset-tree-background-color, var(--or-app-color7, ${unsafeCSS(ORCore.DefaultColor7)}));
         --internal-or-asset-tree-text-color: var(--or-asset-tree-text-color, inherit);
         --internal-or-asset-tree-item-height: var(--or-asset-tree-item-height, 28px);
         --internal-or-asset-tree-item-padding: var(--or-asset-tree-item-padding, 10px);
-        --internal-or-asset-tree-selected-background-color: var(--or-asset-tree-selected-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
-        --internal-or-asset-tree-selected-color: var(--or-asset-tree-selected-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
-        --internal-or-asset-tree-button-color: var(--or-asset-tree-button-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
-        --internal-or-asset-tree-line-color: var(--or-asset-tree-line-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
+        --internal-or-asset-tree-selected-background-color: var(--or-asset-tree-selected-background-color, var(--or-app-color2, ${unsafeCSS(ORCore.DefaultColor2)}));
+        --internal-or-asset-tree-selected-color: var(--or-asset-tree-selected-color, var(--or-app-color4, ${unsafeCSS(ORCore.DefaultColor4)}));
+        --internal-or-asset-tree-button-color: var(--or-asset-tree-button-color, var(--or-app-color4, ${unsafeCSS(ORCore.DefaultColor4)}));
+        --internal-or-asset-tree-line-color: var(--or-asset-tree-line-color, var(--or-app-color5, ${unsafeCSS(ORCore.DefaultColor5)}));
         
         display: flex;
         flex-direction: column;
@@ -54,10 +53,10 @@ export const style = css`
         display: flex;
         width: 100%;        
         height: var(--internal-or-asset-tree-header-height);
-        border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};
-        -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
-        -moz-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
-        box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
+        border-bottom: 1px solid ${unsafeCSS(ORCore.DefaultColor5)};
+        -webkit-box-shadow: ${unsafeCSS(ORCore.DefaultBoxShadowBottom)};
+        -moz-box-shadow: ${unsafeCSS(ORCore.DefaultBoxShadowBottom)};
+        box-shadow: ${unsafeCSS(ORCore.DefaultBoxShadowBottom)};
         z-index: 1000;
     }
     
@@ -117,9 +116,9 @@ export const style = css`
     
     .modal-content {
         border: 1px solid var(--internal-or-asset-tree-line-color);
-        box-shadow: ${unsafeCSS(DefaultBoxShadow)};
-        -moz-box-shadow: ${unsafeCSS(DefaultBoxShadow)};
-        -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadow)};
+        box-shadow: ${unsafeCSS(ORCore.DefaultBoxShadow)};
+        -moz-box-shadow: ${unsafeCSS(ORCore.DefaultBoxShadow)};
+        -webkit-box-shadow: ${unsafeCSS(ORCore.DefaultBoxShadow)};
         color: var(--internal-or-asset-tree-header-menu-text-color);
         background-color: var(--internal-or-asset-tree-header-menu-background-color);
         padding: 20px 25px 10px 25px;

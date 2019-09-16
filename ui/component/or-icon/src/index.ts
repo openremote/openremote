@@ -114,3 +114,7 @@ export class OrIcon extends LitElement {
         this._updateIcon(true);
     }
 }
+
+export default {
+    IconSets
+}

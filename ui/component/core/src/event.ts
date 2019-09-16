@@ -1,4 +1,4 @@
-import openremote from "./index";
+import ORCore from "./index";
 import {arrayRemove, Deferred} from "./util";
 import {
     AttributeEvent,
@@ -432,10 +432,10 @@ export class WebSocketEventProvider extends EventProviderImpl {
     }
 
     protected _doConnect(): Promise<boolean> {
-        let authorisedUrl = this._endpointUrl + "?Auth-Realm=" + openremote.config.realm;
+        let authorisedUrl = this._endpointUrl + "?Auth-Realm=" + ORCore.manager.config.realm;
 
-        if (openremote.authenticated) {
-            authorisedUrl += "&Authorization=" + openremote.getAuthorizationHeader();
+        if (ORCore.manager.authenticated) {
+            authorisedUrl += "&Authorization=" + ORCore.manager.getAuthorizationHeader();
         }
 
         this._webSocket = new WebSocket(authorisedUrl);

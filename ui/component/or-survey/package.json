@@ -1,18 +1,21 @@
 {
-  "name": "@openremote/or-header",
+  "name": "@openremote/or-survey",
   "version": "1.0.2",
-  "description": "Displays header with menu for mobile and desktop",
+  "description": "Displays survey",
   "main": "dist/index.js",
   "types": "src/index.ts",
   "scripts": {
     "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
-    "bundle": "npm run build && rollup -c"
+    "postbuild": "webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "lit-element": "^2.1.0"
+    "@types/lodash-es": "^4.17.3",
+    "lit-element": "^2.1.0",
+    "lodash-es": "^4.17.15",
+    "moment": "2.24.0"
   },
   "devDependencies": {
     "@babel/core": "^7.6.0",

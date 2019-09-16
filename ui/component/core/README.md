@@ -34,7 +34,7 @@ whether initialisation was successful or not.
 Initialisation usage example:
 
 ```$javascript
-import openremote from "@openremote/core";
+import ORCore from "@openremote/core";
 
 openremote.init({
     managerUrl: "http://localhost:8080",
@@ -60,7 +60,7 @@ Exports a `subscribe` function/mixin that can be used by components to connect t
 Manager; it takes care of subscribing to events for the specified Asset(s), usage example:
 
 ```$javascript
-class AssetComponent extends subscribe(openremote) {
+class AssetComponent extends subscribe(ORCore.manager) {
 
     constructor() {
         this.assetIds = [this.asset];

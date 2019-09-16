@@ -2,11 +2,11 @@ import {customElement, property, PropertyValues} from "lit-element";
 import {OrMapMarker} from "./or-map-marker";
 import {AttributeEvent, AttributeType, GeoJSONPoint, AssetType, AssetEvent, AssetEventCause, Asset} from "@openremote/model";
 import {subscribe} from "@openremote/core/dist/asset-mixin";
-import openremote, {AssetModelUtil} from "@openremote/core";
+import ORCore, {AssetModelUtil} from "@openremote/core";
 import {Util} from "@openremote/core";
 
 @customElement("or-map-marker-asset")
-export class OrMapMarkerAsset extends subscribe(openremote)(OrMapMarker) {
+export class OrMapMarkerAsset extends subscribe(ORCore.manager)(OrMapMarker) {
 
     @property({type: String, reflect: true, attribute: true})
     public assetId?: string;

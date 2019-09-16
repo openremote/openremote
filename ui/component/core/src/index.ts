@@ -1,7 +1,7 @@
 import "url-search-params-polyfill";
 import {Console} from "./console";
-import rest from "@openremote/rest";
-import {IconSets} from "@openremote/or-icon";
+import ORRest from "@openremote/rest";
+import ORIcon from "@openremote/or-icon";
 import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next from "i18next";
@@ -32,17 +32,17 @@ export declare type Keycloak = {
 
 export {Util};
 
-export const DefaultColor1: string = "#FFF"; // Header
-export const DefaultColor2: string = "#F9F9F9"; // Background
-export const DefaultColor3: string = "#4c4c4c"; // Text
-export const DefaultColor4: string = "#1B5630"; // Buttons
-export const DefaultColor5: string = "#CCC"; // Borders and lines
-export const DefaultColor6: string = "#be0000"; // Invalid/Error
-export const DefaultColor7: string = "#FFF"; // Panels
-export const DefaultBoxShadowBottom: string = "0 5px 5px -5px rgba(0,0,0,0.57)";
-export const DefaultBoxShadow: string = "0 1px 3px 0 rgba(0,0,0,0.21)";
-export const DefaultHeaderHeight: string = "60px";
-export const DefaultDisabledOpacity: string = "0.3";
+const DefaultColor1: string = "#FFF"; // Header
+const DefaultColor2: string = "#F9F9F9"; // Background
+const DefaultColor3: string = "#4c4c4c"; // Text
+const DefaultColor4: string = "#1B5630"; // Buttons
+const DefaultColor5: string = "#CCC"; // Borders and lines
+const DefaultColor6: string = "#be0000"; // Invalid/Error
+const DefaultColor7: string = "#FFF"; // Panels
+const DefaultBoxShadowBottom: string = "0 5px 5px -5px rgba(0,0,0,0.57)";
+const DefaultBoxShadow: string = "0 1px 3px 0 rgba(0,0,0,0.21)";
+const DefaultHeaderHeight: string = "60px";
+const DefaultDisabledOpacity: string = "0.3";
 
 export enum ORError {
     NONE = "NONE",
@@ -95,6 +95,7 @@ export interface ManagerConfig {
     clientId?: string;
     autoLogin?: boolean;
     credentials?: Credentials;
+    consoleInit?: boolean;
     consoleAutoEnable?: boolean;
     eventProviderType?: EventProviderType;
     pollingIntervalMillis?: number;
@@ -328,6 +329,10 @@ export class Manager implements EventProviderFactory {
             }
         }
 
+        if (normalisedConfig.consoleInit === undefined) {
+            normalisedConfig.consoleInit = true;
+        }
+
         if (normalisedConfig.consoleAutoEnable === undefined) {
             normalisedConfig.consoleAutoEnable = true;
         }
@@ -419,7 +424,7 @@ export class Manager implements EventProviderFactory {
             success = this.doRestApiInit();
         }
 
-        if (success) {
+        if (success && this._config.consoleInit === true) {
             success = await this.doConsoleInit();
         }
 
@@ -462,8 +467,13 @@ export class Manager implements EventProviderFactory {
 
             // Async load material design icons if requested
             if (this._config.loadIcons) {
-                const mdiIconSet = await import(/* webpackChunkName: "mdi-icons" */ "@openremote/or-icon/dist/mdi-icons");
-                IconSets.addIconSet("mdi", mdiIconSet.default);
+                try {
+                    const mdiIconSet = await import(/* webpackChunkName: "mdi-icons" */ "@openremote/or-icon/dist/mdi-icons");
+                    ORIcon.IconSets.addIconSet("mdi", mdiIconSet.default);
+                }
+                catch (e) {
+                    // TRY CDN if above is failing?
+                }
             }
 
             return true;
@@ -526,10 +536,10 @@ export class Manager implements EventProviderFactory {
         }
 
         try {
-            const assetDescriptorResponse = await rest.api.AssetModelResource.getAssetDescriptors();
-            const attributeDescriptorResponse = await rest.api.AssetModelResource.getAttributeDescriptors();
-            const attributeValueDescriptorResponse = await rest.api.AssetModelResource.getAttributeValueDescriptors();
-            const metaItemDescriptorResponse = await rest.api.AssetModelResource.getMetaItemDescriptors();
+            const assetDescriptorResponse = await ORRest.api.AssetModelResource.getAssetDescriptors();
+            const attributeDescriptorResponse = await ORRest.api.AssetModelResource.getAttributeDescriptors();
+            const attributeValueDescriptorResponse = await ORRest.api.AssetModelResource.getAttributeValueDescriptors();
+            const metaItemDescriptorResponse = await ORRest.api.AssetModelResource.getMetaItemDescriptors();
 
             AssetModelUtil._assetDescriptors = assetDescriptorResponse.data;
             AssetModelUtil._attributeDescriptors = attributeDescriptorResponse.data;
@@ -548,7 +558,7 @@ export class Manager implements EventProviderFactory {
             case Auth.BASIC:
                 // TODO: Implement Basic auth support
                 if (this._config.credentials) {
-                    rest.setBasicAuth(this._config.credentials.username, this._config.credentials.password);
+                    ORRest.setBasicAuth(this._config.credentials.username, this._config.credentials.password);
                 }
                 this._setError(ORError.AUTH_TYPE_UNSUPPORTED);
                 success = false;
@@ -556,7 +566,7 @@ export class Manager implements EventProviderFactory {
             case Auth.KEYCLOAK:
                 success = await this.loadAndInitialiseKeycloak();
                 // Add interceptor to inject authorization header on each request
-                rest.addRequestInterceptor(
+                ORRest.addRequestInterceptor(
                     (config: AxiosRequestConfig) => {
                         if (!config.headers.Authorization) {
                             const token = this.getKeycloakToken();
@@ -583,8 +593,8 @@ export class Manager implements EventProviderFactory {
     }
 
     protected doRestApiInit(): boolean {
-        rest.setTimeout(10000);
-        rest.initialise(this.getApiBaseUrl());
+        ORRest.setTimeout(10000);
+        ORRest.initialise(this.getApiBaseUrl());
         return true;
     }
 
@@ -893,4 +903,18 @@ export class Manager implements EventProviderFactory {
     }
 }
 
-export default new Manager();
+export default {
+    manager: new Manager(),
+    Util,
+    DefaultColor1,
+    DefaultColor2,
+    DefaultColor3,
+    DefaultColor4,
+    DefaultColor5,
+    DefaultColor6,
+    DefaultColor7,
+    DefaultBoxShadowBottom,
+    DefaultBoxShadow,
+    DefaultDisabledOpacity,
+    DefaultHeaderHeight
+};

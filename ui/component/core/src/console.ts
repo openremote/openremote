@@ -1,12 +1,12 @@
 import {ConsoleRegistration} from "@openremote/model";
-import rest from "@openremote/rest";
-import openremote from "./index";
+import ORRest from "@openremote/rest";
+import ORCore from "./index";
 import {AxiosResponse} from "axios";
 
 declare function require(name: string): any;
 
 // No ES6 module support in platform lib
-let platform = require('platform');
+import * as platform from "platform";
 
 export interface ProviderMessage {
     provider: string;
@@ -106,7 +106,7 @@ export class Console {
             consoleReg.providers[providerName] = provider;
         }
 
-        let appName = openremote.getAppName();
+        let appName = ORCore.manager.getAppName();
         if (appName.length > 0 && consoleReg.apps!.indexOf(appName) < 0) {
             consoleReg.apps!.push(appName);
         }
@@ -305,7 +305,7 @@ export class Console {
                 console.debug("Console: updating registration");
 
                 try {
-                    rest.api.ConsoleResource.register(this._registration).then((response: AxiosResponse<ConsoleRegistration>) => {
+                    ORRest.api.ConsoleResource.register(this._registration).then((response: AxiosResponse<ConsoleRegistration>) => {
                         if (response.status !== 200) {
                             throw new Error("Failed to register console");
                         }
@@ -491,10 +491,11 @@ export class Console {
     }
 
     protected static _createConsoleRegistration(): ConsoleRegistration {
+
         let reg: ConsoleRegistration = {
             name: platform.name,
             version: platform.version,
-            platform: platform.os.toString(),
+            platform:  platform.os ? platform.os.toString() : '',
             apps: [],
             model: ((platform.manufacturer ? platform.manufacturer + " " : "") + (platform.product ? platform.product : "")).trim()
         };

@@ -1,5 +1,5 @@
 import {css, unsafeCSS} from "lit-element";
-import {DefaultColor2, DefaultColor5, DefaultColor7} from "@openremote/core";
+import ORCore from "@openremote/core";
 
 // TODO this is temp work, should be replaced with material design components / styling
 
@@ -11,12 +11,12 @@ export const selectStyle = css`
     :host {
         display: inline-block;
         
-        --internal-or-select-background-color: var(--or-select-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor2)}));     
-        --internal-or-select-border-color: var(--or-select-border-color, var(--or-app-color1, ${unsafeCSS(DefaultColor5)}));
+        --internal-or-select-background-color: var(--or-select-background-color, var(--or-app-color1, ${unsafeCSS(ORCore.DefaultColor2)}));     
+        --internal-or-select-border-color: var(--or-select-border-color, var(--or-app-color1, ${unsafeCSS(ORCore.DefaultColor5)}));
         --internal-or-select-text-color: var(--or-select-text-color, inherit);
         --internal-or-select-padding: var(--or-select-padding, 10px 40px 10px 10px);
         --internal-or-select-option-text-color: var(--or-select-option-text-color, inherit);
-        --internal-or-select-option-background-color: var(--or-select-option-background-color, var(--or-app-color7, ${unsafeCSS(DefaultColor7)}));
+        --internal-or-select-option-background-color: var(--or-select-option-background-color, var(--or-app-color7, ${unsafeCSS(ORCore.DefaultColor7)}));
     }
     
     select:invalid {

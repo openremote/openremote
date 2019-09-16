@@ -1,21 +1,21 @@
 import {css, unsafeCSS} from "lit-element";
-import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, DefaultBoxShadowBottom, DefaultHeaderHeight} from "@openremote/core";
+import ORCore from "@openremote/core";
 
 // language=CSS
 export const style = css`
     
         :host {
-            --internal-or-header-color: var(--or-header-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));    
-            --internal-or-header-selected-color: var(--or-header-selected-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
+            --internal-or-header-color: var(--or-header-color, var(--or-app-color1, ${unsafeCSS(ORCore.DefaultColor1)}));    
+            --internal-or-header-selected-color: var(--or-header-selected-color, var(--or-app-color4, ${unsafeCSS(ORCore.DefaultColor4)}));    
             --internal-or-header-text-color: var(--or-header-text-color, var(--or-app-color3, inherit));
-            --internal-or-header-height: var(--or-header-height, ${unsafeCSS(DefaultHeaderHeight)});
+            --internal-or-header-height: var(--or-header-height, ${unsafeCSS(ORCore.DefaultHeaderHeight)});
             --internal-or-header-logo-margin: var(--or-header-logo-margin, 0);
-            --internal-or-header-logo-height: var(--or-header-logo-height, var(--internal-or-header-height, ${unsafeCSS(DefaultHeaderHeight)}));
-            --internal-or-header-item-size: var(--or-header-item-size, calc(${unsafeCSS(DefaultHeaderHeight)} - 20px));
-            --internal-or-header-drawer-color: var(--or-header-drawer-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
-            --internal-or-header-drawer-text-color: var(--or-header-drawer-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
+            --internal-or-header-logo-height: var(--or-header-logo-height, var(--internal-or-header-height, ${unsafeCSS(ORCore.DefaultHeaderHeight)}));
+            --internal-or-header-item-size: var(--or-header-item-size, calc(${unsafeCSS(ORCore.DefaultHeaderHeight)} - 20px));
+            --internal-or-header-drawer-color: var(--or-header-drawer-color, var(--or-app-color2, ${unsafeCSS(ORCore.DefaultColor2)}));
+            --internal-or-header-drawer-text-color: var(--or-header-drawer-text-color, var(--or-app-color3, ${unsafeCSS(ORCore.DefaultColor3)}));
             --internal-or-header-drawer-item-size: var(--or-header-drawer-item-size, 40px);
-            --internal-or-header-drawer-separator-color: var(--or-header-drawer-separator-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
+            --internal-or-header-drawer-separator-color: var(--or-header-drawer-separator-color, var(--or-app-color5, ${unsafeCSS(ORCore.DefaultColor5)}));
             
             display: block;
         }
@@ -48,9 +48,9 @@ export const style = css`
         }
 
         .shadow {
-            -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
-            -moz-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
-            box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
+            -webkit-box-shadow: ${unsafeCSS(ORCore.DefaultBoxShadowBottom)};
+            -moz-box-shadow: ${unsafeCSS(ORCore.DefaultBoxShadowBottom)};
+            box-shadow: ${unsafeCSS(ORCore.DefaultBoxShadowBottom)};
         }
                 
         #drawer {

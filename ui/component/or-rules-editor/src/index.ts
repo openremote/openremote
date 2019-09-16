@@ -21,9 +21,9 @@ import {
     ValuePredicateUnion,
     ValueType
 } from "@openremote/model";
-import openremote, {AssetModelUtil} from "@openremote/core";
+import ORCore, {AssetModelUtil} from "@openremote/core";
 import {isTimeDuration} from "@openremote/core/dist/util";
-import rest from "@openremote/rest";
+import ORRest from "@openremote/rest";
 import "@openremote/or-translate";
 import {translate} from "@openremote/or-translate/dist/translate-mixin";
 import "./or-rule-list";
@@ -412,7 +412,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
           <div id="rule-list-container" class="shadow">
                 <or-rule-list .rulesets="${this._rulesets}" .ruleset="${this.activeRuleset}" ></or-rule-list>
                 <div id="bottom-toolbar">
-                    ${openremote.hasRole("write:rules") ? html`
+                    ${ORCore.manager.hasRole("write:rules") ? html`
                       <button @click="${this.deleteRuleset}"><or-icon icon="delete"></or-icon></button>
                       <button style="margin-left: auto;" @click="${this.createRuleset}"><or-icon icon="plus"></or-icon></button>
                     ` : ``}
@@ -428,7 +428,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
           ` : html`
             <div class="center-center">
                 <h3 style="font-weight: normal;">Kies links een profiel of maak een nieuw profiel aan.</h3>
-                ${openremote.hasRole("write:rules") ? html`
+                ${ORCore.manager.hasRole("write:rules") ? html`
                     <button style="margin: auto;" @click="${this.createRuleset}">profiel aanmaken</button>
                 ` : ``}
             </div>
@@ -438,7 +438,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
 
     protected isReadonly(sectionName: string) {
 
-        if (!openremote.hasRole("write:rules")) {
+        if (!ORCore.manager.hasRole("write:rules")) {
             return true;
         }
         if (!this.config || !this.config.controls) {
@@ -664,7 +664,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
     }
 
     protected readRules() {
-        rest.api.RulesResource.getTenantRulesets(openremote.config.realm, {
+        ORRest.api.RulesResource.getTenantRulesets(ORCore.manager.config.realm, {
             language: RulesetLang.JSON,
             fullyPopulate: true
         }).then((response: any) => {
@@ -705,7 +705,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
                 type: "tenant",
                 name: name,
                 lang: RulesetLang.JSON,
-                realm: openremote.getRealm(),
+                realm: ORCore.manager.getRealm(),
                 rules: JSON.stringify(rules)
             };
 
@@ -737,12 +737,12 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
         delete ruleset.error;
 
         if (ruleset.id) {
-            rest.api.RulesResource.updateTenantRuleset(ruleset.id!, ruleset).then((response) => {
+            ORRest.api.RulesResource.updateTenantRuleset(ruleset.id!, ruleset).then((response) => {
                 this._saveInProgress = false;
                 this.readRules();
             });
         } else {
-            rest.api.RulesResource.createTenantRuleset(ruleset).then((response) => {
+            ORRest.api.RulesResource.createTenantRuleset(ruleset).then((response) => {
                 ruleset.id = response.data;
                 this._saveInProgress = false;
                 this.readRules();
@@ -776,7 +776,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
         this.activeRuleset = undefined;
 
         if (id) {
-            rest.api.RulesResource.deleteTenantRuleset(id).then((response) => {
+            ORRest.api.RulesResource.deleteTenantRuleset(id).then((response) => {
                 this.readRules();
             });
         }

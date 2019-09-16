@@ -1,5 +1,5 @@
 import {css, unsafeCSS} from "lit-element";
-import {DefaultColor1, DefaultColor2, DefaultColor5, DefaultColor3, DefaultBoxShadow, DefaultColor4, DefaultColor6, DefaultColor7, DefaultDisabledOpacity} from "@openremote/core";
+import ORCore from "@openremote/core";
 
 // language=CSS
 export const rulesEditorStyle = css`
@@ -9,27 +9,27 @@ export const rulesEditorStyle = css`
         height: 100%;
         width: 100%;
         
-        --internal-or-rules-editor-background-color: var(--or-rules-editor-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
+        --internal-or-rules-editor-background-color: var(--or-rules-editor-background-color, var(--or-app-color2, ${unsafeCSS(ORCore.DefaultColor2)}));
         --internal-or-rules-editor-text-color: var(--or-rules-editor-text-color, inherit);
-        --internal-or-rules-editor-button-color: var(--or-rules-editor-button-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
-        --internal-or-rules-editor-invalid-color: var(--or-rules-editor-invalid-color, var(--or-app-color6, ${unsafeCSS(DefaultColor6)}));        
-        --internal-or-rules-editor-panel-color: var(--or-rules-editor-panel-color, var(--or-app-color7, ${unsafeCSS(DefaultColor7)}));
-        --internal-or-rules-editor-line-color: var(--or-rules-editor-line-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
+        --internal-or-rules-editor-button-color: var(--or-rules-editor-button-color, var(--or-app-color4, ${unsafeCSS(ORCore.DefaultColor4)}));
+        --internal-or-rules-editor-invalid-color: var(--or-rules-editor-invalid-color, var(--or-app-color6, ${unsafeCSS(ORCore.DefaultColor6)}));        
+        --internal-or-rules-editor-panel-color: var(--or-rules-editor-panel-color, var(--or-app-color7, ${unsafeCSS(ORCore.DefaultColor7)}));
+        --internal-or-rules-editor-line-color: var(--or-rules-editor-line-color, var(--or-app-color5, ${unsafeCSS(ORCore.DefaultColor5)}));
         
-        --internal-or-rules-editor-list-selected-color: var(--or-rules-editor-list-selected-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
-        --internal-or-rules-editor-list-text-color: var(--or-rules-editor-list-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
+        --internal-or-rules-editor-list-selected-color: var(--or-rules-editor-list-selected-color, var(--or-app-color2, ${unsafeCSS(ORCore.DefaultColor2)}));
+        --internal-or-rules-editor-list-text-color: var(--or-rules-editor-list-text-color, var(--or-app-color3, ${unsafeCSS(ORCore.DefaultColor3)}));
         --internal-or-rules-editor-list-text-size: var(--or-rules-editor-list-text-size, 15px);
 
         --internal-or-rules-editor-list-button-size: var(--or-rules-editor-list-button-size, 24px);
         
-        --internal-or-rules-editor-header-background-color: var(--or-rules-editor-header-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+        --internal-or-rules-editor-header-background-color: var(--or-rules-editor-header-background-color, var(--or-app-color1, ${unsafeCSS(ORCore.DefaultColor1)}));
         --internal-or-rules-editor-header-height: var(--or-rules-editor-header-height, 80px);
     }
 
     .shadow {
-        -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadow)};
-        -moz-box-shadow: ${unsafeCSS(DefaultBoxShadow)};
-        box-shadow: ${unsafeCSS(DefaultBoxShadow)};
+        -webkit-box-shadow: ${unsafeCSS(ORCore.DefaultBoxShadow)};
+        -moz-box-shadow: ${unsafeCSS(ORCore.DefaultBoxShadow)};
+        box-shadow: ${unsafeCSS(ORCore.DefaultBoxShadow)};
     }
 
     #rule-list-container {
@@ -311,7 +311,7 @@ export const headerStyle = css`
     }
     
     #save-btn[disabled] {
-        opacity: ${unsafeCSS(DefaultDisabledOpacity)};
+        opacity: ${unsafeCSS(ORCore.DefaultDisabledOpacity)};
         pointer-events: none;
     }
 
@@ -339,7 +339,7 @@ export const headerStyle = css`
     }
 
     #toggle-label[data-disabled], #toggle[data-disabled] {
-        opacity: ${unsafeCSS(DefaultDisabledOpacity)};
+        opacity: ${unsafeCSS(ORCore.DefaultDisabledOpacity)};
         pointer-events: none;
     }
 
@@ -355,7 +355,7 @@ export const headerStyle = css`
         border-radius: 50%;
         -webkit-transition: .4s;
         transition: .4s;
-        box-shadow: ${unsafeCSS(DefaultBoxShadow)};
+        box-shadow: ${unsafeCSS(ORCore.DefaultBoxShadow)};
     }
 
     #toggle[data-checked] > span:before {

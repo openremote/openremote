@@ -1,5 +1,5 @@
 import {css, html, LitElement, property, customElement} from "lit-element";
-import openremote from "@openremote/core";
+import ORCore from "@openremote/core";
 import {AttributeEvent} from "@openremote/model";
 
 @customElement("or-thermostat")
@@ -38,14 +38,14 @@ class OrThermostat extends LitElement {
             }
         };
 
-        const subscriptionId = await openremote.events!.subscribeAttributeEvents([this.assetId!], false, callback);
+        const subscriptionId = await ORCore.manager.events!.subscribeAttributeEvents([this.assetId!], false, callback);
         this._subscriptionId = subscriptionId;
         console.log("Subscribed: " + subscriptionId);
     };
 
     unsubscribe() {
         if (this._subscriptionId) {
-            openremote.events!.unsubscribe(this._subscriptionId);
+            ORCore.manager.events!.unsubscribe(this._subscriptionId);
             this._subscriptionId = undefined;
         }
     }

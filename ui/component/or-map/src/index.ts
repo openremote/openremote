@@ -1,4 +1,4 @@
-import openremote, {EventCallback, OREvent} from "@openremote/core";
+import ORCore, {EventCallback, OREvent} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
 import {CSSResult, customElement, html, LitElement, property, PropertyValues, query} from "lit-element";
 import {LngLat, LngLatBoundsLike, LngLatLike} from "mapbox-gl";
@@ -132,16 +132,16 @@ export class OrMap extends LitElement {
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
 
-        if (!openremote.ready) {
+        if (!ORCore.manager.ready) {
             // Defer until openremote is initialised
             this._initCallback = (initEvent: OREvent) => {
                 if (initEvent === OREvent.READY) {
                     this.loadMap();
 
-                    openremote.removeListener(this._initCallback!);
+                    ORCore.manager.removeListener(this._initCallback!);
                 }
             };
-            openremote.addListener(this._initCallback);
+            ORCore.manager.addListener(this._initCallback);
         } else {
             this.loadMap();
         }

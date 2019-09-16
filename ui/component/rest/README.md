@@ -25,15 +25,15 @@ will be ready to use, the endpoints can be accessed via the `RestApi` `api` prop
 in the OpenRemote Manager is also defined with the same name in the `RestApi` object.
 
 ```$typescript
-import openremote from "@openremote/core";
-import rest from "@openremote/rest";
+import ORCore from "@openremote/core";
+import ORRest from "@openremote/rest";
 
 openremote.init({
     ...
 }).then((success) => {
     if (success) {
         let assetQuery = ...;
-        let response = await rest.api.AssetResource.queryAssets(assetQuery);
+        let response = await ORRest.api.AssetResource.queryAssets(assetQuery);
         let assets = response.data;
         
         // Do something with the assets
@@ -53,9 +53,9 @@ header is correctly set if calling secure endpoints on the OpenRemote Manager RE
 import {RestApi} from "@openremote/rest";
 
 let rest = new RestApi();
-rest.setTimeout(10000);
-rest.addRequestInterceptor(...);
-rest.initialise();
+ORRest.setTimeout(10000);
+ORRest.addRequestInterceptor(...);
+ORRest.initialise();
 ```
 
 
