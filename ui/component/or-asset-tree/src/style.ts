@@ -239,7 +239,7 @@ export const style = css`
     }
     
     .expander {
-        width: 26px;
+        width: 36px;
         height: 100%;
         display: inline-block;
         background-repeat: no-repeat;                
@@ -249,6 +249,10 @@ export const style = css`
     
     .expander[data-expandable] {
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='rgb(204, 204, 204)' viewBox='0 0 24 24'%3E%3Cpath d='${unsafeCSS(mdi.icons["chevron-right"])}'/%3E%3C/svg%3E");
+    }
+
+    .expander[data-expandable]:hover {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='${unsafeCSS(mdi.icons["chevron-right"])}'/%3E%3C/svg%3E");
     }
     
     li[data-expanded] > .node-container .expander {
@@ -279,5 +283,11 @@ export const style = css`
         text-align: center;
         margin: 0 auto;
     }    
+    
+     @media only screen and (min-width: 768px){
+        .expander {
+            width: 26px;
+        }
+    }
 
 `;

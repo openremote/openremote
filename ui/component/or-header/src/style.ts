@@ -148,7 +148,7 @@ export const style = css`
             line-height: var(--internal-or-header-height);
         }
         
-        /* Wide layout: when the viewport width is bigger than 460px, layout
+        /* Wide layout: when the viewport width is bigger than 640px, layout
         changes to a wide layout. */
         @media (min-width: 640px) {
 
