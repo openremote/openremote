@@ -359,7 +359,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             assert rowData.size() == 1
             assert rowData[0] instanceof AssetTreeNode
             assert rowData[0].label == "Smart Office"
-            assert rowData[0].icon == "building"
+            assert rowData[0].icon == "office-building"
             assert rowData[0].asset.id == managerDemoSetup.smartOfficeId
         }
         1 * treeDisplay.setRowCount(1, true)
@@ -375,7 +375,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             assert rowData.size() == 1
             assert rowData[0] instanceof AssetTreeNode
             assert rowData[0].label == "Ground Floor"
-            assert rowData[0].icon == "bars"
+            assert rowData[0].icon == "stairs"
             assert rowData[0].asset.id == managerDemoSetup.groundFloorId
         }
         1 * treeDisplay.setRowCount(1, true)

@@ -139,7 +139,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         ex.response.status == 400
 
         when: "an asset is deleted but has children"
-        assetResource.delete(null, managerDemoSetup.apartment1Id)
+        assetResource.delete(null, [managerDemoSetup.apartment1Id])
 
         then: "the request should be bad"
         ex = thrown()

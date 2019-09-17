@@ -330,7 +330,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "the Kitchen room asset is deleted"
         rulesImport.resetRulesFired()
-        assetStorageService.delete(asset.getId())
+        assetStorageService.delete([asset.getId()])
 
         then: "the facts should be removed from the rule engines and rules should have fired"
         conditions.eventually {

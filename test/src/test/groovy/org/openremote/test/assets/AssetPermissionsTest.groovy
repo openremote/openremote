@@ -176,7 +176,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         testAsset.parentId == managerDemoSetup.smartBuildingId
 
         when: "an asset is deleted in the authenticated realm"
-        assetResource.delete(null, managerDemoSetup.thingId)
+        assetResource.delete(null, [managerDemoSetup.thingId])
         assetResource.get(null, managerDemoSetup.thingId)
 
         then: "the asset should not be found"
@@ -184,7 +184,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "an asset is deleted in a foreign realm"
-        assetResource.delete(null, managerDemoSetup.apartment2LivingroomId)
+        assetResource.delete(null, [managerDemoSetup.apartment2LivingroomId])
         assetResource.get(null, managerDemoSetup.apartment2LivingroomId)
 
         then: "the asset should be not found"
@@ -366,7 +366,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is deleted in the authenticated realm"
-        assetResource.delete(null, managerDemoSetup.thingId)
+        assetResource.delete(null, [managerDemoSetup.thingId])
         assetResource.get(null, managerDemoSetup.thingId)
 
         then: "the asset should not be found"
@@ -374,7 +374,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "an asset is deleted in a foreign realm"
-        assetResource.delete(null, managerDemoSetup.apartment2LivingroomId)
+        assetResource.delete(null, [managerDemoSetup.apartment2LivingroomId])
 
         then: "access should be forbidden"
         ex = thrown()
@@ -513,14 +513,14 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is deleted in the authenticated realm"
-        assetResource.delete(null, managerDemoSetup.apartment2LivingroomId)
+        assetResource.delete(null, [managerDemoSetup.apartment2LivingroomId])
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "an asset is deleted in a foreign realm"
-        assetResource.delete(null, managerDemoSetup.thingId)
+        assetResource.delete(null, [managerDemoSetup.thingId])
 
         then: "access should be forbidden"
         ex = thrown()
@@ -746,14 +746,14 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is deleted in the authenticated realm"
-        assetResource.delete(null, managerDemoSetup.apartment1LivingroomId)
+        assetResource.delete(null, [managerDemoSetup.apartment1LivingroomId])
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "an asset is deleted in a foreign realm"
-        assetResource.delete(null, managerDemoSetup.thingId)
+        assetResource.delete(null, [managerDemoSetup.thingId])
 
         then: "access should be forbidden"
         ex = thrown()

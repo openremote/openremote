@@ -17,6 +17,7 @@ import org.openremote.model.calendar.RecurrenceRule
 import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.AssetQuery.OrderBy
+import org.openremote.model.query.LogicGroup
 import org.openremote.model.query.filter.*
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
@@ -636,7 +637,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         !asset.getAttribute("lastPresenceDetected").isPresent()
         !asset.getAttribute("motionSensor").isPresent()
 
-        when: "a query is executed to select an asset with an attribute of a certain value"
+        when: "a query is executed to select an asset with multiple attribute predicates 'ANDED'"
         asset = assetStorageService.find(
                 new AssetQuery().select(Select.selectExcludePathAndParentAndRealm()).attributes(
                         new AttributePredicate(
@@ -655,6 +656,70 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assert asset.getAttribute("co2Level").isPresent()
         assert asset.getAttribute("co2Level").get().valueAsNumber.get() == 350
 
+        when: "a query is executed to select an asset with multiple attribute predicates 'ANDED' where one predicate is false"
+        asset = assetStorageService.find(
+            new AssetQuery().select(Select.selectExcludePathAndParentAndRealm()).attributes(
+                new AttributePredicate(
+                    new StringPredicate("windowOpen"), new BooleanPredicate(false)
+                ),
+                new AttributePredicate(
+                    new StringPredicate("co2Level"), new NumberPredicate(360, Operator.GREATER_THAN, NumberType.INTEGER)
+                )
+            )
+        )
+
+        then: "no assets should match"
+        assert asset == null
+
+        when: "a query is executed to select an asset with multiple logic groups"
+        asset = assetStorageService.find(
+            new AssetQuery().select(Select.selectExcludePathAndParentAndRealm()).attributes(
+                new LogicGroup<AttributePredicate>(LogicGroup.Operator.AND, [
+                    new AttributePredicate(
+                        new StringPredicate("windowOpen"), new BooleanPredicate(false)
+                    )
+                ], [
+                    new LogicGroup(LogicGroup.Operator.OR, [
+                        new AttributePredicate(
+                            new StringPredicate("co2Level"), new NumberPredicate(340, Operator.GREATER_THAN, NumberType.INTEGER)
+                        ),
+                        new AttributePredicate(
+                            new StringPredicate("co2Level"), new NumberPredicate(50, Operator.LESS_THAN, NumberType.INTEGER)
+                        )
+                    ], null)
+                ])
+            )
+        )
+
+        then: "result should contain an Asset with the expected values"
+        assert asset != null
+        assert asset.getAttribute("windowOpen").isPresent()
+        assert !asset.getAttribute("windowOpen").get().valueAsBoolean.get()
+        assert asset.getAttribute("co2Level").isPresent()
+        assert asset.getAttribute("co2Level").get().valueAsNumber.get() == 350
+
+        when: "a query is executed to select an asset with multiple logic groups where one of the groups is false"
+        asset = assetStorageService.find(
+            new AssetQuery().select(Select.selectExcludePathAndParentAndRealm()).attributes(
+                new LogicGroup<AttributePredicate>(LogicGroup.Operator.AND, [
+                    new AttributePredicate(
+                        new StringPredicate("windowOpen"), new BooleanPredicate(false)
+                    )
+                ], [
+                    new LogicGroup(LogicGroup.Operator.OR, [
+                        new AttributePredicate(
+                            new StringPredicate("co2Level"), new NumberPredicate(360, Operator.GREATER_THAN, NumberType.INTEGER)
+                        ),
+                        new AttributePredicate(
+                            new StringPredicate("co2Level"), new NumberPredicate(50, Operator.LESS_THAN, NumberType.INTEGER)
+                        )
+                    ], null)
+                ])
+            )
+        )
+
+        then: "no assets should match"
+        assert asset == null
     }
 
     def "Location queries"() {

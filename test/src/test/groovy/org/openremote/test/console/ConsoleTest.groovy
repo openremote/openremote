@@ -485,7 +485,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert geofences.size() == 0
 
         when: "a console is deleted"
-        assetStorageService.delete(testUser3Console2.id)
+        assetStorageService.delete([testUser3Console2.id])
 
         then: "the deleted console should be removed from ORConsoleGeofenceAssetAdapter"
         conditions.eventually {
