@@ -50,7 +50,7 @@ export class OrSelect extends LitElement {
     public autoSize?: boolean = true;
 
     @property({type: Boolean, attribute: true})
-    public noEmpty?: boolean = false;
+    public showEmptyOption?: boolean = true;
 
     @property({type: Array})
     public options!: string[] | [string, string][];
@@ -93,7 +93,7 @@ export class OrSelect extends LitElement {
         if (_changedProperties.has("options") || _changedProperties.has("value")) {
             let val = this.value;
 
-            if (this.options.length === 1 || (this.noEmpty && !val)) {
+            if (this.options.length === 1 || (!this.showEmptyOption && !val)) {
                 const opt = this.options[0];
                 const firstValue = Array.isArray(opt) ? opt[0] : opt;
                 if (this.value !== firstValue) {
@@ -102,13 +102,17 @@ export class OrSelect extends LitElement {
             }
 
             let index: number;
-            if (this.options.length === 1 || (this.noEmpty && !val)) {
+            if (this.options.length === 1 || (!this.showEmptyOption && !val)) {
                 index = 0;
             } else {
                 index = this.options.findIndex((opt: string | [string, string]) => {
                     const value = Array.isArray(opt) ? opt[0] : opt;
                     return value == val;
                 });
+
+                if(this.showEmptyOption) {
+                    index = index + 1;
+                }
             }
 
             const indexChanged = this._select.selectedIndex != index;
@@ -129,7 +133,7 @@ export class OrSelect extends LitElement {
         return html`
                <div class="mdc-select">
                       <select id="or-select" ?required="${this.required}" @change="${this.onChange}" ?disabled="${this.readonly || isSingular}">
-                        ${!this.noEmpty && !isSingular ? html`<option value=""></option>` : ``};
+                        ${this.showEmptyOption && !isSingular ? html`<option value=""></option>` : ``}
                         ${this.options.length > 0 && Array.isArray(this.options[0]) ?
                             (this.options as [string, string][]).map((option: [string, string]) => {
                                 return html`<option style="color: ${this._optColor || optionColorVar};" value="${option[0]}">${option[1]}</option>`;                            

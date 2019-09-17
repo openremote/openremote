@@ -768,10 +768,12 @@ public class JsonRulesBuilder extends RulesBuilder {
                                 }
                                 break;
                             case DELETE:
-                                if (valueType.equals(ValueType.ARRAY)) {
-                                    ((ArrayValue) value).remove(attributeUpdateAction.index);
-                                } else {
-                                    ((ObjectValue) value).remove(attributeUpdateAction.key);
+                                if(value != null) {
+                                    if (valueType.equals(ValueType.ARRAY)) {
+                                        ((ArrayValue) value).remove(attributeUpdateAction.index);
+                                    } else {
+                                        ((ObjectValue) value).remove(attributeUpdateAction.key);
+                                    }
                                 }
                                 break;
                             case CLEAR:

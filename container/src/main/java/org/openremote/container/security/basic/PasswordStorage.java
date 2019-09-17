@@ -31,11 +31,11 @@ import com.google.common.cache.LoadingCache;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
-import javax.xml.bind.DatatypeConverter;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
@@ -277,13 +277,12 @@ public class PasswordStorage {
         }
     }
 
-    private static byte[] fromBase64(String hex)
-        throws IllegalArgumentException {
-        return DatatypeConverter.parseBase64Binary(hex);
+    private static byte[] fromBase64(String hex) {
+        return Base64.getDecoder().decode(hex);
     }
 
     private static String toBase64(byte[] array) {
-        return DatatypeConverter.printBase64Binary(array);
+        return Base64.getEncoder().encodeToString(array);
     }
 
 }

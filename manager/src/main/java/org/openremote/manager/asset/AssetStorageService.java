@@ -1422,7 +1422,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             } else if (attributePredicate.value instanceof GeofencePredicate) {
                 if (attributePredicate.value instanceof RadialGeofencePredicate) {
                     RadialGeofencePredicate location = (RadialGeofencePredicate) attributePredicate.value;
-                    attributeBuilder.append("ST_Distance_Sphere(ST_MakePoint(")
+                    attributeBuilder.append("ST_DistanceSphere(ST_MakePoint(")
                         .append("(AX")
                         .append(joinCounter)
                         .append(".VALUE #>> '{value,coordinates,0}')::numeric")
