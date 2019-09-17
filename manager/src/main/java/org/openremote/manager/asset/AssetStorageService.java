@@ -71,11 +71,13 @@ import javax.persistence.TypedQuery;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
@@ -477,13 +479,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         try {
             persistenceService.doTransaction(em -> {
                 LOG.fine("Removing: " + String.join(", ", assetIds));
-                int count = em
-                    .createQuery("delete from Asset a where not exists(select child.id from Asset child where child.parentId = a.id) and a.id in :ids")
+                List<Asset> assets = em
+                    .createQuery("select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id) and a.id in :ids", Asset.class)
                     .setParameter("ids", assetIds)
-                    .executeUpdate();
-                if (assetIds.size() != count) {
-                    throw new IllegalArgumentException("Cannot delete one or more requested assets as they have children");
+                    .getResultList();
+
+                if (assetIds.size() != assets.size()) {
+                    throw new IllegalArgumentException("Cannot delete one or more requested assets as they either have children or don't exist");
                 }
+
+                assets.forEach(em::remove);
             });
         } catch (Exception e) {
             return false;
@@ -1130,41 +1135,67 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             if (query.attributes != null) {
+                AtomicInteger joinCounter = new AtomicInteger(1);
                 sb.append(" and A.ID in (select A.ID from");
-                sb.append(" jsonb_each(A.ATTRIBUTES) as AX");
+                sb.append(" jsonb_each(A.ATTRIBUTES) as AX1");
+                int offset = sb.length();
                 sb.append(" where true AND ");
-                addAttributePredicateGroupQuery(sb, binders, query.attributes);
+                addAttributePredicateGroupQuery(sb, binders, joinCounter, query.attributes);
                 sb.append(")");
+
+                int counter = joinCounter.get();
+
+                while (counter > 2) {
+                    sb.insert(offset, ", jsonb_each(A.ATTRIBUTES) as AX" + (counter-1));
+                    counter--;
+                }
             }
         }
         return sb.toString();
     }
 
-    protected void addAttributePredicateGroupQuery(StringBuilder sb, List<ParameterBinder> binders, LogicGroup<AttributePredicate> attributePredicateGroup) {
+    protected void addAttributePredicateGroupQuery(StringBuilder sb, List<ParameterBinder> binders, AtomicInteger joinCounter, LogicGroup<AttributePredicate> attributePredicateGroup) {
 
         LogicGroup.Operator operator = attributePredicateGroup.operator;
 
         if (operator == null) {
-            operator = LogicGroup.Operator.OR;
+            operator = LogicGroup.Operator.AND;
         }
 
         sb.append("(");
-        boolean isFirst = true;
 
-        for (AttributePredicate attributePredicate : attributePredicateGroup.getItems()) {
-                if (!isFirst) {
-                    sb.append(operator == LogicGroup.Operator.OR ? " or " : " and ");
-                }
-                isFirst = false;
+        if (!attributePredicateGroup.getItems().isEmpty()) {
 
-                sb.append("(");
-                sb.append(buildAttributeFilter(attributePredicate, binders));
-                sb.append(")");
+            boolean isFirst = true;
+            Collection<List<AttributePredicate>> grouped;
+
+            if (operator == LogicGroup.Operator.AND) {
+                // Group predicates by their attribute name predicate
+                grouped = attributePredicateGroup.getItems().stream().collect(groupingBy(predicate -> predicate.name)).values();
+            } else {
+                grouped = new ArrayList<>();
+                grouped.add(attributePredicateGroup.getItems());
             }
+
+            for (List<AttributePredicate> group : grouped) {
+                for (AttributePredicate attributePredicate : group) {
+                    if (!isFirst) {
+                        sb.append(operator == LogicGroup.Operator.OR ? " or " : " and ");
+                    }
+                    isFirst = false;
+
+                    sb.append("(");
+                    sb.append(buildAttributeFilter(attributePredicate, joinCounter.get(), binders));
+                    sb.append(")");
+                }
+                joinCounter.incrementAndGet();
+            }
+        }
 
         if (attributePredicateGroup.groups != null && attributePredicateGroup.groups.size() > 0) {
             for (LogicGroup<AttributePredicate> group : attributePredicateGroup.groups) {
-                addAttributePredicateGroupQuery(sb, binders, group);
+                sb.append(operator == LogicGroup.Operator.OR ? " or " : " and ");
+                addAttributePredicateGroupQuery(sb, binders, joinCounter, group);
             }
         }
         sb.append(")");
@@ -1243,13 +1274,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return sb.toString();
     }
 
-    protected String buildAttributeFilter(AttributePredicate attributePredicate, List<ParameterBinder> binders) {
+    protected String buildAttributeFilter(AttributePredicate attributePredicate, int joinCounter, List<ParameterBinder> binders) {
         StringBuilder attributeBuilder = new StringBuilder();
 
         if (attributePredicate.name != null) {
             attributeBuilder.append(attributePredicate.name.caseSensitive
-                ? "AX.key"
-                : "upper(AX.key)"
+                ? "AX" + joinCounter + ".key"
+                : "upper(AX" + joinCounter + ".key)"
             );
             attributeBuilder.append(buildMatchFilter(attributePredicate.name));
 
@@ -1265,15 +1296,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             if (attributePredicate.value instanceof StringPredicate) {
                 StringPredicate stringPredicate = (StringPredicate) attributePredicate.value;
                 attributeBuilder.append(stringPredicate.caseSensitive
-                    ? "AX.VALUE #>> '{value}'"
-                    : "upper(AX.VALUE #>> '{value}')"
+                    ? "AX" + joinCounter + ".VALUE #>> '{value}'"
+                    : "upper(AX" + joinCounter + ".VALUE #>> '{value}')"
                 );
                 attributeBuilder.append(buildMatchFilter(stringPredicate));
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
             } else if (attributePredicate.value instanceof BooleanPredicate) {
                 BooleanPredicate booleanPredicate = (BooleanPredicate) attributePredicate.value;
-                attributeBuilder.append("AX.VALUE #> '{value}' = to_jsonb(")
+                attributeBuilder.append("AX")
+                    .append(joinCounter)
+                    .append(".VALUE #> '{value}' = to_jsonb(")
                     .append(booleanPredicate.value)
                     .append(")");
             } else if (attributePredicate.value instanceof StringArrayPredicate) {
@@ -1281,8 +1314,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 for (int i = 0; i < stringArrayPredicate.predicates.length; i++) {
                     StringPredicate stringPredicate = stringArrayPredicate.predicates[i];
                     attributeBuilder.append(stringPredicate.caseSensitive
-                        ? "AX.VALUE #> '{value}' ->> " + i
-                        : "upper(AX.VALUE #> '{value}' ->> " + i + ")"
+                        ? "AX" + joinCounter + ".VALUE #> '{value}' ->> " + i
+                        : "upper(AX" + joinCounter + ".VALUE #> '{value}' ->> " + i + ")"
                     );
                     attributeBuilder.append(buildMatchFilter(stringPredicate));
                     final int pos = binders.size() + 1;
@@ -1290,7 +1323,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             } else if (attributePredicate.value instanceof DateTimePredicate) {
                 DateTimePredicate dateTimePredicate = (DateTimePredicate) attributePredicate.value;
-                attributeBuilder.append("(AX.Value #>> '{value}')::timestamp");
+                attributeBuilder.append("(AX")
+                    .append(joinCounter)
+                    .append(".Value #>> '{value}')::timestamp");
 
                 Pair<Long, Long> fromAndTo = AssetQueryPredicate.asFromAndTo(timerService.getCurrentTimeMillis(), dateTimePredicate);
 
@@ -1304,7 +1339,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             } else if (attributePredicate.value instanceof NumberPredicate) {
                 NumberPredicate numberPredicate = (NumberPredicate) attributePredicate.value;
-                attributeBuilder.append("(AX.VALUE #>> '{value}')::numeric");
+                attributeBuilder.append("(AX")
+                    .append(joinCounter)
+                    .append(".VALUE #>> '{value}')::numeric");
                 attributeBuilder.append(buildOperatorFilter(numberPredicate.operator, numberPredicate.negate));
 
                 final int pos = binders.size() + 1;
@@ -1328,9 +1365,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             } else if (attributePredicate.value instanceof ObjectValueKeyPredicate) {
                 ObjectValueKeyPredicate keyPredicate = (ObjectValueKeyPredicate) attributePredicate.value;
                 if (keyPredicate.negated) {
-                    attributeBuilder.append("NOT(AX.VALUE #> '{value}' ?? ? ) ");
+                    attributeBuilder.append("NOT(AX").append(joinCounter).append(".VALUE #> '{value}' ?? ? ) ");
                 } else {
-                    attributeBuilder.append("AX.VALUE #> '{value}' ?? ? ");
+                    attributeBuilder.append("AX").append(joinCounter).append(".VALUE #> '{value}' ?? ? ");
                 }
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, keyPredicate.key));
@@ -1342,10 +1379,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
                 if (arrayPredicate.value != null) {
                     if (arrayPredicate.index != null) {
-                        attributeBuilder.append("AX.VALUE -> ");
-                        attributeBuilder.append(arrayPredicate.index);
+                        attributeBuilder.append("AX")
+                            .append(joinCounter)
+                            .append(".VALUE -> ")
+                            .append(arrayPredicate.index);
                     } else {
-                        attributeBuilder.append("AX.VALUE");
+                        attributeBuilder.append("AX").append(joinCounter).append(".VALUE");
                     }
                     attributeBuilder.append(" @> ?");
                     final int pos = binders.size() + 1;
@@ -1360,16 +1399,22 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     binders.add(st -> st.setObject(pos, pgJsonValue));
                 }
                 if (arrayPredicate.lengthEquals != null) {
-                    attributeBuilder.append("json_array_length(AX.VALUE) = ");
-                    attributeBuilder.append(arrayPredicate.lengthEquals);
+                    attributeBuilder.append("json_array_length(AX")
+                        .append(joinCounter)
+                        .append(".VALUE) = ")
+                        .append(arrayPredicate.lengthEquals);
                 }
                 if (arrayPredicate.lengthGreaterThan != null) {
-                    attributeBuilder.append("json_array_length(AX.VALUE) > ");
-                    attributeBuilder.append(arrayPredicate.lengthGreaterThan);
+                    attributeBuilder.append("json_array_length(AX")
+                        .append(joinCounter)
+                        .append(".VALUE) > ")
+                        .append(arrayPredicate.lengthGreaterThan);
                 }
                 if (arrayPredicate.lengthLessThan != null) {
-                    attributeBuilder.append("json_array_length(AX.VALUE) < ");
-                    attributeBuilder.append(arrayPredicate.lengthLessThan);
+                    attributeBuilder.append("json_array_length(AX")
+                        .append(joinCounter)
+                        .append(".VALUE) < ")
+                        .append(arrayPredicate.lengthLessThan);
                 }
                 if (arrayPredicate.negated) {
                     attributeBuilder.append(")");
@@ -1377,38 +1422,44 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             } else if (attributePredicate.value instanceof GeofencePredicate) {
                 if (attributePredicate.value instanceof RadialGeofencePredicate) {
                     RadialGeofencePredicate location = (RadialGeofencePredicate) attributePredicate.value;
-                    attributeBuilder.append("ST_Distance_Sphere(ST_MakePoint(");
-                    attributeBuilder.append("(AX.VALUE #>> '{value,coordinates,0}')::numeric");
-                    attributeBuilder.append(", (AX.VALUE #>> '{value,coordinates,1}')::numeric");
-                    attributeBuilder.append("), ST_MakePoint(");
-                    attributeBuilder.append(location.lng);
-                    attributeBuilder.append(",");
-                    attributeBuilder.append(location.lat);
-                    attributeBuilder.append(location.negated ? ")) > " : ")) <= ");
-                    attributeBuilder.append(location.radius);
+                    attributeBuilder.append("ST_Distance_Sphere(ST_MakePoint(")
+                        .append("(AX")
+                        .append(joinCounter)
+                        .append(".VALUE #>> '{value,coordinates,0}')::numeric")
+                        .append(", (AX")
+                        .append(joinCounter)
+                        .append(".VALUE #>> '{value,coordinates,1}')::numeric")
+                        .append("), ST_MakePoint(")
+                        .append(location.lng)
+                        .append(",")
+                        .append(location.lat)
+                        .append(location.negated ? ")) > " : ")) <= ")
+                        .append(location.radius);
                 } else if (attributePredicate.value instanceof RectangularGeofencePredicate) {
                     RectangularGeofencePredicate location = (RectangularGeofencePredicate) attributePredicate.value;
                     if (location.negated) {
                         attributeBuilder.append("NOT");
                     }
-                    attributeBuilder.append(" ST_Within(ST_MakePoint(");
-                    attributeBuilder.append("(AX.VALUE #>> '{value,coordinates,0}')::numeric");
-                    attributeBuilder.append(", (AX.VALUE #>> '{value,coordinates,1}')::numeric");
-                    attributeBuilder.append(")");
-                    attributeBuilder.append(", ST_MakeEnvelope(");
-                    attributeBuilder.append(location.lngMin);
-                    attributeBuilder.append(",");
-                    attributeBuilder.append(location.latMin);
-                    attributeBuilder.append(",");
-                    attributeBuilder.append(location.lngMax);
-                    attributeBuilder.append(",");
-                    attributeBuilder.append(location.latMax);
-                    attributeBuilder.append("))");
+                    attributeBuilder.append(" ST_Within(ST_MakePoint(")
+                        .append("(AX")
+                        .append(joinCounter)
+                        .append(".VALUE #>> '{value,coordinates,0}')::numeric")
+                        .append(", (AX").append(joinCounter).append(".VALUE #>> '{value,coordinates,1}')::numeric")
+                        .append(")")
+                        .append(", ST_MakeEnvelope(")
+                        .append(location.lngMin)
+                        .append(",")
+                        .append(location.latMin)
+                        .append(",")
+                        .append(location.lngMax)
+                        .append(",")
+                        .append(location.latMax)
+                        .append("))");
                 }
             } else if (attributePredicate.value instanceof ValueNotEmptyPredicate) {
-                attributeBuilder.append("AX.VALUE ->> 'value' IS NOT NULL");
+                attributeBuilder.append("AX").append(joinCounter).append(".VALUE ->> 'value' IS NOT NULL");
             } else if (attributePredicate.value instanceof ValueEmptyPredicate) {
-                attributeBuilder.append("AX.VALUE ->> 'value' IS NULL");
+                attributeBuilder.append("AX").append(joinCounter).append(".VALUE ->> 'value' IS NULL");
             } else {
                 throw new UnsupportedOperationException("Attribute value predicate is not supported: " + attributePredicate.value);
             }

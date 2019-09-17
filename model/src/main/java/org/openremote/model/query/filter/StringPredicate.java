@@ -24,6 +24,7 @@ import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
 import java.util.Locale;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 public class StringPredicate implements ValuePredicate {
@@ -142,5 +143,33 @@ public class StringPredicate implements ValuePredicate {
             ", negate=" + negate +
             ", value='" + value + '\'' +
             '}';
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(match)
+            + Objects.hashCode(caseSensitive)
+            + Objects.hashCode(negate)
+            + Objects.hashCode(value);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        boolean eq = Objects.equals(this, obj);
+
+        if (eq) {
+             return true;
+        }
+
+        if (!(obj instanceof StringPredicate)) {
+            return false;
+        }
+
+        StringPredicate that = (StringPredicate)obj;
+
+        return Objects.equals(that.match, match)
+            && Objects.equals(that.caseSensitive, caseSensitive)
+            && Objects.equals(that.negate, negate)
+            && Objects.equals(that.value, value);
     }
 }
