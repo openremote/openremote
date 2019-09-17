@@ -82,7 +82,7 @@ public class TimerProtocol extends AbstractProtocol {
             null,
             null,
             null,
-            false, null, null, null)
+            false, null, null, null, false)
     );
 
     protected static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Collections.singletonList(

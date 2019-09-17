@@ -21,6 +21,7 @@ package org.openremote.app.client.assets.asset;
 
 import com.google.gwt.user.client.ui.IsWidget;
 import org.openremote.app.client.Environment;
+import org.openremote.app.client.app.AppControllerImpl;
 import org.openremote.app.client.assets.*;
 import org.openremote.app.client.assets.attributes.*;
 import org.openremote.app.client.assets.browser.AssetBrowser;
@@ -59,6 +60,7 @@ import org.openremote.model.value.Values;
 import javax.inject.Inject;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
@@ -72,6 +74,8 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 public class AssetEditActivity
     extends AbstractAssetActivity<AssetEdit.Presenter, AssetEdit, AssetEditPlace>
     implements AssetEdit.Presenter {
+
+    private static final Logger LOG = Logger.getLogger(AssetEditActivity.class.getName());
 
     protected final AssetBrowser assetBrowser;
     protected final AssetResource assetResource;
@@ -434,13 +438,13 @@ public class AssetEditActivity
                         String assetWatermark = environment.getMessages().selectAgent();
                         String attributeWatermark = environment.getMessages().selectProtocolConfiguration();
                         return new AttributeRefEditor(
-                            valueHolder.getValue().flatMap(AttributeRef::fromValue).orElse(null),
-                            attrRef -> onValueModified.accept(attrRef != null ? attrRef.toArrayValue() : null),
-                            isReadOnly,
-                            assetAttributeConsumer -> getLinkableAssetsAndAttributes(valueHolder, assetAttributeConsumer),
-                            assetWatermark,
-                            attributeWatermark,
-                            style.agentLinkEditor()
+                                valueHolder.getValue().flatMap(AttributeRef::fromValue).orElse(null),
+                                attrRef -> onValueModified.accept(attrRef != null ? attrRef.toArrayValue() : null),
+                                isReadOnly,
+                                assetAttributeConsumer -> getLinkableAssetsAndAttributes(valueHolder, assetAttributeConsumer),
+                                assetWatermark,
+                                attributeWatermark,
+                                style.agentLinkEditor()
                         );
                     }
                 }
@@ -452,21 +456,45 @@ public class AssetEditActivity
                         String assetWatermark = environment.getMessages().selectAsset();
                         String attributeWatermark = environment.getMessages().selectAttribute();
                         return new AttributeLinkEditor(
-                            environment,
-                            style,
-                            parentView,
-                            this::createValueEditor,
-                            this::showValidationError,
-                            valueHolder.getValue().map(Value::toJson).map(attributeLinkMapper::read).orElse(null),
-                            attrLink -> {
-                                Value attrLinkObj = attrLink != null ? Values.parse(attributeLinkMapper.write(attrLink)).orElse(null) : null;
-                                onValueModified.accept(attrLinkObj);
-                            },
-                            isReadOnly,
-                            assetAttributeConsumer -> getLinkableAssetsAndAttributes(valueHolder, assetAttributeConsumer),
-                            assetWatermark,
-                            attributeWatermark,
-                            style.agentLinkEditor()
+                                environment,
+                                style,
+                                parentView,
+                                this::createValueEditor,
+                                this::showValidationError,
+                                valueHolder.getValue().map(Value::toJson).map(attributeLinkMapper::read).orElse(null),
+                                attrLink -> {
+                                    Value attrLinkObj = attrLink != null ? Values.parse(attributeLinkMapper.write(attrLink)).orElse(null) : null;
+                                    onValueModified.accept(attrLinkObj);
+                                },
+                                isReadOnly,
+                                assetAttributeConsumer -> getLinkableAssetsAndAttributes(valueHolder, assetAttributeConsumer),
+                                assetWatermark,
+                                attributeWatermark,
+                                style.agentLinkEditor()
+                        );
+                    }
+                }
+            case STRING:
+                if (valueHolder instanceof MetaItem) {
+                    if (metaItemDescriptors.stream()
+                            .filter(assetMeta -> assetMeta.getUrn().equals(((MetaItem) valueHolder).getName().orElse("NotFound")))
+                            .map(MetaItemDescriptor::isSecret)
+                            .findFirst().orElse(false)) {
+
+
+                        boolean isReadOnly = isValueReadOnly(valueHolder);
+                        Optional<Long> timestamp = getTimestamp(valueHolder);
+
+                        return ValueEditors.createValueEditor(
+                                valueHolder.getValue().orElse(null),
+                                valueType,
+                                onValueModified,
+                                timestamp,
+                                isReadOnly,
+                                true,
+                                getEditorStyleName(valueType, style),
+                                environment.getWidgetStyle(),
+                                environment.getMessages()
                         );
                     }
                 }

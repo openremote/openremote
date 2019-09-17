@@ -199,6 +199,7 @@ public interface Protocol extends ContainerService {
         PROTOCOL_NAMESPACE + ":password",
         ACCESS_PRIVATE,
         false,
+        true,
         REGEXP_PATTERN_STRING_NON_EMPTY,
         PatternFailure.STRING_EMPTY);
 

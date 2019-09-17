@@ -61,6 +61,7 @@ public final class ValueEditors {
                                              Consumer<Value> onValueModified,
                                              Optional<Long> timestamp,
                                              boolean readOnly,
+                                             boolean isSecret,
                                              String styleName,
                                              WidgetStyle widgetStyle,
                                              ManagerMessages managerMessages) {
@@ -104,7 +105,8 @@ public final class ValueEditors {
                     onValueModified::accept,
                     timestamp,
                     readOnly,
-                    styleName
+                    styleName,
+                    isSecret
                 );
             case NUMBER:
                 NumberValue currentValueNumber = Values.getNumber(currentValue).map(Values::create).orElse(null);
@@ -133,14 +135,15 @@ public final class ValueEditors {
                                               Consumer<StringValue> onValueModified,
                                               Optional<Long> timestamp,
                                               boolean readOnly,
-                                              String styleName) {
+                                              String styleName,
+                                              boolean isSecret) {
 
         Consumer<String> updateConsumer = readOnly ? null : str ->
             onValueModified.accept(isNullOrEmpty(str) ? null : Values.create(str));
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center or-ValueEditor or-StringValueEditor");
-        IsWidget widget = ValueEditors.createStringEditorWidget(styleName, readOnly, currentValue != null ? currentValue.getString() : null, updateConsumer);
+        IsWidget widget = ValueEditors.createStringEditorWidget(styleName, readOnly, currentValue != null ? currentValue.getString() : null,  isSecret, updateConsumer);
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
         widgetWrapper.add(widget);
@@ -171,7 +174,7 @@ public final class ValueEditors {
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center or-ValueEditor or-NumberValueEditor");
-        IsWidget widget = createStringEditorWidget(styleName, readOnly, currentValue != null ? currentValue.asString() : null, updateConsumer);
+        IsWidget widget = createStringEditorWidget(styleName, readOnly, currentValue != null ? currentValue.asString() : null, false, updateConsumer);
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
         widgetWrapper.add(widget);
@@ -282,6 +285,7 @@ public final class ValueEditors {
     private static IsWidget createStringEditorWidget(String styleName,
                                                      boolean readOnly,
                                                      String value,
+                                                     boolean isSecret,
                                                      Consumer<String> updateConsumer) {
         FormInputText input = new FormInputText();
         if (!TextUtil.isNullOrEmpty(styleName)) {
@@ -292,6 +296,7 @@ public final class ValueEditors {
         } else if (updateConsumer == null) {
             input.setValue("-");
         }
+        input.setSecret(isSecret);
         if (updateConsumer != null && !readOnly) {
             // Both keyup and change (e.g. after pasting) must be used
             input.addKeyUpHandler(event ->

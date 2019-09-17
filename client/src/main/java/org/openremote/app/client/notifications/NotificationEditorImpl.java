@@ -516,6 +516,7 @@ public class NotificationEditorImpl implements NotificationEditor {
                 onValueModified,
                 Optional.empty(),
                 false,
+                false,
                 null,
                 widgetStyle,
                 managerMessages

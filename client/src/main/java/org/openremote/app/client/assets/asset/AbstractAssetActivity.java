@@ -400,7 +400,7 @@ public abstract class AbstractAssetActivity<V
         if (valueHolder instanceof MetaItem) {
             // TODO Should use meta item descriptors from server
             return Arrays.stream(MetaItemType.values())
-                .filter(assetMeta -> assetMeta.getUrn().equals(((MetaItem) valueHolder).getName()))
+                .filter(assetMeta -> assetMeta.getUrn().equals(((MetaItem) valueHolder).getName().orElse("NotFound")))
                 .map(MetaItemType::isValueFixed)
                 .findFirst().orElse(false);
         }
@@ -446,6 +446,7 @@ public abstract class AbstractAssetActivity<V
             onValueModified,
             timestamp,
             isReadOnly,
+            false,
             getEditorStyleName(valueType, style),
             environment.getWidgetStyle(),
             environment.getMessages()

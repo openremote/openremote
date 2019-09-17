@@ -47,6 +47,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
     protected final Value[] allowedValues;
     protected final boolean valueFixed;
     protected final String patternFailureMessage;
+    protected final boolean isSecret;
 
     @JsConstructor
     @JsonCreator
@@ -61,7 +62,8 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                                   @JsonProperty("valueFixed") boolean valueFixed,
                                   @JsonProperty("allowedMin")Value allowedMin,
                                   @JsonProperty("allowedMax")Value allowedMax,
-                                  @JsonProperty("allowedValues")Value[] allowedValues) {
+                                  @JsonProperty("allowedValues")Value[] allowedValues,
+                                  @JsonProperty("isSecret") boolean isSecret) {
         this.urn = urn;
         this.valueType = valueType;
         this.access = access;
@@ -74,6 +76,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
         this.allowedMin = allowedMin;
         this.allowedMax = allowedMax;
         this.allowedValues = allowedValues;
+        this.isSecret = isSecret;
     }
 
     @JsIgnore
@@ -90,7 +93,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 metaItemDescriptor.getPatternFailureMessage(),
                 metaItemDescriptor.getMaxPerAttribute(),
                 initialValue,
-                metaItemDescriptor.isValueFixed(), null, null, null);
+                metaItemDescriptor.isValueFixed(), null, null, null, metaItemDescriptor.isSecret());
     }
 
     @JsIgnore
@@ -105,7 +108,23 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                                   Value allowedMin,
                                   Value allowedMax,
                                   Value[] allowedValues) {
-        this(urn, valueType, Access.ACCESS_PRIVATE, required, pattern, patternFailureMessage, maxPerAttribute, initialValue, valueFixed, allowedMin, allowedMax, allowedValues);
+        this(urn, valueType, Access.ACCESS_PRIVATE, required, pattern, patternFailureMessage, maxPerAttribute, initialValue, valueFixed, allowedMin, allowedMax, allowedValues, false);
+    }
+
+    @JsIgnore
+    public MetaItemDescriptorImpl(String urn,
+                                  ValueType valueType,
+                                  boolean required,
+                                  String pattern,
+                                  String patternFailureMessage,
+                                  Integer maxPerAttribute,
+                                  Value initialValue,
+                                  boolean valueFixed,
+                                  Value allowedMin,
+                                  Value allowedMax,
+                                  Value[] allowedValues,
+                                  boolean isSecret) {
+        this(urn, valueType, Access.ACCESS_PRIVATE, required, pattern, patternFailureMessage, maxPerAttribute, initialValue, valueFixed, allowedMin, allowedMax, allowedValues, isSecret);
     }
 
     @Override
@@ -175,6 +194,11 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
     }
 
     @Override
+    public boolean isSecret() {
+        return isSecret;
+    }
+
+    @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
                 ", urn='" + urn + '\'' +
@@ -188,6 +212,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 ", allowedMax=" + allowedMax +
                 ", allowedValues=" + (allowedValues != null ? Arrays.toString(allowedValues) : "null") +
                 ", valueFixed=" + valueFixed +
+                ", isSecret=" + isSecret +
                 ", patternFailureMessage='" + patternFailureMessage + '\'' +
                 '}';
     }
@@ -206,7 +231,8 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 true,
                 null,
                 null,
-                null);
+                null,
+                false);
     }
 
     @JsIgnore
@@ -225,7 +251,13 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 false,
                 null,
                 null,
-                allowedValues != null ? Arrays.stream(allowedValues).map(Values::create).toArray(Value[]::new) : null);
+                allowedValues != null ? Arrays.stream(allowedValues).map(Values::create).toArray(Value[]::new) : null,
+                false);
+    }
+
+    @JsIgnore
+    public static MetaItemDescriptor metaItemString(String urn, Access access, boolean required, boolean isSecret, String patternRegex, PatternFailure failureMessage) {
+        return metaItemString(urn, access, required, isSecret, patternRegex, failureMessage.name());
     }
 
     @JsIgnore
@@ -234,7 +266,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
     }
 
     @JsIgnore
-    public static MetaItemDescriptor metaItemString(String urn, Access access, boolean required, String patternRegex, String patternFailureMessage) {
+    public static MetaItemDescriptor metaItemString(String urn, Access access, boolean required, boolean isSecret, String patternRegex, String patternFailureMessage) {
         return new MetaItemDescriptorImpl(
                 urn,
                 ValueType.STRING,
@@ -247,8 +279,10 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 false,
                 null,
                 null,
-                null);
+                null,
+                isSecret);
     }
+
 
     @JsIgnore
     public static MetaItemDescriptor metaItemInteger(String urn, Access access, boolean required, Integer minValue, Integer maxValue) {
@@ -264,7 +298,8 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 false,
                 minValue != null ? Values.create(minValue) : null,
                 maxValue != null ? Values.create(maxValue) : null,
-                null);
+                null,
+                false);
     }
 
     @JsIgnore
@@ -283,7 +318,8 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 false,
                 null,
                 null,
-                values);
+                values,
+                false);
     }
 
     @JsIgnore
@@ -300,7 +336,8 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 false,
                 null,
                 null,
-                null);
+                null,
+                false);
     }
 
     @JsIgnore
@@ -317,7 +354,8 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 false,
                 null,
                 null,
-                null);
+                null,
+                false);
     }
 
     @JsIgnore
@@ -340,6 +378,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 false,
                 null,
                 null,
-                null);
+                null,
+                false);
     }
 }

@@ -203,4 +203,10 @@ public interface MetaItemDescriptor extends HasUniqueResourceName {
      * validation. If defined this takes priority over all other value checks.
      */
     Optional<Function<Value, Optional<ValidationFailure>>> getValidator();
+
+    /**
+     * Indicates if the value should be obfuscated in the view, so the contents can't be read
+     */
+    @JsonProperty
+    boolean isSecret();
 }

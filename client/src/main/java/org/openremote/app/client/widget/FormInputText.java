@@ -24,6 +24,7 @@ import com.google.gwt.user.client.ui.TextBox;
 public class FormInputText extends TextBox {
 
     String placeholder = "";
+    boolean isSecret = false;
 
     boolean autofocus;
 
@@ -44,6 +45,15 @@ public class FormInputText extends TextBox {
     public void setPlaceholder(String text) {
         placeholder = (text != null ? text : "");
         getElement().setPropertyString("placeholder", placeholder);
+    }
+
+    public void setSecret(boolean isSecret) {
+        this.isSecret = isSecret;
+        if (this.isSecret) {
+            getElement().setAttribute("type", "password");
+        } else {
+            getElement().setAttribute("type", "text");
+        }
     }
 
     public boolean isAutofocus() {

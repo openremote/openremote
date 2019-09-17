@@ -68,6 +68,7 @@ public enum MetaItemType implements MetaItemDescriptor {
         null,
         null,
         false,
+        false,
         null,
         null,
         null,
@@ -89,6 +90,7 @@ public enum MetaItemType implements MetaItemDescriptor {
         null,
         null,
         null,
+        false,
         false,
         null,
         null,
@@ -303,6 +305,7 @@ public enum MetaItemType implements MetaItemDescriptor {
             PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(),
             null,
             false,
+            false,
             Values.create(1d),
             null,
             null,
@@ -407,6 +410,7 @@ public enum MetaItemType implements MetaItemDescriptor {
     protected final Value allowedMax;
     protected final Value[] allowedValues;
     final protected boolean valueFixed;
+    final protected boolean isSecret;
     final protected Integer maxPerAttribute = 1; // All asset meta so far are single instance
     final protected boolean required = false; // All asset meta so far are not mandatory
     final protected String pattern;
@@ -415,7 +419,11 @@ public enum MetaItemType implements MetaItemDescriptor {
     final protected Function<Value, Optional<ValidationFailure>> validator;
 
     MetaItemType(String urn, Access access, ValueType valueType, String pattern, String patternFailureMessage, Value initialValue, boolean valueFixed) {
-        this(urn, access, valueType, pattern, patternFailureMessage, initialValue, valueFixed, null, null, null, null);
+        this(urn, access, valueType, pattern, patternFailureMessage, initialValue, valueFixed, false, null, null, null, null);
+    }
+
+    MetaItemType(String urn, Access access, ValueType valueType, String pattern, String patternFailureMessage, Value initialValue, boolean valueFixed, boolean isSecret) {
+        this(urn, access, valueType, pattern, patternFailureMessage, initialValue, valueFixed, isSecret, null, null, null, null);
     }
 
     MetaItemType(String urn,
@@ -425,7 +433,11 @@ public enum MetaItemType implements MetaItemDescriptor {
                  String patternFailureMessage,
                  Value initialValue,
                  boolean valueFixed,
-                 Value allowedMin, Value allowedMax, Value[] allowedValues, Function<Value, Optional<ValidationFailure>> validator) {
+                 boolean isSecret,
+                 Value allowedMin,
+                 Value allowedMax,
+                 Value[] allowedValues,
+                 Function<Value, Optional<ValidationFailure>> validator) {
 
         if (initialValue != null && initialValue.getType() != valueType) {
             throw new IllegalStateException("Initial asset meta value must be of the same type as the asset meta");
@@ -441,6 +453,7 @@ public enum MetaItemType implements MetaItemDescriptor {
         this.allowedMin = allowedMin;
         this.allowedMax = allowedMax;
         this.allowedValues = allowedValues;
+        this.isSecret = isSecret;
     }
 
 
@@ -482,6 +495,11 @@ public enum MetaItemType implements MetaItemDescriptor {
     @Override
     public Optional<Function<Value, Optional<ValidationFailure>>> getValidator() {
         return Optional.ofNullable(validator);
+    }
+
+    @Override
+    public boolean isSecret() {
+        return isSecret;
     }
 
     @Override
