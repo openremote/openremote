@@ -494,19 +494,20 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             // Allow any web origin (this will add CORS headers to token requests etc.)
             client.setWebOrigins(Collections.singletonList("*"));
-        }
-
-        List<String> redirectUris = new ArrayList<>();
-        try {
-            for (String consoleName : consoleAppService.getInstalled()) {
-                addClientRedirectUris(consoleName, redirectUris);
+            client.setRedirectUris(Collections.singletonList("*"));
+        } else {
+            List<String> redirectUris = new ArrayList<>();
+            try {
+                for (String consoleName : consoleAppService.getInstalled()) {
+                    addClientRedirectUris(consoleName, redirectUris);
+                }
+            } catch (Exception exception) {
+                LOG.log(Level.WARNING, exception.getMessage(), exception);
+                addClientRedirectUris(realm, redirectUris);
             }
-        } catch (Exception exception) {
-            LOG.log(Level.WARNING, exception.getMessage(), exception);
-            addClientRedirectUris(realm, redirectUris);
-        }
 
-        client.setRedirectUris(redirectUris);
+            client.setRedirectUris(redirectUris);
+        }
 
         return client;
     }
