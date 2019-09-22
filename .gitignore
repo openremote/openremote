@@ -3,6 +3,7 @@
 .local/
 local.properties
 openremote.log
+dive.log
 
 build/
 .gradle
