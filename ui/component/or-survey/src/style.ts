@@ -7,11 +7,11 @@ export const surveySectionStyle = html`
         display: flex;
         flex-direction: column;
         
-        --internal-or-survey-color-primary: var(--or-survey-color, var(--or-app-color1, ${unsafeCSS(ORCore.DefaultColor1)}));   
+        --internal-or-survey-color-button: var(--or-survey-color-button, var(--or-app-color1, ${unsafeCSS(ORCore.DefaultColor1)}));   
         --internal-or-survey-color-lightgrey: var(--or-survey-color, var(--or-app-color1, ${unsafeCSS(ORCore.DefaultColor1)}));   
         --internal-or-survey-color-grey: var(--or-survey-color, var(--or-app-color1, ${unsafeCSS(ORCore.DefaultColor1)}));   
         
-        --internal-or-survey-color: var(--or-survey-color, var(--or-app-color1, ${unsafeCSS(ORCore.DefaultColor1)}));   
+        --internal-or-survey-color: var(--or-survey-color1, var(--or-app-color1, ${unsafeCSS(ORCore.DefaultColor1)}));   
         --internal-or-survey-color2: var(--or-survey-color2, var(--or-app-color2, ${unsafeCSS(ORCore.DefaultColor2)}));     
         --internal-or-survey-color3: var(--or-survey-color3, var(--or-app-color3, ${unsafeCSS(ORCore.DefaultColor3)}));     
         --internal-or-survey-color4: var(--or-survey-color4, var(--or-app-color4, ${unsafeCSS(ORCore.DefaultColor4)}));     
@@ -64,12 +64,12 @@ export const surveySectionStyle = html`
     button {
         font-size: 14px;
         height: 40px;
-        background-color: var(--internal-or-survey-color-primary);
+        background-color: var(--internal-or-survey-color-button);
         margin-left: auto;
         color: #FFF;
         font-weight: bold;
         cursor: pointer;
-        padding: 0px 20px;
+        padding: 0 20px;
         border-width: initial;
         border-style: none;
         border-color: initial;
@@ -256,7 +256,7 @@ export const surveyLayoutStyle =html`
             }
 
             .anwser-card {
-                background-color: var(--internal-or-survey-color4, #F3C11F);
+                background-color: var(--internal-or-survey-color1, #F3C11F);
                 margin-left: 5px;
                 border: 3px solid white;
 
@@ -272,25 +272,25 @@ export const surveyLayoutStyle =html`
             .anwser-card:nth-of-type(1),
             .anwser-card:nth-of-type(5),
             .anwser-card:nth-of-type(9){
-                background-color: var(--internal-or-survey-color4, #F3C11F);
+                background-color: var(--internal-or-survey-color1, #F3C11F);
             }
             
             .anwser-card:nth-of-type(2),
             .anwser-card:nth-of-type(6),
             .anwser-card:nth-of-type(10){
-                background-color: var(--internal-or-survey-color5, #4A99BA);
+                background-color: var(--internal-or-survey-color2, #4A99BA);
             }
 
             .anwser-card:nth-of-type(3),
             .anwser-card:nth-of-type(7),
             .anwser-card:nth-of-type(11){
-                background-color: var(--internal-or-survey-color6, #23B099);
+                background-color: var(--internal-or-survey-color3, #23B099);
             }
 
             .anwser-card:nth-of-type(4),
             .anwser-card:nth-of-type(8),
             .anwser-card:nth-of-type(12){
-                background-color: var(--internal-or-survey-color7, #EA8D31);
+                background-color: var(--internal-or-survey-color4, #EA8D31);
             }
 
 
@@ -301,7 +301,7 @@ export const surveyLayoutStyle =html`
 
             .anwser-card.rating label {
                 border-radius: 50%;
-                background-color: var(--internal-or-survey-color3, #e32527);
+                background-color: var(--or-survey-color-button, #e32527);
 
                 line-height: 30px;
                 width: 30px;
@@ -324,7 +324,7 @@ export const surveyLayoutStyle =html`
                 color: #fff;
                 text-decoration: none;
                 padding: .625rem calc(2.5rem + 10px) .625rem 1.25rem;
-                background-color: var(--internal-or-survey-color3, #e32527);
+                background-color: var(--or-survey-color-button, #e32527);
                 font-size: 18px;
                 font-weight: 300;
     

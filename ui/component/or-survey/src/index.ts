@@ -13,6 +13,14 @@ import filter from "lodash-es/filter";
 
 declare var MANAGER_URL: string;
 
+export interface AnswerOption {
+    value: string
+}
+
+export interface SurveyAnswers {
+    [key: string]: string | string[]
+}
+
 @customElement("or-survey")
 class OrSurvey extends LitElement {
 
@@ -31,9 +39,8 @@ class OrSurvey extends LitElement {
     @property({type: Object})
     public question?: Asset;
 
-    // TODO replace type
     @property({type: Object})
-    public surveyAnswers?: any;
+    public surveyAnswers?: SurveyAnswers;
 
     @property({type: Array})
     public questions?: Asset[];
@@ -73,15 +80,15 @@ class OrSurvey extends LitElement {
 
         const orderedQuestions = orderBy(this.questions, ['attributes.order.value'],['asc']);
         const status = this.checkAssetPeriode(this.survey);
-        let currentAnswer:any;
+        let currentAnswer:string | string[];
 
         if(this.questions && this.questionIndex && this.questions[this.questionIndex]) {
             const currentQuestion = this.questions[this.questionIndex];
-            if(currentQuestion && currentQuestion.id) {
+            if(currentQuestion && currentQuestion.id && this.surveyAnswers) {
                 currentAnswer = this.surveyAnswers[currentQuestion.id];
             }
         }
-
+        
         return html`
                 ${surveySectionStyle}
                 ${surveyLayoutStyle}
@@ -90,7 +97,7 @@ class OrSurvey extends LitElement {
                                 <p>${this.survey.attributes ? this.survey.attributes.thankYouMessage.value : ''}</p>
                                 ${!this.saveanswers ? html`
                                     <button visible="${this.previousButton}" class="previous" @click="${this.resetSurvey}"
-                                            aria-label="Ga Terug">Naar survey
+                                            aria-label="To survey"><or-translate value="To survey"></or-translate>
                                     </button>   
                                 ` : ``}
                         ` : html`
@@ -115,7 +122,7 @@ class OrSurvey extends LitElement {
                                                                    ${this.getType(question.type) === 'text' ? html`
                                                                         <textarea rows="4" class="text-input" type="${this.getInputType(question.type)}" id="${question.id}" name="${question.id}_${index}">${currentAnswer}</textarea>
                                                                    ` : html`
-                                                                        ${question.attributes && question.attributes.answerOptions.value.map((answer:any, index:number) => {
+                                                                        ${question.attributes && question.attributes.answerOptions.value.map((answer:AnswerOption, index:number) => {
                 return html`
                                                                                 <div class="anwser-card ${this.getType(question.type)}">
                                                                                     
@@ -160,11 +167,11 @@ class OrSurvey extends LitElement {
                                             
                                             <div style="margin-top:20px;" class="layout horizontal justified center-center">
                                                 <button ?visible="${this.previousButton}" class="previous" @click="${this.previousQuestion}"
-                                                        aria-label="Ga Terug">Vorige
+                                                        aria-label="Previous"><or-translate value="Previous"></or-translate>
                                                 </button>
                                                 <div style="line-height: 40px;" class="flex-grow t-center">${this.questionIndexLabel} / ${this.questions ? this.questions.length : 0}</div>
                                                 <button ?visible="${this.nextButton}" class="next" @click="${this.onAnswer}" data-autoforward="true"
-                                                        aria-label="${this.nextButtonLabel}">${this.nextButtonLabel}
+                                                        aria-label="${this.nextButtonLabel}"><or-translate value="${this.nextButtonLabel}"></or-translate>
                                                 </button>
                                             </div>
                                            
@@ -192,7 +199,6 @@ class OrSurvey extends LitElement {
         const today = moment();
         const startDate = get(asset, 'attributes.validity.value.start');
         const endDate = get(asset, 'attributes.validity.value.end');
-
         // not published
         if(get(asset, 'attributes.published.value') === false) {
             return 'not_published';
@@ -255,9 +261,9 @@ class OrSurvey extends LitElement {
         }
 
         if (this.questionIndex + 1 == this.questions.length) {
-            this.nextButtonLabel= 'Versturen';
+            this.nextButtonLabel= 'Send';
         } else {
-            this.nextButtonLabel= 'Volgende';
+            this.nextButtonLabel= 'Next';
         }
 
         if(this.questionIndex === this.questions.length && this.questions.length !== 0) {
@@ -290,7 +296,7 @@ class OrSurvey extends LitElement {
     resetSurvey() {
         this.questionIndex = 0;
         this.questionIndexLabel = 1;
-        this.nextButtonLabel = "Volgende";
+        this.nextButtonLabel = "Next";
         this.completed = false;
         this.nextButton = true;
         this.surveyAnswers = {};
@@ -307,13 +313,13 @@ class OrSurvey extends LitElement {
         this.checkButtons();
     }
 
-    onAnswer(e: Event, answer:any) {
+    onAnswer(e: Event, answer:AnswerOption) {
         if(!this.questions || typeof this.questionIndex === 'undefined' || typeof this.questionIndexLabel === 'undefined' ) {
             return;
         }
         const target = e.target;
         let surveyAnswers = this.surveyAnswers;
-        let currQuestion:any = this.questions[this.questionIndex];
+        let currQuestion:Asset = this.questions[this.questionIndex];
         if (this.getType(currQuestion.type) === "singleSelect" || this.getType(currQuestion.type) === "rating") {
             if (!(target instanceof HTMLButtonElement) && !(target instanceof HTMLLabelElement)) {
                 return;
@@ -321,7 +327,7 @@ class OrSurvey extends LitElement {
             if (target && target.dataset.autoforward == "true") {
                 this.nextQuestion();
             } else {
-                if(currQuestion && currQuestion.id){
+                if(currQuestion && currQuestion.id && surveyAnswers){
                     surveyAnswers[currQuestion.id] = answer.value;
                     this.surveyAnswers = surveyAnswers;
                     this.nextQuestion();
@@ -333,7 +339,7 @@ class OrSurvey extends LitElement {
             let id = this.questions[this.questionIndex].id;
             if(this.shadowRoot && id) {
                 const element = (<HTMLInputElement>this.shadowRoot.getElementById(id));
-                if (element && currQuestion && currQuestion.id) {
+                if (element && currQuestion && currQuestion.id && surveyAnswers) {
                     let value = element.value;
                     surveyAnswers[currQuestion.id] = value;
                 }
@@ -347,18 +353,19 @@ class OrSurvey extends LitElement {
             if (target.dataset.autoforward == "true") {
                 this.nextQuestion();
             } else {
-                if(currQuestion && currQuestion.id) {
+                if(currQuestion && currQuestion.id && surveyAnswers) {
                     if (!surveyAnswers[currQuestion.id]) {
                         surveyAnswers[currQuestion.id] = [];
                     }
-                    if(this.shadowRoot) {
+                    const array = surveyAnswers[currQuestion.id];
+                    if(this.shadowRoot && Array.isArray(array)) {
                         let input = (<HTMLInputElement>this.shadowRoot.getElementById(target.htmlFor));
                         if (!input.checked) {
-                            surveyAnswers[currQuestion.id].push(answer.value);
+                            array.push(answer.value);
                         } else {
                             // Delete answer from array
                             let index = surveyAnswers[currQuestion.id].indexOf(answer.value);
-                            surveyAnswers[currQuestion.id].splice(index, 1);
+                            array.splice(index, 1);
                         }
                         this.surveyAnswers = surveyAnswers;
                     }
@@ -395,13 +402,12 @@ class OrSurvey extends LitElement {
             types: [{predicateType: "string", value: "urn:openremote:asset:eindhoven:survey"}]
         };
 
-        ORRest.api.AssetResource.queryPublicAssets(surveyQuery).then((response: any) => {
+        ORRest.api.AssetResource.queryPublicAssets(surveyQuery).then((response) => {
             if (response && response.data) {
                 this.survey = response.data[0];
-                console.log(this.survey);
                 this.requestUpdate();
             }
-        }).catch((reason: any) => {
+        }).catch((reason) => {
             console.error("Error: " + reason);
         });
 
@@ -416,7 +422,7 @@ class OrSurvey extends LitElement {
             types: [{predicateType: "string", value: "urn:openremote:asset:eindhoven:survey:question", match: AssetQueryMatch.CONTAINS}]
         };
 
-        ORRest.api.AssetResource.queryPublicAssets(questionQuery).then((response: any) => {
+        ORRest.api.AssetResource.queryPublicAssets(questionQuery).then((response) => {
             if (response && response.data) {
                 const questions = response.data;
                 this.questions = [...questions];
@@ -426,7 +432,7 @@ class OrSurvey extends LitElement {
                 }
                 this.requestUpdate();
             }
-        }).catch((reason: any) => {
+        }).catch((reason) => {
             console.error("Error: " + reason);
         });
 

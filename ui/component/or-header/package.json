@@ -7,7 +7,7 @@
   "scripts": {
     "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
-    "bundle": "npm run build && rollup -c"
+    "bundle": "webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
@@ -18,10 +18,6 @@
     "@babel/core": "^7.6.0",
     "@babel/plugin-proposal-class-properties": "^7.5.5",
     "@babel/plugin-proposal-decorators": "^7.6.0",
-    "rollup-plugin-babel": "^4.3.3",
-    "rollup-plugin-commonjs": "^10.1.0",
-    "rollup-plugin-json": "^4.0.0",
-    "rollup-plugin-node-resolve": "^5.2.0",
     "tslint": "^5.11.0",
     "typescript": "^3.4.5"
   }

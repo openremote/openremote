@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-icon",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Displays s vector or raster map",
   "main": "dist/index.js",
   "types": "src/index.ts",
@@ -10,6 +10,7 @@
   "scripts": {
     "generate": "node mdi-iconset-generator.js",
     "build": "node mdi-iconset-generator.js && npx tsc -b",
+    "postbuild": "webpack",
     "test": "echo \"No tests\" && exit 0"
   },
   "author": "OpenRemote",
@@ -18,9 +19,7 @@
     "lit-element": "^2.1.0"
   },
   "devDependencies": {
-    "rollup-plugin-node-resolve": "^5.2.0",
-    "rollup-plugin-commonjs": "^10.1.0",
-    "rollup-plugin-json": "^4.0.0",
+    "webpack": "^4.40.2",
     "@mdi/svg": "^4.2.95",
     "tslint": "^5.11.0",
     "typescript": "^3.4.5",
