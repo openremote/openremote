@@ -9,7 +9,8 @@ import {
     ReadAssetAttributesEvent,
     AssetEvent,
     ReadAssetEvent,
-    TriggeredEventSubscription
+    TriggeredEventSubscription,
+    AttributeRef
 } from "@openremote/model";
 
 export enum EventProviderStatus {
@@ -33,9 +34,9 @@ export interface EventProvider {
 
     unsubscribe<T extends SharedEvent>(subscriptionId: string): void;
 
-    subscribeAssetEvents(assetIds: string[] | null, callback: (event: AssetEvent) => void): Promise<string>;
+    subscribeAssetEvents(ids: string[] | AttributeRef[] | null, requestCurrentValues: boolean, callback: (event: AssetEvent) => void): Promise<string>;
 
-    subscribeAttributeEvents(assetIds: string[], requestCurrentValues: boolean, callback: (event: AttributeEvent) => void): Promise<string>;
+    subscribeAttributeEvents(ids: string[] | AttributeRef[], requestCurrentValues: boolean, callback: (event: AttributeEvent) => void): Promise<string>;
 
     sendEvent<T extends SharedEvent>(event: T): void;
 }
@@ -212,17 +213,21 @@ abstract class EventProviderImpl implements EventProvider {
         this._doSend(event);
     }
 
-    public async subscribeAssetEvents(assetIds: string[] | null, callback: (event: AssetEvent) => void): Promise<string> {
+    public async subscribeAssetEvents(ids: string[] | AttributeRef[] | null, requestCurrentValues: boolean, callback: (event: AssetEvent) => void): Promise<string> {
+
         let subscription: EventSubscription<AssetEvent> = {
             eventType: "asset"
         };
 
-        if (assetIds && assetIds.length > 0) {
+        if (ids && ids.length > 0) {
             subscription.filter = {
                 filterType: "asset-id",
-                assetIds: assetIds
+                assetIds: ids
             };
         }
+
+        const isAttributeRef = ids && typeof ids[0] !== "string";
+        const assetIds = isAttributeRef ? (ids as AttributeRef[]).map((id) => id.entityId!) : ids as string[] | null;
 
         let subscriptionId: string | null = null;
 
@@ -230,7 +235,7 @@ abstract class EventProviderImpl implements EventProvider {
             subscriptionId = await this.subscribe(subscription, callback);
 
             // Get the current state of each asset
-            if (assetIds) {
+            if (assetIds && requestCurrentValues) {
                 assetIds.forEach(assetId => {
                     let readEvent: ReadAssetEvent = {
                         assetId: assetId,
@@ -241,7 +246,7 @@ abstract class EventProviderImpl implements EventProvider {
                 });
             }
         } catch (e) {
-            console.error("Failed to subscribe to asset events for assets: " + assetIds);
+            console.error("Failed to subscribe to asset events for assets: " + ids);
             if (subscriptionId) {
                 this.unsubscribe(subscriptionId);
             }
@@ -251,7 +256,16 @@ abstract class EventProviderImpl implements EventProvider {
         return subscriptionId!;
     }
 
-    public async subscribeAttributeEvents(assetIds: string[], requestCurrentValues: boolean, callback: (event: AttributeEvent) => void): Promise<string> {
+    public async subscribeAttributeEvents(ids: string[] | AttributeRef[], requestCurrentValues: boolean, callback: (event: AttributeEvent) => void): Promise<string> {
+
+        if (!ids || ids.length === 0) {
+            throw new Error("At least one ID must be provided");
+        }
+
+        const isAttributeRef = typeof ids[0] !== "string";
+        const assetIds = isAttributeRef ? (ids as AttributeRef[]).map((id) => id.entityId!) : ids as string[];
+        const attributes = isAttributeRef ? ids as AttributeRef[] : undefined;
+
         let subscription: EventSubscription<AttributeEvent> = {
             eventType: "attribute",
             filter: {
@@ -263,21 +277,32 @@ abstract class EventProviderImpl implements EventProvider {
         let subscriptionId: string | null = null;
 
         try {
-            subscriptionId = await this.subscribe(subscription, callback);
+            subscriptionId = await this.subscribe(subscription, (evt) => {
+                if(attributes) {
+                    // Filter events for these attributes
+                    const eventRef = evt.attributeState!.attributeRef!;
+                    if (attributes.findIndex((attrRef) => eventRef.entityId === attrRef.entityId && eventRef.attributeName === attrRef.attributeName) >= 0) {
+                        callback(evt);
+                    }
+                } else {
+                    callback(evt);
+                }
+            });
 
             // Get the current value of each assets attributes
             if (requestCurrentValues) {
-                assetIds.forEach(assetId => {
+                assetIds.forEach((assetId) => {
                     let readEvent: ReadAssetAttributesEvent = {
                         assetId: assetId,
                         eventType: "read-asset-attributes",
+                        attributeNames: attributes ? attributes.filter((attr) => attr.entityId === assetId).map((attr) => attr.attributeName!) : undefined,
                         subscriptionId: subscriptionId!
                     };
                     this.sendEvent(readEvent);
                 });
             }
         } catch (e) {
-            console.error("Failed to subscribe to attribute events for assets: " + assetIds);
+            console.error("Failed to subscribe to attribute events for assets/attributes: " + assetIds.join(", "));
             if (subscriptionId) {
                 this.unsubscribe(subscriptionId);
             }

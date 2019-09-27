@@ -1,4 +1,4 @@
-import {customElement, html, LitElement, property} from "lit-element";
+import {customElement, html, LitElement, property, TemplateResult} from "lit-element";
 import i18next from "i18next";
 import "@openremote/or-select";
 import "@openremote/or-icon";
@@ -109,6 +109,7 @@ export interface RulesConfig {
         hideWhenAddGroup?: boolean;
         hideWhenGroupOutline?: boolean;
     };
+    inputProvider?: (assetType: string, attributeName: string, attributeDescriptor: AttributeDescriptor | undefined, value: any | undefined, valueChangeNotifier: (value: any) => void, readonly: boolean) => TemplateResult | undefined;
     descriptors?: {
         all?: RulesDescriptorSection;
         when?: RulesDescriptorSection;

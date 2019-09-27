@@ -1,5 +1,5 @@
 import {css, unsafeCSS} from "lit-element";
-import {DefaultColor2, DefaultColor5, DefaultColor7} from "@openremote/core";
+import {DefaultColor1, DefaultColor2, DefaultColor5} from "@openremote/core";
 
 // TODO this is temp work, should be replaced with material design components / styling
 
@@ -16,7 +16,7 @@ export const selectStyle = css`
         --internal-or-select-text-color: var(--or-select-text-color, inherit);
         --internal-or-select-padding: var(--or-select-padding, 10px 40px 10px 10px);
         --internal-or-select-option-text-color: var(--or-select-option-text-color, inherit);
-        --internal-or-select-option-background-color: var(--or-select-option-background-color, var(--or-app-color7, ${unsafeCSS(DefaultColor7)}));
+        --internal-or-select-option-background-color: var(--or-select-option-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
     }
     
     select:invalid {

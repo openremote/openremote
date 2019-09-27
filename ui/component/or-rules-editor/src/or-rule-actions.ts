@@ -12,7 +12,8 @@ import {
 } from "@openremote/model";
 import i18next from "i18next";
 import {OrSelectChangedEvent} from "@openremote/or-select";
-import {OrInputChangedEvent} from "@openremote/or-input";
+import {OrAttributeInput} from "@openremote/or-attribute-input";
+import {OrInputChangedEvent} from "@openremote/or-input/dist";
 
 @customElement("or-rule-actions")
 class OrRuleActions extends LitElement {
@@ -121,9 +122,11 @@ class OrRuleActions extends LitElement {
                 const attributeNames = attributeDescriptors.map((ad) => [ad.attributeName, i18next.t(ad.attributeName!)]);
                 const assetType = assetTypes.length > 0 ? assetTypes[0][0] : undefined;
 
+                const attributeInput = this.config && this.config.inputProvider && action.attributeName ? this.config.inputProvider(assetType!, action.attributeName, attributeDescriptors.find((ad) => ad.attributeName === action.attributeName)!, action.value, (value: any) => this.setActionAttributeValue(action, value), this.readonly || false) : undefined;
+
                 actionTemplate = html`
                     <or-select @or-select-changed="${(e: OrSelectChangedEvent) => this.setActionAttributeName(action, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributeNames}" .value="${action.attributeName}"></or-select>
-                    ${action.attributeName ? html`<or-input @or-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeValue(action, e.detail.value)}" ?readonly="${this.readonly}" .assetType="${assetType}" .attributeName="${action.attributeName}" .value="${action.value}"></or-input>` : ``}                     
+                    ${action.attributeName ? attributeInput ? attributeInput : html`<or-attribute-input @or-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeValue(action, e.detail.value)}" ?readonly="${this.readonly}" .assetType="${assetType}" .attributeName="${action.attributeName}" .value="${action.value}"></or-attribute-input>` : ``}                     
                 `;
 
                 if (action.action === "update-attribute" && !hideUpdateOptions) {

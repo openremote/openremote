@@ -1,5 +1,5 @@
 import {css, unsafeCSS} from "lit-element";
-import {DefaultColor1, DefaultColor2, DefaultColor5, DefaultColor3, DefaultColor4, DefaultColor7, DefaultBoxShadow, DefaultDisabledOpacity,
+import {DefaultColor1, DefaultColor2, DefaultColor5, DefaultColor3, DefaultColor4, DefaultBoxShadow, DefaultDisabledOpacity,
     DefaultBoxShadowBottom} from "@openremote/core";
 import mdi from "@openremote/or-icon/dist/mdi-icons";
 
@@ -8,11 +8,11 @@ export const style = css`
 
     :host {       
         --internal-or-asset-tree-header-color: var(--or-asset-tree-header-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));     
-        --internal-or-asset-tree-header-text-color: var(--or-asset-tree-header-text-color, var(--or-app-color7, ${unsafeCSS(DefaultColor7)}));
+        --internal-or-asset-tree-header-text-color: var(--or-asset-tree-header-text-color, var(--or-app-color7, ${unsafeCSS(DefaultColor1)}));
         --internal-or-asset-tree-header-menu-background-color: var(--or-asset-tree-header-menu-background-color, var(--internal-or-asset-tree-header-text-color));
         --internal-or-asset-tree-header-menu-text-color: var(--or-asset-tree-header-menu-text-color, inherit);
         --internal-or-asset-tree-header-height: var(--or-asset-tree-header-height, 40px);
-        --internal-or-asset-tree-background-color: var(--or-asset-tree-background-color, var(--or-app-color7, ${unsafeCSS(DefaultColor7)}));
+        --internal-or-asset-tree-background-color: var(--or-asset-tree-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
         --internal-or-asset-tree-text-color: var(--or-asset-tree-text-color, inherit);
         --internal-or-asset-tree-item-height: var(--or-asset-tree-item-height, 24px);
         --internal-or-asset-tree-item-padding: var(--or-asset-tree-item-padding, 10px);

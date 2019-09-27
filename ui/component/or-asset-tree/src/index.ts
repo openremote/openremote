@@ -1,13 +1,12 @@
-import {customElement, html, LitElement, property, PropertyValues, TemplateResult, query} from "lit-element";
+import {customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
 import "@openremote/or-select";
 import "@openremote/or-icon";
-import {TenantRuleset, Asset, AssetQuery, Tenant, AssetTreeNode, AssetType} from "@openremote/model";
+import {Asset, AssetQuery, AssetTreeNode, AssetType, Tenant} from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
 import openremote, {AssetModelUtil} from "@openremote/core";
 import rest from "@openremote/rest";
 import {OrSelectChangedEvent} from "@openremote/or-select";
-import "@openremote/or-icon";
 import Qs from "qs";
 
 export interface UiAssetTreeNode extends AssetTreeNode {
@@ -190,6 +189,8 @@ export class OrAssetTree extends LitElement {
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
+        super.firstUpdated(_changedProperties);
+
         this.addEventListener("click", (evt) => {
             if (this._sortMenu.hasAttribute("data-visible") && !this._sortMenu.contains(evt.target as Node)) {
                 this._sortMenu.toggleAttribute("data-visible");
@@ -347,6 +348,7 @@ export class OrAssetTree extends LitElement {
 
         this.selectedIds = actuallySelectedIds;
         this._selectedNodes = selectedNodes;
+        this.dispatchEvent(new OrAssetTreeSelectionChangedEvent(this._selectedNodes));
     }
 
 
@@ -429,7 +431,7 @@ export class OrAssetTree extends LitElement {
         let deselectOthers = true;
 
         if (this.multiSelect) {
-            if (evt.ctrlKey) {
+            if (evt.ctrlKey || evt.metaKey) {
                 deselectOthers = false;
                 if (index >= 0 && selectedIds.length > 1) {
                     select = false;

@@ -6,7 +6,8 @@ import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next from "i18next";
 import i18nextXhr from "i18next-xhr-backend";
-import {AssetDescriptor, AttributeDescriptor, AttributeValueDescriptor, MetaItemDescriptor} from "@openremote/model";
+import {AssetDescriptor, AttributeDescriptor, AttributeValueDescriptor, MetaItemDescriptor, Asset, AssetAttribute,
+    MetaItem} from "@openremote/model";
 import * as Util from "./util";
 
 export declare type KeycloakPromise<T> = {
@@ -32,13 +33,17 @@ export declare type Keycloak = {
 
 export {Util};
 
-export const DefaultColor1: string = "#FFF"; // Header
+export const DefaultColor4: string = "#1B5630"; // Primary
+export const DefaultColor7: string = "#FFF"; // Secondary
+export const DefaultColor1: string = "#FFF"; // Surface
 export const DefaultColor2: string = "#F9F9F9"; // Background
-export const DefaultColor3: string = "#4c4c4c"; // Text
-export const DefaultColor4: string = "#1B5630"; // Buttons
 export const DefaultColor5: string = "#CCC"; // Borders and lines
 export const DefaultColor6: string = "#be0000"; // Invalid/Error
-export const DefaultColor7: string = "#FFF"; // Panels
+export const DefaultColor8: string = "#FFF"; // On Primary
+export const DefaultColor3: string = "#4c4c4c"; // Text / On Secondary
+export const DefaultColor9: string = "#000"; // On Background
+export const DefaultColor10: string = "#000"; // On Surface
+export const DefaultColor11: string = "#FFF"; // On Error
 export const DefaultBoxShadowBottom: string = "0 5px 5px -5px rgba(0,0,0,0.3)";
 export const DefaultBoxShadow: string = "0 1px 3px 0 rgba(0,0,0,0.21)";
 export const DefaultHeaderHeight: string = "50px";
@@ -156,7 +161,7 @@ export class AssetModelUtil {
         });
     }
 
-    public static getAttributeDescriptorFromAsset(assetType?: string, attributeName?: string): AttributeDescriptor | undefined {
+    public static getAttributeDescriptorFromAsset(attributeName: string, assetType?: string): AttributeDescriptor | undefined {
         if (!attributeName) {
             return;
         }
@@ -174,14 +179,21 @@ export class AssetModelUtil {
         return this.getAttributeDescriptor(attributeName);
     }
 
-    public static getAttributeValueDescriptor(name?: string): AttributeValueDescriptor | undefined {
-        if (!name) {
-            return;
-        }
-
+    public static getAttributeValueDescriptor(name: string): AttributeValueDescriptor | undefined {
         return this._attributeValueDescriptors.find((attributeValueDescriptor) => {
             return attributeValueDescriptor.name === name;
         });
+    }
+
+    public static getAttributeValueDescriptorFromAsset(name: string, assetType?: string, attributeName?: string) : AttributeValueDescriptor | undefined {
+        if (attributeName) {
+            const attributeDescriptor = this.getAttributeDescriptorFromAsset(attributeName, assetType);
+            if (attributeDescriptor) {
+                return attributeDescriptor.valueDescriptor;
+            }
+        }
+
+        return this.getAttributeValueDescriptor(name);
     }
 
     public static getMetaItemDescriptor(urn?: string): MetaItemDescriptor | undefined {
@@ -202,6 +214,17 @@ export class AssetModelUtil {
             return false;
         }
         return attributeValueDescriptor1.name === attributeValueDescriptor2.name && attributeValueDescriptor1.valueType === attributeValueDescriptor2.valueType;
+    }
+
+    public static getMetaValue(metaItemUrn: string | MetaItemDescriptor, metaItems: MetaItem[] | undefined): any {
+        if (!metaItems) {
+            return;
+        }
+
+        const urn = typeof metaItemUrn === "string" ? metaItemUrn : (metaItemUrn as MetaItemDescriptor).urn;
+
+        const mi = metaItems.find((mi) => mi.name === urn);
+        return mi ? mi.value : undefined;
     }
 
     public static getMetaInitialValueFromMetaDescriptors(metaItemUrn: MetaItemDescriptor | string, metaItemDescriptors: MetaItemDescriptor[] | undefined): any | undefined {

@@ -1,7 +1,7 @@
 {
-  "name": "@openremote/or-rules-editor",
+  "name": "@openremote/or-asset-viewer",
   "version": "1.0.0",
-  "description": "OpenRemote Rules Editor",
+  "description": "OpenRemote Asset Viewer",
   "main": "dist/index.js",
   "types": "src/index.ts",
   "scripts": {
@@ -13,12 +13,13 @@
   "dependencies": {
     "@openremote/core": "^1.0.2",
     "@openremote/model": "^1.0.2",
-    "@openremote/or-input": "^1.0.0",
+    "@openremote/or-icon": "^1.0.0",
     "@openremote/or-select": "^1.0.0",
     "@openremote/or-translate": "^1.0.0",
     "@openremote/rest": "^1.0.2",
+    "@types/simplebar": "^2.4.2",
     "lit-element": "^2.2.1",
-    "moment": "^2.24.0"
+    "simplebar": "^4.2.3"
   },
   "devDependencies": {
     "tslint": "^5.11.0",

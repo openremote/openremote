@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "rootDir": "src"
+  },
+  "include": [
+    "./src",
+    "../or-map/@types"
+  ],
+  "references": [
+    { "path": "../core" },
+    { "path": "../rest" },
+    { "path": "../or-select" },
+    { "path": "../or-translate" },
+    { "path": "../or-icon" },
+    { "path": "../or-map" },
+    { "path": "../or-input" },
+    { "path": "../or-attribute-input" }
+  ]
+}

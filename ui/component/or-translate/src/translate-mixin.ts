@@ -10,54 +10,56 @@ interface CustomElement {
 }
 
 // TODO: Can't currently export declaration files with explicit LitElement type (see https://github.com/Microsoft/TypeScript/issues/17293)
-export const translate = (i18next: i18n.i18n) => <T extends Constructor<CustomElement>>(litElement: T) => {
+export const translate = (i18next: i18n.i18n) => <T extends Constructor<CustomElement>>(base: T) =>
+        class extends base {
 
-    return class extends litElement {
+            _i18nextJustInitialized = false;
 
-        public _i18nextJustInitialized = false;
+            connectedCallback() {
+                if (!i18next.language) {
+                    i18next.on("initialized", this.initCallback);
+                }
 
-        public connectedCallback() {
-            if (!i18next.language) {
-                i18next.on("initialized", this.initCallback);
+                i18next.on("languageChanged", this.langChangedCallback);
+
+                if (super.connectedCallback) {
+                    super.connectedCallback();
+                }
             }
 
-            i18next.on("languageChanged", this.langChangedCallback);
+            disconnectedCallback() {
+                i18next.off("initialized", this.initCallback);
+                i18next.off("languageChanged", this.langChangedCallback);
 
-            if (super.connectedCallback) {
-                super.connectedCallback();
-            }
-        }
-
-        public disconnectedCallback() {
-            i18next.off("initialized", this.initCallback);
-            i18next.off("languageChanged", this.langChangedCallback);
-        }
-
-        public shouldUpdate(changedProps: PropertyValues) {
-            if (this._i18nextJustInitialized) {
-                this._i18nextJustInitialized = false;
-                return true;
+                if (super.disconnectedCallback) {
+                    super.disconnectedCallback();
+                }
             }
 
-            // @ts-ignore
-            return super.shouldUpdate && super.shouldUpdate(changedProps);
-        }
+            shouldUpdate(changedProps: PropertyValues) {
+                if (this._i18nextJustInitialized) {
+                    this._i18nextJustInitialized = false;
+                    return true;
+                }
 
-        public initCallback = (options: i18n.InitOptions) => {
-            this._i18nextJustInitialized = true;
-            // @ts-ignore
-            if (this.requestUpdate) {
                 // @ts-ignore
-                this.requestUpdate();
+                return super.shouldUpdate && super.shouldUpdate(changedProps);
             }
-        }
 
-        public langChangedCallback = () => {
-            // @ts-ignore
-            if (this.requestUpdate) {
+            public initCallback = (options: i18n.InitOptions) => {
+                this._i18nextJustInitialized = true;
                 // @ts-ignore
-                this.requestUpdate();
+                if (this.requestUpdate) {
+                    // @ts-ignore
+                    this.requestUpdate();
+                }
+            };
+
+            public langChangedCallback = () => {
+                // @ts-ignore
+                if (this.requestUpdate) {
+                    // @ts-ignore
+                    this.requestUpdate();
+                }
             }
-        }
-    };
-};
+        };

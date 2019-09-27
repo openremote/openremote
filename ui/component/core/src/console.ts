@@ -3,8 +3,6 @@ import rest from "@openremote/rest";
 import openremote from "./index";
 import {AxiosResponse} from "axios";
 
-declare function require(name: string): any;
-
 // No ES6 module support in platform lib
 let platform = require('platform');
 

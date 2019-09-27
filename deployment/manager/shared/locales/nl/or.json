@@ -70,6 +70,11 @@
   "name": "Naam",
   "deleteAssetsNoChildrenAllowed": "Only assets that have no descendants can be deleted, please remove descendents first.",
   "confirmDeleteAssets": "Asset verwijderen?",
-  "ok": "ok",
-  "cancel": "cancel"
+  "ok": "OK",
+  "cancel": "Cancel",
+  "createdOn": "Created on",
+  "accessPublicRead": "Public read",
+  "type": "Type",
+  "path": "Path",
+  "showOnMap": "Show on map"
 }

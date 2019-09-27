@@ -1,28 +1,48 @@
 import {LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike} from "mapbox-gl";
 import L, {LatLng, LatLngBounds} from "mapbox.js";
+import {Asset, AttributeType, AssetAttribute, GeoJSONPoint, AttributeValueType} from "@openremote/model";
+import {getAssetAttribute} from "@openremote/core/dist/util";
 
-export function getLngLat(lngLatLike?: LngLatLike): LngLat | undefined {
+export function getLngLat(lngLatLike?: LngLatLike | Asset | AssetAttribute | GeoJSONPoint | object): LngLat | undefined {
     if (lngLatLike) {
 
         if (lngLatLike instanceof LngLat) {
             return lngLatLike as LngLat;
         }
 
-        const obj = lngLatLike as object;
+        let obj = lngLatLike as any;
 
-        if (obj.hasOwnProperty("lng")) {
-            const lngLatObj = obj as { lng: number; lat: number; };
-            return new LngLat(lngLatObj.lng, lngLatObj.lat);
+        if (obj.hasOwnProperty("attributes")) {
+            // This is an asset
+            const locationAttribute = getAssetAttribute(obj as Asset, AttributeType.LOCATION.attributeName!);
+            if (!locationAttribute) {
+                return;
+            }
+            obj = locationAttribute;
         }
 
-        if (obj.hasOwnProperty("lon")) {
-            const lonLatObj = obj as { lon: number; lat: number; };
-            return new LngLat(lonLatObj.lon, lonLatObj.lat);
+        if (obj.hasOwnProperty("name") && obj.hasOwnProperty("type")) {
+            const attr = obj as AssetAttribute;
+            if (attr.type !== AttributeValueType.GEO_JSON_POINT.name || !attr.value) {
+                return;
+            }
+            obj = attr.value;
         }
-        const lonLatArr = obj as number[];
 
-        if (lonLatArr.length === 2) {
-            return new LngLat(lonLatArr[0], lonLatArr[1]);
+        if (obj.type === "Point" && Array.isArray(obj.coordinates)) {
+            return new LngLat(obj.coordinates[0], obj.coordinates[1]);
+        }
+
+        if (obj.lng && obj.lat) {
+            return new LngLat(obj.lng, obj.lat);
+        }
+
+        if (obj.lon && obj.lat) {
+            return new LngLat(obj.lon, obj.lat);
+        }
+
+        if (Array.isArray(obj) && obj.length === 2) {
+            return new LngLat(obj[0], obj[1]);
         }
     }
 }

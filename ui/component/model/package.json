@@ -10,7 +10,6 @@
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
-  "dependencies": {},
   "devDependencies": {
     "tslint": "^5.11.0",
     "typescript": "^3.4.5"

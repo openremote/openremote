@@ -1,6 +1,6 @@
 import {customElement, html, LitElement, property} from "lit-element";
 import "@openremote/or-translate";
-import "@openremote/or-input";
+import "@openremote/or-attribute-input";
 import "@openremote/or-select";
 import "@openremote/or-icon";
 import {TenantRuleset} from "@openremote/model";

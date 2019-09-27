@@ -7,11 +7,11 @@ import {
     RuleCondition,
     LogicGroup,
     Asset,
-    AssetAttribute,
+    Attribute,
     AttributeEvent,
-    MetaItem
+    MetaItem,
+    AssetAttribute
 } from "@openremote/model";
-import {Util} from "./index";
 
 export class Deferred<T> {
 
@@ -204,23 +204,32 @@ export function getQueryParameter(name: string): string {
     return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
-export function getAssetAttribute(asset: Asset, attributeName: string): AssetAttribute | undefined {
+export function getAssetAttribute(asset: Asset, attributeName: string): Attribute | undefined {
     if (asset.attributes && asset.attributes.hasOwnProperty(attributeName)) {
-        const attr = asset.attributes[attributeName] as AssetAttribute;
+        const attr = asset.attributes[attributeName] as Attribute;
         attr.name = attributeName;
         return attr;
     }
 }
 
-export function getAssetAttributes(asset: Asset): AssetAttribute[] {
+export function getAssetAttributes(asset: Asset, exclude?: string[]): AssetAttribute[] {
     if (asset.attributes) {
-        return Object.entries(asset.attributes as {[s: string]: AssetAttribute}).map(([name, attr]) => {
+        return Object.entries(asset.attributes as {[s: string]: AssetAttribute}).filter(([name, attr]) => !exclude || exclude.indexOf(name) >= 0).map(([name, attr]) => {
             attr.name = name;
+            attr.assetId = asset.id;
             return attr;
         });
     }
 
     return [];
+}
+
+export function getFirstMetaItem(attribute: Attribute | undefined, name: string): MetaItem | undefined {
+    if (!attribute || !attribute.meta) {
+        return;
+    }
+
+    return attribute.meta.find((metaItem) => metaItem.name === name);
 }
 
 /**

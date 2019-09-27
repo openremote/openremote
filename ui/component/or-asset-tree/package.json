@@ -17,7 +17,7 @@
     "@openremote/or-select": "^1.0.0",
     "@openremote/or-translate": "^1.0.0",
     "@openremote/rest": "^1.0.2",
-    "lit-element": "^2.1.0",
+    "lit-element": "^2.2.1",
     "moment": "^2.24.0"
   },
   "devDependencies": {

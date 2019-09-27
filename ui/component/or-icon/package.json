@@ -15,7 +15,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "lit-element": "^2.1.0"
+    "lit-element": "^2.2.1"
   },
   "devDependencies": {
     "@mdi/svg": "^4.2.95",

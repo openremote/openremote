@@ -5,7 +5,5 @@
   "author": "OpenRemote Inc. <support@openremote.io>",
   "description": "OpenRemote SmartHome Example App",
   "main": "index.html",
-  "license": "AGPL-3.0-or-later",
-  "dependencies": {
-  }
+  "license": "AGPL-3.0-or-later"
 }
