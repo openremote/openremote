@@ -73,7 +73,13 @@ public enum AttributeType implements AttributeDescriptor {
             ASSET_META_NAMESPACE + ":assetStatusColors",
             new Access(true, false, true),
             false,
-            null));
+            null)),
+
+    TAGS(
+        "tags", AttributeValueType.ARRAY,
+        LABEL.withInitialValue(Values.create("Asset Tags")),
+        DESCRIPTION.withInitialValue(Values.create("List of tags associated with an asset"))
+    );
 
     final protected String attributeName;
     final protected AttributeValueDescriptor valueDescriptor;
