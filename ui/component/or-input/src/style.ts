@@ -12,6 +12,7 @@ export const orInputStyle = css`
         
         --mdc-theme-primary: var(--internal-or-input-color);
         --mdc-theme-on-primary: var(--internal-or-input-text-color);
+        --mdc-theme-secondary: var(--internal-or-input-color);
     }
        
     .or-input--rounded {

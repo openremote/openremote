@@ -20,7 +20,6 @@ import {Type as MapType} from "@openremote/or-map";
 import {getLngLat} from "@openremote/or-map/dist/util";
 
 export interface PanelConfig {
-    name: string;
     scrollable?: boolean;
     hide?: boolean;
     include?: string[];
@@ -31,8 +30,8 @@ export interface PanelConfig {
 }
 
 export interface ViewerConfig {
-    default?: PanelConfig[];
-    assetTypes?: { [assetType: string]: PanelConfig[] };
+    default?: {[name: string]: PanelConfig};
+    assetTypes?: { [assetType: string]: {[name: string]: PanelConfig} };
     propertyViewProvider?: (property: string, value: any) => TemplateResult | undefined;
     attributeViewProvider?: (attribute: Attribute) => TemplateResult | undefined;
     assetNameProvider?: (id: string) => string;
@@ -42,9 +41,8 @@ export interface ViewerConfig {
 @customElement("or-asset-viewer")
 export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitElement)) {
 
-    public static DEFAULT_CONFIG: PanelConfig[] = [
-        {
-            name: "info",
+    public static DEFAULT_CONFIG: {[name: string]: PanelConfig} = {
+        "info": {
             fieldStyles: {
                 name: {
                     width: "60%"
@@ -56,8 +54,7 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
                 }
             }
         },
-        {
-            name: "location",
+        "location": {
             scrollable: false,
             include: ["location"],
             fieldStyles: {
@@ -67,15 +64,13 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
                 }
             }
         },
-        {name: "attributes"},
-        {
-            exclude: [
-                ""
-            ],
-            name: "history",
+        "attributes": {
+
+        },
+        "history": {
             scrollable: false,
         }
-    ];
+    };
 
     public static DEFAULT_INFO_PROPERTIES = [
         "name",
@@ -129,8 +124,8 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
 
         return html`
             <div id="container">
-            ${html`${panelConfigs.map((config) => {
-                const panelTemplate = this._getPanel(config.name, config, this._getPanelContent(config.name, attributes, config));
+            ${html`${Object.entries(panelConfigs).map(([name, config]) => {
+                const panelTemplate = this._getPanel(name, config, this._getPanelContent(name, attributes, config));
                 return panelTemplate || ``;
             })}`
             }`;
@@ -351,11 +346,11 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
     }
 
     protected _getPanelConfig(asset: Asset) {
-        let config = this.config && this.config.default ? this.config.default : OrAssetViewer.DEFAULT_CONFIG;
+        let config = this.config && this.config.default ? Object.assign({...OrAssetViewer.DEFAULT_CONFIG}, this.config.default) : {...OrAssetViewer.DEFAULT_CONFIG};
 
         if (this.config) {
             if (this.config.assetTypes && this.config.assetTypes.hasOwnProperty(asset.type!)) {
-                config =  this.config.assetTypes[asset.type!];
+                config =  Object.assign(config, this.config.assetTypes[asset.type!]);
             }
         }
 
