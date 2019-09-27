@@ -65,8 +65,8 @@ public enum AttributeType implements AttributeDescriptor {
         DESCRIPTION.withInitialValue(Values.create("Floor area of building measured in m²")),
         ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/area"))),
 
-    STATUS(
-        "status", AttributeValueType.ASSET_STATUS,
+    ASSET_STATUS(
+        "assetStatus", AttributeValueType.ASSET_STATUS,
         LABEL.withInitialValue(Values.create("Asset Status")),
         DESCRIPTION.withInitialValue(Values.create("Defines an arbitrary status for the containing asset")),
         metaItemObject(
