@@ -1615,8 +1615,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         Asset asset = persistenceEvent.getEntity();
         switch (persistenceEvent.getCause()) {
             case CREATE:
-                // Fully load the asset (excluding attributes)
-                Asset loadedAsset = find(new AssetQuery().select(Select.selectAll().excludeAttributes(true)).ids(asset.getId()));
+                // Fully load the asset
+                Asset loadedAsset = find(new AssetQuery().select(Select.selectAll()).ids(asset.getId()));
 
                 clientEventService.publishEvent(
                     new AssetEvent(AssetEvent.Cause.CREATE, loadedAsset, null)
@@ -1661,8 +1661,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     return !Objects.equals(oldValue, newValue);
                 }).toArray(String[]::new);
 
-                // Fully load the asset (excluding attributes)
-                loadedAsset = find(new AssetQuery().select(Select.selectAll().excludeAttributes(true)).ids(asset.getId()));
+                // Fully load the asset
+                loadedAsset = find(new AssetQuery().select(Select.selectAll()).ids(asset.getId()));
 
                 clientEventService.publishEvent(
                     new AssetEvent(AssetEvent.Cause.UPDATE, loadedAsset, updatedProperties)
