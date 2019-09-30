@@ -59,6 +59,40 @@ export const style = css`
         grid-template-columns: var(--internal-or-asset-viewer-grid-template-columns);
         grid-template-rows: var(--internal-or-asset-viewer-grid-template-rows);
         grid-auto-rows: var(--internal-or-asset-viewer-grid-template-auto-rows);  
+        -webkit-animation: fadein 0.3s; /* Safari, Chrome and Opera > 12.1 */
+        -moz-animation: fadein 0.3s; /* Firefox < 16 */
+        -ms-animation: fadein 0.3s; /* Internet Explorer */
+        -o-animation: fadein 0.3s; /* Opera < 12.1 */
+        animation: fadein 0.3s;
+    }
+
+    @keyframes fadein {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    /* Firefox < 16 */
+    @-moz-keyframes fadein {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    /* Safari, Chrome and Opera > 12.1 */
+    @-webkit-keyframes fadein {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    /* Internet Explorer */
+    @-ms-keyframes fadein {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    /* Opera < 12.1 */
+    @-o-keyframes fadein {
+        from { opacity: 0; }
+        to   { opacity: 1; }
     }
     
     .panel {
@@ -378,11 +412,10 @@ export const style = css`
     }
     
     #loading {
-        flex: 1 0 auto;
-        display: inline-flex;
+        display: flex;
+        justify-content: center;
         align-items: center;
         text-align: center;
-        margin: 0 auto;
+        height: 100%;
     }    
-
 `;

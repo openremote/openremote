@@ -105,7 +105,7 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
 
         if (this._loading) {
             return html`
-                <div>LOADING</div>
+                <div id="loading"><div>Loading</div></div>
             `;
         }
 
