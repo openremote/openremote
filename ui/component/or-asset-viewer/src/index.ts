@@ -105,12 +105,14 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
 
         if (this._loading) {
             return html`
-                <div id="loading"><div>Loading</div></div>
+                <div id="loading"><or-translate value="loading"></or-translate></div>
             `;
         }
 
         if (!this.asset && !this.assetId) {
-            return html``;
+            return html`
+                <div id="noneselected"><or-translate value="noAssetSelected"></or-translate></div>
+            `;
         }
 
         if (!this.asset) {
@@ -278,6 +280,7 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
                     }
                     #location-map-container > or-map {
                         flex: 1;
+                        border: #dbdbdb 1px solid;
                     }
                     #location-map-input {
                         flex: 0 0 auto;

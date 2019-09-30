@@ -77,5 +77,7 @@
   "accessPublicRead": "Public read",
   "type": "Type",
   "path": "Path",
-  "showOnMap": "Show on map"
+  "showOnMap": "Show on map",
+  "noAssetSelected": "Please select an asset on the left",
+  "loading": "Loading..."
 }

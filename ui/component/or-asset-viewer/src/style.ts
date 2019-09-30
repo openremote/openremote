@@ -12,7 +12,7 @@ export const style = css`
         --internal-or-asset-viewer-grid-template-rows: var(--or-asset-viewer-grid-template-rows, repeat(auto-fill, 1fr));
         --internal-or-asset-viewer-grid-template-auto-rows: var(--or-asset-viewer-grid-template-auto-rows, minmax(min-content, 1fr));
         --internal-or-asset-viewer-panel-margin: var(--or-asset-viewer-panel-margin, 15px);
-        --internal-or-asset-viewer-panel-padding: var(--or-asset-viewer-panel-padding, 20px);
+        --internal-or-asset-viewer-panel-padding: var(--or-asset-viewer-panel-padding, 24px);
         --internal-or-asset-viewer-text-color: var(--or-asset-viewer-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));       
         --internal-or-asset-viewer-title-text-color: var(--or-asset-viewer-title-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));       
         --internal-or-asset-viewer-panel-color: var(--or-asset-viewer-panel-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
@@ -119,7 +119,7 @@ export const style = css`
         text-transform: uppercase;
         font-weight: bolder;
         color: var(--internal-or-asset-viewer-title-text-color);
-        margin-bottom: 15px;
+        margin-bottom: 12px;
         flex: 0 0 auto;
     }
    
@@ -411,7 +411,7 @@ export const style = css`
         margin-right: 10px;
     }
     
-    #loading {
+    #loading, #noneselected {
         display: flex;
         justify-content: center;
         align-items: center;
