@@ -107,7 +107,7 @@ export class OrSelect extends LitElement {
             } else {
                 index = this.options.findIndex((opt: string | [string, string]) => {
                     const value = Array.isArray(opt) ? opt[0] : opt;
-                    return value == val;
+                    return value === val;
                 });
 
                 if(this.showEmptyOption) {
@@ -117,7 +117,8 @@ export class OrSelect extends LitElement {
 
             const indexChanged = this._select.selectedIndex != index;
             this._select.selectedIndex = index;
-            if (indexChanged) {
+
+            if (val !== this.value) {
                 this.onChange();
             } else {
                 if (this.autoSize) {
