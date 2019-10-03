@@ -23,38 +23,39 @@ import com.google.gwt.canvas.dom.client.Context2d;
 import com.google.gwt.core.client.*;
 import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONNumber;
-import org.openremote.model.datapoint.NumberDatapoint;
+import com.google.gwt.json.client.JSONObject;
+import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 /**
  * TODO Use JSInterop instead
  */
 public class ChartUtil {
 
-    static public JavaScriptObject convertLabels(NumberDatapoint[] numberDatapoints) {
-        JsArrayString array = (JsArrayString) JsArrayString.createArray();
-        for (int i = 0; i < numberDatapoints.length; i++) {
-            NumberDatapoint numberDatapoint = numberDatapoints[i];
-            array.set(i, numberDatapoint.getLabel());
-        }
-        return array;
-    }
+//    static public JavaScriptObject convertLabels(ValueDatapoint[] numberDatapoints) {
+//        JsArrayString array = (JsArrayString) JsArrayString.createArray();
+//        for (int i = 0; i < numberDatapoints.length; i++) {
+//            ValueDatapoint numberDatapoint = numberDatapoints[i];
+//            array.set(i, numberDatapoint.getLabel());
+//        }
+//        return array;
+//    }
 
-    static public JavaScriptObject convertData(NumberDatapoint[] numberDatapoints) {
+    static public JavaScriptObject convertData(ValueDatapoint[] dps) {
         JSONArray array = new JSONArray();
-        for (int i = 0; i < numberDatapoints.length; i++) {
-            NumberDatapoint numberDatapoint = numberDatapoints[i];
-            Number number = numberDatapoint.getNumber();
-            if (number != null) {
-                array.set(i, new JSONNumber(number.doubleValue()));
-            } else {
-                array.set(i, null);
-            }
+        for (int i = 0; i < dps.length; i++) {
+            ValueDatapoint dp = dps[i];
+            Value value = dp.getValue();
+            JSONObject obj = new JSONObject();
+            obj.put("x", new JSONNumber(dp.getTimestamp()));
+            obj.put("y", value != null ? new JSONNumber(Values.getNumber(value).orElse(0d)) : null);
+            array.set(i, obj);
         }
         return array.getJavaScriptObject();
     }
 
-    public native static void update(Chart chart, JavaScriptObject labels, JavaScriptObject data) /*-{
-        chart.data.labels = labels;
+    public native static void update(Chart chart, JavaScriptObject data) /*-{
         chart.data.datasets[0].data = data;
         chart.update();
     }-*/;
@@ -120,6 +121,11 @@ public class ChartUtil {
                         }
                     }],
                     xAxes: [{
+                        type: "time",
+                        time: {
+                            unit: "minute",
+                            parser: "x"
+                        },
                         ticks: {
                             autoSkip: true,
                             maxTicksLimit: 30,

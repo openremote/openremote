@@ -1,7 +1,4 @@
 import {css, customElement, html, LitElement, PropertyValues, query, unsafeCSS, property} from "lit-element";
-import "@openremote/or-select";
-import "@openremote/or-icon";
-import "@openremote/or-translate";
 import SimpleBar from "simplebar";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling

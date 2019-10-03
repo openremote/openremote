@@ -35,9 +35,11 @@ import org.openremote.app.client.widget.*;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeValidationResult;
+import org.openremote.model.attribute.AttributeValueDescriptor;
 import org.openremote.model.datapoint.DatapointInterval;
-import org.openremote.model.datapoint.NumberDatapoint;
+import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.interop.Consumer;
+import org.openremote.model.value.ValueType;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -120,11 +122,14 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
             DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(new Date(timestamp))
         );
 
-        queryDatapoints(interval, timestamp, numberDatapoints -> ChartUtil.update(
-            chart,
-            ChartUtil.convertLabels(numberDatapoints),
-            ChartUtil.convertData(numberDatapoints)
-        ));
+        ValueType valueType = attribute.getType().map(AttributeValueDescriptor::getValueType).orElse(null);
+
+        if (valueType == ValueType.NUMBER || valueType == ValueType.BOOLEAN) {
+            queryDatapoints(interval, timestamp, datapoints -> ChartUtil.update(
+                chart,
+                ChartUtil.convertData(datapoints)
+            ));
+        }
     }
 
     protected void createChart() {
@@ -236,5 +241,5 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
 
     abstract protected void queryDatapoints(DatapointInterval interval,
                                             long timestamp,
-                                            Consumer<NumberDatapoint[]> consumer);
+                                            Consumer<ValueDatapoint[]> consumer);
 }

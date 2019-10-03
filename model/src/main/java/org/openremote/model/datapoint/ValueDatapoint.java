@@ -19,40 +19,40 @@
  */
 package org.openremote.model.datapoint;
 
-public class NumberDatapoint {
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.value.Value;
 
-    protected String label;
-    protected Number number;
+public class ValueDatapoint<T extends Value> {
 
-    protected NumberDatapoint() {
+    protected long timestamp;
+    protected T value;
+
+    protected ValueDatapoint() {
     }
 
-    public NumberDatapoint(String label, Number number) {
-        this.label = label;
-        this.number = number;
+    @JsonCreator
+    public ValueDatapoint(@JsonProperty("x") long timestamp,
+                          @JsonProperty("y") T value) {
+        this.timestamp = timestamp;
+        this.value = value;
     }
 
-    public String getLabel() {
-        return label;
+    @JsonProperty("x")
+    public long getTimestamp() {
+        return timestamp;
     }
 
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    public Number getNumber() {
-        return number;
-    }
-
-    public void setNumber(Number number) {
-        this.number = number;
+    @JsonProperty("y")
+    public T getValue() {
+        return value;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "label='" + label + '\'' +
-            ", number=" + number +
+            "timestamp='" + timestamp + '\'' +
+            ", value=" + value +
             '}';
     }
 }

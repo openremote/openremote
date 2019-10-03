@@ -12,7 +12,7 @@ import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
 import {OrSelectChangedEvent} from "@openremote/or-select";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
-const buttonStyle = require("@material/button/dist/mdc.button.css");
+const buttonStyle = require("!!raw-loader!@material/button/dist/mdc.button.css");
 const iconButtonStyle = require("!!raw-loader!@material/icon-button/dist/mdc.icon-button.css");
 const textfieldStyle = require("!!raw-loader!@material/textfield/dist/mdc.textfield.css");
 const rippleStyle = require("!!raw-loader!@material/ripple/dist/mdc.ripple.css");

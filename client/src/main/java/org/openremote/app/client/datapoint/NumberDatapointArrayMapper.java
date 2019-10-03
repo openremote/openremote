@@ -23,10 +23,10 @@ import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.app.client.interop.jackson.DefaultJsonMixin;
 import org.openremote.app.client.rest.EntityReader;
-import org.openremote.model.datapoint.NumberDatapoint;
+import org.openremote.model.datapoint.ValueDatapoint;
 
-@JsonMixIns({@JsonMixIns.JsonMixIn(target = NumberDatapoint.class, mixIn = DefaultJsonMixin.class)})
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = ValueDatapoint.class, mixIn = DefaultJsonMixin.class)})
 public interface NumberDatapointArrayMapper
-    extends ObjectMapper<NumberDatapoint[]>,
-    EntityReader<NumberDatapoint[]> {
+    extends ObjectMapper<ValueDatapoint[]>,
+    EntityReader<ValueDatapoint[]> {
 }

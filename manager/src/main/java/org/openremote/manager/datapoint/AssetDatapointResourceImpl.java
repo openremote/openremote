@@ -24,12 +24,12 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.datapoint.Datapoint;
+import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.datapoint.DatapointInterval;
-import org.openremote.model.datapoint.NumberDatapoint;
+import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.value.Value;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
@@ -53,7 +53,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     }
 
     @Override
-    public NumberDatapoint[] getNumberDatapoints(@BeanParam RequestParams requestParams,
+    public ValueDatapoint<Value>[] getDatapoints(@BeanParam RequestParams requestParams,
                                                  String assetId,
                                                  String attributeName,
                                                  DatapointInterval interval,
@@ -79,11 +79,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 new WebApplicationException(Response.Status.NOT_FOUND)
             );
 
-            if (!Datapoint.isDatapointsCapable(attribute) || !attribute.isStoreDatapoints()) {
-                throw new WebApplicationException(Response.Status.BAD_REQUEST);
-            }
-
-            return assetDatapointService.aggregateDatapoints(
+            return assetDatapointService.getValueDatapoints(
                 attribute,
                 interval,
                 timestamp

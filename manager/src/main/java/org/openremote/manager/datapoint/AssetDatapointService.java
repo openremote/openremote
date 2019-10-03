@@ -14,29 +14,31 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.datapoint.AssetDatapoint;
-import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointInterval;
-import org.openremote.model.datapoint.NumberDatapoint;
+import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributeMetaPredicate;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 import org.postgresql.util.PGInterval;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
-import java.sql.*;
-import java.text.SimpleDateFormat;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -118,8 +120,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                                       Asset asset,
                                       AssetAttribute attribute,
                                       Source source) throws AssetProcessingException {
-        if (Datapoint.isDatapointsCapable(attribute)
-                && attribute.isStoreDatapoints()
+        if (attribute.isStoreDatapoints()
                 && attribute.getStateEvent().isPresent()
                 && attribute.getStateEvent().get().getValue().isPresent()) { // Don't store datapoints with null value
             LOG.finest("Storing datapoint for: " + attribute);
@@ -168,63 +169,61 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
         });
     }
 
-    public NumberDatapoint[] aggregateDatapoints(AssetAttribute attribute,
-                                                 DatapointInterval datapointInterval,
-                                                 long timestamp) {
-        LOG.fine("Aggregating datapoints for: " + attribute);
+    public ValueDatapoint[] getValueDatapoints(AssetAttribute attribute,
+                                               DatapointInterval datapointInterval,
+                                               long timestamp) {
 
         AttributeRef attributeRef = attribute.getReferenceOrThrow();
+        ValueType attributeValueType = attribute.getTypeOrThrow().getValueType();
+
+        LOG.fine("Getting datapoints for: " + attributeRef);
 
         return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<NumberDatapoint[]>() {
+                entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<ValueDatapoint[]>() {
                     @Override
-                    public NumberDatapoint[] execute(Connection connection) throws SQLException {
+                    public ValueDatapoint[] execute(Connection connection) throws SQLException {
 
                         String truncateX;
                         String step;
                         String interval;
-                        Function<Timestamp, String> labelFunction;
 
-                        SimpleDateFormat dayFormat = new SimpleDateFormat("dd. MMM yyyy");
-                        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
                         switch (datapointInterval) {
                             case HOUR:
                                 truncateX = "minute";
                                 step = "1 minute";
                                 interval = "1 hour";
-                                labelFunction = timeFormat::format;
                                 break;
                             case DAY:
                                 truncateX = "hour";
                                 step = "1 hour";
                                 interval = "1 day";
-                                labelFunction = timeFormat::format;
                                 break;
                             case WEEK:
                                 truncateX = "day";
                                 step = "1 day";
                                 interval = "7 day";
-                                labelFunction = dayFormat::format;
                                 break;
                             case MONTH:
                                 truncateX = "day";
                                 step = "1 day";
                                 interval = "1 month";
-                                labelFunction = dayFormat::format;
                                 break;
                             case YEAR:
                                 truncateX = "month";
                                 step = "1 month";
                                 interval = "1 year";
-                                labelFunction = dayFormat::format;
                                 break;
                             default:
                                 throw new IllegalArgumentException("Can't handle interval: " + datapointInterval);
                         }
 
                         StringBuilder query = new StringBuilder();
+                        boolean downsample = attributeValueType == ValueType.NUMBER || attributeValueType == ValueType.BOOLEAN;
 
-                        query.append("select TS as X, coalesce(AVG_VALUE, null) as Y " +
+                        if (downsample) {
+
+                            // TODO: Change this to use something like this max min decimation algorithm https://knowledge.ni.com/KnowledgeArticleDetails?id=kA00Z0000019YLKSA2&l=en-GB)
+                            query.append("select TS as X, coalesce(AVG_VALUE, null) as Y " +
                                 " from ( " +
                                 "       select date_trunc(?, GS)::timestamp TS " +
                                 "       from generate_series(to_timestamp(?) - ?, to_timestamp(?), ?) GS " +
@@ -233,18 +232,13 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                                 "       select " +
                                 "           date_trunc(?, to_timestamp(TIMESTAMP / 1000))::timestamp as TS, ");
 
-                        switch (attribute.getTypeOrThrow().getValueType()) {
-                            case NUMBER:
+                            if (attributeValueType == ValueType.NUMBER) {
                                 query.append(" AVG(VALUE::text::numeric) as AVG_VALUE ");
-                                break;
-                            case BOOLEAN:
+                            } else {
                                 query.append(" AVG(case when VALUE::text::boolean is true then 1 else 0 end) as AVG_VALUE ");
-                                break;
-                            default:
-                                throw new IllegalArgumentException("Can't aggregate number datapoints for type of: " + attribute);
-                        }
+                            }
 
-                        query.append(" from ASSET_DATAPOINT " +
+                            query.append(" from ASSET_DATAPOINT " +
                                 "         where " +
                                 "           to_timestamp(TIMESTAMP / 1000) >= to_timestamp(?) - ? " +
                                 "           and " +
@@ -254,31 +248,48 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                                 "         group by TS " +
                                 "  ) DP using (TS) " +
                                 " order by TS asc "
-                        );
+                            );
+                        } else {
+                            query.append("select distinct to_timestamp(TIMESTAMP / 1000) AS X, value AS Y from ASSET_DATAPOINT " +
+                                "where " +
+                                "to_timestamp(TIMESTAMP / 1000) >= to_timestamp(?) - ? " +
+                                "and " +
+                                "to_timestamp(TIMESTAMP / 1000) <= to_timestamp(?) " +
+                                "and " +
+                                "ENTITY_ID = ? and ATTRIBUTE_NAME = ? "
+                            );
+                        }
 
                         try (PreparedStatement st = connection.prepareStatement(query.toString())) {
 
                             long timestampSeconds = timestamp / 1000;
-                            st.setString(1, truncateX);
-                            st.setLong(2, timestampSeconds);
-                            st.setObject(3, new PGInterval(interval));
-                            st.setLong(4, timestampSeconds);
-                            st.setObject(5, new PGInterval(step));
-                            st.setString(6, truncateX);
-                            st.setLong(7, timestampSeconds);
-                            st.setObject(8, new PGInterval(interval));
-                            st.setLong(9, timestampSeconds);
-                            st.setString(10, attributeRef.getEntityId());
-                            st.setString(11, attributeRef.getAttributeName());
+                            if (downsample) {
+                                st.setString(1, truncateX);
+                                st.setLong(2, timestampSeconds);
+                                st.setObject(3, new PGInterval(interval));
+                                st.setLong(4, timestampSeconds);
+                                st.setObject(5, new PGInterval(step));
+                                st.setString(6, truncateX);
+                                st.setLong(7, timestampSeconds);
+                                st.setObject(8, new PGInterval(interval));
+                                st.setLong(9, timestampSeconds);
+                                st.setString(10, attributeRef.getEntityId());
+                                st.setString(11, attributeRef.getAttributeName());
+                            } else {
+                                st.setLong(1, timestampSeconds);
+                                st.setObject(2, new PGInterval(interval));
+                                st.setLong(3, timestampSeconds);
+                                st.setString(4, attributeRef.getEntityId());
+                                st.setString(5, attributeRef.getAttributeName());
+                            }
 
                             try (ResultSet rs = st.executeQuery()) {
-                                List<NumberDatapoint> result = new ArrayList<>();
+                                List<ValueDatapoint<?>> result = new ArrayList<>();
                                 while (rs.next()) {
-                                    String label = labelFunction.apply(rs.getTimestamp(1));
-                                    Number value = rs.getObject(2) != null ? rs.getDouble(2) : null;
-                                    result.add(new NumberDatapoint(label, value));
+                                    Value value = rs.getObject(2) != null ? Values.parseOrNull(rs.getString(2)) : null;
+                                    result.add(new ValueDatapoint<>(rs.getTimestamp(1).getTime(), value));
                                 }
-                                return result.toArray(new NumberDatapoint[result.size()]);
+                                return result.toArray(new ValueDatapoint[result.size()]);
                             }
                         }
                     }

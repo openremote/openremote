@@ -20,10 +20,9 @@
 package org.openremote.model.datapoint;
 
 import jsinterop.annotations.JsType;
-import org.openremote.model.datapoint.DatapointInterval;
-import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
+import org.openremote.model.value.Value;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
@@ -39,8 +38,7 @@ public interface AssetDatapointResource {
      * authenticated realm, the superuser can access assets in other (all) realms. A 403 status is returned if a
      * regular user tries to access an asset in a realm different than its authenticated realm, or if the user is
      * restricted and the asset is not linked to the user. A 400 status is returned if the asset attribute does
-     * not have datapoint storage enabled or is not capable of historical datapoints
-     * (see {@link org.openremote.model.datapoint.Datapoint#isDatapointsCapable}).
+     * not have datapoint storage enabled.
      */
     @GET
     @Path("{assetId}/attribute/{attributeName}")
@@ -48,7 +46,7 @@ public interface AssetDatapointResource {
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
     @SuppressWarnings("unusable-by-js")
-    NumberDatapoint[] getNumberDatapoints(@BeanParam RequestParams requestParams,
+    ValueDatapoint<Value>[] getDatapoints(@BeanParam RequestParams requestParams,
                                           @PathParam("assetId") String assetId,
                                           @PathParam("attributeName") String attributeName,
                                           @QueryParam("interval") DatapointInterval datapointInterval,

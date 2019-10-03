@@ -19,9 +19,10 @@
  */
 package org.openremote.model.datapoint;
 
-import org.openremote.model.attribute.*;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
 
 import javax.persistence.Column;
 import javax.persistence.Id;
@@ -39,23 +40,6 @@ import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 @MappedSuperclass
 @IdClass(Datapoint.class)
 public abstract class Datapoint implements Serializable {
-
-    /**
-     * @return <code>true</code> if datapoints can be stored and analyzed/displayed for the given value type.
-     */
-    public static boolean isDatapointsCapable(ValueType valueType) {
-        switch (valueType) {
-            case NUMBER:
-            case BOOLEAN:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    public static boolean isDatapointsCapable(Attribute attribute) {
-        return attribute.getType().map(attributeType -> isDatapointsCapable(attributeType.getValueType())).orElse(false);
-    }
 
     @Id
     @Column(name = "ENTITY_ID", length = 36, nullable = false)
