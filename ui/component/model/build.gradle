@@ -2,7 +2,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect
 import cz.habarta.typescript.generator.Jackson2Configuration
 
 apply plugin: "groovy"
-apply plugin: 'cz.habarta.typescript-generator'
+apply plugin: "cz.habarta.typescript-generator"
 
 buildscript {
     repositories {
@@ -10,21 +10,18 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'cz.habarta.typescript-generator:typescript-generator-gradle-plugin:2.13.489'
+        classpath "cz.habarta.typescript-generator:typescript-generator-gradle-plugin:$typescriptGeneratorVersion"
     }
 }
 
 dependencies {
     compile resolveProject(":model")
     compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"    
-    compile 'cz.habarta.typescript-generator:typescript-generator-core:2.13.489'
+    compile "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
 }
 
 generateTypeScript {
     jsonLibrary = "jackson2"
-    classes = [
-            "org.openremote.model.http.RequestParams"
-    ]
     classPatterns = [
             "org.openremote.model.**"
     ]

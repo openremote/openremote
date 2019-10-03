@@ -1,5 +1,5 @@
 apply plugin: "groovy"
-apply plugin: 'cz.habarta.typescript-generator'
+apply plugin: "cz.habarta.typescript-generator"
 
 buildscript {
     repositories {
@@ -7,37 +7,80 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'cz.habarta.typescript-generator:typescript-generator-gradle-plugin:2.13.489'
+        classpath "cz.habarta.typescript-generator:typescript-generator-gradle-plugin:$typescriptGeneratorVersion"
     }
 }
 
 dependencies {
     compile resolveProject(":model")
-    compile 'cz.habarta.typescript-generator:typescript-generator-core:2.13.489'
+    compile "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
+}
+
+task generateTypescriptModelInfo(type: cz.habarta.typescript.generator.gradle.GenerateTask) {
+    classPatterns = [
+        "org.openremote.model.**"
+    ]
+    jsonLibrary = "jackson2"
+    outputKind = "module"
+    generateInfoJson = true
+    excludeClassPatterns = [
+        "org.openremote.model.http.*Constraint**",
+        "org.openremote.model.event.shared.*Filter**",
+        "org.openremote.model.util.**",
+        "org.openremote.model.flow.**",
+        "org.openremote.model.interop.**",
+        "org.openremote.model.value.impl.**",
+        "org.openremote.model.**Resource**"
+    ]
+    customTypeNamingFunction = "function(name, simpleName) { if (name.indexOf(\"\$\") > 0) return name.substr(name.lastIndexOf(\".\")+1).replace(\"\$\",\"\"); }"
+    customTypeMappings = [
+        "org.openremote.model.value.ObjectValue:{ [id: string]: any }",
+        "org.openremote.model.value.ArrayValue:any[]",
+        "org.openremote.model.value.NumberValue:number",
+        "org.openremote.model.value.StringValue:string",
+        "org.openremote.model.value.BooleanValue:boolean",
+        "org.openremote.model.value.Value:any",
+        "org.openremote.model.attribute.Meta:MetaItem[]"
+    ]
+    optionalProperties = "all" // TODO: cleanup model to be more explicit about optional params
+    mapEnum = cz.habarta.typescript.generator.EnumMapping.asEnum
+    jackson2Modules = [
+        "com.fasterxml.jackson.datatype.jdk8.Jdk8Module",
+        "org.openremote.model.ModelModule"
+    ]
 }
 
 generateTypeScript {
+    dependsOn generateTypescriptModelInfo
     jsonLibrary = "jackson2"
+    customTypeNamingFunction = "function(name, simpleName) { if (name.indexOf(\"\$\") > 0) return name.substr(name.lastIndexOf(\".\")+1).replace(\"\$\",\"\"); }"
     classPatterns = [
-            "org.openremote.model.**Resource"
+        "org.openremote.model.**Resource"
     ]
     customTypeMappings = [
-            "org.openremote.model.value.ObjectValue:object",
-            "org.openremote.model.value.ArrayValue:Array<any>",
-            "org.openremote.model.value.NumberValue:number",
-            "org.openremote.model.value.StringValue:string",
-            "org.openremote.model.value.BooleanValue:boolean",
-            "org.openremote.model.value.Value:any"
+        "org.openremote.model.value.ObjectValue:{ [id: string]: any }",
+        "org.openremote.model.value.ArrayValue:any[]",
+        "org.openremote.model.value.NumberValue:number",
+        "org.openremote.model.value.StringValue:string",
+        "org.openremote.model.value.BooleanValue:boolean",
+        "org.openremote.model.value.Value:any",
+        "org.openremote.model.attribute.Meta:MetaItem[]"
+    ]
+    moduleDependencies = [
+        new cz.habarta.typescript.generator.ModuleDependency(
+            "@openremote/model",
+            "Model",
+            new File("$buildDir/typescript-generator/typescript-generator-info.json"),
+            (String)null,
+            (String)null
+        )
     ]
     outputFile = "src/restclient.ts"
     outputFileType = "implementationFile"
     outputKind = "module"
     mapEnum = cz.habarta.typescript.generator.EnumMapping.asEnum
-    jaxrsNamespacing = "perResource"
-    customTypeProcessor = "JaxRsClientOnlyProcessor"
-    importDeclarations = [
-            "import * as Model from \"@openremote/model\""
-    ]
+    restNamespacing = "perResource"
     extensions = [
         "AggregatedApiClient",
         "cz.habarta.typescript.generator.ext.AxiosClientExtension"
