@@ -204,10 +204,11 @@ export function getQueryParameter(name: string): string {
     return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
-export function getAssetAttribute(asset: Asset, attributeName: string): Attribute | undefined {
+export function getAssetAttribute(asset: Asset, attributeName: string): AssetAttribute | undefined {
     if (asset.attributes && asset.attributes.hasOwnProperty(attributeName)) {
-        const attr = asset.attributes[attributeName] as Attribute;
+        const attr = asset.attributes[attributeName] as AssetAttribute;
         attr.name = attributeName;
+        attr.assetId = asset.id;
         return attr;
     }
 }

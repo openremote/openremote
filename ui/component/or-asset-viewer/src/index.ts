@@ -1,25 +1,40 @@
-import {customElement, html, LitElement, property, PropertyValues, TemplateResult, query} from "lit-element";
+import {customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
 import "@openremote/or-select";
 import "@openremote/or-icon";
 import "@openremote/or-input";
 import "@openremote/or-attribute-input";
+import "@openremote/or-attribute-history";
+import {getAttributeLabel} from "@openremote/or-attribute-input";
 import "@openremote/or-translate";
 import {translate} from "@openremote/or-translate/dist/translate-mixin";
-import {InputType, OrInput} from "@openremote/or-input";
-import {Asset, AttributeEvent, AssetEvent, Attribute, AssetAttribute, AttributeType, MetaItemType} from "@openremote/model";
+import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
+import {
+    Asset,
+    AssetAttribute,
+    AssetEvent,
+    Attribute,
+    AttributeEvent,
+    AttributeType,
+    MetaItemType,
+    AttributeValueType
+} from "@openremote/model";
 import {style} from "./style";
-import "./components/or-panel";
+import "@openremote/or-panel";
 import openremote from "@openremote/core";
 import rest from "@openremote/rest";
 import {subscribe} from "@openremote/core/dist/asset-mixin";
-import {getAssetAttributes, getFirstMetaItem} from "@openremote/core/dist/util";
+import {getAssetAttribute, getAssetAttributes, getFirstMetaItem} from "@openremote/core/dist/util";
 import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import "@openremote/or-map";
 import {Type as MapType} from "@openremote/or-map";
 import {getLngLat} from "@openremote/or-map/dist/util";
+import {OrAttributeHistory, HistoryConfig} from "@openremote/or-attribute-history";
+
+export type PanelType = "property" | "location" | "attribute" | "history";
 
 export interface PanelConfig {
+    type?: PanelType;
     scrollable?: boolean;
     hide?: boolean;
     include?: string[];
@@ -29,46 +44,88 @@ export interface PanelConfig {
     fieldStyles?: { [field: string]: { [style: string]: string } };
 }
 
+export interface AssetViewerConfig {
+    panels: {[name: string] : PanelConfig};
+    viewerStyles?: { [style: string]: string };
+}
+
 export interface ViewerConfig {
-    default?: {[name: string]: PanelConfig};
-    assetTypes?: { [assetType: string]: {[name: string]: PanelConfig} };
-    propertyViewProvider?: (property: string, value: any) => TemplateResult | undefined;
-    attributeViewProvider?: (attribute: Attribute) => TemplateResult | undefined;
-    assetNameProvider?: (id: string) => string;
+    default?: AssetViewerConfig;
+    assetTypes?: { [assetType: string]: AssetViewerConfig };
+    propertyViewProvider?: (property: string, value: any, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
+    attributeViewProvider?: (attribute: Attribute, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
+    panelViewProvider?: (attributes: AssetAttribute[], panelName: string, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     mapType?: MapType;
+    historyConfig?: HistoryConfig;
 }
 
 @customElement("or-asset-viewer")
 export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitElement)) {
 
-    public static DEFAULT_CONFIG: {[name: string]: PanelConfig} = {
-        "info": {
-            fieldStyles: {
-                name: {
-                    width: "60%"
-                },
-                createdOn: {
-                    width: "40%",
-                    paddingLeft: "20px",
-                    boxSizing: "border-box"
-                }
-            }
-        },
-        "location": {
-            scrollable: false,
-            include: ["location"],
-            fieldStyles: {
-                location: {
-                    height: "100%",
-                    margin: "0"
-                }
-            }
-        },
-        "attributes": {
+    public static DEFAULT_MAP_TYPE = MapType.VECTOR;
+    public static DEFAULT_PANEL_TYPE: PanelType = "attribute";
 
+    public static DEFAULT_CONFIG: AssetViewerConfig = {
+        viewerStyles: {
+            gridTemplateColumns: "repeat(12, 1fr)",
+            gridTemplateRows: "auto minmax(0, 1fr) minmax(0, 50%)"
         },
-        "history": {
-            scrollable: false,
+        panels: {
+            "info": {
+                type: "property",
+                panelStyles: {
+                    gridColumnStart: "1",
+                    gridColumnEnd: "7",
+                    gridRowStart: "1",
+                    gridRowEnd: "2",
+                },
+                fieldStyles: {
+                    name: {
+                        width: "60%"
+                    },
+                    createdOn: {
+                        width: "40%",
+                        paddingLeft: "20px",
+                        boxSizing: "border-box"
+                    }
+                }
+            },
+            "location": {
+                type: "location",
+                scrollable: false,
+                include: ["location"],
+                panelStyles: {
+                    gridColumnStart: "7",
+                    gridColumnEnd: "13",
+                    gridRowStart: "1",
+                    gridRowEnd: "3",
+                },
+                fieldStyles: {
+                    location: {
+                        height: "100%",
+                        margin: "0"
+                    }
+                }
+            },
+            "attributes": {
+                type: "attribute",
+                panelStyles: {
+                    gridColumnStart: "1",
+                    gridColumnEnd: "7",
+                    gridRowStart: "2",
+                    gridRowEnd: "4"
+                }
+            },
+            "history": {
+                type: "history",
+                panelStyles: {
+                    gridColumnStart: "7",
+                    gridColumnEnd: "13",
+                    gridRowStart: "3",
+                    gridRowEnd: "4",
+                },
+                scrollable: false,
+            }
         }
     };
 
@@ -101,6 +158,11 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
     @property()
     protected _loading: boolean = false;
 
+    @query("#history-attribute-picker")
+    protected _historyAttributePicker?: OrInput;
+    @query("#attribute-history")
+    protected _attributeHistory?: OrAttributeHistory;
+
     protected render() {
 
         if (this._loading) {
@@ -121,16 +183,30 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
             `;
         }
 
-        const panelConfigs = this._getPanelConfig(this.asset!);
+        const viewerConfig = this._getPanelConfig(this.asset!);
         const attributes = getAssetAttributes(this.asset);
 
         return html`
-            <div id="container">
-            ${html`${Object.entries(panelConfigs).map(([name, config]) => {
-                const panelTemplate = this._getPanel(name, config, this._getPanelContent(name, attributes, config));
+            <div id="container" style="${viewerConfig.viewerStyles ? styleMap(viewerConfig.viewerStyles) : ""}">
+            ${html`${Object.entries(viewerConfig.panels).map(([name, panelConfig]) => {
+                const panelTemplate = this._getPanel(name, panelConfig, this._getPanelContent(attributes, name, viewerConfig, panelConfig));
                 return panelTemplate || ``;
             })}`
             }`;
+    }
+
+    protected updated(_changedProperties: PropertyValues) {
+        super.updated(_changedProperties);
+
+        if (_changedProperties.has("assetId")) {
+            this.asset = undefined;
+            if (this.assetId) {
+                this._loading = true;
+                super.assetIds = [this.assetId];
+            } else {
+                super.assetIds = undefined;
+            }
+        }
     }
 
     protected _getInfoProperties(config?: PanelConfig): string[] {
@@ -150,74 +226,169 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
 
         return html`
             <div class="panel" id="${name}-panel" style="${config && config.panelStyles ? styleMap(config.panelStyles) : ""}">
-            
-                <div class="panel-title">
-                    <or-translate value="${name}"></or-translate>
-                </div>
-                ${!config || config.scrollable === undefined || config.scrollable ? html`
-                    <or-panel class="panel-content-wrapper">
-                        <div class="panel-content">
-                            ${content}
-                        </div>
-                    </or-panel>
-                `: html`
-                    <div class="panel-content">
-                        ${content}
-                    </div>                    
-                `}
+                ${content}
             </div>
         `;
     }
 
-    protected _getPanelContent(panelName: string, attributes: AssetAttribute[], config: PanelConfig): TemplateResult | undefined {
-        if (config.hide || attributes.length === 0) {
+    protected _getPanelContent(attributes: AssetAttribute[], panelName: string, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig): TemplateResult | undefined {
+        if (panelConfig.hide || attributes.length === 0) {
             return;
         }
 
-        let styles = config ? config.fieldStyles : undefined;
+        if (this.config && this.config.panelViewProvider) {
+            const template = this.config.panelViewProvider(attributes, panelName, viewerConfig, panelConfig);
+            if (template) {
+                return template;
+            }
+        }
 
-        // Special handling for info panel which only shows properties
-        if (panelName === "info") {
-            let properties = this._getInfoProperties(config);
+        let styles = panelConfig ? panelConfig.fieldStyles : undefined;
+
+        const includedAttributes = panelConfig && panelConfig.include ? panelConfig.include : undefined;
+        const excludedAttributes = panelConfig && panelConfig.exclude ? panelConfig.exclude : [];
+        const attrs = attributes.filter((attr) =>
+            (!includedAttributes || includedAttributes.indexOf(attr.name!) >= 0)
+            && (!excludedAttributes || excludedAttributes.indexOf(attr.name!) < 0));
+
+        let innerContent: TemplateResult | undefined;
+
+        if (panelConfig && panelConfig.type === "property") {
+            // Special handling for info panel which only shows properties
+            let properties = this._getInfoProperties(panelConfig);
 
             if (properties.length === 0) {
                 return;
             }
 
-            return html`
+            innerContent = html`
                 ${properties.map((prop) => {
                 let style = styles ? styles[prop!] : undefined;
-                return prop === "attributes" ? `` : this._getField(prop, true, style, this._getPropertyTemplate(prop, (this.asset! as {[index: string]:any})[prop]));
+                return prop === "attributes" ? `` : this._getField(prop, true, style, this._getPropertyTemplate(prop, (this.asset! as {[index: string]:any})[prop], viewerConfig, panelConfig));
             })}
+            `;
+        } else if (panelConfig && panelConfig.type === "history") {
+            // Special handling for history panel which shows an attribute selector and a graph/data table of historical values
+            const historyAttrs = attrs.filter((attr) => getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
+            if (historyAttrs.length > 0) {
+                innerContent = html`
+                    <style>
+                        #history-container {
+                            height: 100%;
+                            width: 100%;
+                            display: flex;
+                            flex-direction: column;
+                        }
+                        
+                        #history-controls {
+                            margin-bottom: 10px;
+                        }
+                        
+                        #history-attribute-picker {
+                            flex: 0;
+                        }
+                        
+                        or-attribute-history {
+                            height: 100%;
+                        }
+                    </style>
+                    <div id="history-container">
+                        <div id="history-controls">
+                            <or-input id="history-attribute-picker" @or-input-changed="${(evt: OrInputChangedEvent) => this._historyAttributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${historyAttrs.map((attr) => [attr.name, getAttributeLabel(attr)])}"></or-input>
+                        </div>        
+                        <or-attribute-history id="attribute-history" .config="${this.config ? this.config.historyConfig : undefined}" .assetType="${this.asset!.type}"></or-attribute-history>
+                    </div>
+                `;
+            }
+        } else if (panelConfig && panelConfig.type === "location") {
+            const attribute = attrs.find((attr) => attr.name === AttributeType.LOCATION.attributeName);
+            if (attribute) {
+                // Special handling for location panel which shows an attribute selector and a map showing the location of the attribute
+                const mapType = this.config && this.config.mapType ? this.config.mapType : OrAssetViewer.DEFAULT_MAP_TYPE;
+                const lngLat = getLngLat(attribute);
+                const center = lngLat ? lngLat.toArray() : undefined;
+                const showOnMapMeta = getFirstMetaItem(attribute, MetaItemType.SHOW_ON_DASHBOARD.urn!);
+
+                return html`
+                    <style>
+                        #location-container {
+                            height: 100%;
+                            width: 100%;
+                            display: flex;
+                            flex-direction: column;
+                        }
+                        #location-container > or-map {
+                            flex: 1;
+                            border: #dbdbdb 1px solid;
+                        }
+                        #location-map-input {
+                            flex: 0 0 auto;
+                            padding: 20px 0 0 0;
+                        }
+                    </style>
+                    <div id="location-container">
+                        <or-map id="location-map" class="or-map" .center="${center}" type="${mapType}">
+                             <or-map-marker-asset active .asset="${this.asset}"></or-map-marker-asset>
+                        </or-map>
+                        ${attribute.name === AttributeType.LOCATION.attributeName ? html`
+                            <or-input id="location-map-input" type="${InputType.SWITCH}" readonly dense .value="${showOnMapMeta ? showOnMapMeta.value : undefined}" label="${i18next.t("showOnMap")}"></or-input>
+                        ` : ``}                    
+                    </div>
+                `;
+            }
+        } else {
+            innerContent = html`
+                ${attrs.sort((attr1, attr2) => attr1.name! < attr2.name! ? -1 : attr1.name! > attr2.name! ? 1 : 0).map((attr) => {
+                    let style = styles ? styles[attr.name!] : undefined;
+                    return this._getField(attr.name!, false, style, this._getAttributeTemplate(attr, viewerConfig, panelConfig));
+                })}
             `;
         }
 
-        // Special handling for history panel
-        if (panelName === "history") {
-            return html``;
+        if (!innerContent) {
+            return;
         }
 
-        const includedAttributes = config && config.include ? config.include : undefined;
-        const excludedAttributes = config && config.exclude ? config.exclude : [];
-        const attrs = attributes.filter((attr) =>
-            (!includedAttributes || includedAttributes.indexOf(attr.name!) >= 0)
-            && (!excludedAttributes || excludedAttributes.indexOf(attr.name!) < 0));
-
         return html`
-            ${attrs.sort((attr1, attr2) => attr1.name! < attr2.name! ? -1 : attr1.name! > attr2.name! ? 1 : 0).map((attr) => {
-            let style = styles ? styles[attr.name!] : undefined;
-            return this._getField(attr.name!, false, style, this._getAttributeTemplate(panelName, attr));
-        })}
+            <div class="panel-title">
+                <or-translate value="${name}"></or-translate>
+            </div>
+            ${!panelConfig || panelConfig.scrollable === undefined || panelConfig.scrollable ? html`
+                <or-panel class="panel-content-wrapper">
+                    <div class="panel-content">
+                        ${innerContent}
+                    </div>
+                </or-panel>
+            `: html`
+                <div class="panel-content-wrapper">
+                    <div class="panel-content">
+                        ${innerContent}
+                    </div>
+                </div>
+            `}
         `;
     }
 
-    protected _getPropertyTemplate(property: string, value: any) {
+    protected _historyAttributeChanged(attributeName: string | undefined) {
+        if (this._historyAttributePicker && this._attributeHistory) {
+
+            let attribute: AssetAttribute | undefined;
+
+            if (attributeName) {
+                attribute = getAssetAttribute(this.asset!, attributeName);
+            }
+
+            this._attributeHistory.attribute = attribute;
+        }
+    }
+
+    protected _getPropertyTemplate(property: string, value: any, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) {
         let type = InputType.TEXT;
         let minLength: number | undefined;
         let maxLength: number | undefined;
 
         if (this.config && this.config.propertyViewProvider) {
-            const result = this.config.propertyViewProvider(property, value);
+            const result = this.config.propertyViewProvider(property, value, viewerConfig, panelConfig);
             if (result) {
                 return result;
             }
@@ -254,47 +425,16 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
         return html`<or-input id="property-${property}" type="${type}" .minLength="${minLength}" .maxLength="${maxLength}" dense .value="${value}" readonly label="${i18next.t(property)}"></or-input>`;
     }
 
-    protected _getAttributeTemplate(panel: string, attribute: AssetAttribute) {
+    protected _getAttributeTemplate(attribute: AssetAttribute, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) {
         if (this.config && this.config.attributeViewProvider) {
-            const result = this.config.attributeViewProvider(attribute);
+            const result = this.config.attributeViewProvider(attribute, viewerConfig, panelConfig);
             if (result) {
                 return result;
             }
         }
 
-        // Special control for main asset location attribute when shown in the location panel
-        if (panel === "location" && attribute.name === AttributeType.LOCATION.attributeName) {
-
-            const mapType = this.config && this.config.mapType ? this.config.mapType : MapType.VECTOR;
-            const lngLat = getLngLat(attribute);
-            const center = lngLat ? lngLat.toArray() : undefined;
-            const showOnMapMeta = getFirstMetaItem(attribute, MetaItemType.SHOW_ON_DASHBOARD.urn!);
-
-            return html`
-                <style>
-                    #location-map-container {
-                        height: 100%;
-                        width: 100%;
-                        display: flex;
-                        flex-direction: column;
-                    }
-                    #location-map-container > or-map {
-                        flex: 1;
-                        border: #dbdbdb 1px solid;
-                    }
-                    #location-map-input {
-                        flex: 0 0 auto;
-                        padding: 20px 0 0 0;
-                    }
-                </style>
-                <div id="location-map-container">
-                    <or-map id="location-map" class="or-map" .center="${center}" type="${mapType}">
-                         <or-map-marker-asset active .asset="${this.asset}"></or-map-marker-asset>
-                    </or-map>
-                    <or-input id="location-map-input" type="${InputType.SWITCH}" readonly dense .value="${showOnMapMeta ? showOnMapMeta.value : undefined}" label="${i18next.t("showOnMap")}"></or-input>                    
-                </div>
-            `;
-        }
+        // Default panel type
+        const panelType = panelConfig ? panelConfig.type : OrAssetViewer.DEFAULT_PANEL_TYPE;
 
         return html`
             <or-attribute-input dense .assetType="${this.asset!.type}" .attribute="${attribute}" .label="${i18next.t(attribute.name!)}"></or-attribute-input>
@@ -313,20 +453,7 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
         `;
     }
 
-    protected updated(_changedProperties: PropertyValues) {
-        super.updated(_changedProperties);
-
-        if (_changedProperties.has("assetId")) {
-            this.asset = undefined;
-            if (this.assetId) {
-                this._loading = true;
-                super.assetIds = [this.assetId];
-            } else {
-                super.assetIds = undefined;
-            }
-        }
-    }
-
+    // TODO: Add debounce in here to minimise render calls
     public onAttributeEvent(event: AttributeEvent) {
         const attrName = event.attributeState!.attributeRef!.attributeName!;
 
@@ -348,12 +475,33 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
         this._loading = false;
     }
 
-    protected _getPanelConfig(asset: Asset) {
-        let config = this.config && this.config.default ? Object.assign({...OrAssetViewer.DEFAULT_CONFIG}, this.config.default) : {...OrAssetViewer.DEFAULT_CONFIG};
-
+    protected _getPanelConfig(asset: Asset): AssetViewerConfig {
+        let config = {...OrAssetViewer.DEFAULT_CONFIG};
         if (this.config) {
+            if (!config.viewerStyles) {
+                config.viewerStyles = {};
+            }
+            if (!config.panels) {
+                config.panels = {};
+            }
             if (this.config.assetTypes && this.config.assetTypes.hasOwnProperty(asset.type!)) {
-                config =  Object.assign(config, this.config.assetTypes[asset.type!]);
+                const assetConfig = this.config.assetTypes[asset.type!];
+                if (assetConfig.viewerStyles) {
+                    Object.assign(config.viewerStyles, assetConfig.viewerStyles);
+                }
+                if (assetConfig.panels) {
+                    Object.entries(assetConfig.panels).forEach(([name, assetPanelConfig]) => {
+                        if (config.panels.hasOwnProperty(name)) {
+                            const panelStyles = {...config.panels[name].panelStyles};
+                            const fieldStyles = {...config.panels[name].fieldStyles};
+                            Object.assign(config.panels[name], {...assetPanelConfig});
+                            config.panels[name].panelStyles = Object.assign(panelStyles, assetPanelConfig.panelStyles);
+                            config.panels[name].fieldStyles = Object.assign(fieldStyles, assetPanelConfig.fieldStyles);
+                        } else {
+                            config.panels[name] = {...assetPanelConfig};
+                        }
+                    });
+                }
             }
         }
 
@@ -361,10 +509,6 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
     }
 
     protected async _getAssetNames(ids: string[]): Promise<string[]> {
-        if (this.config && this.config.assetNameProvider) {
-            return ids.map((id) => this.config!.assetNameProvider!(id));
-        }
-
         const response = await rest.api.AssetResource.queryAssets({
             select: {
                 excludePath: true,

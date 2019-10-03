@@ -13,10 +13,11 @@
     { "path": "../core" },
     { "path": "../rest" },
     { "path": "../or-select" },
+    { "path": "../or-panel" },
     { "path": "../or-translate" },
     { "path": "../or-icon" },
     { "path": "../or-map" },
-    { "path": "../or-input" },
-    { "path": "../or-attribute-input" }
+    { "path": "../or-attribute-input" },
+    { "path": "../or-attribute-history" }
   ]
 }

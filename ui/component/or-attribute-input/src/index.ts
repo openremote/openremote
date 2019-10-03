@@ -9,13 +9,19 @@ import {
     AttributeValueDescriptor,
     AttributeValueType,
     MetaItemType,
-    ValueType
+    ValueType,
+    Attribute
 } from "@openremote/model";
 import openremote, {AssetModelUtil} from "@openremote/core";
 import {subscribe} from "@openremote/core/dist/asset-mixin";
 import "@openremote/or-select";
 import "@openremote/or-input";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
+
+export function getAttributeLabel(attribute: Attribute, fallback?: string): string {
+    const labelMetaValue = AssetModelUtil.getMetaValue(MetaItemType.LABEL, attribute.meta);
+    return i18next.t([attribute!.name!, fallback || labelMetaValue || attribute!.name!]);
+}
 
 // Allows consuming applications to provide custom UI for certain attributes; if the value is changed the custom control
 // must call the valueChangeNotifier.
@@ -184,7 +190,7 @@ export class OrAttributeInput extends subscribe(openremote)(translate(i18next)(L
                         // TODO: Update to use 'effective' meta so not dependent on meta items being defined on the asset itself
                         this._min = AssetModelUtil.getMetaValue(MetaItemType.RANGE_MIN, this.attribute.meta);
                         this._max = AssetModelUtil.getMetaValue(MetaItemType.RANGE_MAX, this.attribute.meta);
-                        this._label = AssetModelUtil.getMetaValue(MetaItemType.LABEL, this.attribute.meta);
+                        this._label = getAttributeLabel(this.attribute);
                         this._readonly = AssetModelUtil.getMetaValue(MetaItemType.READ_ONLY, this.attribute.meta);
                         this._allowedValues = AssetModelUtil.getMetaValue(MetaItemType.ALLOWED_VALUES, this.attribute.meta);
 
@@ -267,7 +273,7 @@ export class OrAttributeInput extends subscribe(openremote)(translate(i18next)(L
                 value = this._valueOutboundConverter(this.attribute.value);
             }
 
-            return html`<or-input .type="${this._inputType}" .label="${i18next.t([this.attribute!.name!, this._label || this.attribute!.name!])}" .value="${value}" .allowedValues="${this._allowedValues}" .min="${this._min}" .max="${this._max}" .readonly="${this.readonly || this._readonly}" .disabled="${this.disabled}" .dense="${this.dense}" @or-input-changed="${(e: OrInputChangedEvent) => this.onValueChange(e.detail.value)}"></or-input>`;
+            return html`<or-input .type="${this._inputType}" .label="${this._label}" .value="${value}" .allowedValues="${this._allowedValues}" .min="${this._min}" .max="${this._max}" .readonly="${this.readonly || this._readonly}" .disabled="${this.disabled}" .dense="${this.dense}" @or-input-changed="${(e: OrInputChangedEvent) => this.onValueChange(e.detail.value)}"></or-input>`;
         }
 
         return html`<span>INPUT TYPE NOT IMPLEMENTED</span>`;
