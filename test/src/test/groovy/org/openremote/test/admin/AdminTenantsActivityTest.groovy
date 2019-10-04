@@ -274,10 +274,10 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
             "Test Name"
         }
         1 * adminTenantView.getTenantRealm() >> {
-            return "testrealm"
+            "testrealm"
         }
         1 * adminTenantView.getTenantEnabled() >> {
-            return true
+            true
         }
 
         and: "The success toast should be shown"

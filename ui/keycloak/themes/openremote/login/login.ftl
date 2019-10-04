@@ -15,7 +15,7 @@
                                autofocus
                                autocomplete="off"
                                autocapitalize="off"
-                               name="username" value="${(login.username!'')?html}" type="text" disabled/>
+                               name="username" value="${(login.username!'')}" type="text" disabled/>
                     <#else>
                         <input id="username"
                                autofocus
@@ -23,7 +23,7 @@
                                autocapitalize="off"
                                required
                                class="validate"
-                               name="username" value="${(login.username!'')?html}" type="text" autofocus/>
+                               name="username" value="${(login.username!'')}" type="text" autofocus/>
                     </#if>
                     <label for="username"><#if !realm.registrationEmailAsUsername>${msg("usernameOrEmail")}<#else>${msg("email")}</#if></label>
                 </div>

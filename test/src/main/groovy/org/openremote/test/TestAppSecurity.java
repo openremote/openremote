@@ -21,7 +21,7 @@ package org.openremote.test;
 
 import groovy.lang.Closure;
 import org.keycloak.adapters.KeycloakDeployment;
-import org.keycloak.adapters.rotation.AdapterRSATokenVerifier;
+import org.keycloak.adapters.rotation.AdapterTokenVerifier;
 import org.keycloak.representations.AccessToken;
 import org.openremote.app.client.AppSecurity;
 import org.openremote.model.Constants;
@@ -48,7 +48,7 @@ public class TestAppSecurity implements AppSecurity {
     protected void updateAccessToken() {
         token = accessTokenClosure.call();
         try {
-            accessToken = AdapterRSATokenVerifier.verifyToken(token, keycloakDeployment);
+            accessToken = AdapterTokenVerifier.verifyToken(token, keycloakDeployment);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }

@@ -338,7 +338,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     public void configureRealm(RealmRepresentation realmRepresentation, int accessTokenLifespanSeconds) {
         realmRepresentation.setDisplayNameHtml(
-            "<span>" + (realmRepresentation.getDisplayName().replaceAll("[^A-Za-z0-9]", "")) + " </span>"
+            realmRepresentation.getDisplayName().replaceAll("[^A-Za-z0-9]", "")
         );
         realmRepresentation.setAccessTokenLifespan(accessTokenLifespanSeconds);
         realmRepresentation.setLoginTheme("openremote");

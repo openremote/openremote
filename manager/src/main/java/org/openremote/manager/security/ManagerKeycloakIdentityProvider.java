@@ -27,6 +27,7 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
+import org.openremote.container.security.AuthForm;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ClientRequestInfo;
@@ -65,6 +66,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     final protected MessageBrokerService messageBrokerService;
     final protected ClientEventService clientEventService;
     final protected ConsoleAppService consoleAppService;
+    final protected String accessToken;
 
     public ManagerKeycloakIdentityProvider(UriBuilder externalServerUri, Container container) {
         super(KEYCLOAK_CLIENT_ID, externalServerUri, container);
@@ -75,6 +77,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         this.messageBrokerService = container.getService(MessageBrokerService.class);
         this.clientEventService = container.getService(ClientEventService.class);
         this.consoleAppService = container.getService(ConsoleAppService.class);
+
+        accessToken = getKeycloak().getAccessToken(
+                MASTER_REALM, new AuthForm("admin-cli", MASTER_REALM_ADMIN_USER, "secret")
+        ).getToken();
 
         enableAuthProxy(container.getService(WebService.class));
     }
@@ -349,38 +355,38 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void updateTenant(ClientRequestInfo clientRequestInfo, String realm, Tenant tenant) {
+    public void updateTenant(String remoteAddress, String realm, Tenant tenant) {
         LOG.fine("Update tenant: " + tenant);
-        getRealms(clientRequestInfo).realm(realm).update(
+        getRealms(new ClientRequestInfo(remoteAddress, accessToken)).realm(realm).update(
             convert(Container.JSON, RealmRepresentation.class, tenant)
         );
         publishModification(PersistenceEvent.Cause.UPDATE, tenant);
     }
 
     @Override
-    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant) {
-        createTenant(clientRequestInfo, tenant, null);
+    public void createTenant(String remoteAddress, Tenant tenant) {
+        createTenant(remoteAddress, tenant, null);
     }
 
     @Override
-    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, TenantEmailConfig emailConfig) {
+    public void createTenant(String remoteAddress, Tenant tenant, TenantEmailConfig emailConfig) {
         LOG.fine("Create tenant: " + tenant);
         RealmRepresentation realmRepresentation = convert(Container.JSON, RealmRepresentation.class, tenant);
         configureRealm(realmRepresentation, emailConfig);
 
         // TODO This is not atomic, write compensation actions
-        getRealms(clientRequestInfo).create(realmRepresentation);
-        createClientApplication(clientRequestInfo, realmRepresentation.getRealm());
+        getRealms(new ClientRequestInfo(remoteAddress, accessToken)).create(realmRepresentation);
+        createClientApplication(new ClientRequestInfo(null, accessToken), realmRepresentation.getRealm());
 
         publishModification(PersistenceEvent.Cause.CREATE, tenant);
     }
 
     @Override
-    public void deleteTenant(ClientRequestInfo clientRequestInfo, String realm) {
+    public void deleteTenant(String remoteAddress, String realm) {
         Tenant tenant = getTenant(realm);
         if (tenant != null) {
             LOG.fine("Delete tenant: " + realm);
-            getRealms(clientRequestInfo).realm(realm).remove();
+            getRealms(new ClientRequestInfo(remoteAddress, accessToken)).realm(realm).remove();
             publishModification(PersistenceEvent.Cause.DELETE, tenant);
         }
     }

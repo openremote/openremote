@@ -42,6 +42,8 @@ dependencies {
     compile "org.hibernate:hibernate-core:$hibernateVersion"
     compile "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
 
+    compile "javax.el:javax.el-api:3.0.0"
+
     compile "org.apache.camel:camel-core:$camelVersion"
     compile "org.apache.camel:camel-jackson:$camelVersion"
 

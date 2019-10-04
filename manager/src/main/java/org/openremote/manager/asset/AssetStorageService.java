@@ -891,7 +891,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         boolean includeRealmInfo = !query.select.excludeRealm;
 
         if (level == 1) {
-            sb.append(" from ASSET A ");
+            sb.append(" from Asset A ");
         } else if (level == 2) {
             sb.append(" from top_level_assets P ");
             sb.append("join ASSET A on A.PARENT_ID = P.ID ");

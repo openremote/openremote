@@ -128,23 +128,23 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public void updateTenant(ClientRequestInfo clientRequestInfo, String realm, Tenant tenant) {
+    public void updateTenant(String remoteAddress, String realm, Tenant tenant) {
         throw new UnsupportedOperationException("This provider does not support multiple tenants");
 
     }
 
     @Override
-    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant) {
+    public void createTenant(String remoteAddress, Tenant tenant) {
         throw new UnsupportedOperationException("This provider does not support multiple tenants");
     }
 
     @Override
-    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, TenantEmailConfig emailConfig) {
+    public void createTenant(String remoteAddress, Tenant tenant, TenantEmailConfig emailConfig) {
         throw new UnsupportedOperationException("This provider does not support multiple tenants");
     }
 
     @Override
-    public void deleteTenant(ClientRequestInfo clientRequestInfo, String realm) {
+    public void deleteTenant(String remoteAddress, String realm) {
         throw new UnsupportedOperationException("This provider does not support multiple tenants");
     }
 

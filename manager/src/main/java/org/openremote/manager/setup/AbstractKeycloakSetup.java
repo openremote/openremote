@@ -97,8 +97,8 @@ public abstract class AbstractKeycloakSetup implements Setup {
         ).getToken();
 
         masterRealmResource = keycloakProvider.getRealms(accessToken).realm(MASTER_REALM);
-        masterClientsResource = keycloakProvider.getRealms(accessToken).realm(MASTER_REALM).clients();
-        masterUsersResource = keycloakProvider.getRealms(accessToken).realm(MASTER_REALM).users();
+        masterClientsResource = masterRealmResource.clients();
+        masterUsersResource = masterRealmResource.users();
     }
 
     protected String getClientObjectId(ClientsResource clientsResource) {

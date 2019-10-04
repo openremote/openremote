@@ -82,8 +82,8 @@ ENV JBOSS_HOME /opt/jboss/keycloak
 # Switch to jboss user
 USER jboss
 
-ENV KEYCLOAK_VERSION 2.5.5.Final
-ENV POSTGRESQL_DRIVER_VERSION 42.1.4
+ENV KEYCLOAK_VERSION 6.0.1
+ENV POSTGRESQL_DRIVER_VERSION 42.2.4
 
 # Enables signals getting passed from startup script to JVM
 # ensuring clean shutdown when container is stopped.
@@ -108,10 +108,10 @@ RUN java -jar /usr/share/java/saxon.jar \
     /opt/jboss/keycloak/standalone/configuration/standalone-ha.xml \
     /opt/jboss/keycloak/changeDatabase.xsl && \
     rm /opt/jboss/keycloak/changeDatabase.xsl
-RUN mkdir -p /opt/jboss/keycloak/modules/system/layers/base/org/postgresql/jdbc/main && \
-    curl -o /opt/jboss/keycloak/modules/system/layers/base/org/postgresql/jdbc/main/postgresql-jdbc.jar \
+RUN mkdir -p /opt/jboss/keycloak/modules/system/layers/keycloak/org/postgresql/main && \
+    curl -o /opt/jboss/keycloak/modules/system/layers/keycloak/org/postgresql/main/postgresql-jdbc.jar \
     http://repo1.maven.org/maven2/org/postgresql/postgresql/${POSTGRESQL_DRIVER_VERSION}/postgresql-${POSTGRESQL_DRIVER_VERSION}.jar 2>/dev/null
-ADD module.xml /opt/jboss/keycloak/modules/system/layers/base/org/postgresql/jdbc/main/
+ADD module.xml /opt/jboss/keycloak/modules/system/layers/keycloak/org/postgresql/main/
 
 ADD setProxyForwarding.xsl /opt/jboss/keycloak/
 RUN java -jar /usr/share/java/saxon.jar \

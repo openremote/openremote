@@ -2,7 +2,7 @@
 
 <xsl:stylesheet version="2.0"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:ds="urn:jboss:domain:datasources:4.0">
+                xmlns:ds="urn:jboss:domain:datasources:5.0">
 
     <xsl:output method="xml" indent="yes"/>
 
@@ -30,7 +30,7 @@
     <xsl:template match="//ds:subsystem/ds:datasources/ds:drivers">
         <xsl:copy>
             <xsl:apply-templates select="node()|@*"/>
-            <ds:driver name="postgresql" module="org.postgresql.jdbc">
+            <ds:driver name="postgresql" module="org.postgresql">
                 <ds:xa-datasource-class>org.postgresql.xa.PGXADataSource</ds:xa-datasource-class>
             </ds:driver>
         </xsl:copy>

@@ -67,13 +67,13 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     Tenant getTenant(String realm);
 
-    void updateTenant(ClientRequestInfo clientRequestInfo, String realm, Tenant tenant);
+    void updateTenant(String remoteAddress, String realm, Tenant tenant);
 
-    void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant);
+    void createTenant(String remoteAddress, Tenant tenant);
 
-    void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, TenantEmailConfig emailConfig);
+    void createTenant(String remoteAddress, Tenant tenant, TenantEmailConfig emailConfig);
 
-    void deleteTenant(ClientRequestInfo clientRequestInfo, String realm);
+    void deleteTenant(String remoteAddress, String realm);
 
     boolean isTenantActiveAndAccessible(AuthContext authContext, Tenant tenant);
 

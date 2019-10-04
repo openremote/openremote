@@ -248,11 +248,8 @@ services:
   # Keycloak identity provider
   keycloak:
 
-    # Image will be built when not already in the cache or when `--build` option is supplied to `docker-compose up`
-    build: '../keycloak'
-
     # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
-    image: openremote/keycloak:${DATE_TAG:-latest}
+    image: jboss/keycloak:7.0.0
 
     environment:
 
@@ -270,13 +267,19 @@ services:
       # SETUP_ADMIN_PASSWORD: # Allow override on CLI
 
       # Configure how Keycloak connects to the database
-      POSTGRES_DATABASE: openremote
-      POSTGRES_USER: openremote
-      POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
+      DB_VENDOR: POSTGRES
+      DB_ADDR: postgresql
+      DB_PORT: 5432
+      DB_DATABASE: openremote
+      DB_USER: openremote
+      DB_SCHEMA: public
+      DB_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: secret
 
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: '-Xms300m -Xmx300m
-                  -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
+                  -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=200m
                   -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m
                   -XX:MaxDirectMemorySize=25m
                   -XX:NativeMemoryTracking=summary
