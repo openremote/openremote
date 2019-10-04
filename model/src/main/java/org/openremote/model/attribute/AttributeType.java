@@ -76,7 +76,7 @@ public enum AttributeType implements AttributeDescriptor {
             null)),
 
     TAGS(
-        "tags", AttributeValueType.ARRAY,
+        "assetTags", AttributeValueType.ARRAY,
         LABEL.withInitialValue(Values.create("Asset Tags")),
         DESCRIPTION.withInitialValue(Values.create("List of tags associated with an asset"))
     );

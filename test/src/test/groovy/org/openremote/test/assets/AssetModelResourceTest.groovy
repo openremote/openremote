@@ -81,7 +81,7 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
         def attributeTypeDescriptors = assetModelResource.getAttributeDescriptors(null)
 
         then: "the default types should be present"
-        attributeTypeDescriptors.size() == 12
+        attributeTypeDescriptors.size() == 13
         attributeTypeDescriptors.any {it.attributeName == "consoleName"}
         attributeTypeDescriptors.any {it.attributeName == "consoleVersion"}
         attributeTypeDescriptors.any {it.attributeName == "consolePlatform"}
@@ -93,7 +93,8 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
         attributeTypeDescriptors.any {it.attributeName == "street"}
         attributeTypeDescriptors.any {it.attributeName == "location"}
         attributeTypeDescriptors.any {it.attributeName == "surfaceArea"}
-        attributeTypeDescriptors.any {it.attributeName == "status"}
+        attributeTypeDescriptors.any {it.attributeName == "assetStatus"}
+        attributeTypeDescriptors.any {it.attributeName == "assetTags"}
 
         when: "a request for Attribute value types is made"
 
