@@ -18,10 +18,7 @@ Before following this quickstart make sure you have [prepared your environment](
 We publish Docker images to [Docker Hub](https://hub.docker.com/u/openremote/):
 
 ```
-docker pull openremote/postgresql
-docker pull openremote/keycloak
-docker pull openremote/proxy
-docker pull openremote/manager
+docker-compose pull
 ```
 
 To run OpenRemote using Docker Hub images, execute the following command from the checked out root project directory:
