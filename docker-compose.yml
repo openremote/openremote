@@ -82,8 +82,7 @@ services:
       file: profile/deploy.yml
       service: manager
     depends_on:
-      keycloak:
-        condition: service_healthy
+     - keycloak
     volumes:
       - deployment-data:/deployment
 

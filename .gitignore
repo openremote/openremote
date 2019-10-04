@@ -1,6 +1,7 @@
 *~
 .DS_*
 .local/
+.vscode/
 local.properties
 openremote.log
 dive.log
