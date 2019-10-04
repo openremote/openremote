@@ -110,7 +110,7 @@ export const style = css`
         box-sizing: border-box;
     }
     
-    #loading, #noneselected {
+    .msg {
         display: flex;
         justify-content: center;
         align-items: center;

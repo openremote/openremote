@@ -142,6 +142,12 @@ export class OrInput extends LitElement {
     @property({type: Array})
     public options?: string[] | [string, string][];
 
+    @property({type: Boolean})
+    public noEmpty?: boolean;
+
+    @property({type: Boolean})
+    public noAutoSize?: boolean;
+
     /* STYLING PROPERTIES BELOW */
 
     @property({type: String})
@@ -234,7 +240,7 @@ export class OrInput extends LitElement {
                     `;
                 case InputType.SELECT:
                     return html`
-                        <or-select .required="${this.required}" .options="${this.options}" .value="${this._processedValue}" .readonly="${this.readonly}" @or-select-changed="${(e: OrSelectChangedEvent) => this.onValueChange(e.detail.value)}"></or-select>
+                        <or-select .required="${this.required}" .noEmpty="${this.noEmpty}" .noAutoSize="${this.noAutoSize}" .options="${this.options}" .value="${this._processedValue}" .readonly="${this.readonly}" @or-select-changed="${(e: OrSelectChangedEvent) => this.onValueChange(e.detail.value)}"></or-select>
                     `;
                 case InputType.BUTTON:
                 case InputType.BUTTON_MOMENTARY: {

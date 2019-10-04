@@ -34,6 +34,7 @@ export interface TableColumnConfig {
     path?: string;
     stringify?: boolean;
     styles?: { [style: string]: string };
+    headerStyles?: { [style: string]: string };
     contentProvider?: (datapoint: ValueDatapoint<any>, value: any, config: TableColumnConfig) => TemplateResult | any | undefined;
 }
 
@@ -93,6 +94,7 @@ const style = css`
         display: flex;
         width: 100%;
         height: 100%;
+        flex-direction: column;
     }
     
     #container > * {
@@ -102,6 +104,13 @@ const style = css`
     #msg {
         height: 100%;
         width: 100%;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+    
+    #msg:not([hidden]) {
+        display: flex;    
     }
        
     #history-wrapper:not([hidden]) {
@@ -243,7 +252,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
         return html`
             <div id="container">
-                <div id="msg" ?hidden="${!this._loading && hasData}"><or-translate value="${this._loading ? "loading" : "noData"}"></or-translate></div>
+                <div id="msg" ?hidden="${!this._loading && hasData}">
+                    <or-translate value="${this._loading ? "loading" : "noData"}"></or-translate>
+                </div>
                 <div id="history-wrapper" ?hidden="${this._loading || !hasData}">
                     <div id="chart-controls">
                         <or-input .type="${InputType.SELECT}" .options="${this._getIntervalOptions()}"></or-input>
@@ -454,7 +465,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 <table style="${config.styles ? styleMap(config.styles) : ""}" class="mdc-data-table__table" aria-label="${attributeName + " history"}">
                     <thead>
                         <tr class="mdc-data-table__header-row">
-                            ${config.columns.map((c) => html`<th style="${c.styles ? styleMap(c.styles) : ""}" class="mdc-data-table__header-cell ${c.numeric ? "mdc-data-table__header-cell--numeric" : ""}" role="columnheader" scope="col"><or-translate value="${c.header}"></or-translate></th>`)}
+                            ${config.columns.map((c) => html`<th style="${c.headerStyles ? styleMap(c.headerStyles) : ""}" class="mdc-data-table__header-cell ${c.numeric ? "mdc-data-table__header-cell--numeric" : ""}" role="columnheader" scope="col"><or-translate value="${c.header}"></or-translate></th>`)}
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
