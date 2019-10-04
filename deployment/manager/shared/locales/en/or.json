@@ -72,13 +72,12 @@
   "confirmDeleteAssets": "Remove assets?",
   "ok": "OK",
   "cancel": "Cancel",
-  "loading": "Loading",
   "createdOn": "Created on",
   "accessPublicRead": "Public read",
   "type": "Type",
   "path": "Path",
   "showOnMap": "Show on map",
   "noAssetSelected": "Please select an asset on the left",
-  "loading": "Loading..."
+  "loading": "Loading...",
   "location": "Location"
 }
