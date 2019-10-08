@@ -27,6 +27,7 @@ import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.security.*;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -67,13 +68,13 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     Tenant getTenant(String realm);
 
-    void updateTenant(String remoteAddress, String realm, Tenant tenant);
+    void updateTenant(ClientRequestInfo clientRequestInfo, String realm, Tenant tenant) throws Exception;
 
-    void createTenant(String remoteAddress, Tenant tenant);
+    void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant) throws Exception;
 
-    void createTenant(String remoteAddress, Tenant tenant, TenantEmailConfig emailConfig);
+    void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, TenantEmailConfig emailConfig) throws Exception;
 
-    void deleteTenant(String remoteAddress, String realm);
+    void deleteTenant(ClientRequestInfo clientRequestInfo, String realm) throws Exception;
 
     boolean isTenantActiveAndAccessible(AuthContext authContext, Tenant tenant);
 

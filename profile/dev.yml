@@ -8,7 +8,7 @@
 # - Mount the proxy-data volume in a new container and edit proxy configuration files
 # - Change the proxy configuration to a directory mount and edit configuration files
 #
-version: '2.2'
+version: '2.4'
 
 volumes:
   proxy-data:

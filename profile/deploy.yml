@@ -4,7 +4,7 @@
 # configuration to complete it with service dependencies and volume
 # mappings, see docker-compose.yml for a usable complete configuration.
 #
-version: '2.2'
+version: '2.4'
 
 services:
 
@@ -248,8 +248,12 @@ services:
   # Keycloak identity provider
   keycloak:
 
+    # Image will be built when not already in the cache or when `--build` option is supplied to `docker-compose up`
+    build: '../keycloak'
+
     # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
-    image: jboss/keycloak:7.0.0
+    image: openremote/keycloak:${DATE_TAG:-latest}
+    #image: jboss/keycloak:7.0.0
 
     environment:
 
@@ -260,14 +264,11 @@ services:
       # Switch to DEBUG to diagnose Keycloak problems.
       KEYCLOAK_LOGLEVEL: INFO
 
-      # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
-      SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
-
       # When you are ready to permanently install your project, replace it with the next line ...
       # SETUP_ADMIN_PASSWORD: # Allow override on CLI
 
       # Configure how Keycloak connects to the database
-      DB_VENDOR: POSTGRES
+      DB_VENDOR: postgres
       DB_ADDR: postgresql
       DB_PORT: 5432
       DB_DATABASE: openremote
@@ -275,7 +276,10 @@ services:
       DB_SCHEMA: public
       DB_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
       KEYCLOAK_USER: admin
-      KEYCLOAK_PASSWORD: secret
+      PROXY_ADDRESS_FORWARDING: 'true'
+
+      # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
+      KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
 
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: '-Xms300m -Xmx300m
@@ -294,6 +298,8 @@ services:
     logging:
         options:
             max-size: 10m
+    ports:
+      - "8081:8080"
 
   # PostgreSQL DBMS
   postgresql:

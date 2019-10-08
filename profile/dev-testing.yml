@@ -3,7 +3,7 @@
 #
 # Run this in the background for full ./gradlew clean build
 #
-version: '2.2'
+version: '2.4'
 
 volumes:
   postgresql-data:

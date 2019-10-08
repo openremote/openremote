@@ -24,6 +24,8 @@ import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.HTTP;
 
+import javax.ws.rs.core.HttpHeaders;
+
 /**
  * This client will always set the configured Host header on all outgoing requests.
  * We use this to emulate a reverse proxy that "preserves" the Host header. Using a

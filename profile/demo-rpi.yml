@@ -3,7 +3,7 @@
 #
 # TODO: Needs updating for fast JDK9 aarch32 JVM, or JDK8 aarch64 JVM
 #
-version: '2.2'
+version: '2.4'
 
 services:
 

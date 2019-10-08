@@ -38,6 +38,26 @@ public class AuthForm {
     public AuthForm() {
     }
 
+    public AuthForm setClientId(String clientId) {
+        this.clientId = clientId;
+        return this;
+    }
+
+    public AuthForm setUsername(String username) {
+        this.username = username;
+        return this;
+    }
+
+    public AuthForm setPassword(String password) {
+        this.password = password;
+        return this;
+    }
+
+    public AuthForm setGrantType(String grantType) {
+        this.grantType = grantType;
+        return this;
+    }
+
     public AuthForm(String clientId, String username, String password) {
         this(clientId, username, password, "password");
     }

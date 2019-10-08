@@ -2,7 +2,7 @@
 # Profile for doing development work on raster map components.
 #
 # https://localhost:8082
-version: '2.2'
+version: '2.4'
 
 services:
 

@@ -38,7 +38,7 @@
 #
 # Your extension JAR files should be in the deployment/manager/extensions/ directory.
 #
-version: '2.2'
+version: '2.4'
 
 # If you enable volume mappings in services, you need this. Otherwise, remove the volumes
 volumes:
@@ -82,7 +82,8 @@ services:
       file: profile/deploy.yml
       service: manager
     depends_on:
-     - keycloak
+      keycloak:
+        condition: service_healthy
     volumes:
       - deployment-data:/deployment
 
