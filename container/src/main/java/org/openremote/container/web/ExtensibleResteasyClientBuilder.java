@@ -91,7 +91,7 @@ public class ExtensibleResteasyClientBuilder extends ResteasyClientBuilder {
                 };
             } else if (that.clientKeyStore != null || that.truststore != null) {
                 SSLContext ctx = SSLContexts.custom()
-                    .useProtocol(SSLConnectionSocketFactory.TLS)
+                    .setProtocol(SSLConnectionSocketFactory.TLS)
                     .setSecureRandom(null)
                     .loadKeyMaterial(that.clientKeyStore,
                         that.clientPrivateKeyPassword != null ? that.clientPrivateKeyPassword.toCharArray() : null)
