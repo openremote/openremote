@@ -11,9 +11,7 @@ import {
     RuleActionUnion, AssetDescriptor, AttributeDescriptor, RuleActionWriteAttribute
 } from "@openremote/model";
 import i18next from "i18next";
-import {OrSelectChangedEvent} from "@openremote/or-select";
-import {OrAttributeInput} from "@openremote/or-attribute-input";
-import {OrInputChangedEvent} from "@openremote/or-input/dist";
+import {OrInputChangedEvent, InputType} from "@openremote/or-input";
 
 @customElement("or-rule-actions")
 class OrRuleActions extends LitElement {
@@ -58,7 +56,7 @@ class OrRuleActions extends LitElement {
             if (action.target.ruleConditionTag) {
                 currentTarget = ActionTargetType.TAGGED_ASSETS;
                 if (!hideTargetOptions) {
-                    targetRhsTemplate = html`<or-select @or-select-changed="${(e: OrSelectChangedEvent) => this.setActionTriggerTag(action, e.detail.value)}" ?readonly="${this.readonly}" options="${this.getTriggerTags}" value="${action.target.ruleConditionTag}"></or-select>`;
+                    targetRhsTemplate = html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionTriggerTag(action, e.detail.value)}" ?readonly="${this.readonly}" .options="${this.getTriggerTags}" .value="${action.target.ruleConditionTag}"></or-input>`;
                 }
             } else if (action.target.users) {
                 currentTarget = ActionTargetType.USERS;
@@ -77,7 +75,7 @@ class OrRuleActions extends LitElement {
             const translatedAllowedTargets = allowedTargets.map((at) => [at, i18next.t(at)] as [string, string]);
             targetTemplate = html`
                 <div class="rule-action-target">
-                    <span><or-translate value="target"></or-translate>: </span><or-select id="actionTargetSelect" @or-select-changed="${(e: OrSelectChangedEvent) => this.setActionTarget(action, e.detail.value as ActionTargetType)}" ?readonly="${this.readonly}" .options="${translatedAllowedTargets}" value="${currentTarget}"></or-select>
+                    <span><or-translate value="target"></or-translate>: </span><or-select id="actionTargetSelect" type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionTarget(action, e.detail.value as ActionTargetType)}" ?readonly="${this.readonly}" .options="${translatedAllowedTargets}" .value="${currentTarget}"></or-select>
                     ${targetRhsTemplate}
                 </div>
             `;
@@ -122,11 +120,11 @@ class OrRuleActions extends LitElement {
                 const attributeNames = attributeDescriptors.map((ad) => [ad.attributeName, i18next.t(ad.attributeName!)]);
                 const assetType = assetTypes.length > 0 ? assetTypes[0][0] : undefined;
 
-                const attributeInput = this.config && this.config.inputProvider && action.attributeName ? this.config.inputProvider(assetType!, action.attributeName, attributeDescriptors.find((ad) => ad.attributeName === action.attributeName)!, action.value, (value: any) => this.setActionAttributeValue(action, value), this.readonly || false) : undefined;
+                const attributeInput = this.config && this.config.inputProvider && action.attributeName ? this.config.inputProvider(assetType!, action.attributeName, attributeDescriptors.find((ad) => ad.attributeName === action.attributeName)!, action.value, (value: any) => this.setActionAttributeValue(action, value), this.readonly || false, false) : undefined;
 
                 actionTemplate = html`
-                    <or-select @or-select-changed="${(e: OrSelectChangedEvent) => this.setActionAttributeName(action, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributeNames}" .value="${action.attributeName}"></or-select>
-                    ${action.attributeName ? attributeInput ? attributeInput : html`<or-attribute-input @or-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeValue(action, e.detail.value)}" ?readonly="${this.readonly}" .assetType="${assetType}" .attributeName="${action.attributeName}" .value="${action.value}"></or-attribute-input>` : ``}                     
+                    <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(action, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributeNames}" .value="${action.attributeName}"></or-input>
+                    ${action.attributeName ? attributeInput ? attributeInput : html`<or-input @or-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeValue(action, e.detail.value)}" ?readonly="${this.readonly}" .assetType="${assetType}" .attributeName="${action.attributeName}" .value="${action.value}"></or-input>` : ``}                     
                 `;
 
                 if (action.action === "update-attribute" && !hideUpdateOptions) {

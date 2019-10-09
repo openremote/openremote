@@ -496,12 +496,16 @@ export class OrInput extends LitElement {
                 case InputType.JSON:
                 case InputType.NUMBER:
                 case InputType.RANGE:
-                    newValue = JSON.parse(newValue);
+                    newValue = newValue !== "" ? JSON.parse(newValue) : null;
                     break;
                 case InputType.DATETIME:
-                    const date = Date.parse(newValue);
-                    const offset = (new Date()).getTimezoneOffset() * 60000;
-                    newValue = date + offset;
+                    if (newValue === "") {
+                        newValue = null;
+                    } else {
+                        const date = Date.parse(newValue);
+                        const offset = (new Date()).getTimezoneOffset() * 60000;
+                        newValue = date + offset;
+                    }
                     break;
             }
         }

@@ -93,16 +93,13 @@ export class OrSelect extends LitElement {
         if (_changedProperties.has("options") || _changedProperties.has("value")) {
             let val = this.value;
 
-            if (this.options.length === 1 || (!this.noEmpty && !val)) {
+            let index: number;
+            if (this.options.length === 1 || (this.noEmpty && !val)) {
                 const opt = this.options[0];
                 const firstValue = Array.isArray(opt) ? opt[0] : opt;
                 if (this.value !== firstValue) {
                     val = firstValue;
                 }
-            }
-
-            let index: number;
-            if (this.options.length === 1 || (this.noEmpty && !val)) {
                 index = 0;
             } else {
                 index = this.options.findIndex((opt: string | [string, string]) => {
@@ -110,12 +107,12 @@ export class OrSelect extends LitElement {
                     return value === val;
                 });
 
-                if(!this.noEmpty) {
+                if (!this.noEmpty) {
                     index = index + 1;
                 }
             }
 
-            const indexChanged = this._select.selectedIndex != index;
+            const indexChanged = this._select.selectedIndex !== index;
             this._select.selectedIndex = index;
 
             if (val !== this.value) {

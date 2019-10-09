@@ -61,13 +61,14 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
                 return;
             }
 
+            const isAttributes = !!this._attributeRefs;
             const ids: string[] | AttributeRef[] | undefined = this._attributeRefs ? this._attributeRefs : this._assetIds;
 
             if (ids && ids.length > 0) {
-                this._assetSubscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAssetEvents(ids, true, (event) => this._onAssetEvent(event));
-                this._attributeSubscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAttributeEvents(ids, false, (event) => this._onAttributeEvent(event));
-            } else if (this._attributeRefs && this._attributeRefs.length > 0) {
-
+                if (!isAttributes) {
+                    this._assetSubscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAssetEvents(ids, true, (event) => this._onAssetEvent(event));
+                }
+                this._attributeSubscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAttributeEvents(ids, isAttributes, (event) => this._onAttributeEvent(event));
             }
             this.onStatusChange(EventProviderStatus.CONNECTED);
         }

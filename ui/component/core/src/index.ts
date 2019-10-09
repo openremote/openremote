@@ -7,7 +7,8 @@ import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEvent
 import i18next from "i18next";
 import i18nextXhr from "i18next-xhr-backend";
 import {AssetDescriptor, AttributeDescriptor, AttributeValueDescriptor, MetaItemDescriptor, Asset, AssetAttribute,
-    MetaItem} from "@openremote/model";
+    MetaItem,
+    Attribute} from "@openremote/model";
 import * as Util from "./util";
 
 export declare type KeycloakPromise<T> = {
@@ -185,7 +186,11 @@ export class AssetModelUtil {
         });
     }
 
-    public static getAttributeValueDescriptorFromAsset(name: string, assetType?: string, attributeName?: string) : AttributeValueDescriptor | undefined {
+    public static getAttributeValueDescriptorFromAsset(name: string | undefined, assetType?: string, attributeName?: string): AttributeValueDescriptor | undefined {
+        if (!name) {
+            return;
+        }
+
         if (attributeName) {
             const attributeDescriptor = this.getAttributeDescriptorFromAsset(attributeName, assetType);
             if (attributeDescriptor) {
@@ -216,15 +221,18 @@ export class AssetModelUtil {
         return attributeValueDescriptor1.name === attributeValueDescriptor2.name && attributeValueDescriptor1.valueType === attributeValueDescriptor2.valueType;
     }
 
-    public static getMetaValue(metaItemUrn: string | MetaItemDescriptor, metaItems: MetaItem[] | undefined): any {
-        if (!metaItems) {
-            return;
-        }
-
+    public static getMetaValue(metaItemUrn: string | MetaItemDescriptor, attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined): any {
         const urn = typeof metaItemUrn === "string" ? metaItemUrn : (metaItemUrn as MetaItemDescriptor).urn;
 
-        const mi = metaItems.find((mi) => mi.name === urn);
-        return mi ? mi.value : undefined;
+        if (attribute && attribute.meta) {
+            const metaItem = attribute.meta.find((mi) => mi.name === urn);
+            return metaItem ? metaItem.value : undefined;
+        }
+
+        if (descriptor && descriptor.metaItemDescriptors) {
+            const metaItemDescriptor = descriptor.metaItemDescriptors.find((mid) => mid.urn === urn);
+            return metaItemDescriptor ? metaItemDescriptor.initialValue : undefined;
+        }
     }
 
     public static getMetaInitialValueFromMetaDescriptors(metaItemUrn: MetaItemDescriptor | string, metaItemDescriptors: MetaItemDescriptor[] | undefined): any | undefined {

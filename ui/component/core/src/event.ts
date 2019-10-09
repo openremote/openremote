@@ -219,15 +219,15 @@ abstract class EventProviderImpl implements EventProvider {
             eventType: "asset"
         };
 
-        if (ids && ids.length > 0) {
+        const isAttributeRef = ids && typeof ids[0] !== "string";
+        const assetIds = isAttributeRef ? (ids as AttributeRef[]).map((id) => id.entityId!) : ids as string[] | null;
+
+        if (assetIds && assetIds.length > 0) {
             subscription.filter = {
                 filterType: "asset-id",
                 assetIds: ids
             };
         }
-
-        const isAttributeRef = ids && typeof ids[0] !== "string";
-        const assetIds = isAttributeRef ? (ids as AttributeRef[]).map((id) => id.entityId!) : ids as string[] | null;
 
         let subscriptionId: string | null = null;
 
@@ -278,7 +278,7 @@ abstract class EventProviderImpl implements EventProvider {
 
         try {
             subscriptionId = await this.subscribe(subscription, (evt) => {
-                if(attributes) {
+                if (attributes) {
                     // Filter events for these attributes
                     const eventRef = evt.attributeState!.attributeRef!;
                     if (attributes.findIndex((attrRef) => eventRef.entityId === attrRef.entityId && eventRef.attributeName === attrRef.attributeName) >= 0) {

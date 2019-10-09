@@ -109,7 +109,7 @@ export interface RulesConfig {
         hideWhenAddGroup?: boolean;
         hideWhenGroupOutline?: boolean;
     };
-    inputProvider?: (assetType: string, attributeName: string, attributeDescriptor: AttributeDescriptor | undefined, value: any | undefined, valueChangeNotifier: (value: any) => void, readonly: boolean) => TemplateResult | undefined;
+    inputProvider?: (assetType: string, attributeName: string, attributeDescriptor: AttributeDescriptor | undefined, value: any | undefined, valueChangeNotifier: (value: any) => void, readonly: boolean, disabled: boolean) => TemplateResult | undefined;
     descriptors?: {
         all?: RulesDescriptorSection;
         when?: RulesDescriptorSection;
