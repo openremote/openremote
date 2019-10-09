@@ -345,7 +345,7 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
                     </style>
                     <div id="history-container">
                         <div id="history-controls">
-                            <or-input id="history-attribute-picker" noempty @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${historyAttrs.map((attr) => [attr.name, getAttributeLabel(attr)])}"></or-input>
+                            <or-input id="history-attribute-picker" noempty @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${historyAttrs.map((attr) => [attr.name, getAttributeLabel(attr, undefined)])}"></or-input>
                         </div>        
                         <or-attribute-history id="attribute-history" .config="${viewerConfig.historyConfig}" .assetType="${asset.type}"></or-attribute-history>
                     </div>
