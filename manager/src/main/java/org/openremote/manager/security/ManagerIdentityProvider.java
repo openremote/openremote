@@ -68,13 +68,13 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     Tenant getTenant(String realm);
 
-    void updateTenant(ClientRequestInfo clientRequestInfo, String realm, Tenant tenant) throws Exception;
+    void updateTenant(ClientRequestInfo clientRequestInfo, String realm, Tenant tenant);
 
-    void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant) throws Exception;
+    void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant);
 
-    void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, TenantEmailConfig emailConfig) throws Exception;
+    void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, TenantEmailConfig emailConfig);
 
-    void deleteTenant(ClientRequestInfo clientRequestInfo, String realm) throws Exception;
+    void deleteTenant(ClientRequestInfo clientRequestInfo, String realm);
 
     boolean isTenantActiveAndAccessible(AuthContext authContext, Tenant tenant);
 

@@ -358,7 +358,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void updateTenant(ClientRequestInfo clientRequestInfo, String realm, Tenant tenant) throws VerificationException {
+    public void updateTenant(ClientRequestInfo clientRequestInfo, String realm, Tenant tenant) {
         LOG.fine("Update tenant: " + tenant);
 
         getRealms(new ClientRequestInfo(clientRequestInfo.getRemoteAddress(), getRealmAdminToken(realm, clientRequestInfo))).realm(realm).update(
@@ -368,12 +368,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant) throws VerificationException {
+    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant) {
         createTenant(clientRequestInfo, tenant, null);
     }
 
     @Override
-    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, TenantEmailConfig emailConfig) throws VerificationException {
+    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, TenantEmailConfig emailConfig) {
         LOG.fine("Create tenant: " + tenant);
         RealmRepresentation realmRepresentation = convert(Container.JSON, RealmRepresentation.class, tenant);
         configureRealm(realmRepresentation, emailConfig);
@@ -386,7 +386,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void deleteTenant(ClientRequestInfo clientRequestInfo, String realm) throws VerificationException {
+    public void deleteTenant(ClientRequestInfo clientRequestInfo, String realm) {
         Tenant tenant = getTenant(realm);
         if (tenant != null) {
             LOG.fine("Delete tenant: " + realm);
@@ -494,14 +494,20 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
      * Keycloak only allows realm CRUD using the {realm}-realm client or the admin-cli client so we need to ensure we
      * have a token for one of these realms; if we are creating a realm then that means using the admin-cli
      */
-    protected String getRealmAdminToken(String realm, ClientRequestInfo clientRequestInfo) throws VerificationException {
-        AccessToken token = TokenVerifier.create(clientRequestInfo.getAccessToken(), AccessToken.class).getToken();
-        if (!token.getIssuedFor().equals(ADMIN_CLI_CLIENT_ID)) {
-            return getKeycloak().getAccessToken(
-                MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, keycloakAdminPassword)
-            ).getToken();
+    protected String getRealmAdminToken(String realm, ClientRequestInfo clientRequestInfo) {
+        try {
+            AccessToken token = TokenVerifier.create(clientRequestInfo.getAccessToken(), AccessToken.class).getToken();
+
+            if (!token.getIssuedFor().equals(ADMIN_CLI_CLIENT_ID)) {
+                return getKeycloak().getAccessToken(
+                    MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, keycloakAdminPassword)
+                ).getToken();
+            }
+            return clientRequestInfo.getAccessToken();
+        } catch (VerificationException e) {
+            LOG.log(Level.WARNING, "Failed to parse access token", e);
+            return clientRequestInfo.getAccessToken();
         }
-        return clientRequestInfo.getAccessToken();
     }
 
     protected ClientRepresentation createClientApplication(String realm, String clientId, String appName, boolean devMode) {
