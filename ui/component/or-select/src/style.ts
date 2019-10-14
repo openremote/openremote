@@ -43,7 +43,7 @@ export const selectStyle = css`
         font-size: 14px;
         outline: none;
         color: var(--internal-or-select-text-color);
-        border-bottom: 2px solid var(--internal-or-select-border-color);
+        border-bottom: 1px solid var(--internal-or-select-border-color);
         background-color: var(--internal-or-select-background-color);
     }
     
