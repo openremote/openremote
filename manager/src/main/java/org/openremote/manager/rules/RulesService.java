@@ -412,8 +412,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
                     // Retract facts for attributes that are obsolete
                     getAddedOrModifiedAttributes(newRuleStateAttributes,
-                        oldRuleStateAttributes,
-                        key -> key.equals(VALUE_TIMESTAMP_FIELD_NAME))
+                        oldRuleStateAttributes)
                         .forEach(obsoleteFactAttribute -> {
                             AssetState update = buildAssetState.apply(loadedAsset, obsoleteFactAttribute);
                             LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting: " + update);
@@ -422,8 +421,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
                     // Insert facts for attributes that are new
                     getAddedOrModifiedAttributes(oldRuleStateAttributes,
-                        newRuleStateAttributes,
-                        key -> key.equals(VALUE_TIMESTAMP_FIELD_NAME))
+                        newRuleStateAttributes)
                         .forEach(newFactAttribute -> {
                             AssetState assetState = buildAssetState.apply(loadedAsset, newFactAttribute);
                             LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), updating: " + assetState);

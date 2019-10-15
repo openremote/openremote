@@ -159,7 +159,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
     public static Predicate<ObjectValue> asPredicate(ObjectValueKeyPredicate predicate) {
         return objectValue -> {
             if (objectValue == null) {
-                return false;
+                return predicate.negated;
             }
 
             boolean result = objectValue.hasKey(predicate.key);

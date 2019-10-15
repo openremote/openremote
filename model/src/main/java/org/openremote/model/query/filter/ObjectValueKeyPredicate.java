@@ -53,4 +53,12 @@ public class ObjectValueKeyPredicate implements ValuePredicate {
         objectValue.put("key", Values.create(key));
         return objectValue;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "key=" + key +
+            ", negated=" + negated +
+            '}';
+    }
 }
