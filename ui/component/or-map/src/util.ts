@@ -1,7 +1,7 @@
 import {LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike} from "mapbox-gl";
 import L, {LatLng, LatLngBounds} from "mapbox.js";
 import {Asset, AttributeType, AssetAttribute, GeoJSONPoint, AttributeValueType} from "@openremote/model";
-import {getAssetAttribute} from "@openremote/core/dist/util";
+import {Util} from "@openremote/core";
 
 export function getLngLat(lngLatLike?: LngLatLike | Asset | AssetAttribute | GeoJSONPoint | object): LngLat | undefined {
     if (lngLatLike) {
@@ -14,7 +14,7 @@ export function getLngLat(lngLatLike?: LngLatLike | Asset | AssetAttribute | Geo
 
         if (obj.hasOwnProperty("attributes")) {
             // This is an asset
-            const locationAttribute = getAssetAttribute(obj as Asset, AttributeType.LOCATION.attributeName!);
+            const locationAttribute = Util.getAssetAttribute(obj as Asset, AttributeType.LOCATION.attributeName!);
             if (!locationAttribute) {
                 return;
             }

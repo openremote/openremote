@@ -1,0 +1,1 @@
+export const MdiMenuSwap = "M12,6L7,11H17L12,6M7,13L12,18L17,13H7Z";

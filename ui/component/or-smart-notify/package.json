@@ -1,12 +1,14 @@
 {
   "name": "@openremote/or-smart-notify",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "OpenRemote Smarty Notify element",
-  "main": "dist/index.js",
-  "types": "src/index.ts",
+  "main": "dist/umd/index.bundle.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "npx tsc -b",
-    "test": "echo \"No tests\" && exit 0"
+    "test": "echo \"No tests\" && exit 0",
+    "prepare": "npx tsc -b && npx webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
@@ -14,13 +16,16 @@
     "@fortawesome/fontawesome-svg-core": "^1.2.12",
     "@fortawesome/free-regular-svg-icons": "^5.6.3",
     "@fortawesome/free-solid-svg-icons": "^5.6.3",
-    "@openremote/model": "^1.0.0",
-    "@openremote/rest": "^1.0.0",
+    "@openremote/model": "^1.1.0",
+    "@openremote/rest": "^1.1.0",
+    "@openremote/core": "^1.1.0",
     "lit-element": "^2.2.1",
     "moment": "^2.24.0"
   },
   "devDependencies": {
-    "tslint": "^5.11.0",
-    "typescript": "^3.4.5"
+    "tslint": ">=5.11.0",
+    "typescript": ">=3.4.5",
+    "webpack": ">=4.41.1",
+    "webpack-cli": ">=3.3.9"
   }
 }

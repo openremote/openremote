@@ -1,7 +1,7 @@
 import {customElement, html, LitElement, property, PropertyValues, query} from "lit-element";
 import {markerActiveColorVar, markerColorVar} from "../style";
 
-export class OrMapMarkerChangedEvent extends CustomEvent<MarkerChangedEventDetail> {
+export class OrMapMarkerChangedEvent extends CustomEvent<OrMapMarkerChangedEventDetail> {
 
     public static readonly NAME = "or-map-marker-changed";
 
@@ -17,7 +17,7 @@ export class OrMapMarkerChangedEvent extends CustomEvent<MarkerChangedEventDetai
     }
 }
 
-export class OrMapMarkerClickedEvent extends CustomEvent<MarkerEventDetail> {
+export class OrMapMarkerClickedEvent extends CustomEvent<OrMapMarkerEventDetail> {
 
     public static readonly NAME = "or-map-marker-clicked";
 
@@ -32,11 +32,11 @@ export class OrMapMarkerClickedEvent extends CustomEvent<MarkerEventDetail> {
     }
 }
 
-export interface MarkerEventDetail {
+export interface OrMapMarkerEventDetail {
     marker: OrMapMarker;
 }
 
-export interface MarkerChangedEventDetail extends MarkerEventDetail {
+export interface OrMapMarkerChangedEventDetail extends OrMapMarkerEventDetail {
     property: string;
 }
 

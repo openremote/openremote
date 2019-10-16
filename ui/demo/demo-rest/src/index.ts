@@ -1,13 +1,12 @@
 import {html, render} from "lit-html";
-import openremote, {Auth, Manager} from "@openremote/core";
-import rest from "@openremote/rest";
+import manager, {Auth, Manager} from "@openremote/core";
 import {AssetQuery} from "@openremote/model";
 
-let loggedInTemplate = (openremote:Manager) => html `<span>Welcome ${openremote.username}</span>(<button @click="${ ()=> {openremote.logout()}}">logout</button>)`;
-let loggedOutTemplate = (openremote:Manager) => html `<span>Please</span><button @click="${() => {openremote.login()}}">login</button>`;
+let loggedInTemplate = (openremote:Manager) => html `<span>Welcome ${manager.username}</span>(<button @click="${ ()=> {manager.logout()}}">logout</button>)`;
+let loggedOutTemplate = (openremote:Manager) => html `<span>Please</span><button @click="${() => {manager.login()}}">login</button>`;
 
 function renderUi() {
-    if (openremote.authenticated) {
+    if (manager.authenticated) {
 
         let queryAssetsTemplate = html`
             ${loggedInTemplate(openremote)}
@@ -22,17 +21,17 @@ function renderUi() {
 
 function queryAssets() {
     let assetQuery: AssetQuery = {};
-    rest.api.AssetResource.queryAssets(assetQuery).then(response => {
+    manager.rest.api.AssetResource.queryAssets(assetQuery).then(response => {
         console.log("Received: " + response.data.length + " Asset(s)");
         console.log(JSON.stringify(response.data, null, 2))
     }).catch(reason => console.log("Error:" + reason));
 }
 
-openremote.addListener(event => {
+manager.addListener(event => {
     console.log("OR Event:" + event);
 });
 
-openremote.init({
+manager.init({
     managerUrl: "http://localhost:8080",
     keycloakUrl: "http://localhost:8080/auth",
     auth: Auth.KEYCLOAK,

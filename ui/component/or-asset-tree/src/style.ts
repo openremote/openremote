@@ -1,7 +1,7 @@
 import {css, unsafeCSS} from "lit-element";
-import {DefaultColor1, DefaultColor2, DefaultColor5, DefaultColor3, DefaultColor4, DefaultBoxShadow, DefaultDisabledOpacity,
-    DefaultBoxShadowBottom} from "@openremote/core";
-import mdi from "@openremote/or-icon/dist/mdi-icons";
+import {DefaultBoxShadow, DefaultColor1, DefaultColor2, DefaultColor4, DefaultColor5} from "@openremote/core";
+import {MdiChevronRight} from "@openremote/mdi-icons/dist/chevronRight";
+import {MdiChevronDown} from "@openremote/mdi-icons/dist/chevronDown";
 
 // language=CSS
 export const style = css`
@@ -248,15 +248,15 @@ export const style = css`
     }
     
     .expander[data-expandable] {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='rgb(204, 204, 204)' viewBox='0 0 24 24'%3E%3Cpath d='${unsafeCSS(mdi.icons["chevron-right"])}'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='rgb(204, 204, 204)' viewBox='0 0 24 24'%3E%3Cpath d='${unsafeCSS(MdiChevronRight)}'/%3E%3C/svg%3E");
     }
 
     .expander[data-expandable]:hover {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='${unsafeCSS(mdi.icons["chevron-right"])}'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='${unsafeCSS(MdiChevronRight)}'/%3E%3C/svg%3E");
     }
     
     li[data-expanded] > .node-container .expander {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='${unsafeCSS(mdi.icons["chevron-down"])}'/%3E%3C/svg%3E") !important;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='${unsafeCSS(MdiChevronDown)}'/%3E%3C/svg%3E") !important;
     }
     
     .node-name {

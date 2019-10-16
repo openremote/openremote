@@ -1,0 +1,1 @@
+export const MdiWindowMinimize = "M20,14H4V10H20";

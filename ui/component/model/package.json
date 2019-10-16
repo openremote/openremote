@@ -1,18 +1,20 @@
 {
   "name": "@openremote/model",
-  "version": "1.0.2",
-  "main": "dist/index.js",
+  "version": "1.1.0",
   "description": "OpenRemote 3.x Model Types",
-  "types": "src/index.ts",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "npx tsc -b",
-    "test": "echo \"No tests\" && exit 0"
+    "test": "echo \"No tests\" && exit 0",
+    "prepare": "npx tsc -b && npx webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
-    "tslint": "^5.11.0",
-    "typescript": "^3.4.5"
+    "tslint": ">=5.11.0",
+    "typescript": ">=3.4.5"
   },
   "files": [
     "dist"

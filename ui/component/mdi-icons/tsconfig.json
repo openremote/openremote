@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "rootDir": "src",
+    "sourceMap": false
+  },
+  "include": [
+    "./src"
+  ],
+  "references": [
+    { "path": "../or-icon" }
+  ]
+}

@@ -1,0 +1,29 @@
+buildDir = "dist"
+
+task clean() {
+    doLast {
+        delete "dist"
+    }
+}
+
+task generate(type: Exec){
+    commandLine npmCommand("npm"), "run-script", "generate"
+}
+
+task build() {
+    dependsOn npmBuild
+}
+
+task prepareUi() {
+    dependsOn clean, build, npmPrepare
+}
+
+task publishUi() {
+    dependsOn clean, build, npmPublish
+}
+
+task installDist(type: Copy) {
+    dependsOn build
+    from "${project.buildDir}/umd"
+    into "${project(':deployment').projectDir}/manager/shared/mdi-icons"
+}

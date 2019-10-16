@@ -10,6 +10,7 @@
   ],
   "references": [
     { "path": "../rest" },
-    { "path": "../or-icon" }
+    { "path": "../or-icon" },
+    { "path": "../mdi-icons" }
   ]
 }

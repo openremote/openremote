@@ -1,4 +1,7 @@
 build/
 build.gradle
 test/
-src/main/
+src/
+tsconfig.json
+dist/*.map
+.tsbuildinfo

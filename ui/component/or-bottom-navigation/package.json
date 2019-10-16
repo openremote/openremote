@@ -5,13 +5,16 @@
   "main": "dist/or-bottom-navigation.js",
   "types": "src/or-bottom-navigation.ts",
   "scripts": {
-    "build": "npx tsc",
-    "test": "echo \"No tests\" && exit 0"
+    "build": "npx tsc -b",
+    "test": "echo \"No tests\" && exit 0",
+    "prepare": "npx tsc -b && npx webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
-    "tslint": "^5.11.0",
-    "typescript": "^3.4.5"
+    "tslint": ">=5.11.0",
+    "typescript": ">=3.4.5",
+    "webpack": ">=4.41.1",
+    "webpack-cli": ">=3.3.9"
   }
 }

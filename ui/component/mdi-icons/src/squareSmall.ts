@@ -1,0 +1,1 @@
+export const MdiSquareSmall = "M10,14V10H14V14H10Z";

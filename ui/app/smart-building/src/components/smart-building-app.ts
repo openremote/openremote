@@ -9,7 +9,6 @@ import {faMap, faSignOutAlt, faTable} from "@fortawesome/free-solid-svg-icons";
 import "@openremote/or-header";
 import "@openremote/or-bottom-navigation";
 
-import {OrHeaderStyle} from "@openremote/or-header/dist/or-header-style";
 import { localize } from "../localize-mixin";
 import { i18next } from "../i18next";
 

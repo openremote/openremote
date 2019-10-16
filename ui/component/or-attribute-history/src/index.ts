@@ -10,14 +10,13 @@ import {
     unsafeCSS
 } from "lit-element";
 import i18next from "i18next";
-import {translate} from "@openremote/or-translate/dist/translate-mixin";
+import {translate} from "@openremote/or-translate";
 import {AssetAttribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueType} from "@openremote/model";
-import {AssetModelUtil, DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5} from "@openremote/core";
-import rest from "@openremote/rest";
+import manager, {AssetModelUtil, DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5} from "@openremote/core";
 import "@openremote/or-input";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
-import {getAssetAttribute} from "@openremote/core/dist/util";
+import {Util} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
 import {InputType} from "@openremote/or-input";
 import {MDCDataTable} from "@material/data-table";
@@ -553,7 +552,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             let attr = this.attribute;
 
             if (!attr) {
-                const response = await rest.api.AssetResource.queryAssets({
+                const response = await manager.rest.api.AssetResource.queryAssets({
                     ids: [assetId],
                     select: {
                         excludeParentInfo: true,
@@ -566,7 +565,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     }
                 });
                 if (response.status === 200 && response.data.length > 0) {
-                    attr = getAssetAttribute(response.data[0], attributeName);
+                    attr = Util.getAssetAttribute(response.data[0], attributeName);
                 }
             }
 
@@ -585,7 +584,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             return;
         }
 
-        const response = await rest.api.AssetDatapointResource.getDatapoints(
+        const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
             assetId,
             attributeName,
             {

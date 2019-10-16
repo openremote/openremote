@@ -18,13 +18,12 @@ import {
     AssetQueryOperator, AssetTypeAttributeName,
     getAssetTypeFromQuery,
     getDescriptorValueType, OrRuleChangedEvent,
-    RulesConfig,
-    RulesConfigAttribute
+    RulesConfig
 } from "./index";
 import {OrSelectChangedEvent} from "@openremote/or-select";
 import "@openremote/or-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
-import {getEnumKeyAsString} from "@openremote/core/dist/util";
+import {Util} from "@openremote/core";
 import {assetQueryEditorStyle} from "./style";
 import i18next from "i18next";
 import {AssetModelUtil} from "@openremote/core";
@@ -493,7 +492,7 @@ class OrRuleAssetQuery extends LitElement {
             case AssetQueryOperator.LESS_THAN:
             case AssetQueryOperator.LESS_EQUALS:
             case AssetQueryOperator.BETWEEN:
-                const key = getEnumKeyAsString(AssetQueryOperator, value);
+                const key = Util.getEnumKeyAsString(AssetQueryOperator, value);
 
                 if (valueType === ValueType.NUMBER) {
                     predicate = {

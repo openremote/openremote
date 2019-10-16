@@ -1,6 +1,6 @@
 buildDir = "dist"
 
-npmBuild.dependsOn(resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build"), resolveTask(":ui:component:or-icon:generate"))
+npmBuild.dependsOn(resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build"), resolveTask(":ui:component:mdi-icons:build"))
 
 task clean() {
     doLast {
@@ -10,4 +10,12 @@ task clean() {
 
 task build() {
     dependsOn npmBuild
+}
+
+task prepareUi() {
+    dependsOn clean, build, npmPrepare
+}
+
+task publishUi() {
+    dependsOn clean, build, npmPublish
 }

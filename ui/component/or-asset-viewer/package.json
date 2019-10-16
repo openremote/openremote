@@ -1,28 +1,33 @@
 {
   "name": "@openremote/or-asset-viewer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "OpenRemote Asset Viewer",
-  "main": "dist/index.js",
-  "types": "src/index.ts",
+  "main": "dist/umd/index.bundle.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "npx tsc",
-    "test": "echo \"No tests\" && exit 0"
+    "build": "npx tsc -b",
+    "test": "echo \"No tests\" && exit 0",
+    "prepare": "npx tsc -b && npx webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/core": "^1.0.2",
-    "@openremote/model": "^1.0.2",
-    "@openremote/or-icon": "^1.0.0",
-    "@openremote/or-attribute-input": "^1.0.0",
-    "@openremote/or-attribute-history": "^1.0.0",
-    "@openremote/or-translate": "^1.0.0",
-    "@openremote/or-panel": "^1.0.0",
-    "@openremote/rest": "^1.0.2",
+    "@openremote/core": "^1.1.0",
+    "@openremote/model": "^1.1.0",
+    "@openremote/or-icon": "^1.1.0",
+    "@openremote/or-attribute-input": "^1.1.0",
+    "@openremote/or-attribute-history": "^1.1.0",
+    "@openremote/or-translate": "^1.1.0",
+    "@openremote/or-panel": "^1.1.0",
+    "@openremote/or-map": "^1.1.0",
+    "@openremote/rest": "^1.1.0",
     "lit-element": "^2.2.1"
   },
   "devDependencies": {
-    "tslint": "^5.11.0",
-    "typescript": "^3.4.5"
+    "tslint": ">=5.11.0",
+    "typescript": ">=3.4.5",
+    "webpack": ">=4.41.1",
+    "webpack-cli": ">=3.3.9"
   }
 }

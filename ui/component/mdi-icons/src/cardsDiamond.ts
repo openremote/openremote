@@ -1,0 +1,1 @@
+export const MdiCardsDiamond = "M19,12L12,22L5,12L12,2";

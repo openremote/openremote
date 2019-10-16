@@ -10,7 +10,6 @@
   ],
   "references": [
     { "path": "../core" },
-    { "path": "../rest" },
     { "path": "../or-select" },
     { "path": "../or-translate" },
     { "path": "../or-icon" }

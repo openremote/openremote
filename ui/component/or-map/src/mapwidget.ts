@@ -1,5 +1,4 @@
-import openremote from "@openremote/core";
-import rest from "@openremote/rest";
+import manager from "@openremote/core";
 import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL, Style as StyleGL, LngLat,
     MapMouseEvent} from "mapbox-gl";
 import L, {Map as MapJS, MapOptions as OptionsJS, Marker as MarkerJS} from "mapbox.js";
@@ -8,16 +7,15 @@ import {
     OrMapMarker
 } from "./markers/or-map-marker";
 import {getLatLng, getLatLngBounds, getLngLat} from "./util";
+const mapboxJsStyles = require("!!raw-loader!mapbox.js/dist/mapbox.css");
+const mapboxGlStyles = require("!!raw-loader!mapbox-gl/dist/mapbox-gl.css");
 
-// TODO were to place this
-// fix any type
+// TODO: fix any type
 const metersToPixelsAtMaxZoom = (meters:number, latitude:number) =>
     meters / 0.075 / Math.cos(latitude * Math.PI / 180);
 
 
 export class MapWidget {
-    protected static _mapboxGlStyle?: any;
-    protected static _mapboxJsStyle?: any;
     protected _mapJs?: MapJS;
     protected _mapGl?: MapGL;
     protected _type: Type;
@@ -121,21 +119,16 @@ export class MapWidget {
 
         if (this._type === Type.RASTER) {
 
-            if (!MapWidget._mapboxJsStyle) {
-                // @ts-ignore
-                MapWidget._mapboxJsStyle = await import(/* webpackChunkName: "mapbox-js-css" */ "mapbox.js/dist/mapbox.css");
-            }
-
             // Add style to shadow root
             const style = document.createElement("style");
             style.id = "mapboxJsStyle";
-            style.textContent = MapWidget._mapboxJsStyle.default.toString();
+            style.textContent = mapboxJsStyles;
             this._styleParent.appendChild(style);
-            const settingsResponse = await rest.api.MapResource.getSettingsJs();
+            const settingsResponse = await manager.rest.api.MapResource.getSettingsJs();
             const settings = settingsResponse.data as any;
 
             // Load options for current realm or fallback to default if exist
-            this._viewSettings = settings.options ? settings.options[openremote.getRealm() || "default"] ? settings.options[openremote.getRealm() || "default"] : settings.options.default : null;
+            this._viewSettings = settings.options ? settings.options[manager.getRealm() || "default"] ? settings.options[manager.getRealm() || "default"] : settings.options.default : null;
             let options: OptionsJS | undefined;
             if (this._viewSettings) {
                 options = {};
@@ -175,30 +168,25 @@ export class MapWidget {
             }
 
         } else {
-            if (!MapWidget._mapboxGlStyle) {
-                // @ts-ignore
-                MapWidget._mapboxGlStyle = await import(/* webpackChunkName: "mapbox-gl-css" */ "mapbox-gl/dist/mapbox-gl.css");
-            }
-
             // Add style to shadow root
             const style = document.createElement("style");
             style.id = "mapboxGlStyle";
-            style.textContent = MapWidget._mapboxGlStyle.default.toString();
+            style.textContent = mapboxGlStyles;
             this._styleParent.appendChild(style);
 
             const map: typeof import("mapbox-gl") = await import(/* webpackChunkName: "mapbox-gl" */ "mapbox-gl");
-            const settingsResponse = await rest.api.MapResource.getSettings();
+            const settingsResponse = await manager.rest.api.MapResource.getSettings();
             const settings = settingsResponse.data as any;
 
             // Load options for current realm or fallback to default if exist
-            this._viewSettings = settings.options ? settings.options[openremote.getRealm() || "default"] ? settings.options[openremote.getRealm() || "default"] : settings.options.default : null;
+            this._viewSettings = settings.options ? settings.options[manager.getRealm() || "default"] ? settings.options[manager.getRealm() || "default"] : settings.options.default : null;
             const options: OptionsGL = {
                 attributionControl: true,
                 container: this._mapContainer,
                 style: settings as StyleGL,
                 transformRequest: (url, resourceType) => {
                     return {
-                        headers: {Authorization: openremote.getAuthorizationHeader()},
+                        headers: {Authorization: manager.getAuthorizationHeader()},
                         url
                     };
                 }

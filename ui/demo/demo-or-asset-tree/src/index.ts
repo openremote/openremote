@@ -1,7 +1,7 @@
 import "@polymer/iron-demo-helpers/demo-pages-shared-styles";
 import "@polymer/iron-demo-helpers/demo-snippet";
 import "@openremote/or-asset-tree";
-import openremote, {Auth} from "@openremote/core";
+import manager, {Auth} from "@openremote/core";
 import {customElement, html, LitElement, property, TemplateResult, css} from "lit-element";
 
 @customElement("or-demo-app")
@@ -39,7 +39,7 @@ class App extends LitElement {
     }
 }
 
-openremote.init({
+manager.init({
     auth: Auth.KEYCLOAK,
     autoLogin: true,
     keycloakUrl: "http://localhost:8080/auth",

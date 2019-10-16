@@ -1,24 +1,28 @@
 {
   "name": "@openremote/rest",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "OpenRemote 3.x REST API",
-  "main": "dist/index.js",
-  "types": "src/index.ts",
+  "main": "dist/umd/index.bundle.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "npx tsc -b",
-    "test": "echo \"No tests\" && exit 0"
+    "test": "echo \"No tests\" && exit 0",
+    "prepare": "npx tsc -b && npx webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/model": "^1.0.0",
     "axios": "0.18.1",
     "qs": "^6.8.0"
   },
   "devDependencies": {
+    "@openremote/model": "^1.1.0",
     "@types/qs": "^6.5.3",
-    "tslint": "^5.11.0",
-    "typescript": "^3.4.5"
+    "tslint": ">=5.11.0",
+    "typescript": ">=3.4.5",
+    "webpack": ">=4.41.1",
+    "webpack-cli": ">=3.3.9"
   },
   "files": [
     "dist"

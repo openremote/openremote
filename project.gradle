@@ -113,6 +113,14 @@ task npmServe(type: Exec){
     dependsOn tasks.getByPath(":yarnInstall")
     commandLine npmCommand("npm"), "run-script", "serve"
 }
+task npmPrepare(type: Exec){
+    dependsOn tasks.getByPath(":yarnInstall")
+    commandLine npmCommand("npm"), "run-script", "prepare"
+}
+task npmPublish(type: Exec){
+    dependsOn tasks.getByPath(":yarnInstall")
+    commandLine npmCommand("npm"), "publish"
+}
 task npmServeProduction(type: Exec){
     dependsOn tasks.getByPath(":yarnInstall")
     commandLine npmCommand("npm"), "run-script", "serveProduction"

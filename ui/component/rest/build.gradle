@@ -95,3 +95,11 @@ clean {
 }
 
 build.dependsOn generateTypeScript, resolveTask(":ui:component:model:build"), npmBuild
+
+task prepareUi() {
+    dependsOn clean, build, npmPrepare
+}
+
+task publishUi() {
+    dependsOn clean, build, npmPublish
+}

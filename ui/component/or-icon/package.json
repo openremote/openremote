@@ -1,16 +1,14 @@
 {
   "name": "@openremote/or-icon",
-  "version": "1.0.0",
-  "description": "Displays s vector or raster map",
-  "main": "dist/index.js",
-  "types": "src/index.ts",
-  "exports": {
-    "./": "./dist/"
-  },
+  "version": "1.1.0",
+  "description": "Icon component for displaying an icon from an icon set",
+  "main": "dist/umd/index.bundle.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "generate": "node mdi-iconset-generator.js",
-    "build": "node mdi-iconset-generator.js && npx tsc -b",
-    "test": "echo \"No tests\" && exit 0"
+    "build": "npx tsc -b",
+    "test": "echo \"No tests\" && exit 0",
+    "prepare": "npx tsc -b && npx webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
@@ -18,10 +16,9 @@
     "lit-element": "^2.2.1"
   },
   "devDependencies": {
-    "@mdi/svg": "^4.2.95",
-    "tslint": "^5.11.0",
-    "typescript": "^3.4.5",
-    "xmldom": "^0.1.27",
-    "xpath": "^0.0.27"
+    "tslint": ">=5.11.0",
+    "typescript": ">=3.4.5",
+    "webpack": ">=4.41.1",
+    "webpack-cli": ">=3.3.9"
   }
 }

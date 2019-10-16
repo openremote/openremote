@@ -2,7 +2,7 @@ import {css, customElement, html, LitElement, PropertyValues, query, unsafeCSS, 
 import SimpleBar from "simplebar";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
-const scrollStyle = require("simplebar/dist/simplebar.css");
+const scrollStyle = require("!!raw-loader!simplebar/dist/simplebar.css");
 
 // language=CSS
 const style = css`

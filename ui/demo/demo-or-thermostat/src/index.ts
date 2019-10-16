@@ -10,8 +10,7 @@ import {
     EventSubscription,
     Asset
 } from "@openremote/model";
-import rest from "@openremote/rest";
-import openremote, {Auth, Manager, OREvent} from "@openremote/core";
+import manager, {Auth, Manager, OREvent} from "@openremote/core";
 
 async function initApartment1Asset(): Promise<string|undefined> {
     let query: AssetQuery = {
@@ -33,7 +32,7 @@ async function initApartment1Asset(): Promise<string|undefined> {
         }
     };
 
-    let response = await rest.api.AssetResource.queryAssets(query);
+    let response = await manager.rest.api.AssetResource.queryAssets(query);
     let assets = response.data;
 
     if (assets.length !== 1) {
@@ -52,7 +51,7 @@ async function refreshUI(assetId:string) {
     render(thermostatTemplate(assetId), document.getElementById("thermostat")!);
 }
 
-openremote.addListener((event: OREvent) => {
+manager.addListener((event: OREvent) => {
     console.log("OR Event:" + event);
 
     if(event === OREvent.EVENTS_CONNECTED) {
@@ -64,7 +63,7 @@ openremote.addListener((event: OREvent) => {
     }
 });
 
-openremote.init({
+manager.init({
     auth: Auth.KEYCLOAK,
     autoLogin: true,
     keycloakUrl: "https://localhost/auth",

@@ -1,6 +1,6 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
 import i18next from "i18next";
-import {translate} from "@openremote/or-translate/dist/translate-mixin";
+import {translate} from "@openremote/or-translate";
 import {
     AssetAttribute,
     Attribute,
@@ -12,9 +12,8 @@ import {
     MetaItemType,
     ValueType
 } from "@openremote/model";
-import openremote, {AssetModelUtil} from "@openremote/core";
-import {subscribe} from "@openremote/core/dist/asset-mixin";
-import "@openremote/or-select";
+import manager, {AssetModelUtil} from "@openremote/core";
+import {subscribe} from "@openremote/core";
 import "@openremote/or-input";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 
@@ -50,7 +49,7 @@ export default inputProviders;
 
 // TODO: Add support for attribute not found and attribute deletion/addition
 @customElement("or-attribute-input")
-export class OrAttributeInput extends subscribe(openremote)(translate(i18next)(LitElement)) {
+export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitElement)) {
 
     static get styles() {
         return css`

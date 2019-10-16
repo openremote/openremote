@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>Demo</title>
+</head>
+<body>
+<div id="info"></div>
+<br />
+<br />
+<div id="asset"></div>
+</body>
+<script src="core/dist/umd/index.orbundle.js"></script>
+<script src="or-asset-tree/dist/umd/index.bundle.js"></script>
+<script>
+    ORCore.manager.init({
+        managerUrl: "http://localhost:8080",
+        keycloakUrl: "http://localhost:8080/auth",
+        auth: "KEYCLOAK",
+        autoLogin: true,
+        loadIcons: true,
+        realm: "cdp-strijp",
+        configureTranslationsOptions: (options) => {
+            options.lng = "nl"; // Change initial language to dutch
+        }
+    }).then((success) => {
+        if (success) {
+
+            if (ORCore.manager.authenticated) {
+                console.log("AUTHENTICATED");
+            }
+        }
+    });
+</script>
+
+<or-icon icon="access-point"></or-icon>
+<or-map style="width: 500px; height: 500px"></or-map>
+<or-asset-tree style="width: 500px; height: 800px;" realm="cdp-strijp"></or-asset-tree>
+</html>

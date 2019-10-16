@@ -1,0 +1,1 @@
+export const MdiNumericNegative1 = "M13 7V9H15V17H17V7H13M11 13H6V11H11V13Z";

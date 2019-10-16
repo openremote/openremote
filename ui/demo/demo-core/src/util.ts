@@ -1,5 +1,5 @@
 import {Asset, AssetQuery, AssetQueryMatch} from "@openremote/model";
-import rest from "@openremote/rest";
+import manager from "@openremote/core";
 
 export async function getApartment1Asset(): Promise<Asset | undefined> {
     const query: AssetQuery = {
@@ -21,7 +21,7 @@ export async function getApartment1Asset(): Promise<Asset | undefined> {
         }
     };
 
-    const response = await rest.api.AssetResource.queryAssets(query);
+    const response = await manager.rest.api.AssetResource.queryAssets(query);
     const assets = response.data;
 
     if (assets.length !== 1) {

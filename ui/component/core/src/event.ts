@@ -1,4 +1,4 @@
-import openremote from "./index";
+import manager from "./index";
 import {arrayRemove, Deferred} from "./util";
 import {
     AttributeEvent,
@@ -457,10 +457,10 @@ export class WebSocketEventProvider extends EventProviderImpl {
     }
 
     protected _doConnect(): Promise<boolean> {
-        let authorisedUrl = this._endpointUrl + "?Auth-Realm=" + openremote.config.realm;
+        let authorisedUrl = this._endpointUrl + "?Auth-Realm=" + manager.config.realm;
 
-        if (openremote.authenticated) {
-            authorisedUrl += "&Authorization=" + openremote.getAuthorizationHeader();
+        if (manager.authenticated) {
+            authorisedUrl += "&Authorization=" + manager.getAuthorizationHeader();
         }
 
         this._webSocket = new WebSocket(authorisedUrl);

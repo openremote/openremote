@@ -1,7 +1,5 @@
 import {css, unsafeCSS} from "lit-element";
-import {DefaultColor1, DefaultColor2, DefaultColor5, DefaultColor3, DefaultColor4, DefaultBoxShadow, DefaultDisabledOpacity,
-    DefaultBoxShadowBottom} from "@openremote/core";
-import mdi from "@openremote/or-icon/dist/mdi-icons";
+import {DefaultBoxShadow, DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5} from "@openremote/core";
 
 // language=CSS
 export const style = css`

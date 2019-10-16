@@ -1,11 +1,16 @@
-import openremote, {EventCallback, OREvent} from "@openremote/core";
+import manager, {EventCallback, OREvent} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
 import {CSSResult, customElement, html, LitElement, property, PropertyValues, query} from "lit-element";
 import {LngLat, LngLatBoundsLike, LngLatLike} from "mapbox-gl";
 import {MapWidget} from "./mapwidget";
 import {style} from "./style";
 import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
-import {getLngLat} from "./util";
+import * as Util from "./util";
+
+// Re-exports
+export {Util};
+export * from "./markers/or-map-marker";
+export * from "./markers/or-map-marker-asset";
 
 export enum Type {
     VECTOR = "VECTOR",
@@ -90,7 +95,7 @@ export class OrMap extends LitElement {
             },
 
             toAttribute(value?: LngLatLike, type?: String): string {
-                const lngLat = getLngLat(value);
+                const lngLat = Util.getLngLat(value);
 
                 if (!lngLat) {
                     return "";
@@ -131,17 +136,18 @@ export class OrMap extends LitElement {
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
+        super.firstUpdated(_changedProperties);
 
-        if (!openremote.ready) {
+        if (!manager.ready) {
             // Defer until openremote is initialised
             this._initCallback = (initEvent: OREvent) => {
                 if (initEvent === OREvent.READY) {
                     this.loadMap();
 
-                    openremote.removeListener(this._initCallback!);
+                    manager.removeListener(this._initCallback!);
                 }
             };
-            openremote.addListener(this._initCallback);
+            manager.addListener(this._initCallback);
         } else {
             this.loadMap();
         }
@@ -246,7 +252,7 @@ export class OrMap extends LitElement {
             <div id="container">
                 <div id="map"></div>
                 <slot></slot>
-                <a id="openremote" href="https://openremote.io/" target="_blank">
+                <a id="openremote" href="https://manager.io/" target="_blank">
                     <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAQAAADZc7J/AAAABGdBTUEAAYagMeiWXwAAAAJiS0dEAP+Hj8y/AAAESUlEQVRIx5XVbWzdZRnH8c//f07POe36sK7SrYXZjYGzbBokOqd4QtKATdnMDFFSkoFzmWGRQOAFSoYnsBSzxBdmGsN4Y7LEFwZkUdHpDoja/AnJjBvp1sm2upW5PtAV+zBS+7Tz//tiLe0emPF+d9/39fvmunJf9+8K3HBF1drFzurVn5+5XkTwPwBNOt1s0pCjDnnT+Xzy/wOa5jaXnLLfLwzlF0WENwaYckyvUTHS1tnjl+6JFqk+JoMOqqy2JqjPVpXP1k7U1+Ty8paBPk97NX/pYwEdgZUetNkdlirDrHGnyv6y5r3lm4M2WVzwpJfz8XUBHTntnrJO6qqLWE9u/125zBNq0WebN/PXAjqq/cBOVWDasCEsd5MsmEzt/3xP+S6fwNsezPdfBejI6fCEDMa95oAT/t31pVxDQ6p6oy2WYSb18w0D2V3Klez2w3y8CNAR2G6vShxXUCxMkXLvS7Y6E/5+3emaJ92JqezzG+8M2nHW/flTi59xladU4phtfluYgnsDWUt8Nv7+8UfO73UUuenvDLxuCKu0RQt90BFo14wxzzpamD8uExtHSsu5HSP7XMCtZ5uTPyO0SdVCBlXahHjNG4WFrGY9Y4tXzODL7zb7NYJS64eHzWK92xYAa9yBKa8Wphf0xaQ4XOz0qF9JhMnXh//mIm4dnDSMOusWALepwQUnrm2t4pi9hrGyP+ccloxV6kOZFemoWi2mOpclaQycqGlt9R8XHS/GixinnVWvbDpjDEEpNpdnWrtd+HvZWzMQT9xjj1iXzUau6MPS9X9NKOeTmqzPpZWwfMkEKnza2ivimqxCKZjQa9BMmFI2D+gxibql4z7EiobYOSy1o7V6Xt1aYacGvD/7lse1+GZ9t0Zc8kHaGcOa1K6o+FePL1iy7K7wYHy70FZa9+qVWOm7tgslfpecKcy46GS0xXKM6g6d14VU+RfTnRJ8Y223w8j4tkMOOeR1j6nAMT8tzkCUcvlbn3ImbJn0RyWC+1af1Iv6ukcbf+aIRKDR3b5ipVCiy+PenaupWRsSfzCWim0ftUmdiqrJwWLpbmk3196UfXG0X6NKIWKDXva0I0UQZT2nRaDfc/mhgCj0PS9ImZzefbg5fliIvuTA++/0ZaYDTDqqpzhn6lHoW36iSuLHnslfCiBqdMBGDI6/0LUhfkgGiWFbC29c+epRaJMX3YJuD+R75l15wG4DaKh5dsPJsj0GXLaawavkWY/MyUcU/JOPHCkK7fAjNZiIf/PeX/vWx1814muF0Y/EKWs95mFVuKhgX352EYAoY5vnNSDRF/9p/MgHfQ2dldNIqbPeJm2aBBix20vzg26RpUUpLfb43FxZU4YMmEJGoxXKQeIfCg4uzMkrTDVitZ0ecst1B05i0Cv26Vk8H68JjFKabXa/Zkul5w5Lxp120EHdlyu/AQCiQI1P+YxaGcwY1+20kasnM/wXCa5/Ik1hKTEAAAAldEVYdGRhdGU6Y3JlYXRlADIwMTktMDgtMjBUMTU6MTc6NTUrMDA6MDCwJSdSAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDE5LTA4LTIwVDE1OjE3OjU1KzAwOjAwwXif7gAAAABJRU5ErkJggg==" />
                 </a>
             </div>

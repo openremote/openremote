@@ -6,7 +6,7 @@ import "@openremote/or-attribute-input";
 import "@openremote/or-attribute-history";
 import {getAttributeLabel} from "@openremote/or-attribute-input";
 import "@openremote/or-translate";
-import {translate} from "@openremote/or-translate/dist/translate-mixin";
+import {translate} from "@openremote/or-translate";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 import {
     Asset,
@@ -19,15 +19,14 @@ import {
 } from "@openremote/model";
 import {style} from "./style";
 import "@openremote/or-panel";
-import openremote from "@openremote/core";
-import rest from "@openremote/rest";
-import {subscribe} from "@openremote/core/dist/asset-mixin";
-import {getAssetAttribute, getAssetAttributes, getFirstMetaItem} from "@openremote/core/dist/util";
+import manager from "@openremote/core";
+import {subscribe} from "@openremote/core";
+import {Util} from "@openremote/core";
 import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import "@openremote/or-map";
 import {Type as MapType} from "@openremote/or-map";
-import {getLngLat} from "@openremote/or-map/dist/util";
+import {Util as MapUtil} from "@openremote/or-map";
 import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
 
 export type PanelType = "property" | "location" | "attribute" | "history";
@@ -64,7 +63,7 @@ export interface ViewerConfig {
 }
 
 @customElement("or-asset-viewer")
-export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitElement)) {
+export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElement)) {
 
     public static DEFAULT_MAP_TYPE = MapType.VECTOR;
     public static DEFAULT_PANEL_TYPE: PanelType = "attribute";
@@ -170,7 +169,7 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
 
             if (this.asset) {
                 this._viewerConfig = this._getPanelConfig(this.asset);
-                this._attributes = getAssetAttributes(this.asset);
+                this._attributes = Util.getAssetAttributes(this.asset);
             }
         }
 
@@ -302,7 +301,7 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
             `;
         } else if (panelConfig && panelConfig.type === "history") {
             // Special handling for history panel which shows an attribute selector and a graph/data table of historical values
-            const historyAttrs = attrs.filter((attr) => getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
+            const historyAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
             if (historyAttrs.length > 0) {
 
                 const attributeChanged = (attributeName: string) => {
@@ -314,7 +313,7 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
                             let attribute: AssetAttribute | undefined;
 
                             if (attributeName) {
-                                attribute = getAssetAttribute(asset, attributeName);
+                                attribute = Util.getAssetAttribute(asset, attributeName);
                             }
 
                             attributeHistory.attribute = attribute;
@@ -356,9 +355,9 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
             if (attribute) {
                 // Special handling for location panel which shows an attribute selector and a map showing the location of the attribute
                 const mapType = viewerConfig.mapType || OrAssetViewer.DEFAULT_MAP_TYPE;
-                const lngLat = getLngLat(attribute);
+                const lngLat = MapUtil.getLngLat(attribute);
                 const center = lngLat ? lngLat.toArray() : undefined;
-                const showOnMapMeta = getFirstMetaItem(attribute, MetaItemType.SHOW_ON_DASHBOARD.urn!);
+                const showOnMapMeta = Util.getFirstMetaItem(attribute, MetaItemType.SHOW_ON_DASHBOARD.urn!);
 
                 content = html`
                     <style>
@@ -533,7 +532,7 @@ export class OrAssetViewer extends subscribe(openremote)(translate(i18next)(LitE
     }
 
     public static async getAssetNames(ids: string[]): Promise<string[]> {
-        const response = await rest.api.AssetResource.queryAssets({
+        const response = await manager.rest.api.AssetResource.queryAssets({
             select: {
                 excludePath: true,
                 excludeParentInfo: true,

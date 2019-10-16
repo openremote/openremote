@@ -6,9 +6,8 @@ import {icon} from "@fortawesome/fontawesome-svg-core";
 import {faClock} from "@fortawesome/free-regular-svg-icons";
 import {faTimes} from "@fortawesome/free-solid-svg-icons";
 
-import REST from "@openremote/rest";
 import {AssetQuery} from "@openremote/model";
-import openremote from "@openremote/core";
+import manager from "@openremote/core";
 
 @customElement("or-smart-notify")
 class OrSmartNotify extends LitElement {
@@ -62,7 +61,7 @@ class OrSmartNotify extends LitElement {
                     excludeAttributeTimestamp: false
                 }
             };
-            REST.api.AssetResource.queryAssets(smartNotifyQuery).then((response: any) => {
+            manager.rest.api.AssetResource.queryAssets(smartNotifyQuery).then((response: any) => {
                 console.log("Setting Smart Notify");
                 if (response.data) {
                     self.smartNotify = response.data[0];
@@ -102,7 +101,7 @@ class OrSmartNotify extends LitElement {
             this.isActive = false;
         }
 
-        REST.api.AssetResource.update(this.smartNotify.id, this.smartNotify).then((response: any) => {
+        manager.rest.api.AssetResource.update(this.smartNotify.id, this.smartNotify).then((response: any) => {
             console.log("Setting Smart Notify");
             this.smartNotify.version = this.smartNotify.version + 1;
             if (isChecked) {
@@ -341,7 +340,7 @@ class OrSmartNotify extends LitElement {
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
-        this.isDisabled = !openremote.hasRole("write:assets");
+        this.isDisabled = !manager.hasRole("write:assets");
     }
 
 }

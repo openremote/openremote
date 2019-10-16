@@ -6,10 +6,14 @@ task clean() {
     }
 }
 
-task generate(type: Exec){
-    commandLine npmCommand("npm"), "run-script", "generate"
-}
-
 task build() {
     dependsOn npmBuild
+}
+
+task prepareUi() {
+    dependsOn clean, build, npmPrepare
+}
+
+task publishUi() {
+    dependsOn clean, build, npmPublish
 }

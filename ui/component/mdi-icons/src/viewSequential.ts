@@ -1,0 +1,1 @@
+export const MdiViewSequential = "M3,4H21V8H3V4M3,10H21V14H3V10M3,16H21V20H3V16Z";

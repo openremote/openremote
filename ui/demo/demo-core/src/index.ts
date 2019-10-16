@@ -1,116 +1,102 @@
-import {html, render} from "lit-html";
-import {when} from "lit-html/directives/when";
-import openremote, {AssetModelUtil, Auth, Manager, OREvent} from "@openremote/core";
-import {subscribe} from "@openremote/core/dist/asset-mixin";
+import {LitElement, html, customElement, property, TemplateResult} from "lit-element";
+import manager, {AssetModelUtil, Auth, Manager, OREvent} from "@openremote/core";
+import {subscribe} from "@openremote/core";
 
 import "@openremote/or-icon";
 import "@openremote/or-translate";
 import {IconSets} from "@openremote/or-icon";
-import {IconSetSvg} from "@openremote/or-icon/dist/icon-set-svg";
+import {IconSetSvg} from "@openremote/or-icon";
 import i18next from "i18next";
 
-import {AttributeEvent, MetaItemType} from "@openremote/model";
+import {AttributeEvent, MetaItemType, AssetEvent} from "@openremote/model";
 import {getApartment1Asset} from "./util";
 
-class Demo {
+@customElement("or-demo")
+class OrDemo extends subscribe(manager)(LitElement) {
+
+    @property()
     protected alarmEnabled = false;
-    protected loggedInTemplate = (openremote: Manager) => html`<span>Welcome ${openremote.username} </span><button @click="${() =>
-        openremote.logout()}">logout</button>`;
-    protected loggedOutTemplate = (openremote: Manager) => html`<button @click="${() => openremote.login()}">login</button>`;
-    protected mainTemplate = (openremote: Manager) => html`
-                                    <p><b>Message:</b> ${when(openremote.authenticated, () => this.loggedInTemplate(openremote), () => this.loggedOutTemplate(openremote))}</p>
-                                    <br/>
-                                    <p><b>Initialised: </b> ${openremote.initialised}</p>
-                                    <p><b>Manager Version: </b> ${openremote.managerVersion}</p>
-                                    <p><b>Authenticated: </b> ${openremote.authenticated}</p>
-                                    <p><b>Username: </b> ${openremote.username}</p>
-                                    <p><b>Roles: </b> ${openremote.roles ? openremote.roles.join(", ") : ""}</p>
-                                    <p><b>Is Super User: </b> ${openremote.isSuperUser()}</p>
-                                    <p><b>Is Manager Same Origin: </b> ${openremote.isManagerSameOrigin()}</p>
-                                    <p><b>Connection Status: </b> ${openremote.connectionStatus}</p>
-                                    <p><b>Is Error: </b> ${openremote.isError}</p>
-                                    <p><b>Error:</b> ${openremote.error}</p>
-                                    <p><b>Config: </b> ${openremote.config ? JSON.stringify(openremote.config, null, 2) : ""}</p>
-                                    <p><b>Console Registration: </b>${openremote.console ? JSON.stringify(openremote.console.registration, null, 2) : ""}</p>
-                                    <p><b>Icon Example (Material Design icon set): </b><or-icon icon="access-point" /></p>
-                                    <p><b>Icon Example (OR icon set): </b><or-icon icon="or:logo"></or-icon><or-icon icon="or:logo-plain"></or-icon><or-icon style="fill: #C4D600;" icon="or:marker"></or-icon></p>
-                                    <p><b>Icon Example (dynamic Set click to add): </b><button @click="${() => this.createIconSet()}">Load</button>: <or-icon icon="test:x"></or-icon></p>
-                                    <p><b>Translation Example: </b> <or-translate value="temperature"></or-translate>   <button @click="${() => this.toggleLanguage()}">${i18next.language}</button></p>
-                                    <p><b>Asset Descriptors: </b>${JSON.stringify(AssetModelUtil.getAssetDescriptors())}</p>
-                                    <p><b>Attribute Descriptors: </b>${JSON.stringify(AssetModelUtil.getAttributeDescriptors())}</p>
-                                    <p><b>Attribute Value Descriptors: </b>${JSON.stringify(AssetModelUtil.getAttributeValueDescriptors())}</p>
-                                    <p><b>Meta Item Descriptors: </b>${JSON.stringify(AssetModelUtil.getMetaItemDescriptors())}</p>
-                                    <p><b>Rule State Meta Item: </b>${JSON.stringify(AssetModelUtil.getMetaItemDescriptor(MetaItemType.RULE_STATE.urn))}</p>
-                                    `;
+
+    @property()
+    protected _assetId?: string;
+
+    protected loggedInTemplate = (openremote: Manager) => html`<span>Welcome ${manager.username} </span><button @click="${() =>
+        manager.logout()}">logout</button>`;
+
+    protected loggedOutTemplate = (openremote: Manager) => html`<button @click="${() => manager.login()}">login</button>`;
 
     protected assetTemplate = (alarmEnabled: boolean) => html`<p><b>Alarm Enabled: </b> ${alarmEnabled}</p>`;
 
-    protected _callback = (event: OREvent) => {
-        console.log("OR Event:" + event);
-
-        if (event === OREvent.READY) {
-            if (openremote.authenticated) {
-                this.initApartment1Asset().then(this.refreshUI);
-            } else {
-                this.refreshUI();
-            }
-        } else {
-            this.refreshUI();
-        }
-    };
-
-    constructor() {
-        openremote.addListener(() => this._callback);
-        if (openremote.authenticated) {
-            this.initApartment1Asset().then(() => this.refreshUI());
-        } else {
-            this.refreshUI();
-        }
+    protected render(): TemplateResult | void {
+        return html`
+            <p><b>Message:</b> ${manager.authenticated ? this.loggedInTemplate(openremote) : this.loggedOutTemplate(openremote)}</p>
+            <br/>
+            <p><b>Initialised: </b> ${manager.initialised}</p>
+            <p><b>Manager Version: </b> ${manager.managerVersion}</p>
+            <p><b>Authenticated: </b> ${manager.authenticated}</p>
+            <p><b>Username: </b> ${manager.username}</p>
+            <p><b>Roles: </b> ${manager.roles ? manager.roles.join(", ") : ""}</p>
+            <p><b>Is Super User: </b> ${manager.isSuperUser()}</p>
+            <p><b>Is Manager Same Origin: </b> ${manager.isManagerSameOrigin()}</p>
+            <p><b>Connection Status: </b> ${manager.connectionStatus}</p>
+            <p><b>Is Error: </b> ${manager.isError}</p>
+            <p><b>Error:</b> ${manager.error}</p>
+            <p><b>Config: </b> ${manager.config ? JSON.stringify(manager.config, null, 2) : ""}</p>
+            <p><b>Console Registration: </b>${manager.console ? JSON.stringify(manager.console.registration, null, 2) : ""}</p>
+            <p><b>Icon Example (Material Design icon set): </b><or-icon icon="access-point" /></p>
+            <p><b>Icon Example (OR icon set): </b><or-icon icon="or:logo"></or-icon><or-icon icon="or:logo-plain"></or-icon><or-icon style="fill: #C4D600;" icon="or:marker"></or-icon></p>
+            <p><b>Icon Example (dynamic Set click to add): </b><button @click="${() => this.createIconSet()}">Load</button>: <or-icon icon="test:x"></or-icon></p>
+            <p><b>Translation Example: </b> <or-translate value="temperature"></or-translate>   <button @click="${() => this.toggleLanguage()}">${i18next.language}</button></p>
+            <p><b>Asset Descriptors: </b>${JSON.stringify(AssetModelUtil.getAssetDescriptors())}</p>
+            <p><b>Attribute Descriptors: </b>${JSON.stringify(AssetModelUtil.getAttributeDescriptors())}</p>
+            <p><b>Attribute Value Descriptors: </b>${JSON.stringify(AssetModelUtil.getAttributeValueDescriptors())}</p>
+            <p><b>Meta Item Descriptors: </b>${JSON.stringify(AssetModelUtil.getMetaItemDescriptors())}</p>
+            <p><b>Rule State Meta Item: </b>${JSON.stringify(AssetModelUtil.getMetaItemDescriptor(MetaItemType.RULE_STATE.urn))}</p>
+            `;
     }
 
-    public async refreshUI() {
-        render(this.mainTemplate(openremote), document.getElementById("info")!);
-        render(this.assetTemplate(this.alarmEnabled), document.getElementById("asset")!);
+    public set assetId(assetId: string) {
+        this._assetId = assetId;
+        super.assetIds = assetId ? [assetId] : undefined;
+    }
+
+    protected _onOrEvent = (event: OREvent) => {
+        console.log("OR Event:" + event);
+    };
+
+    connectedCallback() {
+        super.connectedCallback();
+        manager.addListener(() => this._onOrEvent);
     }
 
     public createIconSet() {
-        let testIconSet = new IconSetSvg(100, {x: "<path d=\"M0,0 L100,100 M100,0 L0,100\" stroke=\"#000\"/>"});
+        let testIconSet = {
+            size: 100,
+            icons: {
+                x: "<path d=\"m0.3125,39.74088l37.33242,0l11.53601,-37.43277l11.53601,37.43277l37.33242,0l-30.20251,23.13446l11.5366,37.43277l-30.20252,-23.13509l-30.20252,23.13509l11.53661,-37.43277l-30.20252,-23.13446z\" stroke-width='5' stroke=\"#000\"/>"
+            }
+        }   ;
         IconSets.addIconSet("test", testIconSet);
     }
 
     public toggleLanguage() {
         i18next.changeLanguage(i18next.language === "en" ? "nl" : "en");
+        this.requestUpdate();
     }
 
-    public subscribeApartmentAttributeEvents(assetId: string) {};
-
-    public async initApartment1Asset(): Promise<void> {
-
-        const apartment1 = await getApartment1Asset();
-
-        if (apartment1) {
-            console.log("Apartment 1 Asset received: " + JSON.stringify(apartment1, null, 2));
-            this.subscribeApartmentAttributeEvents(apartment1.id!);
-        }
-    }
-}
-
-class DemoWithSubscribe extends subscribe(openremote)(Demo) {
-    public subscribeApartmentAttributeEvents(assetId: string) {
-        this.assetIds = [assetId];
-        this.connect();
+    public onAssetEvent(event: AssetEvent) {
+        console.log("Asset Event Received:" + JSON.stringify(event, null, 2));
     }
 
     public onAttributeEvent(event: AttributeEvent) {
-        console.log("Event Received:" + JSON.stringify(event, null, 2));
+        console.log("Attribute Event Received:" + JSON.stringify(event, null, 2));
         if (event.attributeState && event.attributeState.attributeRef!.attributeName === "alarmEnabled") {
             this.alarmEnabled = event.attributeState!.value;
-            this.refreshUI();
         }
     }
 }
 
-openremote.init({
+manager.init({
     managerUrl: "http://localhost:8080",
     keycloakUrl: "http://localhost:8080/auth",
     auth: Auth.KEYCLOAK,
@@ -121,7 +107,13 @@ openremote.init({
     }
 }).then((success) => {
     if (success) {
-        let ev = openremote.events;
-        const demo = new DemoWithSubscribe();
+        if (manager.authenticated) {
+            getApartment1Asset().then((apartment1) => {
+                if (apartment1) {
+                    console.log("Apartment 1 Asset received: " + JSON.stringify(apartment1, null, 2));
+                    (document.getElementById("or-demo") as OrDemo).assetId = apartment1!.id!;
+                }
+            });
+        }
     }
 });

@@ -3,12 +3,12 @@ import "@polymer/iron-demo-helpers/demo-snippet";
 import "@openremote/or-map";
 import "@openremote/or-map/dist/markers/or-map-marker";
 import "@openremote/or-map/dist/markers/or-map-marker-asset";
-import openremote, {Auth} from "@openremote/core";
-import {OrMapMarkerChangedEvent, OrMapMarkerClickedEvent} from "@openremote/or-map/dist/markers/or-map-marker";
+import manager, {Auth} from "@openremote/core";
+import {OrMapMarkerChangedEvent, OrMapMarkerClickedEvent} from "@openremote/or-map";
 import {OrMap} from "@openremote/or-map";
 import {getApartment1Asset} from "../../demo-core/src/util";
 
-openremote.init({
+manager.init({
     auth: Auth.KEYCLOAK,
     autoLogin: true,
     keycloakUrl: "http://localhost:8080/auth",

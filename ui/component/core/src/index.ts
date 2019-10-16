@@ -6,10 +6,20 @@ import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next from "i18next";
 import i18nextXhr from "i18next-xhr-backend";
-import {AssetDescriptor, AttributeDescriptor, AttributeValueDescriptor, MetaItemDescriptor, Asset, AssetAttribute,
-    MetaItem,
-    Attribute} from "@openremote/model";
+import {
+    AssetDescriptor,
+    Attribute,
+    AttributeDescriptor,
+    AttributeValueDescriptor,
+    MetaItemDescriptor
+} from "@openremote/model";
 import * as Util from "./util";
+
+// Re-exports
+export {Util};
+export * from "./asset-mixin";
+export * from "./console";
+export * from "./event";
 
 export declare type KeycloakPromise<T> = {
     success<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | KeycloakPromise<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | KeycloakPromise<TResult2>) | undefined | null): KeycloakPromise<TResult1 | TResult2>;
@@ -31,8 +41,6 @@ export declare type Keycloak = {
     updateToken(expiry: number): KeycloakPromise<boolean>;
     clearToken(): void;
 }
-
-export {Util};
 
 export const DefaultColor4: string = "#1B5630"; // Primary
 export const DefaultColor7: string = "#FFF"; // Secondary
@@ -324,6 +332,10 @@ export class Manager implements EventProviderFactory {
         return this._events;
     }
 
+    get rest() {
+        return rest;
+    }
+
     get language() {
         return i18next.language;
     }
@@ -491,10 +503,12 @@ export class Manager implements EventProviderFactory {
             });
             this._managerVersion = json && json.version ? json.version : "";
 
-            // Async load material design icons if requested
+            // Load material design icons if requested
             if (this._config.loadIcons) {
-                const mdiIconSet = await import(/* webpackChunkName: "mdi-icons" */ "@openremote/or-icon/dist/mdi-icons");
-                IconSets.addIconSet("mdi", mdiIconSet.default);
+                Util.loadJs(this.config.managerUrl + "/shared/mdi-icons/index.bundle.js").then(() => {
+                    // @ts-ignore
+                    IconSets.addIconSet("mdi", window.ORMdiIcons.default);
+                });
             }
 
             return true;
@@ -924,4 +938,8 @@ export class Manager implements EventProviderFactory {
     }
 }
 
-export default new Manager();
+const manager = new Manager();
+
+export {manager};
+
+export default manager;
