@@ -15,7 +15,7 @@ services:
       file: deploy.yml
       service: keycloak
     volumes:
-      - ${DEPLOYMENT_DIRECTORY:-../deployment}/keycloak/themes/openremote:/opt/jboss/keycloak/themes/openremote
+      - ../ui/keycloak/themes:/deployment/keycloak/themes
     # Access directly if needed on localhost
     ports:
       - "8081:8080"
