@@ -126,7 +126,7 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
         }
 
         public _onAttributeEvent(event: AttributeEvent) {
-            if (!this._connectRequested || !this._assetSubscriptionId) {
+            if (!this._connectRequested || !this._attributeSubscriptionId) {
                 return;
             }
 

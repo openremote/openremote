@@ -77,7 +77,10 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     public disabled: boolean = false;
 
     @property({type: Boolean})
-    public preventWrite: boolean = false;
+    public disableSubscribe: boolean = false;
+
+    @property({type: Boolean})
+    public disableWrite: boolean = false;
 
     @property({type: Boolean})
     public dense: boolean = false;
@@ -249,8 +252,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     public updated(_changedProperties: PropertyValues): void {
         super.updated(_changedProperties);
 
-        if (_changedProperties.has("attribute") || _changedProperties.has("attributeRef")) {
-            if (this.attribute || this.attributeRef) {
+        if (_changedProperties.has("attribute") || _changedProperties.has("attributeRef") || _changedProperties.has("disabledSubscribe")) {
+            if ((this.attribute || this.attributeRef) && !this.disableSubscribe) {
                 this._loading = true;
                 super.attributeRefs = this.attribute ? [{entityId: this.attribute!.assetId!, attributeName: this.attribute!.name!}] : [this.attributeRef!];
             } else {
@@ -289,6 +292,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         const oldValue = this.attribute ? this.attribute.value : undefined;
         if (this.attribute) {
             this.attribute.value = event.attributeState!.value;
+            this.attribute.valueTimestamp = event.timestamp;
+            this._loading = false;
             super.requestUpdate();
         }
         this.dispatchEvent(new OrInputChangedEvent(event.attributeState!.value, oldValue));
@@ -300,7 +305,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 newValue = this._valueInboundConverter(newValue);
             }
 
-            if (!this.preventWrite && !this.disabled && !this.readonly) {
+            if (!this.disableWrite && !this.disabled && !this.readonly) {
 
                 let attributeRef = this.attributeRef;
 

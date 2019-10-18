@@ -482,13 +482,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         if (this.asset && this.asset.attributes && this.asset.attributes.hasOwnProperty(attrName)) {
             if (event.attributeState!.deleted) {
                 delete this.asset.attributes[attrName];
-            } else {
-                const attr = this.asset.attributes[attrName]! as Attribute;
-                attr.valueTimestamp = event.timestamp;
-                attr.value = event.attributeState!.value;
-                this.asset.attributes[attrName] = {...attr};
+                this.asset = {...this.asset}
             }
-            this.asset = {...this.asset}
         }
     }
 
