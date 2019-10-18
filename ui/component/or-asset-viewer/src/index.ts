@@ -1,13 +1,16 @@
 import {customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
-import "@openremote/or-select";
 import "@openremote/or-icon";
 import "@openremote/or-input";
 import "@openremote/or-attribute-input";
 import "@openremote/or-attribute-history";
-import {getAttributeLabel} from "@openremote/or-attribute-input";
 import "@openremote/or-translate";
 import {translate} from "@openremote/or-translate";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
+import "@openremote/or-map";
+import manager, {subscribe, Util, AssetModelUtil} from "@openremote/core";
+import "@openremote/or-panel";
+import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
+import {Type as MapType, Util as MapUtil} from "@openremote/or-map";
 import {
     Asset,
     AssetAttribute,
@@ -15,19 +18,12 @@ import {
     Attribute,
     AttributeEvent,
     AttributeType,
-    MetaItemType
+    MetaItemType,
+    AttributeDescriptor
 } from "@openremote/model";
 import {style} from "./style";
-import "@openremote/or-panel";
-import manager from "@openremote/core";
-import {subscribe} from "@openremote/core";
-import {Util} from "@openremote/core";
 import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
-import "@openremote/or-map";
-import {Type as MapType} from "@openremote/or-map";
-import {Util as MapUtil} from "@openremote/or-map";
-import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
 
 export type PanelType = "property" | "location" | "attribute" | "history";
 
@@ -60,6 +56,16 @@ export interface ViewerConfig {
     panelViewProvider?: (attributes: AssetAttribute[], panelName: string, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     mapType?: MapType;
     historyConfig?: HistoryConfig;
+}
+
+function getAttributeLabel(attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined, fallback?: string): string {
+    if (!attribute && !descriptor) {
+        return fallback || "";
+    }
+
+    const labelMetaValue = AssetModelUtil.getMetaValue(MetaItemType.LABEL, attribute, descriptor);
+    const name = attribute ? attribute.name : descriptor!.attributeName;
+    return i18next.t([name, fallback || labelMetaValue || name]);
 }
 
 @customElement("or-asset-viewer")

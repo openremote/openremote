@@ -14,6 +14,8 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "^1.1.0",
+    "@openremote/or-input": "^1.1.0",
+    "@openremote/or-panel": "^1.1.0",
     "@openremote/or-translate": "^1.1.0",
     "@material/data-table": "^3.2.0",
     "chart.js": "^2.8.0",

@@ -4,7 +4,6 @@ import "@openremote/or-icon";
 import "@openremote/or-translate";
 import "@openremote/or-icon";
 
-
 @customElement("or-asset-info")
 export class OrAssetInfo extends LitElement {
 

@@ -1,19 +1,17 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
-import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
+import {translate, i18next} from "@openremote/or-translate";
 import {
     AssetAttribute,
-    Attribute,
     AttributeDescriptor,
     AttributeEvent,
     AttributeRef,
     AttributeValueDescriptor,
     AttributeValueType,
     MetaItemType,
-    ValueType
+    ValueType,
+    Attribute
 } from "@openremote/model";
-import manager, {AssetModelUtil} from "@openremote/core";
-import {subscribe} from "@openremote/core";
+import manager, {AssetModelUtil, subscribe} from "@openremote/core";
 import "@openremote/or-input";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 

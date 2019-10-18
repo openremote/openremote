@@ -12,7 +12,6 @@
   "references": [
     { "path": "../core" },
     { "path": "../rest" },
-    { "path": "../or-select" },
     { "path": "../or-panel" },
     { "path": "../or-translate" },
     { "path": "../or-icon" },
