@@ -14,7 +14,7 @@ mdiStream.write("let mdi: IconSetSvg = {\n");
 mdiStream.write("  size: 24,\n");
 mdiStream.write("  icons: {\n");
 
-let files = fs.readdirSync(mdiSvgDir);
+let files = fs.readdirSync(mdiSvgDir).sort();
 let nameArr = [];
 
 for (let i=0; i<files.length; i++) {
