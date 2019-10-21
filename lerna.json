@@ -1,0 +1,12 @@
+{
+  "version": "1.1.0",
+  "npmClient": "yarn",
+  "command": {
+    "publish": {
+      "ignoreChanges": ["*.js", "*.md"],
+      "message": "UI updates: Set version for publishing",
+      "registry": "https://npm.pkg.github.com"
+    }
+  },
+  "packages": ["ui/component/*"]
+}
