@@ -5,10 +5,11 @@
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "sideEffects": false,
   "scripts": {
     "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
-    "prepare": "npx tsc -b && npx webpack"
+    "prepublishOnly": "npx tsc -b && npx webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",

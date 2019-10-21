@@ -1,6 +1,5 @@
 import {css, unsafeCSS} from "lit-element";
-import {DefaultColor1, DefaultColor2, DefaultColor5, DefaultColor3, DefaultColor4, DefaultBoxShadow, DefaultDisabledOpacity,
-    DefaultBoxShadowBottom} from "@openremote/core";
+import {DefaultColor1, DefaultColor4} from "@openremote/core";
 
 // TODO this is temp work, should be replaced with material design components / styling
 // language=CSS

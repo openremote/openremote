@@ -9,7 +9,7 @@
     "generate": "node mdi-iconset-generator.js",
     "build": "node mdi-iconset-generator.js && npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
-    "prepare": "node mdi-iconset-generator.js && npx tsc -b && npx webpack"
+    "prepublishOnly": "node mdi-iconset-generator.js && npx tsc -b && npx webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
