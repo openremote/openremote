@@ -20,6 +20,7 @@ export {Util};
 export * from "./asset-mixin";
 export * from "./console";
 export * from "./event";
+export * from "./defaults";
 
 export declare type KeycloakPromise<T> = {
     success<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | KeycloakPromise<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | KeycloakPromise<TResult2>) | undefined | null): KeycloakPromise<TResult1 | TResult2>;
@@ -41,22 +42,6 @@ export declare type Keycloak = {
     updateToken(expiry: number): KeycloakPromise<boolean>;
     clearToken(): void;
 }
-
-export const DefaultColor4: string = "#1B5630"; // Primary
-export const DefaultColor7: string = "#FFF"; // Secondary
-export const DefaultColor1: string = "#FFF"; // Surface
-export const DefaultColor2: string = "#F9F9F9"; // Background
-export const DefaultColor5: string = "#CCC"; // Borders and lines
-export const DefaultColor6: string = "#be0000"; // Invalid/Error
-export const DefaultColor8: string = "#FFF"; // On Primary
-export const DefaultColor3: string = "#4c4c4c"; // Text / On Secondary
-export const DefaultColor9: string = "#000"; // On Background
-export const DefaultColor10: string = "#000"; // On Surface
-export const DefaultColor11: string = "#FFF"; // On Error
-export const DefaultBoxShadowBottom: string = "0 5px 5px -5px rgba(0,0,0,0.3)";
-export const DefaultBoxShadow: string = "0 1px 3px 0 rgba(0,0,0,0.21)";
-export const DefaultHeaderHeight: string = "50px";
-export const DefaultDisabledOpacity: string = "0.3";
 
 export enum ORError {
     NONE = "NONE",
