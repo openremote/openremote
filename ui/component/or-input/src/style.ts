@@ -42,4 +42,12 @@ export const orInputStyle = css`
     .mdc-switch {
         margin: 18px;
     }
+    
+    .mdc-select__dropdown-icon {
+        background: none;
+    }
+    
+    .mdc-select--focused .mdc-select__dropdown-icon {
+        --or-icon-fill: var(--internal-or-input-color);
+    }
 `;

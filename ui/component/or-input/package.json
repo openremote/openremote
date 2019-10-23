@@ -21,9 +21,9 @@
     "@material/icon-button": "^3.2.0",
     "@material/line-ripple": "^3.1.0",
     "@material/ripple": "^3.2.0",
+    "@material/select": "^3.2.0",
     "@material/switch": "^3.2.0",
     "@material/textfield": "^3.2.0",
-    "@openremote/or-select": "^1.1.0",
     "lit-element": "^2.2.1"
   },
   "devDependencies": {

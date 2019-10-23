@@ -2,14 +2,13 @@ import {css, customElement, html, LitElement, property, PropertyValues, Template
 import {classMap} from "lit-html/directives/class-map";
 import {ifDefined} from "lit-html/directives/if-defined";
 import {orInputStyle} from "./style";
-import "@openremote/or-select";
 import {MDCTextField} from "@material/textfield";
 import {MDCComponent} from "@material/base";
 import {MDCRipple} from "@material/ripple";
 import {MDCCheckbox} from "@material/checkbox";
 import {MDCSwitch} from "@material/switch";
+import {MDCSelect, MDCSelectEvent, } from "@material/select";
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
-import {OrSelectChangedEvent} from "@openremote/or-select";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("!!raw-loader!@material/button/dist/mdc.button.css");
@@ -21,6 +20,10 @@ const floatingLabelStyle = require("!!raw-loader!@material/floating-label/dist/m
 const formFieldStyle = require("!!raw-loader!@material/form-field/dist/mdc.form-field.css");
 const checkboxStyle = require("!!raw-loader!@material/checkbox/dist/mdc.checkbox.css");
 const switchStyle = require("!!raw-loader!@material/switch/dist/mdc.switch.css");
+const selectStyle = require("!!raw-loader!@material/select/dist/mdc.select.css");
+const listStyle = require("!!raw-loader!@material/list/dist/mdc.list.css");
+const menuSurfaceStyle = require("!!raw-loader!@material/menu-surface/dist/mdc.menu-surface.css");
+const menuStyle = require("!!raw-loader!@material/menu/dist/mdc.menu.css");
 
 export class OrInputChangedEvent extends CustomEvent<OrInputChangedEventDetail> {
 
@@ -87,6 +90,10 @@ export class OrInput extends LitElement {
             css`${unsafeCSS(formFieldStyle)}`,
             css`${unsafeCSS(checkboxStyle)}`,
             css`${unsafeCSS(switchStyle)}`,
+            css`${unsafeCSS(selectStyle)}`,
+            css`${unsafeCSS(listStyle)}`,
+            css`${unsafeCSS(menuStyle)}`,
+            css`${unsafeCSS(menuSurfaceStyle)}`,
             orInputStyle
         ];
     }
@@ -143,10 +150,7 @@ export class OrInput extends LitElement {
     public options?: string[] | [string, string][];
 
     @property({type: Boolean})
-    public noEmpty?: boolean;
-
-    @property({type: Boolean})
-    public noAutoSize?: boolean;
+    public autoSelect?: boolean;
 
     /* STYLING PROPERTIES BELOW */
 
@@ -199,7 +203,7 @@ export class OrInput extends LitElement {
 
     protected _mdcComponent?: MDCComponent<any>;
     protected _mdcField?: MDCComponent<any>;
-    protected _processedValue?: any;
+    protected _selectedIndex = -1;
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
@@ -216,6 +220,14 @@ export class OrInput extends LitElement {
     protected render() {
 
         if (this.type) {
+
+            const showLabel = !this.fullWidth && this.label;
+            const outlined = !this.fullWidth && this.outlined;
+            const hasHelper = !!this.helperText;
+            const showValidationMessage = this.validationMessage;
+            const hasValue = this.value || this.value === false;
+            const labelTemplate = showLabel ? html`<label class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""}" for="elem">${this.label}</label>` : ``;
+
             switch (this.type) {
                 case InputType.RADIO:
                     return html`<span>RADIO</span>`;
@@ -227,7 +239,7 @@ export class OrInput extends LitElement {
                                 <div class="mdc-switch__thumb-underlay">
                                     <div class="mdc-switch__thumb">
                                         <input type="checkbox" id="elem" class="mdc-switch__native-control" 
-                                        ?checked="${this._processedValue}"
+                                        ?checked="${this.value}"
                                         ?required="${this.required}"
                                         ?disabled="${this.disabled || this.readonly}"
                                         @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement).checked)}"
@@ -239,12 +251,59 @@ export class OrInput extends LitElement {
                         </div>
                     `;
                 case InputType.SELECT:
+                    const classes = {
+                        "mdc-select--outlined": outlined,
+                        "mdc-select--disabled": this.disabled,
+                        "mdc-select--dense": this.dense,
+                        "mdc-select--no-label": !this.label,
+                        "mdc-select--with-leading-icon": !!this.icon
+                    };
+                    const helperClasses = {
+                        "mdc-select-helper-text--persistent": this.helperPersistent,
+                        "mdc-select-helper-text--validation-msg": showValidationMessage,
+                    };
+
+                    let opts: [string, string][] | undefined;
+                    if (this.options && this.options.length > 0) {
+                        if (Array.isArray(this.options[0])) {
+                            opts = this.options as [string, string][];
+                        } else {
+                            opts = (this.options as string[]).map((option) => [option, option]);
+                        }
+                    }
+
+                    this._selectedIndex = -1;
+
                     return html`
-                        <or-select .required="${this.required}" .noEmpty="${this.noEmpty}" .noAutoSize="${this.noAutoSize}" .options="${this.options}" .value="${this._processedValue}" .readonly="${this.readonly}" @or-select-changed="${(e: OrSelectChangedEvent) => this.onValueChange(e.detail.value)}"></or-select>
+                        <div id="menu-anchor" class="mdc-menu-surface--anchor"></div>
+                        <div id="component" class="mdc-select ${classMap(classes)}"
+                            ?required="${this.required}"
+                            ?readonly="${this.readonly}"
+                            ?disabled="${this.disabled}"
+                            @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(e.detail.index === -1 ? undefined : e.detail.value)}">
+                            <or-icon class="mdc-select__dropdown-icon" icon="menu-down"></or-icon>
+                            <div id="elem" class="mdc-select__selected-text" role="button" aria-haspopup="listbox" aria-controls="component-helper-text" aria-describedby="component-helper-text" aria-labelledby="component-label component"></div>
+                            <div id="menu" class="mdc-select__menu mdc-menu mdc-menu-surface" role="listbox">
+                                <ul class="mdc-list">
+                                    ${opts ? opts.map(([optValue, optDisplay], index) => {
+                                        if (this.value === optValue) {
+                                            this._selectedIndex = index;
+                                        }
+                                        return html`<li class="mdc-list-item" role="option" data-value="${optValue}">${optDisplay}</li>`;
+                                    }) : ``}
+                                </ul>
+                            </div>
+                            ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
+                            ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
+                        </div>
+                        ${hasHelper ? html`
+                            <p id="component-helper-text" class="mdc-select-helper-text ${classMap(helperClasses)}" aria-hidden="true">
+                                ${showValidationMessage ? this.validationMessage : this.helperText}
+                            </p>` : ``}
                     `;
                 case InputType.BUTTON:
                 case InputType.BUTTON_MOMENTARY: {
-                    const rounded = !!(!this._processedValue && this.rounded && this.icon);
+                    const rounded = !!(!this.value && this.rounded && this.icon);
                     const classes = {
                         "mdc-button--raised": this.raised,
                         "mdc-button--unelevated": this.unElevated,
@@ -288,7 +347,7 @@ export class OrInput extends LitElement {
                         <div id="field" class="mdc-form-field ${this.dense ? "mdc-form-field--dense" : ""}">
                             <div id="component" class="mdc-checkbox ${this.dense ? "mdc-checkbox--dense" : ""}">
                                 <input type="checkbox" 
-                                    ?checked="${this._processedValue}"
+                                    ?checked="${this.value}"
                                     ?required="${this.required}"
                                     ?disabled="${this.disabled || this.readonly}"
                                     @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement).checked)}"
@@ -318,10 +377,27 @@ export class OrInput extends LitElement {
                 case InputType.TEXT:
                 case InputType.TEXTAREA:
                 case InputType.JSON: {
-                    const showLabel = !this.fullWidth && this.label;
-                    const outlined = !this.fullWidth && this.outlined;
-                    const hasHelper = !!this.helperText;
-                    const showValidationMessage = this.validationMessage;
+                    let val = this.value;
+
+                    if (typeof(val) !== "string") {
+                        switch (this.type) {
+                            case InputType.DATETIME:
+                                // Date time conversion for UNIX timestamps in millis
+                                if (typeof(val) === "number") {
+                                    const offset = (new Date()).getTimezoneOffset() * 60000;
+                                    const str = (new Date(val - offset)).toISOString();
+                                    val = str.slice(0, str.lastIndexOf(":"));
+                                }
+                                break;
+                            case InputType.JSON:
+                                val = val !== undefined && val !== null ? JSON.stringify(val, null, 2) : "";
+                                break;
+                            default:
+                                val = val !== undefined && val !== null ? val : "";
+                                break;
+                        }
+                    }
+
                     const classes = {
                         "mdc-text-field--outlined": outlined,
                         "mdc-text-field--textarea": this.type === InputType.TEXTAREA || this.type === InputType.JSON,
@@ -337,8 +413,6 @@ export class OrInput extends LitElement {
                         "mdc-text-field-helper-text--validation-msg": showValidationMessage,
                     };
 
-                    const labelTemplate = showLabel ? html`<label class="mdc-floating-label ${this._processedValue || this._processedValue === false ? "mdc-floating-label--float-above" : ""}" for="elem">${this.label}</label>` : ``;
-
                     return html`
                             <div id="component" class="mdc-text-field ${classMap(classes)}">
                             ${this.icon ? html`<or-icon class="mdc-text-field__icon" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
@@ -352,7 +426,7 @@ export class OrInput extends LitElement {
                                     maxlength="${ifDefined(this.maxLength)}"
                                     rows="${this.rows ? this.rows : 5}" 
                                     cols="${ifDefined(this.cols)}"
-                                    aria-label="${ifDefined(this.label)}">${this._processedValue}</textarea>
+                                    aria-label="${ifDefined(this.label)}">${val}</textarea>
                                 ${this.renderOutlined(labelTemplate)}
                                 ` :
                                 html`<input type="${this.type}" id="elem" class="mdc-text-field__input"
@@ -360,7 +434,7 @@ export class OrInput extends LitElement {
                                     ?readonly="${this.readonly}"
                                     ?disabled="${this.disabled}"
                                     @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement).value)}"
-                                    value="${this._processedValue}"
+                                    value="${val}"
                                     min="${ifDefined(this.min)}"
                                     max="${ifDefined(this.max)}"
                                     step="${ifDefined(this.step)}"
@@ -387,30 +461,6 @@ export class OrInput extends LitElement {
         return html`<span>INPUT TYPE NOT IMPLEMENTED</span>`;
     }
 
-    protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("value") || _changedProperties.has("type")) {
-            let val = this.value;
-
-            if (typeof(val) !== "string") {
-                switch (this.type) {
-                    case InputType.DATETIME:
-                        // Date time conversion for UNIX timestamps in millis
-                        if (typeof(val) === "number") {
-                            const offset = (new Date()).getTimezoneOffset() * 60000;
-                            const str = (new Date(val - offset)).toISOString();
-                            val = str.slice(0, str.lastIndexOf(":"));
-                        }
-                        break;
-                    case InputType.JSON:
-                        val = val !== undefined && val !== null ? JSON.stringify(val, null, 2) : "";
-                        break;
-                }
-            }
-            this._processedValue = val;
-        }
-        return super.shouldUpdate(_changedProperties);
-    }
-
     protected updated(_changedProperties: PropertyValues): void {
         super.updated(_changedProperties);
 
@@ -428,6 +478,14 @@ export class OrInput extends LitElement {
             if (component && this.type) {
                 switch(this.type) {
                     case InputType.SELECT:
+                        // Need to reverse the hoisting of the menu to the body
+                        const menuAnchor = this.shadowRoot!.getElementById("menu-anchor");
+                        const menu = this.shadowRoot!.getElementById("menu");
+                        const mdcSelect = new MDCSelect(component);
+                        menuAnchor!.appendChild(menu!);
+                        (mdcSelect as any).menu_.setIsHoisted(false);
+                        this._mdcComponent = mdcSelect;
+                        mdcSelect.selectedIndex = this._selectedIndex;
                         break;
                     case InputType.RADIO:
                         break;
@@ -451,6 +509,8 @@ export class OrInput extends LitElement {
                         break;
                 }
             }
+        } else if (this.type === InputType.SELECT && this._mdcComponent) {
+            (this._mdcComponent as MDCSelect).selectedIndex = this._selectedIndex;
         }
 
         if (!this.type && this.value) {
@@ -487,6 +547,10 @@ export class OrInput extends LitElement {
             newValue = null;
         }
 
+        if (newValue === "undefined") {
+            newValue = undefined;
+        }
+
         if (typeof(newValue) === "string" && typeof(previousValue) !== "string") {
             switch (this.type) {
                 case InputType.CHECKBOX:
@@ -511,6 +575,9 @@ export class OrInput extends LitElement {
         }
 
         this.value = newValue;
-        this.dispatchEvent(new OrInputChangedEvent(this.value, previousValue));
+
+        if (newValue !== previousValue) {
+            this.dispatchEvent(new OrInputChangedEvent(this.value, previousValue));
+        }
     }
 }
