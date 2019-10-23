@@ -20,6 +20,7 @@
 package org.openremote.app.client.assets.browser;
 
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetType;
 
 public class AssetTreeNode extends BrowserTreeNode {
 
@@ -48,6 +49,11 @@ public class AssetTreeNode extends BrowserTreeNode {
 
     @Override
     public String getIcon() {
-        return asset.getWellKnownType().getIcon();
+        AssetType assetType = asset.getWellKnownType();
+        if (assetType != null) {
+            return assetType.getIcon();
+        }
+
+        return "cube";
     }
 }

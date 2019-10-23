@@ -371,8 +371,8 @@ public class AssetViewImpl extends Composite implements AssetView {
     public void setIconAndType(String icon, String type) {
         headline.setIcon(icon);
         //TODO replace with AssetModel getValues, through a http request
-        AssetType assetType = AssetType.getByValue(type).orElse(AssetType.CUSTOM);
-        if (assetType == AssetType.CUSTOM) {
+        AssetType assetType = AssetType.getByValue(type).orElse(null);
+        if (assetType == null) {
             headline.setSub(type);
         } else {
             headline.setSub(managerMessages.assetTypeLabel(assetType.name()));

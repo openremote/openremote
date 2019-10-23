@@ -428,7 +428,7 @@ public class Asset implements IdentifiableEntity {
 
     public AssetType getWellKnownType() {
         //TODO replace with AssetModel getValues, through a http request
-        return AssetType.getByValue(getType()).orElse(AssetType.CUSTOM);
+        return AssetType.getByValue(getType()).orElse(null);
     }
 
     public void setType(String type) throws IllegalArgumentException {
@@ -491,7 +491,7 @@ public class Asset implements IdentifiableEntity {
 
     public AssetType getParentWellKnownType() {
         //TODO replace with AssetModel getValues, through a http request
-        return AssetType.getByValue(getParentType()).orElse(AssetType.CUSTOM);
+        return AssetType.getByValue(getParentType()).orElse(null);
     }
 
     public String getRealm() {

@@ -32,7 +32,6 @@ import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.asset.AssetType.AGENT
 import static org.openremote.model.asset.AssetType.BUILDING
 import static org.openremote.model.asset.AssetType.CONSOLE
-import static org.openremote.model.asset.AssetType.CUSTOM
 import static org.openremote.model.asset.AssetType.FLOOR
 import static org.openremote.model.asset.AssetType.RESIDENCE
 import static org.openremote.model.asset.AssetType.ROOM
@@ -64,17 +63,16 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
         def assetDescriptors = assetModelResource.getAssetDescriptors(null)
 
         then: "the default asset types should be present"
-        assetDescriptors.size() == 8
-        assetDescriptors[0].name == CUSTOM.name
-        assetDescriptors[1].name == BUILDING.name
-        assetDescriptors[1].attributeDescriptors.length == 5
-        assetDescriptors[1].attributeDescriptors.find {it.attributeName == AttributeType.SURFACE_AREA.attributeName}.valueDescriptor.valueType == ValueType.NUMBER
-        assetDescriptors[2].name == FLOOR.name
-        assetDescriptors[3].name == RESIDENCE.name
-        assetDescriptors[4].name == ROOM.name
-        assetDescriptors[5].name == AGENT.name
-        assetDescriptors[6].name == CONSOLE.name
-        assetDescriptors[7].name == THING.name
+        assetDescriptors.size() == 7
+        assetDescriptors[0].name == BUILDING.name
+        assetDescriptors[0].attributeDescriptors.length == 5
+        assetDescriptors[0].attributeDescriptors.find {it.attributeName == AttributeType.SURFACE_AREA.attributeName}.valueDescriptor.valueType == ValueType.NUMBER
+        assetDescriptors[1].name == FLOOR.name
+        assetDescriptors[2].name == RESIDENCE.name
+        assetDescriptors[3].name == ROOM.name
+        assetDescriptors[4].name == AGENT.name
+        assetDescriptors[5].name == CONSOLE.name
+        assetDescriptors[6].name == THING.name
 
         when: "a request for Attribute types is made"
 

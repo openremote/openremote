@@ -263,7 +263,9 @@ public class AssetViewActivity
     @Override
     public void writeAssetToView() {
         super.writeAssetToView();
-        view.setIconAndType(asset.getWellKnownType().getIcon(), asset.getType());
+        AssetType assetType = asset.getWellKnownType();
+
+        view.setIconAndType(assetType != null ? assetType.getIcon() : "cube", asset.getType());
 
         // Build the link manually, shorter result than AssetQueryMapper, and we must hardcode the path anyway
         String query = Values.createObject()

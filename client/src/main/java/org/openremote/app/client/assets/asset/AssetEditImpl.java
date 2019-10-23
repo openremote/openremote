@@ -201,9 +201,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
             new AbstractRenderer<AssetDescriptor>() {
                 @Override
                 public String render(AssetDescriptor assetType) {
-                    if (assetType == null)
-                        assetType = AssetType.CUSTOM;
-                    return environment.getMessages().assetTypeLabel(assetType.getName());
+                    return assetType != null ? environment.getMessages().assetTypeLabel(assetType.getName()) : "";
                 }
             }
         );
@@ -435,7 +433,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     @Override
     public void selectWellKnownType(AssetDescriptor assetType) {
         typeListBox.setValue(assetType);
-        typeInput.setVisible(assetType == AssetType.CUSTOM);
+        typeInput.setVisible(assetType != null);
     }
 
     @Override
@@ -447,8 +445,8 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     public void setType(String type) {
         typeInput.setValue(type);
         //TODO replace with AssetModel getValues, through a http request
-        AssetDescriptor assetType = AssetType.getByValue(type).orElse(AssetType.CUSTOM);
-        if (assetType == AssetType.CUSTOM) {
+        AssetDescriptor assetType = AssetType.getByValue(type).orElse(null);
+        if (assetType == null) {
             headline.setSub(type);
         } else {
             headline.setSub(managerMessages.assetTypeLabel(assetType.getName()));
@@ -460,7 +458,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         typeGroup.setVisible(editable);
         typeListBox.setEnabled(editable);
         typeInput.setReadOnly(!editable);
-        customTypeInfoLabel.setVisible(editable && typeListBox.getValue() == AssetType.CUSTOM);
+        customTypeInfoLabel.setVisible(editable && typeListBox.getValue() == null);
     }
 
     @Override

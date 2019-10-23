@@ -64,7 +64,6 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
-import static org.openremote.model.asset.AssetType.CUSTOM;
 import static org.openremote.model.attribute.Attribute.ATTRIBUTE_NAME_VALIDATOR;
 import static org.openremote.model.attribute.Attribute.isAttributeNameEqualTo;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
@@ -618,11 +617,6 @@ public class AssetEditActivity
         //TODO replace with AssetModel getValuesSorted, through a http request
         List<AssetDescriptor> list = new ArrayList<>(Arrays.asList(AssetType.values()));
         list.sort(Comparator.comparing(AssetDescriptor::getName));
-        if (list.contains(CUSTOM)) {
-            // CUSTOM should be first
-            list.remove(CUSTOM);
-            list.add(0, CUSTOM);
-        }
         view.setAvailableWellKnownTypes(list.toArray(new AssetDescriptor[list.size()]));
         view.setType(asset.getType());
         view.setTypeEditable(isNullOrEmpty(assetId));
@@ -707,9 +701,6 @@ public class AssetEditActivity
             asset.setParentId(parentAsset.getId());
         } else {
             asset.setParentId(null);
-        }
-        if (CUSTOM.equals(asset.getWellKnownType())) {
-            asset.setType(view.getType());
         }
         if (selectedCoordinates != null) {
             asset.setCoordinates(selectedCoordinates);

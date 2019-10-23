@@ -34,8 +34,6 @@ import static org.openremote.model.attribute.AttributeType.*;
  */
 public enum AssetType implements AssetDescriptor {
 
-    CUSTOM(null, "cube", null),
-
     BUILDING(ASSET_NAMESPACE + ":building", "office-building", null,
             SURFACE_AREA,
             GEO_STREET,
