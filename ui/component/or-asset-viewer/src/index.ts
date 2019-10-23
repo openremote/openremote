@@ -15,6 +15,7 @@ import {
     Asset,
     AssetAttribute,
     AssetEvent,
+    AssetType,
     Attribute,
     AttributeEvent,
     AttributeType,
@@ -77,7 +78,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     public static DEFAULT_CONFIG: AssetViewerConfig = {
         viewerStyles: {
             gridTemplateColumns: "repeat(12, 1fr)",
-            gridTemplateRows: "auto minmax(0, 1fr) minmax(0, 50%)"
+            gridTemplateRows: "30px max-content"
         },
         panels: {
             "info": {
@@ -85,8 +86,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 panelStyles: {
                     gridColumnStart: "1",
                     gridColumnEnd: "7",
-                    gridRowStart: "1",
-                    gridRowEnd: "2",
+                    gridRowStart: "2",
+                    gridRowEnd: "3",
                 },
                 fieldStyles: {
                     name: {
@@ -106,8 +107,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 panelStyles: {
                     gridColumnStart: "7",
                     gridColumnEnd: "13",
-                    gridRowStart: "1",
-                    gridRowEnd: "3",
+                    gridRowStart: "2",
+                    gridRowEnd: "4",
                 },
                 fieldStyles: {
                     location: {
@@ -121,8 +122,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 panelStyles: {
                     gridColumnStart: "1",
                     gridColumnEnd: "7",
-                    gridRowStart: "2",
-                    gridRowEnd: "4"
+                    gridRowStart: "3",
+                    gridRowEnd: "5"
                 }
             },
             "history": {
@@ -130,8 +131,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 panelStyles: {
                     gridColumnStart: "7",
                     gridColumnEnd: "13",
-                    gridRowStart: "3",
-                    gridRowEnd: "4",
+                    gridRowStart: "4",
+                    gridRowEnd: "5",
                 },
                 scrollable: false,
             }
@@ -206,8 +207,18 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             return html``;
         }
 
+        const descriptor = AssetModelUtil.getAssetDescriptor(this.asset!.type!);
+        var assetDate = new Date(this.asset!.createdOn!);
+        var formattedDate = assetDate.toLocaleString('nl-NL');
+
         return html`
             <div id="container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
+                <div id="asset-header">
+                    <div class="title">
+                        <or-icon title="${descriptor && descriptor.type ? descriptor.type : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.color ? "#" + descriptor.color : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetType.THING.icon}"></or-icon>${this.asset.name}
+                    </div>
+                    <div class="created">Aangemaakt op: ${formattedDate}</div>
+                </div>
             ${html`${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
                 const panelTemplate = OrAssetViewer.getPanel(name, this.asset!, this._attributes!, this._viewerConfig!, panelConfig, this.shadowRoot);
                 return panelTemplate || ``;
@@ -372,10 +383,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                             width: 100%;
                             display: flex;
                             flex-direction: column;
+                            padding-top: 10px;
                         }
                         #location-container > or-map {
                             flex: 1;
-                            border: #dbdbdb 1px solid;
+                            border: #e5e5e5 1px solid;
                         }
                         #location-map-input {
                             flex: 0 0 auto;

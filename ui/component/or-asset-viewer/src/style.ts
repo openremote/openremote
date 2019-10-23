@@ -6,7 +6,7 @@ export const style = css`
 
     :host {
         --internal-or-asset-viewer-background-color: var(--or-asset-viewer-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
-        --internal-or-asset-viewer-panel-margin: var(--or-asset-viewer-panel-margin, 30px);
+        --internal-or-asset-viewer-panel-margin: var(--or-asset-viewer-panel-margin, 20px);
         --internal-or-asset-viewer-panel-padding: var(--or-asset-viewer-panel-padding, 24px);
         --internal-or-asset-viewer-text-color: var(--or-asset-viewer-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
         --internal-or-asset-viewer-title-text-color: var(--or-asset-viewer-title-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));       
@@ -15,9 +15,7 @@ export const style = css`
         
         height: 100%;
         width: 100%;
-        box-sizing: border-box;
         background-color: var(--internal-or-asset-viewer-background-color);
-        padding: var(--internal-or-asset-viewer-panel-margin);
     }
    
     *[hidden] {
@@ -26,12 +24,12 @@ export const style = css`
     
     #container {
         box-sizing: border-box;
-        height: 100%;
-        display: grid;
-        grid-template-columns: var(--internal-or-asset-viewer-grid-template-columns);
-        grid-template-rows: var(--internal-or-asset-viewer-grid-template-rows);
+        padding: 20px 30px;
         column-gap: var(--internal-or-asset-viewer-panel-margin);
         row-gap: var(--internal-or-asset-viewer-panel-margin);  
+        height: 100%;
+        display: grid;
+        overflow-y: auto;
         -webkit-animation: fadein 0.3s; /* Safari, Chrome and Opera > 12.1 */
         -moz-animation: fadein 0.3s; /* Firefox < 16 */
         -ms-animation: fadein 0.3s; /* Internet Explorer */
@@ -67,6 +65,33 @@ export const style = css`
         from { opacity: 0; }
         to   { opacity: 1; }
     }
+
+    #asset-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        grid-column-start: 1;
+        grid-column-end: 13;
+        grid-row-start: 1;
+        grid-row-end: 2;
+    }
+
+    #asset-header > .title {
+        flex: 1 0 auto;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    #asset-header .title > or-icon {
+        margin-right: 10px;
+    }
+    
+    #asset-header > .created {
+        text-align: right;
+        flex: 1 0 auto;
+        font-size: 12px;
+        font-color: #ccc;
+    }
     
     .panel {
         display: flex;
@@ -74,7 +99,8 @@ export const style = css`
         background-color: var(--internal-or-asset-viewer-panel-color);        
         margin: 0;
         padding: var(--internal-or-asset-viewer-panel-padding);
-        box-shadow: ${unsafeCSS(DefaultBoxShadow)};
+        border: 1px solid #e5e5e5;
+        border-radius: 5px;
     }
     
     .panel-content-wrapper {
@@ -91,6 +117,7 @@ export const style = css`
     .panel-title {
         text-transform: uppercase;
         font-weight: bolder;
+        line-height: 1em;
         color: var(--internal-or-asset-viewer-title-text-color);
         margin-bottom: 12px;
         flex: 0 0 auto;
