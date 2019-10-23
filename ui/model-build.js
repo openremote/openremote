@@ -25,7 +25,7 @@ function getWorkingDirectory() {
 }
 
 let cwd = getWorkingDirectory();
-console.log("Running gradlew modelWatch task...");
+console.log("Running gradlew modelBuild task...");
 const gradleModelWatch = spawnSync((process.platform === "win32" ? "gradlew" : "./gradlew"), ["modelWatch"], {
     cwd: cwd,
     shell: true

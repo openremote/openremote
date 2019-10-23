@@ -19,7 +19,8 @@ import {
     RulesetLang,
     TenantRuleset,
     ValuePredicateUnion,
-    ValueType
+    ValueType,
+    Attribute
 } from "@openremote/model";
 import manager, {AssetModelUtil} from "@openremote/core";
 import {Util} from "@openremote/core";
@@ -41,8 +42,8 @@ export const enum ConditionType {
 export const enum ActionType {
     WAIT = "wait",
     NOTIFICATION = "notification",
-    WRITE_ATTRIBUTE = "writeAttribute",
-    UPDATE_ATTRIBUTE = "updateAttribute"
+    WRITE_ATTRIBUTE = "write-attribute",
+    UPDATE_ATTRIBUTE = "update-attribute"
 }
 
 export const enum ActionTargetType {
@@ -99,6 +100,7 @@ export interface RulesConfig {
         allowedActionTypes?: ActionType[];
         allowedActionTargets?: ActionTargetType[];
         allowedAssetQueryOperators?: Map<AssetTypeAttributeName | AttributeDescriptor | AttributeValueDescriptor | ValueType, AssetQueryOperator[]>;
+        hideActionTypeOptions?: boolean;
         hideActionTargetOptions?: boolean;
         hideActionUpdateOptions?: boolean;
         hideConditionTypeOptions?: boolean;
@@ -108,7 +110,7 @@ export interface RulesConfig {
         hideWhenAddGroup?: boolean;
         hideWhenGroupOutline?: boolean;
     };
-    inputProvider?: (assetType: string, attributeName: string, attributeDescriptor: AttributeDescriptor | undefined, value: any | undefined, valueChangeNotifier: (value: any) => void, readonly: boolean, disabled: boolean) => TemplateResult | undefined;
+    inputProvider?: (assetType: string | undefined, attribute: Attribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean, disabled: boolean) => ((value: any) => TemplateResult) | undefined;
     descriptors?: {
         all?: RulesDescriptorSection;
         when?: RulesDescriptorSection;
@@ -400,7 +402,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
         
             <div class="section-container">
                 <or-rule-section heading="${i18next.t("then")}...">                    
-                    <or-rule-actions .actions="${rule.then}" .config="${this.config}" .newTemplate="${thenTemplate}" .allowAdd="${thenAllowAdd}" .targetTypeMap="${targetTypeMap}" .assetDescriptors="${actionDescriptors}" ?readonly="${this.isReadonly("then")}"></or-rule-actions>
+                    <or-rule-actions .rule="${rule}" .config="${this.config}" .newTemplate="${thenTemplate}" .allowAdd="${thenAllowAdd}" .targetTypeMap="${targetTypeMap}" .assetDescriptors="${actionDescriptors}" ?readonly="${this.isReadonly("then")}"></or-rule-actions>
                 </or-rule-section>
             </div>
         `;
@@ -559,7 +561,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
                     }
                     break;
                 case "notification":
-
+                    // TODO: validate notification rule action
                     break;
                 case "update-attribute":
                     if (!action.attributeName) {
@@ -691,7 +693,9 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
             let rule = this.config && this.config.templates && this.config.templates.rule ? JSON.parse(JSON.stringify(this.config.templates.rule)) as JsonRule : undefined;
 
             if (!rule) {
-                rule = {};
+                rule = {
+
+                };
             }
 
             const name = this.config && this.config.templates && this.config.templates.rulesetName ? this.config.templates.rulesetName : OrRulesEditor.DEFAULT_RULESET_NAME;

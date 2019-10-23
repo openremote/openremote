@@ -1,17 +1,17 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
-import {translate, i18next} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate";
 import {
     AssetAttribute,
+    Attribute,
     AttributeDescriptor,
     AttributeEvent,
     AttributeRef,
     AttributeValueDescriptor,
     AttributeValueType,
     MetaItemType,
-    ValueType,
-    Attribute
+    ValueType
 } from "@openremote/model";
-import manager, {AssetModelUtil, subscribe} from "@openremote/core";
+import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import "@openremote/or-input";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 
@@ -25,25 +25,140 @@ export function getAttributeLabel(attribute: Attribute | undefined, descriptor: 
     return i18next.t([name, fallback || labelMetaValue || name]);
 }
 
-// Allows consuming applications to provide custom UI for certain attributes; if the value is changed the custom control
-// must call the valueChangeNotifier.
-class AttributeInputProviders {
-    public _providers: Array<(assetType: string | undefined, attribute: AssetAttribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean, disabled: boolean) => TemplateResult | undefined> = [];
+export function getAttributeValueTemplate(
+    assetType: string | undefined,
+    attribute: Attribute,
+    readonly: boolean,
+    disabled: boolean,
+    valueChangedCallback: (value: any) => void,
+    customProvider?: (assetType: string | undefined, attribute: Attribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean, disabled: boolean) => ((value: any) => TemplateResult) | undefined,
+    forceInputType?: InputType) {
 
-    public addInputProvider(callback: (assetType: string | undefined, attribute: AssetAttribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean, disabled: boolean) => TemplateResult | undefined) {
-        this._providers.push(callback);
+    let template: ((value: any) => TemplateResult) | undefined;
+
+    if (!attribute) {
+        return () => html``;
     }
 
-    public removeInputProvider(callback: (assetType: string | undefined, attribute: AssetAttribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean, disabled: boolean) => TemplateResult | undefined) {
-        const i = this._providers.indexOf(callback);
-        if (i <= 0) {
-            this._providers.splice(i, 1);
+    let attributeDescriptor: AttributeDescriptor | undefined;
+    let valueDescriptor: AttributeValueDescriptor | undefined;
+
+    attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attribute.name!, assetType);
+    valueDescriptor = AssetModelUtil.getAttributeValueDescriptorFromAsset(attributeDescriptor && attributeDescriptor.valueDescriptor ? attributeDescriptor.valueDescriptor.name : attribute ? attribute.type as string : undefined, assetType, attribute.name);
+
+    if (customProvider) {
+        template = customProvider(assetType, attribute, attributeDescriptor, valueDescriptor, (newValue: any) => valueChangedCallback(newValue), readonly, disabled);
+    }
+
+    if (!template) {
+        let inputType: InputType | undefined;
+        let step: number | undefined;
+        let min: number | undefined;
+        let max: number | undefined;
+        let ro: boolean | undefined;
+        let label: string | undefined;
+        let options: any | undefined;
+
+        if (valueDescriptor) {
+
+            switch (valueDescriptor.name) {
+                case AttributeValueType.GEO_JSON_POINT.name:
+                    break;
+                case AttributeValueType.BOOLEAN.name:
+                case AttributeValueType.SWITCH_TOGGLE.name:
+                    inputType = InputType.SWITCH;
+                    break;
+                case AttributeValueType.NUMBER.name:
+                    inputType = InputType.NUMBER;
+                    break;
+                case AttributeValueType.STRING.name:
+                    inputType = InputType.TEXT;
+                    break;
+                case AttributeValueType.OBJECT.name:
+                case AttributeValueType.ARRAY.name:
+                    inputType = InputType.JSON;
+                    break;
+                case AttributeValueType.BRIGHTNESS_LUX.name:
+                    inputType = InputType.NUMBER;
+                    step = 1;
+                    break;
+                default:
+                    // Use value type
+                    switch (valueDescriptor.valueType) {
+                        case ValueType.STRING:
+                            inputType = InputType.TEXT;
+                            break;
+                        case ValueType.NUMBER:
+                            inputType = InputType.NUMBER;
+                            break;
+                        case ValueType.BOOLEAN:
+                            inputType = InputType.SWITCH;
+                            break;
+                        default:
+                            inputType = InputType.JSON;
+                            break;
+                    }
+                    break;
+            }
+        }
+
+        if (forceInputType) {
+            inputType = forceInputType;
+        }
+
+        if (!inputType) {
+            let currentValue = attribute.value;
+
+            if (currentValue) {
+                if (typeof currentValue === "number") {
+                    inputType = InputType.NUMBER;
+                } else if (typeof currentValue === "string") {
+                    inputType = InputType.TEXT;
+                } else if (typeof currentValue === "boolean") {
+                    inputType = InputType.SWITCH;
+                } else {
+                    inputType = InputType.JSON;
+                }
+            }
+        }
+
+        if (inputType) {
+            // TODO: Update to use 'effective' meta so not dependent on meta items being defined on the asset itself
+            min = AssetModelUtil.getMetaValue(MetaItemType.RANGE_MIN, attribute, attributeDescriptor) as number;
+            max = AssetModelUtil.getMetaValue(MetaItemType.RANGE_MAX, attribute, attributeDescriptor) as number;
+            label = getAttributeLabel(attribute, attributeDescriptor);
+            ro = AssetModelUtil.getMetaValue(MetaItemType.READ_ONLY, attribute, attributeDescriptor);
+            options = AssetModelUtil.getMetaValue(MetaItemType.ALLOWED_VALUES, attribute, attributeDescriptor);
+
+            if (inputType === InputType.TEXT && options && Array.isArray(options) && options.length > 0) {
+                inputType = InputType.SELECT;
+            }
+
+            let getValue = (value: any) => {
+                if (inputType === InputType.JSON && value !== null && typeof(value) !== "string") {
+                    value = JSON.stringify(value, null, 2);
+                }
+
+                return value;
+            };
+
+            let setValue = (value: any) => {
+                if (inputType === InputType.JSON && value !== null && typeof(value) !== "string") {
+                    if (typeof(value) === "string") {
+                        value = JSON.parse(value);
+                    }
+                }
+                valueChangedCallback(value);
+            };
+
+            template = (value) => html`<or-input .type="${inputType}" .label="${label}" .value="${getValue(value)}" .allowedValues="${options}" .min="${min}" .max="${max}" .readonly="${readonly || ro}" .disabled="${disabled}" @or-input-changed="${(e: OrInputChangedEvent) => setValue(e.detail.value)}"></or-input>`;
+        } else {
+            template = () => html``;
         }
     }
-}
 
-const inputProviders = new AttributeInputProviders();
-export default inputProviders;
+    return template;
+}
 
 // TODO: Add support for attribute not found and attribute deletion/addition
 @customElement("or-attribute-input")
@@ -83,24 +198,13 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     public disableWrite: boolean = false;
 
     @property({type: Boolean})
-    public dense: boolean = false;
-
-    @property({type: Boolean})
     public readonly: boolean = false;
 
-    @property()
-    protected _loading: boolean = false;
+    public customProvider?: (assetType: string | undefined, attribute: Attribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean, disabled: boolean) => ((value: any) => TemplateResult) | undefined;
 
-    protected _inputType?: InputType;
-    protected  _valueOutboundConverter?: (value: any) => any;
-    protected _valueInboundConverter?: (value: any) => any;
-    protected _min?: number;
-    protected _max?: number;
-    protected _step?: number;
-    protected _label?: string;
-    protected _readonly?: boolean;
-    protected _options?: string[] | [string, string][];
-    protected _template?: TemplateResult;
+    protected _loading: boolean = false;
+    protected _invalid: boolean = false;
+    protected _template?: (value: any) => TemplateResult;
 
     @query("#or-input")
     protected _input!: OrInput;
@@ -111,138 +215,30 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         if (_changedProperties.has("attribute")
             || _changedProperties.has("attributeRef")
             || _changedProperties.has("assetType")) {
-            this._inputType = undefined;
-            this._valueInboundConverter = undefined;
-            this._valueOutboundConverter = undefined;
-            this._min = undefined;
-            this._max = undefined;
-            this._step = undefined;
-            this._label = undefined;
-            this._readonly = undefined;
-            this._options = undefined;
 
-            if (!this.attribute && !this.attributeRef) {
-                return shouldUpdate;
-            }
-
-            let attributeDescriptor: AttributeDescriptor | undefined;
-            let valueDescriptor: AttributeValueDescriptor | undefined;
-            let attributeName: string;
-            let valueType: string | undefined;
-
-            if (this.attribute) {
-                attributeName = this.attribute.name!;
-                // Type is actually the name of the type descriptor not the type descriptor itself
-                valueType = this.attribute.type as string;
-            } else {
-                attributeName = this.attributeRef!.attributeName!;
-            }
-
-            attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attributeName, this.assetType);
-            valueDescriptor = AssetModelUtil.getAttributeValueDescriptorFromAsset(valueType, this.assetType, attributeName);
-
-            for (const inputProvider of inputProviders._providers) {
-                this._template = inputProvider(this.assetType, this.attribute, attributeDescriptor, valueDescriptor, (newValue: any) => this.onValueChange(newValue), this.readonly, this.disabled);
-                if (this._template) {
-                    break;
-                }
-            }
-
-            if (!this._template) {
-                if (valueDescriptor) {
-
-                    switch (valueDescriptor.name) {
-                        case AttributeValueType.GEO_JSON_POINT.name:
-                            break;
-                        case AttributeValueType.BOOLEAN.name:
-                        case AttributeValueType.SWITCH_TOGGLE.name:
-                            this._inputType = InputType.SWITCH;
-                            break;
-                        case AttributeValueType.NUMBER.name:
-                            this._inputType = InputType.NUMBER;
-                            break;
-                        case AttributeValueType.STRING.name:
-                            this._inputType = InputType.TEXT;
-                            break;
-                        case AttributeValueType.OBJECT.name:
-                        case AttributeValueType.ARRAY.name:
-                            this._inputType = InputType.JSON;
-                            break;
-                        case AttributeValueType.BRIGHTNESS_LUX.name:
-                            this._inputType = InputType.NUMBER;
-                            this._step = 1;
-                            break;
-                        default:
-                            // Use value type
-                            switch (valueDescriptor.valueType) {
-                                case ValueType.STRING:
-                                    this._inputType = InputType.TEXT;
-                                    break;
-                                case ValueType.NUMBER:
-                                    this._inputType = InputType.NUMBER;
-                                    break;
-                                case ValueType.BOOLEAN:
-                                    this._inputType = InputType.SWITCH;
-                                    break;
-                                default:
-                                    this._inputType = InputType.JSON;
-                                    break;
-                            }
-                            break;
-                    }
-                }
-
-                if (!this._inputType) {
-                    const value = this.attribute ? this.attribute.value : undefined;
-
-                    if (value) {
-                        if (typeof value === "number") {
-                            this._inputType = InputType.NUMBER;
-                        } else if (typeof value === "string") {
-                            this._inputType = InputType.TEXT;
-                        } else if (typeof value === "boolean") {
-                            this._inputType = InputType.SWITCH;
-                        } else {
-                            this._inputType = InputType.JSON;
+            if (!this.attribute) {
+                this._loading = true;
+                if (this.attributeRef) {
+                    manager.rest.api.AssetResource.queryAssets({
+                        ids: [this.attributeRef.entityId!],
+                        select: {
+                            attributes: [this.attributeRef.attributeName!],
+                            excludePath: true,
+                            excludeRealm: true,
+                            excludeParentInfo: true
                         }
-                    }
+                    }).then((response) => {
+                        if (response.data) {
+                            this.assetType = response.data[0].type;
+                            this.attribute = Util.getAssetAttribute(response.data[0], this.attributeRef!.attributeName!);
+                        }
+                    });
+                } else {
+                    this._invalid = true;
                 }
-
-                if (this._inputType) {
-                    // TODO: Update to use 'effective' meta so not dependent on meta items being defined on the asset itself
-                    this._min = AssetModelUtil.getMetaValue(MetaItemType.RANGE_MIN, this.attribute, attributeDescriptor);
-                    this._max = AssetModelUtil.getMetaValue(MetaItemType.RANGE_MAX, this.attribute, attributeDescriptor);
-                    this._label = getAttributeLabel(this.attribute, attributeDescriptor);
-                    this._readonly = AssetModelUtil.getMetaValue(MetaItemType.READ_ONLY, this.attribute, attributeDescriptor);
-                    this._options = AssetModelUtil.getMetaValue(MetaItemType.ALLOWED_VALUES, this.attribute, attributeDescriptor);
-
-                    if (this._inputType === InputType.JSON) {
-                        const outConverter = this._valueOutboundConverter;
-                        const inConverter = this._valueInboundConverter;
-
-                        this._valueOutboundConverter = (value) => {
-                            if (outConverter) {
-                                // @ts-ignore
-                                value = outConverter(value);
-                            }
-                            if (value !== null && typeof(value) !== "string") {
-                                value = JSON.stringify(value, null, 2);
-                                this._valueInboundConverter = (v) => {
-                                    if (inConverter) {
-                                        // @ts-ignore
-                                        v = inConverter(v);
-                                    }
-                                    if (typeof(v) === "string") {
-                                        v = JSON.parse(v);
-                                    }
-                                    return v;
-                                };
-                            }
-
-                            return value;
-                        };
-                    }
-                }
+            } else {
+                this._invalid = false;
+                this._template = getAttributeValueTemplate(this.assetType, this.attribute, this.readonly, this.disabled, (value) => this.onValueChange(value), this.customProvider);
             }
         }
 
@@ -252,10 +248,10 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     public updated(_changedProperties: PropertyValues): void {
         super.updated(_changedProperties);
 
-        if (_changedProperties.has("attribute") || _changedProperties.has("attributeRef") || _changedProperties.has("disabledSubscribe")) {
-            if ((this.attribute || this.attributeRef) && !this.disableSubscribe) {
+        if (_changedProperties.has("attribute") || _changedProperties.has("disabledSubscribe")) {
+            if (this.attribute && !this.disableSubscribe) {
                 this._loading = true;
-                super.attributeRefs = this.attribute ? [{entityId: this.attribute!.assetId!, attributeName: this.attribute!.name!}] : [this.attributeRef!];
+                super.attributeRefs = [{entityId: this.attribute!.assetId!, attributeName: this.attribute!.name!}];
             } else {
                 super.attributeRefs = undefined;
             }
@@ -264,6 +260,12 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
     public render() {
 
+        if (this._invalid) {
+            return html`
+                <div>INVALID</div>
+            `;
+        }
+
         if (this._loading) {
             return html`
                 <div>LOADING</div>
@@ -271,21 +273,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         }
 
         if (this._template) {
-            return html`${this._template}`;
+            return html`${this._template(this.attribute!.value)}`;
         }
-
-        if (this._inputType) {
-            let value: any = this.attribute ? this.attribute.value : undefined;
-
-            if (this._valueOutboundConverter) {
-                // Convert the value before setting it on the input
-                value = this._valueOutboundConverter(value);
-            }
-
-            return html`<or-input .type="${this._inputType}" .label="${this._label}" .value="${value}" .allowedValues="${this._options}" .min="${this._min}" .max="${this._max}" .readonly="${this.readonly || this._readonly}" .disabled="${this.disabled}" .dense="${this.dense}" @or-input-changed="${(e: OrInputChangedEvent) => this.onValueChange(e.detail.value)}"></or-input>`;
-        }
-
-        return html`<span>INPUT TYPE NOT IMPLEMENTED</span>`;
     }
 
     public onAttributeEvent(event: AttributeEvent) {
@@ -301,9 +290,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
     protected onValueChange(newValue: any) {
         if (this.attribute || this.attributeRef) {
-            if (this._valueInboundConverter) {
-                newValue = this._valueInboundConverter(newValue);
-            }
 
             if (!this.disableWrite && !this.disabled && !this.readonly) {
 

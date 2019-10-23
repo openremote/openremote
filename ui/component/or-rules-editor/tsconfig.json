@@ -12,6 +12,7 @@
     { "path": "../core" },
     { "path": "../or-translate" },
     { "path": "../or-input" },
+    { "path": "../or-attribute-input" },
     { "path": "../rest" }
   ]
 }

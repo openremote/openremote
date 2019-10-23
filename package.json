@@ -6,6 +6,9 @@
     "ui/demo/*",
     "client/src/main/webapp"
   ],
+  "devDependencies": {
+    "lerna": "^3.18.1"
+  },
   "resolutions": {
     "growl": "^1.10.5",
     "inherits": "2.0.3",

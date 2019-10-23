@@ -13,6 +13,7 @@ import "./or-rule-asset-query";
 import {OrSelectChangedEvent} from "@openremote/or-select";
 import {conditionEditorStyle} from "./style";
 import i18next from "i18next";
+import {InputType} from "@openremote/or-input";
 
 @customElement("or-rule-condition")
 class OrRuleCondition extends LitElement {
@@ -60,8 +61,7 @@ class OrRuleCondition extends LitElement {
         }
 
         return html`
-            ${showTypeSelect ? html`<or-select @or-select-changed="${(e: OrSelectChangedEvent) => this.type = e.detail.value}" .options="${this.getTypes()}" .value="${type}" ?readonly="${this.readonly}"></or-select>` : ``}
-        
+            ${showTypeSelect ? html`<or-input id="type-selector" type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.type = e.detail.value}" .options="${this.getTypes()}" .value="${type}" ?readonly="${this.readonly}"></or-input>` : ``}        
             ${template}
         `;
     }

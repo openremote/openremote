@@ -1,17 +1,18 @@
-import {customElement, html, LitElement, TemplateResult, property} from "lit-element";
+import {customElement, html, LitElement, property, TemplateResult} from "lit-element";
 import {actionStyle} from "./style";
 import "./or-rule-asset-query";
+import {ActionTargetType, ActionType, getAssetTypeFromQuery, OrRuleChangedEvent, RulesConfig} from "./index";
 import {
-    ActionType,
-    RulesConfig,
-    ActionTargetType,
-    getAssetTypeFromQuery, OrRuleChangedEvent
-} from "./index";
-import {
-    RuleActionUnion, AssetDescriptor, AttributeDescriptor, RuleActionWriteAttribute
+    AssetDescriptor,
+    AttributeDescriptor,
+    JsonRule,
+    RuleActionUnion,
+    RuleActionWriteAttribute,
+    Attribute
 } from "@openremote/model";
 import i18next from "i18next";
-import {OrInputChangedEvent, InputType} from "@openremote/or-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import {getAttributeValueTemplate} from "@openremote/or-attribute-input";
 
 @customElement("or-rule-actions")
 class OrRuleActions extends LitElement {
@@ -20,8 +21,8 @@ class OrRuleActions extends LitElement {
         return actionStyle;
     }
 
-    @property({type: Array})
-    public actions?: RuleActionUnion[];
+    @property({type: Object})
+    public rule?: JsonRule;
 
     @property({type: Object})
     public targetTypeMap?: [string, string?][];
@@ -36,8 +37,8 @@ class OrRuleActions extends LitElement {
 
     public allowAdd: boolean = true;
 
-    private _ruleActionTargets = [ActionTargetType.TRIGGER_ASSETS, ActionTargetType.TAGGED_ASSETS, ActionTargetType.OTHER_ASSETS, ActionTargetType.USERS];
-    private _ruleActionTypes = [ActionType.WRITE_ATTRIBUTE, ActionType.UPDATE_ATTRIBUTE, ActionType.NOTIFICATION, ActionType.WAIT];
+    public static DEFAULT_ALLOWED_ACTION_TARGETS = [ActionTargetType.TRIGGER_ASSETS, ActionTargetType.TAGGED_ASSETS, ActionTargetType.OTHER_ASSETS, ActionTargetType.USERS];
+    public static DEFAULT_ALLOWED_ACTION_TYPES = [ActionType.WRITE_ATTRIBUTE, ActionType.UPDATE_ATTRIBUTE, ActionType.NOTIFICATION, ActionType.WAIT];
 
     protected ruleActionTemplate(action: RuleActionUnion) {
 
@@ -46,38 +47,51 @@ class OrRuleActions extends LitElement {
         }
 
         let targetTemplate: TemplateResult | string = ``;
+        let typeTemplate: TemplateResult | string = ``;
         let currentTarget = ActionTargetType.TRIGGER_ASSETS;
-        const hideTargetOptions = !this.config || !this.config.controls || !this.config.controls.hideActionTargetOptions;
-        const hideUpdateOptions = !this.config || !this.config.controls || !this.config.controls.hideActionUpdateOptions;
-        const allowedTargets = this.config && this.config.controls && this.config.controls.allowedActionTargets ? this.config.controls.allowedActionTargets : this._ruleActionTargets;
+        const showTargetOptions = action.action !== "wait" && (!this.config || !this.config.controls || !this.config.controls.hideActionTargetOptions);
+        const showTypeOptions = !this.config || !this.config.controls || !this.config.controls.hideActionTypeOptions;
+        const showUpdateOptions = !this.config || !this.config.controls || !this.config.controls.hideActionUpdateOptions;
+        let allowedTargets = this.config && this.config.controls && this.config.controls.allowedActionTargets ? this.config.controls.allowedActionTargets : OrRuleActions.DEFAULT_ALLOWED_ACTION_TARGETS;
+        const allowedActions = this.config && this.config.controls && this.config.controls.allowedActionTypes ? this.config.controls.allowedActionTypes : OrRuleActions.DEFAULT_ALLOWED_ACTION_TYPES;
         let targetRhsTemplate: TemplateResult | string = ``;
 
         if (action.target) {
-            if (action.target.ruleConditionTag) {
+            if (action.target.ruleConditionTag !== undefined && action.target.ruleConditionTag !== null) {
                 currentTarget = ActionTargetType.TAGGED_ASSETS;
-                if (!hideTargetOptions) {
-                    targetRhsTemplate = html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionTriggerTag(action, e.detail.value)}" ?readonly="${this.readonly}" .options="${this.getTriggerTags}" .value="${action.target.ruleConditionTag}"></or-input>`;
+                if (showTargetOptions) {
+                    targetRhsTemplate = html`<or-input id="actionTagSelect" type="${InputType.SELECT}" .label="${i18next.t("tag")}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionTriggerTag(action, e.detail.value)}" ?readonly="${this.readonly}" .options="${this.getTriggerTags()}" .value="${action.target.ruleConditionTag}"></or-input>`;
                 }
             } else if (action.target.users) {
                 currentTarget = ActionTargetType.USERS;
-                if (!hideTargetOptions) {
+                if (showTargetOptions) {
                     targetRhsTemplate = html`<span>USER QUERY NOT IMPLEMENTED</span>`;
                 }
             } else if (action.target.assets) {
                 currentTarget = ActionTargetType.OTHER_ASSETS;
-                if (!hideTargetOptions) {
+                if (showTargetOptions) {
                     targetRhsTemplate = html`<or-rule-asset-query .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}" .query="${action.target.assets}"></or-rule-asset-query>`;
                 }
             }
         }
 
-        if (!hideTargetOptions) {
+        if (showTypeOptions) {
+            const translatedAllowedActions = allowedActions.map((actionType) => [actionType, i18next.t(actionType)] as [string, string]);
+            typeTemplate = html`
+                <or-input id="actionTypeSelect" .label="${i18next.t("action")}" .type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionType(action, e.detail.value as ActionType)}" ?readonly="${this.readonly}" .options="${translatedAllowedActions}" .value="${action.action}"></or-input>
+            `;
+        }
+
+        if (showTargetOptions) {
+
+            if (action.action !== "notification") {
+                allowedTargets = allowedTargets.filter((at) => at !== ActionTargetType.USERS);
+            }
+
             const translatedAllowedTargets = allowedTargets.map((at) => [at, i18next.t(at)] as [string, string]);
             targetTemplate = html`
-                <div class="rule-action-target">
-                    <span><or-translate value="target"></or-translate>: </span><or-select id="actionTargetSelect" type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionTarget(action, e.detail.value as ActionTargetType)}" ?readonly="${this.readonly}" .options="${translatedAllowedTargets}" .value="${currentTarget}"></or-select>
-                    ${targetRhsTemplate}
-                </div>
+                <or-input id="actionTargetSelect" .label="${i18next.t("target")}" .type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionTarget(action, e.detail.value as ActionTargetType)}" ?readonly="${this.readonly}" .options="${translatedAllowedTargets}" .value="${currentTarget}"></or-input>
+                ${targetRhsTemplate}
             `;
         }
 
@@ -112,6 +126,9 @@ class OrRuleActions extends LitElement {
                         }
                         break;
                     case ActionTargetType.TAGGED_ASSETS:
+                        // actionTemplate = html`
+                        //     <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionTriggerTag(action, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributeNames}" .value="${action.attributeName}"></or-input>
+                        // `;
                         assetTypes = this.getAssetTypes(action.target!.ruleConditionTag!);
                         break;
                 }
@@ -120,14 +137,18 @@ class OrRuleActions extends LitElement {
                 const attributeNames = attributeDescriptors.map((ad) => [ad.attributeName, i18next.t(ad.attributeName!)]);
                 const assetType = assetTypes.length > 0 ? assetTypes[0][0] : undefined;
 
-                const attributeInput = this.config && this.config.inputProvider && action.attributeName ? this.config.inputProvider(assetType!, action.attributeName, attributeDescriptors.find((ad) => ad.attributeName === action.attributeName)!, action.value, (value: any) => this.setActionAttributeValue(action, value), this.readonly || false, false) : undefined;
+                // A dummy attribute to allow us to re-use the following function
+                let attribute: Attribute = {
+                    name: action.attributeName
+                };
+                let inputTemplate = getAttributeValueTemplate(assetType, attribute, this.readonly || false, false, (v: any) => this.setActionAttributeValue(action, v), this.config ? this.config.inputProvider : undefined);
 
                 actionTemplate = html`
-                    <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(action, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributeNames}" .value="${action.attributeName}"></or-input>
-                    ${action.attributeName ? attributeInput ? attributeInput : html`<or-input @or-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeValue(action, e.detail.value)}" ?readonly="${this.readonly}" .assetType="${assetType}" .attributeName="${action.attributeName}" .value="${action.value}"></or-input>` : ``}                     
+                    <or-input id="actionAttributeSelect" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(action, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributeNames}" .value="${action.attributeName}"></or-input>
+                    ${action.attributeName && inputTemplate ? inputTemplate(action.value) : ``}                     
                 `;
 
-                if (action.action === "update-attribute" && !hideUpdateOptions) {
+                if (action.action === "update-attribute" && showUpdateOptions) {
                     actionTemplate = html`
                         ${actionTemplate}
                         <span>UPDATE NOT IMPLEMENTED</span>
@@ -137,23 +158,28 @@ class OrRuleActions extends LitElement {
         }
 
         return html`
+            ${typeTemplate}
             ${targetTemplate}
-            <div class="rule-action-action">
-                ${actionTemplate}          
-            </div>
+            ${actionTemplate}
         `;
     }
 
     protected render() {
 
-        const allowedActions = this.config && this.config.controls && this.config.controls.allowedActionTypes ? this.config.controls.allowedActionTypes : this._ruleActionTypes;
+        if (!this.rule) {
+            return html``;
+        }
+
+        if (!this.rule.then) {
+            this.rule.then = [];
+        }
 
         return html`                   
-            ${this.actions ? this.actions.map((action: RuleActionUnion) => {
+            ${this.rule.then ? this.rule.then.map((action: RuleActionUnion) => {
                 return html`
                     <div class="rule-action">
                         ${this.ruleActionTemplate(action)}
-                        ${!this.readonly && (this.allowAdd || this.actions!.length > 1) ? html`
+                        ${!this.readonly && (this.allowAdd || this.rule!.then!.length > 1) ? html`
                                         <button class="button-clear" @click="${() => this.removeAction(action)}"><or-icon icon="close-circle"></or-icon></input>
                                     ` : ``}                                   
                     </div>
@@ -193,7 +219,7 @@ class OrRuleActions extends LitElement {
             return [];
         }
 
-        return this.targetTypeMap.filter((typeAndTag) => typeAndTag[1] !== undefined).map((typeAndTag) => typeAndTag[1]!).sort();
+        return this.targetTypeMap.map((typeAndTag, index) => typeAndTag[1] !== undefined ? typeAndTag[1] : index.toString()).sort();
     }
 
     protected getAssetTypes(tagName?: string) {
@@ -211,13 +237,13 @@ class OrRuleActions extends LitElement {
     }
 
     protected removeAction(action?: RuleActionUnion) {
-        if (!this.actions || !action) {
+        if (!this.rule || !this.rule.then || !action) {
             return;
         }
 
-        const index = this.actions.indexOf(action);
+        const index = this.rule.then.indexOf(action);
         if (index >= 0) {
-            this.actions.splice(index, 1);
+            this.rule.then.splice(index, 1);
             this.dispatchEvent(new OrRuleChangedEvent());
             this.requestUpdate();
         }
@@ -225,7 +251,7 @@ class OrRuleActions extends LitElement {
 
     protected addAction() {
 
-        if (!this.actions) {
+        if (!this.rule || !this.rule.then) {
             return;
         }
 
@@ -237,13 +263,75 @@ class OrRuleActions extends LitElement {
             newAction = JSON.parse(JSON.stringify(this.newTemplate)) as RuleActionUnion;
         }
 
-        this.actions.push(newAction);
+        this.rule.then.push(newAction);
         this.dispatchEvent(new OrRuleChangedEvent());
         this.requestUpdate();
     }
 
     protected setActionTarget(action: RuleActionUnion, target: ActionTargetType | undefined) {
-        // TODO: Set action target
+        switch (target) {
+            case ActionTargetType.TRIGGER_ASSETS:
+                action.target = undefined;
+                break;
+            case ActionTargetType.TAGGED_ASSETS:
+                action.target = {
+                    ruleConditionTag: ""
+                };
+                break;
+            case ActionTargetType.USERS:
+                action.target = {
+                    users: {
+
+                    }
+                };
+                break;
+            case ActionTargetType.OTHER_ASSETS:
+                action.target = {
+                    assets: {
+
+                    }
+                };
+                break;
+        }
+
+        this.dispatchEvent(new OrRuleChangedEvent());
+        this.requestUpdate();
+    }
+
+    protected setActionType(action: RuleActionUnion, type: ActionType | undefined) {
+
+        const actions = this.rule!.then!;
+        const index = actions.indexOf(action);
+        if (index < 0) {
+            return;
+        }
+
+        switch (type) {
+            case ActionType.WAIT:
+                action = {
+                    action: "wait"
+                };
+                break;
+            case ActionType.NOTIFICATION:
+                action = {
+                    action: "notification"
+                };
+                break;
+            case ActionType.WRITE_ATTRIBUTE:
+                action = {
+                    action: "write-attribute"
+                };
+                break;
+            case ActionType.UPDATE_ATTRIBUTE:
+                action = {
+                    action: "update-attribute"
+                };
+                break;
+        }
+
+        actions[index] = action;
+        this.dispatchEvent(new OrRuleChangedEvent());
+        this.requestUpdate();
     }
 
     protected setActionTriggerTag(action: RuleActionUnion, tag: string | undefined) {
@@ -254,6 +342,7 @@ class OrRuleActions extends LitElement {
 
     protected setActionAttributeName(action: RuleActionUnion, name: string | undefined) {
         (action as RuleActionWriteAttribute).attributeName = name;
+        (action as RuleActionWriteAttribute).value = undefined;
         this.dispatchEvent(new OrRuleChangedEvent());
         this.requestUpdate();
     }

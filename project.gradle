@@ -115,7 +115,7 @@ task npmServe(type: Exec){
 }
 task npmPrepare(type: Exec){
     dependsOn tasks.getByPath(":yarnInstall")
-    commandLine npmCommand("npm"), "run-script", "prepare"
+    commandLine npmCommand("npm"), "run-script", "prepublishOnly"
 }
 task npmPublish(type: Exec){
     dependsOn tasks.getByPath(":yarnInstall")

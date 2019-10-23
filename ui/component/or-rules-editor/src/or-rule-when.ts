@@ -21,20 +21,17 @@ class OrRuleWhen extends LitElement {
 
     public assetDescriptors?: AssetDescriptor[];
 
-    protected groupAddTemplate(parent: JsonRule | LogicGroup<RuleCondition>) {
-        return html`<button class="button-clear add-button" @click="${() => this.addGroup(parent)}"><or-icon icon="plus-circle"></or-icon><or-translate value="rulesEditorAddGroup"></or-translate></button>`;
-    }
-
-    protected ruleGroupTemplate(group: LogicGroup<RuleCondition>, parentGroup?: LogicGroup<RuleCondition>): TemplateResult | string {
+    protected ruleGroupTemplate(group: LogicGroup<RuleCondition>, parentGroup?: LogicGroup<RuleCondition>): TemplateResult | undefined {
         if (!group) {
-            return ``;
+            return html``;
         }
 
+        const hasItems = (group.items && group.items.length > 0) || (group.groups && group.groups.length > 0);
         const showGroupOutline = !this.config || !this.config.controls || this.config.controls.hideWhenGroupOutline !== true;
         const showAddCondition = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddCondition !== true);
         const showRemoveCondition = !this.readonly && group.items && group.items.length > 1;
         const showAddGroup = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddGroup !== true);
-        const showRemoveGroup = !this.readonly && (parentGroup || (group.groups && group.groups.length > 0));
+        const showRemoveGroup = !this.readonly;
 
         return html`
             <div class="rule-group ${showGroupOutline ? "visible" : "hidden"}">
@@ -71,9 +68,9 @@ class OrRuleWhen extends LitElement {
                 </div>
                 
                 ${showAddCondition || showAddGroup ? html`
-                    <div class="add-buttons-container">
+                    <div class="add-buttons-container ${hasItems ? "" : "hidden"}">
                         ${showAddCondition ? html`<button class="button-clear add-button" @click="${() => this.addCondition(group)}"><or-icon icon="plus-circle"></or-icon><or-translate value="rulesEditorAddCondition"></or-translate></button>` : ``}
-                        ${showAddGroup ? this.groupAddTemplate(group) : ``}
+                        ${showAddGroup ? html`<button class="button-clear add-button" @click="${() => this.addGroup(group)}"><or-icon icon="plus-circle"></or-icon><or-translate value="rulesEditorAddGroup"></or-translate></button>` : ``}
                     </div>
                 ` : ``}
             </div>
@@ -86,10 +83,14 @@ class OrRuleWhen extends LitElement {
 
     protected render() {
         if (!this.rule) {
-            return;
+            return html``;
         }
 
-        return html`${this.rule.when ? this.ruleGroupTemplate(this.rule.when) : this.groupAddTemplate(this.rule)}`;
+        if (!this.rule.when) {
+            this.rule.when = {};
+        }
+
+        return this.ruleGroupTemplate(this.rule.when);
     }
 
     private toggleGroup(group: LogicGroup<RuleCondition>) {
