@@ -32,7 +32,8 @@ export function getAttributeValueTemplate(
     disabled: boolean,
     valueChangedCallback: (value: any) => void,
     customProvider?: (assetType: string | undefined, attribute: Attribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean, disabled: boolean) => ((value: any) => TemplateResult) | undefined,
-    forceInputType?: InputType) {
+    forceInputType?: InputType,
+    labelOverride?: string) {
 
     let template: ((value: any) => TemplateResult) | undefined;
 
@@ -107,7 +108,7 @@ export function getAttributeValueTemplate(
         }
 
         if (!inputType) {
-            let currentValue = attribute.value;
+            const currentValue = attribute.value;
 
             if (currentValue) {
                 if (typeof currentValue === "number") {
@@ -126,7 +127,7 @@ export function getAttributeValueTemplate(
             // TODO: Update to use 'effective' meta so not dependent on meta items being defined on the asset itself
             min = AssetModelUtil.getMetaValue(MetaItemType.RANGE_MIN, attribute, attributeDescriptor) as number;
             max = AssetModelUtil.getMetaValue(MetaItemType.RANGE_MAX, attribute, attributeDescriptor) as number;
-            label = getAttributeLabel(attribute, attributeDescriptor);
+            label = labelOverride ? labelOverride : getAttributeLabel(attribute, attributeDescriptor);
             ro = AssetModelUtil.getMetaValue(MetaItemType.READ_ONLY, attribute, attributeDescriptor);
             options = AssetModelUtil.getMetaValue(MetaItemType.ALLOWED_VALUES, attribute, attributeDescriptor);
 
@@ -134,7 +135,7 @@ export function getAttributeValueTemplate(
                 inputType = InputType.SELECT;
             }
 
-            let getValue = (value: any) => {
+            const getValue = (value: any) => {
                 if (inputType === InputType.JSON && value !== null && typeof(value) !== "string") {
                     value = JSON.stringify(value, null, 2);
                 }
@@ -142,7 +143,7 @@ export function getAttributeValueTemplate(
                 return value;
             };
 
-            let setValue = (value: any) => {
+            const setValue = (value: any) => {
                 if (inputType === InputType.JSON && value !== null && typeof(value) !== "string") {
                     if (typeof(value) === "string") {
                         value = JSON.parse(value);

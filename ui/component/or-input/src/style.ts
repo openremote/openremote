@@ -18,13 +18,17 @@ export const orInputStyle = css`
         border-radius: 50% !important;
     }
     
-    /* MDC TEXT FIELD DOESN'T USE THEME VARS */
+    /* MDC TEXT FIELD AND SELECT DON'T USE THEME VARS */
     .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label {
-      color: var(--mdc-theme-primary);
+        color: var(--mdc-theme-primary);
     }
     .mdc-text-field--focused .mdc-text-field__input:required ~ .mdc-floating-label::after,
     .mdc-text-field--focused .mdc-text-field__input:required ~ .mdc-notched-outline .mdc-floating-label::after {
-      color: var(--mdc-theme-primary);
+        color: var(--mdc-theme-primary);
+    }
+    
+    .mdc-select:not(.mdc-select--disabled).mdc-select--focused .mdc-floating-label {
+        color: var(--mdc-theme-primary);
     }
     
     .mdc-text-field, .mdc-text-field-helper-line {

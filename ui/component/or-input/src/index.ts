@@ -191,7 +191,7 @@ export class OrInput extends LitElement {
     public helperPersistent: boolean = false;
 
     @property({type: String})
-    public validationMessage = '';
+    public validationMessage = "";
 
     @property({type: Boolean})
     public charCounter: boolean = false;
