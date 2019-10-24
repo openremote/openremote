@@ -94,7 +94,6 @@ public class ManagerWebService extends WebService {
     public void init(Container container) throws Exception {
         super.init(container);
 
-        boolean devMode = container.isDevMode();
         IdentityService identityService = container.getService(IdentityService.class);
         String defaultApp = getString(container.getConfig(), APP_DEFAULT, APP_DEFAULT_DEFAULT);
 

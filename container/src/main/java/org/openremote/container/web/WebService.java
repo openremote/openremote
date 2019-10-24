@@ -42,6 +42,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.Inet4Address;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
@@ -84,6 +85,8 @@ public abstract class WebService implements ContainerService {
     public static final int WEBSERVER_LISTEN_PORT_DEFAULT = 8080;
     public static final String WEBSERVER_DUMP_REQUESTS = "WEBSERVER_DUMP_REQUESTS";
     public static final boolean WEBSERVER_DUMP_REQUESTS_DEFAULT = false;
+    public static final String WEBSERVER_ALLOWED_ORIGINS = "WEBSERVER_ALLOWED_ORIGINS";
+    public static final String WEBSERVER_ALLOWED_ORIGINS_DEFAULT = null;
     public static final String WEBSERVER_IO_THREADS_MAX = "WEBSERVER_IO_THREADS_MAX";
     public static final int WEBSERVER_IO_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
     public static final String WEBSERVER_WORKER_THREADS_MAX = "WEBSERVER_WORKER_THREADS_MAX";
@@ -95,7 +98,8 @@ public abstract class WebService implements ContainerService {
     protected Undertow undertow;
     protected List<RequestHandler> httpHandlers = new ArrayList<>();
     protected URI containerHostUri;
-    protected FilterInfo corsFilter;
+    protected CORSFilter corsFilter;
+    protected FilterInfo corsFilterInfo;
 
     protected static String getLocalIpAddress() throws Exception {
         return Inet4Address.getLocalHost().getHostAddress();
@@ -114,7 +118,7 @@ public abstract class WebService implements ContainerService {
                 ? getLocalIpAddress()
                 : host;
 
-        corsFilter = createCorsFilter();
+        createCorsFilter(container);
 
         containerHostUri =
                 UriBuilder.fromPath("/")
@@ -172,10 +176,10 @@ public abstract class WebService implements ContainerService {
             deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
 
 
-            if (corsFilter != null) {
-                deploymentInfo.addFilter(corsFilter);
-                deploymentInfo.addFilterUrlMapping(corsFilter.getName(), "*", DispatcherType.REQUEST);
-                deploymentInfo.addFilterUrlMapping(corsFilter.getName(), "*", DispatcherType.FORWARD);
+            if (corsFilterInfo != null) {
+                deploymentInfo.addFilter(corsFilterInfo);
+                deploymentInfo.addFilterUrlMapping(corsFilterInfo.getName(), "*", DispatcherType.REQUEST);
+                deploymentInfo.addFilterUrlMapping(corsFilterInfo.getName(), "*", DispatcherType.FORWARD);
             }
 
             DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
@@ -270,17 +274,27 @@ public abstract class WebService implements ContainerService {
         return resteasyDeployment;
     }
 
-    protected FilterInfo createCorsFilter() {
+    protected void createCorsFilter(Container container) {
         if (!devMode) {
-            return null;
+            String allowedOriginsStr = getString(container.getConfig(), WEBSERVER_ALLOWED_ORIGINS, WEBSERVER_ALLOWED_ORIGINS_DEFAULT);
+            if (allowedOriginsStr != null) {
+                corsFilter = new CORSFilter();
+                corsFilter.setAllowCredentials(true);
+                corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
+                corsFilter.setCorsMaxAge(1209600);
+                String[] allowedOrigins = allowedOriginsStr.split(";");
+                Arrays.stream(allowedOrigins).forEach(allowedOrigin ->
+                    corsFilter.getAllowedOrigins().add(allowedOrigin)
+                );
+            }
+        } else {
+            corsFilter = new CORSFilter();
+            corsFilter.getAllowedOrigins().add("*");
+            corsFilter.setAllowCredentials(true);
+            corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
+            corsFilter.setCorsMaxAge(1209600);
         }
 
-        CORSFilter corsFilter = new CORSFilter();
-        corsFilter.getAllowedOrigins().add("*");
-        corsFilter.setAllowCredentials(true);
-        corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        corsFilter.setCorsMaxAge(1209600);
-
-        return Servlets.filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(corsFilter));
+        corsFilterInfo = Servlets.filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(corsFilter));
     }
 }
