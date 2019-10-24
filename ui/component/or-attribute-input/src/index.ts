@@ -151,7 +151,7 @@ export function getAttributeValueTemplate(
                 valueChangedCallback(value);
             };
 
-            template = (value) => html`<or-input .type="${inputType}" .label="${label}" .value="${getValue(value)}" .allowedValues="${options}" .min="${min}" .max="${max}" .readonly="${readonly || ro}" .disabled="${disabled}" @or-input-changed="${(e: OrInputChangedEvent) => setValue(e.detail.value)}"></or-input>`;
+            template = (value) => html`<or-input .type="${inputType}" .label="${label}" .value="${getValue(value)}" .allowedValues="${options}" .min="${min}" .max="${max}" .options="${options}" .readonly="${readonly || ro}" .disabled="${disabled}" @or-input-changed="${(e: OrInputChangedEvent) => setValue(e.detail.value)}"></or-input>`;
         } else {
             template = () => html``;
         }
