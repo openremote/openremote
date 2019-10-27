@@ -1,8 +1,13 @@
-apply plugin: 'idea'
-idea {
-    module {
-        excludeDirs += file("manager/app")
-        excludeDirs += file("keycloak")
-        excludeDirs += file("manager/extensions")
+task clean() {
+    doLast {
+        delete "build"
     }
+}
+
+task installDist(type: Copy) {
+    dependsOn(rootProject.getTasksByName('installDist', true).findAll {it.project != project && ((parent == rootProject) || (isCustomProject() && it.project.parent != rootProject))})
+    from(projectDir) {
+        exclude "build.gradle", "Dockerfile", "build"
+    }
+    into project(":deployment").buildDir
 }

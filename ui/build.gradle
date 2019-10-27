@@ -1,3 +1,15 @@
+afterEvaluate {
+    it.getTasksByName('prepareUi', true).forEach {
+        it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
+    }
+    it.getTasksByName('publishUi', true).forEach {
+        it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
+    }
+    it.getTasksByName('installDist', true).forEach {
+        it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
+    }
+}
+
 task deleteNodeModules {
     doFirst {
        delete "${project(':openremote').projectDir}/node_modules"
@@ -5,25 +17,12 @@ task deleteNodeModules {
 }
 
 task clean {
+    // Do this as it will conflict with root project node_modules
     if (isCustomProject() && parent == rootProject) {
         dependsOn deleteNodeModules
     }
 }
 
-task build {
-    dependsOn tasks.getByPath(":yarnInstall")
-
-    // Add dependency to openremote ui build for custom projects
-    // and also remove node_modules dir from openremote repo
-    if (isCustomProject() && parent == rootProject) {
-        dependsOn resolveTask(":ui:build")
-    }
-}
-
-task installDist {
-    dependsOn build
-}
-
 task modelWatch {
-    dependsOn resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build")
+    dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
 }

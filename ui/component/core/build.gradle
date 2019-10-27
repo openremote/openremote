@@ -1,6 +1,8 @@
 buildDir = "dist"
 
-npmBuild.dependsOn(resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build"), resolveTask(":ui:component:mdi-icons:build"))
+task generate(type: Exec){
+    commandLine npmCommand("npm"), "run-script", "generate"
+}
 
 task clean() {
     doLast {
@@ -8,14 +10,16 @@ task clean() {
     }
 }
 
-task build() {
-    dependsOn npmBuild
-}
-
 task prepareUi() {
-    dependsOn clean, build, npmPrepare
+    dependsOn clean, npmPrepare
 }
 
 task publishUi() {
-    dependsOn clean, build, npmPublish
+    dependsOn clean, npmPublish
+}
+
+task installDist(type: Copy) {
+    dependsOn generate
+    from "${buildDir}/mdi-icons.json"
+    into "${project(':deployment').buildDir}/manager/shared"
 }

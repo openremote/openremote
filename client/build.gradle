@@ -161,13 +161,7 @@ gwtSuperDev.dependsOn tasks.getByPath(":yarnInstall")
 
 installDist {
     dependsOn resolveTask(":client:src:main:webapp:installDist")
-    into "${resolveProject(':deployment').projectDir}/manager/app/manager"
-}
-
-clean {
-    doLast {
-        delete "${resolveProject(':deployment').projectDir}/manager/app/manager"
-    }
+    into "${project(':deployment').buildDir}/manager/app/manager"
 }
 
 distributions {

@@ -40,19 +40,6 @@ distributions {
             from(project.projectDir) {
                 include("*Dockerfile")
             }
-            // Populate the /deployment directory in the Manager image
-            from("${resolveProject(":deployment").projectDir}") {
-                into "deployment"
-                exclude "**/build.gradle", "**/package.json", "**/openremote.log*", "**/yarn.lock"
-            }
         }
-    }
-}
-
-installDist {
-    dependsOn resolveTask(":ui:installDist")
-    doLast {
-        // Delete the useless start scripts, they have a hardcoded classpath
-        delete "${buildDir}/install/$distributions.main.baseName/bin"
     }
 }

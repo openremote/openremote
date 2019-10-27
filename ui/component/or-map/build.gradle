@@ -4,14 +4,10 @@ task clean() {
     }
 }
 
-task build() {
-    dependsOn npmBuild
-}
-
 task prepareUi() {
-    dependsOn clean, build, npmPrepare
+    dependsOn clean, npmPrepare
 }
 
 task publishUi() {
-    dependsOn clean, build, npmPublish
+    dependsOn clean, npmPublish
 }

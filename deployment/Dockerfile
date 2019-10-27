@@ -6,6 +6,4 @@ ARG GIT_COMMIT=unknown
 LABEL git-commit=$GIT_COMMIT
 
 RUN mkdir -p /deployment/extensions
-ADD manager /deployment/manager
-ADD keycloak /deployment/keycloak
-ADD map /deployment/map
+ADD build /deployment

@@ -78,8 +78,10 @@ clean {
     }
 }
 
-build.dependsOn generateTypeScript, npmBuild
+task prepareUi() {
+    dependsOn clean, npmPrepare
+}
 
 task publishUi() {
-    dependsOn clean, build, npmPublish
+    dependsOn clean, npmPublish
 }
