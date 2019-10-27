@@ -295,6 +295,8 @@ public abstract class WebService implements ContainerService {
             corsFilter.setCorsMaxAge(1209600);
         }
 
-        corsFilterInfo = Servlets.filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(corsFilter));
+        if (corsFilter != null) {
+            corsFilterInfo = Servlets.filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(corsFilter));
+        }
     }
 }

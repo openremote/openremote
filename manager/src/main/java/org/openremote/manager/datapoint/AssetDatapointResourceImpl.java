@@ -53,7 +53,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     }
 
     @Override
-    public ValueDatapoint<Value>[] getDatapoints(@BeanParam RequestParams requestParams,
+    public ValueDatapoint[] getDatapoints(@BeanParam RequestParams requestParams,
                                                  String assetId,
                                                  String attributeName,
                                                  DatapointInterval interval,
