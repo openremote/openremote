@@ -45,7 +45,6 @@ export DATABASE_CONNECTION_TIMEOUT_SECONDS=300
 # Paths
 export MANAGER_DOCROOT=${BASE_PATH}/client/webapp
 export APP_DOCROOT=${BASE_PATH}/server/deployment/manager/app
-export UI_DOCROOT=${BASE_PATH}/server/deployment/manager/ui
 export SHARED_DOCROOT=${BASE_PATH}/server/deployment/manager/shared
 export LOGGING_CONFIG_FILE=${BASE_PATH}/server/deployment/manager/logging.properties
 export MAP_TILES_PATH=${BASE_PATH}/server/deployment/map/mapdata.mbtiles

@@ -46,7 +46,7 @@ public interface AssetDatapointResource {
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
     @SuppressWarnings("unusable-by-js")
-    ValueDatapoint<Value>[] getDatapoints(@BeanParam RequestParams requestParams,
+    ValueDatapoint[] getDatapoints(@BeanParam RequestParams requestParams,
                                           @PathParam("assetId") String assetId,
                                           @PathParam("attributeName") String attributeName,
                                           @QueryParam("interval") DatapointInterval datapointInterval,
