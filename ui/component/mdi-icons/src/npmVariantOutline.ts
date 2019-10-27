@@ -1,1 +1,0 @@
-export const MdiNpmVariantOutline = "M3,3V21H21V3H3M6,6H18V18H15V9H12V18H6V6Z";

@@ -490,10 +490,9 @@ export class Manager implements EventProviderFactory {
 
             // Load material design icons if requested
             if (this._config.loadIcons) {
-                Util.loadJs(this.config.managerUrl + "/shared/mdi-icons/index.bundle.js").then(() => {
-                    // @ts-ignore
-                    IconSets.addIconSet("mdi", window.ORMdiIcons.default);
-                });
+                const response = await fetch(manager.config.managerUrl + "/shared/mdi-icons.json");
+                const iconSet = await response.json();
+                IconSets.addIconSet("mdi", iconSet);
             }
 
             return true;

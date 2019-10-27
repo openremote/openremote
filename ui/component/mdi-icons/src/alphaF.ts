@@ -1,1 +1,0 @@
-export const MdiAlphaF = "M9,7V17H11V13H14V11H11V9H15V7H9Z";

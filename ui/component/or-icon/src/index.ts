@@ -50,7 +50,7 @@ class _IconSets {
         }
 
         let iconSet = IconSets.getIconSet(iconSetName);
-        iconName = iconName.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); });
+        //iconName = iconName.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); });
 
         if (!iconSet || !iconSet.icons.hasOwnProperty(iconName)) {
             return;

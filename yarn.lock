@@ -1751,7 +1751,12 @@
   dependencies:
     "@material/feature-targeting" "^3.1.0"
 
-"@mdi/svg@^4.5.95":
+"@mdi/js@^4.5.95":
+  version "4.5.95"
+  resolved "https://registry.yarnpkg.com/@mdi/js/-/js-4.5.95.tgz#f9d12c03b9f848001c82fbdcd1aa445a6c9c8d67"
+  integrity sha512-zQ6LqK/B61/ASwoR26AauCLfNc6u/SyTwsnWF0WLcSIh+oe+A7rQbioYT3eSsQch1gC+1Ejk8YDfD7gDk0FUXg==
+
+"@mdi/svg@>=4.5.95":
   version "4.5.95"
   resolved "https://registry.yarnpkg.com/@mdi/svg/-/svg-4.5.95.tgz#b02ea5ac4e118abdf64fee7af59c7807617f32bd"
   integrity sha512-CwIV4cc6GB4qcNI8Z/5KSf51rONTQnB6dgF6Uji0Ns9eANzQQ14/cPvCFgJ42xNm+ivw+VXaQ5Ed9y/zcK/iXQ==
@@ -1981,6 +1986,18 @@
     "@types/events" "*"
     "@types/minimatch" "*"
     "@types/node" "*"
+
+"@types/lodash-es@^4.17.3":
+  version "4.17.3"
+  resolved "https://registry.yarnpkg.com/@types/lodash-es/-/lodash-es-4.17.3.tgz#87eb0b3673b076b8ee655f1890260a136af09a2d"
+  integrity sha512-iHI0i7ZAL1qepz1Y7f3EKg/zUMDwDfTzitx+AlHhJJvXwenP682ZyGbgPSc5Ej3eEAKVbNWKFuwOadCj5vBbYQ==
+  dependencies:
+    "@types/lodash" "*"
+
+"@types/lodash@*":
+  version "4.14.144"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.144.tgz#12e57fc99064bce45e5ab3c8bc4783feb75eab8e"
+  integrity sha512-ogI4g9W5qIQQUhXAclq6zhqgqNUr7UlFaqDHbch7WLSLeeM/7d3CRaw7GLajxvyFvhJqw4Rpcz5bhoaYtIx6Tg==
 
 "@types/mapbox-gl@^0.54.2":
   version "0.54.2"
@@ -5964,6 +5981,11 @@ locate-path@^5.0.0:
   dependencies:
     p-locate "^4.1.0"
 
+lodash-es@^4.17.15:
+  version "4.17.15"
+  resolved "https://registry.yarnpkg.com/lodash-es/-/lodash-es-4.17.15.tgz#21bd96839354412f23d7a10340e5eac6ee455d78"
+  integrity sha512-rlrc3yU3+JNOpZ9zj5pQtxnx2THmvRykwL4Xlxoa8I9lHBlVbbyPhgyPMioxVZ4NqyxaVVtaJnzsyOidQIhyyQ==
+
 lodash._reinterpolate@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/lodash._reinterpolate/-/lodash._reinterpolate-3.0.0.tgz#0ccf2d89166af03b3663c796538b75ac6e114d9d"
@@ -6544,7 +6566,7 @@ moment-es6@^1.0.0:
   dependencies:
     moment "*"
 
-moment@*, moment@^2.10.2, moment@^2.24.0:
+moment@*, moment@2.24.0, moment@^2.10.2, moment@^2.24.0:
   version "2.24.0"
   resolved "https://registry.yarnpkg.com/moment/-/moment-2.24.0.tgz#0d055d53f5052aa653c9f6eb68bb5d12bf5c2b5b"
   integrity sha512-bV7f+6l2QigeBBZSM/6yTNq4P2fNpSWj/0e7jQcy87A8e7o2nAfP/34/2ky5Vw4B9S446EtIhodAzkFCcR4dQg==

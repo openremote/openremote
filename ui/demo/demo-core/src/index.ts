@@ -1,14 +1,11 @@
-import {LitElement, html, customElement, property, TemplateResult} from "lit-element";
-import manager, {AssetModelUtil, Auth, Manager, OREvent} from "@openremote/core";
-import {subscribe} from "@openremote/core";
-
+import {customElement, html, LitElement, property, TemplateResult} from "lit-element";
+import manager, {AssetModelUtil, Auth, Manager, OREvent, subscribe} from "@openremote/core";
 import "@openremote/or-icon";
 import "@openremote/or-translate";
 import {IconSets} from "@openremote/or-icon";
-import {IconSetSvg} from "@openremote/or-icon";
 import i18next from "i18next";
 
-import {AttributeEvent, MetaItemType, AssetEvent} from "@openremote/model";
+import {AssetEvent, AttributeEvent, MetaItemType} from "@openremote/model";
 import {getApartment1Asset} from "./util";
 
 @customElement("or-demo")
@@ -29,7 +26,7 @@ class OrDemo extends subscribe(manager)(LitElement) {
 
     protected render(): TemplateResult | void {
         return html`
-            <p><b>Message:</b> ${manager.authenticated ? this.loggedInTemplate(openremote) : this.loggedOutTemplate(openremote)}</p>
+            <p><b>Message:</b> ${manager.authenticated ? this.loggedInTemplate(manager) : this.loggedOutTemplate(manager)}</p>
             <br/>
             <p><b>Initialised: </b> ${manager.initialised}</p>
             <p><b>Manager Version: </b> ${manager.managerVersion}</p>
@@ -73,7 +70,7 @@ class OrDemo extends subscribe(manager)(LitElement) {
         let testIconSet = {
             size: 100,
             icons: {
-                x: "<path d=\"m0.3125,39.74088l37.33242,0l11.53601,-37.43277l11.53601,37.43277l37.33242,0l-30.20251,23.13446l11.5366,37.43277l-30.20252,-23.13509l-30.20252,23.13509l11.53661,-37.43277l-30.20252,-23.13446z\" stroke-width='5' stroke=\"#000\"/>"
+                "x": "<path d=\"m0.3125,39.74088l37.33242,0l11.53601,-37.43277l11.53601,37.43277l37.33242,0l-30.20251,23.13446l11.5366,37.43277l-30.20252,-23.13509l-30.20252,23.13509l11.53661,-37.43277l-30.20252,-23.13446z\" stroke-width='5' stroke=\"#000\"/>"
             }
         }   ;
         IconSets.addIconSet("test", testIconSet);

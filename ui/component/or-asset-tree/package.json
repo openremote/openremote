@@ -6,13 +6,13 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
     "prepublishOnly": "npx tsc -b && npx webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "@mdi/js": "^4.5.95",
     "@openremote/core": "^1.1.0",
     "@openremote/model": "^1.1.0",
     "@openremote/or-icon": "^1.1.0",

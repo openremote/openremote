@@ -1,1 +1,0 @@
-export const MdiSquare = "M3,3V21H21V3";

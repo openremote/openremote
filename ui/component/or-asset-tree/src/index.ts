@@ -1,11 +1,11 @@
 import {customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
-import "@openremote/or-select";
+import "@openremote/or-input";
 import "@openremote/or-icon";
 import {Asset, AssetQuery, AssetTreeNode, AssetType, Tenant} from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
 import manager, {AssetModelUtil, OREvent, EventCallback} from "@openremote/core";
-import {OrSelectChangedEvent} from "@openremote/or-select";
+import {OrInputChangedEvent, InputType} from "@openremote/or-input";
 import Qs from "qs";
 
 export interface UiAssetTreeNode extends AssetTreeNode {
@@ -221,7 +221,7 @@ export class OrAssetTree extends LitElement {
             <div id="header">
                 <div id="title-container">
                     <or-translate id="title" value="asset_plural"></or-translate>
-                    ${manager.isSuperUser() ? html `<or-select id="realm-picker" noempty .value="${this._getRealm()}" .options="${this._realms ? this._realms.map((tenant) => [tenant.realm, tenant.displayName]) : []}" @or-select-changed="${(evt: OrSelectChangedEvent) => this._onRealmChanged(evt)}"></or-select>` : ``}
+                    ${manager.isSuperUser() ? html `<or-input id="realm-picker" type="${InputType.SELECT}" .value="${this._getRealm()}" .options="${this._realms ? this._realms.map((tenant) => [tenant.realm, tenant.displayName]) : []}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onRealmChanged(evt)}"></or-input>` : ``}
                 </div>
 
                 <div id="header-btns">
@@ -645,7 +645,7 @@ export class OrAssetTree extends LitElement {
         return manager.getRealm();
     }
 
-    protected _onRealmChanged(evt: OrSelectChangedEvent) {
+    protected _onRealmChanged(evt: OrInputChangedEvent) {
         this.realm = evt.detail.value;
         this.assets = undefined;
     }

@@ -1,1 +1,0 @@
-export const MdiNetworkStrength4 = "M1,21H21V1";

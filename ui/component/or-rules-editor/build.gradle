@@ -6,16 +6,10 @@ task clean() {
     }
 }
 
-npmBuild.dependsOn resolveTask(":ui:component:or-translate:build"), resolveTask(":ui:component:or-select:build"), resolveTask(":ui:component:or-input:build")
-
-task build() {
-    dependsOn npmBuild
-}
-
 task prepareUi() {
-    dependsOn clean, build, npmPrepare
+    dependsOn clean, npmPrepare
 }
 
 task publishUi() {
-    dependsOn clean, build, npmPublish
+    dependsOn clean, npmPublish
 }
