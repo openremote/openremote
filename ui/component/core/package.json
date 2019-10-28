@@ -27,8 +27,8 @@
     "@mdi/svg": ">=4.5.95",
     "tslint": ">=5.11.0",
     "typescript": ">=3.4.5",
-    "webpack": ">=4.41.1",
-    "webpack-cli": ">=3.3.9",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.9",
     "xmldom": "^0.1.27",
     "xpath": "^0.0.27"
   }

@@ -59,8 +59,8 @@
     "tslint": ">=5.11.0",
     "typescript": ">=3.4.5",
     "url-loader": "^1.1.2",
-    "webpack": ">=4.41.1",
-    "webpack-cli": "^3.1.2",
-    "webpack-dev-server": "^3.1.10"
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.9",
+    "webpack-dev-server": "^3.9.0"
   }
 }
