@@ -218,7 +218,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
                 assetNode.asset = assetStorageService.merge(asset);
 
                 if (assetNode.children != null) {
-                    persistAssets(assetNode.children, asset, realm);
+                    persistAssets(assetNode.children, assetNode.asset, realm);
                 }
             }
 
