@@ -68,6 +68,7 @@ import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttributes;
+import static org.openremote.model.query.AssetQuery.Select.selectExcludePathAndAttributes;
 
 /**
  * Manages {@link RulesEngine}s for stored {@link Ruleset}s and processes asset attribute updates.
@@ -752,7 +753,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected Stream<Pair<Asset, Stream<AssetAttribute>>> findRuleStateAttributes() {
         List<Asset> assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(AssetQuery.Select.selectAll())
+                .select(selectExcludePathAndAttributes())
                 .attributeMeta(
                     new AttributeMetaPredicate(
                         MetaItemType.RULE_STATE,

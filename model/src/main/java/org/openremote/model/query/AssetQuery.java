@@ -36,29 +36,14 @@ public class AssetQuery {
 
         public String[] attributes;
         public String[] meta;
-        public boolean excludePath = true;
-        public boolean excludeAttributeMeta = true;
-        public boolean excludeAttributes = true;
-        public boolean excludeAttributeValue = true;
-        public boolean excludeAttributeTimestamp = true;
-        public boolean excludeAttributeType = true;
+        public boolean excludePath;
+        public boolean excludeAttributeMeta;
+        public boolean excludeAttributes;
+        public boolean excludeAttributeValue;
+        public boolean excludeAttributeTimestamp;
+        public boolean excludeAttributeType;
         public boolean excludeParentInfo;
         public boolean excludeRealm;
-
-        public Select() {
-        }
-
-        public static Select selectAll() {
-            return new Select()
-                .excludeAttributes(false)
-                .excludeAttributeMeta(false)
-                .excludeAttributeType(false)
-                .excludeAttributeTimestamp(false)
-                .excludeAttributeValue(false)
-                .excludePath(false)
-                .excludeParentInfo(false)
-                .excludeRealm(false);
-        }
 
         public static Select selectExcludePathAndParentAndRealm() {
             return new Select()

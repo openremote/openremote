@@ -263,7 +263,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                 Asset asset = find(
                     new AssetQuery()
-                        .select(Select.selectAll())
                         .ids(event.getAssetId())
                         .access(access));
 
@@ -289,7 +288,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public Asset find(String assetId, boolean loadComplete) {
         if (assetId == null)
             throw new IllegalArgumentException("Can't query null asset identifier");
-        return find(new AssetQuery().select(loadComplete ? Select.selectAll() : Select.selectExcludePathAndAttributes()).ids(assetId));
+        return find(new AssetQuery().select(loadComplete ? null : Select.selectExcludePathAndAttributes()).ids(assetId));
     }
 
     /**
@@ -308,7 +307,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             throw new IllegalArgumentException("Can't query null asset identifier");
         return find(new AssetQuery()
             .select(loadComplete
-                ? Select.selectAll()
+                ? null
                 : Select.selectExcludePathAndAttributes())
             .ids(assetId)
             .access(access));
@@ -672,7 +671,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             em,
             new AssetQuery()
                 .select(loadComplete
-                    ? Select.selectAll()
+                    ? null
                     : Select.selectExcludePathAndAttributes())
                 .ids(assetId)
                 .access(access)
@@ -681,9 +680,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     protected List<Asset> findAll(EntityManager em, AssetQuery query) {
 
-        // Use a default projection if it's missing
-        if (query.select == null)
-            query.select = new Select();
         if (query.access == null)
             query.access = PRIVATE;
 
@@ -758,25 +754,25 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         sb.append(", A.CREATED_ON AS CREATED_ON, A.ASSET_TYPE AS ASSET_TYPE, A.PARENT_ID AS PARENT_ID");
         sb.append(", A.REALM AS REALM, A.OBJ_VERSION as OBJ_VERSION");
 
-        if (!select.excludeParentInfo) {
+        if (select == null || !select.excludeParentInfo) {
             sb.append(", P.NAME as PARENT_NAME, P.ASSET_TYPE as PARENT_TYPE");
         }
 
-        if (!select.excludeRealm) {
+        if (select == null ||!select.excludeRealm) {
             if (!query.recursive || level == 3) {
                 sb.append(", R.NAME as TENANT_NAME");
             }
         }
 
         if (!query.recursive || level == 3) {
-            if (!select.excludePath) {
+            if (select == null || !select.excludePath) {
                 sb.append(", get_asset_tree_path(A.ID) as PATH");
             } else {
                 sb.append(", NULL as PATH");
             }
         }
 
-        if (!select.excludeAttributes) {
+        if (select == null || !select.excludeAttributes) {
             if (query.recursive && level != 3) {
                 sb.append(", A.ATTRIBUTES as ATTRIBUTES");
             } else {
@@ -792,32 +788,32 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected String buildAttributeSelect(AssetQuery query, List<ParameterBinder> binders) {
 
         Select select = query.select;
-        boolean hasMetaFilter = !select.excludeAttributeMeta && select.meta != null && select.meta.length > 0;
-        boolean fullyPopulateAttributes = !(select.excludeAttributeMeta || select.excludeAttributeValue || select.excludeAttributeTimestamp || select.meta != null);
+        boolean hasMetaFilter = select != null && !select.excludeAttributeMeta && select.meta != null && select.meta.length > 0;
+        boolean fullyPopulateAttributes = select == null || !(select.excludeAttributeMeta || select.excludeAttributeValue || select.excludeAttributeTimestamp || select.meta != null);
 
-        if (select.attributes == null && query.access == PRIVATE && fullyPopulateAttributes) {
+        if ((select == null || select.attributes == null) && query.access == PRIVATE && fullyPopulateAttributes) {
             return ", A.ATTRIBUTES as ATTRIBUTES";
         }
 
         StringBuilder attributeBuilder = new StringBuilder();
 
-        if (select.excludeAttributeMeta) {
+        if (select != null && select.excludeAttributeMeta) {
             attributeBuilder.append(" - 'meta'");
         }
-        if (select.excludeAttributeTimestamp) {
+        if (select != null && select.excludeAttributeTimestamp) {
             attributeBuilder.append(" - 'valueTimestamp'");
         }
-        if (select.excludeAttributeValue) {
+        if (select != null && select.excludeAttributeValue) {
             attributeBuilder.append(" - 'value'");
         }
-        if (select.excludeAttributeType) {
+        if (select != null && select.excludeAttributeType) {
             attributeBuilder.append(" - 'type'");
         }
 
         StringBuilder sb = new StringBuilder();
         sb.append(", (");
 
-        if (select.excludeAttributeMeta) {
+        if (select != null && select.excludeAttributeMeta) {
             sb.append("select json_object_agg(AX.key, AX.value");
             sb.append(attributeBuilder);
             sb.append(") from jsonb_each(A.attributes) as AX");
@@ -858,7 +854,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         sb.append(" where true");
 
         // Filter attributes
-        if (select.attributes != null && select.attributes.length > 0) {
+        if (select != null && select.attributes != null && select.attributes.length > 0) {
             sb.append(" AND AX.key IN (");
             for (int i = 0; i < select.attributes.length; i++) {
                 sb.append(i == select.attributes.length - 1 ? "?" : "?,");
@@ -888,7 +884,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         // level = 3 is CTE
         StringBuilder sb = new StringBuilder();
         boolean recursive = query.recursive;
-        boolean includeRealmInfo = !query.select.excludeRealm;
+        boolean includeRealmInfo = query.select == null || !query.select.excludeRealm;
 
         if (level == 1) {
             sb.append(" from Asset A ");
@@ -1531,23 +1527,23 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         asset.setCreatedOn(rs.getTimestamp("CREATED_ON"));
         asset.setAccessPublicRead(rs.getBoolean("ACCESS_PUBLIC_READ"));
 
-        if (!query.select.excludeParentInfo) {
+        if (query.select == null || !query.select.excludeParentInfo) {
             asset.setParentId(rs.getString("PARENT_ID"));
             asset.setParentName(rs.getString("PARENT_NAME"));
             asset.setParentType(rs.getString("PARENT_TYPE"));
         }
 
-        if (!query.select.excludeRealm) {
+        if (query.select == null || !query.select.excludeRealm) {
             asset.setRealm(rs.getString("REALM"));
         }
 
-        if (!query.select.excludeAttributes) {
+        if (query.select == null || !query.select.excludeAttributes) {
             if (rs.getString("ATTRIBUTES") != null) {
                 asset.setAttributes(Values.instance().<ObjectValue>parse(rs.getString("ATTRIBUTES")).orElse(null));
             }
         }
 
-        if (!query.select.excludePath) {
+        if (query.select == null || !query.select.excludePath) {
             Array path = rs.getArray("PATH");
             if (path != null) {
                 asset.setPath((String[]) path.getArray());
@@ -1616,7 +1612,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         switch (persistenceEvent.getCause()) {
             case CREATE:
                 // Fully load the asset
-                Asset loadedAsset = find(new AssetQuery().select(Select.selectAll()).ids(asset.getId()));
+                Asset loadedAsset = find(new AssetQuery().ids(asset.getId()));
 
                 clientEventService.publishEvent(
                     new AssetEvent(AssetEvent.Cause.CREATE, loadedAsset, null)
@@ -1662,7 +1658,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }).toArray(String[]::new);
 
                 // Fully load the asset
-                loadedAsset = find(new AssetQuery().select(Select.selectAll()).ids(asset.getId()));
+                loadedAsset = find(new AssetQuery().ids(asset.getId()));
 
                 clientEventService.publishEvent(
                     new AssetEvent(AssetEvent.Cause.UPDATE, loadedAsset, updatedProperties)

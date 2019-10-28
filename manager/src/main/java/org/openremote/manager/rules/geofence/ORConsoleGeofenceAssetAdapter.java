@@ -102,7 +102,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
         assetStorageService.findAll(
             new AssetQuery()
-                .select(AssetQuery.Select.selectAll().excludePath(true)
+                .select(new AssetQuery.Select().excludePath(true)
                     .attributes(AttributeType.CONSOLE_PROVIDERS.getAttributeName()))
                 .types(CONSOLE)
                 .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),

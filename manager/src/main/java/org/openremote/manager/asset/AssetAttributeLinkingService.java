@@ -258,7 +258,7 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
             em,
             new AssetQuery()
                 .ids(attributeRef.getEntityId())
-                .select(Select.selectAll().attributes(attributeRef.getAttributeName()))
+                .select(new Select().attributes(attributeRef.getAttributeName()))
         );
 
         AssetAttribute attribute = asset != null ? asset.getAttribute(attributeRef.getAttributeName()).orElse(null) : null;

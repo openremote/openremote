@@ -83,7 +83,6 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
 
         when: "a query for a specific public asset is executed"
         def query = new AssetQuery()
-                .select(Select.selectAll())
                 .ids(returnedAssets.get(0).id)
         def assets = assetResource.queryPublicAssets(null, query)
 

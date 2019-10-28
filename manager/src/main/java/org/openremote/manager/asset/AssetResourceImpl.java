@@ -53,6 +53,7 @@ import static org.openremote.container.Container.JSON;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.attribute.MetaItemType.ACCESS_RESTRICTED_READ;
 import static org.openremote.model.query.AssetQuery.Access;
+import static org.openremote.model.query.AssetQuery.Select.selectExcludePathAndAttributes;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
@@ -82,6 +83,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (!isRestrictedUser()) {
                 List<Asset> result = assetStorageService.findAll(
                     new AssetQuery()
+                        .select(selectExcludePathAndAttributes())
                         .parents(new ParentPredicate(true))
                         .tenant(new TenantPredicate(getAuthenticatedRealm()))
                 );
@@ -90,7 +92,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             List<Asset> assets = assetStorageService.findAll(
                 new AssetQuery()
-                    .select(Select.selectExcludePathAndAttributes().meta(ACCESS_RESTRICTED_READ))
+                    .select(selectExcludePathAndAttributes().meta(ACCESS_RESTRICTED_READ))
                     .userIds(getUserId())
             );
 
@@ -514,7 +516,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (isRestrictedUser()) {
                 throw new WebApplicationException(FORBIDDEN);
             }
-            List<Asset> assets = assetStorageService.findAll(new AssetQuery().ids(assetIds.toArray(new String[0])).select(Select.selectExcludePathAndAttributes()));
+            List<Asset> assets = assetStorageService.findAll(new AssetQuery().ids(assetIds.toArray(new String[0])).select(selectExcludePathAndAttributes()));
             if (assets == null || assets.size() != assetIds.size()) {
                 LOG.fine("Request to delete one or more invalid assets");
                 return;
