@@ -338,7 +338,7 @@ export class Console {
             key: key
         }, true);
 
-        if (response && response.hasOwnProperty("value")) {
+        if (response && response.value) {
             return JSON.parse(response.value);
         }
 
@@ -428,7 +428,7 @@ export class Console {
                                 throw new Error("Storage provider 'store' action requires a `key`");
                             }
 
-                            if (msg.hasOwnProperty("value")) {
+                            if (msg.value) {
                                 if (msg.value === null) {
                                     window.localStorage.removeItem(keyValue);
                                 } else {
