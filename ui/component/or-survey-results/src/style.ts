@@ -5,8 +5,8 @@ export const surveyResultStyle = html`
            :host {
                 width: 100%;
                 background-color: #FFFFFF;
+                --internal-or-survey-results-max-width: var(--or-survey-results-max-width, 0);
            }
-           
            
            .flex {
                 -ms-flex: 1 1 0.000000001px;
@@ -77,6 +77,7 @@ export const surveyResultStyle = html`
                 padding-top: 20px;
                 margin: auto;
                 width: 100%;
+                max-width: var(--internal-or-survey-results-max-width)
                 overflow-x: scroll;
             }
 

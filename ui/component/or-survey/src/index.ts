@@ -369,13 +369,14 @@ class OrSurvey extends LitElement {
             this.nextQuestion();
         }
         else if (this.getType(currQuestion.type) === "multiSelect") {
-            if (!(target instanceof HTMLLabelElement)) {
+            if (!(target instanceof HTMLButtonElement) && !(target instanceof HTMLLabelElement)) {
                 return;
             }
+
             if (target.dataset.autoforward == "true") {
                 this.nextQuestion();
             } else {
-                if(currQuestion && currQuestion.id && surveyAnswers) {
+                if(currQuestion && currQuestion.id && surveyAnswers && target instanceof HTMLLabelElement) {
                     if (!surveyAnswers[currQuestion.id]) {
                         surveyAnswers[currQuestion.id] = [];
                     }
