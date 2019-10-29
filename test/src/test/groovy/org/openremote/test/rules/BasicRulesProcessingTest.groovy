@@ -188,7 +188,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
     def "Handle asset create, update, delete"() {
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.5, delay: 0.5)
+        def conditions = new PollingConditions(timeout: 15, initialDelay: 0.5, delay: 0.5)
 
         and: "the container is started"
         def serverPort = findEphemeralPort()

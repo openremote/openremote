@@ -14,7 +14,7 @@ dependencies {
     compile "org.glassfish.tyrus:tyrus-client:$tyrusVersion"
     compile "org.glassfish.tyrus:tyrus-container-grizzly-client:$tyrusVersion"
     compile "org.objenesis:objenesis:$objenesisVersion"
-    testRuntime "net.bytebuddy:byte-buddy:$byteBuddyVersion"
+    compile "net.bytebuddy:byte-buddy:$byteBuddyVersion"
 
     // We must have this on the regular classpath because we do weird
     // things with GWT in tests, but without the transitive runtime

@@ -102,6 +102,7 @@ task npmClean(type: Exec){
     commandLine npmCommand("npm"), "run-script", "clean"
 }
 task npmBuild(type: Exec){
+    mustRunAfter npmClean
     dependsOn tasks.getByPath(":yarnInstall")
     commandLine npmCommand("npm"), "run-script", "build"
 }
