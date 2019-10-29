@@ -154,6 +154,7 @@ services:
       # The service-internal host name and port of the identity provider.
       KEYCLOAK_HOST: keycloak
       KEYCLOAK_PORT: 8080
+      MASTER_REALM_KEYCLOAK_THEME: ${MASTER_REALM_KEYCLOAK_THEME:-openremote}
 
       # The service-internal webservice interface binding, bind to all interfaces
       # when running  in container. Default is 127.0.0.1.
