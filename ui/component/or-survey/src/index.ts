@@ -9,7 +9,7 @@ import orderBy from "lodash-es/orderBy";
 import * as momentImported from 'moment'; const moment = momentImported;
 import manager, { OREvent, EventCallback } from "@openremote/core";
 import filter from "lodash-es/filter";
-
+import "@openremote/or-translate";
 declare var MANAGER_URL: string;
 
 export interface AnswerOption {
@@ -60,8 +60,12 @@ class OrSurvey extends LitElement {
     @property({type: Boolean})
     public hasSubmission?: boolean;
 
+    @property({type: Boolean})
     public previousButton?: boolean;
+
+    @property({type: Boolean})
     public nextButton?: boolean;
+
     public questionAnimation?: string;
 
     protected _initCallback?: EventCallback;
@@ -93,7 +97,7 @@ class OrSurvey extends LitElement {
         return html`
                 ${surveySectionStyle}
                 ${surveyLayoutStyle}
-                 <div id="surveyQuestions">
+                 <div id="surveyQuestions"> 
                         ${this.completed || this.hasSubmission ? html`
                                 <p>${this.survey.attributes ? this.survey.attributes.thankYouMessage.value : ''}</p>
                                 ${!this.saveanswers ? html`
@@ -260,7 +264,7 @@ class OrSurvey extends LitElement {
     }
 
     checkButtons() {
-        if(!this.survey || !this.questions  || typeof this.questionIndex === "undefined") {
+        if(!this.survey || !this.questions || typeof this.questionIndex === "undefined") {
             return;
         }
 
@@ -316,8 +320,8 @@ class OrSurvey extends LitElement {
         this.questionIndexLabel = 1;
         this.nextButtonLabel = "Next";
         this.completed = false;
-        this.nextButton = true;
         this.surveyAnswers = {};
+        this.checkButtons();
     }
 
     previousQuestion() {
@@ -335,7 +339,7 @@ class OrSurvey extends LitElement {
         if(!this.questions || typeof this.questionIndex === 'undefined' || typeof this.questionIndexLabel === 'undefined' ) {
             return;
         }
-        const target = e.target;
+        const target = e.currentTarget;
         let surveyAnswers = this.surveyAnswers;
         let currQuestion:Asset = this.questions[this.questionIndex];
         if (this.getType(currQuestion.type) === "singleSelect" || this.getType(currQuestion.type) === "rating") {
@@ -397,16 +401,17 @@ class OrSurvey extends LitElement {
         let surveyId: string;
         if (location.hash.indexOf('survey') != -1) {
             surveyId = location.hash.split(':')[1];
+            if(!surveyId) {
+                this.checkButtons();
+                return;
+            }
         } else if(this.surveyId){
             surveyId = this.surveyId;
         } else {
+            this.checkButtons();
             return;
         }
 
-        if(localStorage.getItem('survey'+surveyId)){
-            this.hasSubmission = true;
-            return;
-        }
 
         const surveyQuery: AssetQuery = {
             select: {
@@ -429,6 +434,11 @@ class OrSurvey extends LitElement {
             console.error("Error: " + reason);
         });
 
+        if(localStorage.getItem('survey'+surveyId)){
+            this.hasSubmission = true;
+            return;
+        }
+
         const questionQuery: AssetQuery = {
             select: {
                 excludeAttributeMeta: false,
@@ -448,6 +458,8 @@ class OrSurvey extends LitElement {
                 if(this.survey){
                     this.questions = filter(this.questions, ['parentId', this.survey.id]);
                 }
+
+                this.checkButtons();
                 this.requestUpdate();
             }
         }).catch((reason) => {

@@ -70,14 +70,13 @@ export const surveyResultStyle = html`
 
             .label-x {
                 display: block;
-                display: block;
                 margin: 0 10px;
             }
 
             #chart-container {
                 padding-top: 20px;
                 margin: auto;
-                max-width: 860px;
+                width: 100%;
                 overflow-x: scroll;
             }
 
@@ -173,18 +172,6 @@ export const surveyResultStyle = html`
             @keyframes draw {
                 0% {
                     height: 0;
-                }
-            }
-
-            @media (max-width: 1640px) {
-                #chart-container {
-                    max-width: 450px;
-                }
-            }
-            
-          @media (max-width: 768px) {.anwser-card:nth-of-type(5n+5) {
-                #chart-container {
-                    max-width: 100%;
                 }
             }
 
