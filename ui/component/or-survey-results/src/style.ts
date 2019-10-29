@@ -77,7 +77,7 @@ export const surveyResultStyle = html`
                 padding-top: 20px;
                 margin: auto;
                 width: 100%;
-                max-width: var(--internal-or-survey-results-max-width)
+                max-width: var(--internal-or-survey-results-max-width);
                 overflow-x: scroll;
             }
 
