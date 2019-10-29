@@ -66,6 +66,18 @@ public class Tenant {
     @Transient
     protected Boolean rememberMe;
 
+    @Transient
+    protected String loginTheme;
+
+    @Transient
+    protected String accountTheme;
+
+    @Transient
+    protected String adminTheme;
+
+    @Transient
+    protected String emailTheme;
+
     @JsIgnore
     public Tenant() {
         this(null, null, null, null);
@@ -154,6 +166,38 @@ public class Tenant {
     public boolean isActive(double currentTimeMillis) {
         return enabled != null && enabled
             && (notBefore == null || notBefore == 0 || notBefore <= (currentTimeMillis/1000));
+    }
+
+    public String getLoginTheme() {
+        return loginTheme;
+    }
+
+    public void setLoginTheme(String loginTheme) {
+        this.loginTheme = loginTheme;
+    }
+
+    public String getAccountTheme() {
+        return accountTheme;
+    }
+
+    public void setAccountTheme(String accountTheme) {
+        this.accountTheme = accountTheme;
+    }
+
+    public String getAdminTheme() {
+        return adminTheme;
+    }
+
+    public void setAdminTheme(String adminTheme) {
+        this.adminTheme = adminTheme;
+    }
+
+    public String getEmailTheme() {
+        return emailTheme;
+    }
+
+    public void setEmailTheme(String emailTheme) {
+        this.emailTheme = emailTheme;
     }
 
     @Override

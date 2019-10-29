@@ -43,6 +43,7 @@ import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.container.web.ProxyWebClientBuilder;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
+import org.openremote.model.util.TextUtil;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.NotFoundException;
@@ -341,9 +342,16 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             realmRepresentation.getDisplayName().replaceAll("[^A-Za-z0-9]", "")
         );
         realmRepresentation.setAccessTokenLifespan(accessTokenLifespanSeconds);
-        realmRepresentation.setLoginTheme("openremote");
-        realmRepresentation.setAccountTheme("openremote");
-        realmRepresentation.setEmailTheme("openremote");
+
+        if(TextUtil.isNullOrEmpty(realmRepresentation.getLoginTheme())) {
+            realmRepresentation.setLoginTheme("openremote");
+        }
+        if(TextUtil.isNullOrEmpty(realmRepresentation.getAccountTheme())) {
+            realmRepresentation.setAccountTheme("openremote");
+        }
+        if(TextUtil.isNullOrEmpty(realmRepresentation.getEmailTheme())) {
+            realmRepresentation.setEmailTheme("openremote");
+        }
 
         realmRepresentation.setSsoSessionIdleTimeout(sessionTimeoutSeconds);
         realmRepresentation.setSsoSessionMaxLifespan(sessionMaxSeconds);

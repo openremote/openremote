@@ -38,8 +38,15 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
 
     private static final Logger LOG = Logger.getLogger(KeycloakInitSetup.class.getName());
 
+    protected static final String MASTER_REALM_KEYCLOAK_THEME = "MASTER_REALM_KEYCLOAK_THEME";
+
+    protected String masterRealmKeycloakTheme;
+
+
     public KeycloakInitSetup(Container container) {
         super(container);
+
+        masterRealmKeycloakTheme = container.getConfig().getOrDefault(MASTER_REALM_KEYCLOAK_THEME, "openremote");
     }
 
     @Override
@@ -50,6 +57,9 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         RealmRepresentation masterRealm = masterRealmResource.toRepresentation();
 
         masterRealm.setDisplayName("Master");
+        masterRealm.setAccountTheme(masterRealmKeycloakTheme);
+        masterRealm.setEmailTheme(masterRealmKeycloakTheme);
+        masterRealm.setLoginTheme(masterRealmKeycloakTheme);
 
         // Set SMTP server, theme, timeouts, etc.
         keycloakProvider.configureRealm(masterRealm, emailConfig);
