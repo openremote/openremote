@@ -1149,7 +1149,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                 originalResponse = PagingResponse.fromResponse(originalResponse).entity(entities).build();
             }
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Exception thrown whilst doing polling request", e);
+            LOG.log(Level.SEVERE, getProtocolDisplayName() +  " exception thrown whilst doing polling request: " + clientRequest.client.getUri() + clientRequest.path, e);
         }
 
         responseConsumer.accept(originalResponse);
