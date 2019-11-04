@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2019, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -25,6 +25,7 @@ import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.container.Container;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
@@ -81,123 +82,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * {@link Protocol#META_PROTOCOL_CONVERT_HEX} or {@link Protocol#META_PROTOCOL_CONVERT_BINARY} to facilitate working
  * with UDP servers that handle binary data.
  */
-public class UdpClientProtocol extends AbstractProtocol {
-
-    private class ClientAndQueue {
-        IoClient<String> client;
-        AttributeRef protocolRef;
-        Deque<Runnable> actionQueue = new ArrayDeque<>();
-        int retries;
-        int timeoutMillis;
-        Consumer<String> currentResponseConsumer;
-        ScheduledFuture responseMonitor;
-
-        protected ClientAndQueue(IoClient<String> client, AttributeRef protocolRef) {
-            this.client = client;
-            this.protocolRef = protocolRef;
-        }
-
-        protected void connect() {
-            LOG.info("Connecting UDP client");
-            client.addConnectionStatusConsumer(status -> UdpClientProtocol.this.onConnectionStatusChanged(protocolRef, status));
-            client.addMessageConsumer(this::onMessageReceived);
-            client.connect();
-        }
-
-        protected void disconnect() {
-            LOG.info("Disconnecting UDP client");
-            client.removeAllMessageConsumers();
-            client.removeAllConnectionStatusConsumers();
-            client.disconnect();
-        }
-
-        protected synchronized void send(String str, Consumer<String> responseConsumer, AttributeInfo attributeInfo) {
-            if (currentResponseConsumer != null) {
-                actionQueue.add(() -> processNextCommand(str, responseConsumer, attributeInfo));
-                return;
-            }
-
-            executorService.schedule(() -> processNextCommand(str, responseConsumer, attributeInfo), 0);
-        }
-
-        protected void onMessageReceived(String msg) {
-            if (currentResponseConsumer != null) {
-                currentResponseConsumer.accept(msg);
-            }
-        }
-
-        protected synchronized void processNextCommand(String str, Consumer<String> responseConsumer, AttributeInfo attributeInfo) {
-            currentResponseConsumer = null;
-
-            LOG.fine("Executing send for attribute: " + attributeInfo.attributeRef);
-
-            if (responseConsumer == null) {
-                LOG.finer("No response consumer so fire and forget");
-                client.sendMessage(str);
-
-                // Move straight onto next command
-                if (!actionQueue.isEmpty()) {
-                    executorService.schedule(actionQueue.pop(), 0);
-                }
-                return;
-            }
-
-            LOG.finer("Send expects a response [retries=" + attributeInfo.retries + ", timeout=" + attributeInfo.responseTimeoutMillis + "]");
-            this.retries = attributeInfo.retries;
-            this.timeoutMillis = attributeInfo.responseTimeoutMillis;
-            this.currentResponseConsumer = responseStr -> {
-                responseConsumer.accept(responseStr);
-                synchronized (ClientAndQueue.this) {
-                    if (this.responseMonitor != null) {
-                        this.responseMonitor.cancel(true);
-                        currentResponseConsumer = null;
-                    }
-
-                    if (!actionQueue.isEmpty()) {
-                        executorService.schedule(actionQueue.pop(), 0);
-                    }
-                }
-            };
-
-            Runnable failureAction = () -> {
-                synchronized (ClientAndQueue.this) {
-                    LOG.fine("Send failed: response timeout reached");
-
-                    if (retries > 0) {
-                        LOG.fine("Sending message again");
-                        retries--;
-                        client.sendMessage(str);
-                    } else {
-                        LOG.fine("No more retries left so abandoning send");
-                        responseMonitor.cancel(false);
-                        currentResponseConsumer = null;
-                        if (!actionQueue.isEmpty()) {
-                            executorService.schedule(actionQueue.pop(), 0);
-                        }
-                    }
-                }
-            };
-
-
-            client.sendMessage(str);
-            responseMonitor = executorService.scheduleWithFixedDelay(failureAction, timeoutMillis, timeoutMillis);
-        }
-    }
-
-    protected static class AttributeInfo {
-        AttributeRef attributeRef;
-        Consumer<Value> sendConsumer;
-        ScheduledFuture pollingTask;
-        int retries;
-        int responseTimeoutMillis;
-
-        protected AttributeInfo(AttributeRef attributeRef, int retries, int responseTimeoutMillis) {
-            this.attributeRef = attributeRef;
-            this.retries = retries;
-            this.responseTimeoutMillis = responseTimeoutMillis;
-        }
-    }
-
+public class UdpClientProtocol extends AbstractUdpClientProtocol<String> {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, UdpClientProtocol.class.getName());
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":udpClient";
@@ -207,67 +92,7 @@ public class UdpClientProtocol extends AbstractProtocol {
     private static int DEFAULT_SEND_RETRIES = 1;
     private static boolean DEFAULT_SERVER_ALWAYS_RESPONDS = false;
     private static int MIN_POLLING_MILLIS = 1000;
-    protected final Map<AttributeRef, ClientAndQueue> clientMap = new HashMap<>();
     protected final Map<AttributeRef, AttributeInfo> attributeInfoMap = new HashMap<>();
-
-    /**
-     * The UDP server host name/IP address
-     */
-    public static final MetaItemDescriptor META_PROTOCOL_HOST =  metaItemString(
-            PROTOCOL_NAME + ":host",
-            ACCESS_PRIVATE,
-            true,
-            TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY_NO_WHITESPACE,
-            MetaItemDescriptor.PatternFailure.STRING_EMPTY_OR_CONTAINS_WHITESPACE);
-
-    /**
-     * The UDP server port
-     */
-    public static final MetaItemDescriptor META_PROTOCOL_PORT = metaItemInteger(
-            PROTOCOL_NAME + ":port",
-            ACCESS_PRIVATE,
-            true,
-            1,
-            65536);
-
-    /**
-     * Optionally sets the port that this UDP client will bind to (if not set then a random ephemeral port will be used)
-     */
-    public static final MetaItemDescriptor META_PROTOCOL_BIND_PORT = metaItemInteger(
-            PROTOCOL_NAME + ":bindPort",
-            ACCESS_PRIVATE,
-            true,
-            1,
-            65536);
-
-    /**
-     * Indicates whether the server replies to each packet not just polling requests (need this to successfully match
-     * request and response packets)
-     */
-    public static final MetaItemDescriptor META_SERVER_ALWAYS_RESPONDS = metaItemFixedBoolean(
-        PROTOCOL_NAME+ ":serverAlwaysResponds",
-        ACCESS_PRIVATE,
-        false);
-
-    /**
-     * Indicates how long to wait for a response from the server before re-attempting {@link #META_SEND_RETRIES} times
-     */
-    public static final MetaItemDescriptor META_RESPONSE_TIMEOUT_MILLIS = metaItemInteger(
-            PROTOCOL_NAME + ":responseTimeoutMillis",
-            ACCESS_PRIVATE,
-            true,
-            1,
-            10000);
-
-    /**
-     * How many times to retry sending a failed command
-     */
-    public static final MetaItemDescriptor META_SEND_RETRIES = metaItemInteger(
-            PROTOCOL_NAME + ":sendRetries",
-            ACCESS_PRIVATE,
-            true,
-            1,
-            10);
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
         META_ATTRIBUTE_WRITE_VALUE,
@@ -276,23 +101,6 @@ public class UdpClientProtocol extends AbstractProtocol {
         META_SEND_RETRIES,
         META_SERVER_ALWAYS_RESPONDS
     );
-
-    public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
-        META_PROTOCOL_HOST,
-        META_PROTOCOL_PORT,
-        META_PROTOCOL_BIND_PORT,
-        META_PROTOCOL_CHARSET,
-        META_PROTOCOL_CONVERT_BINARY,
-        META_PROTOCOL_CONVERT_HEX,
-        META_RESPONSE_TIMEOUT_MILLIS,
-        META_SEND_RETRIES,
-        META_SERVER_ALWAYS_RESPONDS
-    );
-
-    @Override
-    protected void doStop(Container container) {
-        clientMap.forEach((ref, clientAndQueue) -> clientAndQueue.disconnect());
-    }
 
     @Override
     public String getProtocolName() {
@@ -310,91 +118,8 @@ public class UdpClientProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
-        return PROTOCOL_META_ITEM_DESCRIPTORS;
-    }
-
-    @Override
     protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
         return ATTRIBUTE_META_ITEM_DESCRIPTORS;
-    }
-
-    @Override
-    public AssetAttribute getProtocolConfigurationTemplate() {
-        return super.getProtocolConfigurationTemplate()
-            .addMeta(
-                new MetaItem(META_PROTOCOL_HOST, null),
-                new MetaItem(META_PROTOCOL_PORT, null)
-            );
-    }
-
-    @Override
-    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
-
-        if (!protocolConfiguration.isEnabled()) {
-            LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
-            return;
-        }
-
-        final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
-
-        String host = Values.getMetaItemValueOrThrow(
-            protocolConfiguration,
-            META_PROTOCOL_HOST,
-            true,
-            true
-        ).flatMap(Values::getString).orElse(null);
-
-        int port = Values.getMetaItemValueOrThrow(
-                protocolConfiguration,
-                META_PROTOCOL_PORT,
-                true,
-                true
-        ).flatMap(Values::getIntegerCoerced).orElse(0);
-
-        Integer bindPort = Values.getMetaItemValueOrThrow(
-                protocolConfiguration,
-                META_PROTOCOL_BIND_PORT,
-                false,
-                false
-        ).flatMap(Values::getIntegerCoerced).orElse(null);
-
-        boolean hexMode = Values.getMetaItemValueOrThrow(
-                protocolConfiguration,
-                META_PROTOCOL_CONVERT_HEX,
-                false,
-                false
-        ).flatMap(Values::getBoolean).orElse(false);
-
-        boolean binaryMode = Values.getMetaItemValueOrThrow(
-                protocolConfiguration,
-                META_PROTOCOL_CONVERT_BINARY,
-                false,
-                false
-        ).flatMap(Values::getBoolean).orElse(false);
-
-        Charset charset = Values.getMetaItemValueOrThrow(
-                protocolConfiguration,
-                META_PROTOCOL_CHARSET,
-                false,
-                true
-        ).flatMap(Values::getString).map(Charset::forName).orElse(CharsetUtil.UTF_8);
-
-        IoClient<String> client = addClient(host, port, bindPort, charset, binaryMode, hexMode);
-        ClientAndQueue clientAndQueue = new ClientAndQueue(client, protocolRef);
-        clientMap.put(protocolRef, clientAndQueue);
-        clientAndQueue.connect();
-    }
-
-    @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
-
-        ClientAndQueue clientAndQueue = clientMap.remove(protocolRef);
-        if (clientAndQueue != null) {
-            clientAndQueue.disconnect();
-            updateStatus(protocolRef, ConnectionStatus.DISCONNECTED);
-        }
     }
 
     @Override
@@ -542,7 +267,8 @@ public class UdpClientProtocol extends AbstractProtocol {
         return executorService.scheduleWithFixedDelay(pollingTask, 0, pollingMillis, TimeUnit.MILLISECONDS);
     }
 
-    protected IoClient<String> addClient(String host, int port, Integer bindPort, Charset charset, boolean binaryMode, boolean hexMode) {
+    @Override
+    protected IoClient<String> createIoClient(String host, int port, Integer bindPort, Charset charset, boolean binaryMode, boolean hexMode) {
 
         LOG.info("Adding UDP client");
 
