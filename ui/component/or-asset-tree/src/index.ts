@@ -225,10 +225,10 @@ export class OrAssetTree extends LitElement {
                 </div>
 
                 <div id="header-btns">
-                    <button ?hidden="${!this.selectedIds || this.selectedIds.length === 0}" @click="${() => this._onCopyClicked()}"><or-icon icon="content-copy"></or-icon></button>
+                    <button style="display:none;" ?hidden="${!this.selectedIds || this.selectedIds.length === 0}" @click="${() => this._onCopyClicked()}"><or-icon icon="content-copy"></or-icon></button>
                     <button ?hidden="${!this.selectedIds || this.selectedIds.length === 0}" @click="${() => this._onDeleteClicked()}"><or-icon icon="delete"></or-icon></button>
-                    <button @click="${() => this._onAddClicked()}"><or-icon icon="plus"></or-icon></button>
-                    <button @click="${() => this._onSearchClicked()}"><or-icon icon="magnify"></or-icon></button>
+                    <button hidden @click="${() => this._onAddClicked()}"><or-icon icon="plus"></or-icon></button>
+                    <button hidden @click="${() => this._onSearchClicked()}"><or-icon icon="magnify"></or-icon></button>
                     <button @click="${() => this._onSortClicked()}"><or-icon icon="sort-variant"></or-icon></button>
                     <div class="modal-container">
                         <div class="modal" id="sort-menu">
@@ -472,7 +472,7 @@ export class OrAssetTree extends LitElement {
             }
         }
 
-        this.selectedIds = selectedIds;
+            this.selectedIds = selectedIds;
     }
 
     protected _showDeleteModal() {
@@ -617,6 +617,9 @@ export class OrAssetTree extends LitElement {
         rootAssets.forEach((rootAsset) => this._buildChildTreeNodes(rootAsset, assets, sortFunction));
 
         this._nodes = rootAssets;
+        if(this.selectedIds && this.selectedIds.length > 0) {
+            this._updateSelectedNodes();
+        }
         this._showLoading = false;
     }
 
