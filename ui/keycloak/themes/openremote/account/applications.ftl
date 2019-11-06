@@ -82,7 +82,7 @@
 
                       <td>
                             <#if (application.client.consentRequired && application.claimsGranted?has_content) || application.additionalGrants?has_content>
-                                <button type="submit" class="btn waves-effect waves-light green darken-1" id='revoke-${application.client.clientId}' name="clientId" value="${application.client.id}">${msg("revoke")}</button>
+                                <button type="submit" class="btn waves-effect waves-light" id='revoke-${application.client.clientId}' name="clientId" value="${application.client.id}">${msg("revoke")}</button>
                             </#if>
                       </td>
                   </tr>

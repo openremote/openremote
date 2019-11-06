@@ -23,7 +23,7 @@
                                autocapitalize="off"
                                required
                                class="validate"
-                               name="username" value="${(login.username!'')}" type="text" autofocus/>
+                               name="username" value="${(login.username!'')}" type="text"/>
                     </#if>
                     <label for="username"><#if !realm.registrationEmailAsUsername>${msg("usernameOrEmail")}<#else>${msg("email")}</#if></label>
                 </div>
@@ -51,7 +51,7 @@
             </div>
 
             <div class="col s12 center-align">
-                <button class="btn waves-effect waves-light green darken-1" type="submit" name="login">${msg("doLogIn")}
+                <button class="btn waves-effect waves-light" type="submit" name="login">${msg("doLogIn")}
                     <i class="material-icons right">send</i>
                 </button>
             </div>

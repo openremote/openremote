@@ -59,7 +59,7 @@
             </div>
 
             <div class="col s12 center-align">
-                <button class="btn waves-effect waves-light green darken-1" type="submit" name="register">${msg("doRegister")}
+                <button class="btn waves-effect waves-light" type="submit" name="register">${msg("doRegister")}
                     <i class="material-icons right">send</i>
                 </button>
             </div>
