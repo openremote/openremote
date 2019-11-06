@@ -141,5 +141,17 @@ export const style = css`
         align-items: center;
         text-align: center;
         height: 100%;
-    }    
+    }
+    
+    /* TODO move this to mobilePanelStyle */
+    @media screen and (max-width: 768px) {
+        .panel,
+        #asset-header {
+            grid-area: auto!important;
+        }
+        
+        #container { 
+            grid-template-columns: 1fr!important;
+        }
+    }
 `;
