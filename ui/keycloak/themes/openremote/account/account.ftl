@@ -8,12 +8,12 @@
 
         <form action="${url.accountUrl}" method="post">
 
-            <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker?html}">
+            <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker}">
 
             <#if !realm.registrationEmailAsUsername>
                 <div class="input-field s12 ${messagesPerField.printIfExists('username','has-error')}">
                     <input type="text" class="validate" id="username" name="username" required
-                           <#if !realm.editUsernameAllowed>disabled="disabled"</#if> value="${(account.username!'')?html}"/>
+                           <#if !realm.editUsernameAllowed>disabled="disabled"</#if> value="${(account.username!'')}"/>
                     <label for="username">${msg("username")} <#if realm.editUsernameAllowed>
                     <span class="required">*</span></#if></label>
                 </div>
@@ -22,21 +22,21 @@
             <div class="input-field s12">
                 <input type="text" class="validate ${messagesPerField.printIfExists('email','invalid')}" id="email"
                        name="email" autofocus
-                       value="${(account.email!'')?html}" required/>
+                       value="${(account.email!'')}" required/>
                 <label for="email">${msg("email")} <span class="required">*</span></label>
             </div>
 
             <div class="input-field s12 ${messagesPerField.printIfExists('firstName','has-error')}">
                 <input type="text" class="validate ${messagesPerField.printIfExists('email','invalid')}" id="firstName"
                        name="firstName"
-                       value="${(account.firstName!'')?html}" required/>
+                       value="${(account.firstName!'')}" required/>
                 <label for="firstName">${msg("firstName")} <span class="required">*</span></label>
             </div>
 
             <div class="input-field s12 ${messagesPerField.printIfExists('lastName','has-error')}">
                 <input type="text" class="validate ${messagesPerField.printIfExists('email','invalid')}" id="lastName"
                        name="lastName"
-                       value="${(account.lastName!'')?html}" required/>
+                       value="${(account.lastName!'')}" required/>
                 <label for="lastName">${msg("lastName")}<span class="required">*</span></label>
             </div>
 

@@ -5,9 +5,9 @@
 
     <div class="section">
 
-        <form action="${url.revokeClientUrl}" method="post">
-            <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker?html}">
-            <input type="hidden" id="referrer" name="referrer" value="${stateChecker?html}">
+        <form action="${url.applicationsUrl}" method="post">
+            <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker}">
+            <input type="hidden" id="referrer" name="referrer" value="${stateChecker}">
 
             <table class="striped">
                 <thead>

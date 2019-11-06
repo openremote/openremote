@@ -42,7 +42,7 @@
             <form action="${url.totpUrl}" method="post">
 
                 <div class="row">
-                    <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker?html}">
+                    <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker}">
 
                     <div class="input-field col s12">
                         <input type="text" class="form-control" id="totp" name="totp" autocomplete="off" autofocus

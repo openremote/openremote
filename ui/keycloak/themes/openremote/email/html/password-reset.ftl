@@ -89,7 +89,7 @@
 															<table border="0" cellpadding="30" cellspacing="0" width="100%">
 																<tr>
 																	<td align="center" valign="top" class="textContent">
-																		<h1 style="color:#FFFFFF;line-height:100%;font-family:Helvetica,Arial,sans-serif;font-size:35px;font-weight:normal;margin-bottom:5px;text-align:center;">${(realmName!'')?html} Password</h1>
+																		<h1 style="color:#FFFFFF;line-height:100%;font-family:Helvetica,Arial,sans-serif;font-size:35px;font-weight:normal;margin-bottom:5px;text-align:center;">${(realmName!'')} Password</h1>
 																	</td>
 																</tr>
 															</table>
@@ -116,7 +116,7 @@
 																		<table border="0" cellpadding="0" cellspacing="0" width="420" style="max-width: 100%;">
 																			<tr>
 																				<td align="center" class="textContent">
-																					<div style="text-align:center;font-family:Helvetica,Arial,sans-serif;font-size:15px;margin-bottom:0;color:#5F5F5F;line-height:135%;">Someone just requested to change your ${(realmName!'')?html} account''s credentials. If this was you, click on the link below to reset them.</div>
+																					<div style="text-align:center;font-family:Helvetica,Arial,sans-serif;font-size:15px;margin-bottom:0;color:#5F5F5F;line-height:135%;">Someone just requested to change your ${(realmName!'')} account''s credentials. If this was you, click on the link below to reset them.</div>
 																				</td>
 																			</tr>
 																		</table>
@@ -144,7 +144,7 @@
 															<table border="0" cellpadding="0" cellspacing="0" width="50%" class="emailButton" style="background-color: #c1d72e;">
 																<tr>
 																	<td align="center" valign="middle" class="buttonContent" style="padding-top:15px;padding-bottom:15px;padding-right:15px;padding-left:15px;">
-																		<a style="color:#FFFFFF;text-decoration:none;font-family:Helvetica,Arial,sans-serif;font-size:20px;line-height:135%;" href="${(link!'')?html}" target="_blank">Reset password</a>
+																		<a style="color:#FFFFFF;text-decoration:none;font-family:Helvetica,Arial,sans-serif;font-size:20px;line-height:135%;" href="${(link!'')}" target="_blank">Reset password</a>
 																	</td>
 																</tr>
 															</table>
@@ -170,7 +170,7 @@
 																		<table border="0" cellpadding="0" cellspacing="0" width="420" style="max-width: 100%;">
 																			<tr>
 																				<td align="center" class="textContent">
-																					<div style="text-align:center;font-family:Helvetica,Arial,sans-serif;font-size:15px;margin-bottom:0;color:#5F5F5F;line-height:135%;">This link will expire within ${(linkExpiration!'')?html} minutes.If you don''t want to reset your credentials, just ignore this message and nothing will be changed.</div>
+																					<div style="text-align:center;font-family:Helvetica,Arial,sans-serif;font-size:15px;margin-bottom:0;color:#5F5F5F;line-height:135%;">This link will expire within ${(linkExpiration!'')} minutes.If you don''t want to reset your credentials, just ignore this message and nothing will be changed.</div>
 																				</td>
 																			</tr>
 																		</table>

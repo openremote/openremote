@@ -12,26 +12,26 @@
                 <#if !realm.registrationEmailAsUsername>
                     <div class="input-field col s12">
                         <input type="text" id="username" class="validate ${messagesPerField.printIfExists('username','invalid')}" name="username"
-                               value="${(register.formData.username!'')?html}"/>
+                               value="${(register.formData.username!'')}"/>
                         <label for="username" class="${properties.kcLabelClass!}">${msg("username")}</label>
                     </div>
                 </#if>
 
                 <div class="input-field col s12">
                     <input type="text" id="firstName" class="validate ${messagesPerField.printIfExists('firstName','invalid')}" name="firstName"
-                           value="${(register.formData.firstName!'')?html}"/>
+                           value="${(register.formData.firstName!'')}"/>
                     <label for="firstName" class="${properties.kcLabelClass!}">${msg("firstName")}</label>
                 </div>
 
                 <div class="input-field col s12">
                     <input type="text" id="lastName" class="validate ${messagesPerField.printIfExists('lastName','invalid')}" name="lastName"
-                           value="${(register.formData.lastName!'')?html}"/>
+                           value="${(register.formData.lastName!'')}"/>
                     <label for="lastName" class="${properties.kcLabelClass!}">${msg("lastName")}</label>
                 </div>
 
                 <div class="input-field col s12">
                     <input type="text" id="email" class="validate ${messagesPerField.printIfExists('email','invalid')}" name="email"
-                           value="${(register.formData.email!'')?html}"/>
+                           value="${(register.formData.email!'')}"/>
                     <label for="email" class="${properties.kcLabelClass!}">${msg("email")}</label>
                 </div>
 
