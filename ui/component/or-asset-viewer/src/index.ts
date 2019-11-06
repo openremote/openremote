@@ -111,6 +111,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     gridColumnEnd: "13",
                     gridRowStart: "2",
                     gridRowEnd: "4",
+                    minHeight: "400px"
                 },
                 fieldStyles: {
                     location: {
@@ -219,7 +220,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     <div class="title">
                         <or-icon title="${descriptor && descriptor.type ? descriptor.type : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.color ? "#" + descriptor.color : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetType.THING.icon}"></or-icon>${this.asset.name}
                     </div>
-                    <div class="created">Aangemaakt op: ${formattedDate}</div>
+                    <div class="created mobileHidden">Aangemaakt op: ${formattedDate}</div>
                 </div>
             ${html`${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
                 const panelTemplate = OrAssetViewer.getPanel(name, this.asset!, this._attributes!, this._viewerConfig!, panelConfig, this.shadowRoot);

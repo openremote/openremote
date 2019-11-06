@@ -154,8 +154,16 @@ export const style = css`
             grid-area: auto!important;
         }
         
+        .panel {
+            padding: 10px;
+            border-radius: 0;
+            border-right: none;
+            border-left: none;
+        }
+         
         #container { 
             grid-template-columns: 1fr!important;
+            padding: 20px 0;
         }
     }
 `;
