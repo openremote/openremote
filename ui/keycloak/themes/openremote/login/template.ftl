@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>OpenRemote Login</title>
+    <title>${msg("applicationName")}</title>
 
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -42,7 +42,7 @@
                                 </a>
                                 <div class="left-align">
                                     <h5 id="header"><#nested "header"></h5><br>
-                                    <p id="sub-header">OpenRemote Login</p>
+                                    <p id="sub-header">${msg("applicationName")}</p>
                                 </div>
                             </div>
                         </div>

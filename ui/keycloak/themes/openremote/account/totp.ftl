@@ -42,7 +42,7 @@
             <form action="${url.totpUrl}" method="post">
 
                 <div class="row">
-                    <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker?html}">
+                    <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker}">
 
                     <div class="input-field col s12">
                         <input type="text" class="form-control" id="totp" name="totp" autocomplete="off" autofocus
@@ -54,12 +54,12 @@
 
                 <div class="col s12 center-align">
                     <button type="submit"
-                            class="btn waves-effect waves-light green darken-1"
+                            class="btn waves-effect waves-light"
                             name="submitAction" value="Save">${msg("doSave")}
                         <i class="material-icons right">send</i>
                     </button>
                     <button type="submit"
-                            class="btn waves-effect waves-light green darken-1"
+                            class="btn waves-effect waves-light"
                             name="submitAction" value="Cancel" formnovalidate>${msg("doCancel")}
                         <i class="material-icons right">cancel</i>
                     </button>

@@ -8,7 +8,7 @@
 
         <input type="text" readonly value="this is not a login form" style="display: none;">
         <input type="password" readonly value="this is not a login form" style="display: none;">
-        <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker?html}">
+        <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker}">
 
         <div class="row">
         <#if password.passwordSet>
@@ -35,7 +35,7 @@
         </div>
 
         <div class="col s12 center-align">
-            <button class="btn waves-effect waves-light green darken-1" type="submit" name="login"
+            <button class="btn waves-effect waves-light" type="submit" name="login"
                     value="Save">${msg("doSave")}
                 <i class="material-icons right">send</i>
             </button>

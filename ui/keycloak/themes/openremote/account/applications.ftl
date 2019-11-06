@@ -5,9 +5,9 @@
 
     <div class="section">
 
-        <form action="${url.revokeClientUrl}" method="post">
-            <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker?html}">
-            <input type="hidden" id="referrer" name="referrer" value="${stateChecker?html}">
+        <form action="${url.applicationsUrl}" method="post">
+            <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker}">
+            <input type="hidden" id="referrer" name="referrer" value="${stateChecker}">
 
             <table class="striped">
                 <thead>
@@ -82,7 +82,7 @@
 
                       <td>
                             <#if (application.client.consentRequired && application.claimsGranted?has_content) || application.additionalGrants?has_content>
-                                <button type="submit" class="btn waves-effect waves-light green darken-1" id='revoke-${application.client.clientId}' name="clientId" value="${application.client.id}">${msg("revoke")}</button>
+                                <button type="submit" class="btn waves-effect waves-light" id='revoke-${application.client.clientId}' name="clientId" value="${application.client.id}">${msg("revoke")}</button>
                             </#if>
                       </td>
                   </tr>
