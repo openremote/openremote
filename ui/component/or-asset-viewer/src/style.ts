@@ -155,7 +155,7 @@ export const style = css`
         }
         
         .panel {
-            padding: 10px;
+            padding: 16px;
             border-radius: 0;
             border-right: none;
             border-left: none;
