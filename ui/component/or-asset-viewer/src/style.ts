@@ -143,8 +143,12 @@ export const style = css`
         height: 100%;
     }
     
-    /* TODO move this to mobilePanelStyle */
-    @media screen and (max-width: 768px) {
+    @media screen and (max-width: 769px) {
+        
+        .mobileHidden {
+            display: none;
+        }
+        
         .panel,
         #asset-header {
             grid-area: auto!important;

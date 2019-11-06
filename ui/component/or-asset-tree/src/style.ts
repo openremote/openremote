@@ -284,7 +284,7 @@ export const style = css`
         margin: 0 auto;
     }    
     
-     @media only screen and (min-width: 768px){
+     @media only screen and (min-width: 769px){
         .expander {
             width: 26px;
         }

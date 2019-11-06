@@ -25,6 +25,7 @@ import {
 import {style} from "./style";
 import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
+import {classMap} from "lit-html/directives/class-map";
 
 export type PanelType = "property" | "location" | "attribute" | "history";
 
@@ -32,6 +33,7 @@ export interface PanelConfig {
     type?: PanelType;
     scrollable?: boolean;
     hide?: boolean;
+    hideOnMobile?: boolean;
     include?: string[];
     exclude?: string[];
     readonly?: string[];
@@ -134,7 +136,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     gridRowStart: "4",
                     gridRowEnd: "5",
                 },
-                scrollable: false,
+                scrollable: false
             }
         }
     };
@@ -251,7 +253,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     public static getPanel(name: string, asset: Asset, attributes: AssetAttribute[], viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, shadowRoot: ShadowRoot | null) {
-
         const content = OrAssetViewer.getPanelContent(name, asset, attributes, viewerConfig, panelConfig, shadowRoot);
 
         if (!content) {
@@ -259,7 +260,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         return html`
-            <div class="panel" id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
+            <div class=${classMap({"panel": true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
                 <div class="panel-title">
                     <or-translate value="${name}"></or-translate>
                 </div>
