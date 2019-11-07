@@ -6,6 +6,7 @@ import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next from "i18next";
 import i18nextXhr from "i18next-xhr-backend";
+import moment from "moment";
 import {
     AssetDescriptor,
     Attribute,
@@ -325,6 +326,11 @@ export class Manager implements EventProviderFactory {
         return i18next.language;
     }
 
+    set language(lang: string) {
+        i18next.changeLanguage(lang);
+        this.console.storeData("LANGUAGE", lang);
+    }
+
     getEventProvider(): EventProvider | undefined {
         return this.events;
     }
@@ -510,16 +516,29 @@ export class Manager implements EventProviderFactory {
             this._emitEvent(OREvent.TRANSLATE_INIT);
         });
 
-        i18next.on("languageChanged", () => {
+        i18next.on("languageChanged", (lng) => {
+            moment.locale(lng);
             this._emitEvent(OREvent.TRANSLATE_LANGUAGE_CHANGED);
         });
 
+        // Look for language preference in local storage
+        const language = await this.console.retrieveData("LANGUAGE");
+
         const initOptions: i18next.InitOptions = {
-            lng: "en",
+            lng: language,
             fallbackLng: "en",
             defaultNS: "app",
             fallbackNS: "or",
             ns: this.config.loadTranslations,
+            interpolation: {
+                format: function(value, format, lng) {
+                    if (format === 'uppercase') return value.toUpperCase();
+                    if(value instanceof Date) {
+                        return moment(value).format(format);
+                    }
+                    return value;
+                }
+            },
             backend: {
                 loadPath: (langs: string[], namespaces: string[]) => {
                     if (namespaces.length === 1 && namespaces[0] === "or") {
@@ -885,11 +904,10 @@ export class Manager implements EventProviderFactory {
         });
     }
 
-    protected async _getNativeOfflineRefreshToken(): Promise<string | null> {
+    protected async _getNativeOfflineRefreshToken(): Promise<string | undefined> {
         if (this.console && this.console.isMobile) {
             return await this.console.retrieveData("REFRESH_TOKEN");
         }
-        return null;
     }
 
     protected _emitEvent(event: OREvent) {

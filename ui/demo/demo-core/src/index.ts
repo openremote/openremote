@@ -77,7 +77,7 @@ class OrDemo extends subscribe(manager)(LitElement) {
     }
 
     public toggleLanguage() {
-        i18next.changeLanguage(i18next.language === "en" ? "nl" : "en");
+        manager.language = i18next.language === "en" ? "nl" : "en";
         this.requestUpdate();
     }
 

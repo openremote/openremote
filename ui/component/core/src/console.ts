@@ -331,7 +331,7 @@ export class Console {
     }
 
 
-    public async retrieveData(key: string): Promise<string | null> {
+    public async retrieveData(key: string): Promise<string | undefined> {
         let response = await this.sendProviderMessage({
             provider: "storage",
             action: "RETRIEVE",
@@ -339,10 +339,8 @@ export class Console {
         }, true);
 
         if (response && response.value) {
-            return JSON.parse(response.value);
+            return response.value;
         }
-
-        return null;
     }
 
     protected _postNativeShellMessage(jsonMessage: any) {
@@ -421,35 +419,36 @@ export class Console {
                             };
                             this._handleProviderResponse(JSON.stringify(enableResponse));
                             break;
-                        case "STORE":
-                            let keyValue = msg.key ? msg.key.trim() : null;
+                        case "STORE": {
+                                let keyValue = msg.key ? msg.key.trim() : null;
 
-                            if (!keyValue || keyValue.length === 0) {
-                                throw new Error("Storage provider 'store' action requires a `key`");
-                            }
+                                if (!keyValue || keyValue.length === 0) {
+                                    throw new Error("Storage provider 'store' action requires a `key`");
+                                }
 
-                            if (msg.value) {
-                                if (msg.value === null) {
-                                    window.localStorage.removeItem(keyValue);
-                                } else {
-                                    window.localStorage.setItem(keyValue, msg.value);
+                                if (msg.value) {
+                                    if (msg.value === null) {
+                                        window.localStorage.removeItem(keyValue);
+                                    } else {
+                                        window.localStorage.setItem(keyValue, msg.value);
+                                    }
                                 }
                             }
-
                             break;
-                        case "RETRIEVE":
-                            keyValue = msg.key ? msg.key.trim() : null;
+                        case "RETRIEVE": {
+                                let keyValue = msg.key ? msg.key.trim() : null;
 
-                            if (!keyValue || keyValue.length === 0) {
-                                throw new Error("Storage provider 'retrieve' action requires a `key`");
+                                if (!keyValue || keyValue.length === 0) {
+                                    throw new Error("Storage provider 'retrieve' action requires a `key`");
+                                }
+
+                                this._handleProviderResponse(JSON.stringify({
+                                    action: "RETRIEVE",
+                                    provider: "storage",
+                                    key: keyValue,
+                                    value: window.localStorage.getItem(keyValue)
+                                }));
                             }
-
-                            this._handleProviderResponse(JSON.stringify({
-                                action: "RETRIEVE",
-                                provider: "storage",
-                                key: keyValue,
-                                value: window.localStorage.getItem(keyValue)
-                            }));
                             break;
                         default:
                             throw new Error("Unsupported provider '" + msg.provider + "' and action '" + msg.action + "'");
