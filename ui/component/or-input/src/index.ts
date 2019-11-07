@@ -9,6 +9,7 @@ import {MDCCheckbox} from "@material/checkbox";
 import {MDCSwitch} from "@material/switch";
 import {MDCSelect, MDCSelectEvent, } from "@material/select";
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
+import moment from "moment";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("!!raw-loader!@material/button/dist/mdc.button.css");
@@ -303,19 +304,19 @@ export class OrInput extends LitElement {
                     `;
                 case InputType.BUTTON:
                 case InputType.BUTTON_MOMENTARY: {
-                    const rounded = !!(!this.value && this.rounded && this.icon);
+                    const iconButton = this.isIconButton();
                     const classes = {
                         "mdc-button--raised": this.raised,
                         "mdc-button--unelevated": this.unElevated,
-                        "mdc-button--outlined": !rounded && this.outlined,
-                        "mdc-button--dense": !rounded && this.dense,
+                        "mdc-button--outlined": !iconButton && this.outlined,
+                        "mdc-button--dense": !iconButton && this.dense,
                         "or-input--rounded": this.rounded,
-                        "mdc-button": !rounded,
-                        "mdc-icon-button": rounded
+                        "mdc-button": !iconButton,
+                        "mdc-icon-button": iconButton
                     };
                     const iconClasses = {
-                        "mdc-icon-button__icon": rounded,
-                        "mdc-button__icon": !rounded,
+                        "mdc-icon-button__icon": iconButton,
+                        "mdc-button__icon": !iconButton,
                     };
                     if (this.type === InputType.BUTTON_MOMENTARY) {
                         return html`
@@ -383,10 +384,11 @@ export class OrInput extends LitElement {
                         switch (this.type) {
                             case InputType.DATETIME:
                                 // Date time conversion for UNIX timestamps in millis
-                                if (typeof(val) === "number") {
+                                if (val instanceof Date) {
+                                    val = moment(val).format("YYYY-MM-DDTHH:mm");
+                                } else if (typeof(val) === "number") {
                                     const offset = (new Date()).getTimezoneOffset() * 60000;
-                                    const str = (new Date(val - offset)).toISOString();
-                                    val = str.slice(0, str.lastIndexOf(":"));
+                                    val = moment(new Date(val - offset)).format("YYYY-MM-DDTHH:mm");
                                 }
                                 break;
                             case InputType.JSON:
@@ -434,7 +436,7 @@ export class OrInput extends LitElement {
                                     ?readonly="${this.readonly}"
                                     ?disabled="${this.disabled}"
                                     @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement).value)}"
-                                    value="${val}"
+                                    .value="${val}"
                                     min="${ifDefined(this.min)}"
                                     max="${ifDefined(this.max)}"
                                     step="${ifDefined(this.step)}"
@@ -459,6 +461,10 @@ export class OrInput extends LitElement {
         }
 
         return html`<span>INPUT TYPE NOT IMPLEMENTED</span>`;
+    }
+
+    protected isIconButton() {
+        return !!(!this.value && this.rounded && this.icon);
     }
 
     protected updated(_changedProperties: PropertyValues): void {
@@ -490,7 +496,11 @@ export class OrInput extends LitElement {
                     case InputType.RADIO:
                         break;
                     case InputType.BUTTON:
-                        this._mdcComponent = new MDCRipple(component);
+                        const ripple = new MDCRipple(component);
+                        if (this.isIconButton()) {
+                            ripple.unbounded = true;
+                        }
+                        this._mdcComponent = ripple;
                         break;
                     case InputType.CHECKBOX:
                         this._mdcComponent = new MDCCheckbox(component);

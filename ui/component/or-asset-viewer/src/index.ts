@@ -80,7 +80,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     public static DEFAULT_CONFIG: AssetViewerConfig = {
         viewerStyles: {
             gridTemplateColumns: "repeat(12, 1fr)",
-            gridTemplateRows: "30px max-content"
+            gridTemplateRows: "auto minmax(0, 1fr) minmax(0, 50%)"
         },
         panels: {
             "info": {
@@ -88,8 +88,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 panelStyles: {
                     gridColumnStart: "1",
                     gridColumnEnd: "7",
-                    gridRowStart: "2",
-                    gridRowEnd: "3",
+                    gridRowStart: "1",
+                    gridRowEnd: "2",
                 },
                 fieldStyles: {
                     name: {
@@ -109,8 +109,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 panelStyles: {
                     gridColumnStart: "7",
                     gridColumnEnd: "13",
-                    gridRowStart: "2",
-                    gridRowEnd: "4",
+                    gridRowStart: "1",
+                    gridRowEnd: "3",
                     minHeight: "400px"
                 },
                 fieldStyles: {
@@ -125,8 +125,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 panelStyles: {
                     gridColumnStart: "1",
                     gridColumnEnd: "7",
-                    gridRowStart: "3",
-                    gridRowEnd: "5"
+                    gridRowStart: "2",
+                    gridRowEnd: "4"
                 }
             },
             "history": {
@@ -134,8 +134,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 panelStyles: {
                     gridColumnStart: "7",
                     gridColumnEnd: "13",
-                    gridRowStart: "4",
-                    gridRowEnd: "5",
+                    gridRowStart: "3",
+                    gridRowEnd: "4"
                 },
                 scrollable: false
             }
@@ -211,22 +211,24 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         const descriptor = AssetModelUtil.getAssetDescriptor(this.asset!.type!);
-        var assetDate = new Date(this.asset!.createdOn!);
-        var formattedDate = assetDate.toLocaleString('nl-NL');
 
         return html`
-            <div id="container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
+            <div id="wrapper">
                 <div id="asset-header">
-                    <div class="title">
+                    <div id="title">
                         <or-icon title="${descriptor && descriptor.type ? descriptor.type : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.color ? "#" + descriptor.color : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetType.THING.icon}"></or-icon>${this.asset.name}
                     </div>
-                    <div class="created mobileHidden">Aangemaakt op: ${formattedDate}</div>
+                    <div id="created"><or-translate value="createdOn" .options="${{date: new Date(this.asset!.createdOn!)} as i18next.TOptions<i18next.InitOptions>}"></or-translate></div>
                 </div>
-            ${html`${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
-                const panelTemplate = OrAssetViewer.getPanel(name, this.asset!, this._attributes!, this._viewerConfig!, panelConfig, this.shadowRoot);
-                return panelTemplate || ``;
-            })}`
-            }`;
+                <div id="container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
+                    ${html`${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
+                        const panelTemplate = OrAssetViewer.getPanel(name, this.asset!, this._attributes!, this._viewerConfig!, panelConfig, this.shadowRoot);
+                        return panelTemplate || ``;
+                    })}`
+                    }
+                </div>
+            </div>
+        `;
     }
 
     protected updated(_changedProperties: PropertyValues) {
@@ -347,23 +349,29 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                             width: 100%;
                             display: flex;
                             flex-direction: column;
+                            position: relative;
                         }
                         
                         #history-controls {
+                            flex: 0;
                             margin-bottom: 10px;
+                            position: absolute;
                         }
                         
                         #history-attribute-picker {
                             flex: 0;
+                            width: 200px;
                         }
                         
                         or-attribute-history {
                             height: 100%;
+                            flex: 1 1 auto;
+                            --or-attribute-history-controls-margin: 0 0 0 204px;  
                         }
                     </style>
                     <div id="history-container">
                         <div id="history-controls">
-                            <or-input id="history-attribute-picker" @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${historyAttrs.map((attr) => [attr.name, getAttributeLabel(attr, undefined)])}"></or-input>
+                            <or-input id="history-attribute-picker" .label="${i18next.t("attribute")}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${historyAttrs.map((attr) => [attr.name, getAttributeLabel(attr, undefined)])}"></or-input>
                         </div>        
                         <or-attribute-history id="attribute-history" .config="${viewerConfig.historyConfig}" .assetType="${asset.type}"></or-attribute-history>
                     </div>

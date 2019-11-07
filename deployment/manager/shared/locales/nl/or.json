@@ -1,6 +1,7 @@
 {
-  "asset": "asset",
-  "asset_plural": "assets",
+  "asset": "Asset",
+  "asset_plural": "Assets",
+  "attribute": "Attribute",
   "scenes": "Scenes",
   "settings": "Instellingen",
   "selectLanguage": "Taal kiezen",
@@ -72,12 +73,19 @@
   "confirmDeleteAssets": "Asset verwijderen?",
   "ok": "OK",
   "cancel": "Annuleren",
-  "createdOn": "Aangemaakt op",
+  "createdOn": "Aangemaakt op: {{-date, LLLL}}",
   "accessPublicRead": "Publiek",
   "type": "Type",
   "path": "Pad",
   "showOnMap": "Tonen op kaart",
   "noAssetSelected": "Kies aan de linkerkant een asset uit de lijst",
   "loading":  "Aan het laden...",
-  "location": "Locatie"
+  "location": "Locatie",
+  "hour": "Hour",
+  "day": "Day",
+  "week": "Week",
+  "month": "Month",
+  "year": "Year",
+  "period": "Period",
+  "ending": "Ending"
 }

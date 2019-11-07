@@ -22,14 +22,21 @@ export const style = css`
         display: none;
     }
     
+    #wrapper {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
     #container {
         box-sizing: border-box;
         padding: 20px 30px;
         column-gap: var(--internal-or-asset-viewer-panel-margin);
         row-gap: var(--internal-or-asset-viewer-panel-margin);  
-        height: 100%;
+        flex: 1 1 auto;
         display: grid;
-        overflow-y: auto;
+        width: 100%;
         -webkit-animation: fadein 0.3s; /* Safari, Chrome and Opera > 12.1 */
         -moz-animation: fadein 0.3s; /* Firefox < 16 */
         -ms-animation: fadein 0.3s; /* Internet Explorer */
@@ -67,26 +74,23 @@ export const style = css`
     }
 
     #asset-header {
+        padding: 20px 30px 0 30px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        grid-column-start: 1;
-        grid-column-end: 13;
-        grid-row-start: 1;
-        grid-row-end: 2;
     }
 
-    #asset-header > .title {
+    #title {
         flex: 1 0 auto;
         font-size: 18px;
         font-weight: bold;
     }
 
-    #asset-header .title > or-icon {
+    #title > or-icon {
         margin-right: 10px;
     }
     
-    #asset-header > .created {
+    #created {
         text-align: right;
         flex: 1 0 auto;
         font-size: 12px;

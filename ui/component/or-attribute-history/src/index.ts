@@ -12,13 +12,19 @@ import {
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 import {AssetAttribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueType} from "@openremote/model";
-import manager, {AssetModelUtil, DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5} from "@openremote/core";
+import manager, {
+    AssetModelUtil,
+    DefaultColor2,
+    DefaultColor3,
+    DefaultColor4,
+    DefaultColor5,
+    Util
+} from "@openremote/core";
 import "@openremote/or-input";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
-import {Util} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
-import {InputType} from "@openremote/or-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {MDCDataTable} from "@material/data-table";
 import {JSONPath} from "jsonpath-plus";
 import moment from "moment";
@@ -57,8 +63,14 @@ export interface TableConfig {
     attributeValueTypes?: {[attributeValueType: string]: AssetTableConfig};
 }
 
+export interface ChartConfig {
+    xLabel?: string;
+    yLabel?: string;
+}
+
 export interface HistoryConfig {
-    table: TableConfig;
+    table?: TableConfig;
+    chart?: ChartConfig;
 }
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
@@ -68,7 +80,8 @@ const tableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-tabl
 const style = css`
     :host {
         --internal-or-attribute-history-background-color: var(--or-attribute-history-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
-        --internal-or-attribute-history-text-color: var(--or-attribute-history-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));       
+        --internal-or-attribute-history-text-color: var(--or-attribute-history-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
+        --internal-or-attribute-history-controls-margin: var(--or-attribute-history-controls-margin, 0);       
         --internal-or-attribute-history-graph-fill-color: var(--or-attribute-history-graph-fill-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
         --internal-or-attribute-history-graph-fill-opacity: var(--or-attribute-history-graph-fill-opacity, 1);       
         --internal-or-attribute-history-graph-line-color: var(--or-attribute-history-graph-line-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
@@ -95,10 +108,6 @@ const style = css`
         height: 100%;
         flex-direction: column;
     }
-    
-    #container > * {
-        width: 100%;
-    }
        
     #msg {
         height: 100%;
@@ -111,29 +120,25 @@ const style = css`
     #msg:not([hidden]) {
         display: flex;    
     }
-       
-    #history-wrapper:not([hidden]) {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-    }
     
-    #history-wrapper > * {
-        width: 100%;
-    }
-    
-    #chart-controls {
+    #controls {
         flex: 0;
-        display: none;
         justify-content: space-between;
-        margin-bottom: 10px;
+        padding-bottom: 10px;
+        margin: var(--internal-or-attribute-history-controls-margin);
+    }
+    
+    #ending-controls {
+        float: right;
+        padding-right: 10px;
     }
     
     #chart-container {
-        position: relative;
         height: 100%;
+        flex: 1 1 auto;
+        position: relative;
     }
-    
+        
     #table-container {
         height: 100%;
     }
@@ -177,19 +182,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     public attributeRef?: AttributeRef;
 
     @property({type: String})
-    public xLabel?: string;
-
-    @property({type: String})
-    public yLabel?: string;
-
-    @property({type: Number})
-    public from?: number;
-
-    @property({type: Number})
-    public to?: number;
-
-    @property({type: String})
-    public interval: DatapointInterval = DatapointInterval.WEEK;
+    public interval?: DatapointInterval;
 
     @property({type: Number})
     public timestamp?: Date;
@@ -212,27 +205,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _tableElem!: HTMLDivElement;
     protected _table?: MDCDataTable;
     protected _chart?: Chart;
-    protected _type?: ValueType;
+    protected _type?: ValueType | null;
     protected _style!: CSSStyleDeclaration;
-
-    shouldUpdate(_changedProperties: PropertyValues): boolean {
-
-        let reloadData = _changedProperties.has("interval");
-
-        if (_changedProperties.has("attributeRef") || _changedProperties.has("attribute")) {
-            this._type = undefined;
-            reloadData = true;
-        }
-
-        if (reloadData) {
-            this._data = undefined;
-            if (this.attribute || this.attributeRef) {
-                this._loadData();
-            }
-        }
-
-        return super.shouldUpdate(_changedProperties);
-    }
 
     connectedCallback() {
         super.connectedCallback();
@@ -244,28 +218,72 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         this._cleanup();
     }
 
+
+    shouldUpdate(_changedProperties: PropertyValues): boolean {
+
+        let returnFalse = false;
+
+        if (!this.timestamp) {
+            this.timestamp = new Date();
+            returnFalse = true;
+        }
+
+        if (!this.interval) {
+            this.interval = DatapointInterval.DAY;
+            returnFalse = true;
+        }
+
+        if (returnFalse) {
+            // Will update on next pass
+            return false;
+        }
+
+        let reloadData = _changedProperties.has("interval") || _changedProperties.has("timestamp");
+
+        if (_changedProperties.has("attributeRef") || _changedProperties.has("attribute")) {
+            this._type = undefined;
+            this._cleanup();
+            reloadData = true;
+        }
+
+        if (reloadData) {
+            this._data = undefined;
+            this._loadData();
+        }
+
+        return super.shouldUpdate(_changedProperties);
+    }
+
     render() {
 
-        const hasData = this._data && this._data.length > 0;
         const isChart = this._type === ValueType.NUMBER || this._type === ValueType.BOOLEAN;
+        const disabled = this._loading || !this._type;
 
         return html`
             <div id="container">
-                <div id="msg" ?hidden="${!this._loading && hasData}">
-                    <or-translate value="${this._loading ? "loading" : "noData"}"></or-translate>
-                </div>
-                <div id="history-wrapper" ?hidden="${this._loading || !hasData}">
-                    <div id="chart-controls">
-                        <or-input .type="${InputType.SELECT}" .options="${this._getIntervalOptions()}"></or-input>
+                <div id="controls">
+                    <or-input .type="${InputType.SELECT}" ?disabled="${disabled}" .label="${i18next.t("period")}" @or-input-changed="${(evt: OrInputChangedEvent) => this.interval = evt.detail.value}" .value="${this.interval}" .options="${this._getIntervalOptions()}"></or-input>
+                    <div id="ending-controls">
+                        <or-input .type="${InputType.BUTTON}" ?disabled="${disabled}" icon="chevron-left-circle" rounded @click="${() => this._updateTimestamp(this.timestamp!, false)}"></or-input>
+                        <or-input .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.timestamp}" @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
+                        <or-input .type="${InputType.BUTTON}" ?disabled="${disabled}" icon="chevron-right-circle" rounded @click="${() => this._updateTimestamp(this.timestamp!, true)}"></or-input>
                     </div>
-                    <div ?hidden="${!isChart}" id="chart-container">
-                        <canvas id="chart"></canvas>
-                    </div>
-                    <or-panel ?hidden="${isChart}" id="table-container">
-                        ${this._tableTemplate || ``}
-                    </or-panel>
                 </div>
                 
+                ${!this._type ? html`
+                    <div id="msg">
+                        <or-translate value="invalidAttribute"></or-translate>
+                    </div>
+                ` : isChart
+                    ? html`
+                        <div id="chart-container">
+                            <canvas id="chart"></canvas>
+                        </div>
+                    ` : html`
+                        <or-panel id="table-container">
+                            ${this._tableTemplate || ``}
+                        </or-panel>
+                    `}                
             </div>
         `;
     }
@@ -273,112 +291,104 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     updated(changedProperties: PropertyValues) {
         super.updated(changedProperties);
 
-        if (changedProperties.has("_data")) {
-            if (!this._data) {
-                this._cleanup();
-            }
-
-            if (this._data && this._data.length > 0) {
-
-                const isChart = this._type === ValueType.NUMBER || this._type === ValueType.BOOLEAN;
-
-                if (isChart) {
-                    if (!this._chart) {
-                        let bgColor = this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color").trim();
-                        const opacity = Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-opacity").trim());
-                        if (!isNaN(opacity)) {
-                            if (bgColor.startsWith("#") && (bgColor.length === 4 || bgColor.length === 7)) {
-                                bgColor += (bgColor.length === 4 ? Math.round(opacity * 255).toString(16).substr(0, 1) : Math.round(opacity * 255).toString(16));
-                            } else if (bgColor.startsWith("rgb(")) {
-                                bgColor = bgColor.substring(0, bgColor.length - 1) + opacity;
-                            }
-                        }
-
-                        this._chart = new Chart(this._chartElem, {
-                            type: "bar",
-                            data: {
-                                datasets: [
-                                    {
-                                        data: this._data,
-                                        backgroundColor: bgColor,
-                                        borderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color"),
-                                        pointBorderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-border-color"),
-                                        pointBackgroundColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-color"),
-                                        pointRadius: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-radius")),
-                                        pointBorderWidth: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-border-width")),
-                                        pointHoverBackgroundColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-color"),
-                                        pointHoverBorderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-border-color"),
-                                        pointHoverRadius: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-radius")),
-                                        pointHoverBorderWidth: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-border-width")),
-                                        pointHitRadius: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hit-radius"))
-                                    }
-                                ]
-                            },
-                            options: {
-                                maintainAspectRatio: false,
-                                responsive: true,
-                                legend: {
-                                    display: false
-                                },
-                                tooltips: {
-                                    displayColors: false,
-                                    callbacks: {
-                                        label: (tooltipItem, data) => {
-                                            return tooltipItem.yLabel; // Removes the colon before the label
-                                        },
-                                        footer: () => {
-                                            return " "; // Hack the broken vertical alignment of body with footerFontSize: 0
-                                        }
-                                    } as ChartTooltipCallback
-                                },
-                                scales: {
-                                    yAxes: [{
-                                        ticks: {
-                                            beginAtZero: true
-                                        },
-                                        gridLines: {
-                                            color: "#cccccc"
-                                        }
-                                    }],
-                                    xAxes: [{
-                                        type: "time",
-                                        time: {
-                                            displayFormats: {
-                                                millisecond: 'HH:mm:ss.SSS',
-                                                second: 'HH:mm:ss',
-                                                minute: "HH:mm",
-                                                hour: "HH:mm",
-                                                week: "w"
-                                            }
-                                        },
-                                        ticks: {
-                                            autoSkip: true,
-                                            maxTicksLimit: 30,
-                                            fontColor: "#000",
-                                            fontFamily: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
-                                            fontSize: 9,
-                                            fontStyle: "normal"
-                                        },
-                                        gridLines: {
-                                            color: "#cccccc"
-                                        }
-                                    }]
-                                }
-                            }
-                        });
-                    } else {
-                        this._chart.data.datasets![0].data = this._data;
-                        this._chart.update();
-                    }
-                } else {
-                    this._tableTemplate = this._getTableTemplate();
-                }
-            }
+        if (!this._type) {
+            return;
         }
 
-        if (changedProperties.has("_tableTemplate") && this._tableElem) {
-            // Don't think we need to instantiate
-            //this._table = new MDCDataTable(this._tableElem);
+        const isChart = this._type === ValueType.NUMBER || this._type === ValueType.BOOLEAN;
+
+        if (isChart) {
+            if (!this._chart) {
+                let bgColor = this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color").trim();
+                const opacity = Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-opacity").trim());
+                if (!isNaN(opacity)) {
+                    if (bgColor.startsWith("#") && (bgColor.length === 4 || bgColor.length === 7)) {
+                        bgColor += (bgColor.length === 4 ? Math.round(opacity * 255).toString(16).substr(0, 1) : Math.round(opacity * 255).toString(16));
+                    } else if (bgColor.startsWith("rgb(")) {
+                        bgColor = bgColor.substring(0, bgColor.length - 1) + opacity;
+                    }
+                }
+
+                this._chart = new Chart(this._chartElem, {
+                    type: "bar",
+                    data: {
+                        datasets: [
+                            {
+                                data: this._data,
+                                backgroundColor: bgColor,
+                                borderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color"),
+                                pointBorderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-border-color"),
+                                pointBackgroundColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-color"),
+                                pointRadius: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-radius")),
+                                pointBorderWidth: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-border-width")),
+                                pointHoverBackgroundColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-color"),
+                                pointHoverBorderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-border-color"),
+                                pointHoverRadius: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-radius")),
+                                pointHoverBorderWidth: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-border-width")),
+                                pointHitRadius: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hit-radius"))
+                            }
+                        ]
+                    },
+                    options: {
+                        // maintainAspectRatio: false,
+                        // REMOVED AS DOESN'T SIZE CORRECTLY responsive: true,
+                        legend: {
+                            display: false
+                        },
+                        tooltips: {
+                            displayColors: false,
+                            callbacks: {
+                                label: (tooltipItem, data) => {
+                                    return tooltipItem.yLabel; // Removes the colon before the label
+                                },
+                                footer: () => {
+                                    return " "; // Hack the broken vertical alignment of body with footerFontSize: 0
+                                }
+                            } as ChartTooltipCallback
+                        },
+                        scales: {
+                            yAxes: [{
+                                ticks: {
+                                    beginAtZero: true
+                                },
+                                gridLines: {
+                                    color: "#cccccc"
+                                }
+                            }],
+                            xAxes: [{
+                                type: "time",
+                                time: {
+                                    displayFormats: {
+                                        millisecond: 'HH:mm:ss.SSS',
+                                        second: 'HH:mm:ss',
+                                        minute: "HH:mm",
+                                        hour: "HH:mm",
+                                        week: "w"
+                                    }
+                                },
+                                ticks: {
+                                    autoSkip: true,
+                                    maxTicksLimit: 30,
+                                    fontColor: "#000",
+                                    fontFamily: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
+                                    fontSize: 9,
+                                    fontStyle: "normal"
+                                },
+                                gridLines: {
+                                    color: "#cccccc"
+                                }
+                            }]
+                        }
+                    }
+                });
+            } else {
+                if (changedProperties.has("_data")) {
+                    this._chart.data.datasets![0].data = this._data;
+                    this._chart.update();
+                }
+            }
+        } else {
+            this._tableTemplate = this._getTableTemplate();
         }
     }
 
@@ -535,12 +545,12 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             DatapointInterval.MONTH,
             DatapointInterval.YEAR
         ].map((interval) => {
-            return [interval, i18next.t(interval)];
+            return [interval, i18next.t(interval.toLowerCase())];
         });
     }
 
     protected async _loadData() {
-        if (!this.assetType || (!this.attribute && !this.attributeRef)) {
+        if (this._loading || this._type === null || !this.assetType || (!this.attribute && !this.attributeRef)) {
             return;
         }
 
@@ -548,7 +558,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         const assetId = this.attribute ? this.attribute.assetId! : this.attributeRef!.entityId!;
         const attributeName = this.attribute ? this.attribute.name! : this.attributeRef!.attributeName!;
 
-        if (!this._type) {
+        if (this._type === undefined) {
             let attr = this.attribute;
 
             if (!attr) {
@@ -575,7 +585,11 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
                 if (attrDescriptor && attrDescriptor.valueType) {
                     this._type = attrDescriptor.valueType;
+                } else {
+                    this._type = null;
                 }
+            } else {
+                this._type = null;
             }
         }
 
@@ -584,12 +598,17 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             return;
         }
 
+        if (!this.interval || !this.timestamp) {
+            this._loading = false;
+            return;
+        }
+
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
             assetId,
             attributeName,
             {
-                interval: this.interval,
-                timestamp: this.timestamp ? this.timestamp.getTime() : new Date().valueOf()
+                interval: this.interval || DatapointInterval.DAY,
+                timestamp: this.timestamp.getTime()
             }
         );
 
@@ -598,5 +617,35 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         if (response.status === 200) {
             this._data = response.data;
         }
+    }
+
+    protected _updateTimestamp(timestamp: Date, forward?: boolean) {
+        if (!this.interval) {
+            return;
+        }
+
+        const newMoment = moment(timestamp);
+
+        if (forward !== undefined) {
+            switch (this.interval) {
+                case DatapointInterval.HOUR:
+                    newMoment.add(forward ? 1 : -1, "hour");
+                    break;
+                case DatapointInterval.DAY:
+                    newMoment.add(forward ? 1 : -1, "day");
+                    break;
+                case DatapointInterval.WEEK:
+                    newMoment.add(forward ? 1 : -1, "week");
+                    break;
+                case DatapointInterval.MONTH:
+                    newMoment.add(forward ? 1 : -1, "month");
+                    break;
+                case DatapointInterval.YEAR:
+                    newMoment.add(forward ? 1 : -1, "year");
+                    break;
+            }
+        }
+
+        this.timestamp = newMoment.toDate();
     }
 }

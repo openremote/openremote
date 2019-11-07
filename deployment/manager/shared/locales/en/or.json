@@ -1,6 +1,7 @@
 {
-  "asset": "asset",
-  "asset_plural": "assets",
+  "asset": "Asset",
+  "asset_plural": "Assets",
+  "attribute": "Attribute",
   "scenes": "Scenes",
   "settings": "Settings",
   "selectLanguage": "Select Language",
@@ -72,12 +73,19 @@
   "confirmDeleteAssets": "Remove assets?",
   "ok": "OK",
   "cancel": "Cancel",
-  "createdOn": "Created on",
+  "createdOn": "Created on: {{-date, LLLL}}",
   "accessPublicRead": "Public read",
   "type": "Type",
   "path": "Path",
   "showOnMap": "Show on map",
   "noAssetSelected": "Please select an asset on the left",
   "loading": "Loading...",
-  "location": "Location"
+  "location": "Location",
+  "hour": "Hour",
+  "day": "Day",
+  "week": "Week",
+  "month": "Month",
+  "year": "Year",
+  "period": "Period",
+  "ending": "Ending"
 }

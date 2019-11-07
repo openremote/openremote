@@ -6,6 +6,7 @@ import {DefaultColor1, DefaultColor4} from "@openremote/core";
 export const orInputStyle = css`
     
     :host {
+        display: inline-block;
         --internal-or-input-color: var(--or-input-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
         --internal-or-input-text-color: var(--or-input-text-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));    
         
@@ -53,5 +54,9 @@ export const orInputStyle = css`
     
     .mdc-select--focused .mdc-select__dropdown-icon {
         --or-icon-fill: var(--internal-or-input-color);
+    }
+    
+    .mdc-icon-button {
+        padding: 0;
     }
 `;
