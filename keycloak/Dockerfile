@@ -1,4 +1,4 @@
-FROM jboss/keycloak:7.0.0
+FROM jboss/keycloak:7.0.1
 MAINTAINER support@openremote.io
 
 # Add git commit label must be specified at build time using --build-arg GIT_COMMIT=dadadadadad
