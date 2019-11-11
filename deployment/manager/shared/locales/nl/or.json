@@ -1,12 +1,16 @@
 {
+  "map": "Kaart",
+  "maps": "Kaarten",
+  "rule": "Regel",
+  "rules": "Regels",
   "asset": "Asset",
   "asset_plural": "Assets",
   "attribute": "Attribute",
   "scenes": "Scenes",
   "settings": "Instellingen",
   "selectLanguage": "Taal kiezen",
-  "logOut": "Uitloggen",
-  "logIn": "Log in",
+  "logout": "Uitloggen",
+  "login": "Log in",
   "monday": "maandag",
   "tuesday": "dinsdag",
   "wednesday": "woensdag",
@@ -87,5 +91,10 @@
   "month": "Month",
   "year": "Year",
   "period": "Period",
-  "ending": "Ending"
+  "ending": "Ending",
+  "English": "Engels",
+  "Dutch": "Nederlands",
+  "French": "Frans",
+  "German": "Duits",
+  "Spanish": "Spaans"
 }

@@ -215,6 +215,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         return html`
             <div id="wrapper">
                 <div id="asset-header">
+                    <a class="back-navigation" @click="${() => window.history.back()}">
+                        <or-icon icon="chevron-left"></or-icon>
+                    </a>
                     <div id="title">
                         <or-icon title="${descriptor && descriptor.type ? descriptor.type : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.color ? "#" + descriptor.color : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetType.THING.icon}"></or-icon>${this.asset.name}
                     </div>

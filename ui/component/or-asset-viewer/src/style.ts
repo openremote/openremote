@@ -146,8 +146,14 @@ export const style = css`
         text-align: center;
         height: 100%;
     }
-    
+    .back-navigation {
+        display: none;
+        cursor: pointer;
+    }
     @media screen and (max-width: 769px) {
+        .back-navigation {
+            display: block;
+        }
         
         .mobileHidden {
             display: none;
@@ -157,7 +163,11 @@ export const style = css`
         #asset-header {
             grid-area: auto!important;
         }
-        
+
+        #asset-header {
+            padding: 20px 15px 0;
+        }
+
         .panel {
             padding: 16px;
             border-radius: 0;
@@ -169,5 +179,7 @@ export const style = css`
             grid-template-columns: 1fr!important;
             padding: 20px 0;
         }
+        
+        
     }
 `;
