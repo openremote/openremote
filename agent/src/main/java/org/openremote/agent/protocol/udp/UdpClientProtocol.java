@@ -319,6 +319,28 @@ public class UdpClientProtocol extends AbstractUdpClientProtocol<String> {
 
             @Override
             protected void encode(String message, ByteBuf buf) {
+                /* SORRY 4 DIS CODE */
+                //TODO FIX THAT ANY UDP-CALL THAT ISN'T OURS DOESNT WORK.
+                message = message.substring(1, message.length() - 1).trim();
+                String[] values = message.split(",");
+                int r = Integer.parseInt(values[0]);
+                int g = Integer.parseInt(values[1]);
+                int b = Integer.parseInt(values[2]);
+                int a = Integer.parseInt(values[3]);
+                byte[] prefix = { 65, 114, 116, 45, 78, 101, 116, 0, 0, 80, 0, 14 };
+                buf.writeBytes(prefix);
+                buf.writeByte(0);
+                buf.writeByte(0);
+                buf.writeByte(0);
+                buf.writeByte(0);
+                buf.writeByte(0);
+                buf.writeByte(4);
+                for(int i = 0; i <= 18; i++) {
+                    buf.writeByte(g);
+                    buf.writeByte(r);
+                    buf.writeByte(b);
+                    buf.writeByte(a);
+                }
                 finalEncoder.accept(message, buf);
             }
         };
