@@ -7,3 +7,7 @@ LABEL git-commit=$GIT_COMMIT
 
 RUN mkdir -p /deployment/extensions
 ADD build /deployment
+
+# In swarm mode the role of the swarm manager is to keep all continers running, therefore
+# don't exit this container - rather run it in the infinite loop
+ENTRYPOINT tail -f /dev/null
