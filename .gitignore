@@ -5,6 +5,8 @@
 local.properties
 openremote.log
 dive.log
+*.dab
+*.sh
 
 build/
 .gradle

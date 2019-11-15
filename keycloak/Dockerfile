@@ -9,7 +9,7 @@ USER root
 ADD docker-entrypoint.sh /opt/jboss/
 RUN chmod +x /opt/jboss/docker-entrypoint.sh
 
-HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl --fail --silent http://localhost:8080/auth || exit 1
+HEALTHCHECK --interval=3s --timeout=3s --start-period=600s --retries=30 CMD curl --fail --silent http://localhost:8080/auth || exit 1
 
 USER 1000
 
