@@ -30,7 +30,7 @@ networks:
     driver: overlay
     driver_opts:
       encrypted: 'true'
-    attachable: true
+    attachable: false
 
 # If you enable volume mappings in services, you need this. Otherwise, remove the volumes
 volumes:
@@ -55,6 +55,9 @@ services:
 
     # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
     image: openremote/proxy:${DATE_TAG:-latest}
+    networks:
+      - public
+      - private
 
     environment:
 
@@ -119,8 +122,9 @@ services:
   manager:
 
     # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
-    image: openremote/manager:${DATE_TAG:-latest}
-    #image: swarm/manager:latest
+    image: openremote/manager:${DATE_TAG:-swarm}
+    networks:
+      - private
 
     environment:
 
@@ -219,7 +223,10 @@ services:
 
     # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
     image: openremote/keycloak:${DATE_TAG:-latest}
-
+    networks:
+      - public
+      - private
+      
     environment:
 
       # It is important that all services have the same timezone and are time synchronized.
@@ -271,7 +278,9 @@ services:
   postgresql:
     # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
     image: openremote/postgresql:${DATE_TAG:-latest}
-
+    networks:
+      - private
+      
     environment:
 
       # It is important that all services have the same timezone and are time synchronized.
