@@ -27,6 +27,13 @@ To run OpenRemote using Docker Hub images, execute the following command from th
 docker-compose up --no-build
 ```
 
+To run OpenRemote is swarm mode, which uses Docker Hub images:
+
+```
+docker stack deploy --compose-file docker-compose-swarm.yml openremote
+```
+you don't need to pull or build images in this case, docker swarm mode does this automatically.
+
 ### 2. Starting OpenRemote with source-build images
 
 Alternatively you can build the Docker images locally from source, please see [here](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Preparing-the-environment) for required tooling. First build the code:
