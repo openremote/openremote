@@ -1,4 +1,4 @@
-# @openremote/or-asset-tree  \<or-asset-tree\>
+# @openremote/or-asset-viewer  \<or-asset-viewer\>
 [![NPM Version][npm-image]][npm-url]
 [![Linux Build][travis-image]][travis-url]
 [![Test Coverage][coveralls-image]][coveralls-url]
@@ -7,13 +7,69 @@ Web Component for displaying an asset tree. This component requires an OpenRemot
 
 ## Install
 ```bash
-npm i @openremote/or-asset-list
-yarn add @openremote/or-asset-list
+npm i @openremote/or-asset-viewer
+yarn add @openremote/or-asset-viewer
 ```
 
 ## Usage
-For a full list of properties, methods and options refer to the TypeDoc generated [documentation]().
+By default the or-asset-viewer is using a 2 columns grid. This can be changed by using a different config.
 
+4 column grid, 25% for each column:
+```javascript
+const viewerConfig = {
+    viewerStyles: {
+        gridTemplateColumns: repeat(auto-fill, minmax(calc(25%),1fr));
+    }
+};
+<or-asset-viewer .config="${viewerConfig}"></or-asset-viewer>
+```
+
+
+The position of a panel can also be changed by changing the config of or-asset-viewer
+
+To change the width of a panel use gridColumn:
+```javascript
+const viewerConfig = {
+    panels: {
+      "info": {
+          type: "property",
+          panelStyles: {
+            gridColumn: "1 / -1" // same as 1 / 3 in a 2 column grid: Start on column 1, End on column 3
+          }
+      }
+    }
+};
+```
+
+gridColumn can also be used to change the position horizontaly.
+```javascript
+const viewerConfig = {
+    panels: {
+      "info": {
+          type: "property",
+          panelStyles: {
+            gridColumnStart: "2" // start the panel in the second column
+          }
+      }
+    }
+};
+```
+
+To change the vertical position of a panel use gridRowStart. To start the panel on the first row set gridRowStart to 1:
+```javascript
+const viewerConfig = {
+    panels: {
+      "info": {
+          type: "property",
+          panelStyles: {
+            gridRowStart: "1"
+          }
+      }
+    }
+};
+```
+
+For a full list of properties, methods and options refer to the TypeDoc generated [documentation]().
 
 ## Supported Browsers
 The last 2 versions of all modern browsers are supported, including Chrome, Safari, Opera, Firefox, Edge. In addition,
