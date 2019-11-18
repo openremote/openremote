@@ -18,6 +18,8 @@ dependencies {
 
     compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:$jacksonVersion"
     compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    compile "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
 
     compile "io.undertow:undertow-servlet:$undertowVersion"
     compile "io.undertow:undertow-websockets-jsr:$undertowVersion"

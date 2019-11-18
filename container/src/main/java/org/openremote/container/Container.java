@@ -20,12 +20,15 @@
 package org.openremote.container;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import org.openremote.container.concurrent.ContainerThreads;
 import org.openremote.model.ModelModule;
 import org.openremote.container.util.LogUtil;
@@ -67,12 +70,15 @@ public class Container {
         .setSerializationInclusion(JsonInclude.Include.NON_NULL)
         .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false)
         .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false)
+        .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
         .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
         .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY)
         .registerModule(new ModelModule())
-        .registerModule(new Jdk8Module());
+        .registerModule(new Jdk8Module())
+        .registerModule(new JavaTimeModule())
+        .registerModule(new ParameterNamesModule(JsonCreator.Mode.PROPERTIES));
 
     protected final Map<String, String> config = new HashMap<>();
     protected final boolean devMode;
