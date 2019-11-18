@@ -18,7 +18,7 @@ By default the or-asset-viewer is using a 2 columns grid. This can be changed by
 ```javascript
 const viewerConfig = {
     viewerStyles: {
-        gridTemplateColumns: repeat(auto-fill, minmax(calc(25%),1fr));
+        gridTemplateColumns: "repeat(auto-fill, minmax(calc(25%),1fr))";
     }
 };
 <or-asset-viewer .config="${viewerConfig}"></or-asset-viewer>
