@@ -31,7 +31,6 @@ export type PanelType = "property" | "location" | "attribute" | "history";
 
 export interface PanelConfig {
     type?: PanelType;
-    scrollable?: boolean;
     hide?: boolean;
     hideOnMobile?: boolean;
     include?: string[];
@@ -79,17 +78,12 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     public static DEFAULT_CONFIG: AssetViewerConfig = {
         viewerStyles: {
-            gridTemplateColumns: "repeat(12, 1fr)",
-            gridTemplateRows: "auto minmax(0, 1fr) minmax(0, 50%)"
+
         },
         panels: {
             "info": {
                 type: "property",
                 panelStyles: {
-                    gridColumnStart: "1",
-                    gridColumnEnd: "7",
-                    gridRowStart: "1",
-                    gridRowEnd: "2",
                 },
                 fieldStyles: {
                     name: {
@@ -104,40 +98,23 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             },
             "location": {
                 type: "location",
-                scrollable: false,
                 include: ["location"],
                 panelStyles: {
-                    gridColumnStart: "7",
-                    gridColumnEnd: "13",
-                    gridRowStart: "1",
-                    gridRowEnd: "3",
-                    minHeight: "400px"
                 },
                 fieldStyles: {
                     location: {
-                        height: "100%",
-                        margin: "0"
                     }
                 }
             },
             "attributes": {
                 type: "attribute",
                 panelStyles: {
-                    gridColumnStart: "1",
-                    gridColumnEnd: "7",
-                    gridRowStart: "2",
-                    gridRowEnd: "4"
                 }
             },
             "history": {
                 type: "history",
                 panelStyles: {
-                    gridColumnStart: "7",
-                    gridColumnEnd: "13",
-                    gridRowStart: "3",
-                    gridRowEnd: "4"
-                },
-                scrollable: false
+                }
             }
         }
     };
@@ -170,6 +147,12 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     protected _viewerConfig?: AssetViewerConfig;
     protected _attributes?: AssetAttribute[];
+
+
+    constructor() {
+        super();
+        window.addEventListener('resize', this.generateGrid.bind(this));
+    }
 
     shouldUpdate(changedProperties: PropertyValues): boolean {
 
@@ -221,7 +204,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     <div id="title">
                         <or-icon title="${descriptor && descriptor.type ? descriptor.type : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.color ? "#" + descriptor.color : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetType.THING.icon}"></or-icon>${this.asset.name}
                     </div>
-                    <div id="created"><or-translate value="createdOn" .options="${{date: new Date(this.asset!.createdOn!)} as i18next.TOptions<i18next.InitOptions>}"></or-translate></div>
+                    <div id="created" class="mobileHidden"><or-translate value="createdOn" .options="${{date: new Date(this.asset!.createdOn!)} as i18next.TOptions<i18next.InitOptions>}"></or-translate></div>
                 </div>
                 <div id="container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
                     ${html`${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
@@ -246,6 +229,35 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 super.assetIds = undefined;
             }
         }
+
+       this.onCompleted().then(() => {
+           this.generateGrid();
+       });
+
+    }
+
+    async onCompleted() {
+        await this.updateComplete;
+    }
+
+    generateGrid(){
+        if(this.shadowRoot) {
+            const grid = this.shadowRoot.querySelector('#container');
+            if(grid){
+                const rowHeight = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-auto-rows'));
+                const rowGap = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-row-gap'));
+                const items = this.shadowRoot.querySelectorAll('.panel');
+                if(items){
+                    items.forEach((item) => {
+                        const content = item.querySelector('.panel-content-wrapper');
+                        if(content) {
+                            const rowSpan = Math.ceil((content.getBoundingClientRect().height + rowGap) / (rowHeight + rowGap));
+                            (item as HTMLElement).style.gridRowEnd = "span "+rowSpan;
+                        }
+                    });
+                }
+            }
+        }
     }
 
     public static getInfoProperties(config?: PanelConfig): string[] {
@@ -265,24 +277,17 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             return;
         }
 
+
         return html`
             <div class=${classMap({"panel": true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
-                <div class="panel-title">
-                    <or-translate value="${name}"></or-translate>
-                </div>
-                ${!panelConfig || panelConfig.scrollable === undefined || panelConfig.scrollable ? html`
-                    <or-panel class="panel-content-wrapper">
-                        <div class="panel-content">
-                            ${content}
-                        </div>
-                    </or-panel>
-                `: html`
-                    <div class="panel-content-wrapper">
-                        <div class="panel-content">
-                            ${content}
-                        </div>
+                <div class="panel-content-wrapper">
+                    <div class="panel-title">
+                        <or-translate value="${name}"></or-translate>
                     </div>
-                `}
+                    <div class="panel-content">
+                        ${content}
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -346,38 +351,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 };
 
                 content = html`
-                    <style>
-                        #history-container {
-                            height: 100%;
-                            width: 100%;
-                            display: flex;
-                            flex-direction: column;
-                            position: relative;
-                        }
-                        
-                        #history-controls {
-                            flex: 0;
-                            margin-bottom: 10px;
-                            position: absolute;
-                        }
-                        
-                        #history-attribute-picker {
-                            flex: 0;
-                            width: 200px;
-                        }
-                        
-                        or-attribute-history {
-                            height: 100%;
-                            flex: 1 1 auto;
-                            --or-attribute-history-controls-margin: 0 0 0 204px;  
-                        }
-                    </style>
-                    <div id="history-container">
-                        <div id="history-controls">
-                            <or-input id="history-attribute-picker" .label="${i18next.t("attribute")}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${historyAttrs.map((attr) => [attr.name, getAttributeLabel(attr, undefined)])}"></or-input>
-                        </div>        
-                        <or-attribute-history id="attribute-history" .config="${viewerConfig.historyConfig}" .assetType="${asset.type}"></or-attribute-history>
-                    </div>
+                    <div id="history-controls">
+                        <or-input id="history-attribute-picker" .label="${i18next.t("attribute")}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${historyAttrs.map((attr) => [attr.name, getAttributeLabel(attr, undefined)])}"></or-input>
+                    </div>        
+                    <or-attribute-history id="attribute-history" .config="${viewerConfig.historyConfig}" .assetType="${asset.type}"></or-attribute-history>
                 `;
             }
         } else if (panelConfig && panelConfig.type === "location") {
@@ -391,30 +368,20 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
                 content = html`
                     <style>
-                        #location-container {
-                            height: 100%;
-                            width: 100%;
-                            display: flex;
-                            flex-direction: column;
-                            padding-top: 10px;
-                        }
-                        #location-container > or-map {
-                            flex: 1;
+                        or-map {
                             border: #e5e5e5 1px solid;
                         }
+                        
                         #location-map-input {
-                            flex: 0 0 auto;
                             padding: 20px 0 0 0;
                         }
                     </style>
-                    <div id="location-container">
-                        <or-map id="location-map" class="or-map" .center="${center}" type="${mapType}">
-                             <or-map-marker-asset active .asset="${asset}"></or-map-marker-asset>
-                        </or-map>
-                        ${attribute.name === AttributeType.LOCATION.attributeName ? html`
-                            <or-input id="location-map-input" type="${InputType.SWITCH}" readonly dense .value="${showOnMapMeta ? showOnMapMeta.value : undefined}" label="${i18next.t("showOnMap")}"></or-input>
-                        ` : ``}                    
-                    </div>
+                    <or-map id="location-map" class="or-map" .center="${center}" type="${mapType}">
+                         <or-map-marker-asset active .asset="${asset}"></or-map-marker-asset>
+                    </or-map>
+                    ${attribute.name === AttributeType.LOCATION.attributeName ? html`
+                        <or-input id="location-map-input" type="${InputType.SWITCH}" readonly dense .value="${showOnMapMeta ? showOnMapMeta.value : undefined}" label="${i18next.t("showOnMap")}"></or-input>
+                    ` : ``}                    
                 `;
             }
         } else {

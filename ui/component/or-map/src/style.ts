@@ -7,6 +7,8 @@ export const markerActiveColorVar = "--internal-or-map-marker-active-color";
 // language=CSS
 export const style = css`
     :host {
+        --internal-or-map-width: var(--or-map-width, 100%);
+        --internal-or-map-min-height: var(--or-map-min-height, 300px);
         --internal-or-map-marker-transform: var(--or-map-marker-transform, translate(-16px, -29px));
         --internal-or-map-marker-width: var(--or-map-marker-width, 32px);
         --internal-or-map-marker-height: var(--or-map-marker-height, 32px);
@@ -29,6 +31,9 @@ export const style = css`
         --internal-or-map-marker-icon-active-transform: var(--or-map-marker-icon-active-transform, translate(-50%, -20px));
         display: block;
         overflow: hidden;
+        
+        min-height: var(--internal-or-map-min-height);
+        width: var(--internal-or-map-width);
     }
 
     :host([hidden]) {
