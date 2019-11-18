@@ -323,10 +323,24 @@ public class UdpClientProtocol extends AbstractUdpClientProtocol<String> {
                 //TODO FIX THAT ANY UDP-CALL THAT ISN'T OURS DOESNT WORK.
                 message = message.substring(1, message.length() - 1).trim();
                 String[] values = message.split(",");
-                int r = Integer.parseInt(values[0]);
-                int g = Integer.parseInt(values[1]);
-                int b = Integer.parseInt(values[2]);
-                int a = Integer.parseInt(values[3]);
+
+                double dim = Double.parseDouble(values[4]);
+                int r;
+                int g;
+                int b;
+                int w;
+                if(dim > 0) {
+                    r = (int) Math.round((Double.parseDouble(values[0]) / (100 - dim)));
+                    g = (int) Math.round((Double.parseDouble(values[1]) / (100 - dim)));
+                    b = (int) Math.round((Double.parseDouble(values[2]) / (100 - dim)));
+                    w = (int) Math.round((Double.parseDouble(values[3]) / (100 - dim)));
+                }else {
+                    r = 0;
+                    g = 0;
+                    b = 0;
+                    w = 0;
+                }
+
                 byte[] prefix = { 65, 114, 116, 45, 78, 101, 116, 0, 0, 80, 0, 14 };
                 buf.writeBytes(prefix);
                 buf.writeByte(0);
@@ -339,7 +353,7 @@ public class UdpClientProtocol extends AbstractUdpClientProtocol<String> {
                     buf.writeByte(g);
                     buf.writeByte(r);
                     buf.writeByte(b);
-                    buf.writeByte(a);
+                    buf.writeByte(w);
                 }
                 finalEncoder.accept(message, buf);
             }
