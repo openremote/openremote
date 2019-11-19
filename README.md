@@ -58,7 +58,7 @@ When all Docker containers are ready, you can access the OpenRemote UI and API w
 Username: admin  
 Password: secret
 
-**Demo Smart Building App:** https://localhost/smart-building-v1/  
+**Demo Smart Building App:** https://localhost/main/?realm=building
 Username: building  
 Password: building
 
