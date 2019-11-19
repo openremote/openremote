@@ -37,11 +37,10 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Smart Start", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
-                managerDemoSetup.apartment1Id,
-                false,
-                false
-        )
+            managerDemoSetup.apartment1Id,
+            "Demo Apartment - Smart Start",
+            Ruleset.Lang.GROOVY,
+            getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
@@ -167,11 +166,10 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Smart Start", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
-                managerDemoSetup.apartment1Id,
-                false,
-                false
-        )
+            managerDemoSetup.apartment1Id,
+            "Demo Apartment - Smart Start",
+            Ruleset.Lang.GROOVY,
+            getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
@@ -265,11 +263,10 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Smart Start", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
-                managerDemoSetup.apartment1Id,
-                false,
-                false
-        )
+            managerDemoSetup.apartment1Id,
+            "Demo Apartment - Smart Start",
+            Ruleset.Lang.GROOVY,
+            getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
@@ -387,11 +384,10 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Smart Start", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
-                managerDemoSetup.apartment1Id,
-                false,
-                false
-        )
+            managerDemoSetup.apartment1Id,
+            "Demo Apartment - Smart Start",
+            Ruleset.Lang.GROOVY,
+            getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
@@ -486,11 +482,10 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Smart Start", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
-                managerDemoSetup.apartment1Id,
-                false,
-                false
-        )
+            managerDemoSetup.apartment1Id,
+            "Demo Apartment - Smart Start",
+            Ruleset.Lang.GROOVY,
+            getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"

@@ -28,6 +28,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.query.RulesetQuery;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.security.ClientRole;
@@ -110,7 +111,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         int executionErrorCount = engine.getExecutionErrorDeploymentCount();
 
         return new RulesEngineInfo(
-            engine.getStatus(compilationErrorCount, executionErrorCount),
+            engine.getStatus(),
             compilationErrorCount,
             executionErrorCount
         );
@@ -122,7 +123,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
-        List<GlobalRuleset> result = rulesetStorageService.findGlobalRulesets(false, language, fullyPopulate);
+        List<GlobalRuleset> result = rulesetStorageService.findAll(GlobalRuleset.class, new RulesetQuery().setLanguage(language).setFullyPopulate(fullyPopulate));
 
         // Try and retrieve transient status and error data
         result.forEach(ruleset ->
@@ -138,15 +139,21 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     }
 
     @Override
-    public TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, String realmId, Ruleset.Lang language, boolean fullyPopulate) {
+    public TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, String realm, Ruleset.Lang language, boolean fullyPopulate) {
 
-        if (isAuthenticated() && !isRealmAccessibleByUser(realmId)) {
+        if (isAuthenticated() && !isRealmAccessibleByUser(realm)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
         boolean publicOnly = !isAuthenticated() || isRestrictedUser() | !hasResourceRole(ClientRole.READ_RULES.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
-        List<TenantRuleset> result = rulesetStorageService.findTenantRulesets(realmId, publicOnly, false, language, fullyPopulate);
+        List<TenantRuleset> result = rulesetStorageService.findAll(
+            TenantRuleset.class,
+            new RulesetQuery().
+                setRealm(realm)
+                .setLanguage(language)
+                .setFullyPopulate(fullyPopulate)
+                .setPublicOnly(publicOnly));
 
         // Try and retrieve transient status and error data
         result.forEach(ruleset ->
@@ -173,7 +180,14 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
         boolean publicOnly = !isAuthenticated() || (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) || !hasResourceRole(ClientRole.READ_RULES.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
-        List<AssetRuleset> result = rulesetStorageService.findAssetRulesets(asset.getRealm(), assetId, publicOnly, false, language, fullyPopulate);
+        List<AssetRuleset> result = rulesetStorageService.findAll(
+            AssetRuleset.class,
+            new RulesetQuery()
+                .setRealm(asset.getRealm())
+                .setAssetIds(assetId)
+                .setPublicOnly(publicOnly)
+                .setLanguage(language)
+                .setFullyPopulate(fullyPopulate));
 
         // Try and retrieve transient status and error data
         result.forEach(ruleset ->
@@ -203,7 +217,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        GlobalRuleset ruleset = rulesetStorageService.findById(GlobalRuleset.class, id);
+        GlobalRuleset ruleset = rulesetStorageService.find(GlobalRuleset.class, id);
         if (ruleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
@@ -215,7 +229,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        GlobalRuleset existingRuleset = rulesetStorageService.findById(GlobalRuleset.class, id);
+        GlobalRuleset existingRuleset = rulesetStorageService.find(GlobalRuleset.class, id);
         if (existingRuleset == null)
             throw new WebApplicationException(NOT_FOUND);
         rulesetStorageService.merge(ruleset);
@@ -247,7 +261,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public TenantRuleset getTenantRuleset(@BeanParam RequestParams requestParams, Long id) {
-        TenantRuleset ruleset = rulesetStorageService.findById(TenantRuleset.class, id);
+        TenantRuleset ruleset = rulesetStorageService.find(TenantRuleset.class, id);
         if (ruleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
@@ -264,7 +278,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public void updateTenantRuleset(@BeanParam RequestParams requestParams, Long id, TenantRuleset ruleset) {
-        TenantRuleset existingRuleset = rulesetStorageService.findById(TenantRuleset.class, id);
+        TenantRuleset existingRuleset = rulesetStorageService.find(TenantRuleset.class, id);
         if (existingRuleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
@@ -287,7 +301,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public void deleteTenantRuleset(@BeanParam RequestParams requestParams, Long id) {
-        TenantRuleset ruleset = rulesetStorageService.findById(TenantRuleset.class, id);
+        TenantRuleset ruleset = rulesetStorageService.find(TenantRuleset.class, id);
         if (ruleset == null) {
             return;
         }
@@ -325,7 +339,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public AssetRuleset getAssetRuleset(@BeanParam RequestParams requestParams, Long id) {
-        AssetRuleset ruleset = rulesetStorageService.findById(AssetRuleset.class, id);
+        AssetRuleset ruleset = rulesetStorageService.find(AssetRuleset.class, id);
         if (ruleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
@@ -344,7 +358,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public void updateAssetRuleset(@BeanParam RequestParams requestParams, Long id, AssetRuleset ruleset) {
-        AssetRuleset existingRuleset = rulesetStorageService.findById(AssetRuleset.class, id);
+        AssetRuleset existingRuleset = rulesetStorageService.find(AssetRuleset.class, id);
         if (existingRuleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
@@ -370,7 +384,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public void deleteAssetRuleset(@BeanParam RequestParams requestParams, Long id) {
-        AssetRuleset ruleset = rulesetStorageService.findById(AssetRuleset.class, id);
+        AssetRuleset ruleset = rulesetStorageService.find(AssetRuleset.class, id);
         if (ruleset == null) {
             return;
         }

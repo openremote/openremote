@@ -21,7 +21,10 @@ package org.openremote.model.rules;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -189,57 +192,49 @@ public abstract class Ruleset {
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_OBJECT_TYPE)
     protected ObjectValue meta;
 
-    @Column(name = "CONTINUE_ON_ERROR", nullable = false)
-    protected boolean continueOnError = false;
-
     @Transient
     protected RulesetStatus status;
 
     @Transient
     protected String error;
 
+    public static final String META_KEY_CONTINUE_ON_ERROR = "urn:openremote:rule:meta:continueOnError";
+    public static final String META_KEY_VALIDITY = "urn:openremote:rule:meta:validity";
+
     protected Ruleset() {
     }
 
-    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, Lang lang) {
-        this(id, version, createdOn, lastModified, name, enabled, null, lang, null, false);
-    }
-
-    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang, ObjectValue meta, boolean continueOnError) {
-        this.id = id;
-        this.version = version;
-        this.createdOn = createdOn;
-        this.lastModified = lastModified;
+    protected Ruleset(String name, Lang language, String rules) {
         this.name = name;
-        this.enabled = enabled;
+        this.lang = language;
         this.rules = rules;
-        this.lang = lang;
-        this.meta = meta;
-        this.continueOnError = continueOnError;
-    }
-
-    public Ruleset(String name, String rules, Lang lang, ObjectValue meta, boolean continueOnError) {
-        this(name, rules, lang, continueOnError);
-        this.meta = meta;
-    }
-
-    public Ruleset(String name, String rules, Lang lang, boolean continueOnError) {
-        this.name = name;
-        this.rules = rules;
-        this.lang = lang;
-        this.continueOnError = continueOnError;
     }
 
     public Long getId() {
         return id;
     }
 
+    public Ruleset setId(Long id) {
+        this.id = id;
+        return this;
+    }
+
     public long getVersion() {
         return version;
     }
 
+    public Ruleset setVersion(long version) {
+        this.version = version;
+        return this;
+    }
+
     public Date getCreatedOn() {
         return createdOn;
+    }
+
+    public Ruleset setCreatedOn(Date createdOn) {
+        this.createdOn = createdOn;
+        return this;
     }
 
     @PreUpdate
@@ -248,8 +243,9 @@ public abstract class Ruleset {
         setLastModified(new Date());
     }
 
-    public void setLastModified(Date lastModified) {
+    public Ruleset setLastModified(Date lastModified) {
         this.lastModified = lastModified;
+        return this;
     }
 
     public Date getLastModified() {
@@ -260,67 +256,118 @@ public abstract class Ruleset {
         return name;
     }
 
-    public void setName(String name) {
+    public Ruleset setName(String name) {
         this.name = name;
+        return this;
     }
 
     public boolean isEnabled() {
         return enabled;
     }
 
-    public void setEnabled(boolean enabled) {
+    public Ruleset setEnabled(boolean enabled) {
         this.enabled = enabled;
+        return this;
     }
 
     public String getRules() {
         return rules;
     }
 
-    public void setRules(String rules) {
+    public Ruleset setRules(String rules) {
         this.rules = rules;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
+        return this;
     }
 
     public Lang getLang() {
         return lang;
     }
 
-    public void setLang(Lang lang) {
+    public Ruleset setLang(Lang lang) {
         this.lang = lang;
+        return this;
     }
 
     public ObjectValue getMeta() {
         return meta;
     }
 
-    public void setMeta(ObjectValue meta) {
+    public Optional<Value> getMeta(String key) {
+        return meta != null ? meta.get(key) : Optional.empty();
+    }
+
+    public Ruleset setMeta(ObjectValue meta) {
         this.meta = meta;
+        return this;
+    }
+
+    public Ruleset addMeta(String key, Value value) {
+        if (meta == null) {
+            meta = Values.createObject();
+        }
+        meta.put(key, value);
+        return this;
+    }
+
+    public Ruleset removeMeta(String key) {
+        if (meta == null) {
+            return this;
+        }
+        meta.remove(key);
+        return this;
+    }
+
+    public boolean hasMeta(String key) {
+        return meta != null && meta.hasKey(key);
     }
 
     public RulesetStatus getStatus() {
         return status;
     }
 
-    public void setStatus(RulesetStatus status) {
+    public Ruleset setStatus(RulesetStatus status) {
         this.status = status;
+        return this;
     }
 
     public String getError() {
         return error;
     }
 
-    public void setError(String error) {
+    public Ruleset setError(String error) {
         this.error = error;
+        return this;
     }
 
     public boolean isContinueOnError() {
-        return continueOnError;
+        return Values.getObject(meta).flatMap(objValue -> objValue.getBoolean(META_KEY_CONTINUE_ON_ERROR)).orElse(false);
     }
 
-    public void setContinueOnError(boolean continueOnError) {
-        this.continueOnError = continueOnError;
+    public Ruleset setContinueOnError(boolean continueOnError) {
+        if (meta == null) {
+            meta = Values.createObject();
+        }
+        if (!continueOnError) {
+            meta.remove(META_KEY_CONTINUE_ON_ERROR);
+        } else {
+            meta.put(META_KEY_CONTINUE_ON_ERROR, true);
+        }
+        return this;
+    }
+
+    public CalendarEvent getValidity() {
+        return Values.getObject(meta).flatMap(objValue -> objValue.getObject(META_KEY_VALIDITY)).flatMap(CalendarEvent::fromValue).orElse(null);
+    }
+
+    public Ruleset setValidity(CalendarEvent calendarEvent) {
+        if (meta == null) {
+            meta = Values.createObject();
+        }
+        if (calendarEvent == null) {
+            meta.remove(META_KEY_VALIDITY);
+        } else {
+            meta.put(META_KEY_VALIDITY, calendarEvent.toValue());
+        }
+        return this;
     }
 }

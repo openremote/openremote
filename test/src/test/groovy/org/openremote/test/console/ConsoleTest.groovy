@@ -41,10 +41,10 @@ import java.util.stream.IntStream
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_CUSTOMER_A
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.SMART_BUILDING_LOCATION
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
-import static org.openremote.model.attribute.MetaItemType.RULE_STATE
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD
 import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl
 import static org.openremote.model.attribute.AttributeType.LOCATION
+import static org.openremote.model.attribute.MetaItemType.RULE_STATE
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 import static org.openremote.model.util.TextUtil.isNullOrEmpty
 import static org.openremote.model.value.Values.parse
@@ -97,11 +97,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         and: "the demo location predicate console rules are loaded"
         Ruleset ruleset = new TenantRuleset(
-                "Demo Tenant A - Console Location", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoConsoleLocation.groovy").text,
-                keycloakDemoSetup.tenantA.realm,
-                false,
-                false
-        )
+            keycloakDemoSetup.tenantA.realm,
+            "Demo Tenant A - Console Location",
+            Ruleset.Lang.GROOVY,
+            getClass().getResource("/demo/rules/DemoConsoleLocation.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engine to become available and be running"
@@ -500,11 +499,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         when: "a new ruleset is deployed on the console parent asset with multiple location predicate rules (including a duplicate and a rectangular predicate)"
         def newRuleset = new AssetRuleset(
-                "Console test location predicates", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.groovy").text,
-                testUser3Console1.parentId,
-                false,
-                false
-        )
+            testUser3Console1.parentId,
+            "Console test location predicates",
+            Ruleset.Lang.GROOVY,
+            getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.groovy").text)
         newRuleset = rulesetStorageService.merge(newRuleset)
         RulesEngine consoleParentEngine = null
         def newLocationPredicate = new RadialGeofencePredicate(50, 0, -60)

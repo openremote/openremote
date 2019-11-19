@@ -35,4 +35,14 @@ public class UserQuery {
         this.limit = limit;
         return this;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "tenantPredicate=" + tenantPredicate +
+            ", assetPredicate=" + assetPredicate +
+            ", pathPredicate=" + pathPredicate +
+            ", limit=" + limit +
+            '}';
+    }
 }

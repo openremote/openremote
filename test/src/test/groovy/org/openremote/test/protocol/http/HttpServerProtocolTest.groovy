@@ -21,6 +21,7 @@ package org.openremote.test.protocol.http
 
 import org.jboss.resteasy.spi.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
+import org.openremote.agent.protocol.controller.PollingKey
 import org.openremote.agent.protocol.http.*
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -421,8 +422,10 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         when: "an attempt is made to use the removed endpoint"
         authenticatedTestResource.postAsset(testAsset)
 
-        then: "an exception should be thrown"
-        thrown Exception
+        then: "the asset should not have been posted"
+        new PollingConditions(initialDelay: 3).eventually {
+            assert testServerProtocol.resource1.postedAssets.size() == 2
+        }
 
         cleanup: "the server should be stopped"
         stopContainer(container)

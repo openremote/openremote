@@ -26,7 +26,7 @@ import org.openremote.model.value.Values;
 public class AttributePredicate {
 
     public StringPredicate name;
-    public boolean exists;
+    public boolean notExists;
     public ValuePredicate value;
 
     public AttributePredicate() {
@@ -56,6 +56,11 @@ public class AttributePredicate {
 
     public AttributePredicate value(ValuePredicate value) {
         this.value = value;
+        return this;
+    }
+
+    public AttributePredicate doesntExist() {
+        this.notExists = true;
         return this;
     }
 

@@ -21,7 +21,7 @@ import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.AttributeMetaPredicate;
+import org.openremote.model.query.filter.MetaPredicate;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
@@ -33,7 +33,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,12 +100,11 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
     @Override
     public void start(Container container) throws Exception {
         if (maxDatapointAgeDays > 0) {
-            long period = 24L * 3600L * 1000L;
-
             dataPointsPurgeScheduledFuture = managerExecutorService.scheduleAtFixedRate(
                     this::purgeDataPoints,
-                    getFirstRunMillis(timerService.getNow()),
-                    period);
+
+                getFirstRunMillis(timerService.getNow()),
+                Duration.ofDays(1).toMillis());
 
         }
     }
@@ -304,8 +305,8 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
         List<Asset> assets = assetStorageService.findAll(
                 new AssetQuery()
                         .attributeMeta(
-                                new AttributeMetaPredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS),
-                                new AttributeMetaPredicate(MetaItemType.STORE_DATA_POINTS))
+                                new MetaPredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS),
+                                new MetaPredicate(MetaItemType.STORE_DATA_POINTS))
                         .select(AssetQuery.Select.selectExcludePathAndParentAndRealm()));
 
         List<AssetAttribute> attributes = assets.stream()

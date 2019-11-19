@@ -21,11 +21,17 @@ package org.openremote.manager.rules;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
+import net.fortuna.ical4j.filter.PeriodRule;
+import net.fortuna.ical4j.model.*;
+import net.fortuna.ical4j.model.component.VEvent;
+import net.fortuna.ical4j.model.property.RRule;
 import org.geotools.referencing.GeodeticCalculator;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.attribute.Meta;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.calendar.CalendarEvent;
+import org.openremote.model.calendar.RecurrenceRule;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.AssetQuery.NumberType;
@@ -39,8 +45,9 @@ import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.Date;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -376,7 +383,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                 return true;
             }
 
-            for (AttributeMetaPredicate p : predicate.meta) {
+            for (MetaPredicate p : predicate.meta) {
                 if (!AssetQueryPredicate.asPredicate(currentMillisProducer, p).test(meta)) {
                     return false;
                 }
@@ -446,6 +453,10 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                 return asPredicate(p).test(Optional.ofNullable(value)
                         .flatMap(Values::getArray)
                         .orElse(null));
+            } else if (predicate instanceof CalendarEventPredicate) {
+
+                CalendarEventPredicate p = (CalendarEventPredicate) predicate;
+                return asPredicate(p).test(Values.getObject(value).flatMap(CalendarEvent::fromValue).orElse(null));
             } else {
                 // TODO Implement more
                 throw new UnsupportedOperationException(
@@ -455,7 +466,77 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
         };
     }
 
-    public static Predicate<Meta> asPredicate(Supplier<Long> currentMillisProducer, AttributeMetaPredicate predicate) {
+    public static Predicate<CalendarEvent> asPredicate(CalendarEventPredicate p) {
+
+        return calendarEvent -> {
+            if (calendarEvent == null) {
+                return true;
+            }
+
+            Date when = p.timestamp;
+
+            Pair<Long, Long> nextOrActive = getNextOrActiveFromTo(calendarEvent, when);
+            if (nextOrActive == null) {
+                return false;
+            }
+
+            return nextOrActive.key <= when.getTime() && nextOrActive.value > when.getTime();
+        };
+    }
+
+    public static Pair<Long, Long> getNextOrActiveFromTo(CalendarEvent calendarEvent, Date when) {
+
+        if (calendarEvent.getEnd() == null) {
+            return new Pair<>(calendarEvent.getStart().getTime(), Long.MAX_VALUE);
+        }
+
+        if (calendarEvent.getStart().before(when) && calendarEvent.getEnd().after(when) && (calendarEvent.getEnd().getTime()-when.getTime() > 1000)) {
+            return new Pair<>(calendarEvent.getStart().getTime(), calendarEvent.getEnd().getTime());
+        }
+
+        if (calendarEvent.getRecurrence() == null) {
+            if (calendarEvent.getEnd().before(when)) {
+                return null;
+            }
+            return new Pair<>(calendarEvent.getStart().getTime(), calendarEvent.getEnd().getTime());
+        }
+
+        RecurrenceRule recurrenceRule = calendarEvent.getRecurrence();
+        Recur recurrence;
+
+        if (recurrenceRule.getCount() != null) {
+            recurrence = new Recur(recurrenceRule.getFrequency().name(), recurrenceRule.getCount());
+        } else if (recurrenceRule.getUntil() != null) {
+            recurrence = new Recur(recurrenceRule.getFrequency().name(),
+                new net.fortuna.ical4j.model.Date(recurrenceRule.getUntil()));
+        } else {
+            recurrence = new Recur(recurrenceRule.getFrequency().name(), null);
+        }
+
+        if (recurrenceRule.getInterval() != null) {
+            recurrence.setInterval(recurrenceRule.getInterval());
+        }
+
+        long whenMillis = when.toInstant().minus(calendarEvent.getEnd().getTime() - calendarEvent.getStart().getTime(), ChronoUnit.MILLIS).toEpochMilli();
+        DateList matches = recurrence.getDates(new net.fortuna.ical4j.model.DateTime(calendarEvent.getStart()), new net.fortuna.ical4j.model.DateTime(whenMillis), new net.fortuna.ical4j.model.DateTime(Long.MAX_VALUE), net.fortuna.ical4j.model.parameter.Value.DATE_TIME, 2);
+
+        if (matches.isEmpty()) {
+            return null;
+        }
+
+        long endTime = matches.get(0).getTime() + (calendarEvent.getEnd().getTime()-calendarEvent.getStart().getTime());
+
+        if (endTime <= when.getTime()) {
+            if (matches.size() == 2) {
+                return new Pair<>(matches.get(1).getTime(), matches.get(1).getTime() + (calendarEvent.getEnd().getTime()-calendarEvent.getStart().getTime()));
+            }
+            return null;
+        }
+
+        return new Pair<>(matches.get(0).getTime(), endTime);
+    }
+
+    public static Predicate<Meta> asPredicate(Supplier<Long> currentMillisProducer, MetaPredicate predicate) {
 
         Predicate<MetaItem> metaItemPredicate = metaItem -> {
             if (predicate.itemNamePredicate != null) {
@@ -544,14 +625,14 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             if (TimeUtil.isTimeDuration(dateTimePredicate.value)) {
                 from = currentMillis + TimeUtil.parseTimeDuration(dateTimePredicate.value);
             } else {
-                from = ZonedDateTime.parse(dateTimePredicate.value).toInstant().toEpochMilli();
+                from = TimeUtil.parseTimeIso8601(dateTimePredicate.value);
             }
 
             if (dateTimePredicate.operator == AssetQuery.Operator.BETWEEN) {
                 if (TimeUtil.isTimeDuration(dateTimePredicate.rangeValue)) {
                     to = currentMillis + TimeUtil.parseTimeDuration(dateTimePredicate.rangeValue);
                 } else {
-                    to = ZonedDateTime.parse(dateTimePredicate.rangeValue).toInstant().toEpochMilli();
+                    to = TimeUtil.parseTimeIso8601(dateTimePredicate.rangeValue);
                 }
             }
         } catch (IllegalArgumentException e) {

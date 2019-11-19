@@ -22,16 +22,16 @@ package org.openremote.model.query.filter;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItemDescriptor;
 
-public class AttributeRefPredicate extends AttributeMetaPredicate {
+public class RefPredicate extends MetaPredicate {
 
-    public AttributeRefPredicate() {
+    public RefPredicate() {
     }
 
-    public AttributeRefPredicate(AttributeRef attributeRef) {
+    public RefPredicate(AttributeRef attributeRef) {
         this(attributeRef.getEntityId(), attributeRef.getAttributeName());
     }
 
-    public AttributeRefPredicate(String entityId, String attributeName) {
+    public RefPredicate(String entityId, String attributeName) {
         super(
             new StringArrayPredicate(
                 new StringPredicate(entityId),
@@ -39,7 +39,7 @@ public class AttributeRefPredicate extends AttributeMetaPredicate {
             ));
     }
 
-    public AttributeRefPredicate(String name, String entityId, String attributeName) {
+    public RefPredicate(String name, String entityId, String attributeName) {
         super(
             new StringPredicate(name),
             new StringArrayPredicate(
@@ -48,11 +48,11 @@ public class AttributeRefPredicate extends AttributeMetaPredicate {
             ));
     }
 
-    public AttributeRefPredicate(MetaItemDescriptor metaItemDescriptor, String entityId, String attributeName) {
+    public RefPredicate(MetaItemDescriptor metaItemDescriptor, String entityId, String attributeName) {
         this(metaItemDescriptor.getUrn(), entityId, attributeName);
     }
 
-    public AttributeRefPredicate(StringPredicate name, AttributeRef attributeRef) {
+    public RefPredicate(StringPredicate name, AttributeRef attributeRef) {
         super(
             name,
             new StringArrayPredicate(
@@ -61,7 +61,7 @@ public class AttributeRefPredicate extends AttributeMetaPredicate {
             ));
     }
 
-    public AttributeRefPredicate(MetaItemDescriptor metaItemDescriptor, AttributeRef attributeRef) {
+    public RefPredicate(MetaItemDescriptor metaItemDescriptor, AttributeRef attributeRef) {
         this(new StringPredicate(metaItemDescriptor.getUrn()), attributeRef);
     }
 }

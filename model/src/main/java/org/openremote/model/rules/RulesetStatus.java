@@ -41,12 +41,32 @@ public enum RulesetStatus {
     EXECUTION_ERROR,
 
     /**
+     * Ruleset caused a loop whilst being executed.
+     */
+    LOOP_ERROR,
+
+    /**
      * Ruleset has been disabled.
      */
     DISABLED,
 
     /**
+     * Ruleset is outside of validity period but will be valid again in the future.
+     */
+    PAUSED,
+
+    /**
+     * Ruleset is outside of validity period and will nt be valid again.
+     */
+    EXPIRED,
+
+    /**
      * Ruleset has been removed.
      */
-    REMOVED
+    REMOVED,
+
+    /**
+     * Contains no rules
+     */
+    EMPTY
 }

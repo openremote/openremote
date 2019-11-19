@@ -37,10 +37,12 @@ import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
+import org.openremote.model.util.TextUtil;
 
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -79,6 +81,10 @@ public class RulesEngine<T extends Ruleset> {
     // Separate logger for periodic stats printer
     public static final Logger STATS_LOG = Logger.getLogger("org.openremote.rules.RulesEngineStats");
 
+    // Here to facilitate testing
+    protected static BiConsumer<RulesEngine, RulesetDeployment> PAUSE_SCHEDULER = RulesEngine::schedulePause;
+    protected static BiConsumer<RulesEngine, RulesetDeployment> UNPAUSE_SCHEDULER = RulesEngine::scheduleUnpause;
+
     final protected TimerService timerService;
     final protected ManagerExecutorService executorService;
     final protected AssetStorageService assetStorageService;
@@ -99,7 +105,8 @@ public class RulesEngine<T extends Ruleset> {
     protected boolean trackLocationPredicates;
     protected ScheduledFuture fireTimer;
     protected ScheduledFuture statsTimer;
-    protected List<RulesetDeployment> newlyAddedDeployments = new ArrayList<>();
+    protected Map<Long, ScheduledFuture> pauseTimers = new HashMap<>();
+    protected Map<Long, ScheduledFuture> unpauseTimers = new HashMap<>();
     protected boolean assetStatesChanged = false;
 
     // Only used to optimize toString(), contains the details of this engine
@@ -160,8 +167,7 @@ public class RulesEngine<T extends Ruleset> {
 
     public boolean isError() {
         for (RulesetDeployment deployment : deployments.values()) {
-            if (((deployment.status == COMPILATION_ERROR || deployment.getStatus() == EXECUTION_ERROR) &&
-                !deployment.getRuleset().isContinueOnError()) || deployment.error instanceof RulesLoopException) {
+            if (deployment.isError() || deployment.getError() instanceof RulesLoopException) {
                 return true;
             }
         }
@@ -169,7 +175,7 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     public int getExecutionErrorDeploymentCount() {
-        return (int) deployments.values().stream().filter(deployment -> deployment.getStatus() == EXECUTION_ERROR).count();
+        return (int) deployments.values().stream().filter(deployment -> deployment.getStatus() == EXECUTION_ERROR || deployment.getStatus() == LOOP_ERROR).count();
     }
 
     public int getCompilationErrorDeploymentCount() {
@@ -192,74 +198,56 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     /**
-     * @return <code>true</code> if all rulesets are {@link RulesetStatus#DEPLOYED} and this engine can be
-     * started.
+     * @return <code>true</code> if all rulesets are not in an error state.
      */
-    public boolean isDeployed() {
-        return deployments.values().stream().allMatch(rd -> rd.getStatus() == DEPLOYED || rd.getRuleset().isContinueOnError());
+    public boolean canStart() {
+        return deployments.values().stream().noneMatch(rd -> rd.getStatus() == COMPILATION_ERROR && !rd.isContinueOnError());
     }
 
     public void addRuleset(T ruleset) {
-        if (ruleset == null || ruleset.getRules() == null || ruleset.getRules().isEmpty()) {
-            // Assume it's a success if deploying an empty ruleset
-            LOG.finest("Ruleset is empty so no rules to deploy");
-            return;
-        }
 
+        // Check for previous version of this ruleset
         RulesetDeployment deployment = deployments.get(ruleset.getId());
 
         stop();
 
-        // Check if ruleset is already deployed (maybe an older version)
         if (deployment != null) {
-            deployment.onStop(facts);
-            deployment.stop();
-            LOG.info("Removing ruleset deployment: " + ruleset);
-            deployments.remove(ruleset.getId());
-            updateDeploymentInfo();
+            removeRuleset(deployment.ruleset);
         }
 
         deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade);
-        newlyAddedDeployments.add(deployment);
+        boolean compiled;
 
-        boolean compilationSuccessful = deployment.start();
-
-        if (!compilationSuccessful) {
-            // If any other ruleset is DEPLOYED in this scope, demote to READY
-            for (RulesetDeployment rd : deployments.values()) {
-                if (rd.getStatus() == DEPLOYED) {
-                    rd.setStatus(READY);
-                    publishRulesetStatus(
-                        rd.getRuleset(),
-                        rd.getStatus(),
-                        rd.getErrorMessage()
-                    );
-                }
-            }
+        if (TextUtil.isNullOrEmpty(ruleset.getRules())) {
+            LOG.finest("Ruleset is empty so no rules to deploy: " + ruleset.getName());
+            deployment.setStatus(EMPTY);
+            publishRulesetStatus(deployment);
+        } else if (!ruleset.isEnabled()) {
+            LOG.finest("Ruleset is disabled: " + ruleset.getName());
+            deployment.setStatus(DISABLED);
+            publishRulesetStatus(deployment);
         } else {
-            // If any other ruleset is READY in this scope, promote to DEPLOYED
-            for (RulesetDeployment rd : deployments.values()) {
-                if (rd.getStatus() == READY) {
-                    rd.setStatus(DEPLOYED);
-                    publishRulesetStatus(
-                        rd.getRuleset(),
-                        rd.getStatus(),
-                        rd.getErrorMessage()
-                    );
-                }
+            deployment.updateValidity();
+            if (deployment.hasExpired()) {
+                LOG.fine("Ruleset validity period has expired: " + ruleset.getName());
+                deployment.setStatus(EXPIRED);
+                publishRulesetStatus(deployment);
+                compiled = true;
+            } else {
+                compiled = deployment.compile();
+            }
+
+            if (!compiled) {
+                LOG.log(Level.SEVERE, "Ruleset compilation error: " + ruleset.getName(), deployment.getError());
+                deployment.setStatus(COMPILATION_ERROR);
+                publishRulesetStatus(deployment);
+            } else if (running) {
+                startRuleset(deployment);
             }
         }
 
-        // Add new ruleset and set its status to either DEPLOYED or COMPILATION_ERROR
-        deployment.setStatus(compilationSuccessful ? DEPLOYED : COMPILATION_ERROR);
         deployments.put(ruleset.getId(), deployment);
         updateDeploymentInfo();
-
-        publishRulesetStatus(
-            ruleset,
-            deployment.getStatus(),
-            deployment.getErrorMessage()
-        );
         start();
     }
 
@@ -274,48 +262,25 @@ public class RulesEngine<T extends Ruleset> {
             return deployments.size() == 0;
         }
 
-        stop();
-        deployment.onStop(facts);
-        deployment.stop();
+        stopRuleset(deployment);
+
+        deployment.setStatus(REMOVED);
+        publishRulesetStatus(deployment);
+        deployments.remove(ruleset.getId());
+
+        ScheduledFuture timer = pauseTimers.remove(ruleset.getId());
+        if (timer != null) timer.cancel(true);
+        timer = unpauseTimers.remove(ruleset.getId());
+        if (timer != null) timer.cancel(true);
+
         updateDeploymentInfo();
+        start();
 
-        publishRulesetStatus(ruleset, ruleset.isEnabled() ? REMOVED : DISABLED, null);
-
-        // If there are no deployments with COMPILATION_ERROR, promote all which are READY to DEPLOYED
-        boolean anyDeploymentsHaveCompilationError = deployments
-            .values()
-            .stream()
-            .anyMatch(rd -> rd.getStatus() == COMPILATION_ERROR);
-
-        if (!anyDeploymentsHaveCompilationError) {
-            deployments.values().forEach(rd -> {
-                if (rd.getStatus() == READY) {
-                    rd.setStatus(DEPLOYED);
-                    publishRulesetStatus(
-                        rd.getRuleset(),
-                        rd.getStatus(),
-                        rd.getErrorMessage()
-                    );
-                }
-            });
-        }
-
-        if (deployments.size() > 0) {
-            start();
-            return false;
-        } else {
-            publishRulesEngineStatus();
-            return true;
-        }
+        return deployments.size() == 0;
     }
 
     public void start() {
-        if (isRunning()) {
-            return;
-        }
-
-        if (!isDeployed()) {
-            LOG.fine("Cannot start rules engine, not all rulesets are status " + DEPLOYED);
+        if (running) {
             return;
         }
 
@@ -324,9 +289,18 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
+        if (!canStart()) {
+            LOG.fine("Cannot start rules engine one or more rulesets in an error state");
+            return;
+        }
+
         LOG.info("Starting: " + this);
         running = true;
         trackLocationPredicates = true;
+
+        deployments.values().forEach(this::startRuleset);
+
+        updateDeploymentInfo();
         publishRulesEngineStatus();
         fire();
 
@@ -338,6 +312,83 @@ public class RulesEngine<T extends Ruleset> {
                 LOG.info("On " + this + ", enabling periodic full memory dump at FINEST level every 30 seconds on category: " + STATS_LOG.getName());
             }
             statsTimer = executorService.scheduleAtFixedRate(this::printSessionStats, 3, 30, TimeUnit.SECONDS);
+        }
+    }
+
+
+    public void stop() {
+        stop(false);
+    }
+
+    public void stop(boolean systemShutdownInProgress) {
+        if (!running) {
+            return;
+        }
+        LOG.info("Stopping: " + this);
+        if (fireTimer != null) {
+            fireTimer.cancel(true);
+            fireTimer = null;
+        }
+        if (statsTimer != null) {
+            statsTimer.cancel(true);
+            statsTimer = null;
+        }
+        pauseTimers.values().forEach(pauseTimer -> pauseTimer.cancel(true));
+        pauseTimers.clear();
+        unpauseTimers.values().forEach(unpauseTimer -> unpauseTimer.cancel(true));
+        unpauseTimers.clear();
+
+        deployments.values().forEach(this::stopRuleset);
+        running = false;
+
+        if (!systemShutdownInProgress && assetLocationPredicatesConsumer != null) {
+            assetLocationPredicatesConsumer.accept(this, null);
+        }
+
+        updateDeploymentInfo();
+        publishRulesEngineStatus();
+    }
+
+    protected void startRuleset(RulesetDeployment deployment) {
+        if (!running) {
+            return;
+        }
+
+        if (deployment.getStatus() == COMPILATION_ERROR || deployment.getStatus() == DISABLED || deployment.getStatus() == EXPIRED) {
+            return;
+        }
+
+        deployment.updateValidity();
+
+        if (deployment.hasExpired()) {
+            deployment.setStatus(EXPIRED);
+            publishRulesetStatus(deployment);
+            return;
+        }
+
+        if (deployment.getValidFrom() > timerService.getCurrentTimeMillis()) {
+            // Not ready to start yet so pause
+            pauseRuleset(deployment);
+        } else {
+            deployment.setStatus(DEPLOYED);
+            publishRulesetStatus(deployment);
+            deployment.start(facts);
+
+            if (deployment.getValidTo() != Long.MAX_VALUE) {
+                PAUSE_SCHEDULER.accept(this, deployment);
+            }
+        }
+    }
+
+    protected void stopRuleset(RulesetDeployment deployment) {
+        if (!running) {
+            return;
+        }
+
+        if (deployment.getStatus() == DEPLOYED) {
+            deployment.stop(facts);
+            deployment.setStatus(READY);
+            publishRulesetStatus(deployment);
         }
     }
 
@@ -391,47 +442,42 @@ public class RulesEngine<T extends Ruleset> {
         // Remove any expired temporary facts
         facts.removeExpiredTemporaryFacts();
 
-        // Call on start for any newly deployed rulesets
-        newlyAddedDeployments.forEach(rulesetDeployment -> {
-            rulesetDeployment.onStart(facts);
-            if (!assetStatesChanged) {
-                rulesetDeployment.onAssetStatesChanged(facts);
-            }
-        });
-        newlyAddedDeployments.clear();
-
         // Notify rulesets if assetstates changed
         boolean notifyAssetStatesChanged = assetStatesChanged;
         assetStatesChanged = false;
 
         for (RulesetDeployment deployment : deployments.values()) {
             try {
-                if (notifyAssetStatesChanged) {
-                    deployment.onAssetStatesChanged(facts);
+
+                if (deployment.getStatus() == DEPLOYED) {
+
+                    RULES_LOG.fine("Firing rules @" + clock + " of: " + deployment);
+
+                    // If full detail logging is enabled
+                    if (RULES_LOG.isLoggable(Level.FINEST)) {
+                        // Log asset states and events before firing (note that this will log at INFO)
+                        facts.logFacts(RULES_LOG);
+                    }
+
+                    // Reset facts for this firing (loop detection etc.)
+                    facts.reset();
+
+                    if (notifyAssetStatesChanged) {
+                        deployment.onAssetStatesChanged(facts);
+                    }
+
+                    long startTimestamp = System.currentTimeMillis();
+                    lastFireTimestamp = startTimestamp;
+                    engine.fire(deployment.getRules(), facts);
+                    RULES_LOG.fine("Rules executed in: " + (System.currentTimeMillis() - startTimestamp) + "ms");
                 }
-
-                RULES_LOG.fine("Firing rules @" + clock + " of: " + deployment);
-
-                // If full detail logging is enabled
-                if (RULES_LOG.isLoggable(Level.FINEST)) {
-                    // Log asset states and events before firing (note that this will log at INFO)
-                    facts.logFacts(RULES_LOG);
-                }
-
-                // Reset facts for this firing (loop detection etc.)
-                facts.reset();
-
-                long startTimestamp = System.currentTimeMillis();
-                lastFireTimestamp = startTimestamp;
-                engine.fire(deployment.getRules(), facts);
-                RULES_LOG.fine("Rules executed in: " + (System.currentTimeMillis() - startTimestamp) + "ms");
 
             } catch (Exception ex) {
                 LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error firing rules of: " + deployment, ex);
 
-                deployment.setStatus(EXECUTION_ERROR);
+                deployment.setStatus(ex instanceof RulesLoopException ? LOOP_ERROR : EXECUTION_ERROR);
                 deployment.setError(ex);
-                publishRulesetStatus(deployment.getRuleset(), deployment.getStatus(), deployment.getErrorMessage());
+                publishRulesetStatus(deployment);
 
                 // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
                 if (ex instanceof RulesLoopException || !deployment.ruleset.isContinueOnError()) {
@@ -452,37 +498,11 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public void stop() {
-        stop(false);
-    }
-
-    public void stop(boolean systemShutdownInProgress) {
-        if (!isRunning()) {
-            return;
-        }
-        LOG.info("Stopping: " + this);
-        if (fireTimer != null) {
-            fireTimer.cancel(true);
-            fireTimer = null;
-        }
-        if (statsTimer != null) {
-            statsTimer.cancel(true);
-            statsTimer = null;
-        }
-        running = false;
-
-        if (!systemShutdownInProgress && assetLocationPredicatesConsumer != null) {
-            assetLocationPredicatesConsumer.accept(this, null);
-        }
-
-        publishRulesEngineStatus();
-    }
-
     public void updateFact(AssetState assetState, boolean fireImmediately) {
         assetStatesChanged = true;
         facts.putAssetState(assetState);
         trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals(AttributeType.LOCATION.getAttributeName());
-        if (fireImmediately) {
+        if (running && fireImmediately) {
             fire();
         }
     }
@@ -491,14 +511,18 @@ public class RulesEngine<T extends Ruleset> {
         assetStatesChanged = true;
         facts.removeAssetState(assetState);
         trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals(AttributeType.LOCATION.getAttributeName());
-        fire();
+        if (running) {
+            fire();
+        }
     }
 
     public void insertFact(String expires, AssetState assetState) {
         assetStatesChanged = true;
         facts.insertAssetEvent(expires, assetState);
         trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals(AttributeType.LOCATION.getAttributeName());
-        fire();
+        if (running) {
+            fire();
+        }
     }
 
     protected void updateDeploymentInfo() {
@@ -542,15 +566,11 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected RulesEngineStatus getStatus() {
-        return getStatus(getCompilationErrorDeploymentCount(), getExecutionErrorDeploymentCount());
-    }
-
-    protected RulesEngineStatus getStatus(int compilationErrors, int executionErrors) {
         if (isRunning()) {
-            return compilationErrors > 0 || executionErrors > 0 ? RulesEngineStatus.ERROR : RulesEngineStatus.RUNNING;
+            return RulesEngineStatus.RUNNING;
         }
 
-        return compilationErrors > 0 || executionErrors > 0 ? RulesEngineStatus.ERROR : deployments.isEmpty() ? null : RulesEngineStatus.STOPPED;
+        return deployments.values().stream().anyMatch(RulesetDeployment::isError) ? RulesEngineStatus.ERROR : RulesEngineStatus.STOPPED;
     }
 
     protected void publishRulesEngineStatus() {
@@ -560,7 +580,7 @@ public class RulesEngine<T extends Ruleset> {
             int compilationErrors = getCompilationErrorDeploymentCount();
             int executionErrors = getExecutionErrorDeploymentCount();
             RulesEngineInfo engineInfo = new RulesEngineInfo(
-                getStatus(compilationErrors, executionErrors),
+                getStatus(),
                 compilationErrors,
                 executionErrors);
 
@@ -577,13 +597,14 @@ public class RulesEngine<T extends Ruleset> {
         });
     }
 
-    protected void publishRulesetStatus(Ruleset ruleset, RulesetStatus status, String error) {
+    protected void publishRulesetStatus(RulesetDeployment deployment) {
         withLock(getClass().getSimpleName() + "::publishRulesetStatus", () -> {
 
+            Ruleset ruleset = deployment.ruleset;
             String engineId = id == null ? null : id.getRealm().orElse(id.getAssetId().orElse(null));
 
-            ruleset.setStatus(status);
-            ruleset.setError(error);
+            ruleset.setStatus(deployment.getStatus());
+            ruleset.setError(deployment.getErrorMessage());
 
             RulesetChangedEvent event = new RulesetChangedEvent(
                 timerService.getCurrentTimeMillis(),
@@ -595,6 +616,55 @@ public class RulesEngine<T extends Ruleset> {
 
             // Notify clients
             clientEventService.publishEvent(event);
+        });
+    }
+
+    protected void schedulePause(RulesetDeployment deployment) {
+        long delay = deployment.getValidTo() - timerService.getCurrentTimeMillis();
+        LOG.info("Scheduling pause of ruleset at '" + new Date(deployment.getValidTo()).toString() + "' ("+ delay + "ms): " + deployment.ruleset.getName());
+        pauseTimers.put(deployment.getId(), executorService.schedule(() -> pauseRuleset(deployment), delay));
+    }
+
+    protected void pauseRuleset(RulesetDeployment deployment) {
+        pauseTimers.remove(deployment.getId());
+
+        if (!running) {
+            return;
+        }
+
+        withLock(getClass().getSimpleName() + ":pauseRuleset", () -> {
+            LOG.info("Pausing ruleset: " + deployment.getRuleset().getName());
+            stopRuleset(deployment);
+            deployment.updateValidity();
+
+            if (deployment.hasExpired()) {
+                deployment.setStatus(EXPIRED);
+                publishRulesetStatus(deployment);
+            } else {
+                deployment.setStatus(PAUSED);
+                publishRulesetStatus(deployment);
+                UNPAUSE_SCHEDULER.accept(this, deployment);
+            }
+        });
+
+    }
+
+    protected void scheduleUnpause(RulesetDeployment deployment) {
+        long delay = deployment.getValidFrom() - timerService.getCurrentTimeMillis();
+        LOG.info("Scheduling un-pause of ruleset at '" + new Date(deployment.getValidFrom()).toString() + "' ("+ delay + "ms): " + deployment.ruleset.getName());
+        unpauseTimers.put(deployment.getId(), executorService.schedule(() -> unPauseRuleset(deployment), delay));
+    }
+
+    protected void unPauseRuleset(RulesetDeployment deployment) {
+        unpauseTimers.remove(deployment.getId());
+
+        if (!running) {
+            return;
+        }
+
+        withLock(getClass().getSimpleName() + "::unpauseRuleset", () -> {
+            LOG.info("Un-pausing ruleset: " + deployment.getRuleset().getName());
+            startRuleset(deployment);
         });
     }
 

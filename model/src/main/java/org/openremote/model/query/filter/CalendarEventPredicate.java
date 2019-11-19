@@ -21,14 +21,30 @@ package org.openremote.model.query.filter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Values;
 
-public class CalendarEventActivePredicate {
+import java.util.Date;
 
-    @JsonProperty("timestamp")
-    public long timestampSeconds;
+/**
+ * Can be applied to {@link org.openremote.model.attribute.Attribute}s of type
+ * {@link org.openremote.model.attribute.AttributeValueType#CALENDAR_EVENT}.
+ */
+public class CalendarEventPredicate implements ValuePredicate {
+
+    public static final String name = "calendar-event";
+    public Date timestamp;
 
     @JsonCreator
-    public CalendarEventActivePredicate(@JsonProperty("timestamp") long timestampSeconds) {
-        this.timestampSeconds = timestampSeconds;
+    public CalendarEventPredicate(@JsonProperty("timestamp") Date timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    @Override
+    public ObjectValue toModelValue() {
+        ObjectValue objectValue = Values.createObject();
+        objectValue.put("predicateType", name);
+        objectValue.put("timestamp", Values.create(timestamp.getTime()));
+        return objectValue;
     }
 }

@@ -42,22 +42,10 @@ public class RecurrenceRule {
     protected Integer count;
     protected Date until;
 
-    protected RecurrenceRule() {
-    }
-
-    public RecurrenceRule(Frequency frequency) {
-        this.frequency = frequency;
-    }
-
-    public RecurrenceRule(Frequency frequency, int interval, int count) {
+    public RecurrenceRule(Frequency frequency, Integer interval, Integer count, Date until) {
         this.frequency = frequency;
         this.interval = interval;
         this.count = count;
-    }
-
-    public RecurrenceRule(Frequency frequency, int interval, Date until) {
-        this.frequency = frequency;
-        this.interval = interval;
         this.until = until;
     }
 
@@ -93,10 +81,7 @@ public class RecurrenceRule {
             return Optional.empty();
         }
 
-        RecurrenceRule rRule = new RecurrenceRule(frequency.get());
-        rRule.interval = interval;
-        rRule.count = count;
-        until.ifPresent(l -> rRule.until = new Date(1000L * l));
+        RecurrenceRule rRule = new RecurrenceRule(frequency.get(), interval, count, until.map(Date::new).orElse(null));
         return Optional.of(rRule);
     }
 
@@ -110,7 +95,7 @@ public class RecurrenceRule {
             objectValue.put("count", Values.create(count));
         }
         if (until != null) {
-            objectValue.put("until", Values.create(until.getTime()/1000));
+            objectValue.put("until", Values.create(until.getTime()));
         }
 
         return objectValue;

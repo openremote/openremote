@@ -41,7 +41,8 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.AttributeMetaPredicate;
+import org.openremote.model.query.RulesetQuery;
+import org.openremote.model.query.filter.MetaPredicate;
 import org.openremote.model.query.filter.BooleanPredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
@@ -65,10 +66,8 @@ import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.model.AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttributes;
-import static org.openremote.model.query.AssetQuery.Select.selectExcludePathAndAttributes;
 
 /**
  * Manages {@link RulesEngine}s for stored {@link Ruleset}s and processes asset attribute updates.
@@ -215,11 +214,20 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         }
 
         LOG.info("Deploying global rulesets");
-        rulesetStorageService.findGlobalRulesets(true, null, true).forEach(this::deployGlobalRuleset);
+        rulesetStorageService.findAll(
+            GlobalRuleset.class,
+            new RulesetQuery()
+                .setEnabledOnly(true)
+                .setFullyPopulate(true)
+        ).forEach(this::deployGlobalRuleset);
 
         LOG.info("Deploying tenant rulesets");
         tenants = identityService.getIdentityProvider().getTenants();
-        rulesetStorageService.findTenantRulesets(false, true, null, true)
+        rulesetStorageService.findAll(
+            TenantRuleset.class,
+            new RulesetQuery()
+                .setEnabledOnly(true)
+                .setFullyPopulate(true))
             .stream()
             .filter(rd ->
                 Arrays.stream(tenants)
@@ -228,7 +236,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
         LOG.info("Deploying asset rulesets");
         // Group by asset ID then tenant and check tenant is enabled
-        deployAssetRulesets(rulesetStorageService.findAssetRulesets(null, null, false, true, null, true));
+        deployAssetRulesets(
+            rulesetStorageService.findAll(
+                AssetRuleset.class,
+                new RulesetQuery()
+                    .setEnabledOnly(true)
+                    .setFullyPopulate(true)));
 
         LOG.info("Loading all assets with fact attributes to initialize state of rules engines");
         Stream<Pair<Asset, Stream<AssetAttribute>>> assetRuleAttributes = findRuleStateAttributes();
@@ -345,11 +358,22 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             } else {
                 // Create tenant rules engines for this tenant if it has any rulesets
                 rulesetStorageService
-                    .findTenantRulesets(tenant.getRealm(), false, true, null, true)
+                    .findAll(
+                        TenantRuleset.class,
+                        new RulesetQuery()
+                            .setRealm(tenant.getRealm())
+                            .setFullyPopulate(true)
+                            .setEnabledOnly(true))
                     .forEach(this::deployTenantRuleset);
 
                 // Create any asset rules engines for assets in this realm that have rulesets
-                deployAssetRulesets(rulesetStorageService.findAssetRulesetsByRealm(tenant.getRealm(), false, true, null, true));
+                deployAssetRulesets(
+                    rulesetStorageService.findAll(
+                        AssetRuleset.class,
+                        new RulesetQuery()
+                            .setRealm(tenant.getRealm())
+                            .setEnabledOnly(true)
+                            .setFullyPopulate(true)));
             }
         });
     }
@@ -464,7 +488,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     if (newEngine != null) {
                         // Push all existing facts into the engine, this is an initial import of state so fire delayed
                         assetStates.forEach(assetState -> newEngine.updateFact(assetState, false));
-                        newEngine.fire();
                     }
 
                 } else if (ruleset instanceof TenantRuleset) {
@@ -477,20 +500,18 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                                 newEngine.updateFact(assetState, false);
                             }
                         });
-                        newEngine.fire();
                     }
 
                 } else if (ruleset instanceof AssetRuleset) {
 
                     // Must reload from the database, the ruleset might not be completely hydrated on CREATE or UPDATE
-                    AssetRuleset assetRuleset = rulesetStorageService.findById(AssetRuleset.class, ruleset.getId());
+                    AssetRuleset assetRuleset = rulesetStorageService.find(AssetRuleset.class, ruleset.getId());
                     RulesEngine newEngine = deployAssetRuleset(assetRuleset);
                     if (newEngine != null) {
                         // Push all existing facts for this asset (and it's children into the engine), this is an
                         // initial import of state so fire delayed
                         getAssetStatesInScope(((AssetRuleset) ruleset).getAssetId())
                             .forEach(assetState -> newEngine.updateFact(assetState, false));
-                        newEngine.fire();
                     }
                 }
             }
@@ -532,6 +553,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             }
 
             if (globalEngine.removeRuleset(ruleset)) {
+                globalEngine.stop();
                 globalEngine = null;
             }
         });
@@ -542,7 +564,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             final boolean[] created = {false};
 
             // Look for existing rules engines for this tenant
-            RulesEngine<TenantRuleset> tenentRulesEngine = tenantEngines
+            RulesEngine<TenantRuleset> tenantRulesEngine = tenantEngines
                 .computeIfAbsent(ruleset.getRealm(), (realm) -> {
                     created[0] = true;
                     return new RulesEngine<>(
@@ -558,9 +580,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     );
                 });
 
-            tenentRulesEngine.addRuleset(ruleset);
+            tenantRulesEngine.addRuleset(ruleset);
 
-            return created[0] ? tenentRulesEngine : null;
+            return created[0] ? tenantRulesEngine : null;
         });
     }
 
@@ -572,6 +594,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             }
 
             if (rulesEngine.removeRuleset(ruleset)) {
+                rulesEngine.stop();
                 tenantEngines.remove(ruleset.getRealm());
             }
         });
@@ -633,12 +656,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
     protected void undeployAssetRuleset(AssetRuleset ruleset) {
         withLock(getClass().getSimpleName() + "::undeployAssetRuleset", () -> {
-            RulesEngine<AssetRuleset> assetRulesEngine = assetEngines.get(ruleset.getAssetId());
-            if (assetRulesEngine == null) {
+            RulesEngine<AssetRuleset> rulesEngine = assetEngines.get(ruleset.getAssetId());
+            if (rulesEngine == null) {
                 return;
             }
 
-            if (assetRulesEngine.removeRuleset(ruleset)) {
+            if (rulesEngine.removeRuleset(ruleset)) {
+                rulesEngine.stop();
                 assetEngines.remove(ruleset.getAssetId());
             }
         });
@@ -754,7 +778,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         List<Asset> assets = assetStorageService.findAll(
             new AssetQuery()
                 .attributeMeta(
-                    new AttributeMetaPredicate(
+                    new MetaPredicate(
                         MetaItemType.RULE_STATE,
                         new BooleanPredicate(true))
                 ));

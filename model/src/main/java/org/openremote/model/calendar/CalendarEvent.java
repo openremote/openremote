@@ -19,6 +19,8 @@
  */
 package org.openremote.model.calendar;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -28,25 +30,32 @@ import java.util.Date;
 import java.util.Optional;
 
 /**
- * Represents an event that occurs at a point in time with a duration and optional recurrence. This is inspired by the
- * following standards:
+ * Represents an event that occurs at a point in time with a {@link #start}, {#link #end} and optional
+ * {@link #recurrence} and loosely follows the following standard for JSEvent. If {@link #end} is not specified then it
+ * is assumed the event never ends and so only the {@link #start} is important.
+ * <p>
+ * CRON expressions were ruled out because intervals are not possible when using days
+ * of the week (e.g. every other Thursday).
+ * <p>
+ * Note that unix timestamp milliseconds is used everywhere as time zone information can
+ * be obtained from the associated {@link Asset}; {@link #start} and {@link #end} are required but {@link #recurrence}
+ * is optional:
  * <ul>
- * <li><a href="https://icalendar.org/RFC-Specifications/iCalendar-RFC-5545/">iCalendar RFC-5545</a></li>
  * <li><a href="https://tools.ietf.org/id/draft-jenkins-jscalendar-01.html">JSCalendar</a></li>
  * </ul>
  * <p>
- * Example 1:
+ * Example 1 (One day, one time only):
  * <blockquote><pre>{@code
 {
-    "start": 1517011200,
-    "end": 1517014800
+    "start": 1441148400000,
+    "end": 1441234800000
 }
  * }</pre></blockquote>
- * Example 2 (Repeat every other week, 3 occurrences):
+ * Example 2 (2 days starting 2nd September 2015; repeat every other week, 3 occurrences):
  * <blockquote><pre>{@code
 {
-    "start": 1517011200,
-    "end": 1517014800,
+    "start": 1441148400000,
+    "end": 1441321200000,
     "recurrence": {
         "frequency": "WEEKLY",
         "interval": 2,
@@ -54,42 +63,29 @@ import java.util.Optional;
     }
 }
  * }</pre></blockquote>
- * Example 3 (Repeat every day until 1st Feb 2018):
+ * Example 3 (8 hours starting 2nd September 2015 08:00am, repeat every day until 1st Feb 2018):
  * <blockquote><pre>{@code
 {
-    "start": 1517011200,
-    "end": 1517014800,
+    "start": 1441177200000,
+    "ends": 1441206000000,
     "recurrence": {
-        "frequency": "WEEKLY",
-        "interval": 2,
-        "until": 1517443200
+        "frequency": "DAILY",
+        "interval": 1,
+        "until": 1517443200000
     }
 }
  * }</pre></blockquote>
- * <b>
- * <h1>NOTES</h1>
- * <ul>
- * <li>date and time values must be in Unix timestamp seconds</li>
- * </ul>
- * </b>
  */
 public class CalendarEvent {
     protected Date start;
     protected Date end;
     protected RecurrenceRule recurrence;
 
-    protected CalendarEvent() {
-    }
-
+    @JsonCreator
     public CalendarEvent(Date start, Date end, RecurrenceRule recurrence) {
         this.start = start;
         this.end = end;
         this.recurrence = recurrence;
-    }
-
-    public CalendarEvent(Date start, Date end) {
-        this.start = start;
-        this.end = end;
     }
 
     public Date getStart() {
@@ -114,20 +110,16 @@ public class CalendarEvent {
         Optional<Long> end = objectValue.get("end").flatMap(Values::getLongCoerced);
         Optional<RecurrenceRule> recurrence = RecurrenceRule.fromValue(objectValue.getObject("recurrence").orElse(null));
 
-        if (!start.isPresent() || !end.isPresent()) {
-            return Optional.empty();
-        }
-
-        return Optional.of(
-            new CalendarEvent(new Date(1000L*start.get()),
-                              new Date(1000L*end.get()), recurrence.orElse(null))
-        );
+        return start.map(aLong -> new CalendarEvent(new Date(aLong),
+            end.map(Date::new).orElse(null), recurrence.orElse(null)));
     }
 
     public Value toValue() {
         ObjectValue objectValue = Values.createObject();
-        objectValue.put("start", start.getTime() / 1000);
-        objectValue.put("end", end.getTime() / 1000);
+        objectValue.put("start", start.getTime());
+        if (end != null) {
+            objectValue.put("end", end.getTime());
+        }
         if (recurrence != null) {
             objectValue.put("recurrence", recurrence.toValue());
         }

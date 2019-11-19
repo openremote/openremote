@@ -50,7 +50,7 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.AttributeRefPredicate;
+import org.openremote.model.query.filter.RefPredicate;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
@@ -494,7 +494,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             List<Asset> assets = assetStorageService.findAll(
                 new AssetQuery()
                     .attributeMeta(
-                        new AttributeRefPredicate(
+                        new RefPredicate(
                             MetaItemType.AGENT_LINK,
                             protocolAttributeRef.getEntityId(),
                             protocolAttributeRef.getAttributeName()
@@ -523,7 +523,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             List<Asset> assets = assetStorageService.findAll(
                 new AssetQuery()
                     .attributeMeta(
-                        new AttributeRefPredicate(
+                        new RefPredicate(
                             MetaItemType.AGENT_LINK,
                             protocolAttributeRef.getEntityId(),
                             protocolAttributeRef.getAttributeName()

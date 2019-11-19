@@ -20,47 +20,46 @@
 package org.openremote.model.query.filter;
 
 import org.openremote.model.attribute.MetaItemDescriptor;
-import org.openremote.model.query.AssetQuery;
 
-public class AttributeMetaPredicate {
+public class MetaPredicate {
 
     public StringPredicate itemNamePredicate;
     public ValuePredicate itemValuePredicate;
 
-    public AttributeMetaPredicate() {
+    public MetaPredicate() {
     }
 
-    public AttributeMetaPredicate(StringPredicate itemNamePredicate) {
+    public MetaPredicate(StringPredicate itemNamePredicate) {
         this.itemNamePredicate = itemNamePredicate;
     }
 
-    public AttributeMetaPredicate(MetaItemDescriptor metaItemDescriptor) {
+    public MetaPredicate(MetaItemDescriptor metaItemDescriptor) {
         this.itemNamePredicate = new StringPredicate(metaItemDescriptor.getUrn());
     }
 
-    public AttributeMetaPredicate(ValuePredicate itemValuePredicate) {
+    public MetaPredicate(ValuePredicate itemValuePredicate) {
         this.itemValuePredicate = itemValuePredicate;
     }
 
-    public AttributeMetaPredicate(StringPredicate itemNamePredicate, ValuePredicate itemValuePredicate) {
+    public MetaPredicate(StringPredicate itemNamePredicate, ValuePredicate itemValuePredicate) {
         this.itemNamePredicate = itemNamePredicate;
         this.itemValuePredicate = itemValuePredicate;
     }
 
-    public AttributeMetaPredicate(MetaItemDescriptor metaItemDescriptor, ValuePredicate itemValuePredicate) {
+    public MetaPredicate(MetaItemDescriptor metaItemDescriptor, ValuePredicate itemValuePredicate) {
         this(new StringPredicate(metaItemDescriptor.getUrn()), itemValuePredicate);
     }
 
-    public AttributeMetaPredicate itemName(StringPredicate itemNamePredicate) {
+    public MetaPredicate itemName(StringPredicate itemNamePredicate) {
         this.itemNamePredicate = itemNamePredicate;
         return this;
     }
 
-    public AttributeMetaPredicate itemName(MetaItemDescriptor metaItemDescriptor) {
+    public MetaPredicate itemName(MetaItemDescriptor metaItemDescriptor) {
         return itemName(new StringPredicate(metaItemDescriptor.getUrn()));
     }
 
-    public AttributeMetaPredicate itemValue(ValuePredicate itemValuePredicate) {
+    public MetaPredicate itemValue(ValuePredicate itemValuePredicate) {
         this.itemValuePredicate = itemValuePredicate;
         return this;
     }

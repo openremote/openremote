@@ -19,8 +19,8 @@
  */
 package org.openremote.model.rules.json;
 
-import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.LogicGroup;
 
 /**
  * A declarative rule definition a.k.a. JSON rules; consists of:

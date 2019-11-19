@@ -204,7 +204,10 @@ public enum AttributeValueType implements AttributeValueDescriptor {
     // TODO Implement "Saved Filter/Searches" properly, see AssetResourceImpl
     RULES_TEMPLATE_FILTER("filter", ValueType.ARRAY),
 
-    ASSET_STATUS("heart-pulse", ValueType.STRING);
+    ASSET_STATUS("heart-pulse", ValueType.STRING),
+
+
+    CALENDAR_EVENT("calendar", ValueType.OBJECT);
 
 
     public enum AttributeValueTypeFailureReason implements ValidationFailure.Reason {

@@ -24,14 +24,14 @@ import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
 /**
- * Predicate for date time values; provided values should be valid ISO 8601 datetime strings (e.g. yyyy-MM-dd'T'HH:mm:ssZ
- * or yyyy-MM-dd'T'HH:mm:ss\u00b1HH:mm), it is recommended to include time zone information to avoid any issues working
- * across timezones.
+ * Predicate for date time values; provided values should be valid ISO 8601 datetime strings
+ * (e.g. yyyy-MM-dd'T'HH:mm:ssZ or yyyy-MM-dd'T'HH:mm:ss\u00b1HH:mm), offset and time are optional, if no offset
+ * information is supplied then UTC is assumed.
  */
 public class DateTimePredicate implements ValuePredicate {
 
     public static final String name = "datetime";
-    public String value; // Sliding window value e.g. 1h or fixed date time
+    public String value; // Sliding window value e.g. 1h or fixed date time in ISO 8601
     public String rangeValue; // Sliding window value e.g. 1h or fixed date time (used as upper bound when Operator.BETWEEN)
     public AssetQuery.Operator operator = AssetQuery.Operator.EQUALS;
     public boolean negate;

@@ -11,7 +11,9 @@ import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
+import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TenantRuleset
+import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -74,11 +76,10 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         when: "a new tenant rule definition is added to Tenant A"
         ruleset = new TenantRuleset(
-                "Some more tenantA tenant rules", GROOVY, getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text,
-                keycloakDemoSetup.tenantA.realm,
-                false,
-                false
-        )
+            keycloakDemoSetup.tenantA.realm,
+            "Some more tenantA tenant rules",
+            GROOVY,
+            getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         then: "Tenant A rules engine should load this definition and restart successfully"
@@ -93,11 +94,10 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         when: "a new tenant rule definition is added to Tenant B"
         ruleset = new TenantRuleset(
-                "Some more tenantB tenant rules", GROOVY, getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text,
-                keycloakDemoSetup.tenantB.realm,
-                false,
-                false
-        )
+            keycloakDemoSetup.tenantB.realm,
+            "Some more tenantB tenant rules",
+            GROOVY,
+            getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         then: "a tenant rules engine should be created for Tenant B and load this definition and start successfully"
@@ -111,7 +111,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         }
 
         when: "the disabled rule definition for Tenant B is enabled"
-        ruleset = rulesetStorageService.findById(TenantRuleset.class, rulesImport.tenantBRulesetId)
+        ruleset = rulesetStorageService.find(TenantRuleset.class, rulesImport.tenantBRulesetId)
         ruleset.setEnabled(true)
         rulesetStorageService.merge(ruleset)
 
@@ -128,7 +128,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         when: "the enabled rule definition for Tenant B is disabled"
         // TODO: Stop instances of rule definitions being passed around as rules engine nulls the rules property
-        ruleset = rulesetStorageService.findById(TenantRuleset.class, rulesImport.tenantBRulesetId)
+        ruleset = rulesetStorageService.find(TenantRuleset.class, rulesImport.tenantBRulesetId)
         ruleset.setEnabled(false)
         rulesetStorageService.merge(ruleset)
 
@@ -164,7 +164,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         then: "the global rules engine should not run and the rule engine status should indicate the issue"
         conditions.eventually {
             assert rulesService.globalEngine.deployments.size() == 3
-            assert rulesService.globalEngine.running == false
+            assert !rulesService.globalEngine.running
             assert rulesService.globalEngine.isError()
             assert rulesService.globalEngine.error instanceof RuntimeException
             assert rulesService.globalEngine.deployments.values().any({ it.name == "Some global demo rules" && it.status == READY})
@@ -178,8 +178,8 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         then: "the global rules engine should restart"
         conditions.eventually {
             assert rulesService.globalEngine.deployments.size() == 2
-            assert rulesService.globalEngine.running == true
-            assert rulesService.globalEngine.isError() == false
+            assert rulesService.globalEngine.running
+            assert !rulesService.globalEngine.isError()
             assert rulesService.globalEngine.deployments.values().any({ it.name == "Some global demo rules" && it.status == DEPLOYED })
             assert rulesService.globalEngine.deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED })
         }
@@ -234,11 +234,11 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         when: "a new tenant rule definition is added to Tenant A"
         ruleset = new TenantRuleset(
-                "Throw Failure Exception", GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureActionThrowsException.groovy").text,
-                keycloakDemoSetup.tenantA.realm,
-                false,
-                true
-        )
+            keycloakDemoSetup.tenantA.realm,
+            "Throw Failure Exception",
+            GROOVY,
+            getClass().getResource("/org/openremote/test/failure/RulesFailureActionThrowsException.groovy").text)
+            .addMeta(Ruleset.META_KEY_CONTINUE_ON_ERROR, Values.create(true))
         ruleset = rulesetStorageService.merge(ruleset)
 
         then: "the tenants A rule engine should run with one deployment as error"
@@ -253,11 +253,11 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         when: "a new tenant rule definition is added to Tenant A"
         ruleset = new TenantRuleset(
-                "Looping error", GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text,
-                keycloakDemoSetup.tenantA.realm,
-                false,
-                true
-        )
+            keycloakDemoSetup.tenantA.realm,
+            "Looping error",
+            GROOVY,
+            getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text)
+            .addMeta(Ruleset.META_KEY_CONTINUE_ON_ERROR, Values.create(true))
         ruleset = rulesetStorageService.merge(ruleset)
 
         then: "the tenants A rule engine should have an error"
@@ -266,7 +266,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             assert tenantAEngine != null
             assert !tenantAEngine.isRunning()
             assert tenantAEngine.deployments.size() == 4
-            assert tenantAEngine.deployments[ruleset.id].status == EXECUTION_ERROR
+            assert tenantAEngine.deployments[ruleset.id].status == LOOP_ERROR
             assert tenantAEngine.deployments[ruleset.id].error instanceof RulesLoopException
             assert tenantAEngine.deployments[ruleset.id].error.message == "Possible rules loop detected, exceeded max trigger count of " + RulesFacts.MAX_RULES_TRIGGERED_PER_EXECUTION +  " for rule: Condition loops"
             assert tenantAEngine.isError()

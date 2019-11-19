@@ -76,6 +76,10 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
     }
 
+    /**
+     * This stores all state for a given {@link RuleCondition} and calculates which {@link AssetState}s match and don't
+     * match the condition.
+     */
     static class RuleTriggerState {
 
         final TimerService timerService;
@@ -412,26 +416,41 @@ public class JsonRulesBuilder extends RulesBuilder {
     final protected TimerService timerService;
     final protected Assets assetsFacade;
     final protected Users usersFacade;
-    final protected NotificationsFacade notificationFacade;
+    final protected NotificationsFacade notificationsFacade;
     final protected ManagerExecutorService executorService;
     final protected BiConsumer<Runnable, Long> scheduledActionConsumer;
     final protected Map<String, RuleEvaluationResult> ruleEvaluationMap = new HashMap<>();
+    final protected JsonRule[] jsonRules;
 
-    public JsonRulesBuilder(TimerService timerService, AssetStorageService assetStorageService, ManagerExecutorService executorService, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationFacade, BiConsumer<Runnable, Long> scheduledActionConsumer) {
+    public JsonRulesBuilder(JsonRule[] jsonRules, TimerService timerService, AssetStorageService assetStorageService, ManagerExecutorService executorService, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationsFacade, BiConsumer<Runnable, Long> scheduledActionConsumer) {
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
         this.executorService = executorService;
         this.assetsFacade = assetsFacade;
         this.usersFacade = usersFacade;
-        this.notificationFacade = notificationFacade;
+        this.notificationsFacade = notificationsFacade;
         this.scheduledActionConsumer = scheduledActionConsumer;
+        this.jsonRules = jsonRules;
+
+        Arrays.stream(jsonRules).forEach(this::add);
+    }
+
+    public void stop(RulesFacts facts) {
+        Arrays.stream(jsonRules).forEach(jsonRule ->
+            executeRuleActions(jsonRule, jsonRule.onStop, "onStop", false, facts, null, assetsFacade, usersFacade, notificationsFacade, timerService, assetStorageService, this.scheduledActionConsumer));
+    }
+
+    public void start(RulesFacts facts) {
+        Arrays.stream(jsonRules).forEach(jsonRule ->
+            executeRuleActions(jsonRule, jsonRule.onStart, "onStart", false, facts, null, assetsFacade, usersFacade, notificationsFacade, timerService, assetStorageService, this.scheduledActionConsumer));
+        onAssetStatesChanged(facts);
     }
 
     public void onAssetStatesChanged(RulesFacts facts) {
         ruleEvaluationMap.values().forEach(triggerStateMap -> triggerStateMap.conditionStateMap.values().forEach(ruleConditionState -> ruleConditionState.updateUnfilteredAssetStates(facts)));
     }
 
-    public JsonRulesBuilder add(JsonRule rule) {
+    protected JsonRulesBuilder add(JsonRule rule) {
 
         if (ruleEvaluationMap.containsKey(rule.name)) {
             throw new IllegalArgumentException("Rules must have a unique name within a ruleset, rule name '" + rule.name + "' already used");
@@ -469,10 +488,10 @@ public class JsonRulesBuilder extends RulesBuilder {
         return this;
     }
 
-    protected void addRuleTriggerStates(LogicGroup<RuleCondition> ruleConditionCondition, boolean trackUnmatched, int index, Map<String, RuleTriggerState> triggerStateMap, RuleConditionReset defaultReset) {
-        if (ruleConditionCondition != null) {
-            if (ruleConditionCondition.getItems().size() > 0) {
-                for (RuleCondition ruleCondition : ruleConditionCondition.getItems()) {
+    protected void addRuleTriggerStates(LogicGroup<RuleCondition> ruleConditionGroup, boolean trackUnmatched, int index, Map<String, RuleTriggerState> triggerStateMap, RuleConditionReset defaultReset) {
+        if (ruleConditionGroup != null) {
+            if (ruleConditionGroup.getItems().size() > 0) {
+                for (RuleCondition ruleCondition : ruleConditionGroup.getItems()) {
                     if (TextUtil.isNullOrEmpty(ruleCondition.tag)) {
                         ruleCondition.tag = Integer.toString(index);
                     }
@@ -483,8 +502,8 @@ public class JsonRulesBuilder extends RulesBuilder {
                     index++;
                 }
             }
-            if (ruleConditionCondition.groups != null && ruleConditionCondition.groups.size() > 0) {
-                for (LogicGroup<RuleCondition> childRuleTriggerCondition : ruleConditionCondition.groups) {
+            if (ruleConditionGroup.groups != null && ruleConditionGroup.groups.size() > 0) {
+                for (LogicGroup<RuleCondition> childRuleTriggerCondition : ruleConditionGroup.groups) {
                     addRuleTriggerStates(childRuleTriggerCondition, trackUnmatched, index, triggerStateMap, defaultReset);
                 }
             }
@@ -520,12 +539,12 @@ public class JsonRulesBuilder extends RulesBuilder {
             try {
                 log(Level.FINER, "Triggered rule so executing 'then' actions for rule: " + rule.name);
                 if (ruleEvaluationResult.thenMatched) {
-                    executeRuleActions(rule, rule.then, "then", false, facts, ruleEvaluationResult.conditionStateMap, assetsFacade, usersFacade, notificationFacade, timerService, assetStorageService, scheduledActionConsumer);
+                    executeRuleActions(rule, rule.then, "then", false, facts, ruleEvaluationResult.conditionStateMap, assetsFacade, usersFacade, notificationsFacade, timerService, assetStorageService, scheduledActionConsumer);
                 }
 
                 if (rule.otherwise != null && ruleEvaluationResult.otherwiseMatched) {
                     log(Level.FINER, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleEvaluationResult.conditionStateMap, assetsFacade, usersFacade, notificationFacade, timerService, assetStorageService, scheduledActionConsumer);
+                    executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleEvaluationResult.conditionStateMap, assetsFacade, usersFacade, notificationsFacade, timerService, assetStorageService, scheduledActionConsumer);
                 }
             } catch (Exception e) {
                 log(Level.SEVERE, "Exception thrown during rule RHS execution", e);

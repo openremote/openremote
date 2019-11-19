@@ -463,7 +463,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             } catch (Throwable t) {
                 throw new AssetProcessingException(
                     PROCESSOR_FAILURE,
-                    "processor '" + processor + "' threw exception: " + t.toString()
+                    "processor '" + processor + "' threw an exception",
+                    t
                 );
             }
             if (complete) {
@@ -504,7 +505,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             // TODO Better exception handling - dead letter queue?
             if (exception instanceof AssetProcessingException) {
                 AssetProcessingException processingException = (AssetProcessingException) exception;
-                error.append(" - ").append(processingException.getReasonPhrase());
+                error.append(" - ").append(processingException.getMessage());
                 error.append(": ").append(event.toString());
                 logger.warning(error.toString());
             } else {

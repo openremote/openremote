@@ -8,12 +8,15 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
+import org.openremote.manager.rules.RulesetDeployment
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.calendar.CalendarEvent
+import org.openremote.model.calendar.RecurrenceRule
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
@@ -22,14 +25,17 @@ import org.openremote.model.notification.AbstractNotificationMessage
 import org.openremote.model.notification.Notification
 import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.rules.Ruleset
+import org.openremote.model.rules.RulesetStatus
 import org.openremote.model.rules.TenantRuleset
 import org.openremote.model.value.ObjectValue
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static java.util.concurrent.TimeUnit.HOURS
-import static java.util.concurrent.TimeUnit.MINUTES
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
+import static java.util.concurrent.TimeUnit.*
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_CUSTOMER_A
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.attribute.AttributeType.LOCATION
@@ -77,11 +83,10 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "some rules"
         Ruleset ruleset = new TenantRuleset(
-                "Demo Apartment - All Lights Off", Ruleset.Lang.JSON, getClass().getResource("/org/openremote/test/rules/BasicJsonRules.json").text,
-                keycloakDemoSetup.tenantA.realm,
-                false,
-                false
-        )
+            keycloakDemoSetup.tenantA.realm,
+            "Demo Apartment - All Lights Off",
+            Ruleset.Lang.JSON,
+            getClass().getResource("/org/openremote/test/rules/BasicJsonRules.json").text)
         ruleset = rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running with asset states inserted"
@@ -224,7 +229,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the console sends a location update with a new location but still outside the geofence"
-        def attributeEvent = new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(10d, 10d).toValue(), timerService.getCurrentTimeMillis())
+        def timestamp = assetStorageService.find(consoleRegistration.id, true).getAttribute(LOCATION).flatMap{it.getValueTimestamp()}.orElse(timerService.getCurrentTimeMillis())
+        def attributeEvent = new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(10d, 10d).toValue(), timestamp)
         assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
 
         then: "another notification should have been sent to the console (because the reset condition includes reset on valueChanges)"
@@ -236,7 +242,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         when: "when time advances 5 hours"
         advancePseudoClock(5, HOURS, container)
 
-        and: "the same AttributeEvent is send"
+        and: "the same AttributeEvent is sent"
         assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
 
         then: "another notification should have been sent to the console (because the reset condition includes reset on timer)"
@@ -245,7 +251,139 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert targetIds[4] == consoleRegistration.id
         }
 
+        when: "the Rules PAUSE_SCHEDULER is overridden to facilitate testing"
+        RulesEngine engine
+        RulesetDeployment deployment
+        def originalPause = RulesEngine.PAUSE_SCHEDULER
+        RulesEngine.PAUSE_SCHEDULER = {e, d ->
+            engine = e
+            deployment = d
+            long delay = d.getValidTo() - timerService.getCurrentTimeMillis()
+            // Don't actually schedule just simulate time passing and let test decide when to move on
+            advancePseudoClock(delay, MILLISECONDS, container)
+
+        }
+        def originalUnpause = RulesEngine.UNPAUSE_SCHEDULER
+        RulesEngine.UNPAUSE_SCHEDULER = {e, d ->
+            engine = e
+            deployment = d
+            long delay = d.getValidFrom() - timerService.getCurrentTimeMillis()
+            // Don't actually schedule just simulate time passing and let test decide when to move on
+            advancePseudoClock(delay, MILLISECONDS, container)
+        }
+
+        and: "a validity period is added to the ruleset (fictional times to ensure firing in sensible time within test)"
+        def version = ruleset.version
+        def validityStart = Instant.ofEpochMilli(getClockTimeOf(container)).plus(2000, ChronoUnit.MILLIS)
+        def validityEnd = Instant.ofEpochMilli(getClockTimeOf(container)).plus(4000, ChronoUnit.MILLIS)
+        def calendarEvent = new CalendarEvent(
+            Date.from(validityStart),
+            Date.from(validityEnd),
+            new RecurrenceRule(RecurrenceRule.Frequency.DAILY, 2, 3, null))
+        ruleset = rulesetStorageService.merge(ruleset.addMeta(Ruleset.META_KEY_VALIDITY,calendarEvent.toValue()))
+
+        then: "the ruleset should be redeployed and paused until 1st occurrence"
+        conditions.eventually {
+            assert tenantAEngine.deployments.find{it.key == ruleset.id}.value.version == version+1
+            assert tenantAEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.PAUSED
+        }
+
+        when: "the same AttributeEvent is sent"
+        timestamp = attributeEvent.getTimestamp()+1
+        attributeEvent.setTimestamp(timestamp)
+        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+
+        then: "the event should have been committed to the DB"
+        conditions.eventually {
+            def console = assetStorageService.find(consoleRegistration.id, true)
+            assert console.getAttribute(LOCATION).flatMap{it.getValueTimestamp()}.orElse(0) == timestamp
+        }
+
+        and: "no notification should have been sent as outside the validity period"
+        assert notificationMessages.size() == 5
+
+        when: "the pause elapses"
+        engine.unPauseRuleset(deployment)
+
+        then: "eventually the ruleset should be unpaused (1st occurrence)"
+        conditions.eventually {
+            assert tenantAEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+        }
+
+        when: "the same AttributeEvent is sent"
+        timestamp = attributeEvent.getTimestamp()+1
+        attributeEvent.setTimestamp(timestamp)
+        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+
+        then: "the event should have been committed to the DB"
+        conditions.eventually {
+            def console = assetStorageService.find(consoleRegistration.id, true)
+            assert console.getAttribute(LOCATION).flatMap{it.getValueTimestamp()}.orElse(0) == timestamp
+        }
+
+        and: "another notification should have been sent as inside the validity period"
+        conditions.eventually {
+            assert notificationMessages.size() == 6
+            assert targetIds[5] == consoleRegistration.id
+        }
+
+        when: "the un-pause elapses"
+        engine.pauseRuleset(deployment)
+
+        then: "the ruleset should become paused again (until next occurrence)"
+        conditions.eventually {
+            assert tenantAEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.PAUSED
+        }
+
+        when: "the same AttributeEvent is sent"
+        timestamp = attributeEvent.getTimestamp()+1
+        attributeEvent.setTimestamp(timestamp)
+        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+
+        then: "the event should have been committed to the DB"
+        conditions.eventually {
+            def console = assetStorageService.find(consoleRegistration.id, true)
+            assert console.getAttribute(LOCATION).flatMap{it.getValueTimestamp()}.orElse(0) == timestamp
+        }
+
+        and: "no notification should have been sent as outside the validity period"
+        assert notificationMessages.size() == 6
+
+        when: "the pause elapses"
+        engine.unPauseRuleset(deployment)
+
+        then: "eventually the ruleset should be unpaused (next occurrence)"
+        conditions.eventually {
+            assert tenantAEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+        }
+
+        when: "the un-pause elapses"
+        engine.pauseRuleset(deployment)
+
+        then: "the ruleset should become paused again (until last occurrence)"
+        conditions.eventually {
+            assert tenantAEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.PAUSED
+        }
+
+        when: "the pause elapses"
+        engine.unPauseRuleset(deployment)
+
+        then: "eventually the ruleset should be unpaused (last occurrence)"
+        conditions.eventually {
+            assert tenantAEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+        }
+
+        when: "the un-pause elapses"
+        engine.pauseRuleset(deployment)
+
+        then: "the ruleset should expire"
+        conditions.eventually {
+            assert tenantAEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.EXPIRED
+        }
+
         cleanup: "stop the container"
+        RulesEngine.PAUSE_SCHEDULER = originalPause
+        RulesEngine.UNPAUSE_SCHEDULER = originalUnpause
         stopContainer(container)
     }
 }

@@ -84,7 +84,7 @@ public class AssetRulesEditorActivity
 
     @Override
     protected AssetRuleset newRuleset() {
-        return new AssetRuleset(null, null, null, assetId, false, false);
+        return new AssetRuleset(assetId, null, null, null);
     }
 
     @Override

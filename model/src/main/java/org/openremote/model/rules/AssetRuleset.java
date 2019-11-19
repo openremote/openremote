@@ -19,12 +19,14 @@
  */
 package org.openremote.model.rules;
 
+import org.hibernate.annotations.Formula;
+import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Value;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
-import javax.persistence.Transient;
 import java.util.Date;
 
 /**
@@ -43,53 +45,131 @@ public class AssetRuleset extends Ruleset {
     @Column(name = "ACCESS_PUBLIC_READ", nullable = false)
     protected boolean accessPublicRead;
 
-    @Transient
+    @Formula("(select a.REALM from Asset a where a.ID = ASSET_ID)")
     protected String realm;
 
-    public AssetRuleset() {
-    }
+    public AssetRuleset() {}
 
-    public AssetRuleset(String name, Lang lang, String rules, String assetId, boolean accessPublicRead, boolean continueOnError) {
-        super(name, rules, lang, continueOnError);
+    public AssetRuleset(String assetId, String name, Lang language, String rules) {
+        super(name, language, rules);
         this.assetId = assetId;
-        this.accessPublicRead = accessPublicRead;
-    }
-
-    public AssetRuleset(String name, Lang lang, ObjectValue meta, String rules, String assetId, boolean accessPublicRead, boolean continueOnError) {
-        super(name, rules, lang, meta, continueOnError);
-        this.assetId = assetId;
-        this.accessPublicRead = accessPublicRead;
-    }
-
-    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, boolean enabled, String name, Lang lang, ObjectValue meta, String rules, String realm, String assetId, boolean accessPublicRead, boolean continueOnError) {
-        super(id, version, createdOn, lastModified, name, enabled, rules, lang, meta, continueOnError);
-        this.assetId = assetId;
-        this.realm = realm;
-        this.accessPublicRead = accessPublicRead;
     }
 
     public String getAssetId() {
         return assetId;
     }
 
-    public void setAssetId(String assetId) {
+    public AssetRuleset setAssetId(String assetId) {
         this.assetId = assetId;
+        return this;
     }
 
     public String getRealm() {
         return realm;
     }
 
-    public void setRealm(String realm) {
+    public AssetRuleset setRealm(String realm) {
         this.realm = realm;
+        return this;
     }
 
     public boolean isAccessPublicRead() {
         return accessPublicRead;
     }
 
-    public void setAccessPublicRead(boolean accessPublicRead) {
+    public AssetRuleset setAccessPublicRead(boolean accessPublicRead) {
         this.accessPublicRead = accessPublicRead;
+        return this;
+    }
+
+    @Override
+    public AssetRuleset setId(Long id) {
+        super.setId(id);
+        return this;
+    }
+
+    @Override
+    public AssetRuleset setVersion(long version) {
+        super.setVersion(version);
+        return this;
+    }
+
+    @Override
+    public AssetRuleset setCreatedOn(Date createdOn) {
+        super.setCreatedOn(createdOn);
+        return this;
+    }
+
+    @Override
+    public AssetRuleset setLastModified(Date lastModified) {
+        super.setLastModified(lastModified);
+        return this;
+    }
+
+    @Override
+    public AssetRuleset setName(String name) {
+        super.setName(name);
+        return this;
+    }
+
+    @Override
+    public AssetRuleset setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        return this;
+    }
+
+    @Override
+    public AssetRuleset setRules(String rules) {
+        super.setRules(rules);
+        return this;
+    }
+
+    @Override
+    public AssetRuleset setLang(Lang lang) {
+        super.setLang(lang);
+        return this;
+    }
+
+    @Override
+    public AssetRuleset setMeta(ObjectValue meta) {
+        super.setMeta(meta);
+        return this;
+    }
+
+    @Override
+    public AssetRuleset addMeta(String key, Value value) {
+        super.addMeta(key, value);
+        return this;
+    }
+
+    @Override
+    public AssetRuleset removeMeta(String key) {
+        super.removeMeta(key);
+        return this;
+    }
+
+    @Override
+    public AssetRuleset setStatus(RulesetStatus status) {
+        super.setStatus(status);
+        return this;
+    }
+
+    @Override
+    public AssetRuleset setError(String error) {
+        super.setError(error);
+        return this;
+    }
+
+    @Override
+    public AssetRuleset setContinueOnError(boolean continueOnError) {
+        super.setContinueOnError(continueOnError);
+        return this;
+    }
+
+    @Override
+    public AssetRuleset setValidity(CalendarEvent calendarEvent) {
+        super.setValidity(calendarEvent);
+        return this;
     }
 
     @Override
@@ -102,7 +182,7 @@ public class AssetRuleset extends Ruleset {
                 ", createdOn='" + createdOn + '\'' +
                 ", lastModified='" + lastModified + '\'' +
                 ", enabled='" + enabled + '\'' +
-                ", continueOnError='" + continueOnError + '\'' +
+                ", meta='" + meta + '\'' +
                 ", realm='" + realm + '\'' +
                 ", assetId='" + assetId + '\'' +
                 ", accessPublicRead='" + accessPublicRead + '\'' +

@@ -35,19 +35,19 @@ import org.openremote.container.Container;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
-import org.openremote.manager.rules.facade.AssetsFacade;
 import org.openremote.manager.rules.facade.NotificationsFacade;
+import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.RulesetStatus;
 import org.openremote.model.rules.Users;
 import org.openremote.model.rules.json.JsonRulesetDefinition;
+import org.openremote.model.util.Pair;
 
 import javax.script.*;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
@@ -55,7 +55,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
-import static org.openremote.manager.rules.JsonRulesBuilder.executeRuleActions;
+import static org.openremote.manager.rules.AssetQueryPredicate.getNextOrActiveFromTo;
 
 public class RulesetDeployment {
 
@@ -132,10 +132,11 @@ public class RulesetDeployment {
     final protected Users usersFacade;
     final protected NotificationsFacade notificationsFacade;
     final protected List<ScheduledFuture> scheduledRuleActions = new ArrayList<>();
-    protected RulesetStatus status;
+    protected RulesetStatus status = RulesetStatus.READY;
     protected Throwable error;
     protected JsonRulesBuilder jsonRulesBuilder;
-    protected JsonRulesetDefinition jsonRulesetDefinition;
+    protected CalendarEvent validity;
+    protected Pair<Long, Long> nextValidity;
 
     public RulesetDeployment(Ruleset ruleset, TimerService timerService, AssetStorageService assetStorageService, ManagerExecutorService executorService, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationsFacade) {
         this.ruleset = ruleset;
@@ -146,16 +147,11 @@ public class RulesetDeployment {
         this.usersFacade = usersFacade;
         this.notificationsFacade = notificationsFacade;
 
-        if (ruleset.getLang() == Ruleset.Lang.JSON) {
-            try {
-                String rulesStr = ruleset.getRules();
-                rulesStr = rulesStr.replace("%RULESET_ID%", Long.toString(ruleset.getId()));
-                rulesStr = rulesStr.replace("%RULESET_NAME%", ruleset.getName());
-                jsonRulesetDefinition = Container.JSON.readValue(rulesStr, JsonRulesetDefinition.class);
-                jsonRulesBuilder = new JsonRulesBuilder(timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationsFacade, this::scheduleRuleAction);
-            } catch (IOException e) {
-                RulesEngine.LOG.log(Level.SEVERE, "Error evaluating ruleset: " + ruleset, e);
-                setError(e);
+        if (ruleset.hasMeta(Ruleset.META_KEY_VALIDITY)) {
+            validity = ruleset.getValidity();
+
+            if (validity == null) {
+                RulesEngine.LOG.log(Level.SEVERE, "Ruleset has invalid validity value '" + ruleset.getMeta(Ruleset.META_KEY_VALIDITY) + "'");
             }
         }
     }
@@ -180,36 +176,52 @@ public class RulesetDeployment {
         return rules;
     }
 
-    /**
-     * Called when a ruleset is about to be started (allows for initialisation tasks)
-     */
-    public void onStart(RulesFacts facts) {
-        if (jsonRulesetDefinition != null && jsonRulesetDefinition.rules != null && jsonRulesetDefinition.rules.length > 0) {
-            Arrays.stream(jsonRulesetDefinition.rules).forEach(jsonRule ->
-                executeRuleActions(jsonRule, jsonRule.onStart, "onStart", false, facts, null, assetsFacade, usersFacade, notificationsFacade, timerService, assetStorageService, this::scheduleRuleAction));
+    public void updateValidity() {
+        if (validity != null && !hasExpired()) {
+            Pair<Long, Long> fromTo = getNextOrActiveFromTo(validity, new Date(timerService.getCurrentTimeMillis()));
+            if (fromTo == null) {
+                nextValidity = new Pair<>(Long.MIN_VALUE, Long.MIN_VALUE);
+            } else {
+                nextValidity = fromTo;
+            }
         }
     }
 
-    public boolean start() {
-        RulesEngine.LOG.info("Evaluating ruleset deployment: " + ruleset);
+    public long getValidFrom() {
+        return nextValidity != null ? nextValidity.key : Long.MIN_VALUE;
+    }
+
+    public long getValidTo() {
+        return nextValidity != null ? nextValidity.value : Long.MAX_VALUE;
+    }
+
+    public boolean hasExpired() {
+        return validity != null && nextValidity != null && nextValidity.value == Long.MIN_VALUE;
+    }
+
+    public boolean compile() {
+        RulesEngine.LOG.info("Compiling ruleset deployment: " + ruleset);
+        if (error != null) {
+            return false;
+        }
+
         switch (ruleset.getLang()) {
             case JAVASCRIPT:
-                return startRulesJavascript(ruleset, assetsFacade, usersFacade, notificationsFacade);
+                return compileRulesJavascript(ruleset, assetsFacade, usersFacade, notificationsFacade);
             case GROOVY:
-                return startRulesGroovy(ruleset, assetsFacade, usersFacade, notificationsFacade);
+                return compileRulesGroovy(ruleset, assetsFacade, usersFacade, notificationsFacade);
             case JSON:
-                return startRulesJson(ruleset);
+                return compileRulesJson(ruleset);
         }
         return false;
     }
 
     /**
-     * Called when a ruleset is about to be stopped (allows for cleanup tasks)
+     * Called when a ruleset is started (allows for initialisation tasks)
      */
-    public void onStop(RulesFacts facts) {
-        if (jsonRulesetDefinition != null && jsonRulesetDefinition.rules != null && jsonRulesetDefinition.rules.length > 0) {
-            Arrays.stream(jsonRulesetDefinition.rules).forEach(jsonRule ->
-                    executeRuleActions(jsonRule, jsonRule.onStop, "onStop", false, facts, null, assetsFacade, usersFacade, notificationsFacade, timerService, assetStorageService, this::scheduleRuleAction));
+    public void start(RulesFacts facts) {
+        if (jsonRulesBuilder != null) {
+            jsonRulesBuilder.start(facts);
         }
     }
 
@@ -217,12 +229,15 @@ public class RulesetDeployment {
      * Called when this deployment is stopped, could be the ruleset is being updated, removed or an error has occurred
      * during execution
      */
-    public void stop() {
-        withLock(toString() + "::stopRulesetDeployment", () ->
-                scheduledRuleActions.removeIf(scheduledFuture -> {
-                    scheduledFuture.cancel(true);
-                    return true;
-                }));
+    public void stop(RulesFacts facts) {
+        scheduledRuleActions.removeIf(scheduledFuture -> {
+            scheduledFuture.cancel(true);
+            return true;
+        });
+
+        if (jsonRulesBuilder != null) {
+            jsonRulesBuilder.stop(facts);
+        }
     }
 
     public void onAssetStatesChanged(RulesFacts facts) {
@@ -242,30 +257,35 @@ public class RulesetDeployment {
         });
     }
 
-    protected boolean startRulesJson(Ruleset ruleset) {
-
-        if (jsonRulesetDefinition == null || jsonRulesetDefinition.rules == null || jsonRulesetDefinition.rules.length == 0) {
-            RulesEngine.LOG.log(Level.WARNING, "No rules within ruleset so nothing to start: " + ruleset);
-            return false;
-        }
+    protected boolean compileRulesJson(Ruleset ruleset) {
 
         try {
-            Arrays.stream(jsonRulesetDefinition.rules).forEach(r -> jsonRulesBuilder.add(r));
+            String rulesStr = ruleset.getRules();
+            rulesStr = rulesStr.replace("%RULESET_ID%", Long.toString(ruleset.getId()));
+            rulesStr = rulesStr.replace("%RULESET_NAME%", ruleset.getName());
+
+            JsonRulesetDefinition jsonRulesetDefinition = Container.JSON.readValue(rulesStr, JsonRulesetDefinition.class);
+
+            if (jsonRulesetDefinition == null || jsonRulesetDefinition.rules == null || jsonRulesetDefinition.rules.length == 0) {
+                throw new IllegalArgumentException("No rules within ruleset so nothing to start: " + ruleset);
+            }
+
+            jsonRulesBuilder = new JsonRulesBuilder(jsonRulesetDefinition.rules, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationsFacade, this::scheduleRuleAction);
+
+            for (Rule rule : jsonRulesBuilder.build()) {
+                RulesEngine.LOG.fine("Registering JSON rule: " + rule.getName());
+                rules.register(rule);
+            }
+
+            return true;
         } catch (Exception e) {
-            RulesEngine.LOG.log(Level.SEVERE, "Exception occurred during ruleset deployment: " + ruleset);
+            setError(e);
             return false;
         }
 
-        for (Rule rule : jsonRulesBuilder.build()) {
-            RulesEngine.LOG.info("Registering JSON rule: " + rule.getName());
-            rules.register(rule);
-        }
-        RulesEngine.LOG.info("Evaluated ruleset deployment: " + ruleset);
-
-        return true;
     }
 
-    protected boolean startRulesJavascript(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade consolesFacade) {
+    protected boolean compileRulesJavascript(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade consolesFacade) {
         // TODO https://github.com/pfisterer/scripting-sandbox/blob/master/src/main/java/de/farberg/scripting/sandbox/ScriptingSandbox.java
         ScriptEngine scriptEngine = scriptEngineManager.getEngineByName("nashorn");
         ScriptContext newContext = new SimpleScriptContext();
@@ -327,13 +347,10 @@ public class RulesetDeployment {
         try {
             scriptEngine.eval(script, engineScope);
 
-            startRulesJavascript((ScriptObjectMirror) engineScope.get("rules"));
-
-            RulesEngine.LOG.info("Evaluated ruleset deployment: " + ruleset);
+            compileRulesJavascript((ScriptObjectMirror) engineScope.get("rules"));
             return true;
 
         } catch (Exception e) {
-            RulesEngine.LOG.log(Level.SEVERE, "Error evaluating ruleset: " + ruleset, e);
             setError(e);
             engineScope.clear();
             return false;
@@ -343,7 +360,7 @@ public class RulesetDeployment {
     /**
      * Marshal the JavaScript rules array into {@link Rule} instances.
      */
-    protected void startRulesJavascript(ScriptObjectMirror scriptRules) {
+    protected void compileRulesJavascript(ScriptObjectMirror scriptRules) {
         if (scriptRules == null || !scriptRules.isArray()) {
             throw new IllegalArgumentException("No 'rules' array defined in ruleset");
         }
@@ -401,7 +418,7 @@ public class RulesetDeployment {
                 throw new IllegalArgumentException("Defined 'then' is not a function in rule: " + name);
             }
 
-            RulesEngine.LOG.info("Registering rule: " + name);
+            RulesEngine.LOG.fine("Registering javascript rule: " + name);
 
             rules.register(
                     new RuleBuilder().name(name).description(description).priority(priority).when(when).then(then).build()
@@ -409,7 +426,7 @@ public class RulesetDeployment {
         }
     }
 
-    protected boolean startRulesGroovy(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationFacade) {
+    protected boolean compileRulesGroovy(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationFacade) {
         try {
             // TODO Implement sandbox
             // new DenyAll().register();
@@ -424,14 +441,13 @@ public class RulesetDeployment {
             script.setBinding(binding);
             script.run();
             for (Rule rule : rulesBuilder.build()) {
-                RulesEngine.LOG.info("Registering rule: " + rule.getName());
+                RulesEngine.LOG.fine("Registering groovy rule: " + rule.getName());
                 rules.register(rule);
             }
-            RulesEngine.LOG.info("Evaluated ruleset deployment: " + ruleset);
+
             return true;
 
         } catch (Exception e) {
-            RulesEngine.LOG.log(Level.SEVERE, "Error evaluating ruleset: " + ruleset, e);
             setError(e);
             return false;
         }
@@ -455,6 +471,14 @@ public class RulesetDeployment {
 
     public String getErrorMessage() {
         return getError() != null ? getError().getMessage() : null;
+    }
+
+    public boolean isError() {
+        return getStatus() == RulesetStatus.LOOP_ERROR  || ((getStatus() == RulesetStatus.EXECUTION_ERROR || getStatus() == RulesetStatus.COMPILATION_ERROR) && !isContinueOnError());
+    }
+
+    public boolean isContinueOnError() {
+        return ruleset.isContinueOnError();
     }
 
     @Override

@@ -80,11 +80,9 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Notify Alarm Trigger", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceNotifyAlarmTrigger.groovy").text,
-                managerDemoSetup.apartment1Id,
-                false,
-                false
-        )
+            managerDemoSetup.apartment1Id,
+            "Demo Apartment - Notify Alarm Trigger",
+            Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceNotifyAlarmTrigger.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"

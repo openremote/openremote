@@ -19,7 +19,9 @@
  */
 package org.openremote.model.rules;
 
+import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Value;
 
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -37,17 +39,99 @@ public class GlobalRuleset extends Ruleset {
     public GlobalRuleset() {
     }
 
-    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, boolean enabled, String name, Lang lang, ObjectValue meta, boolean continueOnError, String rules) {
-        super(id, version, createdOn, lastModified, name, enabled, rules, lang, meta, continueOnError);
+    public GlobalRuleset(String name, Lang language, String rules) {
+        super(name, language, rules);
     }
 
-    public GlobalRuleset(String name, Lang lang, String rules) {
-        super(name, rules, lang, false);
+    @Override
+    public GlobalRuleset setId(Long id) {
+        super.setId(id);
+        return this;
     }
 
-    public GlobalRuleset(String name, Lang lang, String rules, ObjectValue meta) {
-        super(name, rules, lang, meta, false);
+    @Override
+    public GlobalRuleset setVersion(long version) {
+        super.setVersion(version);
+        return this;
     }
+
+    @Override
+    public GlobalRuleset setCreatedOn(Date createdOn) {
+        super.setCreatedOn(createdOn);
+        return this;
+    }
+
+    @Override
+    public GlobalRuleset setLastModified(Date lastModified) {
+        super.setLastModified(lastModified);
+        return this;
+    }
+
+    @Override
+    public GlobalRuleset setName(String name) {
+        super.setName(name);
+        return this;
+    }
+
+    @Override
+    public GlobalRuleset setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        return this;
+    }
+
+    @Override
+    public GlobalRuleset setRules(String rules) {
+        super.setRules(rules);
+        return this;
+    }
+
+    @Override
+    public GlobalRuleset setLang(Lang lang) {
+        super.setLang(lang);
+        return this;
+    }
+
+    @Override
+    public GlobalRuleset setMeta(ObjectValue meta) {
+        super.setMeta(meta);
+        return this;
+    }
+
+    @Override
+    public GlobalRuleset addMeta(String key, Value value) {
+        super.addMeta(key, value);
+        return this;
+    }
+
+    @Override
+    public GlobalRuleset removeMeta(String key) {
+        super.removeMeta(key);
+        return this;
+    }
+
+    @Override
+    public GlobalRuleset setStatus(RulesetStatus status) {
+        super.setStatus(status);
+        return this;
+    }
+
+    @Override
+    public GlobalRuleset setError(String error) {
+        super.setError(error);
+        return this;
+    }
+
+    @Override
+    public GlobalRuleset setContinueOnError(boolean continueOnError) {
+        super.setContinueOnError(continueOnError);
+        return this;
+    }
+
+    @Override
+    public GlobalRuleset setValidity(CalendarEvent calendarEvent) {
+        super.setValidity(calendarEvent);
+        return this;
+    }    
 
     @Override
     public String toString() {
@@ -59,8 +143,7 @@ public class GlobalRuleset extends Ruleset {
             ", createdOn='" + createdOn + '\'' +
             ", lastModified='" + lastModified + '\'' +
             ", enabled='" + enabled + '\'' +
-            ", continueOnError='" + continueOnError + '\'' +
+            ", meta='" + meta + '\'' +
             '}';
     }
-
 }

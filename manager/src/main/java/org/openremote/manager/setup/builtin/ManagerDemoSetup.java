@@ -874,10 +874,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         camera3Asset = assetStorageService.merge(camera3Asset);
 
         AssetRuleset camera3Rules = new AssetRuleset(
-            "Camera3_Rules",
-                GROOVY, IOUtils.toString(getClass().getResource("/demo/rules/DemoSmartCityCamera.groovy"), "UTF-8"), camera3Asset.getId(),
-                false,
-                false
+            camera3Asset.getId(), "Camera3_Rules", GROOVY, IOUtils.toString(getClass().getResource("/demo/rules/DemoSmartCityCamera.groovy"), "UTF-8")
         );
         camera3Rules = rulesetStorageService.merge(camera3Rules);
 
