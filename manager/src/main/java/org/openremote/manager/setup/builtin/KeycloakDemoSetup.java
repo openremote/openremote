@@ -76,7 +76,7 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         tenantBuilding.setEnabled(true);
         keycloakProvider.createTenant(new ClientRequestInfo(null, accessToken), tenantBuilding, emailConfig);
         tenantBuilding = keycloakProvider.getTenant(tenantBuilding.getRealm());
-        Updated the demo setup with new realms and with the new npm ui packages
+
         tenantCity = new Tenant();
         tenantCity.setRealm("smartcity");
         tenantCity.setDisplayName("Smart City");
