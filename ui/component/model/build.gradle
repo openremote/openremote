@@ -72,6 +72,9 @@ generateTypeScript {
     ]
 }
 
+build.dependsOn generateTypeScript, npmBuild
+npmBuild.dependsOn generateTypeScript
+
 clean {
     doLast {
         delete "dist"

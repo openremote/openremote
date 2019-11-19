@@ -1,9 +1,10 @@
-import {customElement, html, LitElement, property} from "lit-element";
+import {css, customElement, html, LitElement, property, PropertyValues} from "lit-element";
 import {
     AssetDescriptor,
     AssetQuery,
     AssetQueryMatch,
     AssetQueryOperator as AQO,
+    AssetQueryOrderBy$Property,
     AttributeDescriptor,
     AttributePredicate,
     AttributeValueDescriptor,
@@ -11,35 +12,74 @@ import {
     LogicGroup,
     LogicGroupOperator,
     ValuePredicateUnion,
-    ValueType
+    ValueType,
+    Asset,
+    MetaItemType
 } from "@openremote/model";
 import {
     AssetQueryOperator,
     AssetTypeAttributeName,
     getAssetTypeFromQuery,
+    getAssetIdsFromQuery,
     getDescriptorValueType,
-    OrRuleChangedEvent,
-    RulesConfig
+    OrRulesEditorRuleChangedEvent,
+    RulesConfig, getAttributeNames
 } from "./index";
 import {OrSelectChangedEvent} from "@openremote/or-select";
 import "@openremote/or-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {getAttributeValueTemplate} from "@openremote/or-attribute-input";
-import {Util} from "@openremote/core";
-import {assetQueryEditorStyle} from "./style";
+import manager, {Util, AssetModelUtil} from "@openremote/core";
 import i18next from "i18next";
+import {buttonStyle} from "./style";
+
+// language=CSS
+const style = css`
+    
+    ${buttonStyle}
+    
+    :host {
+        display: flex;
+    }
+    
+    :host > * {
+        margin-right: 20px;
+    }
+    
+    .attribute-group {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: row;
+    }
+    
+    .attribute, .attribute-editor {
+        display: flex;
+        flex-grow: 1;
+    }
+    
+    .attribute > * {
+        flex-grow: 0;
+    }
+    
+    .attribute-editor > * {
+        margin: 0 5px;    
+    }
+`;
 
 @customElement("or-rule-asset-query")
 class OrRuleAssetQuery extends LitElement {
 
-    @property({type: Object})
-    public query?: AssetQuery;
+    @property({type: Object, attribute: false})
+    public query!: AssetQuery;
 
     public readonly?: boolean;
 
     public config?: RulesConfig;
 
     public assetDescriptors?: AssetDescriptor[];
+
+    @property({type: Array, attribute: false})
+    protected _assets?: Asset[];
 
     // Value predicates for specific attribute value descriptors
     protected _queryOperatorsMap: Map<AssetTypeAttributeName | AttributeDescriptor | AttributeValueDescriptor | ValueType, AssetQueryOperator[]> = new Map<AssetTypeAttributeName | AttributeDescriptor | AttributeValueDescriptor | ValueType, AssetQueryOperator[]>([
@@ -51,11 +91,22 @@ class OrRuleAssetQuery extends LitElement {
         [ValueType.OBJECT, [AssetQueryOperator.CONTAINS_KEY, AssetQueryOperator.NOT_CONTAINS_KEY, AssetQueryOperator.VALUE_EMPTY, AssetQueryOperator.VALUE_NOT_EMPTY]]
     ]);
 
-    protected attributePredicateEditorTemplate(assetDescriptor: AssetDescriptor, attributePredicate: AttributePredicate) {
+    protected attributePredicateEditorTemplate(assetDescriptor: AssetDescriptor, asset: Asset | undefined, attributePredicate: AttributePredicate) {
 
         const operator = this.getOperator(attributePredicate);
         const attributeName = this.getAttributeName(attributePredicate);
-        const attributes = this.getAttributes(assetDescriptor).map((a) => [a, i18next.t(a)]);
+        let attributes: [string, string][];
+        if (asset) {
+            attributes = Util.getAssetAttributes(asset).filter((attr) => !Util.hasMetaItem(attr, MetaItemType.READ_ONLY.urn!))
+                .map((attr) => {
+                    const attrDescriptor = AssetModelUtil.getAssetAttributeDescriptor(assetDescriptor, attr.name);
+                    return [attr.name!, Util.getAttributeLabel(attr, attrDescriptor)];
+                });
+        } else {
+            attributes = !assetDescriptor || !assetDescriptor.attributeDescriptors ? []
+                : assetDescriptor.attributeDescriptors.filter((ad) => !AssetModelUtil.hasMetaItem(ad, MetaItemType.READ_ONLY.urn!))
+                    .map((ad) => [ad.attributeName!, Util.getAttributeLabel(undefined, ad)]);
+        }
 
         return html`
             <div class="attribute-editor">
@@ -83,22 +134,22 @@ class OrRuleAssetQuery extends LitElement {
 
         switch (valuePredicate.predicateType) {
             case "string":
-                return getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined)(value);
+                return getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, "")(value);
             case "boolean":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "datetime":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "number":
                 if (valuePredicate.operator === AQO.BETWEEN) {
-                    let inputTemplate1 = getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined);
-                    let inputTemplate2 = getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "rangeValue", v), this.config ? this.config.inputProvider : undefined);
+                    let inputTemplate1 = getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, "");
+                    let inputTemplate2 = getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "rangeValue", v), this.config ? this.config.inputProvider : undefined, undefined, "");
                     return html`
                         ${inputTemplate1(value)}
                         <span style="display: inline-flex; align-items: center;">&</span>
                         ${inputTemplate2(valuePredicate.rangeValue)}
                     `;
                 }
-                return getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined)(value);
+                return getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, "")(value);
             case "string-array":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "radial":
@@ -114,31 +165,42 @@ class OrRuleAssetQuery extends LitElement {
             case "array":
                 // TODO: Update once we can determine inner type of array
                 // Assume string array
-                return getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, InputType.TEXT)(value);
+                return getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, InputType.TEXT, undefined)(value);
             default:
                 return html `<span>NOT IMPLEMENTED</span>`;
         }
     }
 
     static get styles() {
-        return assetQueryEditorStyle;
+        return style;
+    }
+
+    protected shouldUpdate(_changedProperties: PropertyValues): boolean {
+
+        if (_changedProperties.has("query")) {
+            this._assets = undefined;
+        }
+
+        return super.shouldUpdate(_changedProperties);
     }
 
     protected render() {
-        if (!this.query) {
-            return;
-        }
 
         const assetType = getAssetTypeFromQuery(this.query);
 
         if (!assetType) {
-            return;
+            return html``;
         }
 
         const assetDescriptor = this.assetDescriptors ? this.assetDescriptors.find((ad) => ad.type === assetType) : undefined;
 
         if (!assetDescriptor) {
-            return;
+            return html``;
+        }
+
+        if (!this._assets) {
+            this.loadAssets(assetType);
+            return html``;
         }
 
         if (!this.query.attributes) {
@@ -149,45 +211,41 @@ class OrRuleAssetQuery extends LitElement {
             this.query.attributes.items = [{}];
         }
 
-        const showAddAttribute = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddAttribute !== true);
         const showRemoveAttribute = !this.readonly && this.query.attributes && this.query.attributes.items && this.query.attributes.items.length > 1;
+
+        // TODO: Add multiselect support
+        const ids = getAssetIdsFromQuery(this.query);
+        const idValue = ids && ids.length > 0 ? ids[0] : "*";
+        const idOptions: [string, string] [] = [
+            ["*", i18next.t("anyOfThisType")]
+        ];
+
+        idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
 
         return html`
             <div class="attribute-group">
-                <div class="attribute-items">
-                    ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate) => {
-                        
-                        return html`
-                           <div class="attribute-item">
-                                <button @click="${() => this.toggleAttributeGroup(this.query!.attributes!)}" class="button-clear operator"><span>${i18next.t(!this.query!.attributes!.operator || this.query!.attributes!.operator === LogicGroupOperator.AND ? "and" : "or")}</span></button>
-                                <div class="attribute">
-                                    ${this.attributePredicateEditorTemplate(assetDescriptor, attributePredicate)}
-                                    ${showRemoveAttribute ? html`
-                                        <button class="button-clear" @click="${() => this.removeAttributePredicate(this.query!.attributes!, attributePredicate)}"><or-icon icon="close-circle"></or-icon></input>
-                                    ` : ``}
-                                </div>
-                            </div>
-                        `;
-                    }) : ``}
-                </div>
-                
-                ${showAddAttribute ? html`
-                    <div class="add-buttons-container">
-                        ${showAddAttribute ? html`<button class="button-clear add-button" @click="${() => this.addAttributePredicate(this.query!.attributes!)}"><or-icon icon="plus-circle"></or-icon><or-translate value="rulesEditorAddCondition"></or-translate></button>` : ``}
-                    </div>
-                ` : ``}
+            
+                <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" ?readonly="${this.readonly}" .options="${idOptions}" .value="${idValue}"></or-input>
+            
+                ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate) => {
+                    
+                    return html`
+                        <div class="attribute">
+                            ${this.attributePredicateEditorTemplate(assetDescriptor, idValue !== "*" ? this._assets!.find((asset) => asset.id === idValue) : undefined, attributePredicate)}
+                            ${showRemoveAttribute ? html`
+                                <button class="button-clear" @click="${() => this.removeAttributePredicate(this.query!.attributes!, attributePredicate)}"><or-icon icon="close-circle"></or-icon></input>
+                            ` : ``}
+                        </div>
+                    `;
+                }) : ``}
             </div>
         `;
     }
 
-    protected getAttributes(descriptor?: AssetDescriptor) {
-        let attributes: string[] = [];
-
-        if (descriptor && descriptor.attributeDescriptors) {
-            attributes = descriptor.attributeDescriptors.map((ad) => ad.attributeName!);
-        }
-
-        return attributes;
+    protected set _assetId(assetId: string | undefined) {
+        !assetId || assetId === "*" ? this.query.ids = undefined : this.query.ids! = [assetId];
+        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+        this.requestUpdate();
     }
 
     protected getAttributeName(attributePredicate: AttributePredicate): string | undefined {
@@ -205,7 +263,7 @@ class OrRuleAssetQuery extends LitElement {
         attributePredicate!.name.match = AssetQueryMatch.EXACT;
         attributePredicate!.name.value = attributeName;
         attributePredicate!.value = undefined;
-        this.dispatchEvent(new OrRuleChangedEvent());
+        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
         this.requestUpdate();
     }
 
@@ -349,7 +407,7 @@ class OrRuleAssetQuery extends LitElement {
 
         if (!operator) {
             attributePredicate.value = undefined;
-            this.dispatchEvent(new OrRuleChangedEvent());
+            this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
             this.requestUpdate();
             return;
         }
@@ -361,7 +419,7 @@ class OrRuleAssetQuery extends LitElement {
 
         if (!valueType || !value) {
             attributePredicate.value = undefined;
-            this.dispatchEvent(new OrRuleChangedEvent());
+            this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
             this.requestUpdate();
             return;
         }
@@ -544,7 +602,7 @@ class OrRuleAssetQuery extends LitElement {
         }
 
         attributePredicate.value = predicate;
-        this.dispatchEvent(new OrRuleChangedEvent());
+        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
         this.requestUpdate();
     }
 
@@ -562,7 +620,7 @@ class OrRuleAssetQuery extends LitElement {
         }
 
         (valuePredicate as any)[propertyName] = value;
-        this.dispatchEvent(new OrRuleChangedEvent());
+        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
         this.requestUpdate();
     }
 
@@ -571,7 +629,7 @@ class OrRuleAssetQuery extends LitElement {
         if (index >= 0) {
             group.items!.splice(index, 1);
         }
-        this.dispatchEvent(new OrRuleChangedEvent());
+        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
         this.requestUpdate();
     }
 
@@ -580,7 +638,7 @@ class OrRuleAssetQuery extends LitElement {
             group.items = [];
         }
         group.items.push({});
-        this.dispatchEvent(new OrRuleChangedEvent());
+        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
         this.requestUpdate();
     }
 
@@ -590,7 +648,29 @@ class OrRuleAssetQuery extends LitElement {
         } else {
             group.operator = LogicGroupOperator.OR;
         }
-        this.dispatchEvent(new OrRuleChangedEvent());
+        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
         this.requestUpdate();
+    }
+
+    protected loadAssets(type: string) {
+        manager.rest.api.AssetResource.queryAssets({
+            types: [
+                {
+                    predicateType: "string",
+                    value: type
+                }
+            ],
+            select: {
+                excludeAttributeMeta: true,
+                excludeAttributeTimestamp: true,
+                excludeAttributeValue: true,
+                excludeParentInfo: true,
+                excludeRealm: true,
+                excludePath: true
+            },
+            orderBy: {
+                property: AssetQueryOrderBy$Property.NAME
+            }
+        }).then((response) => this._assets = response.data);
     }
 }

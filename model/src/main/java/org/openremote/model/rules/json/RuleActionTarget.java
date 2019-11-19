@@ -32,6 +32,7 @@ import org.openremote.model.query.UserQuery;
  */
 public class RuleActionTarget {
     public String ruleConditionTag;
+    public AssetQuery matchedAssets;
     public AssetQuery assets;
     public UserQuery users;
 }

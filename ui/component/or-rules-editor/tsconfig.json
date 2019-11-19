@@ -13,6 +13,10 @@
     { "path": "../or-translate" },
     { "path": "../or-input" },
     { "path": "../or-attribute-input" },
+    { "path": "../or-icon" },
+    { "path": "../or-panel" },
+    { "path": "../or-asset-viewer" },
+    { "path": "../or-mwc-components" },
     { "path": "../rest" }
   ]
 }

@@ -1,4 +1,5 @@
-import {customElement, html, LitElement, property, TemplateResult} from "lit-element";
+import {customElement, html, css, unsafeCSS, LitElement, property, TemplateResult, query} from "lit-element";
+import {DefaultColor1, DefaultColor2, DefaultColor5, DefaultColor3, DefaultBoxShadow, DefaultColor4, DefaultColor6, DefaultDisabledOpacity} from "@openremote/core";
 import i18next from "i18next";
 import "@openremote/or-select";
 import "@openremote/or-icon";
@@ -28,10 +29,12 @@ import "@openremote/or-translate";
 import {translate} from "@openremote/or-translate";
 import "./or-rule-list";
 import "./or-rule-when";
-import "./or-rule-actions";
+import "./or-rule-then-otherwise";
 import "./or-rule-header";
-import "./or-rule-section";
-import {rulesEditorStyle} from "./style";
+import "@openremote/or-panel";
+import {OrRulesList} from "./or-rule-list";
+import {Menu, OrMwcMenu, OrMwcMenuChangedEvent} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {InputType, OrInput} from "@openremote/or-input";
 
 export const enum ConditionType {
     ASSET_QUERY = "assetQuery",
@@ -42,15 +45,7 @@ export const enum ConditionType {
 export const enum ActionType {
     WAIT = "wait",
     NOTIFICATION = "notification",
-    WRITE_ATTRIBUTE = "write-attribute",
-    UPDATE_ATTRIBUTE = "update-attribute"
-}
-
-export const enum ActionTargetType {
-    TRIGGER_ASSETS = "triggerAssets",
-    TAGGED_ASSETS = "taggedAssets",
-    USERS = "users",
-    OTHER_ASSETS = "otherAssets"
+    ATTRIBUTE = "attribute"
 }
 
 export enum AssetQueryOperator {
@@ -98,7 +93,6 @@ export interface RulesConfig {
         headerReadonly?: boolean;
         allowedConditionTypes?: ConditionType[];
         allowedActionTypes?: ActionType[];
-        allowedActionTargets?: ActionTargetType[];
         allowedAssetQueryOperators?: Map<AssetTypeAttributeName | AttributeDescriptor | AttributeValueDescriptor | ValueType, AssetQueryOperator[]>;
         hideActionTypeOptions?: boolean;
         hideActionTargetOptions?: boolean;
@@ -108,9 +102,8 @@ export interface RulesConfig {
         hideWhenAddCondition?: boolean;
         hideWhenAddAttribute?: boolean;
         hideWhenAddGroup?: boolean;
-        hideWhenGroupOutline?: boolean;
     };
-    inputProvider?: (assetType: string | undefined, attribute: Attribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean, disabled: boolean) => ((value: any) => TemplateResult) | undefined;
+    inputProvider?: (assetType: string | undefined, attribute: Attribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean | undefined, disabled: boolean | undefined) => ((value: any) => TemplateResult) | undefined;
     descriptors?: {
         all?: RulesDescriptorSection;
         when?: RulesDescriptorSection;
@@ -123,6 +116,7 @@ export interface RulesConfig {
         whenCondition?: RuleCondition;
         whenAssetQuery?: AssetQuery;
         then?: RuleActionUnion;
+        otherwise?: RuleActionUnion;
     };
 }
 
@@ -156,6 +150,16 @@ export interface RulesConfigAttributeValue {
     valueType?: ValueType;
 }
 
+export interface RulesetNode {
+    ruleset: TenantRuleset;
+    selected: boolean;
+}
+
+export interface RequestEventDetail<T> {
+    allow: boolean,
+    detail: T
+}
+
 function getAssetDescriptorFromSection(assetTpe: string, config: RulesConfig | undefined, useActionConfig: boolean) {
     if (!config || !config.descriptors) {
         return;
@@ -182,6 +186,20 @@ export function getDescriptorValueType(descriptor?: AttributeDescriptor) {
 
 export function getAssetTypeFromQuery(query?: AssetQuery) {
     return query && query.types && query.types.length > 0 && query.types[0] ? query.types[0].value : undefined;
+}
+
+export function getAssetIdsFromQuery(query?: AssetQuery) {
+    return query && query.ids ? [...query.ids] : undefined;
+}
+
+export function getAttributeNames(descriptor?: AssetDescriptor) {
+    let attributes: string[] = [];
+
+    if (descriptor && descriptor.attributeDescriptors) {
+        attributes = descriptor.attributeDescriptors.map((ad) => ad.attributeName!);
+    }
+
+    return attributes;
 }
 
 export function getAssetDescriptors(config: RulesConfig | undefined, useActionConfig: boolean) {
@@ -298,6 +316,24 @@ export function getAssetDescriptors(config: RulesConfig | undefined, useActionCo
     });
 }
 
+export function getButtonWithMenuTemplate(menu: Menu, icon: string, value: string | undefined, valueChangedCallback: (v: string) => void): TemplateResult {
+
+    const openMenu = (evt: Event) => {
+        if (!menu) {
+            return;
+        }
+
+        ((evt.currentTarget as OrInput).parentElement!.lastElementChild as OrMwcMenu).open();
+    };
+
+    return html`
+        <div style="display: table-cell; vertical-align: middle;">
+            <or-input type="${InputType.BUTTON}" .icon="${icon}" @click="${openMenu}"></or-input>
+            ${menu ? html`<or-mwc-menu @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => valueChangedCallback(evt.detail)}" .value="${value}" .menu="${menu}" id="menu"></or-mwc-menu>` : ``}
+        </div>
+    `;
+}
+
 function addOrReplaceMetaItemDescriptor(metaItemDescriptors: MetaItemDescriptor[], metaItemDescriptor: MetaItemDescriptor) {
     const index = metaItemDescriptors.findIndex((mid) => mid.urn === metaItemDescriptor.urn);
     if (index >= 0) {
@@ -307,23 +343,219 @@ function addOrReplaceMetaItemDescriptor(metaItemDescriptors: MetaItemDescriptor[
     metaItemDescriptors.push(metaItemDescriptor);
 }
 
-export class OrRuleChangedEvent extends CustomEvent<void> {
+export class OrRulesEditorRuleChangedEvent extends CustomEvent<void> {
 
-    public static readonly NAME = "or-rule-changed";
+    public static readonly NAME = "or-rules-editor-rule-changed";
 
     constructor() {
-        super(OrRuleChangedEvent.NAME, {
+        super(OrRulesEditorRuleChangedEvent.NAME, {
             bubbles: true,
             composed: true
         });
     }
 }
 
-declare global {
-    export interface HTMLElementEventMap {
-        [OrRuleChangedEvent.NAME]: OrRuleChangedEvent;
+export class OrRulesEditorRuleInvalidEvent extends CustomEvent<void> {
+
+    public static readonly NAME = "or-rules-editor-rule-invalid";
+
+    constructor() {
+        super(OrRulesEditorRuleInvalidEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
     }
 }
+
+export class OrRulesEditorRuleUnsupportedEvent extends CustomEvent<void> {
+
+    public static readonly NAME = "or-rules-editor-rule-unsupported";
+
+    constructor() {
+        super(OrRulesEditorRuleUnsupportedEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export class OrRulesEditorRequestSelectEvent extends CustomEvent<RequestEventDetail<TenantRuleset[]>> {
+
+    public static readonly NAME = "or-rules-editor-request-select";
+
+    constructor(request: TenantRuleset[]) {
+        super(OrRulesEditorRequestSelectEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                allow: true,
+                detail: request
+            }
+        });
+    }
+}
+
+export class OrRulesEditorRequestAddEvent extends CustomEvent<void> {
+
+    public static readonly NAME = "or-rules-editor-request-add";
+
+    constructor() {
+        super(OrRulesEditorRequestAddEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export class OrRulesEditorRequestDeleteEvent extends CustomEvent<TenantRuleset[]> {
+
+    public static readonly NAME = "or-rules-editor-request-delete";
+
+    constructor(request: TenantRuleset[]) {
+        super(OrRulesEditorRequestDeleteEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: request
+        });
+    }
+}
+
+export class OrRulesEditorRequestCopyEvent extends CustomEvent<TenantRuleset> {
+
+    public static readonly NAME = "or-rules-editor-request-copy";
+
+    constructor(request: TenantRuleset) {
+        super(OrRulesEditorRequestCopyEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: request
+        });
+    }
+}
+
+export class OrRulesEditorRequestSaveEvent extends CustomEvent<TenantRuleset> {
+
+    public static readonly NAME = "or-rules-editor-request-save";
+
+    constructor(request: TenantRuleset) {
+        super(OrRulesEditorRequestSaveEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: request
+        });
+    }
+}
+
+export class OrRulesEditorSelectionChangedEvent extends CustomEvent<TenantRuleset[]> {
+
+    public static readonly NAME = "or-rules-editor-selection-changed";
+
+    constructor(nodes: TenantRuleset[]) {
+        super(OrRulesEditorSelectionChangedEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: nodes
+        });
+    }
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [OrRulesEditorRuleInvalidEvent.NAME]: OrRulesEditorRuleInvalidEvent;
+        [OrRulesEditorRuleUnsupportedEvent.NAME]: OrRulesEditorRuleUnsupportedEvent;
+        [OrRulesEditorRequestSelectEvent.NAME]: OrRulesEditorRequestSelectEvent;
+        [OrRulesEditorRequestAddEvent.NAME]: OrRulesEditorRequestAddEvent;
+        [OrRulesEditorRequestDeleteEvent.NAME]: OrRulesEditorRequestDeleteEvent;
+        [OrRulesEditorRequestCopyEvent.NAME]: OrRulesEditorRequestCopyEvent;
+        [OrRulesEditorRequestSaveEvent.NAME]: OrRulesEditorRequestSaveEvent;
+        [OrRulesEditorRuleChangedEvent.NAME]: OrRulesEditorRuleChangedEvent;
+        [OrRulesEditorSelectionChangedEvent.NAME]: OrRulesEditorSelectionChangedEvent;
+    }
+}
+
+// language=CSS
+export const style = css`
+
+    :host {
+        display: flex;
+        height: 100%;
+        width: 100%;
+        
+        --internal-or-rules-editor-background-color: var(--or-rules-editor-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
+        --internal-or-rules-editor-text-color: var(--or-rules-editor-text-color, inherit);
+        --internal-or-rules-editor-button-color: var(--or-rules-editor-button-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
+        --internal-or-rules-editor-invalid-color: var(--or-rules-editor-invalid-color, var(--or-app-color6, ${unsafeCSS(DefaultColor6)}));        
+        --internal-or-rules-editor-panel-color: var(--or-rules-editor-panel-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+        --internal-or-rules-editor-line-color: var(--or-rules-editor-line-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
+        
+        --internal-or-rules-editor-list-selected-color: var(--or-rules-editor-list-selected-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
+        --internal-or-rules-editor-list-text-color: var(--or-rules-editor-list-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
+        --internal-or-rules-editor-list-text-size: var(--or-rules-editor-list-text-size, 15px);
+
+        --internal-or-rules-editor-list-button-size: var(--or-rules-editor-list-button-size, 24px);
+        
+        --internal-or-rules-editor-header-background-color: var(--or-rules-editor-header-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+        --internal-or-rules-editor-header-height: var(--or-rules-editor-header-height, 80px);
+        
+        --or-panel-background-color: var(--internal-or-rules-editor-panel-color);
+    }
+
+    .shadow {
+        -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadow)};
+        -moz-box-shadow: ${unsafeCSS(DefaultBoxShadow)};
+        box-shadow: ${unsafeCSS(DefaultBoxShadow)};
+    }
+
+    #rule-list-container {
+        min-width: 300px;
+        width: 300px;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--internal-or-rules-editor-panel-color);
+        color: var(--internal-or-rules-editor-list-text-color);
+
+    }
+
+    .rule-container {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+
+    or-rule-header {
+        min-height: var(--internal-or-rules-editor-header-height);
+        height: var(--internal-or-rules-editor-header-height);
+    }
+    
+    .rule-editor-panel {
+        display: flex;
+        flex-grow: 1;
+        background-color: var(--internal-or-rules-editor-background-color);
+    }
+
+    .section-container {
+        flex: 1 0 0px;
+    }
+
+    .msg {
+        display: flex;
+        justify-content: center;
+        align-items: center;        
+        flex-direction: column;
+        text-align: center;
+        margin: auto;
+    }
+    
+    @media only screen 
+    and (min-device-width : 768px) 
+    and (max-device-width : 1024px)  { 
+        side-menu {
+            min-width: 150px;
+            width: 150px;
+        }
+    }
+`;
 
 @customElement("or-rules-editor")
 class OrRulesEditor extends translate(i18next)(LitElement) {
@@ -332,20 +564,23 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
 
     static get styles() {
         return [
-            rulesEditorStyle
+            style
         ];
     }
 
     public config?: RulesConfig;
 
-    @property({type: Number})
-    private value: number = 0;
+    @property({type: String})
+    public realm?: string;
 
-    @property({type: Array, attribute: false})
-    private _rulesets?: TenantRuleset[];
+    @property({type: Array})
+    public selectedIds?: number[];
 
     @property({type: Boolean, attribute: false})
-    private isValidRule?: boolean;
+    private _isValidRule?: boolean;
+
+    @query("#rules-list")
+    private _rulesList!: OrRulesList;
 
     private _activeRuleset?: TenantRuleset;
     private _activeRules?: JsonRule[];
@@ -357,7 +592,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
     private set activeRuleset(ruleset: TenantRuleset | undefined) {
         this._activeRuleset = ruleset;
         this._activeRules = undefined;
-        this._activeModified = false;
+        this._activeModified = !!(ruleset && !ruleset.id);
 
         if (ruleset && ruleset.rules) {
             const rules = JSON.parse(ruleset.rules) as JsonRulesetDefinition;
@@ -377,33 +612,28 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
 
     constructor() {
         super();
-        this.readRules();
 
-        this.addEventListener(OrRuleChangedEvent.NAME, this.onRuleChanged);
-        this.addEventListener("rules:set-active-rule", this.setActiveRuleset);
-        this.addEventListener("rules:create-rule", this.createRuleset);
-        this.addEventListener("rules:save-ruleset", this.saveRuleset);
-        this.addEventListener("rules:delete-rule", this.deleteRuleset);
+        this.addEventListener(OrRulesEditorRuleChangedEvent.NAME, this._onRuleChanged);
+        this.addEventListener(OrRulesEditorRequestSelectEvent.NAME, this._onRequestSelect);
+        this.addEventListener(OrRulesEditorRequestAddEvent.NAME, this._onRequestAdd);
+        this.addEventListener(OrRulesEditorRequestDeleteEvent.NAME, this._onRequestDelete);
+        this.addEventListener(OrRulesEditorRequestCopyEvent.NAME, this._onRequestCopy);
+        this.addEventListener(OrRulesEditorRequestSaveEvent.NAME, this._onRequestSave);
+        this.addEventListener(OrRulesEditorSelectionChangedEvent.NAME, this._onRuleSelectionChanged);
     }
 
     protected ruleEditorPanelTemplate(rule: JsonRule) {
-        const thenTemplate = this.config && this.config.templates && this.config.templates.then ? this.config.templates.then : undefined;
         const targetTypeMap = this.getTargetTypeMap();
         const whenDescriptors = this.getAssetDescriptors(false);
         const actionDescriptors = this.getAssetDescriptors(true);
-        const thenAllowAdd = !this.config || !this.config.controls || this.config.controls.hideThenAddAction !== true;
 
         return html`
-            <div class="section-container">
-                <or-rule-section heading="${i18next.t("when")}...">                    
-                    <or-rule-when .rule="${rule}" .config="${this.config}" .assetDescriptors="${whenDescriptors}" ?readonly="${this.isReadonly("when")}"></or-rule-when> 
-                </or-rule-section>
+            <div class="section-container">                                    
+                <or-rule-when .rule="${rule}" .config="${this.config}" .assetDescriptors="${whenDescriptors}" ?readonly="${this.isReadonly("when")}"></or-rule-when>
             </div>
         
-            <div class="section-container">
-                <or-rule-section heading="${i18next.t("then")}...">                    
-                    <or-rule-actions .rule="${rule}" .config="${this.config}" .newTemplate="${thenTemplate}" .allowAdd="${thenAllowAdd}" .targetTypeMap="${targetTypeMap}" .assetDescriptors="${actionDescriptors}" ?readonly="${this.isReadonly("then")}"></or-rule-actions>
-                </or-rule-section>
+            <div class="section-container">              
+                <or-rule-then-otherwise .rule="${rule}" .config="${this.config}" .targetTypeMap="${targetTypeMap}" .assetDescriptors="${actionDescriptors}" ?readonly="${this.isReadonly("then")}"></or-rule-then-otherwise>
             </div>
         `;
     }
@@ -412,28 +642,17 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
 
         return html`
           <div id="rule-list-container" class="shadow">
-                <or-rule-list .rulesets="${this._rulesets}" .ruleset="${this.activeRuleset}" ></or-rule-list>
-                <div id="bottom-toolbar">
-                    ${manager.hasRole("write:rules") ? html`
-                      <button @click="${this.deleteRuleset}"><or-icon icon="delete"></or-icon></button>
-                      <button style="margin-left: auto;" @click="${this.createRuleset}"><or-icon icon="plus"></or-icon></button>
-                    ` : ``}
-                </div>
+                <or-rule-list id="rules-list" .realm="${this.realm}" .selectedIds="${this.selectedIds}"></or-rule-list>
           </div>
           ${this.activeRule ? html`
                 <div class="rule-container">
-                    <or-rule-header class="shadow" .readonly="${this.isReadonly("header")}" .ruleset="${this.activeRuleset}" .rule="${this.activeRule}" .saveEnabled="${!this._saveInProgress && this.isValidRule && this._activeModified}"></or-rule-header>
+                    <or-rule-header class="shadow" .readonly="${this.isReadonly("header")}" .ruleset="${this.activeRuleset}" .rule="${this.activeRule}" .saveEnabled="${!this._saveInProgress && this._isValidRule && this._activeModified}"></or-rule-header>
                     <div class="rule-editor-panel">                    
                         ${this.ruleEditorPanelTemplate(this.activeRule)}
                     </div>
                 </div>
           ` : html`
-            <div class="center-center">
-                <h3 style="font-weight: normal;">Kies links een profiel of maak een nieuw profiel aan.</h3>
-                ${manager.hasRole("write:rules") ? html`
-                    <button style="margin: auto;" @click="${this.createRuleset}">profiel aanmaken</button>
-                ` : ``}
-            </div>
+            <div class="msg"><or-translate value="noRuleSelected"></or-translate></div>
           `}
         `;
     }
@@ -460,20 +679,20 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
         }
     }
 
-    protected onRuleChanged() {
+    protected _onRuleChanged() {
         this._activeModified = true;
         let isValid = false;
         const rule  = this.activeRule;
 
         if (rule) {
-            isValid = this.validateRuleset();
+            isValid = this._validateRuleset();
         }
 
-        this.isValidRule = isValid;
+        this._isValidRule = isValid;
         this.requestUpdate();
     }
 
-    protected validateRuleset(): boolean {
+    protected _validateRuleset(): boolean {
 
         const ruleset = this.activeRuleset;
         const rule = this.activeRule;
@@ -490,7 +709,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
             return false;
         }
 
-        if (!rule.then) {
+        if (!rule.then || rule.then.length === 0) {
             return false;
         }
 
@@ -507,25 +726,27 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
     }
 
     protected validateConditionGroup(group: LogicGroup<RuleCondition>): boolean {
-        if (!group.items || group.items.length === 0) {
+        if ((!group.items || group.items.length === 0) && (!group.groups || group.groups.length === 0)) {
             return false;
         }
 
-        for (const condition of group.items) {
-            if (!condition.assets && !condition.datetime && !condition.timer) {
-                return false;
-            }
+        if (group.items) {
+            for (const condition of group.items) {
+                if (!condition.assets && !condition.datetime && !condition.timer) {
+                    return false;
+                }
 
-            if (condition.assets && !this.validateAssetQuery(condition.assets)) {
-                return false;
-            }
+                if (condition.assets && !this.validateAssetQuery(condition.assets, true, false)) {
+                    return false;
+                }
 
-            if (condition.datetime && !this.validateValuePredicate(condition.datetime)) {
-                return false;
-            }
+                if (condition.datetime && !this.validateValuePredicate(condition.datetime)) {
+                    return false;
+                }
 
-            if (condition.timer && !Util.isTimeDuration(condition.timer)) {
-                return false;
+                if (condition.timer && !Util.isTimeDuration(condition.timer)) {
+                    return false;
+                }
             }
         }
 
@@ -592,7 +813,11 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
         }
 
         if (target.assets) {
-            return this.validateAssetQuery(target.assets);
+            return this.validateAssetQuery(target.assets, false, false);
+        }
+
+        if (target.matchedAssets) {
+            return this.validateAssetQuery(target.matchedAssets, false, true);
         }
 
         const typesAndTags = this.getTypeAndTagsFromGroup(rule.when!);
@@ -603,22 +828,25 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
         return true;
     }
 
-    protected validateAssetQuery(query?: AssetQuery): boolean {
-        if (!query) {
-            return true;
-        }
+    protected validateAssetQuery(query: AssetQuery, isWhen: boolean, isMatchedAssets: boolean): boolean {
 
         if (!query.types || query.types.length === 0) {
             return false;
         }
 
-        if (!query.attributes || !query.attributes.items || query.attributes.items.length === 0) {
-            return false;
+        if (isWhen) {
+            if (!query.attributes || !query.attributes.items || query.attributes.items.length === 0) {
+                return false;
+            }
+        } else {
+            if (!query.ids || query.ids.length === 0 && !isMatchedAssets) {
+                return false;
+            }
         }
 
         if (query.types) {
             for (const type of query.types) {
-                if (!type.match || !type.value) {
+                if (!type.value || !type.predicateType) {
                     return false;
                 }
             }
@@ -665,62 +893,38 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
         }
     }
 
-    protected readRules() {
-        manager.rest.api.RulesResource.getTenantRulesets(manager.config.realm, {
-            language: RulesetLang.JSON,
-            fullyPopulate: true
-        }).then((response: any) => {
-            if (response && response.data) {
-                this._rulesets = response.data;
+    protected _onRequestAdd() {
+        const shouldContinue = this.okToLeaveActiveRule();
 
-                if (this._rulesets && this.activeRuleset) {
-                    this.activeRuleset = this._rulesets.find((ruleset) => ruleset.id === this.activeRuleset!.id);
-                }
-            }
-        }).catch((reason: any) => {
-            console.error("Error: " + reason);
-        });
-    }
-
-    protected async createRuleset() {
-        const shouldContinue = await this.okToLeaveActiveRule();
         if (!shouldContinue) {
             return;
         }
+        let rule = this.config && this.config.templates && this.config.templates.rule ? JSON.parse(JSON.stringify(this.config.templates.rule)) as JsonRule : undefined;
 
-        if (this._rulesets) {
+        if (!rule) {
+            rule = {
 
-            let rule = this.config && this.config.templates && this.config.templates.rule ? JSON.parse(JSON.stringify(this.config.templates.rule)) as JsonRule : undefined;
-
-            if (!rule) {
-                rule = {
-
-                };
-            }
-
-            const name = this.config && this.config.templates && this.config.templates.rulesetName ? this.config.templates.rulesetName : OrRulesEditor.DEFAULT_RULESET_NAME;
-            rule.name = name;
-            const rules: JsonRulesetDefinition = {
-                rules: [rule]
             };
-
-            const ruleset: TenantRuleset = {
-                id: 0,
-                type: "tenant",
-                name: name,
-                lang: RulesetLang.JSON,
-                realm: manager.getRealm(),
-                rules: JSON.stringify(rules)
-            };
-
-            this._rulesets = [...this._rulesets, ruleset];
-            this.activeRuleset = ruleset;
         }
+
+        const name = this.config && this.config.templates && this.config.templates.rulesetName ? this.config.templates.rulesetName : OrRulesEditor.DEFAULT_RULESET_NAME;
+        rule.name = name;
+        const rules: JsonRulesetDefinition = {
+            rules: [rule]
+        };
+
+        const ruleset: TenantRuleset = {
+            id: 0,
+            type: "tenant",
+            name: name,
+            lang: RulesetLang.JSON,
+            realm: manager.getRealm(),
+            rules: JSON.stringify(rules)
+        };
+        this.activeRuleset = ruleset;
     }
 
-    protected saveRuleset(e: Event) {
-        e.preventDefault();
-
+    protected _onRequestSave(e: OrRulesEditorRequestSaveEvent) {
         if (!this.activeRuleset || !this.activeRule) {
             return;
         }
@@ -740,72 +944,76 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
         delete ruleset.status;
         delete ruleset.error;
 
+        this._rulesList.disabled = true;
+
         if (ruleset.id) {
             manager.rest.api.RulesResource.updateTenantRuleset(ruleset.id!, ruleset).then((response) => {
                 this._saveInProgress = false;
-                this.readRules();
+                this._rulesList.refresh();
+                this._rulesList.disabled = false;
             });
         } else {
             manager.rest.api.RulesResource.createTenantRuleset(ruleset).then((response) => {
                 ruleset.id = response.data;
                 this._saveInProgress = false;
-                this.readRules();
+                this._rulesList.refresh();
+                this._rulesList.disabled = false;
             });
         }
     }
 
-    protected deleteRuleset() {
+    protected _onRequestCopy(e: OrRulesEditorRequestCopyEvent) {
+        const shouldContinue = this.okToLeaveActiveRule();
 
-        if (!this.activeRuleset) {
+        if (!shouldContinue) {
             return;
         }
 
-        let confirmed = !this._activeModified || window.confirm(i18next.t("continueWithoutSaving"));
+        let ruleset = JSON.parse(JSON.stringify(e.detail)) as TenantRuleset;
+        delete ruleset.lastModified;
+        delete ruleset.createdOn;
+        delete ruleset.status;
+        delete ruleset.error;
+        this.activeRuleset = ruleset;
+    }
+
+    protected async _onRequestDelete(event: OrRulesEditorRequestDeleteEvent) {
+
+        let confirmed = this.okToLeaveActiveRule();
 
         if (!confirmed) {
             return;
         }
 
-        confirmed = !this.activeRuleset.id || window.confirm(i18next.t("confirmDelete"));
+        confirmed = !this.activeRuleset!.id || window.confirm(i18next.t("confirmDelete"));
 
         if (!confirmed) {
             return;
         }
 
-        const id = this.activeRuleset.id;
-        const index = this._rulesets!.findIndex((ruleset) => ruleset.id === this.activeRuleset!.id);
-        if (index >= 0) {
-            this._rulesets!.splice(index, 1);
-        }
         this.activeRuleset = undefined;
 
-        if (id) {
-            manager.rest.api.RulesResource.deleteTenantRuleset(id).then((response) => {
-                this.readRules();
-            });
+        const rulesetsToDelete = event.detail;
+
+        // We need to call the backend so disable list until done
+        this._rulesList.disabled = true;
+        for (let ruleset of rulesetsToDelete) {
+            await manager.rest.api.RulesResource.deleteTenantRuleset(ruleset.id!);
         }
+        this._rulesList.refresh();
+        this._rulesList.disabled = false;
     }
 
-    protected async setActiveRuleset(e: any) {
-        if (this.okToLeaveActiveRule()) {
-            this.activeRuleset = e.detail.ruleset;
-        }
+    protected _onRequestSelect(event: OrRulesEditorRequestSelectEvent) {
+        event.detail.allow = this.okToLeaveActiveRule();
+    }
+
+    protected _onRuleSelectionChanged(event: OrRulesEditorSelectionChangedEvent) {
+        this.activeRuleset = event.detail.length == 1 ? event.detail[0] : undefined;
     }
 
     protected okToLeaveActiveRule() {
-
-        const confirmed = !this._activeModified || window.confirm(i18next.t("continueWithoutSaving"));
-
-        if (confirmed) {
-            if (this.activeRuleset && this.activeRuleset.id === 0) {
-                const index = this._rulesets!.findIndex((ruleset) => ruleset.id === this.activeRuleset!.id);
-                if (index >= 0) {
-                    this._rulesets!.splice(index, 1);
-                    this._rulesets = [...this._rulesets!];
-                }
-            }
-        }
-        return confirmed;
+        return !this._activeModified || window.confirm(i18next.t("continueWithoutSaving"));
     }
 
     protected getTypeAndTagsFromGroup(group: LogicGroup<RuleCondition>): [string, string?][] {

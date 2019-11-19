@@ -640,7 +640,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 // Override the notification targets if set in the rule
                 Notification.TargetType targetType = Notification.TargetType.ASSET;
-                Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, triggerStateMap, assetsFacade, usersFacade);
+                Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, triggerStateMap, assetsFacade, usersFacade, facts);
                 if (targetIsNotAssets(ruleAction.target)) {
                     targetType = Notification.TargetType.USER;
                 }
@@ -669,7 +669,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 return null;
             }
 
-            Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, triggerStateMap, assetsFacade, usersFacade);
+            Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, triggerStateMap, assetsFacade, usersFacade, facts);
 
             if (ids == null || ids.isEmpty()) {
                 log(Level.FINEST, "No targets for write attribute rule action so skipping: " + rule.name + " '" + actionsName + "' action index " + index);
@@ -710,7 +710,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 if (ruleAction.target != null && ruleAction.target.users != null) {
                     throw new IllegalStateException("Cannot use action type '" + RuleActionUpdateAttribute.class.getSimpleName() + "' with user target");
                 }
-                matchingAssetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, triggerStateMap, assetsFacade, usersFacade));
+                matchingAssetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, triggerStateMap, assetsFacade, usersFacade, facts));
             } else {
                 matchingAssetIds = facts
                     .matchAssetState(ruleAction.target.assets)
@@ -815,7 +815,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         return null;
     }
 
-    protected static Collection<String> getRuleActionTargetIds(RuleActionTarget target, boolean useUnmatched, Map<String, RuleTriggerState> triggerStateMap, Assets assetsFacade, Users usersFacade) {
+    protected static Collection<String> getRuleActionTargetIds(RuleActionTarget target, boolean useUnmatched, Map<String, RuleTriggerState> triggerStateMap, Assets assetsFacade, Users usersFacade, RulesFacts facts) {
         if (target != null) {
             if (!TextUtil.isNullOrEmpty(target.ruleConditionTag) && triggerStateMap != null) {
                 RuleTriggerState triggerState = triggerStateMap.get(target.ruleConditionTag);
@@ -824,6 +824,19 @@ public class JsonRulesBuilder extends RulesBuilder {
                 }
 
                 return triggerState != null ? triggerState.getUnmatchedAssetIds() : Collections.emptyList();
+            }
+
+            if (target.matchedAssets != null) {
+                List<String> compareAssetIds = triggerStateMap.values().stream()
+                    .flatMap(triggerState ->
+                        useUnmatched ? triggerState.getUnmatchedAssetIds().stream() : triggerState.getMatchedAssetIds().stream())
+                    .collect(Collectors.toList());
+
+                return facts.matchAssetState(target.matchedAssets)
+                    .map(AssetState::getId)
+                    .distinct()
+                    .filter(matchedAssetId -> compareAssetIds.indexOf(matchedAssetId) >= 0)
+                    .collect(Collectors.toList());
             }
 
             if (target.assets != null) {

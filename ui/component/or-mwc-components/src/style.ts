@@ -57,10 +57,6 @@ export const orInputStyle = css`
     }
     
     .mdc-icon-button {
-        --or-icon-fill: var(--mdc-theme-primary);
-    }
-    
-    .mdc-icon-button {
         padding: 0;
     }
 `;

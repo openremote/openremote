@@ -16,6 +16,7 @@
   "dependencies": {
     "@material/button": "^3.2.0",
     "@material/checkbox": "^3.2.0",
+    "@material/fab": "^4.0.0",
     "@material/floating-label": "^3.2.0",
     "@material/form-field": "^3.2.0",
     "@material/icon-button": "^3.2.0",

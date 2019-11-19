@@ -16,13 +16,16 @@
     "@openremote/core": "^1.1.0",
     "@openremote/or-input": "^1.1.0",
     "@openremote/or-select": "^1.1.0",
-    "@openremote/or-attribute-input": "^1.1.0",
     "@openremote/or-translate": "^1.1.0",
+    "@openremote/or-icon": "^1.1.0",
+    "@openremote/or-panel": "^1.1.0",
     "@openremote/or-attribute-input": "^1.1.0",
+    "@openremote/or-mwc-components": "^1.1.0",
     "@openremote/rest": "^1.1.0",
     "lit-element": "^2.2.1"
   },
   "devDependencies": {
+    "@openremote/or-asset-viewer": "^1.1.0",
     "@openremote/model": "^1.1.0",
     "tslint": ">=5.11.0",
     "typescript": ">=3.4.5",

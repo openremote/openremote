@@ -7,6 +7,7 @@ import {style} from "./style";
 import manager, {AssetModelUtil, OREvent, EventCallback} from "@openremote/core";
 import {OrInputChangedEvent, InputType} from "@openremote/or-input";
 import Qs from "qs";
+import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 
 export interface UiAssetTreeNode extends AssetTreeNode {
     selected: boolean;
@@ -25,6 +26,8 @@ interface NodeClickEventDetail {
     node: UiAssetTreeNode,
     clickEvent: MouseEvent
 }
+
+export {style}
 
 export class OrAssetTreeRequestSelectEvent extends CustomEvent<RequestEventDetail<NodeClickEventDetail>> {
 
@@ -166,8 +169,6 @@ export class OrAssetTree extends LitElement {
     @property()
     protected _showLoading: boolean = true;
 
-    protected _selectedNodes: UiAssetTreeNode[] = [];
-
     @query("#sort-menu")
     protected _sortMenu!: HTMLDivElement;
 
@@ -177,8 +178,13 @@ export class OrAssetTree extends LitElement {
     @query("#delete-confirm-modal")
     protected _deleteConfirmModal!: HTMLDivElement;
 
+    protected _selectedNodes: UiAssetTreeNode[] = [];
     protected _initCallback?: EventCallback;
     protected _ready = false;
+
+    public get selectedNodes(): UiAssetTreeNode[] {
+        return this._selectedNodes ? [...this._selectedNodes] : [];
+    }
 
     protected _onReady() {
         this._ready = true;
@@ -225,8 +231,8 @@ export class OrAssetTree extends LitElement {
                 </div>
 
                 <div id="header-btns">
-                    <button style="display:none;" ?hidden="${!this.selectedIds || this.selectedIds.length === 0}" @click="${() => this._onCopyClicked()}"><or-icon icon="content-copy"></or-icon></button>
-                    <button ?hidden="${!this.selectedIds || this.selectedIds.length === 0}" @click="${() => this._onDeleteClicked()}"><or-icon icon="delete"></or-icon></button>
+                    <button style="display:none;" ?hidden="${!manager.hasRole("write:rules") || !this.selectedIds || this.selectedIds.length === 0}" @click="${() => this._onCopyClicked()}"><or-icon icon="content-copy"></or-icon></button>
+                    <button ?hidden="${!manager.hasRole("write:rules") || !this.selectedIds || this.selectedIds.length === 0}" @click="${() => this._onDeleteClicked()}"><or-icon icon="delete"></or-icon></button>
                     <button hidden @click="${() => this._onAddClicked()}"><or-icon icon="plus"></or-icon></button>
                     <button hidden @click="${() => this._onSearchClicked()}"><or-icon icon="magnify"></or-icon></button>
                     <button @click="${() => this._onSortClicked()}"><or-icon icon="sort-variant"></or-icon></button>
@@ -297,7 +303,7 @@ export class OrAssetTree extends LitElement {
                 <div class="node-container" style="padding-left: ${level*22}px">
                     <div class="node-name">
                         <div class="expander" ?data-expandable="${treeNode.expandable}"></div>
-                        <or-icon style="--or-icon-fill: ${descriptor && descriptor.color ? "#" + descriptor.color : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetType.THING.icon}"></or-icon>
+                        ${getAssetDescriptorIconTemplate(descriptor)}
                         <span>${treeNode.asset!.name}</span>
                     </div>
                 </div>
@@ -342,10 +348,6 @@ export class OrAssetTree extends LitElement {
         }
     }
 
-    public get selectedNodes(): UiAssetTreeNode[] {
-        return this._selectedNodes ? [...this._selectedNodes] : [];
-    }
-
     protected _updateSelectedNodes() {
         const actuallySelectedIds: string[] = [];
         const selectedNodes: UiAssetTreeNode[] = [];
@@ -369,7 +371,6 @@ export class OrAssetTree extends LitElement {
         this._selectedNodes = selectedNodes;
         this.dispatchEvent(new OrAssetTreeSelectionChangedEvent(this._selectedNodes));
     }
-
 
     protected _updateSort(nodes: UiAssetTreeNode[], sortFunction: (a: UiAssetTreeNode, b: UiAssetTreeNode) => number) {
         if (!nodes) {
@@ -472,7 +473,7 @@ export class OrAssetTree extends LitElement {
             }
         }
 
-            this.selectedIds = selectedIds;
+        this.selectedIds = selectedIds;
     }
 
     protected _showDeleteModal() {
@@ -544,6 +545,28 @@ export class OrAssetTree extends LitElement {
         }
     }
 
+    protected _getRealm(): string | undefined {
+        if (manager.isSuperUser() && this.realm) {
+            return this.realm;
+        }
+
+        return manager.getRealm();
+    }
+
+    protected _onRealmChanged(evt: OrInputChangedEvent) {
+        this.realm = evt.detail.value;
+        this.assets = undefined;
+    }
+
+    protected _doRequest<T>(event: CustomEvent<RequestEventDetail<T>>, handler: (detail: T) => void) {
+        this.dispatchEvent(event);
+        window.setTimeout(() => {
+            if (event.detail.allow) {
+                handler(event.detail.detail);
+            }
+        })
+    }
+
     protected _loadAssets() {
 
         if (!this._ready) {
@@ -587,37 +610,37 @@ export class OrAssetTree extends LitElement {
     protected _buildTreeNodes(assets: Asset[], sortFunction: (a: UiAssetTreeNode, b: UiAssetTreeNode) => number) {
         if (!assets || assets.length === 0) {
             this._nodes = [];
-        }
-
-        let rootAssetIds: string[] | undefined;
-
-        if (this.rootAssetIds) {
-            rootAssetIds = this.rootAssetIds;
-        } else if (this.rootAssets) {
-            rootAssetIds = this.rootAssets.map((ra) => ra.id!);
-        }
-
-        let rootAssets: UiAssetTreeNode[];
-
-        if (rootAssetIds) {
-            rootAssets = assets.filter((asset) => rootAssetIds!.indexOf(asset.id!) >= 0).map((asset) => {
-                return {
-                    asset: asset
-                } as UiAssetTreeNode;
-            });
         } else {
-            rootAssets = assets.filter((asset) => !asset.parentId).map((asset) => {
-                return {
-                    asset: asset
-                } as UiAssetTreeNode;
-            });
+            let rootAssetIds: string[] | undefined;
+
+            if (this.rootAssetIds) {
+                rootAssetIds = this.rootAssetIds;
+            } else if (this.rootAssets) {
+                rootAssetIds = this.rootAssets.map((ra) => ra.id!);
+            }
+
+            let rootAssets: UiAssetTreeNode[];
+
+            if (rootAssetIds) {
+                rootAssets = assets.filter((asset) => rootAssetIds!.indexOf(asset.id!) >= 0).map((asset) => {
+                    return {
+                        asset: asset
+                    } as UiAssetTreeNode;
+                });
+            } else {
+                rootAssets = assets.filter((asset) => !asset.parentId).map((asset) => {
+                    return {
+                        asset: asset
+                    } as UiAssetTreeNode;
+                });
+            }
+
+            rootAssets.sort(sortFunction);
+            rootAssets.forEach((rootAsset) => this._buildChildTreeNodes(rootAsset, assets, sortFunction));
+
+            this._nodes = rootAssets;
         }
-
-        rootAssets.sort(sortFunction);
-        rootAssets.forEach((rootAsset) => this._buildChildTreeNodes(rootAsset, assets, sortFunction));
-
-        this._nodes = rootAssets;
-        if(this.selectedIds && this.selectedIds.length > 0) {
+        if (this.selectedIds && this.selectedIds.length > 0) {
             this._updateSelectedNodes();
         }
         this._showLoading = false;
@@ -638,28 +661,6 @@ export class OrAssetTree extends LitElement {
             childNode.parent = treeNode;
             this._buildChildTreeNodes(childNode, assets, sortFunction);
         });
-    }
-
-    protected _getRealm(): string | undefined {
-        if (manager.isSuperUser() && this.realm) {
-            return this.realm;
-        }
-
-        return manager.getRealm();
-    }
-
-    protected _onRealmChanged(evt: OrInputChangedEvent) {
-        this.realm = evt.detail.value;
-        this.assets = undefined;
-    }
-
-    protected _doRequest<T>(event: CustomEvent<RequestEventDetail<T>>, handler: (detail: T) => void) {
-        this.dispatchEvent(event);
-        window.setTimeout(() => {
-            if (event.detail.allow) {
-                handler(event.detail.detail);
-            }
-        })
     }
 
     protected static _forEachNodeRecursive(nodes: UiAssetTreeNode[], fn: (node: UiAssetTreeNode) => void) {

@@ -215,20 +215,6 @@ export class AssetModelUtil {
         return attributeValueDescriptor1.name === attributeValueDescriptor2.name && attributeValueDescriptor1.valueType === attributeValueDescriptor2.valueType;
     }
 
-    public static getMetaValue(metaItemUrn: string | MetaItemDescriptor, attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined): any {
-        const urn = typeof metaItemUrn === "string" ? metaItemUrn : (metaItemUrn as MetaItemDescriptor).urn;
-
-        if (attribute && attribute.meta) {
-            const metaItem = attribute.meta.find((mi) => mi.name === urn);
-            return metaItem ? metaItem.value : undefined;
-        }
-
-        if (descriptor && descriptor.metaItemDescriptors) {
-            const metaItemDescriptor = descriptor.metaItemDescriptors.find((mid) => mid.urn === urn);
-            return metaItemDescriptor ? metaItemDescriptor.initialValue : undefined;
-        }
-    }
-
     public static getMetaInitialValueFromMetaDescriptors(metaItemUrn: MetaItemDescriptor | string, metaItemDescriptors: MetaItemDescriptor[] | undefined): any | undefined {
         if (!metaItemDescriptors) {
             return;
@@ -249,6 +235,22 @@ export class AssetModelUtil {
         const newMetaItem = JSON.parse(JSON.stringify(metaItemDescriptor)) as MetaItemDescriptor;
         newMetaItem.initialValue = initialValue;
         return newMetaItem;
+    }
+
+    public static getAssetDescriptorColor(descriptor: AssetDescriptor | undefined, fallbackColor?: string): string | undefined {
+        return descriptor && descriptor.color ? descriptor.color : fallbackColor;
+    }
+
+    public static getAssetDescriptorIcon(descriptor: AssetDescriptor | undefined, fallbackIcon?: string): string | undefined {
+        return descriptor && descriptor.icon ? descriptor.icon : fallbackIcon;
+    }
+
+    public static hasMetaItem(descriptor: AttributeDescriptor | undefined, name: string): boolean {
+        if (!descriptor || !descriptor.metaItemDescriptors) {
+            return false;
+        }
+
+        return !!descriptor.metaItemDescriptors.find((mid) => mid.urn === name);
     }
 }
 

@@ -15,23 +15,13 @@ import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import "@openremote/or-input";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 
-export function getAttributeLabel(attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined, fallback?: string): string {
-    if (!attribute && !descriptor) {
-        return fallback || "";
-    }
-
-    const labelMetaValue = AssetModelUtil.getMetaValue(MetaItemType.LABEL, attribute, descriptor);
-    const name = attribute ? attribute.name : descriptor!.attributeName;
-    return i18next.t([name, fallback || labelMetaValue || name]);
-}
-
 export function getAttributeValueTemplate(
     assetType: string | undefined,
     attribute: Attribute,
-    readonly: boolean,
-    disabled: boolean,
+    readonly: boolean | undefined,
+    disabled: boolean | undefined,
     valueChangedCallback: (value: any) => void,
-    customProvider?: (assetType: string | undefined, attribute: Attribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean, disabled: boolean) => ((value: any) => TemplateResult) | undefined,
+    customProvider?: (assetType: string | undefined, attribute: Attribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean | undefined, disabled: boolean | undefined) => ((value: any) => TemplateResult) | undefined,
     forceInputType?: InputType,
     labelOverride?: string) {
 
@@ -125,11 +115,11 @@ export function getAttributeValueTemplate(
 
         if (inputType) {
             // TODO: Update to use 'effective' meta so not dependent on meta items being defined on the asset itself
-            min = AssetModelUtil.getMetaValue(MetaItemType.RANGE_MIN, attribute, attributeDescriptor) as number;
-            max = AssetModelUtil.getMetaValue(MetaItemType.RANGE_MAX, attribute, attributeDescriptor) as number;
-            label = labelOverride ? labelOverride : getAttributeLabel(attribute, attributeDescriptor);
-            ro = AssetModelUtil.getMetaValue(MetaItemType.READ_ONLY, attribute, attributeDescriptor);
-            options = AssetModelUtil.getMetaValue(MetaItemType.ALLOWED_VALUES, attribute, attributeDescriptor);
+            min = Util.getMetaValue(MetaItemType.RANGE_MIN, attribute, attributeDescriptor) as number;
+            max = Util.getMetaValue(MetaItemType.RANGE_MAX, attribute, attributeDescriptor) as number;
+            label = labelOverride !== undefined ? labelOverride : Util.getAttributeLabel(attribute, attributeDescriptor);
+            ro = readonly === undefined ? Util.getMetaValue(MetaItemType.READ_ONLY, attribute, attributeDescriptor) : readonly;
+            options = Util.getMetaValue(MetaItemType.ALLOWED_VALUES, attribute, attributeDescriptor);
 
             if (inputType === InputType.TEXT && options && Array.isArray(options) && options.length > 0) {
                 inputType = InputType.SELECT;
@@ -190,7 +180,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     public label?: string;
 
     @property({type: Boolean})
-    public disabled: boolean = false;
+    public disabled?: boolean;
 
     @property({type: Boolean})
     public disableSubscribe: boolean = false;
@@ -199,9 +189,9 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     public disableWrite: boolean = false;
 
     @property({type: Boolean})
-    public readonly: boolean = false;
+    public readonly?: boolean;
 
-    public customProvider?: (assetType: string | undefined, attribute: Attribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean, disabled: boolean) => ((value: any) => TemplateResult) | undefined;
+    public customProvider?: (assetType: string | undefined, attribute: Attribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean | undefined, disabled: boolean | undefined) => ((value: any) => TemplateResult) | undefined;
 
     protected _loading: boolean = false;
     protected _invalid: boolean = false;
@@ -292,25 +282,22 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     protected onValueChange(newValue: any) {
         if (this.attribute || this.attributeRef) {
 
-            if (!this.disableWrite && !this.disabled && !this.readonly) {
+            let attributeRef = this.attributeRef;
 
-                let attributeRef = this.attributeRef;
-
-                if (!this.attributeRef) {
-                    attributeRef = {
-                        entityId: this.attribute!.assetId,
-                        attributeName: this.attribute!.name
-                    };
-                }
-
-                super._sendEvent({
-                    eventType: "attribute",
-                    attributeState: {
-                        attributeRef: attributeRef,
-                        value: newValue
-                    }
-                } as AttributeEvent);
+            if (!this.attributeRef) {
+                attributeRef = {
+                    entityId: this.attribute!.assetId,
+                    attributeName: this.attribute!.name
+                };
             }
+
+            super._sendEvent({
+                eventType: "attribute",
+                attributeState: {
+                    attributeRef: attributeRef,
+                    value: newValue
+                }
+            } as AttributeEvent);
         }
     }
 }

@@ -9,10 +9,12 @@ import {MDCCheckbox} from "@material/checkbox";
 import {MDCSwitch} from "@material/switch";
 import {MDCSelect, MDCSelectEvent, } from "@material/select";
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
+import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
 import moment from "moment";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("!!raw-loader!@material/button/dist/mdc.button.css");
+const buttonFabStyle = require("!!raw-loader!@material/fab/dist/mdc.fab.css");
 const iconButtonStyle = require("!!raw-loader!@material/icon-button/dist/mdc.icon-button.css");
 const textfieldStyle = require("!!raw-loader!@material/textfield/dist/mdc.textfield.css");
 const rippleStyle = require("!!raw-loader!@material/ripple/dist/mdc.ripple.css");
@@ -55,6 +57,7 @@ declare global {
 
 export enum InputType {
     BUTTON = "button",
+    BUTTON_TOGGLE = "button-toggle",
     BUTTON_MOMENTARY = "button-momentary",
     CHECKBOX = "checkbox",
     COLOUR = "color",
@@ -84,6 +87,7 @@ export class OrInput extends LitElement {
         return [
             css`${unsafeCSS(iconButtonStyle)}`,
             css`${unsafeCSS(buttonStyle)}`,
+            css`${unsafeCSS(buttonFabStyle)}`,
             css`${unsafeCSS(textfieldStyle)}`,
             css`${unsafeCSS(rippleStyle)}`,
             css`${unsafeCSS(lineRippleStyle)}`,
@@ -158,6 +162,9 @@ export class OrInput extends LitElement {
     @property({type: String})
     public icon?: string;
 
+    @property({type: String})
+    public iconOn?: string;
+
     @property({type: Boolean})
     public dense: boolean = false;
 
@@ -168,6 +175,9 @@ export class OrInput extends LitElement {
 
     @property({type: Boolean})
     public raised: boolean = false;
+
+    @property({type: Boolean})
+    public action: boolean = false;
 
     @property({type: Boolean})
     public unElevated: boolean = false;
@@ -302,44 +312,41 @@ export class OrInput extends LitElement {
                                 ${showValidationMessage ? this.validationMessage : this.helperText}
                             </p>` : ``}
                     `;
-                case InputType.BUTTON:
-                case InputType.BUTTON_MOMENTARY: {
-                    const iconButton = this.isIconButton();
-                    const classes = {
-                        "mdc-button--raised": this.raised,
-                        "mdc-button--unelevated": this.unElevated,
-                        "mdc-button--outlined": !iconButton && this.outlined,
-                        "mdc-button--dense": !iconButton && this.dense,
-                        "or-input--rounded": this.rounded,
-                        "mdc-button": !iconButton,
-                        "mdc-icon-button": iconButton
-                    };
-                    const iconClasses = {
-                        "mdc-icon-button__icon": iconButton,
-                        "mdc-button__icon": !iconButton,
-                    };
-                    if (this.type === InputType.BUTTON_MOMENTARY) {
-                        return html`
-                            <button id="component" class="${classMap(classes)}"
-                                ?required="${this.required}"
-                                ?readonly="${this.readonly}"
-                                ?disabled="${this.disabled}"
-                                @onmousedown="${() => this.onValueChange(true)}" @onmouseup="${() => this.onValueChange(false)}">
-                                ${this.icon ? html`<or-icon class="${classMap(iconClasses)}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
-                                ${this.label ? html`<span class="mdc-button__label">${this.label}</span>` : ``}
-                                ${this.iconTrailing ? html`<or-icon class="${classMap(iconClasses)}" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
-                            </button>
-                        `;
-                    }
+                case InputType.BUTTON_TOGGLE:
                     return html`
-                        <button id="component" class="${classMap(classes)}"
-                            ?required="${this.required}"
+                        <button id="component" class="mdc-icon-button ${this.value ? "mdc-icon-button--on" : ""}"
                             ?readonly="${this.readonly}"
                             ?disabled="${this.disabled}"
-                            @onmouseup="${() => this.onValueChange(true)}">
-                            ${this.icon ? html`<or-icon class="${classMap(iconClasses)}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
-                            ${this.label ? html`<span class="mdc-button__label">${this.label}</span>` : ``}
-                            ${this.iconTrailing ? html`<or-icon class="${classMap(iconClasses)}" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
+                            @MDCIconButtonToggle:change="${(evt: MDCIconButtonToggleEventDetail) => this.onValueChange(evt.isOn)}">
+                            ${this.icon ? html`<or-icon class="mdc-icon-button__icon" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
+                            ${this.iconOn ? html`<or-icon class="mdc-icon-button__icon mdc-icon-button__icon--on" aria-hidden="true" icon="${this.iconOn}"></or-icon>` : ``}
+                        </button>
+                    `;
+                case InputType.BUTTON:
+                case InputType.BUTTON_MOMENTARY: {
+                    const isMomentary = this.type === InputType.BUTTON_MOMENTARY;
+                    const isIconButton = !this.action && !this.label;
+                    const classes = {
+                        "mdc-icon-button": isIconButton,
+                        "mdc-fab": !isIconButton && this.action,
+                        "mdc-fab--extended": !isIconButton && this.action && !!this.label,
+                        "mdc-fab--mini": !isIconButton && this.action && this.dense,
+                        "mdc-button": !isIconButton && !this.action,
+                        "mdc-button--raised": !isIconButton && !this.action && this.raised,
+                        "mdc-button--unelevated": !isIconButton && !this.action && this.unElevated,
+                        "mdc-button--outlined": !isIconButton && !this.action && this.outlined,
+                        "mdc-button--dense": !isIconButton && !this.action && this.dense,
+                        "or-input--rounded": !isIconButton && !this.action && this.rounded
+                    };
+                    return html`
+                        <button id="component" class="${classMap(classes)}"
+                            ?readonly="${this.readonly}"
+                            ?disabled="${this.disabled}"
+                            @onmousedown="${() => {if (isMomentary) this.onValueChange(true)}}" @onmouseup="${() => isMomentary ? this.onValueChange(false) : this.onValueChange(true)}">
+                            ${!isIconButton ? html`<div class="mdc-button__ripple"></div>` : ``}
+                            ${this.icon ? html`<or-icon class="${isIconButton ? "" : this.action ? "mdc-fab__icon" : "mdc-button__icon"}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
+                            ${this.label ? html`<span class="${this.action ? "mdc-fab__label" : "mdc-button__label"}">${this.label}</span>` : ``}
+                            ${!isIconButton && this.iconTrailing ? html`<or-icon class="${this.action ? "mdc-fab__icon" : "mdc-button__icon"}" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
                         </button>
                     `;
                 }
@@ -463,10 +470,6 @@ export class OrInput extends LitElement {
         return html`<span>INPUT TYPE NOT IMPLEMENTED</span>`;
     }
 
-    protected isIconButton() {
-        return !!(!this.value && this.rounded && this.icon);
-    }
-
     protected updated(_changedProperties: PropertyValues): void {
         super.updated(_changedProperties);
 
@@ -496,11 +499,16 @@ export class OrInput extends LitElement {
                     case InputType.RADIO:
                         break;
                     case InputType.BUTTON:
+                    case InputType.BUTTON_MOMENTARY:
+                        const isIconButton = !this.action && !this.label;
                         const ripple = new MDCRipple(component);
-                        if (this.isIconButton()) {
+                        if (isIconButton) {
                             ripple.unbounded = true;
                         }
                         this._mdcComponent = ripple;
+                        break;
+                    case InputType.BUTTON_TOGGLE:
+                        this._mdcComponent = new MDCIconButtonToggle(component);
                         break;
                     case InputType.CHECKBOX:
                         this._mdcComponent = new MDCCheckbox(component);

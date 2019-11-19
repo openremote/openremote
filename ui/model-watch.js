@@ -37,5 +37,5 @@ child.stderr.pipe(process.stderr);
 
 child.on("exit", function() {
     console.log("gradlew modelWatch finished! Status = " + child.status);
-    process.exit(gradleModelWatch.status);
+    process.exit(child.status);
 });

@@ -94,7 +94,8 @@ clean {
     }
 }
 
-build.dependsOn generateTypeScript
+build.dependsOn generateTypeScript, npmBuild
+npmBuild.dependsOn generateTypeScript
 
 task prepareUi() {
     dependsOn clean, build, npmPrepare

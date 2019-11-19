@@ -1,23 +1,19 @@
 {
-  "name": "@openremote/or-panel",
+  "name": "@openremote/or-mwc-components",
   "version": "1.1.0",
-  "description": "OpenRemote simple panel with heading",
-  "main": "dist/umd/index.bundle.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "description": "Material Design Components packaged as web components (The official components are hardcoded to use Material Design font which has limited icons)",
   "scripts": {
+    "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
     "prepublishOnly": "npx tsc -b && npx webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@material/elevation": "^4.0.0",
-    "lit-element": "^2.2.1",
-    "simplebar": "^5.0.7"
+    "@material/menu": "^3.2.0",
+    "lit-element": "^2.2.1"
   },
   "devDependencies": {
-    "@types/simplebar": "^2.4.2",
     "tslint": ">=5.11.0",
     "typescript": ">=3.4.5",
     "webpack": "^4.41.2",

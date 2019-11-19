@@ -6,7 +6,7 @@ import "@openremote/or-icon";
 import {TenantRuleset} from "@openremote/model";
 
 import {headerStyle} from "./style";
-import {OrRuleChangedEvent} from "./index";
+import {OrRulesEditorRuleChangedEvent, OrRulesEditorRequestSaveEvent} from "./index";
 
 @customElement("or-rule-header")
 class OrRuleHeader extends LitElement {
@@ -15,10 +15,10 @@ class OrRuleHeader extends LitElement {
         return headerStyle;
     }
 
-    @property({type: Object})
-    public ruleset?: TenantRuleset;
+    @property({type: Object, attribute: false})
+    public ruleset!: TenantRuleset;
 
-    @property({type: Boolean})
+    @property({type: Boolean, attribute: false})
     public saveEnabled: boolean = false;
 
     public readonly: boolean = false;
@@ -27,22 +27,18 @@ class OrRuleHeader extends LitElement {
         const value = e.target.value;
         if (this.ruleset) {
             this.ruleset.name = value;
-            this.dispatchEvent(new OrRuleChangedEvent());
+            this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
         }
     }
 
     public saveRuleset() {
-        const event = new CustomEvent("rules:save-ruleset", {
-            bubbles: true,
-            composed: true
-        });
-        this.dispatchEvent(event);
+        this.dispatchEvent(new OrRulesEditorRequestSaveEvent(this.ruleset));
     }
 
     public toggleEnabled() {
         if (this.ruleset) {
             this.ruleset.enabled = !this.ruleset.enabled;
-            this.dispatchEvent(new OrRuleChangedEvent());
+            this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
             this.requestUpdate();
         }
     }

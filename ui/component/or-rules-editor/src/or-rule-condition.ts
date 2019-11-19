@@ -1,25 +1,90 @@
-import {customElement, html, LitElement, TemplateResult, property} from "lit-element";
+import {customElement, html, css, LitElement, property, TemplateResult} from "lit-element";
+import {AssetDescriptor, AssetQueryMatch, RuleCondition} from "@openremote/model";
 import {
-    AssetQueryMatch,
-    RuleCondition,
-    AssetDescriptor,
-} from "@openremote/model";
-import {
-    RulesConfig,
     ConditionType,
-    getAssetTypeFromQuery, OrRuleChangedEvent
+    getAssetTypeFromQuery,
+    getButtonWithMenuTemplate,
+    OrRulesEditorRuleChangedEvent,
+    RulesConfig
 } from "./index";
 import "./or-rule-asset-query";
-import {OrSelectChangedEvent} from "@openremote/or-select";
-import {conditionEditorStyle} from "./style";
-import i18next from "i18next";
-import {InputType} from "@openremote/or-input";
+import "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {Menu, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import "@openremote/or-icon";
+import "@openremote/or-translate";
+import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
+import {AssetModelUtil} from "@openremote/core";
+import {i18next} from "@openremote/or-translate";
+
+const TIMER_COLOR = "4b87ea";
+const DATE_TIME_COLOR = "6AEAA4";
+
+function getWhenTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescriptor[]): Menu {
+
+    let addAssetTypes = true;
+    let addDatetime = true;
+    let addTimer = true;
+
+    if (config && config.controls && config.controls.allowedConditionTypes) {
+        addAssetTypes = config.controls.allowedConditionTypes.indexOf(ConditionType.ASSET_QUERY) >= 0;
+        addDatetime = config.controls.allowedConditionTypes.indexOf(ConditionType.DATE_TIME) >= 0;
+        addTimer = config.controls.allowedConditionTypes.indexOf(ConditionType.TIMER) >= 0;
+    }
+
+    const menu: Menu = {
+        items: []
+    };
+
+    if (addAssetTypes && assetDescriptors) {
+        menu.items.push(...assetDescriptors.map((ad) => {
+            const content = html`
+                    ${getAssetDescriptorIconTemplate(ad)}
+                    &nbsp;&nbsp;<span style="white-space: nowrap; text-transform: capitalize">${i18next.t(ad.name!, {defaultValue: ad.name!.replace(/_/g, " ").toLowerCase()})}</span>
+                `;
+            return {content: content, value: ad.type} as MenuItem
+        }));
+    }
+
+    if (addDatetime) {
+        const content = html`
+                <or-icon style="--or-icon-fill: #${DATE_TIME_COLOR}" icon="clock"></or-icon>
+                <span style="text-transform: capitalize">&nbsp;<or-translate value="datetime"></or-translate></span>
+            `;
+        menu.items.push({content: content, value: ConditionType.DATE_TIME} as MenuItem);
+    }
+
+    if (addTimer) {
+        const content = html`
+                <or-icon style="--or-icon-fill: #${TIMER_COLOR}" icon="timer"></or-icon>
+                <span style="text-transform: capitalize">&nbsp;<or-translate value="timer"></or-translate></span>
+            `;
+        menu.items.push({content: content, value: ConditionType.TIMER} as MenuItem);
+    }
+
+    return menu;
+}
+
+// language=CSS
+const style = css`
+    :host {
+        display: flex;
+        flex-direction: row;
+    }
+    
+    or-rule-asset-query {
+        flex-grow: 1;
+    }
+
+    #type-selector {
+        margin-top: 10px;
+    }
+`;
 
 @customElement("or-rule-condition")
 class OrRuleCondition extends LitElement {
 
-    @property({type: Object})
-    public ruleCondition?: RuleCondition;
+    @property({type: Object, attribute: false})
+    public ruleCondition!: RuleCondition;
 
     public readonly: boolean = false;
 
@@ -28,14 +93,10 @@ class OrRuleCondition extends LitElement {
     public assetDescriptors?: AssetDescriptor[];
 
     static get styles() {
-        return conditionEditorStyle;
+        return style;
     }
 
     protected render() {
-
-        if (!this.ruleCondition) {
-            return;
-        }
 
         const showTypeSelect = !this.config || !this.config.controls || this.config.controls.hideConditionTypeOptions !== true;
         const type = this.type;
@@ -44,8 +105,39 @@ class OrRuleCondition extends LitElement {
             return html`<span>INVALID CONFIG - NO TYPE SPECIFIED AND TYPE SELECTOR DISABLED</span>`;
         }
 
+        let typeTemplate: TemplateResult | string = ``;
         let template: TemplateResult | string = ``;
 
+        if (showTypeSelect) {
+            
+            let buttonIcon = undefined;
+            let buttonColor = "inherit";
+
+            if (type) {
+                switch (type) {
+                    case ConditionType.DATE_TIME:
+                        buttonIcon = "clock";
+                        buttonColor = DATE_TIME_COLOR;
+                        break;
+                    case ConditionType.TIMER:
+                        buttonIcon = "timer";
+                        buttonColor = TIMER_COLOR;
+                        break;
+                    default:
+                        const ad = AssetModelUtil.getAssetDescriptor(type);
+                        buttonIcon = AssetModelUtil.getAssetDescriptorIcon(ad) || buttonIcon;
+                        buttonColor = AssetModelUtil.getAssetDescriptorColor(ad) || buttonColor;
+                        break;
+                }
+            }
+            
+            typeTemplate = html`
+                <div style="display: table; height: 100%; --or-input-color: #${buttonColor}">
+                    ${getButtonWithMenuTemplate(getWhenTypesMenu(this.config, this.assetDescriptors), buttonIcon || "", type, (value: string) => this.type = value)}
+                </div>
+            `;
+        }
+        
         if (type) {
             switch (type) {
                 case ConditionType.DATE_TIME:
@@ -61,47 +153,12 @@ class OrRuleCondition extends LitElement {
         }
 
         return html`
-            ${showTypeSelect ? html`<or-input id="type-selector" type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.type = e.detail.value}" .options="${this.getTypes()}" .value="${type}" ?readonly="${this.readonly}"></or-input>` : ``}        
+            ${typeTemplate}        
             ${template}
         `;
     }
 
-    protected getTypes() {
-
-        let addAssetTypes = true;
-        let addDatetime = true;
-        let addTimer = true;
-
-        if (this.config && this.config.controls && this.config.controls.allowedConditionTypes) {
-            addAssetTypes = this.config.controls.allowedConditionTypes.indexOf(ConditionType.ASSET_QUERY) >= 0;
-            addDatetime = this.config.controls.allowedConditionTypes.indexOf(ConditionType.DATE_TIME) >= 0;
-            addTimer = this.config.controls.allowedConditionTypes.indexOf(ConditionType.TIMER) >= 0;
-        }
-
-        const types: [string, string][] = [];
-        
-        if (addAssetTypes && this.assetDescriptors) {
-            this.assetDescriptors.forEach((ad) => types.push([ad.type!, ad.name!]));
-        }
-
-        if (types.length > 0 && (addDatetime || addTimer)) {
-            types.push(["", "---"]); // Empty spacer
-        }
-        
-        if (addDatetime) {
-            types.push([ConditionType.DATE_TIME, i18next.t(ConditionType.DATE_TIME)]);
-        }
-        if (addTimer) {
-            types.push([ConditionType.TIMER, i18next.t(ConditionType.TIMER)]);
-        }
-
-        return types;
-    }
-
     protected get type(): string | undefined {
-        if (!this.ruleCondition) {
-            return;
-        }
 
         const assetType = getAssetTypeFromQuery(this.ruleCondition.assets);
         if (assetType) {
@@ -118,15 +175,12 @@ class OrRuleCondition extends LitElement {
     }
 
     protected set type(value: string | undefined) {
-        if (!this.ruleCondition) {
-            return;
-        }
 
         if (!value || value === "") {
             this.ruleCondition.assets = undefined;
             this.ruleCondition.timer = undefined;
             this.ruleCondition.datetime = undefined;
-            this.dispatchEvent(new OrRuleChangedEvent());
+            this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
             this.requestUpdate();
             return;
         }
@@ -135,7 +189,7 @@ class OrRuleCondition extends LitElement {
             this.ruleCondition.assets = undefined;
             this.ruleCondition.datetime = undefined;
             this.ruleCondition.timer = "1h";
-            this.dispatchEvent(new OrRuleChangedEvent());
+            this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
             this.requestUpdate();
             return;
         }
@@ -146,7 +200,7 @@ class OrRuleCondition extends LitElement {
             this.ruleCondition.datetime = {
                 predicateType: "datetime"
             };
-            this.dispatchEvent(new OrRuleChangedEvent());
+            this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
             this.requestUpdate();
             return;
         }
@@ -160,15 +214,15 @@ class OrRuleCondition extends LitElement {
             this.ruleCondition.assets = {};
         }
 
-        if (!this.ruleCondition!.assets!.types || this.ruleCondition!.assets!.types.length === 0) {
-            this.ruleCondition!.assets!.types = [{
+        if (!this.ruleCondition.assets!.types || this.ruleCondition.assets!.types.length === 0) {
+            this.ruleCondition.assets!.types = [{
                 predicateType: "string",
                 match: AssetQueryMatch.EXACT
             }];
         }
 
-        this.ruleCondition!.assets!.types[0].value = value;
-        this.dispatchEvent(new OrRuleChangedEvent());
+        this.ruleCondition.assets!.types[0].value = value;
+        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
         this.requestUpdate();
     }
 }

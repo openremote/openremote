@@ -1,6 +1,7 @@
 import {style} from "./style";
 import {customElement, html, LitElement, property, query} from "lit-element";
 import "@openremote/or-icon";
+import "./or-language";
 
 @customElement("or-header")
 class OrHeader extends LitElement {

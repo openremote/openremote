@@ -190,7 +190,6 @@ export const style = css`
     }
     
     #list-container {
-        height: 0px;
         flex: 1 1 auto;
         overflow: auto;
         font-size: 14px;
