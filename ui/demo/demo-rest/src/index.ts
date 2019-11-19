@@ -36,5 +36,5 @@ manager.init({
     keycloakUrl: "http://localhost:8080/auth",
     auth: Auth.KEYCLOAK,
     autoLogin: true,
-    realm: "tenantA"
+    realm: "building"
 }).then(renderUi);

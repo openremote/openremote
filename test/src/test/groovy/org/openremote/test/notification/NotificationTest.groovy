@@ -78,7 +78,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def consoleResource = (ConsoleResourceImpl)container.getService(WebService.class).getApiSingletons().find {it instanceof ConsoleResourceImpl}
 
         and: "an authenticated test user"
-        def realm = keycloakDemoSetup.tenantA.realm
+        def realm = keycloakDemoSetup.tenantBuilding.realm
         def testuser1AccessToken = authenticate(
             container,
             MASTER_REALM,
@@ -125,7 +125,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def testuser2NotificationResource = getClientApiTarget(serverUri(serverPort), realm, testuser2AccessToken).proxy(NotificationResource.class)
         def testuser3NotificationResource = getClientApiTarget(serverUri(serverPort), realm, testuser3AccessToken).proxy(NotificationResource.class)
         def adminNotificationResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(NotificationResource.class)
-        def anonymousNotificationResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm).proxy(NotificationResource.class)
+        def anonymousNotificationResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm).proxy(NotificationResource.class)
         def testuser1ConsoleResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, testuser1AccessToken).proxy(ConsoleResource.class)
         def testuser2ConsoleResource = getClientApiTarget(serverUri(serverPort), realm, testuser2AccessToken).proxy(ConsoleResource.class)
         def testuser3ConsoleResource = getClientApiTarget(serverUri(serverPort), realm, testuser3AccessToken).proxy(ConsoleResource.class)
@@ -175,7 +175,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         anonymousConsole.id != null
 
         when: "the admin user sends a push notification to an entire realm"
-        notification.targets = new Notification.Targets(Notification.TargetType.TENANT, keycloakDemoSetup.tenantA.realm)
+        notification.targets = new Notification.Targets(Notification.TargetType.TENANT, keycloakDemoSetup.tenantBuilding.realm)
         adminNotificationResource.sendNotification(null, notification)
 
         then: "all consoles in that realm should have been sent a notification"
@@ -225,7 +225,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex = thrown()
         ex.response.status == 403
 
-        when: "the admin user sends a push notification to the console assets in tenantA realm"
+        when: "the admin user sends a push notification to the console assets in building realm"
         notification.targets = new Notification.Targets(Notification.TargetType.ASSET,
                                                         testuser2Console.id,
                                                         testuser3Console1.id,
@@ -295,7 +295,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         //    Check notification resource
         // -----------------------------------------------
 
-        when: "the admin user requests the notifications for Tenant A consoles"
+        when: "the admin user requests the notifications for Building consoles"
         def notifications = []
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id))
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
@@ -312,7 +312,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 n.acknowledgedOn == null
         } == 19
 
-        when: "the admin user marks a Tenant A console notification as delivered and requests the notifications for Tenant A consoles"
+        when: "the admin user marks a Building console notification as delivered and requests the notifications for Building consoles"
         adminNotificationResource.notificationDelivered(null, testuser2Console.id, notifications.find {n -> n.targetId == testuser2Console.id}.id)
         notifications = []
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id))
@@ -324,7 +324,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         assert notifications.size() == 19
         assert notifications.count {n -> n.deliveredOn != null} == 1
 
-        when: "the admin user marks a Tenant A console notification as delivered and requests the notifications for Tenant A consoles"
+        when: "the admin user marks a Building console notification as delivered and requests the notifications for Building consoles"
         adminNotificationResource.notificationAcknowledged(null, testuser2Console.id, notifications.find {n -> n.targetId == testuser2Console.id && n.deliveredOn != null}.id, Values.create("dismissed"))
         notifications = []
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id))
@@ -577,8 +577,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def notification = new Notification(
                 "Test",
                 new EmailNotificationMessage().setSubject("Test").setText("Hello world!"),
-                new Notification.Targets(Notification.TargetType.TENANT, managerDemoSetup.realmATenant), null, null)
-        notificationService.sendNotification(notification, Notification.Source.TENANT_RULESET, managerDemoSetup.realmATenant)
+                new Notification.Targets(Notification.TargetType.TENANT, managerDemoSetup.realmBuildingTenant), null, null)
+        notificationService.sendNotification(notification, Notification.Source.TENANT_RULESET, managerDemoSetup.realmBuildingTenant)
 
         then: "the email should have been sent to all tenant users"
         conditions.eventually {

@@ -1,0 +1,23 @@
+{
+  "Space": "Plaatsen",
+  "occupied": "Bezet",
+  "buffer": "Buffer",
+  "capacity": "Totale plaatsen",
+  "occupancy": "Bezette plaatsen",
+  "Sound": "Geluidsniveau",
+  "alarm": "Alarm",
+  "zone1": "Scenario 1",
+  "zone2": "Scenario 2",
+  "zone3": "Scenario 3",
+  "zone4": "Scenario 4",
+  "maintMode": "Onderhoudsmodus",
+  "On": "Aan",
+  "Off": "Uit",
+  "streamId": "ID",
+  "alarmEvent": "Laatste alarm",
+  "latestEvent": "Laatste event",
+  "gunshotEvent": "Laatste gunshot",
+  "intensityEvent": "Laatste lawaai",
+  "aggressionEvent": "Laatste agressie",
+  "breakingglassEvent":  "Laatste brekend glas"
+}

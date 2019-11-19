@@ -97,36 +97,36 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         and: "the demo location predicate console rules are loaded"
         Ruleset ruleset = new TenantRuleset(
-            keycloakDemoSetup.tenantA.realm,
-            "Demo Tenant A - Console Location",
+            keycloakDemoSetup.tenantBuilding.realm,
+            "Demo Tenant Building - Console Location",
             Ruleset.Lang.GROOVY,
             getClass().getResource("/demo/rules/DemoConsoleLocation.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engine to become available and be running"
         conditions.eventually {
-            def tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm)
-            assert tenantAEngine != null
-            assert tenantAEngine.isRunning()
-            assert tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            def tenantBuildingEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantBuilding.realm)
+            assert tenantBuildingEngine != null
+            assert tenantBuildingEngine.isRunning()
+            assert tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
         }
 
         and: "an authenticated user"
         def accessToken = authenticate(
                 container,
-                keycloakDemoSetup.tenantA.realm,
+                keycloakDemoSetup.tenantBuilding.realm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
         ).token
 
         and: "authenticated and anonymous console, rules and asset resources"
-        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm, accessToken).proxy(ConsoleResource.class)
-        def authenticatedRulesResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm, accessToken).proxy(RulesResource.class)
-        def authenticatedAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm, accessToken).proxy(AssetResource.class)
-        def anonymousConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm).proxy(ConsoleResource.class)
-        def anonymousRulesResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm).proxy(RulesResource.class)
-        def anonymousAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm).proxy(AssetResource.class)
+        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(ConsoleResource.class)
+        def authenticatedRulesResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(RulesResource.class)
+        def authenticatedAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(AssetResource.class)
+        def anonymousConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm).proxy(ConsoleResource.class)
+        def anonymousRulesResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm).proxy(RulesResource.class)
+        def anonymousAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm).proxy(AssetResource.class)
 
         when: "a console registers with an authenticated user"
         def consoleRegistration = new ConsoleRegistration(null,
@@ -184,7 +184,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         }.orElse(null) == "23123213ad2313b0897efd"
 
         and: "the console should have been linked to the authenticated user"
-        def userAssets = assetStorageService.findUserAssets(keycloakDemoSetup.tenantA.realm, keycloakDemoSetup.testuser3Id, consoleId)
+        def userAssets = assetStorageService.findUserAssets(keycloakDemoSetup.tenantBuilding.realm, keycloakDemoSetup.testuser3Id, consoleId)
         assert userAssets.size() == 1
         assert userAssets.get(0).assetName == "Test Console"
 
@@ -411,10 +411,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             assert asset != null
             assert asset.getAttribute(LOCATION.attributeName).flatMap { it.valueTimestamp }.orElse(Long.MIN_VALUE) > timestamp
             assert notificationIds.size() == 1
-            def tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm)
-            assert tenantAEngine != null
-            assert tenantAEngine.isRunning()
-            assert !tenantAEngine.facts.getOptional("welcomeHome_${testUser3Console2.id}").isPresent()
+            def tenantBuildingEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantBuilding.realm)
+            assert tenantBuildingEngine != null
+            assert tenantBuildingEngine.isRunning()
+            assert !tenantBuildingEngine.facts.getOptional("welcomeHome_${testUser3Console2.id}").isPresent()
         }
 
         when: "a console's location is updated to be at the Smart Building again"

@@ -71,6 +71,8 @@ services:
       - proxy-data:/deployment
       # Override the haproxy.cfg with custom file
       # -${MY_PROXY_CONFIG_FILE}:/etc/haproxy/haproxy.cfg
+    environment:
+      DOMAINNAME: demo.openremote.io
 
   # This configuration uses the manager's deployment-specific data such as map tiles,
   # console application static resources (HTML, JS, CSS), extensions, and other
@@ -84,6 +86,10 @@ services:
         condition: service_healthy
     volumes:
       - deployment-data:/deployment
+      - /deployment.local/manager:/deployment.local
+    environment:
+      MAP_TILES_PATH: '/deployment.local/map/mapdata.mbtiles'
+      IDENTITY_NETWORK_HOST: demo.openremote.io
 
   keycloak:
     extends:

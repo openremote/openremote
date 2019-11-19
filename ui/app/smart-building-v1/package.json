@@ -1,9 +1,0 @@
-{
-  "name": "customerA",
-  "version": "3.0.0",
-  "homepage": "http://openremote.com/",
-  "author": "OpenRemote Inc. <support@openremote.io>",
-  "description": "OpenRemote SmartHome Example App",
-  "main": "index.html",
-  "license": "AGPL-3.0-or-later"
-}

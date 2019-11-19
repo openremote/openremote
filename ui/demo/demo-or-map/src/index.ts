@@ -11,7 +11,7 @@ manager.init({
     autoLogin: true,
     keycloakUrl: "http://localhost:8080/auth",
     managerUrl: "http://localhost:8080",
-    realm: "tenantA"
+    realm: "building"
 })
     .then(getApartment1Asset)
     .then((apartment1) => {

@@ -27,7 +27,7 @@ import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.TenantRuleset;
 
 import java.io.InputStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 
 public class RulesDemoSetup extends AbstractManagerSetup {
@@ -39,7 +39,7 @@ public class RulesDemoSetup extends AbstractManagerSetup {
     }
 
     public Long apartmentActionsRulesetId;
-    public Long tenantARulesetId;
+    public Long tenantBuildingRulesetId;
 
     @Override
     public void onStart() throws Exception {
@@ -53,35 +53,35 @@ public class RulesDemoSetup extends AbstractManagerSetup {
 
         // Apartment 1
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidencePresenceDetection.groovy")) {
-            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new AssetRuleset(
                 managerDemoSetup.apartment1Id, "Demo Residence - Presence Detection with motion and CO2 sensors", Ruleset.Lang.GROOVY, rules
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceVacationMode.groovy")) {
-            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new AssetRuleset(
                 managerDemoSetup.apartment1Id, "Demo Residence - Vacation Mode", Ruleset.Lang.GROOVY, rules
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceAutoVentilation.groovy")) {
-            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new AssetRuleset(
                 managerDemoSetup.apartment1Id, "Demo Residence - Auto Ventilation", Ruleset.Lang.GROOVY, rules
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceNotifyAlarmTrigger.groovy")) {
-            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new AssetRuleset(
                 managerDemoSetup.apartment1Id, "Demo Residence - Notify Alarm Trigger", Ruleset.Lang.GROOVY, rules
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceSmartSwitch.groovy")) {
-            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new AssetRuleset(
                 managerDemoSetup.apartment1Id, "Demo Residence - Smart Start Switch", Ruleset.Lang.GROOVY, rules
             );
@@ -90,7 +90,7 @@ public class RulesDemoSetup extends AbstractManagerSetup {
 
         // Apartment 2
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceAllLightsOff.js")) {
-            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new AssetRuleset(
                 managerDemoSetup.apartment2Id, "Demo Residence - All Lights Off", Ruleset.Lang.JAVASCRIPT, rules
             );
@@ -98,11 +98,11 @@ public class RulesDemoSetup extends AbstractManagerSetup {
         }
 
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoConsoleLocation.groovy")) {
-            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new TenantRuleset(
-                keycloakDemoSetup.tenantA.getRealm(), "Demo Console Location", Ruleset.Lang.GROOVY, rules
+                keycloakDemoSetup.tenantBuilding.getRealm(), "Demo Console Location", Ruleset.Lang.GROOVY, rules
             ).setAccessPublicRead(true);
-            tenantARulesetId = rulesetStorageService.merge(ruleset).getId();
+            tenantBuildingRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
     }
 }

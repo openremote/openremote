@@ -56,7 +56,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
         }
@@ -86,8 +86,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert smartHomeEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
-            assertRulesFired(rulesImport.tenantAEngine, 1)
-            assertRulesFired(rulesImport.tenantAEngine, ["All"])
+            assertRulesFired(rulesImport.tenantBuildingEngine, 1)
+            assertRulesFired(rulesImport.tenantBuildingEngine, ["All"])
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
@@ -106,8 +106,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         conditions.eventually {
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
-            assertRulesFired(rulesImport.tenantAEngine, 1)
-            assertRulesFired(rulesImport.tenantAEngine, ["All"])
+            assertRulesFired(rulesImport.tenantBuildingEngine, 1)
+            assertRulesFired(rulesImport.tenantBuildingEngine, ["All"])
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
@@ -145,7 +145,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         rulesImport.resetRulesFired()
         def apartment2 = assetStorageService.find(managerDemoSetup.apartment2Id)
         def asset = new Asset("Kitchen", AssetType.ROOM, apartment2)
-        asset.setRealm(keycloakDemoSetup.tenantA.getRealm())
+        asset.setRealm(keycloakDemoSetup.tenantBuilding.getRealm())
         def attributes = [
             new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
@@ -160,7 +160,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         conditions.eventually {
             assert rulesImport.globalEngine.lastFireTimestamp > 0
             assert rulesImport.masterEngine.lastFireTimestamp > 0
-            assert rulesImport.tenantAEngine.lastFireTimestamp > 0
+            assert rulesImport.tenantBuildingEngine.lastFireTimestamp > 0
             assert rulesImport.apartment2Engine.lastFireTimestamp > 0
             assert rulesImport.apartment3Engine.lastFireTimestamp > 0
         }
@@ -170,15 +170,15 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 1
+            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 1
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2 + 1
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
             assertRulesFired(rulesImport.masterEngine, 1)
             assertRulesFired(rulesImport.masterEngine, ["All"])
-            assertRulesFired(rulesImport.tenantAEngine, 1)
-            assertRulesFired(rulesImport.tenantAEngine, ["All"])
+            assertRulesFired(rulesImport.tenantBuildingEngine, 1)
+            assertRulesFired(rulesImport.tenantBuildingEngine, ["All"])
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
@@ -187,7 +187,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "an attribute event is pushed into the system for an attribute with no RULE_STATE meta"
         def globalLastFireTimestamp = rulesImport.globalEngine.lastFireTimestamp
         def masterLastFireTimestamp = rulesImport.masterEngine.lastFireTimestamp
-        def tenantALastFireTimestamp = rulesImport.tenantAEngine.lastFireTimestamp
+        def tenantALastFireTimestamp = rulesImport.tenantBuildingEngine.lastFireTimestamp
         def apartment2LastFireTimestamp = rulesImport.apartment2Engine.lastFireTimestamp
         def apartment3LastFireTimestamp = rulesImport.apartment3Engine.lastFireTimestamp
         def apartment2LivingRoomWindowOpenChange = new AttributeEvent(
@@ -205,7 +205,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         conditions.eventually {
             assert rulesImport.globalEngine.lastFireTimestamp == globalLastFireTimestamp
             assert rulesImport.masterEngine.lastFireTimestamp == masterLastFireTimestamp
-            assert rulesImport.tenantAEngine.lastFireTimestamp == tenantALastFireTimestamp
+            assert rulesImport.tenantBuildingEngine.lastFireTimestamp == tenantALastFireTimestamp
             assert rulesImport.apartment2Engine.lastFireTimestamp == apartment2LastFireTimestamp
             assert rulesImport.apartment3Engine.lastFireTimestamp == apartment3LastFireTimestamp
         }
@@ -213,7 +213,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "the Kitchen room asset is modified to add a new attribute but RULE_STATE = true meta is not changed"
         globalLastFireTimestamp = rulesImport.globalEngine.lastFireTimestamp
         masterLastFireTimestamp = rulesImport.masterEngine.lastFireTimestamp
-        tenantALastFireTimestamp = rulesImport.tenantAEngine.lastFireTimestamp
+        tenantALastFireTimestamp = rulesImport.tenantBuildingEngine.lastFireTimestamp
         apartment2LastFireTimestamp = rulesImport.apartment2Engine.lastFireTimestamp
         apartment3LastFireTimestamp = rulesImport.apartment3Engine.lastFireTimestamp
         attributes = [
@@ -230,7 +230,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         conditions.eventually {
             assert rulesImport.globalEngine.lastFireTimestamp > globalLastFireTimestamp
             assert rulesImport.masterEngine.lastFireTimestamp == masterLastFireTimestamp
-            assert rulesImport.tenantAEngine.lastFireTimestamp > tenantALastFireTimestamp
+            assert rulesImport.tenantBuildingEngine.lastFireTimestamp > tenantALastFireTimestamp
             assert rulesImport.apartment2Engine.lastFireTimestamp > apartment2LastFireTimestamp
             assert rulesImport.apartment3Engine.lastFireTimestamp == apartment3LastFireTimestamp
         }
@@ -240,12 +240,12 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 1
+            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 1
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2 + 1
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.masterEngine, 1)
-            assertRulesFired(rulesImport.tenantAEngine, 1)
+            assertRulesFired(rulesImport.tenantBuildingEngine, 1)
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment3Engine, 0)
         }
@@ -267,13 +267,13 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
-            assertRulesFired(rulesImport.tenantAEngine, 1)
-            assertRulesFired(rulesImport.tenantAEngine, ["All"])
+            assertRulesFired(rulesImport.tenantBuildingEngine, 1)
+            assertRulesFired(rulesImport.tenantBuildingEngine, ["All"])
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
@@ -299,13 +299,13 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 2
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 2
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 2
+            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 2
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2 + 2
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
-            assertRulesFired(rulesImport.tenantAEngine, 1)
-            assertRulesFired(rulesImport.tenantAEngine, ["All"])
+            assertRulesFired(rulesImport.tenantBuildingEngine, 1)
+            assertRulesFired(rulesImport.tenantBuildingEngine, ["All"])
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
@@ -320,13 +320,13 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
-            assertRulesFired(rulesImport.tenantAEngine, 1)
-            assertRulesFired(rulesImport.tenantAEngine, ["All"])
+            assertRulesFired(rulesImport.tenantBuildingEngine, 1)
+            assertRulesFired(rulesImport.tenantBuildingEngine, ["All"])
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
@@ -358,22 +358,22 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
-        when: "a broken RHS rule is loaded into the tenantA engine"
+        when: "a broken RHS rule is loaded into the building engine"
         def ruleset = new TenantRuleset(
-            keycloakDemoSetup.tenantA.realm,
+            keycloakDemoSetup.tenantBuilding.realm,
             "Some broken test rules",
             Ruleset.Lang.GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicBrokenRules.groovy").text)
         rulesetStorageService.merge(ruleset)
 
-        then: "the tenantA engine should not run and the rule engine status should indicate the issue"
+        then: "the building engine should not run and the rule engine status should indicate the issue"
         conditions.eventually {
-            assert rulesImport.tenantAEngine.deployments.size() == 2
-            assert !rulesImport.tenantAEngine.running
-            assert rulesImport.tenantAEngine.deployments.values().any({
-                it.name == "Some tenantA tenant demo rules" && it.status == READY
+            assert rulesImport.tenantBuildingEngine.deployments.size() == 2
+            assert !rulesImport.tenantBuildingEngine.running
+            assert rulesImport.tenantBuildingEngine.deployments.values().any({
+                it.name == "Some building tenant demo rules" && it.status == READY
             })
-            assert rulesImport.tenantAEngine.deployments.values().any({
+            assert rulesImport.tenantBuildingEngine.deployments.values().any({
                 it.name == "Some broken test rules" && it.status == COMPILATION_ERROR && it.error instanceof RuntimeException
             })
         }
@@ -381,7 +381,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "an attribute event occurs"
         def globalLastFireTimestamp = rulesImport.globalEngine.lastFireTimestamp
         def masterLastFireTimestamp = rulesImport.masterEngine.lastFireTimestamp
-        def tenantALastFireTimestamp = rulesImport.tenantAEngine.lastFireTimestamp
+        def tenantALastFireTimestamp = rulesImport.tenantBuildingEngine.lastFireTimestamp
         def apartment2LastFireTimestamp = rulesImport.apartment2Engine.lastFireTimestamp
         def apartment3LastFireTimestamp = rulesImport.apartment3Engine.lastFireTimestamp
         def apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
@@ -393,7 +393,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         conditions.eventually {
             assert rulesImport.globalEngine.lastFireTimestamp > globalLastFireTimestamp
             assert rulesImport.masterEngine.lastFireTimestamp > masterLastFireTimestamp
-            assert rulesImport.tenantAEngine.lastFireTimestamp == tenantALastFireTimestamp
+            assert rulesImport.tenantBuildingEngine.lastFireTimestamp == tenantALastFireTimestamp
             assert rulesImport.apartment2Engine.lastFireTimestamp > apartment2LastFireTimestamp
             assert rulesImport.apartment3Engine.lastFireTimestamp > apartment3LastFireTimestamp
         }

@@ -220,7 +220,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.parentId == managerDemoSetup.smartBuildingId
         asset.parentName == null
         asset.parentType == null
-        asset.realm == keycloakDemoSetup.tenantA.realm
+        asset.realm == keycloakDemoSetup.tenantBuilding.realm
         asset.path.length == 2
         asset.path[0] == managerDemoSetup.apartment1Id
         asset.path[1] == managerDemoSetup.smartBuildingId
@@ -326,7 +326,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).parentId == managerDemoSetup.smartBuildingId
         assets.get(0).parentName == "Smart Building"
         assets.get(0).parentType == AssetType.BUILDING.type
-        assets.get(0).realm == keycloakDemoSetup.tenantA.realm
+        assets.get(0).realm == keycloakDemoSetup.tenantBuilding.realm
         assets.get(0).path == null
         assets.get(0).attributesList.size() == 0
         assets.get(1).id == managerDemoSetup.apartment2Id
@@ -337,7 +337,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(selectExcludePathAndAttributes())
                     .parents(new ParentPredicate(managerDemoSetup.smartBuildingId))
-                    .tenant(new TenantPredicate(keycloakDemoSetup.tenantA.realm))
+                    .tenant(new TenantPredicate(keycloakDemoSetup.tenantBuilding.realm))
         )
 
         then: "result should match"
@@ -351,7 +351,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(selectExcludePathAndAttributes())
                     .parents(new ParentPredicate(managerDemoSetup.smartBuildingId))
-                    .tenant(new TenantPredicate(keycloakDemoSetup.tenantA.realm))
+                    .tenant(new TenantPredicate(keycloakDemoSetup.tenantBuilding.realm))
                     .orderBy(new OrderBy(NAME, true))
         )
 
@@ -633,7 +633,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.parentId != null
         asset.parentName == "Apartment 1"
         asset.parentType == AssetType.RESIDENCE.getType()
-        asset.realm == keycloakDemoSetup.tenantA.realm
+        asset.realm == keycloakDemoSetup.tenantBuilding.realm
         asset.path != null
         asset.getAttributesList().size() == 3
         asset.getAttribute("co2Level").isPresent()
@@ -660,7 +660,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.parentId != null
         asset.parentName == "Apartment 1"
         asset.parentType == AssetType.RESIDENCE.getType()
-        asset.realm == keycloakDemoSetup.tenantA.realm
+        asset.realm == keycloakDemoSetup.tenantBuilding.realm
         asset.path != null
         asset.getAttributesList().size() == 1
         asset.getAttribute("co2Level").isPresent()

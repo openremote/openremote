@@ -7,7 +7,7 @@ task clean() {
 task installDist(type: Copy) {
     dependsOn(rootProject.getTasksByName('installDist', true).findAll {it.project != project && ((parent == rootProject) || (isCustomProject() && it.project.parent != rootProject))})
     from(projectDir) {
-        exclude "build.gradle", "Dockerfile", "build"
+        exclude "build.gradle", "Dockerfile", "build", "**/*.mbtiles"
     }
     into project(":deployment").buildDir
 }

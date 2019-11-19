@@ -164,11 +164,11 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             assert rowData[0].icon == "group"
             assert rowData[0].id == keycloakDemoSetup.masterTenant.realm
             assert rowData[1] instanceof TenantTreeNode
-            assert rowData[1].label == "Tenant A"
-            assert rowData[1].id == keycloakDemoSetup.tenantA.realm
+            assert rowData[1].label == "Building"
+            assert rowData[1].id == keycloakDemoSetup.tenantBuilding.realm
             assert rowData[2] instanceof TenantTreeNode
-            assert rowData[2].label == "Tenant B"
-            assert rowData[2].id == keycloakDemoSetup.tenantB.realm
+            assert rowData[2].label == "City"
+            assert rowData[2].id == keycloakDemoSetup.tenantCity.realm
         }
         1 * treeDisplay.setRowCount(3, true)
 
@@ -400,7 +400,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         collectedSharedEvents.clear()
         clientEventService.subscribe(
                 AssetTreeModifiedEvent.class,
-                new TenantFilter(keycloakDemoSetup.tenantA.realm)
+                new TenantFilter(keycloakDemoSetup.tenantBuilding.realm)
         )
 
         then: "the server should return a failure"
@@ -427,7 +427,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
         and: "an authenticated user"
-        def realm = keycloakDemoSetup.tenantA.realm
+        def realm = keycloakDemoSetup.tenantBuilding.realm
         def accessToken = {
             authenticate(
                     container,

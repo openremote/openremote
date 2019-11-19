@@ -49,7 +49,7 @@ services:
       # PROXY_HOST_REDIRECT_1_NAME: www.my-console-master.tld
       # PROXY_HOST_REDIRECT_1_TARGET: /console/master
       # PROXY_HOST_REDIRECT_2_NAME: www.my-console-tenant-a.tld
-      # PROXY_HOST_REDIRECT_2_TARGET: /console/tenantA
+      # PROXY_HOST_REDIRECT_2_TARGET: /console/building
       # PROXY_HOST_REDIRECT_3_NAME: ...
 
       # Customize proxy log, defaults to 'notice', requests are logged at 'info'.

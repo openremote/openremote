@@ -38,6 +38,7 @@ import org.openremote.model.simulator.element.SwitchSimulatorElement;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -90,8 +91,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String apartment2BathroomId;
     public String apartment3LivingroomId;
     public String masterRealm;
-    public String realmATenant;
-    public String realmBTenant;
+    public String realmBuildingTenant;
+    public String realmCityTenant;
     public String smartCityServiceAgentId;
 
 
@@ -106,11 +107,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
         Tenant masterTenant = keycloakDemoSetup.masterTenant;
-        Tenant realmATenant = keycloakDemoSetup.tenantA;
-        Tenant realmBTenant = keycloakDemoSetup.tenantB;
+        Tenant tenantBuilding = keycloakDemoSetup.tenantBuilding;
+        Tenant tenantCity = keycloakDemoSetup.tenantCity;
         masterRealm = masterTenant.getRealm();
-        this.realmATenant = realmATenant.getRealm();
-        this.realmBTenant = realmBTenant.getRealm();
+        this.realmBuildingTenant = tenantBuilding.getRealm();
+        this.realmCityTenant = tenantCity.getRealm();
 
         // ################################ Demo assets for 'master' realm ###################################
 
@@ -378,12 +379,12 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                                      AttributeEvent.Source.SENSOR);
         });
 
-        // ################################ Demo assets for 'tenantA' realm ###################################
+        // ################################ Demo assets for 'building' realm ###################################
 
         ObjectValue locationValueA = SMART_BUILDING_LOCATION.toValue();
 
         Asset smartBuilding = new Asset();
-        smartBuilding.setRealm(this.realmATenant);
+        smartBuilding.setRealm(this.realmBuildingTenant);
         smartBuilding.setName("Smart Building");
         smartBuilding.setType(BUILDING);
         smartBuilding.addAttributes(
@@ -734,41 +735,41 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Link demo users and assets ###################################
 
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantBuilding.getRealm(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1Id));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantBuilding.getRealm(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1LivingroomId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantBuilding.getRealm(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1KitchenId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantBuilding.getRealm(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1Bedroom1Id));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantBuilding.getRealm(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1BathroomId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantBuilding.getRealm(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1HallwayId));
 
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantBuilding.getRealm(),
                 keycloakDemoSetup.buildingUserId,
                 apartment1Id));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantBuilding.getRealm(),
                 keycloakDemoSetup.buildingUserId,
                 apartment1LivingroomId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantBuilding.getRealm(),
                 keycloakDemoSetup.buildingUserId,
                 apartment1KitchenId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantBuilding.getRealm(),
                 keycloakDemoSetup.buildingUserId,
                 apartment1Bedroom1Id));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantBuilding.getRealm(),
                 keycloakDemoSetup.buildingUserId,
                 apartment1BathroomId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantBuilding.getRealm(),
                 keycloakDemoSetup.buildingUserId,
                 apartment1HallwayId));
 
@@ -782,12 +783,12 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         testuser3Config.setRestricted(true);
         buildingUserConfig = identityService.mergeUserConfiguration(buildingUserConfig);
 
-        // ################################ Realm B ###################################
+        // ################################ Realm smartcity ###################################
 
         ObjectValue locationValueB = SMART_CITY_LOCATION.toValue();
 
         Asset smartCity = new Asset();
-        smartCity.setRealm(this.realmBTenant);
+        smartCity.setRealm(this.realmCityTenant);
         smartCity.setName("Smart City");
         smartCity.setType(BUILDING);
         smartCity.addAttributes(

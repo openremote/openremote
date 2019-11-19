@@ -39,10 +39,10 @@ import java.util.logging.Logger;
  * <ul>
  * <li><code>admin</code> - The superuser in the "master" realm with all access</li>
  * <li><code>testuser1</code> - (Password: testuser1) A user in the "master" realm with read/write access to assets and rules</li>
- * <li><code>testuser2</code> - (Password: testuser2) A user in the "tenantA" realm with only read access to assets</li>
- * <li><code>testuser3</code> - (Password: testuser3) A user in the "tenantA" realm with read/write access to a restricted set of assets and their rules</li>
- * <li><code>building</code> - (Password: building) A user in the "tenantA" realm with read/write access to the building apartment 1 assets and their rules</li>
- * <li><code>testuser4</code> - (Password: testuser4) A user in the "tenantB" realm with read/write access to a restricted set of assets and their rules</li>
+ * <li><code>testuser2</code> - (Password: testuser2) A user in the "building" realm with only read access to assets</li>
+ * <li><code>testuser3</code> - (Password: testuser3) A user in the "building" realm with read/write access to a restricted set of assets and their rules</li>
+ * <li><code>building</code> - (Password: building) A user in the "building" realm with read/write access to the building apartment 1 assets and their rules</li>
+ * <li><code>testuser4</code> - (Password: testuser4) A user in the "smartcity" realm with read/write access to a restricted set of assets and their rules</li>
  *
  * </ul>
  */
@@ -56,8 +56,8 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
     public String testuser4Id;
     public String buildingUserId;
     public Tenant masterTenant;
-    public Tenant tenantA;
-    public Tenant tenantB;
+    public Tenant tenantBuilding;
+    public Tenant tenantCity;
 
     public KeycloakDemoSetup(Container container) {
         super(container);
@@ -70,19 +70,19 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         // Tenants
         masterTenant = identityService.getIdentityProvider().getTenant(Constants.MASTER_REALM);
 
-        tenantA = new Tenant();
-        tenantA.setRealm("tenantA");
-        tenantA.setDisplayName("Tenant A");
-        tenantA.setEnabled(true);
-        keycloakProvider.createTenant(new ClientRequestInfo(null, accessToken), tenantA, emailConfig);
-        tenantA = keycloakProvider.getTenant(tenantA.getRealm());
-
-        tenantB = new Tenant();
-        tenantB.setRealm("tenantB");
-        tenantB.setDisplayName("Tenant B");
-        tenantB.setEnabled(true);
-        keycloakProvider.createTenant(new ClientRequestInfo(null, accessToken), tenantB, emailConfig);
-        tenantB = keycloakProvider.getTenant(tenantB.getRealm());
+        tenantBuilding = new Tenant();
+        tenantBuilding.setRealm("building");
+        tenantBuilding.setDisplayName("Building");
+        tenantBuilding.setEnabled(true);
+        keycloakProvider.createTenant(new ClientRequestInfo(null, accessToken), tenantBuilding, emailConfig);
+        tenantBuilding = keycloakProvider.getTenant(tenantBuilding.getRealm());
+        Updated the demo setup with new realms and with the new npm ui packages
+        tenantCity = new Tenant();
+        tenantCity.setRealm("smartcity");
+        tenantCity.setDisplayName("Smart City");
+        tenantCity.setEnabled(true);
+        keycloakProvider.createTenant(new ClientRequestInfo(null, accessToken), tenantCity, emailConfig);
+        tenantCity = keycloakProvider.getTenant(tenantCity.getRealm());
 
         // Users
         String masterClientObjectId = getClientObjectId(masterClientsResource);
@@ -111,10 +111,10 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         ));
         LOG.info("Added demo user '" + testuser1.getUsername() + "' with password '" + testuser1Credentials.getValue() + "'");
 
-        UsersResource tenantAUsersResource = keycloakProvider.getRealms(accessToken).realm("tenantA").users();
-        ClientsResource tenantAClientsResource = keycloakProvider.getRealms(accessToken).realm("tenantA").clients();
-        String tenantAClientObjectId = getClientObjectId(tenantAClientsResource);
-        RolesResource tenantARolesResource = tenantAClientsResource.get(tenantAClientObjectId).roles();
+        UsersResource tenantBuildingUsersResource = keycloakProvider.getRealms(accessToken).realm("building").users();
+        ClientsResource tenantBuildingClientsResource = keycloakProvider.getRealms(accessToken).realm("building").clients();
+        String tenantBuildingClientObjectId = getClientObjectId(tenantBuildingClientsResource);
+        RolesResource tenantBuildingRolesResource = tenantBuildingClientsResource.get(tenantBuildingClientObjectId).roles();
 
         UserRepresentation testuser2 = new UserRepresentation();
         testuser2.setUsername("testuser2");
@@ -122,18 +122,18 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         testuser2.setLastName("DemoLast");
         testuser2.setEmail("testuser2@openremote.local");
         testuser2.setEnabled(true);
-        tenantAUsersResource.create(testuser2);
-        testuser2 = tenantAUsersResource.search("testuser2", null, null, null, null, null).get(0);
+        tenantBuildingUsersResource.create(testuser2);
+        testuser2 = tenantBuildingUsersResource.search("testuser2", null, null, null, null, null).get(0);
         this.testuser2Id = testuser2.getId();
         CredentialRepresentation testuser2Credentials = new CredentialRepresentation();
         testuser2Credentials.setType("password");
         testuser2Credentials.setValue("testuser2");
         testuser2Credentials.setTemporary(false);
-        tenantAUsersResource.get(testuser2.getId()).resetPassword(testuser2Credentials);
-        tenantAUsersResource.get(testuser2.getId()).roles().clientLevel(tenantAClientObjectId).add(Arrays.asList(
-            tenantARolesResource.get(ClientRole.WRITE_USER.getValue()).toRepresentation(),
-            tenantARolesResource.get(ClientRole.READ_MAP.getValue()).toRepresentation(),
-            tenantARolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation()
+        tenantBuildingUsersResource.get(testuser2.getId()).resetPassword(testuser2Credentials);
+        tenantBuildingUsersResource.get(testuser2.getId()).roles().clientLevel(tenantBuildingClientObjectId).add(Arrays.asList(
+            tenantBuildingRolesResource.get(ClientRole.WRITE_USER.getValue()).toRepresentation(),
+            tenantBuildingRolesResource.get(ClientRole.READ_MAP.getValue()).toRepresentation(),
+            tenantBuildingRolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation()
         ));
         LOG.info("Added demo user '" + testuser2.getUsername() + "' with password '" + testuser2Credentials.getValue() + "'");
 
@@ -143,21 +143,21 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         testuser3.setLastName("DemoLast");
         testuser3.setEmail("testuser3@openremote.local");
         testuser3.setEnabled(true);
-        tenantAUsersResource.create(testuser3);
-        testuser3 = tenantAUsersResource.search("testuser3", null, null, null, null, null).get(0);
+        tenantBuildingUsersResource.create(testuser3);
+        testuser3 = tenantBuildingUsersResource.search("testuser3", null, null, null, null, null).get(0);
         this.testuser3Id = testuser3.getId();
         CredentialRepresentation testuser3Credentials = new CredentialRepresentation();
         testuser3Credentials.setType("password");
         testuser3Credentials.setValue("testuser3");
         testuser3Credentials.setTemporary(false);
-        tenantAUsersResource.get(testuser3.getId()).resetPassword(testuser3Credentials);
-        tenantAUsersResource.get(testuser3.getId()).roles().clientLevel(tenantAClientObjectId).add(Arrays.asList(
-            tenantARolesResource.get(ClientRole.WRITE_USER.getValue()).toRepresentation(),
-            tenantARolesResource.get(ClientRole.READ_MAP.getValue()).toRepresentation(),
-            tenantARolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation(),
-            tenantARolesResource.get(ClientRole.WRITE_RULES.getValue()).toRepresentation(),
-            tenantARolesResource.get(ClientRole.WRITE_ASSETS.getValue()).toRepresentation(),
-            tenantARolesResource.get(ClientRole.READ_RULES.getValue()).toRepresentation()
+        tenantBuildingUsersResource.get(testuser3.getId()).resetPassword(testuser3Credentials);
+        tenantBuildingUsersResource.get(testuser3.getId()).roles().clientLevel(tenantBuildingClientObjectId).add(Arrays.asList(
+            tenantBuildingRolesResource.get(ClientRole.WRITE_USER.getValue()).toRepresentation(),
+            tenantBuildingRolesResource.get(ClientRole.READ_MAP.getValue()).toRepresentation(),
+            tenantBuildingRolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation(),
+            tenantBuildingRolesResource.get(ClientRole.WRITE_RULES.getValue()).toRepresentation(),
+            tenantBuildingRolesResource.get(ClientRole.WRITE_ASSETS.getValue()).toRepresentation(),
+            tenantBuildingRolesResource.get(ClientRole.READ_RULES.getValue()).toRepresentation()
         ));
         LOG.info("Added demo user '" + testuser3.getUsername() + "' with password '" + testuser3Credentials.getValue() + "'");
 
@@ -167,28 +167,28 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         buildingUser.setLastName("User");
         buildingUser.setEmail("building@openremote.local");
         buildingUser.setEnabled(true);
-        tenantAUsersResource.create(buildingUser);
-        buildingUser = tenantAUsersResource.search("building", null, null, null, null, null).get(0);
+        tenantBuildingUsersResource.create(buildingUser);
+        buildingUser = tenantBuildingUsersResource.search("building", null, null, null, null, null).get(0);
         this.buildingUserId = buildingUser.getId();
         CredentialRepresentation buildingUserCredentials = new CredentialRepresentation();
         buildingUserCredentials.setType("password");
         buildingUserCredentials.setValue("building");
         buildingUserCredentials.setTemporary(false);
-        tenantAUsersResource.get(buildingUser.getId()).resetPassword(buildingUserCredentials);
-        tenantAUsersResource.get(buildingUser.getId()).roles().clientLevel(tenantAClientObjectId).add(Arrays.asList(
-            tenantARolesResource.get(ClientRole.WRITE_USER.getValue()).toRepresentation(),
-            tenantARolesResource.get(ClientRole.READ_MAP.getValue()).toRepresentation(),
-            tenantARolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation(),
-            tenantARolesResource.get(ClientRole.WRITE_RULES.getValue()).toRepresentation(),
-            tenantARolesResource.get(ClientRole.WRITE_ASSETS.getValue()).toRepresentation(),
-            tenantARolesResource.get(ClientRole.READ_RULES.getValue()).toRepresentation()
+        tenantBuildingUsersResource.get(buildingUser.getId()).resetPassword(buildingUserCredentials);
+        tenantBuildingUsersResource.get(buildingUser.getId()).roles().clientLevel(tenantBuildingClientObjectId).add(Arrays.asList(
+            tenantBuildingRolesResource.get(ClientRole.WRITE_USER.getValue()).toRepresentation(),
+            tenantBuildingRolesResource.get(ClientRole.READ_MAP.getValue()).toRepresentation(),
+            tenantBuildingRolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation(),
+            tenantBuildingRolesResource.get(ClientRole.WRITE_RULES.getValue()).toRepresentation(),
+            tenantBuildingRolesResource.get(ClientRole.WRITE_ASSETS.getValue()).toRepresentation(),
+            tenantBuildingRolesResource.get(ClientRole.READ_RULES.getValue()).toRepresentation()
         ));
         LOG.info("Added demo user '" + buildingUser.getUsername() + "' with password '" + buildingUserCredentials.getValue() + "'");
 
-        UsersResource tenantBUsersResource = keycloakProvider.getRealms(accessToken).realm("tenantB").users();
-        ClientsResource tenantBClientsResource = keycloakProvider.getRealms(accessToken).realm("tenantB").clients();
-        String tenantBClientObjectId = getClientObjectId(tenantBClientsResource);
-        RolesResource tenantBRolesResource = tenantBClientsResource.get(tenantBClientObjectId).roles();
+        UsersResource tenantCityUsersResource = keycloakProvider.getRealms(accessToken).realm("city").users();
+        ClientsResource tenantCityClientsResource = keycloakProvider.getRealms(accessToken).realm("city").clients();
+        String tenantCityClientObjectId = getClientObjectId(tenantCityClientsResource);
+        RolesResource tenantCityRolesResource = tenantCityClientsResource.get(tenantCityClientObjectId).roles();
 
         UserRepresentation testuser4 = new UserRepresentation();
         testuser4.setUsername("testuser4");
@@ -196,19 +196,19 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         testuser4.setLastName("DemoLast");
         testuser4.setEmail("testuser4@openremote.local");
         testuser4.setEnabled(true);
-        tenantBUsersResource.create(testuser4);
-        testuser4 = tenantBUsersResource.search("testuser4", null, null, null, null, null).get(0);
+        tenantCityUsersResource.create(testuser4);
+        testuser4 = tenantCityUsersResource.search("testuser4", null, null, null, null, null).get(0);
         this.testuser4Id = testuser4.getId();
         CredentialRepresentation testuser4Credentials = new CredentialRepresentation();
         testuser4Credentials.setType("password");
         testuser4Credentials.setValue("testuser4");
         testuser4Credentials.setTemporary(false);
-        tenantBUsersResource.get(testuser4.getId()).resetPassword(testuser4Credentials);
-        tenantBUsersResource.get(testuser4.getId()).roles().clientLevel(tenantBClientObjectId).add(Arrays.asList(
-            tenantBRolesResource.get(ClientRole.WRITE_USER.getValue()).toRepresentation(),
-            tenantBRolesResource.get(ClientRole.READ_MAP.getValue()).toRepresentation(),
-            tenantBRolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation(),
-            tenantBRolesResource.get(ClientRole.READ_RULES.getValue()).toRepresentation()
+        tenantCityUsersResource.get(testuser4.getId()).resetPassword(testuser4Credentials);
+        tenantCityUsersResource.get(testuser4.getId()).roles().clientLevel(tenantCityClientObjectId).add(Arrays.asList(
+            tenantCityRolesResource.get(ClientRole.WRITE_USER.getValue()).toRepresentation(),
+            tenantCityRolesResource.get(ClientRole.READ_MAP.getValue()).toRepresentation(),
+            tenantCityRolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation(),
+            tenantCityRolesResource.get(ClientRole.READ_RULES.getValue()).toRepresentation()
         ));
         LOG.info("Added demo user '" + testuser4.getUsername() + "' with password '" + testuser4Credentials.getValue() + "'");
     }
