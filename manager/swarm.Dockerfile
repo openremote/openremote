@@ -72,7 +72,7 @@ ENV MAP_SETTINGS_PATH /deployment/map/mapsettings.json
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
+HEALTHCHECK --interval=3s --timeout=3s --start-period=300s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
 
 WORKDIR /opt/app
 
