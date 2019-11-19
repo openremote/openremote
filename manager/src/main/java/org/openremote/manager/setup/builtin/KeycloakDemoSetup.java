@@ -185,8 +185,8 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         ));
         LOG.info("Added demo user '" + buildingUser.getUsername() + "' with password '" + buildingUserCredentials.getValue() + "'");
 
-        UsersResource tenantCityUsersResource = keycloakProvider.getRealms(accessToken).realm("city").users();
-        ClientsResource tenantCityClientsResource = keycloakProvider.getRealms(accessToken).realm("city").clients();
+        UsersResource tenantCityUsersResource = keycloakProvider.getRealms(accessToken).realm("smartcity").users();
+        ClientsResource tenantCityClientsResource = keycloakProvider.getRealms(accessToken).realm("smartcity").clients();
         String tenantCityClientObjectId = getClientObjectId(tenantCityClientsResource);
         RolesResource tenantCityRolesResource = tenantCityClientsResource.get(tenantCityClientObjectId).roles();
 
