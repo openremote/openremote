@@ -9,7 +9,6 @@
     "./src"
   ],
   "references": [
-    { "path": "../rest" },
-    { "path": "../or-icon" }
+    { "path": "../rest" }
   ]
 }

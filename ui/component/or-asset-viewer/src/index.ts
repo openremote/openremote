@@ -60,16 +60,6 @@ export interface ViewerConfig {
     historyConfig?: HistoryConfig;
 }
 
-function getAttributeLabel(attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined, fallback?: string): string {
-    if (!attribute && !descriptor) {
-        return fallback || "";
-    }
-
-    const labelMetaValue = AssetModelUtil.getMetaValue(MetaItemType.LABEL, attribute, descriptor);
-    const name = attribute ? attribute.name : descriptor!.attributeName;
-    return i18next.t([name, fallback || labelMetaValue || name]);
-}
-
 @customElement("or-asset-viewer")
 export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElement)) {
 
@@ -352,7 +342,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
                 content = html`
                     <div id="history-controls">
-                        <or-input id="history-attribute-picker" .label="${i18next.t("attribute")}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${historyAttrs.map((attr) => [attr.name, getAttributeLabel(attr, undefined)])}"></or-input>
+                        <or-input id="history-attribute-picker" .label="${i18next.t("attribute")}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${historyAttrs.map((attr) => [attr.name, Util.getAttributeLabel(attr, undefined)])}"></or-input>
                     </div>        
                     <or-attribute-history id="attribute-history" .config="${viewerConfig.historyConfig}" .assetType="${asset.type}"></or-attribute-history>
                 `;

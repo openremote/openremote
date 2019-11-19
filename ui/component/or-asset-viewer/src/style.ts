@@ -109,10 +109,13 @@ export const style = css`
         padding: var(--internal-or-asset-viewer-panel-padding);
     }
     
+    #location-panel .panel-content {
+        height: 100%;
+    }
+    
     .panel-content {
         display: flex;
         flex-wrap: wrap;
-        height: 100%;
     }
         
     .panel-title {
@@ -143,6 +146,7 @@ export const style = css`
         text-align: center;
         height: 100%;
     }
+    
     .back-navigation {
         display: none;
         cursor: pointer;
