@@ -10,7 +10,7 @@
 #   dosker swarm init
 #   docker pull openremote/deployment
 #   docker-compose -p demo up -d --no-build deployment 
-#   docker deploy --compose-file docker-compose-swarm.yml demo
+#   docker stack deploy --compose-file docker-compose-swarm.yml demo
 #
 # Stop the stack:
 #
@@ -65,9 +65,6 @@ services:
       # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
       TZ: Europe/Amsterdam
 
-      # File to which std out will be logged
-      LOGFILE: /var/log/proxy.log
-
       # The public host name of this OpenRemote installation. Set this to request/manage an SSL
       # certificate with the free https://letsencrypt.org/ provider. The default 'localhost' will
       # rely on a baked-in self-signed certificate. If you change this, adjust manager#IDENTITY_NETWORK_HOST.
@@ -105,11 +102,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-
-    # Configure logging of the container
-    logging:
-        options:
-            max-size: 10m
 
     volumes:
       - proxy-data:/deployment
@@ -212,10 +204,6 @@ services:
                   -XX:NativeMemoryTracking=summary
                   -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof'
 
-    # Configure logging of the container, see deployment/logging.properties
-    logging:
-        options:
-            max-size: 10m
     volumes:
       - deployment-data:/deployment
 
@@ -262,10 +250,6 @@ services:
                   -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof
                   -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true'
 
-    # Configure logging of the container
-    logging:
-        options:
-            max-size: 10m
     ports:
       - "8081:8080"
 
@@ -298,9 +282,5 @@ services:
       # You can open an SQL console on a running container with:
       # docker exec -it <container ID> psql -U openremote
 
-    # Configure logging of the container
-    logging:
-        options:
-            max-size: 10m
     volumes:
       - postgresql-data:/deployment
