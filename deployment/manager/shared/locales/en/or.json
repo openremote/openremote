@@ -101,5 +101,8 @@
   "notification": "Notification",
   "matched": "Matched",
   "unmatched": "Unmatched",
-  "wait": "Wait"
+  "wait": "Wait",
+  "history": "History",
+  "attributes": "Attributes",
+  "info": "Info"
 }
