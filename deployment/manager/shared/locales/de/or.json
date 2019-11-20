@@ -97,13 +97,13 @@
   "french": "Französisch",
   "german": "Deutsch",
   "spanish": "Spanisch",
-  "noRuleSelected": "*Please select a rule on the left",
-  "anyOfThisType": "*Any of this type",
-  "notification": "*Notification",
-  "matched": "*Matched",
-  "unmatched": "*Unmatched",
-  "wait": "*Wait",
-  "history": "*History",
-  "attributes": "*Attributes",
-  "info": "*Info"
+  "noRuleSelected": "Bitte wählen Sie links eine Regel aus",
+  "anyOfThisType": "Irgendeines von diesem Typ",
+  "notification": "Benachrichtigung",
+  "matched": "Passend",
+  "unmatched": "Nicht passend",
+  "wait": "Warte",
+  "history": "Historie",
+  "attributes": "Attribute",
+  "info": "Info"
 }
