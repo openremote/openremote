@@ -33,6 +33,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.*;
+import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.Values;
 
@@ -508,9 +509,10 @@ public abstract class AbstractManagerSetup implements Setup {
         );
     }
 
-    protected Asset createDemoCameraAsset(String name, Asset area, Supplier<MetaItem[]> agentLinker) {
-        Asset cameraAsset = new Asset(name, THING, area);
+    protected Asset createDemoCameraAsset(String name, Asset area, GeoJSON location, Supplier<MetaItem[]> agentLinker) {
+        Asset cameraAsset = new Asset(name, CAMERA, area);
         cameraAsset.addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()),
             new AssetAttribute("cameraCountIn", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Camera Count In")),
@@ -584,9 +586,10 @@ public abstract class AbstractManagerSetup implements Setup {
         return cameraAsset;
     }
 
-    protected Asset createDemoMicrophoneAsset(String name, Asset area, Supplier<MetaItem[]> agentLinker) {
-        Asset microphoneAsset = new Asset(name, THING, area);
+    protected Asset createDemoMicrophoneAsset(String name, Asset area, GeoJSON location, Supplier<MetaItem[]> agentLinker) {
+        Asset microphoneAsset = new Asset(name, MICROPHONE, area);
         microphoneAsset.addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()),
             new AssetAttribute("microphoneLevel", SOUND_DB)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Microphone Level")),
@@ -639,9 +642,10 @@ public abstract class AbstractManagerSetup implements Setup {
         return microphoneAsset;
     }
 
-    protected Asset createDemoEnviromentAsset(String name, Asset area, Supplier<MetaItem[]> agentLinker) {
-        Asset enviromentAsset = new Asset(name, THING, area);
+    protected Asset createDemoEnviromentAsset(String name, Asset area, GeoJSON location, Supplier<MetaItem[]> agentLinker) {
+        Asset enviromentAsset = new Asset(name, ENVIRONMENT_SENSOR, area);
         enviromentAsset.addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()),
             new AssetAttribute("temperature", TEMPERATURE_CELCIUS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Tempature Level")),
@@ -709,9 +713,10 @@ public abstract class AbstractManagerSetup implements Setup {
         return enviromentAsset;
     }
 
-    protected Asset createDemoLightAsset(String name, Asset area) {
-        Asset lightAsset = new Asset(name, THING, area);
+    protected Asset createDemoLightAsset(String name, Asset area, GeoJSON location) {
+        Asset lightAsset = new Asset(name, LIGHT, area);
         lightAsset.addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()),
             new AssetAttribute("lightStatus", BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Light Status")),

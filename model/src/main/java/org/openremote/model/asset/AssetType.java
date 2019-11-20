@@ -21,7 +21,7 @@ package org.openremote.model.asset;
 
 import org.openremote.model.attribute.AttributeDescriptor;
 
-import java.util.*;
+import java.util.Optional;
 
 import static org.openremote.model.Constants.ASSET_NAMESPACE;
 import static org.openremote.model.attribute.AttributeType.*;
@@ -41,6 +41,15 @@ public enum AssetType implements AssetDescriptor {
             GEO_COUNTRY,
             GEO_POSTAL_CODE),
 
+    CITY(ASSET_NAMESPACE + ":city", "city", null,
+        GEO_CITY,
+        GEO_COUNTRY),
+
+    AREA(ASSET_NAMESPACE + ":area", "home-city", null,
+        GEO_CITY,
+        GEO_COUNTRY,
+        GEO_POSTAL_CODE),
+
     FLOOR(ASSET_NAMESPACE + ":floor", "stairs", null),
 
     RESIDENCE(ASSET_NAMESPACE + ":residence", "home", null),
@@ -50,6 +59,14 @@ public enum AssetType implements AssetDescriptor {
     AGENT(ASSET_NAMESPACE + ":agent", "cogs", null),
 
     CONSOLE(ASSET_NAMESPACE + ":console", "monitor-cellphone", null),
+
+    MICROPHONE(ASSET_NAMESPACE + ":microphone", "microphone", null),
+
+    ENVIRONMENT_SENSOR(ASSET_NAMESPACE + ":enviroment", "periodic-table-co2", null),
+
+    LIGHT(ASSET_NAMESPACE + ":light", "lightbulb", null),
+
+    CAMERA(ASSET_NAMESPACE + ":camera", "camera", null),
 
     THING(ASSET_NAMESPACE + ":thing", "cube-outline", null);
 

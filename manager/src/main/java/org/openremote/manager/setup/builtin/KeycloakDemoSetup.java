@@ -53,7 +53,7 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
     public String testuser1Id;
     public String testuser2Id;
     public String testuser3Id;
-    public String testuser4Id;
+    public String smartCityUserId;
     public String buildingUserId;
     public Tenant masterTenant;
     public Tenant tenantBuilding;
@@ -190,26 +190,28 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         String tenantCityClientObjectId = getClientObjectId(tenantCityClientsResource);
         RolesResource tenantCityRolesResource = tenantCityClientsResource.get(tenantCityClientObjectId).roles();
 
-        UserRepresentation testuser4 = new UserRepresentation();
-        testuser4.setUsername("testuser4");
-        testuser4.setFirstName("DemoB");
-        testuser4.setLastName("DemoLast");
-        testuser4.setEmail("testuser4@openremote.local");
-        testuser4.setEnabled(true);
-        tenantCityUsersResource.create(testuser4);
-        testuser4 = tenantCityUsersResource.search("testuser4", null, null, null, null, null).get(0);
-        this.testuser4Id = testuser4.getId();
-        CredentialRepresentation testuser4Credentials = new CredentialRepresentation();
-        testuser4Credentials.setType("password");
-        testuser4Credentials.setValue("testuser4");
-        testuser4Credentials.setTemporary(false);
-        tenantCityUsersResource.get(testuser4.getId()).resetPassword(testuser4Credentials);
-        tenantCityUsersResource.get(testuser4.getId()).roles().clientLevel(tenantCityClientObjectId).add(Arrays.asList(
+        UserRepresentation smartCityUser = new UserRepresentation();
+        smartCityUser.setUsername("smartCity");
+        smartCityUser.setFirstName("Smart");
+        smartCityUser.setLastName("City");
+        smartCityUser.setEmail("smartCityUser@openremote.local");
+        smartCityUser.setEnabled(true);
+        tenantCityUsersResource.create(smartCityUser);
+        smartCityUser = tenantCityUsersResource.search("smartCity", null, null, null, null, null).get(0);
+        this.smartCityUserId = smartCityUser.getId();
+        CredentialRepresentation smartCityCredentials = new CredentialRepresentation();
+        smartCityCredentials.setType("password");
+        smartCityCredentials.setValue("smartCity");
+        smartCityCredentials.setTemporary(false);
+        tenantCityUsersResource.get(smartCityUser.getId()).resetPassword(smartCityCredentials);
+        tenantCityUsersResource.get(smartCityUser.getId()).roles().clientLevel(tenantCityClientObjectId).add(Arrays.asList(
             tenantCityRolesResource.get(ClientRole.WRITE_USER.getValue()).toRepresentation(),
             tenantCityRolesResource.get(ClientRole.READ_MAP.getValue()).toRepresentation(),
             tenantCityRolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation(),
-            tenantCityRolesResource.get(ClientRole.READ_RULES.getValue()).toRepresentation()
+            tenantCityRolesResource.get(ClientRole.WRITE_ASSETS.getValue()).toRepresentation(),
+            tenantCityRolesResource.get(ClientRole.READ_RULES.getValue()).toRepresentation(),
+            tenantCityRolesResource.get(ClientRole.WRITE_RULES.getValue()).toRepresentation()
         ));
-        LOG.info("Added demo user '" + testuser4.getUsername() + "' with password '" + testuser4Credentials.getValue() + "'");
+        LOG.info("Added demo user '" + smartCityUser.getUsername() + "' with password '" + smartCityCredentials.getValue() + "'");
     }
 }
