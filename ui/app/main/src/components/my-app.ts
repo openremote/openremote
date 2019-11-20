@@ -36,7 +36,7 @@ class MyApp extends connect(store)(LitElement) {
             :host {
                 --or-app-color2: ${unsafeCSS(DefaultColor2)};
                 --or-app-color3: #22211f;
-                --or-app-color4: #3F89BF;
+                --or-app-color4: #07601F;
                 color: ${unsafeCSS(DefaultColor3)};
                 fill: ${unsafeCSS(DefaultColor3)};
                 font-size: 14px;
