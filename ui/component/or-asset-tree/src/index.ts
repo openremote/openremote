@@ -278,7 +278,7 @@ export class OrAssetTree extends LitElement {
 
             ${!this._nodes || this._showLoading
                 ? html`
-                    <span id="loading">LOADING</span>` 
+                    <span id="loading"><or-translate value="loading"></or-translate></span>` 
                 : html`
                     <div id="list-container">
                         <ol id="list">
