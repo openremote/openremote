@@ -1,7 +1,6 @@
 import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
-import orIconSet from "./or-icon-set";
 import {AssetDescriptor, AssetType} from "@openremote/model";
-import {AssetModelUtil} from "@openremote/core";
+import {IconSetAddedEvent, ORIconSets, AssetModelUtil} from "@openremote/core";
 
 export function getAssetDescriptorIconTemplate(descriptor: AssetDescriptor | undefined, fallbackColor?: string | undefined, fallbackIcon?: string | undefined, overrideColor?: string | undefined, overrideIcon?: string | undefined): TemplateResult {
     const color = overrideColor ? overrideColor : AssetModelUtil.getAssetDescriptorColor(descriptor, fallbackColor);
@@ -9,85 +8,12 @@ export function getAssetDescriptorIconTemplate(descriptor: AssetDescriptor | und
     return html`<or-icon style="--or-icon-fill: ${color ? "#" + color : "unset"}" icon="${icon ? icon : AssetType.THING.icon}"></or-icon>`;
 }
 
-export interface IconSetSvg {
-    size: number;
-    icons: {[name: string]: string};
-}
-export class IconSetAddedEvent extends CustomEvent<void> {
+const _iconSets = new ORIconSets();
 
-    public static readonly NAME = "or-icon-iconset-added";
-
-    constructor() {
-        super(IconSetAddedEvent.NAME, {
-            bubbles: true,
-            composed: true
-        });
-    }
-}
-
-declare global {
-    export interface HTMLElementEventMap {
-        [IconSetAddedEvent.NAME]: IconSetAddedEvent;
-    }
-}
-
-class _IconSets {
-    private _icons: {[name: string]: IconSetSvg} = {
-        or: orIconSet
-    };
-
-    addIconSet(name: string, iconset: IconSetSvg) {
-        this._icons[name] = iconset;
-        window.dispatchEvent(new IconSetAddedEvent());
-    }
-
-    getIconSet(name: string) {
-        return this._icons[name];
-    }
-
-    getIcon(icon: string | undefined): Element | undefined {
-        if (!icon) {
-            return undefined;
-        }
-
-        let parts = (icon || "").split(":");
-        let iconName = parts.pop();
-        let iconSetName = parts.pop() || OrIcon.DEFAULT_ICONSET;
-        if (!iconSetName || iconSetName === "" || !iconName || iconName === "") {
-            return;
-        }
-
-        let iconSet = IconSets.getIconSet(iconSetName);
-        //iconName = iconName.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); });
-
-        if (!iconSet || !iconSet.icons.hasOwnProperty(iconName)) {
-            return;
-        }
-
-        const iconData = iconSet.icons[iconName];
-        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.setAttribute("viewBox", "0 0 " + iconSet.size + " " + iconSet.size);
-        svg.style.cssText = "pointer-events: none; display: block; width: 100%; height: 100%;";
-        svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-        svg.setAttribute("focusable", "false");
-        if (iconData.startsWith("<")) {
-            svg.innerHTML = iconData;
-        } else {
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("d", iconData);
-            path.style.pointerEvents = "pointer-events: var(--or-icon-pointer-events, none);";
-            svg.appendChild(path);
-        }
-        return svg;
-    }
-}
-
-export const IconSets = new _IconSets();
+export const IconSets = _iconSets;
 
 @customElement("or-icon")
 export class OrIcon extends LitElement {
-
-    static DEFAULT_ICONSET: string = "mdi";
 
     static styles = css`
         :host {

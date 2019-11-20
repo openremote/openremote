@@ -1,7 +1,6 @@
 import "url-search-params-polyfill";
 import {Console} from "./console";
 import rest from "@openremote/rest";
-import {IconSets} from "@openremote/or-icon";
 import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next from "i18next";
@@ -9,12 +8,12 @@ import i18nextXhr from "i18next-xhr-backend";
 import moment from "moment";
 import {
     AssetDescriptor,
-    Attribute,
     AttributeDescriptor,
     AttributeValueDescriptor,
     MetaItemDescriptor
 } from "@openremote/model";
 import * as Util from "./util";
+import orIconSet from "./or-icon-set";
 
 // Re-exports
 export {Util};
@@ -22,6 +21,8 @@ export * from "./asset-mixin";
 export * from "./console";
 export * from "./event";
 export * from "./defaults";
+
+export const DEFAULT_ICONSET: string = "mdi";
 
 export declare type KeycloakPromise<T> = {
     success<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | KeycloakPromise<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | KeycloakPromise<TResult2>) | undefined | null): KeycloakPromise<TResult1 | TResult2>;
@@ -103,6 +104,78 @@ export interface ManagerConfig {
     loadTranslations?: string[];
     translationsLoadPath?: string;
     configureTranslationsOptions?: (i18next: i18next.InitOptions) => void;
+}
+
+export class IconSetAddedEvent extends CustomEvent<void> {
+
+    public static readonly NAME = "or-iconset-added";
+
+    constructor() {
+        super(IconSetAddedEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [IconSetAddedEvent.NAME]: IconSetAddedEvent;
+    }
+}
+
+export interface IconSetSvg {
+    size: number;
+    icons: {[name: string]: string};
+}
+
+export class ORIconSets {
+    private _icons: {[name: string]: IconSetSvg} = {};
+
+    addIconSet(name: string, iconset: IconSetSvg) {
+        this._icons[name] = iconset;
+        window.dispatchEvent(new IconSetAddedEvent());
+    }
+
+    getIconSet(name: string) {
+        return this._icons[name];
+    }
+
+    getIcon(icon: string | undefined): Element | undefined {
+        if (!icon) {
+            return undefined;
+        }
+
+        let parts = (icon || "").split(":");
+        let iconName = parts.pop();
+        let iconSetName = parts.pop() || DEFAULT_ICONSET;
+        if (!iconSetName || iconSetName === "" || !iconName || iconName === "") {
+            return;
+        }
+
+        let iconSet = IconSets.getIconSet(iconSetName);
+        //iconName = iconName.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); });
+
+        if (!iconSet || !iconSet.icons.hasOwnProperty(iconName)) {
+            return;
+        }
+
+        const iconData = iconSet.icons[iconName];
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("viewBox", "0 0 " + iconSet.size + " " + iconSet.size);
+        svg.style.cssText = "pointer-events: none; display: block; width: 100%; height: 100%;";
+        svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+        svg.setAttribute("focusable", "false");
+        if (iconData.startsWith("<")) {
+            svg.innerHTML = iconData;
+        } else {
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", iconData);
+            path.style.pointerEvents = "pointer-events: var(--or-icon-pointer-events, none);";
+            svg.appendChild(path);
+        }
+        return svg;
+    }
 }
 
 export class AssetModelUtil {
@@ -496,11 +569,12 @@ export class Manager implements EventProviderFactory {
             });
             this._managerVersion = json && json.version ? json.version : "";
 
-            // Load material design icons if requested
+            // Load material design and OR icon sets if requested
             if (this._config.loadIcons) {
                 const response = await fetch(manager.config.managerUrl + "/shared/mdi-icons.json");
-                const iconSet = await response.json();
-                IconSets.addIconSet("mdi", iconSet);
+                const mdiIconSet = await response.json();
+                IconSets.addIconSet("mdi", mdiIconSet);
+                IconSets.addIconSet("or", orIconSet);
             }
 
             return true;
@@ -943,7 +1017,7 @@ export class Manager implements EventProviderFactory {
 }
 
 const manager = new Manager();
+const _iconSets = new ORIconSets();
 
-export {manager};
-
+export const IconSets = _iconSets;
 export default manager;
