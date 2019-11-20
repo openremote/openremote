@@ -9,7 +9,6 @@ import {RootState, store} from "../store";
 import "../components/pages/page-map";
 import "../components/pages/page-assets";
 import "../components/pages/page-rules";
-import "../components/or-language/src";
 import i18next from "i18next";
 import {connect} from "pwa-helpers/connect-mixin";
 
