@@ -9,6 +9,7 @@
     "./src"
   ],
   "references": [
-    { "path": "../core" }
+    { "path": "../core" },
+    { "path": "../model" }
   ]
 }

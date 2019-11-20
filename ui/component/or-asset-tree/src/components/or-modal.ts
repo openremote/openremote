@@ -2,8 +2,6 @@ import {customElement, html, LitElement, property, PropertyValues, TemplateResul
 import "@openremote/or-select";
 import "@openremote/or-icon";
 import "@openremote/or-translate";
-import "@openremote/or-icon";
-
 
 @customElement("or-modal")
 export class OrModal extends LitElement {

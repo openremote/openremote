@@ -12,6 +12,7 @@
   "references": [
     { "path": "../core" },
     { "path": "../rest" },
+    { "path": "../model" },
     { "path": "../or-panel" },
     { "path": "../or-translate" },
     { "path": "../or-icon" },

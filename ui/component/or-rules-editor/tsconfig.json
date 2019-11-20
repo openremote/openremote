@@ -17,7 +17,6 @@
     { "path": "../or-panel" },
     { "path": "../or-asset-viewer" },
     { "path": "../or-asset-tree" },
-    { "path": "../or-mwc-components" },
-    { "path": "../rest" }
+    { "path": "../or-mwc-components" }
   ]
 }
