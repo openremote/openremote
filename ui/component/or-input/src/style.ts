@@ -19,6 +19,10 @@ export const orInputStyle = css`
         border-radius: 50% !important;
     }
     
+    .mdc-text-field--dense .mdc-text-field__input {
+        white-space: nowrap;
+    }
+    
     /* MDC TEXT FIELD AND SELECT DON'T USE THEME VARS */
     .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label {
         color: var(--mdc-theme-primary);
