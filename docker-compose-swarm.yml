@@ -40,39 +40,17 @@ volumes:
 
 services:
 
-  # This service will only populate an empty volume on startup and then exit.
-  # If the volume already contains data, it exits immediately.
-#  deployment:
-#    image: openremote/deployment:${DATE_TAG:-latest}
-#    volumes:
-#      - deployment-data:/deployment
-
-  # This configuration does not store SSL certificate data and allow changes to the
-  # proxy configuration, it is only configured for deployment on localhost. You can
-  # map a Docker volume or host directory to access/store proxy configuration files
-  # and SSL certificates.
   proxy:
 
-    # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
     image: openremote/proxy:${DATE_TAG:-latest}
     networks:
       - public
       - private
 
     environment:
-
-      # It is important that all services have the same timezone and are time synchronized.
-      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
       TZ: Europe/Amsterdam
-
-      # The public host name of this OpenRemote installation. Set this to request/manage an SSL
-      # certificate with the free https://letsencrypt.org/ provider. The default 'localhost' will
-      # rely on a baked-in self-signed certificate. If you change this, adjust manager#IDENTITY_NETWORK_HOST.
       DOMAINNAME: ${DOMAINNAME:-localhost}
-
-      # Provide your own email address for your SSL certificates with Let's Encrypt. This should
-      # be set when DOMAINNAME is not 'localhost'.
-      LE_EMAIL: ${LE_EMAIL:-}
+      LE_EMAIL: ${LE_EMAIL:-me@privacy.net}
 
       # Enable --staging will manage fake certificates, so avoid hitting the rate limits of Let's Encrypt
       # when testing (this is important, you are limited to 5 duplicate certificates per week!)

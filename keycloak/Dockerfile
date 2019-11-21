@@ -1,3 +1,4 @@
+FROM openremote/deployment:latest as deployment
 FROM jboss/keycloak:7.0.1
 MAINTAINER support@openremote.io
 
@@ -14,6 +15,8 @@ HEALTHCHECK --interval=3s --timeout=3s --start-period=600s --retries=30 CMD curl
 USER 1000
 
 EXPOSE 8080
+
+COPY --from=deployment /deployment/keycloak/themes/ /opt/jboss/keycloak/themes/
 
 ENTRYPOINT ["/opt/jboss/docker-entrypoint.sh"]
 CMD ["-b", "0.0.0.0"]
