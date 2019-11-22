@@ -22,16 +22,16 @@ import {
     getAssetTypeFromQuery,
     getAssetIdsFromQuery,
     getDescriptorValueType,
-    OrRulesEditorRuleChangedEvent,
     RulesConfig, getAttributeNames
-} from "./index";
+} from "../index";
 import {OrSelectChangedEvent} from "@openremote/or-select";
 import "@openremote/or-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {getAttributeValueTemplate} from "@openremote/or-attribute-input";
 import manager, {Util, AssetModelUtil} from "@openremote/core";
 import i18next from "i18next";
-import {buttonStyle} from "./style";
+import {buttonStyle} from "../style";
+import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 
 // language=CSS
 const style = css`
@@ -39,11 +39,7 @@ const style = css`
     ${buttonStyle}
     
     :host {
-        display: flex;
-    }
-    
-    :host > * {
-        margin-right: 20px;
+        display: block;
     }
     
     .attribute-group {
@@ -225,7 +221,7 @@ class OrRuleAssetQuery extends LitElement {
         return html`
             <div class="attribute-group">
             
-                <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" ?readonly="${this.readonly}" .options="${idOptions}" .value="${idValue}"></or-input>
+                <or-input id="idSelect" type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" ?readonly="${this.readonly}" .options="${idOptions}" .value="${idValue}"></or-input>
             
                 ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate) => {
                     
@@ -244,7 +240,7 @@ class OrRuleAssetQuery extends LitElement {
 
     protected set _assetId(assetId: string | undefined) {
         !assetId || assetId === "*" ? this.query.ids = undefined : this.query.ids! = [assetId];
-        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
 
@@ -263,7 +259,7 @@ class OrRuleAssetQuery extends LitElement {
         attributePredicate!.name.match = AssetQueryMatch.EXACT;
         attributePredicate!.name.value = attributeName;
         attributePredicate!.value = undefined;
-        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
 
@@ -407,7 +403,7 @@ class OrRuleAssetQuery extends LitElement {
 
         if (!operator) {
             attributePredicate.value = undefined;
-            this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+            this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
             this.requestUpdate();
             return;
         }
@@ -419,7 +415,7 @@ class OrRuleAssetQuery extends LitElement {
 
         if (!valueType || !value) {
             attributePredicate.value = undefined;
-            this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+            this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
             this.requestUpdate();
             return;
         }
@@ -602,7 +598,7 @@ class OrRuleAssetQuery extends LitElement {
         }
 
         attributePredicate.value = predicate;
-        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
 
@@ -620,7 +616,7 @@ class OrRuleAssetQuery extends LitElement {
         }
 
         (valuePredicate as any)[propertyName] = value;
-        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
 
@@ -629,7 +625,7 @@ class OrRuleAssetQuery extends LitElement {
         if (index >= 0) {
             group.items!.splice(index, 1);
         }
-        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
 
@@ -638,7 +634,7 @@ class OrRuleAssetQuery extends LitElement {
             group.items = [];
         }
         group.items.push({});
-        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
 
@@ -648,7 +644,7 @@ class OrRuleAssetQuery extends LitElement {
         } else {
             group.operator = LogicGroupOperator.OR;
         }
-        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
 

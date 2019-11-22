@@ -11,7 +11,7 @@ export const style = css`
         --internal-or-asset-tree-header-text-color: var(--or-asset-tree-header-text-color, var(--or-app-color7, ${unsafeCSS(DefaultColor1)}));
         --internal-or-asset-tree-header-menu-background-color: var(--or-asset-tree-header-menu-background-color, var(--internal-or-asset-tree-header-text-color));
         --internal-or-asset-tree-header-menu-text-color: var(--or-asset-tree-header-menu-text-color, inherit);
-        --internal-or-asset-tree-header-height: var(--or-asset-tree-header-height, 40px);
+        --internal-or-asset-tree-header-height: var(--or-asset-tree-header-height, 48px);
         --internal-or-asset-tree-background-color: var(--or-asset-tree-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
         --internal-or-asset-tree-text-color: var(--or-asset-tree-text-color, inherit);
         --internal-or-asset-tree-item-height: var(--or-asset-tree-item-height, 24px);
@@ -53,14 +53,13 @@ export const style = css`
     #header {
         background-color: var(--internal-or-asset-tree-header-color);
         display: flex;
+        align-items: center;
         width: 100%;        
         height: var(--internal-or-asset-tree-header-height);
         border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};
         z-index: 1000;
-    }
-    
-    #header > * {
         line-height: var(--internal-or-asset-tree-header-height);
+        color: var(--internal-or-asset-tree-header-text-color);
     }
    
     #title-container {
@@ -79,8 +78,7 @@ export const style = css`
     
     #title {
         font-weight: 500;
-        font-size: 16px;
-        color: var(--internal-or-asset-tree-header-text-color);
+        font-size: 16px;        
     }
     
     #realm-picker {
@@ -95,100 +93,7 @@ export const style = css`
         flex-direction: row;
         padding-right: 5px;
     }
-    
-    .modal-container {
-        position: relative;
-        line-height: normal;
-    }
-    
-    .modal {
-        position: absolute;
-        height: 0;
-        overflow: hidden;
-    }
-    
-    .modal[data-visible] {
-        transition: all 0.5s ease-in;
-        height: auto;
-        overflow: visible;
-    }
-    
-    .modal-content {
-        border: 1px solid var(--internal-or-asset-tree-line-color);
-        box-shadow: ${unsafeCSS(DefaultBoxShadow)};
-        -moz-box-shadow: ${unsafeCSS(DefaultBoxShadow)};
-        -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadow)};
-        color: var(--internal-or-asset-tree-header-menu-text-color);
-        background-color: var(--internal-or-asset-tree-header-menu-background-color);
-        padding: 5px 0;
-        font-size: 14px;
-    }
 
-    .modal-content > ul {
-        list-style-type: none;
-        padding: 0;
-        margin: 0;
-        white-space: nowrap;
-    }
-    
-    .modal-content > ul > li {
-        padding: 8px 10px;
-        cursor: pointer;
-    }
-
-    .modal-content > ul > li:hover {
-        background-color: var(--internal-or-asset-tree-selected-background-color);
-    }
-    
-    .modal-content > ul > li > or-icon {
-        visibility: hidden;
-        width: 16px;
-        height: 16px;
-        margin-right: 8px;
-        --or-icon-fill: var(--internal-or-asset-tree-header-color);
-        --or-icon-stroke: var(--internal-or-asset-tree-header-color);
-        --or-icon-stroke-width: 2px;
-    }
-    
-    .modal-content > ul > li[data-selected] > or-icon {
-        visibility: visible;
-    }
-    
-    .modal-content > p {
-        padding: 0 15px;
-        margin: 10px 0;
-    }
-    
-    .modal-btns {
-        text-align: right;
-        padding: 5px 15px;
-    }
-    
-    .modal-btns .btn {
-        font-weight: 500;
-        cursor: pointer;
-        text-transform: uppercase;
-    }
-    
-    .modal-btns .btn + .btn {
-        margin-left: 15px;
-    }    
-            
-    #sort-menu {
-        left: -130px;
-        top: calc(var(--internal-or-asset-tree-header-height) - 5px);
-    }
-    
-    #delete-not-allowed-modal {
-        left: -200px;
-        top: calc(var(--internal-or-asset-tree-header-height) - 5px);
-    }
-    
-    #delete-confirm-modal {
-        left: -200px;
-        top: calc(var(--internal-or-asset-tree-header-height) - 5px);
-    }
-    
     #list-container {
         flex: 1 1 auto;
         overflow: auto;

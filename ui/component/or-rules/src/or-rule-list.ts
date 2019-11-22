@@ -1,57 +1,39 @@
-import {customElement, html, LitElement, property, PropertyValues, query, TemplateResult, css} from "lit-element";
+import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
 import {JsonRule, RuleCondition, RulesetLang, Tenant, TenantRuleset} from "@openremote/model";
 import "@openremote/or-translate";
 import manager, {EventCallback, OREvent} from "@openremote/core";
 import moment from "moment";
+import "@openremote/or-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {style as OrAssetTreeStyle} from "@openremote/or-asset-tree";
 import {
-    OrRulesEditorRequestAddEvent,
-    OrRulesEditorRequestCopyEvent,
-    OrRulesEditorRequestDeleteEvent,
-    OrRulesEditorRequestSelectEvent,
-    OrRulesEditorSelectionChangedEvent,
+    OrRulesRequestAddEvent,
+    OrRulesRequestCopyEvent,
+    OrRulesRequestDeleteEvent,
+    OrRulesRequestSelectEvent,
+    OrRulesSelectionChangedEvent,
     RequestEventDetail,
-    RulesetNode
-} from "./index";
+    RulesConfig,
+    RulesetNode} from "./index";
+import "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {translate} from "@openremote/or-translate";
+import i18next from "i18next";
+import {getContentWithMenuTemplate} from "../../or-mwc-components/dist/or-mwc-menu";
 
 // language=CSS
 const style = css`
     :host {
-        overflow: auto;
         flex-grow: 1;
-        font-size: var(--internal-or-rules-editor-list-text-size);
+        font-size: var(--internal-or-rules-list-text-size);
+        
+        /*Override asset tree styles*/
+        --internal-or-asset-tree-header-height: var(--internal-or-rules-list-header-height);
     }
     
     #wrapper[data-disabled] {
         opacity: 0.3;
         pointer-events: none;
-    }
-    
-    .d-flex {
-        display: -webkit-box;
-        display: -moz-box;
-        display: -ms-flexbox;
-        display: -webkit-flex;
-        display: flex;
-    }
-
-    .flex {
-        -webkit-box-flex: 1;
-        -moz-box-flex: 1;
-        -webkit-flex: 1;
-        -ms-flex: 1;
-        flex: 1;
-    }
-
-    .list-title {
-        display: block;
-        padding: 30px 30px 5px 20px;
-        text-transform: uppercase;
-        /*color: var(, #808080);*/
-        font-size:14px;
-        font-weight: bold;
-        text-align: left;
     }
 
     .list-item {
@@ -64,13 +46,13 @@ const style = css`
     }
 
     .list-item:hover {
-        border-left-color: var(--internal-or-rules-editor-list-selected-color);
-        background-color: var(--internal-or-rules-editor-list-selected-color);
+        border-left-color: var(--internal-or-rules-list-selected-color);
+        background-color: var(--internal-or-rules-list-selected-color);
     }
 
     .list-item[selected] {
-        border-left-color: var(--internal-or-rules-editor-button-color);
-        background-color: var(--internal-or-rules-editor-list-selected-color);
+        border-left-color: var(--internal-or-rules-button-color);
+        background-color: var(--internal-or-rules-list-selected-color);
         opacity: 1;
     }
 
@@ -86,7 +68,7 @@ const style = css`
     }
 
     .bg-red {
-        background-color: red
+        background-color: red;
     }
     
     .bg-blue {
@@ -99,10 +81,18 @@ const style = css`
 `;
 
 @customElement("or-rule-list")
-export class OrRulesList extends LitElement {
+export class OrRuleList extends translate(i18next)(LitElement) {
+
+    public static DEFAULT_ALLOWED_LANGUAGES = [RulesetLang.JSON, RulesetLang.GROOVY, RulesetLang.JAVASCRIPT];
+
+    @property({type: Object})
+    public config?: RulesConfig;
 
     @property({type: String})
     public realm?: string;
+
+    @property({type: Boolean})
+    public readonly: boolean = false;
 
     @property({type: Boolean})
     public disabled: boolean = false;
@@ -116,17 +106,17 @@ export class OrRulesList extends LitElement {
     @property({type: String})
     public sortBy?: string;
 
+    @property({type: String})
+    public language?: RulesetLang;
+
     @property({attribute: false})
     protected _realms?: Tenant[];
 
     @property({attribute: false})
     protected _nodes?: RulesetNode[];
 
-    @property()
+    @property({attribute: false})
     protected _showLoading: boolean = true;
-
-    @query("#sort-menu")
-    protected _sortMenu!: HTMLDivElement;
 
     protected _selectedNodes: RulesetNode[] = [];
     protected _initCallback?: EventCallback;
@@ -141,6 +131,19 @@ export class OrRulesList extends LitElement {
 
     public refresh() {
         this._nodes = undefined;
+    }
+
+    protected get _allowedLanguages(): RulesetLang[] | undefined {
+        return this.config && this.config.controls && this.config.controls.allowedLanguages ? this.config.controls.allowedLanguages : OrRuleList.DEFAULT_ALLOWED_LANGUAGES;
+    }
+
+    protected _updateLanguage() {
+        const rulesetLangs = this._allowedLanguages;
+        if (!rulesetLangs || rulesetLangs.length === 0) {
+            this.language = undefined;
+        } else if (!this.language || rulesetLangs.indexOf(this.language) < 0) {
+            this.language = rulesetLangs[0];
+        }
     }
 
     protected _onReady() {
@@ -164,16 +167,14 @@ export class OrRulesList extends LitElement {
         } else {
             this._onReady();
         }
-
-        this.addEventListener("click", (evt) => {
-            if (this._sortMenu.hasAttribute("data-visible") && !this._sortMenu.contains(evt.target as Node)) {
-                this._sortMenu.toggleAttribute("data-visible");
-            }
-        });
     }
 
-    protected shouldUpdate(_changedProperties: PropertyValues): boolean {
+    public shouldUpdate(_changedProperties: PropertyValues): boolean {
         const result = super.shouldUpdate(_changedProperties);
+
+        if (_changedProperties.has("language")) {
+            this._updateLanguage();
+        }
 
         if (manager.ready) {
             if (_changedProperties.has("realm")) {
@@ -190,7 +191,7 @@ export class OrRulesList extends LitElement {
             }
 
             if (_changedProperties.has("sortBy")) {
-                OrRulesList._updateSort(this._nodes!, this._getSortFunction());
+                OrRuleList._updateSort(this._nodes!, this._getSortFunction());
             }
         }
 
@@ -199,31 +200,52 @@ export class OrRulesList extends LitElement {
 
     protected render() {
 
+        const realm = this._getRealm();
+
+        if (this.realm !== realm) {
+            this._onRealmChanged(realm);
+        }
+
+        if (!this.language) {
+            this._updateLanguage();
+        }
+
+        const allowedLanguages = this._allowedLanguages;
+        let addTemplate: TemplateResult | string = ``;
+
+        if (!this._isReadonly()) {
+            if (allowedLanguages && allowedLanguages.length > 1) {
+                addTemplate = getContentWithMenuTemplate(
+                    html`<or-input type="${InputType.BUTTON}" icon="plus"></or-input>`,
+                    allowedLanguages.map((l) => {
+                        return {value: l, content: html`<span>${l}</span>`} as MenuItem;
+                    }),
+                    this.language,
+                    (v) => this._onAddClicked(v as RulesetLang));
+            } else {
+                addTemplate = html`<or-input type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked(this.language!)}"></or-input>`;
+            }
+        }
+
         return html`
             <div id="wrapper" ?data-disabled="${this.disabled}">
                 <div id="header">
                     <div id="title-container">
                         <or-translate id="title" value="rule_plural"></or-translate>
-                        ${manager.isSuperUser() ? html `<or-input id="realm-picker" type="${InputType.SELECT}" .value="${this._getRealm()}" .options="${this._realms ? this._realms.map((tenant) => [tenant.realm, tenant.displayName]) : []}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onRealmChanged(evt)}"></or-input>` : ``}
+                        ${manager.isSuperUser() ? html `<or-input id="realm-picker" type="${InputType.SELECT}" .value="${this._getRealm()}" .options="${this._realms ? this._realms.map((tenant) => [tenant.realm, tenant.displayName]) : []}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onRealmChanged(evt.detail.value)}"></or-input>` : ``}
                     </div>
         
                     <div id="header-btns">
-                    
-                        <button style="display:none;" ?hidden="${!manager.hasRole("write:rules") || !this.selectedIds || this.selectedIds.length === 0}" @click="${() => this._onCopyClicked()}"><or-icon icon="content-copy"></or-icon></button>
-                        <button ?hidden="${!manager.hasRole("write:rules") || !this.selectedIds || this.selectedIds.length === 0}" @click="${() => this._onDeleteClicked()}"><or-icon icon="delete"></or-icon></button>
-                        <button ?hidden="${!manager.hasRole("write:rules")}" @click="${() => this._onAddClicked()}"><or-icon icon="plus"></or-icon></button>
-                        <button hidden @click="${() => this._onSearchClicked()}"><or-icon icon="magnify"></or-icon></button>
-                        <button @click="${() => this._onSortClicked()}"><or-icon icon="sort-variant"></or-icon></button>
-                        <div class="modal-container">
-                            <div class="modal" id="sort-menu">
-                                <div class="modal-content">
-                                    <ul>
-                                        <li @click="${() => this.sortBy = "name"}" ?data-selected="${!this.sortBy || this.sortBy === "name"}"><or-icon icon="check"></or-icon><or-translate value="name"></or-translate></li>
-                                        <li @click="${() => this.sortBy = "created"}" ?data-selected="${this.sortBy === "created"}"><or-icon icon="check"></or-icon><or-translate value="creationDate"></or-translate></li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
+                        <or-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-input>
+                        <or-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-input>
+                        ${addTemplate}
+                        <or-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-input>
+                        
+                        ${getContentWithMenuTemplate(
+                            html`<or-input type="${InputType.BUTTON}" icon="sort-variant"></or-input>`,
+                            ["name", "createdOn"].map((sort) => {return {value: sort, content: html`<span>${i18next.t(sort)}</span>`} as MenuItem;}),
+                            this.sortBy,
+                            (v) => this._onSortClicked(v))}
                     </div>
                 </div>
         
@@ -246,12 +268,16 @@ export class OrRulesList extends LitElement {
         `;
     }
 
+    protected _isReadonly() {
+        return this.readonly || !manager.hasRole("write:rules");
+    }
+
     protected _nodeTemplate(node: RulesetNode): TemplateResult | string {
         return html`
             <li ?data-selected="${node.selected}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, node)}">
                 <div class="node-container">
                     <div class="node-name">
-                        <span class="${OrRulesList._getNodeStatusClasses(node.ruleset)}"></span>
+                        <span class="${OrRuleList._getNodeStatusClasses(node.ruleset)}"></span>
                         <div class="flex">
                             <span>${node.ruleset.name}</span>
                         </div>
@@ -315,7 +341,7 @@ export class OrRulesList extends LitElement {
 
         this.selectedIds = actuallySelectedIds;
         this._selectedNodes = selectedNodes;
-        this.dispatchEvent(new OrRulesEditorSelectionChangedEvent(this._selectedNodes.map((node) => node.ruleset)));
+        this.dispatchEvent(new OrRulesSelectionChangedEvent(this._selectedNodes.map((node) => node.ruleset)));
     }
 
     protected static _updateSort(nodes: RulesetNode[], sortFunction: (a: RulesetNode, b: RulesetNode) => number) {
@@ -360,49 +386,37 @@ export class OrRulesList extends LitElement {
             }
         }
 
-        this._doRequest(new OrRulesEditorRequestSelectEvent(selectRulesets), (detail) => {
+        this._doRequest(new OrRulesRequestSelectEvent(selectRulesets), (detail) => {
             this.selectedIds = detail.map((ruleset) => ruleset.id!);
         });
     }
 
     protected _onCopyClicked() {
         if (this._selectedNodes.length == 1) {
-            this.dispatchEvent(new OrRulesEditorRequestCopyEvent(this._selectedNodes[0].ruleset));
+            this.dispatchEvent(new OrRulesRequestCopyEvent(this._selectedNodes[0].ruleset));
         }
     }
 
     protected _onDeleteClicked() {
         if (this._selectedNodes.length > 0) {
-            this.dispatchEvent(new OrRulesEditorRequestDeleteEvent(this._selectedNodes.map((node) => node.ruleset)));
+            this.dispatchEvent(new OrRulesRequestDeleteEvent(this._selectedNodes.map((node) => node.ruleset)));
         }
     }
 
-    protected _onAddClicked() {
-        this.dispatchEvent(new OrRulesEditorRequestAddEvent());
+    protected _onAddClicked(lang: RulesetLang) {
+        this.dispatchEvent(new OrRulesRequestAddEvent(lang));
     }
 
     protected _onSearchClicked() {
 
     }
 
-    protected _onSortClicked() {
-        // Do open on next task to prevent click handler closing it immediately
-        if (!this._sortMenu.hasAttribute("data-visible")) {
-            window.setTimeout(() => {
-                this._sortMenu.toggleAttribute("data-visible");
-            });
-        }
+    protected _onSortClicked(sortBy: string) {
+        this.sortBy = sortBy;
     }
 
     protected _getSortFunction(): (a: RulesetNode, b: RulesetNode) => number {
-
-        const nameSort = (a: RulesetNode, b: RulesetNode) => { return a.ruleset!.name! < b.ruleset!.name! ? -1 : a.ruleset!.name! > b.ruleset!.name! ? 1 : 0 };
-
-        if (this.sortBy === "created") {
-            return (a, b) => { return a.ruleset!.createdOn! < b.ruleset!.createdOn! ? -1 : a.ruleset!.createdOn! > b.ruleset!.createdOn! ? 1 : nameSort(a, b) };
-        }
-
-        return nameSort;
+        return (a, b) => { return (a.ruleset as any)![this.sortBy!] < (b.ruleset as any)![this.sortBy!] ? -1 : (a.ruleset as any)![this.sortBy!] > (b.ruleset as any)![this.sortBy!] ? 1 : 0 };
     }
 
     protected _getRealm(): string | undefined {
@@ -413,8 +427,8 @@ export class OrRulesList extends LitElement {
         return manager.getRealm();
     }
 
-    protected _onRealmChanged(evt: OrInputChangedEvent) {
-        this.realm = evt.detail.value;
+    protected _onRealmChanged(realm: string | undefined) {
+        this.realm = realm;
     }
 
     protected _doRequest<T>(event: CustomEvent<RequestEventDetail<T>>, handler: (detail: T) => void) {

@@ -1,25 +1,27 @@
 import {css, customElement, html, LitElement, property, TemplateResult} from "lit-element";
-import {buttonStyle} from "./style";
+import {buttonStyle} from "../style";
 import "./or-rule-asset-query";
 import {
     ActionType,
     getAssetTypeFromQuery,
-    getButtonWithMenuTemplate,
-    OrRulesEditorRuleChangedEvent,
     RulesConfig
-} from "./index";
+} from "../index";
+import {
+    OrRulesJsonRuleChangedEvent
+} from "./or-rule-json-viewer";
 import {AssetDescriptor, JsonRule, RuleActionUnion} from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-input";
-import {Menu, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {AssetModelUtil} from "@openremote/core";
 import "./or-rule-action-attribute";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 
 const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
 
-function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescriptor[]): Menu {
+function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescriptor[]): MenuItem[] {
 
     let addAssetTypes = true;
     let addWait = true;
@@ -31,12 +33,10 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
         addNotification = config.controls.allowedActionTypes.indexOf(ActionType.NOTIFICATION) >= 0;
     }
 
-    const menu: Menu = {
-        items: []
-    };
+    const menu: MenuItem[] = [];
 
     if (addAssetTypes && assetDescriptors) {
-        menu.items.push(...assetDescriptors.map((ad) => {
+        menu.push(...assetDescriptors.map((ad) => {
             const content = html`
                     ${getAssetDescriptorIconTemplate(ad)}
                     &nbsp;&nbsp;<span style="white-space: nowrap; text-transform: capitalize">${i18next.t(ad.name!, {defaultValue: ad.name!.replace(/_/g, " ").toLowerCase()})}</span>
@@ -50,7 +50,7 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
                 <or-icon style="--or-icon-fill: #${NOTIFICATION_COLOR}" icon="email"></or-icon>
                 <span style="text-transform: capitalize">&nbsp;<or-translate value="notification"></or-translate></span>
             `;
-        menu.items.push({content: content, value: ActionType.NOTIFICATION} as MenuItem);
+        menu.push({content: content, value: ActionType.NOTIFICATION} as MenuItem);
     }
 
     if (addWait) {
@@ -58,7 +58,7 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
                 <or-icon style="--or-icon-fill: #${WAIT_COLOR}" icon="timer"></or-icon>
                 <span style="text-transform: capitalize">&nbsp;<or-translate value="wait"></or-translate></span>
             `;
-        menu.items.push({content: content, value: ActionType.WAIT} as MenuItem);
+        menu.push({content: content, value: ActionType.WAIT} as MenuItem);
     }
 
     return menu;
@@ -78,6 +78,7 @@ const style = css`
     .rule-action {
         display: flex;
         margin: 10px 0;
+        align-items: center;
     }
     
     .rule-action-action {
@@ -98,6 +99,15 @@ const style = css`
     
     #type-selector {
         margin-top: 10px;
+    }    
+        
+    .add-button-wrapper {
+        display: flex;
+        align-items: center;
+    }
+    
+    .add-button-wrapper > * {
+        margin: 0 5px;
     }
 `;
 
@@ -158,8 +168,12 @@ class OrRuleThenOtherwise extends LitElement {
             }
 
             typeTemplate = html`
-                <div style="display: table; height: 100%; --or-input-color: #${buttonColor}">
-                    ${getButtonWithMenuTemplate(getActionTypesMenu(this.config, this.assetDescriptors), buttonIcon || "", action.action, (value: string) => this.setActionType(actions, action, value))}
+                <div style="--or-input-text-color: #${buttonColor}">
+                    ${getContentWithMenuTemplate(
+                        html`<or-input class="menu-button" type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
+                        getActionTypesMenu(this.config, this.assetDescriptors),
+                        action.action,
+                        (value: string) => this.setActionType(actions, action, value))}
                 </div>
             `;
         }
@@ -197,7 +211,14 @@ class OrRuleThenOtherwise extends LitElement {
                     ${!this.rule.then ? `` : this.rule.then.map((action: RuleActionUnion) => this.ruleActionTemplate(this.rule.then!, action))}
                     
                     ${this.thenAllowAdd ? html`
-                        <or-input type="${InputType.BUTTON}" .label="${i18next.t("rulesEditorAddAction")}" @click="${() => this.addAction()}"></or-input>
+                        <span class="add-button-wrapper">
+                            ${getContentWithMenuTemplate(
+                                html`<or-input class="menu-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,
+                                getActionTypesMenu(this.config, this.assetDescriptors),
+                                undefined,
+                                (value: string) => this.addAction(value))}
+                            <span>${i18next.t("rulesEditorAddAction")}</span>
+                        </span>
                     ` : ``}
                 </or-panel>
             </div>
@@ -271,7 +292,7 @@ class OrRuleThenOtherwise extends LitElement {
         const index = actions.indexOf(action);
         actions[index] = {...action};
 
-        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
 
@@ -283,12 +304,12 @@ class OrRuleThenOtherwise extends LitElement {
         const index = this.rule.then.indexOf(action);
         if (index >= 0) {
             this.rule.then.splice(index, 1);
-            this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+            this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
             this.requestUpdate();
         }
     }
 
-    protected addAction(otherwise?: boolean) {
+    protected addAction(type: string | undefined, otherwise?: boolean) {
 
         if (!this.rule) {
             return;
@@ -299,27 +320,32 @@ class OrRuleThenOtherwise extends LitElement {
             action: "write-attribute"
         };
         let template: RuleActionUnion | undefined;
+        let templateConfig = this.config && this.config.json ? this.config.json : undefined;
 
         if (!otherwise) {
             if (!this.rule.then) {
                 this.rule.then = [];
             }
             actionArray = this.rule.then;
-            template = this.config && this.config.templates && this.config.templates.then ? this.config.templates.then : undefined;
+            template = templateConfig && templateConfig.then ? templateConfig.then : undefined;
         } else {
             if (!this.rule.otherwise) {
                 this.rule.otherwise = [];
             }
             actionArray = this.rule.otherwise;
-            template = this.config && this.config.templates && this.config.templates.otherwise ? this.config.templates.otherwise : undefined;
+            template = templateConfig && templateConfig.otherwise ? templateConfig.otherwise : undefined;
         }
 
         if (template) {
             newAction = JSON.parse(JSON.stringify(template)) as RuleActionUnion;
         }
 
+        if (type) {
+            this.setActionType(actionArray, newAction, type);
+        }
+
         actionArray.push(newAction);
-        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
 }

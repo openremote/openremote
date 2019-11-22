@@ -20,7 +20,7 @@
     "@openremote/or-asset-viewer": "^1.1.0",
     "@openremote/or-header": "^1.1.0",
     "@openremote/or-map": "^1.1.0",
-    "@openremote/or-rules-editor": "^1.1.0",
+    "@openremote/or-rules": "^1.1.0",
     "@openremote/or-smart-notify": "^1.1.0",
     "@openremote/or-timeline": "^1.1.0",
     "@openremote/rest": "^1.1.0",

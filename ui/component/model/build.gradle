@@ -77,7 +77,8 @@ npmBuild.dependsOn generateTypeScript
 
 clean {
     doLast {
-        delete "dist"
+        def dir = new File("${projectDir}/dist")
+        dir.deleteDir()
     }
 }
 

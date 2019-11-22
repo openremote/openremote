@@ -1,10 +1,13 @@
 import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
-import {AssetDescriptor, JsonRule, LogicGroup, LogicGroupOperator, RuleCondition, AssetType} from "@openremote/model";
-import {OrRulesEditorRuleChangedEvent, RulesConfig} from "./index";
-import {buttonStyle} from "./style";
+import {AssetDescriptor, AssetType, JsonRule, LogicGroup, LogicGroupOperator, RuleCondition} from "@openremote/model";
+import {OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
+import {buttonStyle} from "../style";
 import "./or-rule-condition";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-input";
+import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
+import {getWhenTypesMenu, updateRuleConditionType} from "./or-rule-condition";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 
 // language=CSS
 const style = css`
@@ -63,6 +66,15 @@ const style = css`
         height: 24px;
         transform: translate(50%, -50%);
     }
+    
+    .add-button-wrapper {
+        display: flex;
+        align-items: center;
+    }
+    
+    .add-button-wrapper > * {
+        margin: 0 5px;
+    }
 `;
 
 @customElement("or-rule-when")
@@ -91,7 +103,6 @@ class OrRuleWhen extends LitElement {
         const showAddCondition = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddCondition !== true);
         const showRemoveCondition = !this.readonly && group.items && group.items.length > 1;
         const showRemoveGroup = !this.readonly;
-        const showAddGroup = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddGroup !== true);
 
         let wrapper: (content: TemplateResult, item: LogicGroup<RuleCondition> | RuleCondition, parent: LogicGroup<RuleCondition>, isGroup: boolean, isFirst: boolean) => TemplateResult;
 
@@ -157,18 +168,16 @@ class OrRuleWhen extends LitElement {
             isFirst = false;
         }
 
-        if (isTopLevel && showAddGroup) {
-            addTemplate = html`
-                <or-panel>
-                    <or-input type="${InputType.BUTTON}" icon="plus" @click="${() => this.addGroup(group)}"></or-input>
-                    <strong>${i18next.t(isFirst ? "when": "orWhen")}...</strong>
-                </or-panel>
-            `;
-        }
-
         if (!isTopLevel && showAddCondition) {
             addTemplate = html`
-                <or-input type="${InputType.BUTTON}" .label="${i18next.t("rulesEditorAddCondition")}" @click="${() => this.addCondition(group)}"></or-input>
+                <span class="add-button-wrapper">
+                    ${getContentWithMenuTemplate(
+                        html`<or-input type="${InputType.BUTTON}" icon="plus"></or-input>`,
+                        getWhenTypesMenu(this.config, this.assetDescriptors),
+                        undefined,
+                        (value: string) => this.addCondition(group, value))}
+                    <span>${i18next.t("rulesEditorAddCondition")}</span>
+                </span>
             `;
         }
 
@@ -207,10 +216,25 @@ class OrRuleWhen extends LitElement {
             return html``;
         }
 
+        const showAddGroup = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddGroup !== true);
+
         return html`
             <div>
-                ${this.ruleGroupTemplate(this.rule.when!)}
+                ${this.ruleGroupTemplate(this.rule.when)}
             </div>
+            
+            ${!showAddGroup ? `` : html`
+                <or-panel>
+                    <span class="add-button-wrapper">
+                        ${getContentWithMenuTemplate(
+                            html`<or-input type="${InputType.BUTTON}" icon="plus"></or-input>`,
+                            getWhenTypesMenu(this.config, this.assetDescriptors),
+                            undefined,
+                            (value: string) => this.addGroup(this.rule!.when!, value))}
+                        <strong>${i18next.t(this.rule.when.groups && this.rule.when.groups.length === 0 ? "when": "orWhen")}...</strong>
+                    </span>
+                </or-panel>
+            `}
         `;
     }
 
@@ -250,35 +274,45 @@ class OrRuleWhen extends LitElement {
         return true;
     }
 
-    private addGroup(parent: LogicGroup<RuleCondition>) {
+    private addGroup(parent: LogicGroup<RuleCondition>, type: string | undefined) {
         if (!this.rule || !this.rule.when || parent !== this.rule.when) {
             return;
         }
 
-        let newGroup: LogicGroup<RuleCondition> = {};
+        let newGroup: LogicGroup<RuleCondition> = {
+            operator: LogicGroupOperator.AND
+        };
 
-        if (this.config && this.config.templates && this.config.templates.whenGroup) {
-            newGroup = JSON.parse(JSON.stringify(this.config.templates.whenGroup)) as LogicGroup<RuleCondition>;
+        if (this.config && this.config.json && this.config.json.whenGroup) {
+            newGroup = JSON.parse(JSON.stringify(this.config.json.whenGroup)) as LogicGroup<RuleCondition>;
         }
 
-        // Force to AND as this is what the editor supports
-        newGroup.operator = LogicGroupOperator.AND;
+        if (newGroup.operator !== LogicGroupOperator.AND) {
+            console.warn("JSON rules editor doesn't support top level logic group with type OR");
+            this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
+            return;
+        }
 
-        // Clear any child groups
+        if (newGroup.groups && newGroup.groups.length > 0) {
+            console.warn("JSON rules editor doesn't support multiple top level logic groups");
+            this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
+            return;
+        }
+
+
         newGroup.groups = undefined;
 
         // Add an item if none exist
         if (!newGroup.items || newGroup.items!.length === 0) {
-            this.addCondition(newGroup, true);
+            this.addCondition(newGroup, type, true);
         }
 
-        const group = parent as LogicGroup<RuleCondition>;
-        if (!group.groups) {
-            group.groups = [];
+        if (!parent.groups) {
+            parent.groups = [];
         }
-        group.groups.push(newGroup);
+        parent.groups.push(newGroup);
 
-        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
 
@@ -298,13 +332,13 @@ class OrRuleWhen extends LitElement {
             }
 
             if (removed) {
-                this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+                this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
                 this.requestUpdate();
             }
         }
     }
 
-    private addCondition(parent: LogicGroup<RuleCondition>, silent?: boolean) {
+    private addCondition(parent: LogicGroup<RuleCondition>, type: string | undefined, silent?: boolean) {
         if (!parent) {
             return;
         }
@@ -313,27 +347,17 @@ class OrRuleWhen extends LitElement {
             parent.items = [];
         }
 
-        let newTrigger: RuleCondition = {};
+        let newCondition: RuleCondition = {};
 
-        if (this.config && this.config.templates && this.config.templates.whenCondition) {
-            newTrigger = JSON.parse(JSON.stringify(this.config.templates.whenCondition)) as RuleCondition;
+        if (this.config && this.config.json && this.config.json.whenCondition) {
+            newCondition = JSON.parse(JSON.stringify(this.config.json.whenCondition)) as RuleCondition;
+        } else {
+            updateRuleConditionType(newCondition, type || AssetType.THING.type, this.config);
         }
 
-        // Populate the condition with something to help the UI
-        if (!newTrigger.timer && !newTrigger.datetime && !newTrigger.assets) {
-            newTrigger.assets = {
-                types: [
-                    {
-                        predicateType: "string",
-                        value: AssetType.THING.type
-                    }
-                ]
-            };
-        }
-
-        parent.items.push(newTrigger);
+        parent.items.push(newCondition);
         if (!silent) {
-            this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+            this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
             this.requestUpdate();
         }
     }

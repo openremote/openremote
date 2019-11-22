@@ -1,7 +1,6 @@
-import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult, unsafeCSS} from "lit-element";
+import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult, unsafeCSS, query} from "lit-element";
 import {classMap} from "lit-html/directives/class-map";
 import {ifDefined} from "lit-html/directives/if-defined";
-import {orInputStyle} from "./style";
 import {MDCTextField} from "@material/textfield";
 import {MDCComponent} from "@material/base";
 import {MDCRipple} from "@material/ripple";
@@ -11,6 +10,7 @@ import {MDCSelect, MDCSelectEvent, } from "@material/select";
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
 import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
 import moment from "moment";
+import {DefaultColor1, DefaultColor4} from "@openremote/core";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("!!raw-loader!@material/button/dist/mdc.button.css");
@@ -80,6 +80,82 @@ export enum InputType {
     SELECT = "select"
 }
 
+// language=CSS
+const style = css`
+    
+    :host {
+        display: inline-block;
+        --internal-or-input-color: var(--or-input-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
+        --internal-or-input-text-color: var(--or-input-text-color, var(--or-app-color1, inherit));    
+        
+        --mdc-theme-primary: var(--internal-or-input-color);
+        --mdc-theme-on-primary: var(--internal-or-input-text-color);
+        --mdc-theme-secondary: var(--internal-or-input-color);
+    }
+     
+    #wrapper {
+        display: flex;
+        align-items: center;
+    }
+    
+    #wrapper > label {
+        margin-left: 10px;
+    }
+       
+    .or-input--rounded {
+        border-radius: 50% !important;
+    }
+    
+    /* MDC TEXT FIELD AND SELECT DON'T USE THEME VARS */
+    .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label {
+        color: var(--mdc-theme-primary);
+    }
+    .mdc-text-field--focused .mdc-text-field__input:required ~ .mdc-floating-label::after,
+    .mdc-text-field--focused .mdc-text-field__input:required ~ .mdc-notched-outline .mdc-floating-label::after {
+        color: var(--mdc-theme-primary);
+    }
+    
+    .mdc-select:not(.mdc-select--disabled).mdc-select--focused .mdc-floating-label {
+        color: var(--mdc-theme-primary);
+    }
+    
+    .mdc-text-field, .mdc-text-field-helper-line {
+        width: inherit;
+    }
+    
+    .mdc-text-field--dense:not(.mdc-text-field--no-label):not(.mdc-text-field--outlined) {
+        height: 52px;
+    }
+    
+    .mdc-text-field--dense.mdc-text-field--no-label {
+        height: 40px;
+    }
+    
+    .mdc-text-field--dense .mdc-text-field__input {
+        white-space: nowrap;
+    }
+    
+    .mdc-select__dropdown-icon {
+        background: none;
+    }
+    
+    .mdc-select--focused .mdc-select__dropdown-icon {
+        --or-icon-fill: var(--internal-or-input-color);
+    }
+    
+    .mdc-icon-button {
+        --or-icon-fill: var(--internal-or-input-text-color);
+    }
+    
+    .mdc-icon-button {
+        padding: 0;
+    }
+    
+    #field {
+        height: 100%;
+    }
+`;
+
 @customElement("or-input")
 export class OrInput extends LitElement {
 
@@ -99,7 +175,7 @@ export class OrInput extends LitElement {
             css`${unsafeCSS(listStyle)}`,
             css`${unsafeCSS(menuStyle)}`,
             css`${unsafeCSS(menuSurfaceStyle)}`,
-            orInputStyle
+            style
         ];
     }
 
@@ -244,7 +320,7 @@ export class OrInput extends LitElement {
                     return html`<span>RADIO</span>`;
                 case InputType.SWITCH:
                     return html`
-                        <div id="field" class="mdc-form-field ${this.dense ? "mdc-form-field--dense" : ""}">
+                        <span id="wrapper">
                             <div id="component" class="mdc-switch ${this.disabled || this.readonly ? "mdc-switch--disabled" : ""} ${this.value ? "mdc-switch--checked" : ""}">
                                 <div class="mdc-switch__track"></div>
                                 <div class="mdc-switch__thumb-underlay">
@@ -253,13 +329,13 @@ export class OrInput extends LitElement {
                                         ?checked="${this.value}"
                                         ?required="${this.required}"
                                         ?disabled="${this.disabled || this.readonly}"
-                                        @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement).checked)}"
+                                        @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).checked)}"
                                         role="switch">
                                     </div>
                                 </div>
                             </div>
                             <label for="elem">${this.label}</label>
-                        </div>
+                        </span>
                     `;
                 case InputType.SELECT:
                     const classes = {
@@ -291,7 +367,7 @@ export class OrInput extends LitElement {
                             ?required="${this.required}"
                             ?readonly="${this.readonly}"
                             ?disabled="${this.disabled}"
-                            @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(e.detail.index === -1 ? undefined : e.detail.value)}">
+                            @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : e.detail.value)}">
                             <or-icon class="mdc-select__dropdown-icon" icon="menu-down"></or-icon>
                             <div id="elem" class="mdc-select__selected-text" role="button" aria-haspopup="listbox" aria-controls="component-helper-text" aria-describedby="component-helper-text" aria-labelledby="component-label component"></div>
                             <div id="menu" class="mdc-select__menu mdc-menu mdc-menu-surface" role="listbox">
@@ -317,7 +393,7 @@ export class OrInput extends LitElement {
                         <button id="component" class="mdc-icon-button ${this.value ? "mdc-icon-button--on" : ""}"
                             ?readonly="${this.readonly}"
                             ?disabled="${this.disabled}"
-                            @MDCIconButtonToggle:change="${(evt: MDCIconButtonToggleEventDetail) => this.onValueChange(evt.isOn)}">
+                            @MDCIconButtonToggle:change="${(evt: MDCIconButtonToggleEventDetail) => this.onValueChange(undefined, evt.isOn)}">
                             ${this.icon ? html`<or-icon class="mdc-icon-button__icon" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
                             ${this.iconOn ? html`<or-icon class="mdc-icon-button__icon mdc-icon-button__icon--on" aria-hidden="true" icon="${this.iconOn}"></or-icon>` : ``}
                         </button>
@@ -342,7 +418,7 @@ export class OrInput extends LitElement {
                         <button id="component" class="${classMap(classes)}"
                             ?readonly="${this.readonly}"
                             ?disabled="${this.disabled}"
-                            @onmousedown="${() => {if (isMomentary) this.onValueChange(true)}}" @onmouseup="${() => isMomentary ? this.onValueChange(false) : this.onValueChange(true)}">
+                            @onmousedown="${() => {if (isMomentary) this.onValueChange(undefined, true)}}" @onmouseup="${() => isMomentary ? this.onValueChange(undefined, false) : this.onValueChange(undefined, true)}">
                             ${!isIconButton ? html`<div class="mdc-button__ripple"></div>` : ``}
                             ${this.icon ? html`<or-icon class="${isIconButton ? "" : this.action ? "mdc-fab__icon" : "mdc-button__icon"}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
                             ${this.label ? html`<span class="${this.action ? "mdc-fab__label" : "mdc-button__label"}">${this.label}</span>` : ``}
@@ -358,7 +434,7 @@ export class OrInput extends LitElement {
                                     ?checked="${this.value}"
                                     ?required="${this.required}"
                                     ?disabled="${this.disabled || this.readonly}"
-                                    @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement).checked)}"
+                                    @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}"
                                     class="mdc-checkbox__native-control" id="elem"/>
                                 <div class="mdc-checkbox__background">
                                     <svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
@@ -430,7 +506,7 @@ export class OrInput extends LitElement {
                                     ?required="${this.required}"
                                     ?readonly="${this.readonly}"
                                     ?disabled="${this.disabled}"
-                                    @change="${(e: Event) => this.onValueChange((e.target as HTMLTextAreaElement).value)}"
+                                    @change="${(e: Event) => this.onValueChange((e.target as HTMLTextAreaElement), (e.target as HTMLTextAreaElement).value)}"
                                     minlength="${ifDefined(this.minLength)}"
                                     maxlength="${ifDefined(this.maxLength)}"
                                     rows="${this.rows ? this.rows : 5}" 
@@ -442,7 +518,7 @@ export class OrInput extends LitElement {
                                     ?required="${this.required}"
                                     ?readonly="${this.readonly}"
                                     ?disabled="${this.disabled}"
-                                    @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement).value)}"
+                                    @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}"
                                     .value="${val}"
                                     min="${ifDefined(this.min)}"
                                     max="${ifDefined(this.max)}"
@@ -523,7 +599,9 @@ export class OrInput extends LitElement {
                         this._mdcComponent = new MDCSwitch(component);
                         break;
                     default:
-                        this._mdcComponent = new MDCTextField(component);
+                        const textField = new MDCTextField(component);
+                        textField.useNativeValidation = false;
+                        this._mdcComponent = textField;
                         break;
                 }
             }
@@ -558,7 +636,19 @@ export class OrInput extends LitElement {
         `;
     }
 
-    protected onValueChange(newValue: any | undefined) {
+    protected onValueChange(elem: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | undefined, newValue: any | undefined) {
+
+        let valid = true;
+
+        if (elem && this._mdcComponent) {
+
+            // trigger validation
+            valid = elem.checkValidity();
+            if (this._mdcComponent instanceof MDCTextField) {
+                this._mdcComponent.valid = valid;
+            }
+        }
+
         const previousValue = this.value;
 
         if (newValue === "null") {

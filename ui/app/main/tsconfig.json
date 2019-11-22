@@ -17,6 +17,6 @@
 	{ "path": "../../component/or-asset-tree" },
     { "path": "../../component/or-attribute-input" },
     { "path": "../../component/or-asset-viewer" },
-    { "path": "../../component/or-rules-editor" }
+    { "path": "../../component/or-rules" }
   ]
 }

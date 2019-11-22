@@ -8,6 +8,8 @@ import manager, {AssetModelUtil, OREvent, EventCallback} from "@openremote/core"
 import {OrInputChangedEvent, InputType} from "@openremote/or-input";
 import Qs from "qs";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
+import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {i18next} from "@openremote/or-translate";
 
 export interface UiAssetTreeNode extends AssetTreeNode {
     selected: boolean;
@@ -146,6 +148,12 @@ export class OrAssetTree extends LitElement {
     public realm?: string;
 
     @property({type: Boolean})
+    public readonly: boolean = false;
+
+    @property({type: Boolean})
+    public disabled: boolean = false;
+
+    @property({type: Boolean})
     public multiSelect?: boolean = true;
 
     @property({type: Function, noAccessor: true, attribute: false})
@@ -168,15 +176,6 @@ export class OrAssetTree extends LitElement {
 
     @property()
     protected _showLoading: boolean = true;
-
-    @query("#sort-menu")
-    protected _sortMenu!: HTMLDivElement;
-
-    @query("#delete-not-allowed-modal")
-    protected _deleteNotAllowedModal!: HTMLDivElement;
-
-    @query("#delete-confirm-modal")
-    protected _deleteConfirmModal!: HTMLDivElement;
 
     protected _selectedNodes: UiAssetTreeNode[] = [];
     protected _initCallback?: EventCallback;
@@ -207,18 +206,6 @@ export class OrAssetTree extends LitElement {
         } else {
             this._onReady();
         }
-
-        this.addEventListener("click", (evt) => {
-            if (this._sortMenu.hasAttribute("data-visible") && !this._sortMenu.contains(evt.target as Node)) {
-                this._sortMenu.toggleAttribute("data-visible");
-            }
-            if (this._deleteNotAllowedModal.hasAttribute("data-visible") && !this._deleteNotAllowedModal.contains(evt.target as Node)) {
-                this._deleteNotAllowedModal.toggleAttribute("data-visible");
-            }
-            if (this._deleteConfirmModal.hasAttribute("data-visible") && !this._deleteConfirmModal.contains(evt.target as Node)) {
-                this._deleteConfirmModal.toggleAttribute("data-visible");
-            }
-        });
     }
 
     protected render() {
@@ -230,49 +217,17 @@ export class OrAssetTree extends LitElement {
                     ${manager.isSuperUser() ? html `<or-input id="realm-picker" type="${InputType.SELECT}" .value="${this._getRealm()}" .options="${this._realms ? this._realms.map((tenant) => [tenant.realm, tenant.displayName]) : []}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onRealmChanged(evt)}"></or-input>` : ``}
                 </div>
 
-                <div id="header-btns">
-                    <button style="display:none;" ?hidden="${!manager.hasRole("write:rules") || !this.selectedIds || this.selectedIds.length === 0}" @click="${() => this._onCopyClicked()}"><or-icon icon="content-copy"></or-icon></button>
-                    <button ?hidden="${!manager.hasRole("write:rules") || !this.selectedIds || this.selectedIds.length === 0}" @click="${() => this._onDeleteClicked()}"><or-icon icon="delete"></or-icon></button>
-                    <button hidden @click="${() => this._onAddClicked()}"><or-icon icon="plus"></or-icon></button>
-                    <button hidden @click="${() => this._onSearchClicked()}"><or-icon icon="magnify"></or-icon></button>
-                    <button @click="${() => this._onSortClicked()}"><or-icon icon="sort-variant"></or-icon></button>
-                    <div class="modal-container">
-                        <div class="modal" id="sort-menu">
-                            <div class="modal-content">
-                                <ul>
-                                    <li @click="${() => this.sortBy = "name"}" ?data-selected="${!this.sortBy || this.sortBy === "name"}"><or-icon icon="check"></or-icon><or-translate value="name"></or-translate></li>
-                                    <li @click="${() => this.sortBy = "type"}" ?data-selected="${this.sortBy === "type"}"><or-icon icon="check"></or-icon><or-translate value="assetType"></or-translate></li>
-                                    <li @click="${() => this.sortBy = "created"}" ?data-selected="${this.sortBy === "created"}"><or-icon icon="check"></or-icon><or-translate value="creationDate"></or-translate></li>
-                                    <li @click="${() => this.sortBy = "status"}" ?data-selected="${this.sortBy === "status"}"><or-icon icon="check"></or-icon><or-translate value="status"></or-translate></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-container">
-                        <div class="modal" id="delete-not-allowed-modal">
-                            <div class="modal-content">
-                                <p>
-                                    <or-translate value="deleteAssetsNoChildrenAllowed"></or-translate>
-                                </p>
-                                <div class="modal-btns">
-                                    <span class="btn" @click="${() => this._deleteNotAllowedModal.toggleAttribute("data-visible")}"><or-translate value="ok"></or-translate></span>                                
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-container">
-                        <div class="modal" id="delete-confirm-modal">
-                            <div class="modal-content">
-                                <p>
-                                    <or-translate value="confirmDeleteAssets"></or-translate>
-                                </p>
-                                <div class="modal-btns">
-                                    <span class="btn" @click="${() => this._deleteConfirmModal.toggleAttribute("data-visible")}"><or-translate value="cancel"></or-translate></span>
-                                    <span class="btn" @click="${() => this._doDelete()}"><or-translate value="ok"></or-translate></span>                                
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div id="header-btns">                
+                    <or-input style="display: none;" ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-input>
+                    <or-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-input>
+                    <or-input style="display: none;" ?hidden="${this._isReadonly()}" type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked()}"></or-input>
+                    <or-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-input>
+                    
+                    ${getContentWithMenuTemplate(
+                            html`<or-input type="${InputType.BUTTON}" icon="sort-variant"></or-input>`,
+                            ["name", "type", "createdOn", "status"].map((sort) => {return {value: sort, content: html`<span class="no-wrap">${i18next.t(sort)}</span>`} as MenuItem;}),
+                            this.sortBy,
+                            (v) => this._onSortClicked(v))}
                 </div>
             </div>
 
@@ -292,6 +247,10 @@ export class OrAssetTree extends LitElement {
             
             </div>
         `;
+    }
+
+    protected _isReadonly() {
+        return this.readonly || !manager.hasRole("write:rules");
     }
 
     protected _treeNodeTemplate(treeNode: UiAssetTreeNode, level: number): TemplateResult | string {
@@ -421,7 +380,7 @@ export class OrAssetTree extends LitElement {
     }
 
     protected _onDeleteClicked() {
-        this._doRequest(new OrAssetTreeRequestDeleteEvent(this._selectedNodes), (nodes) => this._showDeleteModal());
+        this._doRequest(new OrAssetTreeRequestDeleteEvent(this._selectedNodes), (nodes) => this._doDelete());
     }
 
     protected _onAddClicked() {
@@ -432,13 +391,8 @@ export class OrAssetTree extends LitElement {
 
     }
 
-    protected _onSortClicked() {
-        // Do open on next task to prevent click handler closing it immediately
-        if (!this._sortMenu.hasAttribute("data-visible")) {
-            window.setTimeout(() => {
-                this._sortMenu.toggleAttribute("data-visible");
-            });
-        }
+    protected _onSortClicked(sortBy: string) {
+        this.sortBy = sortBy;
     }
 
     protected _doSelect(detail: NodeClickEventDetail) {
@@ -476,7 +430,7 @@ export class OrAssetTree extends LitElement {
         this.selectedIds = selectedIds;
     }
 
-    protected _showDeleteModal() {
+    protected _doDelete() {
 
         if (!this._selectedNodes) {
             return;
@@ -484,24 +438,15 @@ export class OrAssetTree extends LitElement {
 
         // Check each selected node has no children
         if (this._selectedNodes.find((node) => node.children && node.children.length > 0)) {
-            // Do open on next task to prevent click handler closing it immediately
-            window.setTimeout(() => {
-                this._deleteNotAllowedModal.toggleAttribute("data-visible");
-            });
+            window.alert(i18next.t("deleteAssetsNoChildrenAllowed"));
             return;
         }
 
-        // Do open on next task to prevent click handler closing it immediately
-        window.setTimeout(() => {
-            this._deleteConfirmModal.toggleAttribute("data-visible");
-        });
-    }
-
-    protected _doDelete() {
-        if (!this._selectedNodes) {
+        if (!this._okToDelete()) {
             return;
         }
 
+        this.disabled = true;
         manager.rest.api.AssetResource.delete({
             assetId: this._selectedNodes.map((node) => node.asset!.id!)
         }, {
@@ -518,7 +463,11 @@ export class OrAssetTree extends LitElement {
             // Clear nodes to refetch them
             this._nodes = undefined;
         });
-        this._showLoading = true;
+        this.disabled = true;
+    }
+
+    protected _okToDelete() {
+        return window.confirm(i18next.t("confirmDeleteAssets"));
     }
 
     protected _doAdd() {
@@ -530,19 +479,7 @@ export class OrAssetTree extends LitElement {
     }
 
     protected _getSortFunction(): (a: UiAssetTreeNode, b: UiAssetTreeNode) => number {
-
-        const nameSort = (a: UiAssetTreeNode, b: UiAssetTreeNode) => { return a.asset!.name! < b.asset!.name! ? -1 : a.asset!.name! > b.asset!.name! ? 1 : 0 };
-
-        switch (this.sortBy) {
-            case "created":
-                return (a, b) => { return a.asset!.createdOn! < b.asset!.createdOn! ? -1 : a.asset!.createdOn! > b.asset!.createdOn! ? 1 : nameSort(a, b) };
-            case "status":
-                return (a, b) => { return a.asset!.name! < b.asset!.name! ? -1 : a.asset!.name! > b.asset!.name! ? 1 : nameSort(a, b) };
-            case "type":
-                return (a, b) => { return a.asset!.type! < b.asset!.type! ? -1 : a.asset!.type! > b.asset!.type! ? 1 : nameSort(a, b) };
-            default:
-                return nameSort;
-        }
+        return (a, b) => { return (a.asset as any)![this.sortBy!] < (b.asset as any)![this.sortBy!] ? -1 : (a.asset as any)![this.sortBy!] > (b.asset as any)![this.sortBy!] ? 1 : 0 };
     }
 
     protected _getRealm(): string | undefined {

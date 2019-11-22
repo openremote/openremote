@@ -3,23 +3,24 @@ import {AssetDescriptor, AssetQueryMatch, RuleCondition} from "@openremote/model
 import {
     ConditionType,
     getAssetTypeFromQuery,
-    getButtonWithMenuTemplate,
-    OrRulesEditorRuleChangedEvent,
     RulesConfig
-} from "./index";
+} from "../index";
 import "./or-rule-asset-query";
 import "@openremote/or-mwc-components/dist/or-mwc-menu";
-import {Menu, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import "@openremote/or-icon";
 import "@openremote/or-translate";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
+import {InputType} from "@openremote/or-input";
 import {AssetModelUtil} from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
+import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 
 const TIMER_COLOR = "4b87ea";
 const DATE_TIME_COLOR = "6AEAA4";
 
-function getWhenTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescriptor[]): Menu {
+export function getWhenTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescriptor[]): MenuItem[] {
 
     let addAssetTypes = true;
     let addDatetime = true;
@@ -31,15 +32,13 @@ function getWhenTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescript
         addTimer = config.controls.allowedConditionTypes.indexOf(ConditionType.TIMER) >= 0;
     }
 
-    const menu: Menu = {
-        items: []
-    };
+    const menu: MenuItem[] = [];
 
     if (addAssetTypes && assetDescriptors) {
-        menu.items.push(...assetDescriptors.map((ad) => {
+        menu.push(...assetDescriptors.map((ad) => {
             const content = html`
                     ${getAssetDescriptorIconTemplate(ad)}
-                    &nbsp;&nbsp;<span style="white-space: nowrap; text-transform: capitalize">${i18next.t(ad.name!, {defaultValue: ad.name!.replace(/_/g, " ").toLowerCase()})}</span>
+                    &nbsp;&nbsp;<span style="text-transform: capitalize">${i18next.t(ad.name!, {defaultValue: ad.name!.replace(/_/g, " ").toLowerCase()})}</span>
                 `;
             return {content: content, value: ad.type} as MenuItem
         }));
@@ -50,7 +49,7 @@ function getWhenTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescript
                 <or-icon style="--or-icon-fill: #${DATE_TIME_COLOR}" icon="clock"></or-icon>
                 <span style="text-transform: capitalize">&nbsp;<or-translate value="datetime"></or-translate></span>
             `;
-        menu.items.push({content: content, value: ConditionType.DATE_TIME} as MenuItem);
+        menu.push({content: content, value: ConditionType.DATE_TIME} as MenuItem);
     }
 
     if (addTimer) {
@@ -58,10 +57,46 @@ function getWhenTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescript
                 <or-icon style="--or-icon-fill: #${TIMER_COLOR}" icon="timer"></or-icon>
                 <span style="text-transform: capitalize">&nbsp;<or-translate value="timer"></or-translate></span>
             `;
-        menu.items.push({content: content, value: ConditionType.TIMER} as MenuItem);
+        menu.push({content: content, value: ConditionType.TIMER} as MenuItem);
     }
 
     return menu;
+}
+
+export function updateRuleConditionType(ruleCondition: RuleCondition, value: string | undefined, config?: RulesConfig) {
+
+    if (!value || value === "") {
+        ruleCondition.assets = undefined;
+        ruleCondition.timer = undefined;
+        ruleCondition.datetime = undefined;
+    } else if (value === ConditionType.TIMER) {
+        ruleCondition.assets = undefined;
+        ruleCondition.datetime = undefined;
+        ruleCondition.timer = "1h";
+    } else if (value === ConditionType.DATE_TIME) {
+        ruleCondition.assets = undefined;
+        ruleCondition.timer = undefined;
+        ruleCondition.datetime = {
+            predicateType: "datetime"
+        };
+    } else {
+        ruleCondition.timer = undefined;
+        ruleCondition.datetime = undefined;
+
+        if (config && config.json && config.json.whenAssetQuery) {
+            ruleCondition.assets = JSON.parse(JSON.stringify(config.json.whenAssetQuery));
+        } else {
+            ruleCondition.assets = {};
+        }
+
+        if (!ruleCondition.assets!.types || ruleCondition.assets!.types.length === 0) {
+            ruleCondition.assets!.types = [{
+                predicateType: "string",
+                match: AssetQueryMatch.EXACT
+            }];
+        }
+        ruleCondition.assets!.types[0].value = value;
+    }
 }
 
 // language=CSS
@@ -69,6 +104,7 @@ const style = css`
     :host {
         display: flex;
         flex-direction: row;
+        align-items: center;
     }
     
     or-rule-asset-query {
@@ -77,6 +113,10 @@ const style = css`
 
     #type-selector {
         margin-top: 10px;
+    }
+    
+    #type {
+        margin-right: 10px;
     }
 `;
 
@@ -132,8 +172,12 @@ class OrRuleCondition extends LitElement {
             }
             
             typeTemplate = html`
-                <div style="display: table; height: 100%; --or-input-color: #${buttonColor}">
-                    ${getButtonWithMenuTemplate(getWhenTypesMenu(this.config, this.assetDescriptors), buttonIcon || "", type, (value: string) => this.type = value)}
+                <div id="type" style="--or-input-text-color: #${buttonColor}">
+                    ${getContentWithMenuTemplate(
+                        html`<or-input class="menu-button" type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
+                        getWhenTypesMenu(this.config, this.assetDescriptors),
+                        type,
+                        (value: string) => this.type = value)}
                 </div>
             `;
         }
@@ -176,53 +220,8 @@ class OrRuleCondition extends LitElement {
 
     protected set type(value: string | undefined) {
 
-        if (!value || value === "") {
-            this.ruleCondition.assets = undefined;
-            this.ruleCondition.timer = undefined;
-            this.ruleCondition.datetime = undefined;
-            this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
-            this.requestUpdate();
-            return;
-        }
-
-        if (value === ConditionType.TIMER) {
-            this.ruleCondition.assets = undefined;
-            this.ruleCondition.datetime = undefined;
-            this.ruleCondition.timer = "1h";
-            this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
-            this.requestUpdate();
-            return;
-        }
-
-        if (value === ConditionType.DATE_TIME) {
-            this.ruleCondition.assets = undefined;
-            this.ruleCondition.timer = undefined;
-            this.ruleCondition.datetime = {
-                predicateType: "datetime"
-            };
-            this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
-            this.requestUpdate();
-            return;
-        }
-
-        this.ruleCondition.timer = undefined;
-        this.ruleCondition.datetime = undefined;
-
-        if (this.config && this.config.templates && this.config.templates.whenAssetQuery) {
-            this.ruleCondition.assets = JSON.parse(JSON.stringify(this.config.templates.whenAssetQuery));
-        } else {
-            this.ruleCondition.assets = {};
-        }
-
-        if (!this.ruleCondition.assets!.types || this.ruleCondition.assets!.types.length === 0) {
-            this.ruleCondition.assets!.types = [{
-                predicateType: "string",
-                match: AssetQueryMatch.EXACT
-            }];
-        }
-
-        this.ruleCondition.assets!.types[0].value = value;
-        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+        updateRuleConditionType(this.ruleCondition, value, this.config);
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
 }

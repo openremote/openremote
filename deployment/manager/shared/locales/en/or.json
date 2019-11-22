@@ -76,7 +76,7 @@
   "confirmDeleteAssets": "Remove assets?",
   "ok": "OK",
   "cancel": "Cancel",
-  "createdOn": "Created on:",
+  "createdOn": "Created on",
   "createdOnWithDate": "Created on: {{-date, LLLL}}",
   "accessPublicRead": "Public read",
   "type": "Type",
@@ -105,5 +105,6 @@
   "wait": "Wait",
   "history": "History",
   "attributes": "Attributes",
-  "info": "Info"
+  "info": "Info",
+  "notSupported": "Not supported"
 }

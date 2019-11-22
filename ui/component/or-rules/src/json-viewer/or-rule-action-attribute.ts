@@ -1,5 +1,5 @@
 import {customElement, html, LitElement, property, PropertyValues, css, TemplateResult} from "lit-element";
-import {getAssetIdsFromQuery, getAssetTypeFromQuery, OrRulesEditorRuleChangedEvent, RulesConfig} from "./index";
+import {getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
 import {
     Asset,
     AssetDescriptor,
@@ -13,6 +13,7 @@ import manager, {AssetModelUtil, Util} from "@openremote/core";
 import {getAttributeValueTemplate} from "@openremote/or-attribute-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import i18next from "i18next";
+import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 
 // language=CSS
 const style = css`
@@ -21,7 +22,7 @@ const style = css`
     }
 
     :host > * {
-        margin-right: 20px;
+        margin-right: 10px;
     }
 `;
 
@@ -167,20 +168,20 @@ export class OrRuleActionAttribute extends LitElement {
             }
         }
 
-        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
 
     protected setActionAttributeName(name: string | undefined) {
         this.action.attributeName = name;
         this.action.value = undefined;
-        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
 
     protected setActionAttributeValue(value: any) {
         this.action.value = value;
-        this.dispatchEvent(new OrRulesEditorRuleChangedEvent());
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }
 

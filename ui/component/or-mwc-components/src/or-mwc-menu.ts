@@ -1,14 +1,20 @@
-import {css, customElement, html, LitElement, property, query, TemplateResult, unsafeCSS, PropertyValues} from "lit-element";
+import {
+    css,
+    customElement,
+    html,
+    LitElement,
+    property,
+    PropertyValues,
+    query,
+    TemplateResult,
+    unsafeCSS
+} from "lit-element";
 
-import {MDCMenu, MDCMenuItemComponentEventDetail} from "@material/menu";
+import {MDCMenu} from "@material/menu";
 
 const listStyle = require("!!raw-loader!@material/list/dist/mdc.list.css");
 const menuSurfaceStyle = require("!!raw-loader!@material/menu-surface/dist/mdc.menu-surface.css");
 const menuStyle = require("!!raw-loader!@material/menu/dist/mdc.menu.css");
-
-export interface Menu {
-    items: (MenuItem | MenuGroup | null)[];
-}
 
 export interface MenuGroup {
     icon?: string;
@@ -39,6 +45,30 @@ declare global {
     }
 }
 
+export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (MenuItem | MenuGroup | null)[], selectedValue: string | undefined, valueChangedCallback: (v: string) => void): TemplateResult {
+
+    const openMenu = (evt: Event) => {
+        if (!menuItems) {
+            return;
+        }
+
+        ((evt.currentTarget as Element).parentElement!.lastElementChild as OrMwcMenu).open();
+    };
+
+    return html`
+        <span>
+            <span @click="${openMenu}">${content}</span>
+            ${menuItems ? html`<or-mwc-menu @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => valueChangedCallback(evt.detail)}" .value="${selectedValue}" .menuItems="${menuItems}" id="menu"></or-mwc-menu>` : ``}
+        </span>
+    `;
+}
+
+// language=CSS
+const style = css`
+    :host {
+        white-space: nowrap;
+    }
+`;
 
 @customElement("or-mwc-menu")
 export class OrMwcMenu extends LitElement {
@@ -47,12 +77,13 @@ export class OrMwcMenu extends LitElement {
         return [
             css`${unsafeCSS(listStyle)}`,
             css`${unsafeCSS(menuStyle)}`,
-            css`${unsafeCSS(menuSurfaceStyle)}`
+            css`${unsafeCSS(menuSurfaceStyle)}`,
+            style
         ];
     }
 
-    @property({type: Object})
-    public menu?: Menu;
+    @property({type: Array})
+    public menuItems?: (MenuItem | MenuGroup | null)[];
 
     @property({type: String})
     public value?: string;
@@ -84,7 +115,7 @@ export class OrMwcMenu extends LitElement {
 
     protected render() {
 
-        if (!this.menu || !this.menu.items) {
+        if (!this.menuItems || this.menuItems.length === 0) {
             return html``;
         }
 
@@ -92,7 +123,7 @@ export class OrMwcMenu extends LitElement {
             <div id="wrapper" class="mdc-menu-surface--anchor">
                 <div class="mdc-menu mdc-menu-surface" id="menu">
                     <ul class="mdc-list" role="menu" aria-hidden="true" aria-orientation="vertical" tabindex="-1">
-                        ${this.getItemsTemplate(this.menu.items)}
+                        ${this.getItemsTemplate(this.menuItems)}
                     </ul>
                 </div>
             </div>
@@ -109,7 +140,7 @@ export class OrMwcMenu extends LitElement {
                     return html`
                         <li>
                             <ul class="mdc-menu__selection-group">
-                                ${this.getItemsTemplate((item as Menu).items, (item as MenuGroup).icon)}
+                                ${this.getItemsTemplate((item as MenuGroup).items, (item as MenuGroup).icon)}
                             </ul>
                         </li>
                     `;
@@ -128,11 +159,13 @@ export class OrMwcMenu extends LitElement {
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
-        this._mdcComponent = new MDCMenu(this._mdcElem);
-        this._mdcComponent!.quickOpen = true;
-        const elem = this.anchorElem || this._wrapperElem;
-        // This doesn't work
-        //this._mdcComponent.setAnchorElement(elem);
+        if (this._mdcElem) {
+            this._mdcComponent = new MDCMenu(this._mdcElem);
+            this._mdcComponent!.quickOpen = true;
+            const elem = this.anchorElem || this._wrapperElem;
+            // This doesn't work
+            //this._mdcComponent.setAnchorElement(elem);
+        }
     }
 
     protected updated(_changedProperties: PropertyValues): void {

@@ -293,8 +293,8 @@ export function loadJs(url: string) {
             let script = document.createElement('script');
             script.type = 'text/javascript';
             script.src = url;
-            script.addEventListener('load', () => resolve(script), false);
-            script.addEventListener('error', () => reject(script), false);
+            script.addEventListener('load', (e) => resolve(e), false);
+            script.addEventListener('error', (e) => reject(e), false);
             document.body.appendChild(script);
         });
 };

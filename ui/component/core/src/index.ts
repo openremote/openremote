@@ -118,6 +118,11 @@ export class IconSetAddedEvent extends CustomEvent<void> {
     }
 }
 
+export interface OrManagerEventDetail {
+    event: OREvent;
+    error?: ORError;
+}
+
 declare global {
     export interface HTMLElementEventMap {
         [IconSetAddedEvent.NAME]: IconSetAddedEvent;
@@ -873,18 +878,9 @@ export class Manager implements EventProviderFactory {
     // so this will need updating.
     protected async loadAndInitialiseKeycloak(): Promise<boolean> {
 
-        // Load the keycloak JS API
-        const promise = new Promise<Event>((resolve, reject) => {
-            // Load keycloak script from keycloak server
-            const scriptElement = document.createElement("script");
-            scriptElement.src = this._config.keycloakUrl + "/js/keycloak.js";
-            scriptElement.onload = (e) => resolve(e);
-            scriptElement.onerror = (e) => reject(e);
-            document.querySelector("head")!.appendChild(scriptElement);
-        });
-
         try {
-            await promise;
+            // Load the keycloak JS API
+            await Util.loadJs(this._config.keycloakUrl + "/js/keycloak.js");
 
             // Should have Keycloak global var now
             if (!(window as any).Keycloak) {
@@ -957,6 +953,7 @@ export class Manager implements EventProviderFactory {
             }
         } catch (error) {
             this._setError(ORError.KEYCLOAK_FAILED_TO_LOAD);
+            console.error("Failed to load Keycloak");
             return false;
         }
     }
