@@ -36,6 +36,7 @@ networks:
 volumes:
   proxy-data:
   deployment-data:
+  keycloak-data:
   postgresql-data:
 
 services:
@@ -54,7 +55,7 @@ services:
 
       # Enable --staging will manage fake certificates, so avoid hitting the rate limits of Let's Encrypt
       # when testing (this is important, you are limited to 5 duplicate certificates per week!)
-      # LE_EXTRA_ARGS: '--staging --logs-dir=/etc/letsencrypt'
+      LE_EXTRA_ARGS: '--staging --logs-dir=/etc/letsencrypt'
 
       # Traffic should be forwarded to this service (defaults to manager:8080)
       # PROXY_BACKEND_HOST: manager
@@ -91,15 +92,12 @@ services:
   # configuration files which were baked into the managers image.
   manager:
 
-    # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
     image: openremote/manager:${DATE_TAG:-swarm}
     networks:
       - private
 
     environment:
 
-      # It is important that all services have the same timezone and are time synchronized.
-      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
       TZ: Europe/Amsterdam
 
       # If developer mode is enabled, all setup tasks will be executed on application startup.
@@ -232,7 +230,7 @@ services:
       - "8081:8080"
 
     volumes:
-      - deployment-data:/deployment
+      - keycloak-data:/deployment
 
   # This configuration stores postgresql data in a Docker volume. You manage this volume
   # independently from your stack with with 'docker volume ls', 'docker volume rm', etc.
