@@ -36,15 +36,13 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     private final Map<AttributeRef, AttributeInfo> attributeInfoMap = new HashMap<>();
     private static int DEFAULT_RESPONSE_TIMEOUT_MILLIS = 3000;
     private static int DEFAULT_SEND_RETRIES = 1;
-    private static boolean DEFAULT_SERVER_ALWAYS_RESPONDS = false;
     private static int MIN_POLLING_MILLIS = 1000;
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
             META_ATTRIBUTE_WRITE_VALUE,
             META_POLLING_MILLIS,
             META_RESPONSE_TIMEOUT_MILLIS,
-            META_SEND_RETRIES,
-            META_SERVER_ALWAYS_RESPONDS
+            META_SEND_RETRIES
     );
 
     @Override
@@ -171,17 +169,6 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
                                 .orElse(DEFAULT_SEND_RETRIES)
                 );
 
-        final boolean serverAlwaysResponds = Values.getMetaItemValueOrThrow(
-                attribute,
-                META_SERVER_ALWAYS_RESPONDS,
-                false,
-                false
-        ).flatMap(Values::getBoolean).orElseGet(() ->
-                Values.getMetaItemValueOrThrow(protocolConfiguration, META_SERVER_ALWAYS_RESPONDS, false, false)
-                        .flatMap(Values::getBoolean)
-                        .orElse(DEFAULT_SERVER_ALWAYS_RESPONDS)
-        );
-
         Consumer<Value> sendConsumer = null;
         ScheduledFuture pollingTask = null;
         AttributeInfo info = new AttributeInfo(attribute.getReferenceOrThrow(), sendRetries, responseTimeoutMillis);
@@ -190,9 +177,10 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             sendConsumer = Protocol.createDynamicAttributeWriteConsumer(attribute, str ->
                     clientAndQueue.send(
                             str,
-                            serverAlwaysResponds ? responseStr -> {
+                            responseStr -> {
+                                // TODO: Add discovery
                                 // Just drop the response; something in the future could be used to verify send was successful
-                            } : null,
+                            },
                             info));
         }
 
