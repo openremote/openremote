@@ -4,10 +4,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.buffer.ByteBuf;
 
+import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
+import java.util.ArrayList;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class ArtNetPacket {
     protected int universe;
@@ -28,10 +31,13 @@ public class ArtNetPacket {
         return Values.getObject(value).flatMap(obj -> {
             int _universe = obj.getNumber("universe").orElse(0.).intValue();
             double  _dim = obj.getNumber("dim").orElse(1.);
-            int[] _values = obj.getArray("values").orElse(null)
-                    .stream().mapToInt(num -> num.asAny().asByte()).toArray();
+            ArrayValue _values = obj.getArray("values").get();
+            int[] values = new int[_values.length()];
+            for (int i = 0; i < values.length; i++) {
+                values[i] = _values.get(i).get().asAny().asInt();
+            }
 
-            return Optional.of(new ArtNetPacket(_universe, _dim, _values));
+            return Optional.of(new ArtNetPacket(_universe, _dim,  values));
         });
     }
 
