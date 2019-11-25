@@ -156,9 +156,7 @@ class OrRuleWhen extends LitElement {
                         <div class="rule-group-item">
                             <div class="rule-condition">
                                 <or-rule-condition .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .ruleCondition="${condition}" .readonly="${this.readonly}" ></or-rule-condition>
-                                ${showRemoveCondition ? html`
-                                    <button class="button-clear" @click="${() => this.removeItem(condition, group, false)}"><or-icon icon="close-circle"></or-icon></input>
-                                ` : ``}
+                                <button class="button-clear ${showRemoveCondition ? "" : "hidden"}" @click="${() => this.removeItem(condition, group, false)}"><or-icon icon="close-circle"></or-icon></input>
                             </div>
                         </div>
                     `;

@@ -1,34 +1,35 @@
 import {css, customElement, html, LitElement, property, PropertyValues} from "lit-element";
 import {
+    Asset,
     AssetDescriptor,
-    AssetQuery,
     AssetQueryMatch,
     AssetQueryOperator as AQO,
     AssetQueryOrderBy$Property,
+    Attribute,
     AttributeDescriptor,
     AttributePredicate,
     AttributeValueDescriptor,
     AttributeValueType,
     LogicGroup,
     LogicGroupOperator,
+    MetaItemType,
+    RuleCondition,
     ValuePredicateUnion,
-    ValueType,
-    Asset,
-    MetaItemType
+    ValueType
 } from "@openremote/model";
 import {
     AssetQueryOperator,
     AssetTypeAttributeName,
-    getAssetTypeFromQuery,
     getAssetIdsFromQuery,
+    getAssetTypeFromQuery,
     getDescriptorValueType,
-    RulesConfig, getAttributeNames
+    RulesConfig
 } from "../index";
 import {OrSelectChangedEvent} from "@openremote/or-select";
 import "@openremote/or-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {getAttributeValueTemplate} from "@openremote/or-attribute-input";
-import manager, {Util, AssetModelUtil} from "@openremote/core";
+import manager, {AssetModelUtil, Util} from "@openremote/core";
 import i18next from "i18next";
 import {buttonStyle} from "../style";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
@@ -57,8 +58,12 @@ const style = css`
         flex-grow: 0;
     }
     
+    #idSelect {
+        margin-right: 3px;
+    }
+    
     .attribute-editor > * {
-        margin: 0 5px;    
+        margin: 0 3px;    
     }
 `;
 
@@ -66,7 +71,7 @@ const style = css`
 class OrRuleAssetQuery extends LitElement {
 
     @property({type: Object, attribute: false})
-    public query!: AssetQuery;
+    public condition!: RuleCondition;
 
     public readonly?: boolean;
 
@@ -79,20 +84,75 @@ class OrRuleAssetQuery extends LitElement {
 
     // Value predicates for specific attribute value descriptors
     protected _queryOperatorsMap: Map<AssetTypeAttributeName | AttributeDescriptor | AttributeValueDescriptor | ValueType, AssetQueryOperator[]> = new Map<AssetTypeAttributeName | AttributeDescriptor | AttributeValueDescriptor | ValueType, AssetQueryOperator[]>([
-        [AttributeValueType.GEO_JSON_POINT, [AssetQueryOperator.EQUALS, AssetQueryOperator.NOT_EQUALS, AssetQueryOperator.WITHIN_RADIUS, AssetQueryOperator.OUTSIDE_RADIUS, AssetQueryOperator.WITHIN_RECTANGLE, AssetQueryOperator.OUTSIDE_RECTANGLE]],
-        [ValueType.STRING, [AssetQueryOperator.EQUALS, AssetQueryOperator.NOT_EQUALS, AssetQueryOperator.CONTAINS, AssetQueryOperator.NOT_CONTAINS, AssetQueryOperator.STARTS_WITH, AssetQueryOperator.NOT_STARTS_WITH, AssetQueryOperator.ENDS_WITH, AssetQueryOperator.NOT_ENDS_WITH, AssetQueryOperator.VALUE_EMPTY, AssetQueryOperator.VALUE_NOT_EMPTY]],
-        [ValueType.NUMBER, [AssetQueryOperator.EQUALS, AssetQueryOperator.NOT_EQUALS, AssetQueryOperator.GREATER_THAN, AssetQueryOperator.GREATER_EQUALS, AssetQueryOperator.LESS_THAN, AssetQueryOperator.LESS_EQUALS, AssetQueryOperator.BETWEEN, AssetQueryOperator.NOT_BETWEEN, AssetQueryOperator.VALUE_EMPTY, AssetQueryOperator.VALUE_NOT_EMPTY]],
-        [ValueType.BOOLEAN, [AssetQueryOperator.IS_TRUE, AssetQueryOperator.IS_FALSE, AssetQueryOperator.VALUE_EMPTY, AssetQueryOperator.VALUE_NOT_EMPTY]],
-        [ValueType.ARRAY, [AssetQueryOperator.CONTAINS, AssetQueryOperator.NOT_CONTAINS, AssetQueryOperator.INDEX_CONTAINS, AssetQueryOperator.NOT_INDEX_CONTAINS, AssetQueryOperator.LENGTH_EQUALS, AssetQueryOperator.NOT_LENGTH_EQUALS, AssetQueryOperator.LENGTH_LESS_THAN, AssetQueryOperator.LENGTH_GREATER_THAN, AssetQueryOperator.VALUE_EMPTY, AssetQueryOperator.VALUE_NOT_EMPTY]],
-        [ValueType.OBJECT, [AssetQueryOperator.CONTAINS_KEY, AssetQueryOperator.NOT_CONTAINS_KEY, AssetQueryOperator.VALUE_EMPTY, AssetQueryOperator.VALUE_NOT_EMPTY]]
+        [AttributeValueType.GEO_JSON_POINT, [
+            AssetQueryOperator.EQUALS,
+            AssetQueryOperator.NOT_EQUALS,
+            AssetQueryOperator.WITHIN_RADIUS,
+            AssetQueryOperator.OUTSIDE_RADIUS,
+            AssetQueryOperator.WITHIN_RECTANGLE,
+            AssetQueryOperator.OUTSIDE_RECTANGLE,
+            AssetQueryOperator.VALUE_EMPTY,
+            AssetQueryOperator.VALUE_NOT_EMPTY]
+        ],
+        [ValueType.STRING, [
+            AssetQueryOperator.EQUALS,
+            AssetQueryOperator.NOT_EQUALS,
+            AssetQueryOperator.CONTAINS,
+            AssetQueryOperator.NOT_CONTAINS,
+            AssetQueryOperator.STARTS_WITH,
+            AssetQueryOperator.NOT_STARTS_WITH,
+            AssetQueryOperator.ENDS_WITH,
+            AssetQueryOperator.NOT_ENDS_WITH,
+            AssetQueryOperator.VALUE_EMPTY,
+            AssetQueryOperator.VALUE_NOT_EMPTY]
+        ],
+        [ValueType.NUMBER, [
+            AssetQueryOperator.EQUALS,
+            AssetQueryOperator.NOT_EQUALS,
+            AssetQueryOperator.GREATER_THAN,
+            AssetQueryOperator.GREATER_EQUALS,
+            AssetQueryOperator.LESS_THAN,
+            AssetQueryOperator.LESS_EQUALS,
+            AssetQueryOperator.BETWEEN,
+            AssetQueryOperator.NOT_BETWEEN,
+            AssetQueryOperator.VALUE_EMPTY,
+            AssetQueryOperator.VALUE_NOT_EMPTY]
+        ],
+        [ValueType.BOOLEAN, [
+            AssetQueryOperator.IS_TRUE,
+            AssetQueryOperator.IS_FALSE,
+            AssetQueryOperator.VALUE_EMPTY,
+            AssetQueryOperator.VALUE_NOT_EMPTY]
+        ],
+        [ValueType.ARRAY, [
+            AssetQueryOperator.CONTAINS,
+            AssetQueryOperator.NOT_CONTAINS,
+            AssetQueryOperator.INDEX_CONTAINS,
+            AssetQueryOperator.NOT_INDEX_CONTAINS,
+            AssetQueryOperator.LENGTH_EQUALS,
+            AssetQueryOperator.NOT_LENGTH_EQUALS,
+            AssetQueryOperator.LENGTH_LESS_THAN,
+            AssetQueryOperator.LENGTH_GREATER_THAN,
+            AssetQueryOperator.VALUE_EMPTY,
+            AssetQueryOperator.VALUE_NOT_EMPTY]
+        ],
+        [ValueType.OBJECT, [
+            AssetQueryOperator.CONTAINS_KEY,
+            AssetQueryOperator.NOT_CONTAINS_KEY,
+            AssetQueryOperator.VALUE_EMPTY,
+            AssetQueryOperator.VALUE_NOT_EMPTY]
+        ]
     ]);
 
     protected attributePredicateEditorTemplate(assetDescriptor: AssetDescriptor, asset: Asset | undefined, attributePredicate: AttributePredicate) {
 
         const operator = this.getOperator(attributePredicate);
         const attributeName = this.getAttributeName(attributePredicate);
+        let attribute: Attribute | undefined;
         let attributes: [string, string][];
+
         if (asset) {
+            attribute = attributeName ? Util.getAssetAttribute(asset, attributeName) : undefined;
             attributes = Util.getAssetAttributes(asset).filter((attr) => !Util.hasMetaItem(attr, MetaItemType.READ_ONLY.urn!))
                 .map((attr) => {
                     const attrDescriptor = AssetModelUtil.getAssetAttributeDescriptor(assetDescriptor, attr.name);
@@ -104,11 +164,13 @@ class OrRuleAssetQuery extends LitElement {
                     .map((ad) => [ad.attributeName!, Util.getAttributeLabel(undefined, ad)]);
         }
 
+        const operators = this.getOperators(assetDescriptor, attribute, attributeName);
+
         return html`
             <div class="attribute-editor">
                 <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributes}" .value="${attributeName}"></or-input>
                 
-                ${attributeName ? html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setOperator(assetDescriptor, attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${this.getOperators(assetDescriptor, attributeName)}" .value="${operator}"></or-input>` : ``}
+                ${attributeName ? html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setOperator(assetDescriptor, attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${operators}" .value="${operator}"></or-input>` : ``}
                 
                 ${attributePredicate ? this.attributePredicateValueEditorTemplate(assetDescriptor, attributePredicate) : ``}
             </div>
@@ -137,8 +199,8 @@ class OrRuleAssetQuery extends LitElement {
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "number":
                 if (valuePredicate.operator === AQO.BETWEEN) {
-                    let inputTemplate1 = getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, "");
-                    let inputTemplate2 = getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "rangeValue", v), this.config ? this.config.inputProvider : undefined, undefined, "");
+                    const inputTemplate1 = getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, "");
+                    const inputTemplate2 = getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "rangeValue", v), this.config ? this.config.inputProvider : undefined, undefined, "");
                     return html`
                         ${inputTemplate1(value)}
                         <span style="display: inline-flex; align-items: center;">&</span>
@@ -173,11 +235,15 @@ class OrRuleAssetQuery extends LitElement {
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
 
-        if (_changedProperties.has("query")) {
+        if (_changedProperties.has("condition")) {
             this._assets = undefined;
         }
 
         return super.shouldUpdate(_changedProperties);
+    }
+
+    protected get query() {
+        return this.condition.assets!;
     }
 
     protected render() {
@@ -303,21 +369,22 @@ class OrRuleAssetQuery extends LitElement {
         return valueTypeMatch;
     }
     
-    protected getOperators(assetDescriptor: AssetDescriptor, attributeName: string | undefined) {
+    protected getOperators(assetDescriptor: AssetDescriptor, attribute: Attribute | undefined, attributeName: string | undefined) {
         if (!attributeName) {
             return [];
         }
 
         const descriptor = assetDescriptor.attributeDescriptors ? assetDescriptor.attributeDescriptors.find((ad) => ad.attributeName === attributeName) : undefined;
-        const valueType = getDescriptorValueType(descriptor);
+        const valueDescriptor = attribute ? AssetModelUtil.getAttributeValueDescriptor(attribute.type as string) : descriptor ? descriptor.valueDescriptor : undefined;
+        const valueType = valueDescriptor ? valueDescriptor.valueType : undefined;
         let operators: AssetQueryOperator[] | undefined;
 
         if (this.config && this.config.controls && this.config.controls.allowedAssetQueryOperators) {
-            operators = this.getOperatorMapValue(this.config.controls.allowedAssetQueryOperators, getAssetTypeFromQuery(this.query), attributeName, descriptor, descriptor ? descriptor.valueDescriptor : undefined, valueType);
+            operators = this.getOperatorMapValue(this.config.controls.allowedAssetQueryOperators, getAssetTypeFromQuery(this.query), attributeName, descriptor, valueDescriptor, valueType);
         }
 
         if (!operators) {
-            operators = this.getOperatorMapValue(this._queryOperatorsMap, getAssetTypeFromQuery(this.query), attributeName, descriptor, descriptor ? descriptor.valueDescriptor : undefined, valueType);
+            operators = this.getOperatorMapValue(this._queryOperatorsMap, getAssetTypeFromQuery(this.query), attributeName, descriptor, valueDescriptor, valueType);
         }
 
         return operators ? operators.map((v) => [v, i18next.t(v)]) : [];

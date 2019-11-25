@@ -116,7 +116,7 @@ const style = css`
     }
     
     #type {
-        margin-right: 10px;
+        margin-right: 6px;
     }
 `;
 
@@ -191,7 +191,7 @@ class OrRuleCondition extends LitElement {
                     template = html`<span>TIMER NOT IMPLEMENTED</span>`;
                     break;
                 default:
-                    template = html`<or-rule-asset-query .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}" .query="${this.ruleCondition.assets}"></or-rule-asset-query>`;
+                    template = html`<or-rule-asset-query .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}" .condition="${this.ruleCondition}"></or-rule-asset-query>`;
                     break;
             }
         }

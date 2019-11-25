@@ -33,7 +33,7 @@ public class RuleConditionReset {
     public boolean never;
 
     /**
-     * Simple timer expression e.g. '1h' that is started when
+     * Simple timer expression e.g. '1h' that is started when the condition is matched.
      */
     public String timer;
 

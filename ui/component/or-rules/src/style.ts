@@ -23,6 +23,10 @@ export const buttonStyle = css`
         outline: 0;
     }
 
+    .button-clear.hidden {
+        visibility: hidden;
+    }
+    
     .add-button {
         display: inline-block;
         font-weight: bold;

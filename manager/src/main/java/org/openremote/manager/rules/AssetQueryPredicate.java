@@ -588,7 +588,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
 
     protected static boolean conditionIsEmpty(LogicGroup condition) {
         return condition.getItems().size() == 0
-            && (condition.groups != null && condition.groups.size() > 0);
+            && (condition.groups == null || condition.groups.isEmpty());
     }
 
     protected static <T> Predicate<T> asPredicate(Collection<Predicate<T>> predicates, LogicGroup.Operator operator) {

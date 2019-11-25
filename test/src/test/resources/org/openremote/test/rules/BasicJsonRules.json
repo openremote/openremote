@@ -1,37 +1,43 @@
- {
+{
   "rules": [
     {
       "name": "Test Rule",
       "when": {
-        "items": [
+        "operator": "OR",
+        "groups": [
           {
-            "assets": {
-              "types": [
-                {
-                  "predicateType": "string",
-                  "match": "EXACT",
-                  "value": "urn:openremote:asset:console"
-                }
-              ],
-              "attributes": {
-                "items": [
-                  {
-                    "name": {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    {
                       "predicateType": "string",
                       "match": "EXACT",
-                      "value": "location"
-                    },
-                    "value": {
-                      "predicateType": "radial",
-                      "radius": 50,
-                      "lat": 51.438000,
-                      "lng": 5.470945,
-                      "negated": true
+                      "value": "urn:openremote:asset:console"
                     }
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "location"
+                        },
+                        "value": {
+                          "predicateType": "radial",
+                          "radius": 50,
+                          "lat": 51.438000,
+                          "lng": 5.470945,
+                          "negated": true
+                        }
+                      }
+                    ]
                   }
-                ]
+                }
               }
-            }
+            ]
           }
         ]
       },
