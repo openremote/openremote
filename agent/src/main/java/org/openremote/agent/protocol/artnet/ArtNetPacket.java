@@ -34,7 +34,7 @@ public class ArtNetPacket {
             ArrayValue _values = obj.getArray("values").get();
             int[] values = new int[_values.length()];
             for (int i = 0; i < values.length; i++) {
-                values[i] = _values.get(i).get().asAny().asInt();
+                values[i] = _values.getNumber(i).get().intValue();
             }
 
             return Optional.of(new ArtNetPacket(_universe, _dim,  values));
