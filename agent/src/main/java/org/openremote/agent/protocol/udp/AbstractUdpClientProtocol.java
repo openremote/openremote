@@ -51,7 +51,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 public abstract class AbstractUdpClientProtocol<T> extends AbstractProtocol {
 
     protected class ClientAndQueue {
-        IoClient<T> client;
+        public IoClient<T> client;
         AttributeRef protocolRef;
         Deque<Runnable> actionQueue = new ArrayDeque<>();
         int retries;
@@ -78,7 +78,7 @@ public abstract class AbstractUdpClientProtocol<T> extends AbstractProtocol {
             client.disconnect();
         }
 
-        protected synchronized void send(T str, Consumer<T> responseConsumer, AttributeInfo attributeInfo) {
+        public synchronized void send(T str, Consumer<T> responseConsumer, AttributeInfo attributeInfo) {
             if (currentResponseConsumer != null) {
                 actionQueue.add(() -> processNextCommand(str, responseConsumer, attributeInfo));
                 return;
@@ -152,12 +152,13 @@ public abstract class AbstractUdpClientProtocol<T> extends AbstractProtocol {
 
     protected static class AttributeInfo {
         AttributeRef attributeRef;
-        Consumer<Value> sendConsumer;
-        ScheduledFuture pollingTask;
+        //Might have to move this out of the UDP package as the artnet-package also makes use of the sendConsumer.
+        public Consumer<Value> sendConsumer;
+        public ScheduledFuture pollingTask;
         int retries;
         int responseTimeoutMillis;
 
-        protected AttributeInfo(AttributeRef attributeRef, int retries, int responseTimeoutMillis) {
+        public AttributeInfo(AttributeRef attributeRef, int retries, int responseTimeoutMillis) {
             this.attributeRef = attributeRef;
             this.retries = retries;
             this.responseTimeoutMillis = responseTimeoutMillis;

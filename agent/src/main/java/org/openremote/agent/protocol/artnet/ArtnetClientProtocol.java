@@ -7,14 +7,21 @@ import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.agent.protocol.udp.AbstractUdpClient;
 import org.openremote.agent.protocol.udp.AbstractUdpClientProtocol;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.MetaItemDescriptor;
+import org.openremote.model.attribute.*;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
@@ -25,7 +32,12 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ArtnetClientProtocol.class.getName());
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":artnetClient";
     public static final String PROTOCOL_DISPLAY_NAME = "Artnet Client";
-    public static final String PROTOCOL_VERSION = "1.0";
+    private static final String PROTOCOL_VERSION = "1.0";
+    private final Map<AttributeRef, AttributeInfo> attributeInfoMap = new HashMap<>();
+    private static int DEFAULT_RESPONSE_TIMEOUT_MILLIS = 3000;
+    private static int DEFAULT_SEND_RETRIES = 1;
+    private static boolean DEFAULT_SERVER_ALWAYS_RESPONDS = false;
+    private static int MIN_POLLING_MILLIS = 1000;
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
             META_ATTRIBUTE_WRITE_VALUE,
@@ -128,6 +140,101 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
 
+        if (!protocolConfiguration.isEnabled()) {
+            LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
+            return;
+        }
+
+        ClientAndQueue clientAndQueue = clientMap.get(protocolConfiguration.getReferenceOrThrow());
+
+        if (clientAndQueue == null) {
+            return;
+        }
+
+        final Integer pollingMillis = Values.getMetaItemValueOrThrow(attribute, META_POLLING_MILLIS, false, true)
+                .flatMap(Values::getIntegerCoerced)
+                .orElse(null);
+
+        final int responseTimeoutMillis = Values.getMetaItemValueOrThrow(attribute, META_RESPONSE_TIMEOUT_MILLIS, false, true)
+                .flatMap(Values::getIntegerCoerced)
+                .orElseGet(() ->
+                        Values.getMetaItemValueOrThrow(protocolConfiguration, META_RESPONSE_TIMEOUT_MILLIS, false, true)
+                                .flatMap(Values::getIntegerCoerced)
+                                .orElse(DEFAULT_RESPONSE_TIMEOUT_MILLIS)
+                );
+
+        final int sendRetries = Values.getMetaItemValueOrThrow(attribute, META_SEND_RETRIES, false, true)
+                .flatMap(Values::getIntegerCoerced)
+                .orElseGet(() ->
+                        Values.getMetaItemValueOrThrow(protocolConfiguration, META_SEND_RETRIES, false, true)
+                                .flatMap(Values::getIntegerCoerced)
+                                .orElse(DEFAULT_SEND_RETRIES)
+                );
+
+        final boolean serverAlwaysResponds = Values.getMetaItemValueOrThrow(
+                attribute,
+                META_SERVER_ALWAYS_RESPONDS,
+                false,
+                false
+        ).flatMap(Values::getBoolean).orElseGet(() ->
+                Values.getMetaItemValueOrThrow(protocolConfiguration, META_SERVER_ALWAYS_RESPONDS, false, false)
+                        .flatMap(Values::getBoolean)
+                        .orElse(DEFAULT_SERVER_ALWAYS_RESPONDS)
+        );
+
+        Consumer<Value> sendConsumer = null;
+        ScheduledFuture pollingTask = null;
+        AttributeInfo info = new AttributeInfo(attribute.getReferenceOrThrow(), sendRetries, responseTimeoutMillis);
+
+        if (!attribute.isReadOnly()) {
+            sendConsumer = Protocol.createDynamicAttributeWriteConsumer(attribute, str ->
+                    clientAndQueue.send(
+                            str,
+                            serverAlwaysResponds ? responseStr -> {
+                                // Just drop the response; something in the future could be used to verify send was successful
+                            } : null,
+                            info));
+        }
+
+        if (pollingMillis != null && pollingMillis < MIN_POLLING_MILLIS) {
+            LOG.warning("Polling ms must be >= " + MIN_POLLING_MILLIS);
+            return;
+        }
+
+        final String writeValue = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_WRITE_VALUE, false, true)
+                .map(Object::toString).orElse(null);
+
+        if (pollingMillis != null && TextUtil.isNullOrEmpty(writeValue)) {
+            LOG.warning("Polling requires the META_ATTRIBUTE_WRITE_VALUE meta item to be set");
+            return;
+        }
+
+        if (pollingMillis != null) {
+            Consumer<String> responseConsumer = str -> {
+                LOG.fine("Polling response received updating attribute: " + attribute.getReferenceOrThrow());
+                updateLinkedAttribute(
+                        new AttributeState(
+                                attribute.getReferenceOrThrow(),
+                                str != null ? Values.create(str) : null));
+            };
+
+            Runnable pollingRunnable = () -> clientAndQueue.send(writeValue, responseConsumer, info);
+            pollingTask = schedulePollingRequest(clientAndQueue, attribute.getReferenceOrThrow(), pollingRunnable, pollingMillis);
+        }
+
+        attributeInfoMap.put(attribute.getReferenceOrThrow(), info);
+        info.pollingTask = pollingTask;
+        info.sendConsumer = sendConsumer;
+    }
+
+    protected ScheduledFuture schedulePollingRequest(ClientAndQueue clientAndQueue,
+                                                     AttributeRef attributeRef,
+                                                     Runnable pollingTask,
+                                                     int pollingMillis) {
+
+        LOG.fine("Scheduling polling request on client '" + clientAndQueue.client + "' to execute every " + pollingMillis + " ms for attribute: " + attributeRef);
+
+        return executorService.scheduleWithFixedDelay(pollingTask, 0, pollingMillis, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -137,7 +244,34 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
     @Override
     protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+        AttributeInfo info = attributeInfoMap.get(event.getAttributeRef());
 
+        if (info == null || info.sendConsumer == null) {
+            LOG.info("Request to write unlinked attribute or attribute that doesn't support writes so ignoring: " + event);
+            return;
+        }
+
+        AssetAttribute attribute = getLinkedAttribute(event.getAttributeRef());
+        AttributeExecuteStatus status = null;
+
+        if (attribute.isExecutable()) {
+            status = event.getValue()
+                    .flatMap(Values::getString)
+                    .flatMap(AttributeExecuteStatus::fromString)
+                    .orElse(null);
+
+            if (status != null && status != AttributeExecuteStatus.REQUEST_START) {
+                LOG.fine("Unsupported execution status: " + status);
+                return;
+            }
+        }
+
+        Value value = status != null ? null : event.getValue().orElse(null);
+        info.sendConsumer.accept(value);
+
+        if (status != null) {
+            updateLinkedAttribute(new AttributeState(event.getAttributeRef(), AttributeExecuteStatus.COMPLETED.asValue()));
+        }
     }
 
     @Override
