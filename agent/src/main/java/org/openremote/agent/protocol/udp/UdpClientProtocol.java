@@ -319,7 +319,6 @@ public class UdpClientProtocol extends AbstractUdpClientProtocol<String> {
 
             @Override
             protected void encode(String message, ByteBuf buf) {
-                /* SORRY 4 DIS CODE */
                 //TODO FIX THAT ANY UDP-CALL THAT ISN'T OURS DOESNT WORK.
                 message = message.substring(1, message.length() - 1).trim();
                 String[] values = message.split(",");
