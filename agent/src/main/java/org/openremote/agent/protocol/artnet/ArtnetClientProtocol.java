@@ -98,6 +98,9 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
             @Override
             protected void encode(String message, ByteBuf buf) {
+                if(!Boolean.parseBoolean(message)) {
+
+                }
                 message = message.substring(1, message.length() - 1).trim();
                 String[] values = message.split(",");
 
