@@ -1,5 +1,9 @@
 package org.openremote.agent.protocol.artnet;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 import org.openremote.agent.protocol.Protocol;
@@ -13,6 +17,7 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -36,15 +41,13 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     private final Map<AttributeRef, AttributeInfo> attributeInfoMap = new HashMap<>();
     private static int DEFAULT_RESPONSE_TIMEOUT_MILLIS = 3000;
     private static int DEFAULT_SEND_RETRIES = 1;
-    private static boolean DEFAULT_SERVER_ALWAYS_RESPONDS = false;
     private static int MIN_POLLING_MILLIS = 1000;
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
             META_ATTRIBUTE_WRITE_VALUE,
             META_POLLING_MILLIS,
             META_RESPONSE_TIMEOUT_MILLIS,
-            META_SEND_RETRIES,
-            META_SERVER_ALWAYS_RESPONDS
+            META_SEND_RETRIES
     );
 
     @Override
@@ -98,43 +101,9 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
             @Override
             protected void encode(String message, ByteBuf buf) {
-                if(!Boolean.parseBoolean(message)) {
-
-                }
-                message = message.substring(1, message.length() - 1).trim();
-                String[] values = message.split(",");
-
-                double dim = Double.parseDouble(values[4]);
-                int r;
-                int g;
-                int b;
-                int w;
-                if(dim > 0) {
-                    r = (int) Math.round((Double.parseDouble(values[0]) / (100 - dim)));
-                    g = (int) Math.round((Double.parseDouble(values[1]) / (100 - dim)));
-                    b = (int) Math.round((Double.parseDouble(values[2]) / (100 - dim)));
-                    w = (int) Math.round((Double.parseDouble(values[3]) / (100 - dim)));
-                }else {
-                    r = 0;
-                    g = 0;
-                    b = 0;
-                    w = 0;
-                }
-
-                byte[] prefix = { 65, 114, 116, 45, 78, 101, 116, 0, 0, 80, 0, 14 };
-                buf.writeBytes(prefix);
-                buf.writeByte(0);
-                buf.writeByte(0);
-                buf.writeByte(0);
-                buf.writeByte(0);
-                buf.writeByte(0);
-                buf.writeByte(4);
-                for(int i = 0; i <= 18; i++) {
-                    buf.writeByte(g);
-                    buf.writeByte(r);
-                    buf.writeByte(b);
-                    buf.writeByte(w);
-                }
+                Value msg = Values.create(message);
+                ArtNetPacket packet = ArtNetPacket.fromValue(msg).orElseThrow(() -> {throw new IllegalArgumentException("ArtNet packet could not be made.");});
+                packet.toBuffer(buf);
                 finalEncoder.accept(message, buf);
             }
         };
@@ -174,17 +143,6 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
                                 .orElse(DEFAULT_SEND_RETRIES)
                 );
 
-        final boolean serverAlwaysResponds = Values.getMetaItemValueOrThrow(
-                attribute,
-                META_SERVER_ALWAYS_RESPONDS,
-                false,
-                false
-        ).flatMap(Values::getBoolean).orElseGet(() ->
-                Values.getMetaItemValueOrThrow(protocolConfiguration, META_SERVER_ALWAYS_RESPONDS, false, false)
-                        .flatMap(Values::getBoolean)
-                        .orElse(DEFAULT_SERVER_ALWAYS_RESPONDS)
-        );
-
         Consumer<Value> sendConsumer = null;
         ScheduledFuture pollingTask = null;
         AttributeInfo info = new AttributeInfo(attribute.getReferenceOrThrow(), sendRetries, responseTimeoutMillis);
@@ -193,9 +151,10 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             sendConsumer = Protocol.createDynamicAttributeWriteConsumer(attribute, str ->
                     clientAndQueue.send(
                             str,
-                            serverAlwaysResponds ? responseStr -> {
+                            responseStr -> {
+                                // TODO: Add discovery
                                 // Just drop the response; something in the future could be used to verify send was successful
-                            } : null,
+                            },
                             info));
         }
 
