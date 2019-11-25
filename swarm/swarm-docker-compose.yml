@@ -35,8 +35,6 @@ networks:
 # If you enable volume mappings in services, you need this. Otherwise, remove the volumes
 volumes:
   proxy-data:
-  deployment-data:
-  keycloak-data:
   postgresql-data:
 
 services:
@@ -180,8 +178,8 @@ services:
                   -XX:NativeMemoryTracking=summary
                   -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof'
 
-    volumes:
-      - deployment-data:/deployment
+    ports:
+      - "8080:8080"
 
   keycloak:
 
@@ -228,9 +226,6 @@ services:
 
     ports:
       - "8081:8080"
-
-    volumes:
-      - keycloak-data:/deployment
 
   # This configuration stores postgresql data in a Docker volume. You manage this volume
   # independently from your stack with with 'docker volume ls', 'docker volume rm', etc.

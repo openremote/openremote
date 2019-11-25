@@ -82,7 +82,7 @@
   "type": "Type",
   "path": "Chemin",
   "showOnMap": "Montrer sur la carte",
-  "noAssetSelected": "Veuillez sélectionner une ressource sur la droite",
+  "noAssetSelected": "Veuillez sélectionner une ressource sur la gauche",
   "loading": "Chargement...",
   "location": "Position",
   "hour": "*Hour",
