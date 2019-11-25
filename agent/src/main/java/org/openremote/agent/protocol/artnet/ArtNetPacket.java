@@ -28,7 +28,7 @@ public class ArtNetPacket {
         return Values.getObject(value).flatMap(obj -> {
             int _universe = obj.getNumber("universe").orElse(0.).intValue();
             double  _dim = obj.getNumber("dim").orElse(1.);
-            int[] _values = obj.getArray("values").orElseThrow(null)
+            int[] _values = obj.getArray("values").orElse(null)
                     .stream().mapToInt(num -> num.asAny().asByte()).toArray();
 
             return Optional.of(new ArtNetPacket(_universe, _dim, _values));

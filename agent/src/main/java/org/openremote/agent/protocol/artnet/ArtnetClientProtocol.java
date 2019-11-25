@@ -19,10 +19,7 @@ import org.openremote.model.value.Values;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -101,7 +98,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
             @Override
             protected void encode(String message, ByteBuf buf) {
-                Value msg = Values.create(message);
+                Value msg = Values.parse(message).orElseThrow(() -> {throw new IllegalArgumentException("No valid JSON provided, to construct ArtNet packet");});
                 ArtNetPacket packet = ArtNetPacket.fromValue(msg).orElseThrow(() -> {throw new IllegalArgumentException("ArtNet packet could not be made.");});
                 packet.toBuffer(buf);
                 finalEncoder.accept(message, buf);
