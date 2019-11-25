@@ -10,7 +10,7 @@ import {MDCSelect, MDCSelectEvent, } from "@material/select";
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
 import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
 import moment from "moment";
-import {DefaultColor1, DefaultColor4} from "@openremote/core";
+import {DefaultColor1, DefaultColor4, DefaultColor8} from "@openremote/core";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("!!raw-loader!@material/button/dist/mdc.button.css");
@@ -86,7 +86,7 @@ const style = css`
     :host {
         display: inline-block;
         --internal-or-input-color: var(--or-input-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
-        --internal-or-input-text-color: var(--or-input-text-color, var(--or-app-color1, inherit));    
+        --internal-or-input-text-color: var(--or-input-text-color, var(--or-app-color1, ${unsafeCSS(DefaultColor8)}));    
         
         --mdc-theme-primary: var(--internal-or-input-color);
         --mdc-theme-on-primary: var(--internal-or-input-text-color);
@@ -144,10 +144,6 @@ const style = css`
     }
     
     .mdc-icon-button {
-        --or-icon-fill: var(--internal-or-input-text-color);
-    }
-    
-    .mdc-icon-button {
         padding: 0;
     }
     
@@ -178,6 +174,9 @@ export class OrInput extends LitElement {
             style
         ];
     }
+
+    @property({type: Boolean})
+    public focused?: boolean;
 
     @property()
     public value?: any;
@@ -621,6 +620,10 @@ export class OrInput extends LitElement {
             } else {
                 this.type = InputType.JSON;
             }
+        }
+
+        if (this.focused && this._mdcComponent && typeof((this._mdcComponent as any).focus) === "function") {
+            (this._mdcComponent as any).focus();
         }
     }
 

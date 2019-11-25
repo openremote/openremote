@@ -172,7 +172,7 @@ class OrRuleCondition extends LitElement {
             }
             
             typeTemplate = html`
-                <div id="type" style="--or-input-text-color: #${buttonColor}">
+                <div id="type" style="color: #${buttonColor}">
                     ${getContentWithMenuTemplate(
                         html`<or-input class="menu-button" type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
                         getWhenTypesMenu(this.config, this.assetDescriptors),

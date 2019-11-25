@@ -12,7 +12,7 @@ import manager, {DefaultBoxShadow} from "@openremote/core";
 import "./json-viewer/or-rule-json-viewer";
 import "@openremote/or-input";
 import {translate} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import {InputType, OrInputChangedEvent, OrInput} from "@openremote/or-input";
 import i18next from "i18next";
 
 // language=CSS
@@ -78,13 +78,6 @@ export const style = css`
 @customElement("or-rule-viewer")
 export class OrRuleViewer extends translate(i18next)(LitElement) {
 
-    constructor() {
-        super();
-
-        this.addEventListener(OrRulesRuleChangedEvent.NAME, this._onRuleChanged);
-        this.addEventListener(OrRulesRuleUnsupportedEvent.NAME, this._onRuleUnsupported);
-    }
-
     static get styles() {
         return [
             style
@@ -115,8 +108,17 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     @query("#rule-viewer")
     public view?: RuleView;
 
+    protected _focusName = false;
+
+    constructor() {
+        super();
+
+        this.addEventListener(OrRulesRuleChangedEvent.NAME, this._onRuleChanged);
+        this.addEventListener(OrRulesRuleUnsupportedEvent.NAME, this._onRuleUnsupported);
+    }
+
     public get valid() {
-        return this.ruleset && this.view && this._ruleValid && this.ruleset.name && this.ruleset.name.length >= 3 && this.ruleset.name.length > 255;
+        return this.ruleset && this.view && this._ruleValid && this.ruleset.name && this.ruleset.name.length >= 3 && this.ruleset.name.length < 255;
     }
 
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
@@ -126,6 +128,8 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
             if (!this.ruleset) {
                 this.modified = false;
                 this._ruleValid = false;
+            } else {
+                this._focusName = true;
             }
         }
         return super.shouldUpdate(_changedProperties);
@@ -159,16 +163,16 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         return html`
             <div class="wrapper">            
                 <div id="rule-header">
-                    <or-input id="rule-name" .type="${InputType.TEXT}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" fullwidth required minlength="3" maxlength="255" @or-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-input>
+                    <or-input id="rule-name" .type="${InputType.TEXT}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" fullwidth required minlength="3" maxlength="255" @or-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-input>
                     
                     <div id="rule-header-controls">
                         <span id="active-wrapper">
                             <or-translate value="active"></or-translate>
                             
-                            <or-input .type="${InputType.SWITCH}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${this._cannotSave()}" @or-input-changed="${this._toggleEnabled}"></or-input>
+                            <or-input .type="${InputType.SWITCH}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${!this.ruleset.id}" @or-input-changed="${this._toggleEnabled}"></or-input>
                         </span>
     
-                        <or-input .type="${InputType.BUTTON}" id="save-btn" .label="${i18next.t("save")}" raised ?disabled="${this._cannotSave()}" @or-input-changed="${this._doSave}"></or-input>
+                        <or-input .type="${InputType.BUTTON}" id="save-btn" .label="${i18next.t("save")}" raised ?disabled="${this._cannotSave()}" @click="${this._doSave}" @or-input-changed="${this._doSave}"></or-input>
                     </div>                        
                 </div>
 
@@ -196,6 +200,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     protected _changeName(name: string) {
         if (this.ruleset && this.ruleset.name !== name) {
             this.ruleset.name = name;
+            this.modified = true;
             this.requestUpdate();
         }
     }
@@ -249,6 +254,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     protected _toggleEnabled() {
         if (this.ruleset) {
             this.ruleset.enabled = !this.ruleset.enabled;
+            this.modified = true;
             this.requestUpdate();
         }
     }

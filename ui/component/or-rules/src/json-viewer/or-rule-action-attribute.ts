@@ -19,6 +19,7 @@ import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 const style = css`
     :host {
         display: flex;
+        align-items: center;
     }
 
     :host > * {
@@ -130,7 +131,7 @@ export class OrRuleActionAttribute extends LitElement {
         }
 
         return html`
-            <or-input id="matchSelect" type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" ?readonly="${this.readonly}" .options="${idOptions}" .value="${idValue}"></or-input>
+            <or-input id="matchSelect" .type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" ?readonly="${this.readonly}" .options="${idOptions}" .value="${idValue}"></or-input>
             <or-input id="attributeSelect" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" ?readonly="${this.readonly}" .options="${attributes}" .value="${this.action.attributeName}"></or-input>
             ${inputTemplate ? inputTemplate(this.action.value) : ``}
         `;

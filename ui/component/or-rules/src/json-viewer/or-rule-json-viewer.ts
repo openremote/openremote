@@ -83,6 +83,10 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
     }
 
     public set ruleset(ruleset: RulesetUnion) {
+        if (this._ruleset === ruleset) {
+            return;
+        }
+
         this._ruleset = ruleset;
 
         if (!ruleset.rules) {
@@ -180,13 +184,13 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             return;
         }
 
-        this._rule.name = this.ruleset.name;
+        this._rule.name = this._ruleset.name;
 
         const jsonRules: JsonRulesetDefinition = {
             rules: [this._rule]
         };
 
-        this.ruleset.rules = JSON.stringify(jsonRules);
+        this._ruleset.rules = JSON.stringify(jsonRules);
     }
 
     public validate(): boolean {

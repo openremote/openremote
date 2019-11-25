@@ -12,32 +12,37 @@ const _iconSets = new ORIconSets();
 
 export const IconSets = _iconSets;
 
+// language=CSS
+const style = css`
+    
+    :host {    
+        --internal-or-icon-width: var(--or-icon-width, 24px);
+        --internal-or-icon-height: var(--or-icon-height, 24px);
+        --internal-or-icon-fill: var(--or-icon-fill, currentColor);
+        --internal-or-icon-stroke: var(--or-icon-fill, none);
+        --internal-or-icon-stroke-width: var(--or-icon-stroke-width, 0);
+    
+        display: inline-block;
+        position: relative;
+        vertical-align: text-bottom;
+        fill: var(--internal-or-icon-fill);
+        stroke: var(--internal-or-icon-stroke);
+        stroke-width: var(--internal-or-icon-stroke-width);
+        width: var(--internal-or-icon-width);
+        height: var(--internal-or-icon-height);
+    }
+    
+    :host([hidden]) {
+        display: none;
+    }
+`;
+
 @customElement("or-icon")
 export class OrIcon extends LitElement {
 
-    static styles = css`
-        :host {
-        
-            --internal-or-icon-width: var(--or-icon-width, 24px);
-            --internal-or-icon-height: var(--or-icon-height, 24px);
-            --internal-or-icon-fill: var(--or-icon-fill, currentColor);
-            --internal-or-icon-stroke: var(--or-icon-fill, none);
-            --internal-or-icon-stroke-width: var(--or-icon-stroke-width, 0);
-        
-            display: inline-block;
-            position: relative;
-            vertical-align: text-bottom;
-            fill: var(--internal-or-icon-fill);
-            stroke: var(--internal-or-icon-stroke);
-            stroke-width: var(--internal-or-icon-stroke-width);
-            width: var(--internal-or-icon-width);
-            height: var(--internal-or-icon-height);
-        }
-        
-        :host([hidden]) {
-            display: none;
-        }
-    `;
+    static get styles() {
+        return style;
+    }
 
     @property({type: String, reflect: true})
     icon?: string;

@@ -643,7 +643,7 @@ export class OrRules extends translate(i18next)(LitElement) {
     }
 
     protected _onRuleSelectionChanged(event: OrRulesSelectionChangedEvent) {
-        this._activeRuleset = event.detail.length == 1 ? event.detail[0] : undefined;
+        this._activeRuleset = event.detail.length === 1 ? {...event.detail[0]} : undefined;
     }
 
     protected _onRuleSaveStart(event: OrRulesSaveStartEvent) {
