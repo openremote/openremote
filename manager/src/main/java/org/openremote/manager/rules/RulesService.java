@@ -54,6 +54,7 @@ import org.openremote.model.value.ObjectValue;
 
 import javax.persistence.EntityManager;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -256,6 +257,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     updateAssetState(assetState, true, true);
                 });
             });
+
     }
 
     @Override
@@ -488,6 +490,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     if (newEngine != null) {
                         // Push all existing facts into the engine, this is an initial import of state so fire delayed
                         assetStates.forEach(assetState -> newEngine.updateFact(assetState, false));
+                        newEngine.start();
                     }
 
                 } else if (ruleset instanceof TenantRuleset) {
@@ -500,6 +503,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                                 newEngine.updateFact(assetState, false);
                             }
                         });
+                        newEngine.start();
                     }
 
                 } else if (ruleset instanceof AssetRuleset) {
@@ -512,6 +516,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         // initial import of state so fire delayed
                         getAssetStatesInScope(((AssetRuleset) ruleset).getAssetId())
                             .forEach(assetState -> newEngine.updateFact(assetState, false));
+
+                        newEngine.start();
                     }
                 }
             }
@@ -542,6 +548,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             }
 
             globalEngine.addRuleset(ruleset);
+
+            if (created) {
+                globalEngine.start();
+            }
+
             return created ? globalEngine : null;
         });
     }
@@ -561,12 +572,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
     protected RulesEngine<TenantRuleset> deployTenantRuleset(TenantRuleset ruleset) {
         return withLockReturning(getClass().getSimpleName() + "::deployTenantRuleset", () -> {
-            final boolean[] created = {false};
+            AtomicBoolean created = new AtomicBoolean(false);
 
             // Look for existing rules engines for this tenant
             RulesEngine<TenantRuleset> tenantRulesEngine = tenantEngines
                 .computeIfAbsent(ruleset.getRealm(), (realm) -> {
-                    created[0] = true;
+                    created.set(true);
                     return new RulesEngine<>(
                         timerService,
                         identityService,
@@ -582,7 +593,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
             tenantRulesEngine.addRuleset(ruleset);
 
-            return created[0] ? tenantRulesEngine : null;
+            if (created.get()) {
+                tenantRulesEngine.start();
+            }
+
+            return created.get() ? tenantRulesEngine : null;
         });
     }
 
@@ -630,12 +645,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
     protected RulesEngine<AssetRuleset> deployAssetRuleset(AssetRuleset ruleset) {
         return withLockReturning(getClass().getSimpleName() + "::deployAssetRuleset", () -> {
-            final boolean[] created = {false};
+            AtomicBoolean created = new AtomicBoolean(false);
 
             // Look for existing rules engine for this asset
             RulesEngine<AssetRuleset> assetRulesEngine = assetEngines
                 .computeIfAbsent(ruleset.getAssetId(), (assetId) -> {
-                    created[0] = true;
+                    created.set(true);
                     return new RulesEngine<>(
                         timerService,
                         identityService,
@@ -649,8 +664,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     );
                 });
 
+            if (created.get()) {
+                assetRulesEngine.start();
+            }
+
             assetRulesEngine.addRuleset(ruleset);
-            return created[0] ? assetRulesEngine : null;
+            return created.get() ? assetRulesEngine : null;
         });
     }
 

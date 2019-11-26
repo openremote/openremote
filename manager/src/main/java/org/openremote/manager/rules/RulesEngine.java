@@ -208,6 +208,7 @@ public class RulesEngine<T extends Ruleset> {
 
         // Check for previous version of this ruleset
         RulesetDeployment deployment = deployments.get(ruleset.getId());
+        boolean wasRunning = this.running;
 
         stop();
 
@@ -248,7 +249,10 @@ public class RulesEngine<T extends Ruleset> {
 
         deployments.put(ruleset.getId(), deployment);
         updateDeploymentInfo();
-        start();
+
+        if (wasRunning) {
+            start();
+        }
     }
 
     /**

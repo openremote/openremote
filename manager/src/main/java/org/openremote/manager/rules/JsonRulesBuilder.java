@@ -443,7 +443,15 @@ public class JsonRulesBuilder extends RulesBuilder {
     public void start(RulesFacts facts) {
         Arrays.stream(jsonRules).forEach(jsonRule ->
             executeRuleActions(jsonRule, jsonRule.onStart, "onStart", false, facts, null, assetsFacade, usersFacade, notificationsFacade, timerService, assetStorageService, this.scheduledActionConsumer));
+
+        // Initialise asset states
         onAssetStatesChanged(facts);
+
+        // Initialise trigger state - prevents rules firing based on initial asset states
+        Arrays.stream(jsonRules).forEach(jsonRule -> {
+            log(Level.FINEST, "Initialising rule trigger states for rule: " + jsonRule.name);
+            ruleEvaluationMap.get(jsonRule.name).conditionStateMap.values().forEach(RuleTriggerState::update);
+        });
     }
 
     public void onAssetStatesChanged(RulesFacts facts) {
