@@ -56,7 +56,7 @@ export class OrRuleActionNotification extends LitElement {
             message: {
                 type: "email",
                 subject: "%RULESET_NAME%",
-                html: "TEST",
+                html: "%TRIGGER_ASSETS%",
                 from: {address:"no-reply@openremote.io"},
                 to: []
             }

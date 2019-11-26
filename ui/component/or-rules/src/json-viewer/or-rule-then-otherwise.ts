@@ -9,7 +9,7 @@ import {
 import {
     OrRulesJsonRuleChangedEvent
 } from "./or-rule-json-viewer";
-import {AssetDescriptor, JsonRule, RuleActionUnion} from "@openremote/model";
+import {AssetDescriptor, JsonRule, RuleActionUnion, RuleActionNotification} from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-input";
 import {MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
