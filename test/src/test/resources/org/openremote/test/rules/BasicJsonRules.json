@@ -61,7 +61,7 @@
             "message": {
               "type": "email",
               "subject": "%RULESET_NAME%",
-              "html": "TEST",
+              "html": "%TRIGGER_ASSETS%",
               "to": [
                 {
                   "address": "test@openremote.io",

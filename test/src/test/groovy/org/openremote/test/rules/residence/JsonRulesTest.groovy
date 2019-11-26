@@ -83,7 +83,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             // Assume sent to FCM
             sendMessage(_ as Email) >> {
                 email ->
-                    emailMessages << email
+                    emailMessages << email.get(0)
                     return NotificationSendResult.success()
             }
         }
@@ -221,11 +221,12 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert targets[0].id == consoleRegistration.id
         }
 
-        and: "an email should have been sent to test@openremote.io"
+        and: "an email should have been sent to test@openremote.io with the triggered asset in the body"
         conditions.eventually {
             assert emailMessages.size() == 1
             assert emailMessages[0].recipients.size() == 1
-            assert emailMessages[0].recipients[0].address[0] == "test@openremote.io"
+            assert emailMessages[0].recipients[0].address == "test@openremote.io"
+            assert emailMessages[0].HTMLText == "<table><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>{\"type\":\"Point\",\"coordinates\":[0,0]}</td></tr></table>"
         }
 
         and: "after a few seconds the rule should not have fired again"
