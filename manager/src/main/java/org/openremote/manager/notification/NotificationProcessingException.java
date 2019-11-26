@@ -45,7 +45,7 @@ public class NotificationProcessingException extends RuntimeException {
         MISSING_MESSAGE,
 
         /**
-         * Missing {@link Notification.Targets}.
+         * Missing {@link Notification.Target}.
          */
         MISSING_TARGETS,
 

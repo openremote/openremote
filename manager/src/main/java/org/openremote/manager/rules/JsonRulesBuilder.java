@@ -647,18 +647,13 @@ public class JsonRulesBuilder extends RulesBuilder {
             if (notificationAction.notification != null) {
 
                 // Override the notification targets if set in the rule
-                Notification.TargetType targetType = Notification.TargetType.ASSET;
+                Notification.TargetType targetType = targetIsNotAssets(ruleAction.target) ? Notification.TargetType.USER : Notification.TargetType.ASSET;
                 Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, triggerStateMap, assetsFacade, usersFacade, facts);
-                if (targetIsNotAssets(ruleAction.target)) {
-                    targetType = Notification.TargetType.USER;
+
+                if (ids != null && !ids.isEmpty()) {
+                    notificationAction.notification.setTargets(ids.stream().map(id -> new Notification.Target(targetType, id)).collect(Collectors.toList()));
                 }
 
-                if (ids == null || ids.isEmpty()) {
-                    log(Level.FINEST, "No targets for notification rule action so skipping: " + rule.name + " '" + actionsName + "' action index " + index);
-                    return null;
-                }
-
-                notificationAction.notification.setTargets(new Notification.Targets(targetType, ids));
                 log(Level.FINE, "Sending notification for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
                 return new RuleActionExecution(() -> notificationsFacade.send(notificationAction.notification), 0);
             }

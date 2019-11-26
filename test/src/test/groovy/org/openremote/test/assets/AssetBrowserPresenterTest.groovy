@@ -167,7 +167,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             assert rowData[1].label == "Building"
             assert rowData[1].id == keycloakDemoSetup.tenantBuilding.realm
             assert rowData[2] instanceof TenantTreeNode
-            assert rowData[2].label == "City"
+            assert rowData[2].label == "Smart City"
             assert rowData[2].id == keycloakDemoSetup.tenantCity.realm
         }
         1 * treeDisplay.setRowCount(3, true)

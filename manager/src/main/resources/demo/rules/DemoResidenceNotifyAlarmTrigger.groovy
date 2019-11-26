@@ -158,6 +158,7 @@ rules.add()
 
             LOG.info("Alerting users of " + alarmTrigger + ": " + userIds)
 
+            List<Notification.Target> targets = userIds.stream().map{new Notification.Target(Notification.TargetType.USER, it)}.collect(Collectors.toList())
             Notification notification = new Notification(
                     "ApartmentAlarm",
                     new PushNotificationMessage()
@@ -167,7 +168,7 @@ rules.add()
                             new PushNotificationButton("Details", new PushNotificationAction("#security")),
                             new PushNotificationButton("Alarm uit", PushNotificationAction.writeAttributeValueAction(new AttributeRef(alarmTrigger.residenceId, "alarmEnabled"), Values.create(false)))
                     ]),
-                    new Notification.Targets(Notification.TargetType.USER, userIds), null, null
+                    targets, null, null
             )
 
             // Send the notification to all matched users

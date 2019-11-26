@@ -56,6 +56,22 @@
           }
         },
         {
+          "action": "notification",
+          "notification": {
+            "message": {
+              "type": "email",
+              "subject": "%RULESET_NAME%",
+              "html": "TEST",
+              "to": [
+                {
+                  "address": "test@openremote.io",
+                  "name": "OR Test"
+                }
+              ]
+            }
+          }
+        },
+        {
           "action": "write-attribute",
           "target": {
             "assets": {

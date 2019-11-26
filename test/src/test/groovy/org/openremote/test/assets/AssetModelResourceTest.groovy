@@ -30,9 +30,15 @@ import spock.lang.Specification
 
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.asset.AssetType.AGENT
+import static org.openremote.model.asset.AssetType.AREA
 import static org.openremote.model.asset.AssetType.BUILDING
+import static org.openremote.model.asset.AssetType.CAMERA
+import static org.openremote.model.asset.AssetType.CITY
 import static org.openremote.model.asset.AssetType.CONSOLE
+import static org.openremote.model.asset.AssetType.ENVIRONMENT_SENSOR
 import static org.openremote.model.asset.AssetType.FLOOR
+import static org.openremote.model.asset.AssetType.LIGHT
+import static org.openremote.model.asset.AssetType.MICROPHONE
 import static org.openremote.model.asset.AssetType.RESIDENCE
 import static org.openremote.model.asset.AssetType.ROOM
 import static org.openremote.model.asset.AssetType.THING
@@ -63,16 +69,22 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
         def assetDescriptors = assetModelResource.getAssetDescriptors(null)
 
         then: "the default asset types should be present"
-        assetDescriptors.size() == 7
+        assetDescriptors.size() == 13
         assetDescriptors[0].name == BUILDING.name
         assetDescriptors[0].attributeDescriptors.length == 5
         assetDescriptors[0].attributeDescriptors.find {it.attributeName == AttributeType.SURFACE_AREA.attributeName}.valueDescriptor.valueType == ValueType.NUMBER
-        assetDescriptors[1].name == FLOOR.name
-        assetDescriptors[2].name == RESIDENCE.name
-        assetDescriptors[3].name == ROOM.name
-        assetDescriptors[4].name == AGENT.name
-        assetDescriptors[5].name == CONSOLE.name
-        assetDescriptors[6].name == THING.name
+        assetDescriptors[1].name == CITY.name
+        assetDescriptors[2].name == AREA.name
+        assetDescriptors[3].name == FLOOR.name
+        assetDescriptors[4].name == RESIDENCE.name
+        assetDescriptors[5].name == ROOM.name
+        assetDescriptors[6].name == AGENT.name
+        assetDescriptors[7].name == CONSOLE.name
+        assetDescriptors[8].name == MICROPHONE.name
+        assetDescriptors[9].name == ENVIRONMENT_SENSOR.name
+        assetDescriptors[10].name == LIGHT.name
+        assetDescriptors[11].name == CAMERA.name
+        assetDescriptors[12].name == THING.name
 
         when: "a request for Attribute types is made"
 

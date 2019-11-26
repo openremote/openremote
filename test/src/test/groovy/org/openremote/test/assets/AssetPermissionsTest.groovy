@@ -6,6 +6,7 @@ import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
+import org.openremote.model.attribute.AttributeType
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.asset.AssetType
 import org.openremote.model.attribute.AttributeValueType
@@ -192,18 +193,18 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "an asset attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Values.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 123").toJson())
 
         then: "result should match"
         def asset
         conditions.eventually {
             asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
-            assert asset.getAttribute("geoStreet").get().getValue().isPresent()
-            assert asset.getAttribute("geoStreet").get().getValue().get().toJson() == Values.create("Teststreet 123").toJson()
+            assert asset.getAttribute(AttributeType.GEO_STREET).get().getValue().isPresent()
+            assert asset.getAttribute(AttributeType.GEO_STREET).get().getValue().get().toJson() == Values.create("Teststreet 123").toJson()
         }
 
         when: "an non-existent assets attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, "doesnotexist", "geoStreet", Values.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, "doesnotexist", AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 123").toJson())
 
         then: "the attribute should be not found"
         ex = thrown()
@@ -217,13 +218,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartBuildingId, "geoStreet", Values.create("Teststreet 456").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartBuildingId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 456").toJson())
 
         then: "result should match"
         conditions.eventually {
             asset = assetResource.get(null, managerDemoSetup.smartBuildingId)
-            assert asset.getAttribute("geoStreet").get().getValue().isPresent()
-            assert asset.getAttribute("geoStreet").get().getValue().get().toJson() == Values.create("Teststreet 456").toJson()
+            assert asset.getAttribute(AttributeType.GEO_STREET).get().getValue().isPresent()
+            assert asset.getAttribute(AttributeType.GEO_STREET).get().getValue().get().toJson() == Values.create("Teststreet 456").toJson()
         }
 
         cleanup: "the server should be stopped"
@@ -381,17 +382,17 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Values.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 123").toJson())
 
         then: "result should match"
         conditions.eventually {
             def asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
-            assert asset.getAttribute("geoStreet").get().getValue().isPresent()
-            assert asset.getAttribute("geoStreet").get().getValue().get().toJson() == Values.create("Teststreet 123").toJson()
+            assert asset.getAttribute(AttributeType.GEO_STREET).get().getValue().isPresent()
+            assert asset.getAttribute(AttributeType.GEO_STREET).get().getValue().get().toJson() == Values.create("Teststreet 123").toJson()
         }
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartBuildingId, "geoStreet", Values.create("Teststreet 456").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartBuildingId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 456").toJson())
 
         then: "access should be forbidden"
         ex = thrown()
@@ -527,14 +528,14 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartBuildingId, "geoStreet", Values.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartBuildingId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 123").toJson())
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Values.create("Teststreet 456").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 456").toJson())
 
         then: "access should be forbidden"
         ex = thrown()
@@ -795,7 +796,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Values.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 123").toJson())
 
         then: "access should be forbidden"
         ex = thrown()

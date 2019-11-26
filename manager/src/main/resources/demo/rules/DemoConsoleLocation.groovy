@@ -14,6 +14,7 @@ import org.openremote.model.rules.Assets
 import org.openremote.model.rules.Notifications
 
 import java.util.logging.Logger
+import java.util.stream.Collectors
 
 Logger LOG = binding.LOG
 RulesBuilder rules = binding.rules
@@ -44,17 +45,19 @@ rules.add()
     facts ->
 
         List<String> consoleIds = facts.bound("consoleIds")
-        Notification notification = new Notification(
+        if (consoleIds != null) {
+            List<Notification.Target> targets = consoleIds.stream().map{new Notification.Target(Notification.TargetType.ASSET, it)}.collect(Collectors.toList())
+            Notification notification = new Notification(
                 "Welcome Home",
-                new PushNotificationMessage("Welcome Home", "No new events to report", null, null, null),
-                new Notification.Targets(Notification.TargetType.ASSET, consoleIds), null, null)
+                new PushNotificationMessage("Welcome Home", "No new events to report", null, null, null), targets, null, null)
 
-        notifications.send(notification)
+            notifications.send(notification)
 
-        consoleIds.forEach({
-            LOG.info("Welcome Home triggered: $it")
-            facts.put("welcomeHome" + "_${it}", it)
-        })
+            consoleIds.forEach({
+                LOG.info("Welcome Home triggered: $it")
+                facts.put("welcomeHome" + "_${it}", it)
+            })
+        }
 })
 
 rules.add()

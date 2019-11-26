@@ -38,8 +38,7 @@ public class SentNotification {
     @GeneratedValue(generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
     protected Long id;
 
-    @NotNull
-    @Column(name = "NAME", nullable = false)
+    @Column(name = "NAME")
     protected String name;
 
     @NotNull

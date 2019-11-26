@@ -61,11 +61,11 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         PushNotificationHandler mockPushNotificationHandler = Spy(PushNotificationHandler) {
             isValid() >> true
 
-            sendMessage(_ as Long, _ as Notification.Source, _, _ as Notification.TargetType, _ as String, _ as AbstractNotificationMessage) >> {
-                id, source, sourceId, targetType, targetId, message ->
+            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+                id, source, sourceId, target, message ->
                     notificationIds << id
-                    targetTypes << targetType
-                    targetIds << targetId
+                    targetTypes << target.type
+                    targetIds << target.id
                     messages << message
                     callRealMethod()
             }

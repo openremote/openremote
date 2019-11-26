@@ -41,7 +41,6 @@ import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.notification.*;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.TenantResource;
@@ -437,6 +436,6 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
     }
 
     protected Notification buildNotification() {
-        return new Notification("Manager Message", sendOptions.getMessage(), new Notification.Targets(sendOptions.selectedTargetType, sendOptions.selectedTarget), null, null);
+        return new Notification("Manager Message", sendOptions.getMessage(), Collections.singletonList(new Notification.Target(sendOptions.selectedTargetType, sendOptions.selectedTarget)), null, null);
     }
 }

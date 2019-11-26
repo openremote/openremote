@@ -56,8 +56,7 @@ import java.util.stream.Collectors;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.persistence.PersistenceEvent.*;
 import static org.openremote.model.asset.AssetType.CONSOLE;
-import static org.openremote.model.notification.PushNotificationMessage.TargetType.DEVICE;
-import static org.openremote.model.notification.PushNotificationMessage.TargetType.TOPIC;
+import static org.openremote.model.notification.PushNotificationMessage.TargetType.*;
 
 public class PushNotificationHandler extends RouteBuilder implements NotificationHandler {
 
@@ -174,108 +173,95 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     }
 
     @Override
-    public Notification.Targets mapTarget(Notification.Source source, String sourceId, Notification.TargetType targetType, String targetId, AbstractNotificationMessage message) {
+    public List<Notification.Target> getTargets(Notification.Source source, String sourceId, List<Notification.Target> targets, AbstractNotificationMessage message) {
 
         // Check if message is going to a topic if so then filter consoles subscribed to that topic
         PushNotificationMessage pushMessage = (PushNotificationMessage) message;
-        AssetQuery.Select select;
-        boolean forTopic = pushMessage.getTargetType() == TOPIC;
-        List<Asset> mappedConsoles;
+        List<Notification.Target> mappedTargets = new ArrayList<>();
 
-        if (forTopic) {
-            select = AssetQuery.Select.selectExcludePathAndParentAndRealm().attributes(AttributeType.CONSOLE_PROVIDERS.getAttributeName());
-        } else {
-            select = AssetQuery.Select.selectExcludeAll();
+        if (pushMessage.getTargetType() == TOPIC || pushMessage.getTargetType() == CONDITION) {
+            mappedTargets.add(new Notification.Target(Notification.TargetType.CUSTOM, pushMessage.getTargetType() + ": " + pushMessage.getTarget()));
+            return mappedTargets;
         }
 
-        switch (targetType) {
+        if (targets != null) {
 
-            case TENANT:
-                // Get all console assets with a push provider defined within the specified tenant
-                mappedConsoles = assetStorageService.findAll(
-                    new AssetQuery()
-                        .select(select)
-                        .tenant(new TenantPredicate(targetId))
-                        .types(AssetType.CONSOLE)
-                        .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
-                            new ObjectValueKeyPredicate(PushNotificationMessage.TYPE))
-                );
+            targets.forEach(target -> {
 
-                if (forTopic) {
-                    mappedConsoles.removeIf(c -> !isConsoleSubscribedToTopic(c, pushMessage.getTarget()));
+                Notification.TargetType targetType = target.getType();
+                String targetId = target.getId();
+
+                switch (targetType) {
+
+                    case TENANT:
+                        // Get all console assets with a push provider defined within the specified tenant
+                        mappedTargets.addAll(
+                            assetStorageService.findAll(
+                                new AssetQuery()
+                                    .select(AssetQuery.Select.selectExcludeAll())
+                                    .tenant(new TenantPredicate(targetId))
+                                    .types(AssetType.CONSOLE)
+                                    .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
+                                        new ObjectValueKeyPredicate(PushNotificationMessage.TYPE)))
+                                .stream()
+                                .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
+                                .collect(Collectors.toList()));
+                        break;
+
+                    case USER:
+                        // Get all console assets linked to the specified user
+                        String[] ids = assetStorageService.findUserAssets(null, targetId, null)
+                            .stream()
+                            .map(userAsset -> userAsset.getId().getAssetId()).toArray(String[]::new);
+
+                        if (ids.length > 0) {
+
+                            mappedTargets.addAll(
+                                assetStorageService.findAll(
+                                    new AssetQuery()
+                                        .select(AssetQuery.Select.selectExcludeAll())
+                                        .ids(ids)
+                                        .types(AssetType.CONSOLE)
+                                        .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
+                                            new ObjectValueKeyPredicate(PushNotificationMessage.TYPE)))
+                                    .stream()
+                                    .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
+                                    .collect(Collectors.toList()));
+                        } else {
+                            LOG.fine("No console assets linked to target user");
+                            return;
+                        }
+
+                        break;
+
+                    case ASSET:
+                        // Find all console descendants of the specified asset
+                        mappedTargets.addAll(
+                            assetStorageService.findAll(
+                                new AssetQuery()
+                                    .select(AssetQuery.Select.selectExcludeAll())
+                                    .paths(new PathPredicate(targetId))
+                                    .types(AssetType.CONSOLE)
+                                    .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
+                                        new ObjectValueKeyPredicate(PushNotificationMessage.TYPE)))
+                                .stream()
+                                .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
+                                .collect(Collectors.toList()));
+                        break;
                 }
-
-                if (mappedConsoles.isEmpty()) {
-                    LOG.fine("No console assets linked to target realm");
-                    return null;
-                }
-
-                return new Notification.Targets(Notification.TargetType.ASSET,
-                    mappedConsoles.stream().map(Asset::getId).collect(Collectors.toList()));
-
-            case USER:
-
-                // Get all console assets linked to the specified user
-                String[] ids = assetStorageService.findUserAssets(null, targetId, null)
-                    .stream()
-                    .map(userAsset -> userAsset.getId().getAssetId()).toArray(String[]::new);
-
-                if (ids.length > 0) {
-
-                    mappedConsoles = assetStorageService.findAll(
-                        new AssetQuery()
-                            .select(select)
-                            .ids(ids)
-                            .types(AssetType.CONSOLE)
-                            .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
-                                new ObjectValueKeyPredicate(PushNotificationMessage.TYPE))
-                    );
-
-                    if (forTopic) {
-                        mappedConsoles.removeIf(c ->
-                            !isConsoleSubscribedToTopic(c, pushMessage.getTarget())
-                        );
-                    }
-                } else {
-                    LOG.fine("No console assets linked to target user");
-                    return null;
-                }
-
-                return new Notification.Targets(Notification.TargetType.ASSET,
-                    mappedConsoles.stream().map(Asset::getId).collect(Collectors.toList()));
-
-            case ASSET:
-
-                // Find all console descendants of the specified asset
-                mappedConsoles = assetStorageService.findAll(
-                    new AssetQuery()
-                        .select(select)
-                        .paths(new PathPredicate(targetId))
-                        .types(AssetType.CONSOLE)
-                        .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
-                            new ObjectValueKeyPredicate(PushNotificationMessage.TYPE))
-                );
-
-                if (forTopic) {
-                    mappedConsoles.removeIf(c -> !isConsoleSubscribedToTopic(c, pushMessage.getTarget()));
-                }
-
-                if (mappedConsoles.isEmpty()) {
-                    LOG.fine("No console assets descendants of target asset");
-                    return null;
-                }
-
-                return new Notification.Targets(Notification.TargetType.ASSET,
-                    mappedConsoles.stream().map(Asset::getId).collect(Collectors.toList()));
+            });
         }
 
-        return null;
+        return mappedTargets;
     }
 
     @Override
-    public NotificationSendResult sendMessage(long id, Notification.Source source, String sourceId, Notification.TargetType targetType, String targetId, AbstractNotificationMessage message) {
+    public NotificationSendResult sendMessage(long id, Notification.Source source, String sourceId, Notification.Target target, AbstractNotificationMessage message) {
 
-        if (targetType != Notification.TargetType.ASSET) {
+        Notification.TargetType targetType = target.getType();
+        String targetId = target.getId();
+
+        if (targetType != Notification.TargetType.ASSET && targetType != Notification.TargetType.CUSTOM) {
             LOG.warning("Target type not supported: " + targetType);
             return NotificationSendResult.failure("Target type not supported: " + targetType);
         }
@@ -307,12 +293,10 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                 break;
             case TOPIC:
                 // TODO: Decide how to handle FCM topic support (too much power for users to put anything in target)
-                LOG.warning("Messages sent to a topic are not supported");
-                return NotificationSendResult.failure("Messages sent to a topic are not supported");
+                break;
             case CONDITION:
                 // TODO: Decide how to handle conditions support (too much power for users to put anything in target)
-                LOG.warning("Messages sent to conditional targets are not supported");
-                return NotificationSendResult.failure("Messages sent to conditional targets are not supported");
+                break;
         }
 
         return sendMessage(buildFCMMessage(id, pushMessage));

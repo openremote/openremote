@@ -8,7 +8,7 @@ drop table DEVICE_NOTIFICATION_TOKEN cascade;
 
 create table NOTIFICATION (
   ID              int8                     not null,
-  NAME            varchar(255)             not null,
+  NAME            varchar(255),
   TYPE            varchar(50)              not null,
   TARGET          varchar(50)              not null,
   TARGET_ID       varchar(43)              not null,

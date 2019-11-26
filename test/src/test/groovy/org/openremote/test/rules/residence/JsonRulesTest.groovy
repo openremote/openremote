@@ -5,6 +5,7 @@ import com.google.firebase.messaging.Message
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.notification.EmailNotificationHandler
 import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
@@ -24,11 +25,13 @@ import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.notification.AbstractNotificationMessage
 import org.openremote.model.notification.Notification
 import org.openremote.model.notification.NotificationSendResult
+import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RulesetStatus
 import org.openremote.model.rules.TenantRuleset
 import org.openremote.model.value.ObjectValue
 import org.openremote.test.ManagerContainerTrait
+import org.simplejavamail.email.Email
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -45,17 +48,19 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
     def "Turn all lights off when console exits the residence geofence"() {
 
-        def notificationMessages = []
-        def targetIds = []
+        List<PushNotificationMessage> notificationMessages = []
+        List<Email> emailMessages = []
+        List<Notification.Target> targets = []
+        List<Notification.Target> emailTargets = []
 
         given: "a mock push notification handler"
         PushNotificationHandler mockPushNotificationHandler = Spy(PushNotificationHandler) {
             isValid() >> true
 
-            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.TargetType, _ as String, _ as AbstractNotificationMessage) >> {
-                id, source, sourceId, targetType, targetId, message ->
+            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+                id, source, sourceId, target, message ->
                     notificationMessages << message
-                    targetIds << targetId
+                    targets << target
                     callRealMethod()
             }
 
@@ -65,12 +70,32 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             }
         }
 
+        and: "a mock email notification handler"
+        EmailNotificationHandler mockEmailNotificationHandler = Spy(EmailNotificationHandler) {
+            isValid() >> true
+
+            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+                id, source, sourceId, target, message ->
+                    emailTargets << target
+                    callRealMethod()
+            }
+
+            // Assume sent to FCM
+            sendMessage(_ as Email) >> {
+                email ->
+                    emailMessages << email
+                    return NotificationSendResult.success()
+            }
+        }
+
         and: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 10, delay: 1)
         def serverPort = findEphemeralPort()
         def services = Lists.newArrayList(defaultServices())
         services.removeIf {it instanceof PushNotificationHandler}
+        services.removeIf {it instanceof EmailNotificationHandler}
         services.add(mockPushNotificationHandler)
+        services.add(mockEmailNotificationHandler)
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), services)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -192,7 +217,15 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         and: "a notification should have been sent to the console"
         conditions.eventually {
             assert notificationMessages.size() == 1
-            assert targetIds[0] == consoleRegistration.id
+            assert targets[0].type == Notification.TargetType.ASSET
+            assert targets[0].id == consoleRegistration.id
+        }
+
+        and: "an email should have been sent to test@openremote.io"
+        conditions.eventually {
+            assert emailMessages.size() == 1
+            assert emailMessages[0].recipients.size() == 1
+            assert emailMessages[0].recipients[0].address[0] == "test@openremote.io"
         }
 
         and: "after a few seconds the rule should not have fired again"
@@ -215,7 +248,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         then: "another notification should have been sent to the console"
         conditions.eventually {
             assert notificationMessages.size() == 2
-            assert targetIds[1] == consoleRegistration.id
+            assert targets[1].id == consoleRegistration.id
         }
 
         when: "the console sends a location update with the same location but a newer timestamp"
@@ -225,7 +258,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         then: "another notification should have been sent to the console (because the reset condition includes reset on timestampChanges)"
         conditions.eventually {
             assert notificationMessages.size() == 3
-            assert targetIds[2] == consoleRegistration.id
+            assert targets[2].id == consoleRegistration.id
         }
 
         when: "the console sends a location update with a new location but still outside the geofence"
@@ -236,7 +269,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         then: "another notification should have been sent to the console (because the reset condition includes reset on valueChanges)"
         conditions.eventually {
             assert notificationMessages.size() == 4
-            assert targetIds[3] == consoleRegistration.id
+            assert targets[3].id == consoleRegistration.id
         }
 
         when: "when time advances 5 hours"
@@ -248,7 +281,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         then: "another notification should have been sent to the console (because the reset condition includes reset on timer)"
         conditions.eventually {
             assert notificationMessages.size() == 5
-            assert targetIds[4] == consoleRegistration.id
+            assert targets[4].id == consoleRegistration.id
         }
 
         when: "the Rules PAUSE_SCHEDULER is overridden to facilitate testing"
@@ -324,7 +357,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         and: "another notification should have been sent as inside the validity period"
         conditions.eventually {
             assert notificationMessages.size() == 6
-            assert targetIds[5] == consoleRegistration.id
+            assert targets[5].id == consoleRegistration.id
         }
 
         when: "the un-pause elapses"

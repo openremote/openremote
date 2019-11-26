@@ -10,6 +10,7 @@ import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetType
+import org.openremote.model.attribute.AttributeType
 import org.openremote.model.attribute.AttributeValueType
 import org.openremote.model.attribute.MetaItemType
 import org.openremote.model.calendar.CalendarEvent
@@ -264,7 +265,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.realm == keycloakDemoSetup.masterTenant.realm
         asset.path.length == 1
         asset.path[0] == managerDemoSetup.smartOfficeId
-        asset.getAttribute("geoStreet").get().getValueAsString().get() == "Torenallee 20"
+        asset.getAttribute(AttributeType.GEO_STREET).get().getValueAsString().get() == "Torenallee 20"
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -308,7 +309,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).realm == keycloakDemoSetup.masterTenant.realm
         assets.get(0).path.length == 1
         assets.get(0).path[0] == managerDemoSetup.smartOfficeId
-        assets.get(0).getAttribute("geoStreet").get().getValueAsString().get() == "Torenallee 20"
+        assets.get(0).getAttribute(AttributeType.GEO_STREET).get().getValueAsString().get() == "Torenallee 20"
 
         when: "a query is executed"
         assets = assetStorageService.findAll(

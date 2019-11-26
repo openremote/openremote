@@ -65,6 +65,14 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
             arrayValue.add(Values.create(address));
             return arrayValue;
         }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "name='" + name + '\'' +
+                ", address='" + address + '\'' +
+                '}';
+        }
     }
 
     public static final String TYPE = "email";

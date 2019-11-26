@@ -51,11 +51,11 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         PushNotificationHandler mockPushNotificationHandler = Spy(PushNotificationHandler) {
             isValid() >> true
 
-            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.TargetType, _ as String, _ as AbstractNotificationMessage) >> {
-                id, source, sourceId, targetType, targetId, message ->
+            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+                id, source, sourceId, target, message ->
                     notificationIds << id
-                    notificationTargetTypes << targetType
-                    notificationTargetIds << targetId
+                    notificationTargetTypes << target.type
+                    notificationTargetIds << target.id
                     notificationMessages << message
                     callRealMethod()
             }
@@ -175,7 +175,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         anonymousConsole.id != null
 
         when: "the admin user sends a push notification to an entire realm"
-        notification.targets = new Notification.Targets(Notification.TargetType.TENANT, keycloakDemoSetup.tenantBuilding.realm)
+        notification.targets = [new Notification.Target(Notification.TargetType.TENANT, keycloakDemoSetup.tenantBuilding.realm)]
         adminNotificationResource.sendNotification(null, notification)
 
         then: "all consoles in that realm should have been sent a notification"
@@ -195,7 +195,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 403
 
         when: "the admin user sends a notification to a user in a different realm"
-        notification.targets = new Notification.Targets(Notification.TargetType.USER, keycloakDemoSetup.testuser2Id)
+        notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakDemoSetup.testuser2Id)]
         advancePseudoClock(1, TimeUnit.HOURS, container)
         adminNotificationResource.sendNotification(null, notification)
 
@@ -203,7 +203,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         notificationIds.size() == 5
 
         when: "a regular user sends a push notification to a user in a different realm"
-        notification.targets = new Notification.Targets(Notification.TargetType.USER, keycloakDemoSetup.testuser2Id)
+        notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakDemoSetup.testuser2Id)]
         testuser1NotificationResource.sendNotification(null, notification)
 
         then: "access should be forbidden"
@@ -211,7 +211,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 403
 
         when: "a restricted user sends a push notification to another user in the same realm"
-        notification.targets = new Notification.Targets(Notification.TargetType.USER, keycloakDemoSetup.testuser2Id)
+        notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakDemoSetup.testuser2Id)]
         testuser3NotificationResource.sendNotification(null, notification)
 
         then: "access should be forbidden"
@@ -226,11 +226,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 403
 
         when: "the admin user sends a push notification to the console assets in building realm"
-        notification.targets = new Notification.Targets(Notification.TargetType.ASSET,
-                                                        testuser2Console.id,
-                                                        testuser3Console1.id,
-                                                        testuser3Console2.id,
-                                                        anonymousConsole.id)
+        notification.targets = [new Notification.Target(Notification.TargetType.ASSET, testuser2Console.id),
+                                new Notification.Target(Notification.TargetType.ASSET, testuser3Console1.id),
+                                new Notification.Target(Notification.TargetType.ASSET, testuser3Console2.id),
+                                new Notification.Target(Notification.TargetType.ASSET, anonymousConsole.id)]
         advancePseudoClock(1, TimeUnit.HOURS, container)
         adminNotificationResource.sendNotification(null, notification)
 
@@ -267,11 +266,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 403
 
         when: "a restricted user sends a push notification to some consoles linked to them and some not linked to them"
-        notification.targets = new Notification.Targets(Notification.TargetType.ASSET,
-                                                        testuser2Console.id,
-                                                        testuser3Console1.id,
-                                                        testuser3Console2.id,
-                                                        anonymousConsole.id)
+        notification.targets = [new Notification.Target(Notification.TargetType.ASSET, testuser2Console.id),
+                                new Notification.Target(Notification.TargetType.ASSET, testuser3Console1.id),
+                                new Notification.Target(Notification.TargetType.ASSET, testuser3Console2.id),
+                                new Notification.Target(Notification.TargetType.ASSET, anonymousConsole.id)]
         testuser3NotificationResource.sendNotification(null, notification)
 
         then: "access should be forbidden"
@@ -283,9 +281,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         when: "a restricted user sends a push notification to some consoles linked to them"
         advancePseudoClock(1, TimeUnit.HOURS, container)
-        notification.targets = new Notification.Targets(Notification.TargetType.ASSET,
-                                                        testuser3Console1.id,
-                                                        testuser3Console2.id)
+        notification.targets = [new Notification.Target(Notification.TargetType.ASSET, testuser3Console1.id),
+                                new Notification.Target(Notification.TargetType.ASSET, testuser3Console2.id)]
         testuser3NotificationResource.sendNotification(null, notification)
 
         then: "the notifications should have been sent"
@@ -543,19 +540,22 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         EmailNotificationHandler mockEmailNotificationHandler = Spy(EmailNotificationHandler) {
             isValid() >> true
 
-            sendMessage(_ as Long, _ as Notification.Source, _, _ as Notification.TargetType, _ as String, _ as AbstractNotificationMessage) >> {
-                id, source, sourceId, targetType, targetId, message ->
+            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+                id, source, sourceId, target, message ->
                     notificationIds << id
-                    notificationTargetTypes << targetType
-                    notificationTargetIds << targetId
+                    notificationTargetTypes << target.type
+                    notificationTargetIds << target.id
                     notificationMessages << message
                     callRealMethod()
             }
 
             sendMessage(_ as Email) >> {
                 email ->
-                    toAddresses.addAll(((EmailNotificationMessage)notificationMessages.last()).getTo())
-                    return NotificationSendResult.success()
+                    if (email instanceof List) {
+                        def e = ((List)email).get(0) as Email
+                        e.recipients.forEach {toAddresses.add(it.address)}
+                        return NotificationSendResult.success()
+                    }
             }
         }
 
@@ -577,22 +577,20 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def notification = new Notification(
                 "Test",
                 new EmailNotificationMessage().setSubject("Test").setText("Hello world!"),
-                new Notification.Targets(Notification.TargetType.TENANT, managerDemoSetup.realmBuildingTenant), null, null)
+                Collections.singletonList(new Notification.Target(Notification.TargetType.TENANT, managerDemoSetup.realmBuildingTenant)), null, null)
         notificationService.sendNotification(notification, Notification.Source.TENANT_RULESET, managerDemoSetup.realmBuildingTenant)
 
         then: "the email should have been sent to all tenant users"
         conditions.eventually {
             assert notificationMessages.size() == 3
-            assert toAddresses.size() == 3
             assert ((EmailNotificationMessage) notificationMessages.get(0)).getText() == "Hello world!"
             assert ((EmailNotificationMessage) notificationMessages.get(0)).getSubject() == "Test"
-            assert ((EmailNotificationMessage) notificationMessages.get(0)).getFrom().getAddress() == mockEmailNotificationHandler.defaultFrom
             assert ((EmailNotificationMessage) notificationMessages.get(1)).getText() == "Hello world!"
             assert ((EmailNotificationMessage) notificationMessages.get(1)).getSubject() == "Test"
-            assert ((EmailNotificationMessage) notificationMessages.get(1)).getFrom().getAddress() == mockEmailNotificationHandler.defaultFrom
-            assert toAddresses.any { ((EmailNotificationMessage.Recipient)it).getAddress() == "testuser2@openremote.local" }
-            assert toAddresses.any { ((EmailNotificationMessage.Recipient)it).getAddress() == "testuser3@openremote.local" }
-            assert toAddresses.any { ((EmailNotificationMessage.Recipient)it).getAddress() == "building@openremote.local" }
+            assert toAddresses.size() == 3
+            assert toAddresses.any { it == "testuser2@openremote.local" }
+            assert toAddresses.any { it == "testuser3@openremote.local" }
+            assert toAddresses.any { it == "building@openremote.local" }
         }
 
         when: "an email attribute is added to an asset"
@@ -601,14 +599,14 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         kitchen = assetStorageService.merge(kitchen)
 
         and: "an email notification is sent to a parent asset"
-        notification.setTargets(new Notification.Targets(Notification.TargetType.ASSET, managerDemoSetup.apartment1Id))
+        notification.setTargets([new Notification.Target(Notification.TargetType.ASSET, managerDemoSetup.apartment1Id)])
         notificationService.sendNotification(notification)
 
         then: "the child asset with the email attribute should have been sent an email"
         conditions.eventually {
             assert notificationMessages.size() == 4
             assert toAddresses.size() == 4
-            assert toAddresses.any { ((EmailNotificationMessage.Recipient)it).getAddress() == "kitchen@openremote.local" }
+            assert toAddresses.any { it == "kitchen@openremote.local" }
         }
 
         cleanup: "the server should be stopped"

@@ -664,11 +664,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     );
                 });
 
+            assetRulesEngine.addRuleset(ruleset);
+
             if (created.get()) {
                 assetRulesEngine.start();
             }
 
-            assetRulesEngine.addRuleset(ruleset);
             return created.get() ? assetRulesEngine : null;
         });
     }
