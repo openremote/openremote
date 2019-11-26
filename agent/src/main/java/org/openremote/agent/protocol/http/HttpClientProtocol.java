@@ -536,6 +536,16 @@ public class HttpClientProtocol extends AbstractProtocol {
             false,
             null);
 
+    /**
+     * Set default read timeout for the request. Useful for requests which need more time completing.
+     */
+    public static final MetaItemDescriptor META_READ_TIMEOUT_MILLISECONDS = metaItemInteger(
+        PROTOCOL_NAME + ":readTimeout",
+        ACCESS_PRIVATE,
+        false,
+        (int) WebTargetBuilder.CONNECTION_TIMEOUT_MILLISECONDS,
+        null);
+
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
             META_ATTRIBUTE_PATH,
             META_ATTRIBUTE_METHOD,
@@ -546,7 +556,8 @@ public class HttpClientProtocol extends AbstractProtocol {
             META_POLLING_MILLIS,
             META_QUERY_PARAMETERS,
             META_FAILURE_CODES,
-            META_PAGING_ENABLED);
+            META_PAGING_ENABLED,
+            META_READ_TIMEOUT_MILLISECONDS);
 
     public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
             META_PROTOCOL_BASE_URI,
@@ -564,7 +575,8 @@ public class HttpClientProtocol extends AbstractProtocol {
             META_QUERY_PARAMETERS,
             META_HEADERS,
             META_FAILURE_CODES,
-            META_PAGING_ENABLED);
+            META_PAGING_ENABLED,
+            META_READ_TIMEOUT_MILLISECONDS);
 
     protected final Map<AttributeRef, Pair<ResteasyWebTarget, List<Integer>>> clientMap = new HashMap<>();
     protected final Map<AttributeRef, HttpClientRequest> requestMap = new HashMap<>();
@@ -734,7 +746,21 @@ public class HttpClientProtocol extends AbstractProtocol {
                 .flatMap(Values::getString)
                 .orElse(null);
 
-        WebTargetBuilder webTargetBuilder = new WebTargetBuilder(client, uri);
+        Double readTimeout = Values.getMetaItemValueOrThrow(
+            protocolConfiguration,
+            META_READ_TIMEOUT_MILLISECONDS,
+            false,
+            true)
+            .flatMap(Values::getNumber)
+            .orElse(null);
+
+        WebTargetBuilder webTargetBuilder;
+        if (readTimeout != null) {
+            webTargetBuilder = new WebTargetBuilder(WebTargetBuilder.createClient(executorService, WebTargetBuilder.CONNECTION_POOL_SIZE, readTimeout.longValue(), null), uri);
+        } else {
+            webTargetBuilder = new WebTargetBuilder(client, uri);
+        }
+
         if (oAuthGrant.isPresent()) {
             LOG.info("Adding OAuth");
             webTargetBuilder.setOAuthAuthentication(oAuthGrant.get());
@@ -1149,7 +1175,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                 originalResponse = PagingResponse.fromResponse(originalResponse).entity(entities).build();
             }
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, getProtocolDisplayName() +  " exception thrown whilst doing polling request: " + clientRequest.client.getUri() + clientRequest.path, e);
+            LOG.log(Level.SEVERE, getProtocolDisplayName() + " exception thrown whilst doing polling request: " + clientRequest.requestTarget.getUriBuilder().build().toString(), e);
         }
 
         responseConsumer.accept(originalResponse);

@@ -162,7 +162,29 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
             return;
         }
 
-        sendAttributeEvent(new AttributeEvent(attributeLink.getAttributeRef(), sendConvertedValue.getValue()));
+        Value value = sendConvertedValue.getValue();
+
+        Optional<AssetAttribute> attribute = getAttribute(em, assetStorageService, attributeLink.getAttributeRef());
+        if (attribute.isPresent()) {
+            // Do built in value conversion
+            Optional<ValueType> attributeValueType = attribute.get().getType().map(AttributeValueDescriptor::getValueType);
+
+            if (value != null && attributeValueType.isPresent()) {
+                if (attributeValueType.get() != value.getType()) {
+                    LOG.fine("Trying to convert value: " + value.getType() + " -> " + attributeValueType.get());
+                    Optional<Value> convertedValue = Values.convert(value, attributeValueType.get());
+                    if (!convertedValue.isPresent()) {
+                        LOG.warning("Failed to convert value: " + value.getType() + " -> " + attributeValueType.get());
+                        LOG.warning("Cannot send linked attribute update");
+                        return;
+                    } else {
+                        value = convertedValue.get();
+                    }
+                }
+            }
+        }
+
+        sendAttributeEvent(new AttributeEvent(attributeLink.getAttributeRef(), value));
     }
 
     protected ConvertedValue convertValueForLinkedAttribute(EntityManager em,
