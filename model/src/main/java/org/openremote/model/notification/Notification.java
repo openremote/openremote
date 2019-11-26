@@ -69,7 +69,7 @@ public class Notification {
         public String toString() {
             return getClass().getSimpleName()+ "{" +
                 "type=" + type +
-                "id=" + id +
+                ", id=" + id +
                 '}';
         }
     }

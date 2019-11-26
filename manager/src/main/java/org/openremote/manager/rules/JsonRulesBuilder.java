@@ -27,6 +27,7 @@ import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.rules.facade.NotificationsFacade;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.notification.EmailNotificationMessage;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
@@ -35,6 +36,7 @@ import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.DateTimePredicate;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.Assets;
+import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.Users;
 import org.openremote.model.rules.json.*;
 import org.openremote.model.util.Pair;
@@ -48,6 +50,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.openremote.container.util.Util.distinctByKey;
@@ -411,6 +414,9 @@ public class JsonRulesBuilder extends RulesBuilder {
         USER
     }
 
+    public static final String PLACEHOLDER_RULESET_ID = "%RULESET_ID%";
+    public static final String PLACEHOLDER_RULESET_NAME = "%RULESET_NAME%";
+    public static final String PLACEHOLDER_TRIGGER_ASSETS = "%TRIGGER_ASSETS%";
     final static String LOG_PREFIX = "JSON Rules: ";
     final protected AssetStorageService assetStorageService;
     final protected TimerService timerService;
@@ -422,7 +428,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     final protected Map<String, RuleEvaluationResult> ruleEvaluationMap = new HashMap<>();
     final protected JsonRule[] jsonRules;
 
-    public JsonRulesBuilder(JsonRule[] jsonRules, TimerService timerService, AssetStorageService assetStorageService, ManagerExecutorService executorService, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationsFacade, BiConsumer<Runnable, Long> scheduledActionConsumer) {
+    public JsonRulesBuilder(Ruleset ruleset, TimerService timerService, AssetStorageService assetStorageService, ManagerExecutorService executorService, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationsFacade, BiConsumer<Runnable, Long> scheduledActionConsumer) throws Exception {
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
         this.executorService = executorService;
@@ -430,8 +436,18 @@ public class JsonRulesBuilder extends RulesBuilder {
         this.usersFacade = usersFacade;
         this.notificationsFacade = notificationsFacade;
         this.scheduledActionConsumer = scheduledActionConsumer;
-        this.jsonRules = jsonRules;
 
+        String rulesStr = ruleset.getRules();
+        rulesStr = rulesStr.replace(PLACEHOLDER_RULESET_ID, Long.toString(ruleset.getId()));
+        rulesStr = rulesStr.replace(PLACEHOLDER_RULESET_NAME, ruleset.getName());
+
+        JsonRulesetDefinition jsonRulesetDefinition = Container.JSON.readValue(rulesStr, JsonRulesetDefinition.class);
+
+        if (jsonRulesetDefinition == null || jsonRulesetDefinition.rules == null || jsonRulesetDefinition.rules.length == 0) {
+            throw new IllegalArgumentException("No rules within ruleset so nothing to start: " + ruleset);
+        }
+
+        this.jsonRules = jsonRulesetDefinition.rules;
         Arrays.stream(jsonRules).forEach(this::add);
     }
 
@@ -646,6 +662,27 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             if (notificationAction.notification != null) {
 
+                if (notificationAction.notification.getMessage() != null && Objects.equals(notificationAction.notification.getMessage().getType(), EmailNotificationMessage.TYPE)) {
+                    EmailNotificationMessage email = (EmailNotificationMessage)notificationAction.notification.getMessage();
+
+                    boolean hasBody = !TextUtil.isNullOrEmpty(email.getHtml()) || !TextUtil.isNullOrEmpty(email.getText());
+                    boolean isHtml = !TextUtil.isNullOrEmpty(email.getHtml());
+
+                    if (hasBody) {
+                        String body = isHtml ? email.getHtml() : email.getText();
+
+                        if (body.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
+                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, triggerStateMap, isHtml);
+                            body = body.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
+                            if (isHtml) {
+                                email.setHtml(body);
+                            } else {
+                                email.setText(body);
+                            }
+                        }
+                    }
+                }
+
                 // Override the notification targets if set in the rule
                 Notification.TargetType targetType = targetIsNotAssets(ruleAction.target) ? Notification.TargetType.USER : Notification.TargetType.ASSET;
                 Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, triggerStateMap, assetsFacade, usersFacade, facts);
@@ -816,6 +853,46 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         log(Level.FINE, "Unsupported rule action: " + rule.name + " '" + actionsName + "' action index " + index);
         return null;
+    }
+
+    private static String buildTriggeredAssetInfo(boolean useUnmatched, Map<String, RuleTriggerState> triggerStateMap, boolean isHtml) {
+        List<AssetState> assetStates = triggerStateMap.values().stream().flatMap(ruleTriggerState -> {
+            Collection<AssetState> as = useUnmatched
+                ? ruleTriggerState.lastTriggerResult.unmatchedAssetStates
+                : ruleTriggerState.lastTriggerResult.matchedAssetStates;
+            return as.stream();
+        }).collect(Collectors.toList());
+
+        StringBuilder sb = new StringBuilder();
+        if (isHtml) {
+            sb.append("<table>");
+            sb.append("<tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr>");
+            assetStates.forEach(assetState -> {
+                sb.append("<tr><td>");
+                sb.append(assetState.getId());
+                sb.append("</td><td>");
+                sb.append(assetState.getName());
+                sb.append("</td><td>");
+                sb.append(assetState.getAttributeName());
+                sb.append("</td><td>");
+                sb.append(assetState.getValue().map(Value::toString).orElse(""));
+                sb.append("</td></tr>");
+            });
+            sb.append("</table>");
+        } else {
+            sb.append("Asset ID\tAsset Name\tAttribute\tValue");
+            assetStates.forEach(assetState -> {
+                sb.append(assetState.getId());
+                sb.append("\t");
+                sb.append(assetState.getName());
+                sb.append("\t");
+                sb.append(assetState.getAttributeName());
+                sb.append("\t");
+                sb.append(assetState.getValue().map(Value::toString).orElse(""));
+            });
+        }
+
+        return sb.toString();
     }
 
     protected static Collection<String> getRuleActionTargetIds(RuleActionTarget target, boolean useUnmatched, Map<String, RuleTriggerState> triggerStateMap, Assets assetsFacade, Users usersFacade, RulesFacts facts) {

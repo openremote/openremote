@@ -260,17 +260,7 @@ public class RulesetDeployment {
     protected boolean compileRulesJson(Ruleset ruleset) {
 
         try {
-            String rulesStr = ruleset.getRules();
-            rulesStr = rulesStr.replace("%RULESET_ID%", Long.toString(ruleset.getId()));
-            rulesStr = rulesStr.replace("%RULESET_NAME%", ruleset.getName());
-
-            JsonRulesetDefinition jsonRulesetDefinition = Container.JSON.readValue(rulesStr, JsonRulesetDefinition.class);
-
-            if (jsonRulesetDefinition == null || jsonRulesetDefinition.rules == null || jsonRulesetDefinition.rules.length == 0) {
-                throw new IllegalArgumentException("No rules within ruleset so nothing to start: " + ruleset);
-            }
-
-            jsonRulesBuilder = new JsonRulesBuilder(jsonRulesetDefinition.rules, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationsFacade, this::scheduleRuleAction);
+            jsonRulesBuilder = new JsonRulesBuilder(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationsFacade, this::scheduleRuleAction);
 
             for (Rule rule : jsonRulesBuilder.build()) {
                 RulesEngine.LOG.fine("Registering JSON rule: " + rule.getName());
@@ -282,7 +272,6 @@ public class RulesetDeployment {
             setError(e);
             return false;
         }
-
     }
 
     protected boolean compileRulesJavascript(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade consolesFacade) {
