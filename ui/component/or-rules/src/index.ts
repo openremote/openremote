@@ -1,4 +1,4 @@
-import {css, customElement, html, LitElement, property, query, TemplateResult, unsafeCSS} from "lit-element";
+import {css, customElement, html, LitElement, property, query, TemplateResult, unsafeCSS, PropertyValues} from "lit-element";
 import manager, {
     AssetModelUtil,
     DefaultBoxShadow,
@@ -78,7 +78,8 @@ export enum AssetQueryOperator {
     WITHIN_RADIUS = "withinRadius",
     OUTSIDE_RADIUS = "outsideRadius",
     WITHIN_RECTANGLE = "withinRectangle",
-    OUTSIDE_RECTANGLE = "outsideRectangle"
+    OUTSIDE_RECTANGLE = "outsideRectangle",
+    VALUE_CHANGES = "valueChanges"
 }
 
 export interface AssetTypeAttributeName {
@@ -555,6 +556,17 @@ export class OrRules extends translate(i18next)(LitElement) {
         this.addEventListener(OrRulesSelectionChangedEvent.NAME, this._onRuleSelectionChanged);
         this.addEventListener(OrRulesSaveEndEvent.NAME, this._onRuleSaveEnd);
         this.addEventListener(OrRulesSaveStartEvent.NAME, this._onRuleSaveStart);
+    }
+
+    public shouldUpdate(_changedProperties: PropertyValues): boolean {
+        if (this._rulesList && _changedProperties.has("selectedIds")) {
+            this._rulesList.selectedIds = this.selectedIds;
+            if (_changedProperties.size === 1) {
+                return false;
+            }
+        }
+
+        return super.shouldUpdate(_changedProperties);
     }
 
     protected render() {

@@ -8,6 +8,7 @@ import {InputType} from "@openremote/or-input";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {getWhenTypesMenu, updateRuleConditionType} from "./or-rule-condition";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import { translate } from "@openremote/or-translate";
 
 // language=CSS
 const style = css`
@@ -78,7 +79,7 @@ const style = css`
 `;
 
 @customElement("or-rule-when")
-class OrRuleWhen extends LitElement {
+class OrRuleWhen extends translate(i18next)(LitElement) {
 
     static get styles() {
         return style;
@@ -190,7 +191,7 @@ class OrRuleWhen extends LitElement {
         return html`<span>DATE TIME PREDICATE NOT IMPLEMENTED</span>`;
     }
 
-    protected shouldUpdate(_changedProperties: PropertyValues): boolean {
+    public shouldUpdate(_changedProperties: PropertyValues): boolean {
         if (_changedProperties.has("rule")) {
             if (this.rule) {
                 if (!this.rule.when) {

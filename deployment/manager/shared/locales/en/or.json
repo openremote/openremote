@@ -55,6 +55,7 @@
   "notLengthEquals": "Array length does not equal",
   "lengthGreaterThan": "Array length greater than",
   "lengthLessThan": "Array length less than",
+  "valueChanges": "Value changes",
   "save": "Save",
   "active": "Active",
   "continueWithoutSaving": "If you continue, your changes will not be saved. Continue without saving?",

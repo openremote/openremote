@@ -128,7 +128,6 @@ export const style = css`
             
     .node-container {
         display: flex;
-        flex-direction: row;
         border-left: 4px solid transparent;
         user-select: none;
         cursor: pointer;

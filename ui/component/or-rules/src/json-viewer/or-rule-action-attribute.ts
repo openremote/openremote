@@ -14,6 +14,7 @@ import {getAttributeValueTemplate} from "@openremote/or-attribute-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import i18next from "i18next";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
+import { translate } from "@openremote/or-translate";
 
 // language=CSS
 const style = css`
@@ -28,7 +29,7 @@ const style = css`
 `;
 
 @customElement("or-rule-action-attribute")
-export class OrRuleActionAttribute extends LitElement {
+export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
 
     static get styles() {
         return style;
@@ -49,8 +50,7 @@ export class OrRuleActionAttribute extends LitElement {
     @property({type: Array, attribute: false})
     protected _assets?: Asset[];
 
-
-    protected shouldUpdate(_changedProperties: PropertyValues): boolean {
+    public shouldUpdate(_changedProperties: PropertyValues): boolean {
         if (_changedProperties.has("action")) {
             this._assets = undefined;
         }

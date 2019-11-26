@@ -124,11 +124,10 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
         if (_changedProperties.has("ruleset")) {
             this._supported = true;
+            this.modified = false;
+            this._ruleValid = false;
 
-            if (!this.ruleset) {
-                this.modified = false;
-                this._ruleValid = false;
-            } else {
+            if (this.ruleset) {
                 this._focusName = true;
             }
         }

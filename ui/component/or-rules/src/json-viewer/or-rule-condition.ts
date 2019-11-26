@@ -13,7 +13,7 @@ import "@openremote/or-translate";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {InputType} from "@openremote/or-input";
 import {AssetModelUtil} from "@openremote/core";
-import {i18next} from "@openremote/or-translate";
+import {i18next, translate} from "@openremote/or-translate";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 
@@ -121,7 +121,7 @@ const style = css`
 `;
 
 @customElement("or-rule-condition")
-class OrRuleCondition extends LitElement {
+class OrRuleCondition extends translate(i18next)(LitElement) {
 
     @property({type: Object, attribute: false})
     public ruleCondition!: RuleCondition;

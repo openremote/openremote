@@ -36,31 +36,17 @@ const style = css`
         pointer-events: none;
     }
 
-    .list-item {
-        text-decoration: none;
-        padding: 13px 15px;
-        border-left: 5px solid transparent;
-        cursor: pointer;
-        transition: all 200ms ease-in;
-        opacity: 0.8;
+    .node-container {
+        align-items: center;
+        padding-left: 10px;
     }
-
-    .list-item:hover {
-        border-left-color: var(--internal-or-rules-list-selected-color);
-        background-color: var(--internal-or-rules-list-selected-color);
-    }
-
-    .list-item[selected] {
-        border-left-color: var(--internal-or-rules-button-color);
-        background-color: var(--internal-or-rules-list-selected-color);
-        opacity: 1;
-    }
-
-    .list-item > span {
-        width: 8px;
-        height: 8px;
-        border-radius: 8px;
-        margin: 6px 10px 0 0;
+    
+    .node-status {
+        width: 10px;
+        height: 10px;
+        border-radius: 5px;
+        margin-right: 10px;
+        display: none;
     }
 
     .bg-green {
@@ -187,7 +173,14 @@ export class OrRuleList extends translate(i18next)(LitElement) {
             }
 
             if (_changedProperties.has("selectedIds")) {
-                this._updateSelectedNodes();
+                let changed = true;
+                const oldValue = _changedProperties.get("selectedIds") as number[];
+                if (this.selectedIds && oldValue && this.selectedIds.length === oldValue.length) {
+                    changed = !!this.selectedIds.find((oldSelected) => oldValue.indexOf(oldSelected) < 0);
+                }
+                if (changed) {
+                    this._updateSelectedNodes();
+                }
             }
 
             if (_changedProperties.has("sortBy")) {
@@ -276,12 +269,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         return html`
             <li ?data-selected="${node.selected}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, node)}">
                 <div class="node-container">
-                    <div class="node-name">
-                        <span class="${OrRuleList._getNodeStatusClasses(node.ruleset)}"></span>
-                        <div class="flex">
-                            <span>${node.ruleset.name}</span>
-                        </div>
-                    </div>
+                    <span class="node-status ${OrRuleList._getNodeStatusClasses(node.ruleset)}"></span>
+                    <span class="node-name">${node.ruleset.name}</span>
                 </div>
             </li>
         `;

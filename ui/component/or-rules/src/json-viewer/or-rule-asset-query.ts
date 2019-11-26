@@ -33,6 +33,7 @@ import manager, {AssetModelUtil, Util} from "@openremote/core";
 import i18next from "i18next";
 import {buttonStyle} from "../style";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
+import { translate } from "@openremote/or-translate";
 
 // language=CSS
 const style = css`
@@ -68,7 +69,7 @@ const style = css`
 `;
 
 @customElement("or-rule-asset-query")
-class OrRuleAssetQuery extends LitElement {
+class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
     @property({type: Object, attribute: false})
     public condition!: RuleCondition;
@@ -92,7 +93,8 @@ class OrRuleAssetQuery extends LitElement {
             AssetQueryOperator.WITHIN_RECTANGLE,
             AssetQueryOperator.OUTSIDE_RECTANGLE,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY]
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.VALUE_CHANGES]
         ],
         [ValueType.STRING, [
             AssetQueryOperator.EQUALS,
@@ -116,13 +118,15 @@ class OrRuleAssetQuery extends LitElement {
             AssetQueryOperator.BETWEEN,
             AssetQueryOperator.NOT_BETWEEN,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY]
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.VALUE_CHANGES]
         ],
         [ValueType.BOOLEAN, [
             AssetQueryOperator.IS_TRUE,
             AssetQueryOperator.IS_FALSE,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY]
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.VALUE_CHANGES]
         ],
         [ValueType.ARRAY, [
             AssetQueryOperator.CONTAINS,
@@ -134,13 +138,15 @@ class OrRuleAssetQuery extends LitElement {
             AssetQueryOperator.LENGTH_LESS_THAN,
             AssetQueryOperator.LENGTH_GREATER_THAN,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY]
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.VALUE_CHANGES]
         ],
         [ValueType.OBJECT, [
             AssetQueryOperator.CONTAINS_KEY,
             AssetQueryOperator.NOT_CONTAINS_KEY,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY]
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.VALUE_CHANGES]
         ]
     ]);
 
@@ -170,7 +176,7 @@ class OrRuleAssetQuery extends LitElement {
             <div class="attribute-editor">
                 <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributes}" .value="${attributeName}"></or-input>
                 
-                ${attributeName ? html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setOperator(assetDescriptor, attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${operators}" .value="${operator}"></or-input>` : ``}
+                ${attributeName ? html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${operators}" .value="${operator}"></or-input>` : ``}
                 
                 ${attributePredicate ? this.attributePredicateValueEditorTemplate(assetDescriptor, attributePredicate) : ``}
             </div>
@@ -233,7 +239,7 @@ class OrRuleAssetQuery extends LitElement {
         return style;
     }
 
-    protected shouldUpdate(_changedProperties: PropertyValues): boolean {
+    public shouldUpdate(_changedProperties: PropertyValues): boolean {
 
         if (_changedProperties.has("condition")) {
             this._assets = undefined;
@@ -459,7 +465,7 @@ class OrRuleAssetQuery extends LitElement {
         }
     }
 
-    protected setOperator(assetDescriptor: AssetDescriptor, attributePredicate: AttributePredicate, operator: string | undefined) {
+    protected setOperator(assetDescriptor: AssetDescriptor, attribute: Attribute | undefined, attributeName: string, attributePredicate: AttributePredicate, operator: string | undefined) {
 
         if (!this.query
             || !this.query.attributes
@@ -468,6 +474,8 @@ class OrRuleAssetQuery extends LitElement {
             return;
         }
 
+        this.condition.reset = undefined;
+
         if (!operator) {
             attributePredicate.value = undefined;
             this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
@@ -475,9 +483,9 @@ class OrRuleAssetQuery extends LitElement {
             return;
         }
 
-        const attributeName = this.getAttributeName(attributePredicate);
-        const attributeDescriptor = assetDescriptor.attributeDescriptors ? assetDescriptor.attributeDescriptors.find((ad) => ad.attributeName === attributeName) : undefined;
-        const valueType = getDescriptorValueType(attributeDescriptor);
+        const descriptor = assetDescriptor.attributeDescriptors ? assetDescriptor.attributeDescriptors.find((ad) => ad.attributeName === attributeName) : undefined;
+        const valueDescriptor = attribute ? AssetModelUtil.getAttributeValueDescriptor(attribute.type as string) : descriptor ? descriptor.valueDescriptor : undefined;
+        const valueType = valueDescriptor ? valueDescriptor.valueType : undefined;
         const value = operator as AssetQueryOperator;
 
         if (!valueType || !value) {
@@ -618,7 +626,7 @@ class OrRuleAssetQuery extends LitElement {
             // multiple
             case AssetQueryOperator.EQUALS:
             case AssetQueryOperator.NOT_EQUALS:
-                if (attributeDescriptor && attributeDescriptor.valueDescriptor && attributeDescriptor.valueDescriptor.name === AttributeValueType.DATETIME.name) {
+                if (descriptor && descriptor.valueDescriptor && descriptor.valueDescriptor.name === AttributeValueType.DATETIME.name) {
                     predicate = {
                         predicateType: "datetime",
                         negate: value === AssetQueryOperator.NOT_EQUALS,
@@ -644,9 +652,15 @@ class OrRuleAssetQuery extends LitElement {
                 };
                 break;
             case AssetQueryOperator.VALUE_NOT_EMPTY:
+            case AssetQueryOperator.VALUE_CHANGES:
                 predicate = {
                     predicateType: "value-not-empty"
                 };
+                if (value === AssetQueryOperator.VALUE_CHANGES) {
+                    this.condition.reset = {
+                        valueChanges: true
+                    };
+                }
                 break;
             case AssetQueryOperator.CONTAINS:
             case AssetQueryOperator.NOT_CONTAINS:

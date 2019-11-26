@@ -17,6 +17,7 @@ import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {AssetModelUtil} from "@openremote/core";
 import "./or-rule-action-attribute";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import { translate } from "@openremote/or-translate";
 
 const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
@@ -112,7 +113,7 @@ const style = css`
 `;
 
 @customElement("or-rule-then-otherwise")
-class OrRuleThenOtherwise extends LitElement {
+class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
     static get styles() {
         return style;
