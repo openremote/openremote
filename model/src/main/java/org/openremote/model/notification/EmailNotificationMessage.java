@@ -19,6 +19,8 @@
  */
 package org.openremote.model.notification;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
@@ -40,7 +42,8 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
             this(null, address);
         }
 
-        public Recipient(String name, String address) {
+        @JsonCreator
+        public Recipient(@JsonProperty("name") String name, @JsonProperty("address") String address) {
             this.name = name;
             this.address = address;
         }
