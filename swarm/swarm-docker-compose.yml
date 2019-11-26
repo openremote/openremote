@@ -90,6 +90,9 @@ services:
   # configuration files which were baked into the managers image.
   manager:
 
+    build:
+      context: '../manager/build/install/manager'
+      dockerfile: swarm.Dockerfile
     image: openremote/manager:${DATE_TAG:-swarm}
     networks:
       - private
