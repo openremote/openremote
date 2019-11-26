@@ -1,4 +1,4 @@
-FROM debian:stretch AS builder
+FROM debian:stretch
 MAINTAINER support@openremote.io
 
 # Install utilities
@@ -23,6 +23,12 @@ ARG LUA_VERSION=5.3.4
 ARG ACME_PLUGIN_VERSION=0.1.1
 ARG DOMAINNAME
 ARG LOCAL_CERT_FILE
+ENV DOMAINNAME=${DOMAINNAME:-localhost}
+ENV LOCAL_CERT_FILE=$LOCAL_CERT_FILE
+ENV TERM xterm
+ENV PROXY_LOGLEVEL notice
+ENV PROXY_BACKEND_HOST=${PROXY_BACKEND_HOST:-manager}
+ENV PROXY_BACKEND_PORT=${PROXY_BACKEND_PORT:-8080}
 
 RUN mkdir /tmp/lua && cd /tmp/lua \
     && curl -sSL https://www.lua.org/ftp/lua-${LUA_VERSION}.tar.gz -o lua.tar.gz \
@@ -52,22 +58,11 @@ ADD selfsigned /opt/selfsigned
 
 ADD cli.ini /root/.config/letsencrypt/
 
-COPY entrypoint.sh /
-RUN chmod +x /entrypoint.sh
-
-FROM scratch
-
-ENV DOMAINNAME=${DOMAINNAME:-localhost}
-ENV LOCAL_CERT_FILE=$LOCAL_CERT_FILE
-ENV TERM xterm
-ENV PROXY_LOGLEVEL notice
-ENV PROXY_BACKEND_HOST=${PROXY_BACKEND_HOST:-manager}
-ENV PROXY_BACKEND_PORT=${PROXY_BACKEND_PORT:-8080}
-
-COPY --from=builder / /
 EXPOSE 80 443
 
 HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl --fail --silent http://localhost:80 || exit 1
 
+COPY entrypoint.sh /
+RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["run"]
