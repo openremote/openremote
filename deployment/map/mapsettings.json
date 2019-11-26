@@ -3,14 +3,14 @@
     "default": {
       "center": [5.4774, 51.4370],
       "bounds": [5.343, 51.378, 5.591, 51.509],
-      "zoom": 13,
+      "zoom": 14,
       "maxZoom": 19,
       "boxZoom": false
     },
     "building": {
-      "center": [5.4774, 51.4370],
+      "center": [5.4561596, 51.446795],
       "bounds": [5.343, 51.378, 5.591, 51.509],
-      "zoom": 13,
+      "zoom": 15,
       "minZoom": 14,
       "maxZoom": 19,
       "boxZoom": false

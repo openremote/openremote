@@ -9,7 +9,7 @@ import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 import "@openremote/or-map";
 import manager, {subscribe, Util, AssetModelUtil} from "@openremote/core";
 import "@openremote/or-panel";
-import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
+import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
 import {Type as MapType, Util as MapUtil} from "@openremote/or-map";
 import {
     Asset,
@@ -60,6 +60,29 @@ export interface ViewerConfig {
     historyConfig?: HistoryConfig;
 }
 
+class EventHandler{
+    _callbacks: Function[];
+
+    constructor() {
+        this._callbacks = [];
+    }
+
+    startCallbacks() {
+        return new Promise((resolve, reject)=> {
+            if(this._callbacks && this._callbacks.length > 0){
+                this._callbacks.forEach(cb => cb());
+            }
+            resolve();
+        })
+
+    }
+
+    addCallback(callback:Function) {
+        this._callbacks.push(callback);
+    }
+}
+const onRenderComplete = new EventHandler();
+
 @customElement("or-asset-viewer")
 export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElement)) {
 
@@ -73,6 +96,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         panels: {
             "info": {
                 type: "property",
+                hideOnMobile: true,
                 panelStyles: {
                 },
                 fieldStyles: {
@@ -141,7 +165,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     constructor() {
         super();
-        window.addEventListener('resize', this.generateGrid.bind(this));
+        window.addEventListener('resize', () => OrAssetViewer.generateGrid(this.shadowRoot));
+
+        this.addEventListener(OrAttributeHistoryEvent.NAME,() => OrAssetViewer.generateGrid(this.shadowRoot));
     }
 
     shouldUpdate(changedProperties: PropertyValues): boolean {
@@ -221,7 +247,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
        this.onCompleted().then(() => {
-           this.generateGrid();
+           onRenderComplete.startCallbacks().then(()=> {
+               OrAssetViewer.generateGrid(this.shadowRoot);
+           });
        });
 
     }
@@ -230,13 +258,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         await this.updateComplete;
     }
 
-    generateGrid(){
-        if(this.shadowRoot) {
-            const grid = this.shadowRoot.querySelector('#container');
+    public static generateGrid(shadowRoot: ShadowRoot | null){
+        if(shadowRoot) {
+            const grid = shadowRoot.querySelector('#container');
             if(grid){
                 const rowHeight = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-auto-rows'));
                 const rowGap = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-row-gap'));
-                const items = this.shadowRoot.querySelectorAll('.panel');
+                const items = shadowRoot.querySelectorAll('.panel');
                 if(items){
                     items.forEach((item) => {
                         const content = item.querySelector('.panel-content-wrapper');
@@ -339,12 +367,21 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         }
                     }
                 };
-
+                const options = historyAttrs.map((attr) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
+                const attrName:string = historyAttrs[0].name!;
+                onRenderComplete.addCallback(() => attributeChanged(attrName));
                 content = html`
+                    <style>
+                       or-attribute-history{
+                            min-height: 70px;
+                            width: 100%;
+                       }
+                    </style>
                     <div id="history-controls">
-                        <or-input id="history-attribute-picker" .label="${i18next.t("attribute")}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${historyAttrs.map((attr) => [attr.name, Util.getAttributeLabel(attr, undefined)])}"></or-input>
+                        <or-input id="history-attribute-picker" value="${historyAttrs[0].name}" .label="${i18next.t("attribute")}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${options}"></or-input>
                     </div>        
                     <or-attribute-history id="attribute-history" .config="${viewerConfig.historyConfig}" .assetType="${asset.type}"></or-attribute-history>
+
                 `;
             }
         } else if (panelConfig && panelConfig.type === "location") {

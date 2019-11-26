@@ -30,6 +30,35 @@ import {JSONPath} from "jsonpath-plus";
 import moment from "moment";
 import {styleMap} from "lit-html/directives/style-map";
 
+
+export class OrAttributeHistoryEvent extends CustomEvent<OrAttributeHistoryEventDetail> {
+
+    public static readonly NAME = "or-attribute-history-event";
+
+    constructor(value?: any, previousValue?: any) {
+        super(OrAttributeHistoryEvent.NAME, {
+            detail: {
+                value: value,
+                previousValue: previousValue
+            },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export interface OrAttributeHistoryEventDetail {
+    value?: any;
+    previousValue?: any;
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [OrAttributeHistoryEvent.NAME]: OrAttributeHistoryEvent;
+    }
+}
+
+
 export type TableColumnType = "timestamp" | "prop";
 
 export interface TableColumnConfig {
@@ -104,6 +133,7 @@ const style = css`
     
     #container {
         display: flex;
+        min-width: 0;
         width: 100%;
         height: 100%;
         flex-direction: column;
@@ -141,8 +171,6 @@ const style = css`
     }
     
     #chart-container {
-        height: 100%;
-        flex: 1 1 auto;
         position: relative;
     }
         
@@ -339,6 +367,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     options: {
                         // maintainAspectRatio: false,
                         // REMOVED AS DOESN'T SIZE CORRECTLY responsive: true,
+                        maintainAspectRatio: false,
+                        onResize: () => this.dispatchEvent(new OrAttributeHistoryEvent('resize')),
                         legend: {
                             display: false
                         },

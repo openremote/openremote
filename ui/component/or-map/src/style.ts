@@ -65,7 +65,11 @@ export const style = css`
     .or-map-marker {
         position: absolute; /* This makes mapboxJS behave like mapboxGL */
     }
-
+    
+    .or-map-marker.active {
+        z-index: 1;
+    }
+    
     .marker-container {
         position: relative;
         cursor: pointer;

@@ -38,7 +38,7 @@ export const style = css`
         grid-gap: 10px;
         grid-template-columns: repeat(auto-fill, minmax(calc(50% - 5px),1fr));
         grid-auto-rows: 5px;
-            
+
         -webkit-animation: fadein 0.3s; /* Safari, Chrome and Opera > 12.1 */
         -moz-animation: fadein 0.3s; /* Firefox < 16 */
         -ms-animation: fadein 0.3s; /* Internet Explorer */
@@ -169,12 +169,29 @@ export const style = css`
             padding: 20px 15px 0;
         }
 
+        #container {
+            grid-auto-rows: auto;
+        }
+
         .panel {
             border-radius: 0;
             border-right: none;
             border-left: none;
         }
+        
+        #attributes-panel {
+            grid-row-start: 1;
+        }
+        
+        #location-panel {
          
+            grid-row-start: 2;
+        }
+        
+        #history-panel {
+            grid-row-start: 3;
+        }
+        
         #container { 
             grid-template-columns: 1fr!important;
             padding: 20px 0;

@@ -16,6 +16,7 @@ import {MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {AssetModelUtil} from "@openremote/core";
 import "./or-rule-action-attribute";
+import "./or-rule-action-notification";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import { translate } from "@openremote/or-translate";
 
@@ -185,7 +186,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     template = html`<span>WAIT NOT IMPLEMENTED</span>`;
                     break;
                 case ActionType.NOTIFICATION:
-                    template = html`<span>NOTIFICATION NOT IMPLEMENTED</span>`;
+                    template = html`<or-rule-action-notification id="rule-notification" .action="${action}" .config="${this.config}" .readonly="${this.readonly}"></or-rule-action-notification>`;
                     break;
                 default:
                     template = html`<or-rule-action-attribute .action="${action}" .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}"></or-rule-action-attribute>`;
@@ -232,6 +233,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             case "wait":
                 break;
             case "notification":
+                return action.action;
                 break;
             case "write-attribute":
             case "update-attribute":
@@ -261,7 +263,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 action.attributeName = undefined;
                 break;
             case "notification":
-                action.notification = undefined;
+                action.notification =  undefined;
                 break;
             case "update-attribute":
                 action.value = undefined;
