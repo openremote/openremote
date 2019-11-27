@@ -100,8 +100,8 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             protected void encode(String message, ByteBuf buf) {
                 Value msg = Values.parse(message).orElseThrow(() -> {throw new IllegalArgumentException("No valid JSON provided, to construct ArtNet packet");});
                 ArtNetPacket packet = ArtNetPacket.fromValue(msg).orElseThrow(() -> {throw new IllegalArgumentException("ArtNet packet could not be made.");});
-                packet.toBuffer(buf);
-                finalEncoder.accept(message, buf);
+                ByteBuf output = packet.toBuffer(buf);
+                finalEncoder.accept(message, output);
             }
         };
     }

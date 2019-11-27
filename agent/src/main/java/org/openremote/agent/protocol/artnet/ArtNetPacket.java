@@ -28,7 +28,8 @@ public class ArtNetPacket {
     }
 
     public static Optional<ArtNetPacket> fromValue(Value value) {
-        return Values.getObject(value).flatMap(obj -> {
+
+        Optional<ArtNetPacket> a = Values.getObject(value).flatMap(obj -> {
             int _universe = obj.getNumber("universe").orElse(0.).intValue();
             double  _dim = obj.getNumber("dim").orElse(1.);
             ArrayValue _values = obj.getArray("values").get();
@@ -39,9 +40,11 @@ public class ArtNetPacket {
 
             return Optional.of(new ArtNetPacket(_universe, _dim,  values));
         });
+
+        return  a;
     }
 
-    public void toBuffer(ByteBuf buf) {
+    public ByteBuf toBuffer(ByteBuf buf) {
         buf.writeBytes(prefix);
         buf.writeByte(0); // Sequence
         buf.writeByte(0); // Physical
@@ -49,8 +52,12 @@ public class ArtNetPacket {
         buf.writeByte(universe & 0xff);
         buf.writeByte((values.length >> 8) & 0xff);
         buf.writeByte(values.length & 0xff);
-        for(int i = 0; i <= values.length; i++) {
-            buf.writeByte(values[i]);
+        for (int x = 0; x < 6; x++)//Each lamp has 6 lights
+        {
+            for(int i = 0; i < values.length; i++) {
+                buf.writeByte(values[i]);
+            }
         }
+        return buf;
     }
 }
