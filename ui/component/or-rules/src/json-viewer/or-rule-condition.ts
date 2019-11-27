@@ -1,4 +1,4 @@
-import {customElement, html, css, LitElement, property, TemplateResult} from "lit-element";
+import {customElement, html, css, LitElement, property, TemplateResult, query} from "lit-element";
 import {AssetDescriptor, AssetQueryMatch, RuleCondition} from "@openremote/model";
 import {
     ConditionType,
@@ -16,6 +16,7 @@ import {AssetModelUtil} from "@openremote/core";
 import {i18next, translate} from "@openremote/or-translate";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import { OrRuleAssetQuery } from "./or-rule-asset-query";
 
 const TIMER_COLOR = "4b87ea";
 const DATE_TIME_COLOR = "6AEAA4";
@@ -132,6 +133,9 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
 
     public assetDescriptors?: AssetDescriptor[];
 
+    @query("#asset-query")
+    protected _assetQuery?: OrRuleAssetQuery;
+
     static get styles() {
         return style;
     }
@@ -191,7 +195,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                     template = html`<span>TIMER NOT IMPLEMENTED</span>`;
                     break;
                 default:
-                    template = html`<or-rule-asset-query .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}" .condition="${this.ruleCondition}"></or-rule-asset-query>`;
+                    template = html`<or-rule-asset-query id="asset-query" .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}" .condition="${this.ruleCondition}"></or-rule-asset-query>`;
                     break;
             }
         }
@@ -219,8 +223,10 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
     }
 
     protected set type(value: string | undefined) {
-
         updateRuleConditionType(this.ruleCondition, value, this.config);
+        if (this._assetQuery) {
+            this._assetQuery.refresh();
+        }
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }

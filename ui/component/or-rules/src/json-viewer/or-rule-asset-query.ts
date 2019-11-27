@@ -69,7 +69,7 @@ const style = css`
 `;
 
 @customElement("or-rule-asset-query")
-class OrRuleAssetQuery extends translate(i18next)(LitElement) {
+export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
     @property({type: Object, attribute: false})
     public condition!: RuleCondition;
@@ -149,6 +149,11 @@ class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.VALUE_CHANGES]
         ]
     ]);
+
+    public refresh() {
+        // Clear assets
+        this._assets = undefined;
+    }
 
     protected attributePredicateEditorTemplate(assetDescriptor: AssetDescriptor, asset: Asset | undefined, attributePredicate: AttributePredicate) {
 
