@@ -53,6 +53,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static org.openremote.container.Container.JSON;
+import static org.openremote.container.Container.LOG;
 import static org.openremote.container.util.Util.distinctByKey;
 import static org.openremote.manager.rules.AssetQueryPredicate.conditionIsEmpty;
 import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
@@ -441,7 +443,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         rulesStr = rulesStr.replace(PLACEHOLDER_RULESET_ID, Long.toString(ruleset.getId()));
         rulesStr = rulesStr.replace(PLACEHOLDER_RULESET_NAME, ruleset.getName());
 
-        JsonRulesetDefinition jsonRulesetDefinition = Container.JSON.readValue(rulesStr, JsonRulesetDefinition.class);
+        JsonRulesetDefinition jsonRulesetDefinition = JSON.readValue(rulesStr, JsonRulesetDefinition.class);
 
         if (jsonRulesetDefinition == null || jsonRulesetDefinition.rules == null || jsonRulesetDefinition.rules.length == 0) {
             throw new IllegalArgumentException("No rules within ruleset so nothing to start: " + ruleset);
@@ -662,8 +664,10 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             if (notificationAction.notification != null) {
 
-                if (notificationAction.notification.getMessage() != null && Objects.equals(notificationAction.notification.getMessage().getType(), EmailNotificationMessage.TYPE)) {
-                    EmailNotificationMessage email = (EmailNotificationMessage)notificationAction.notification.getMessage();
+                Notification notification = notificationAction.notification;
+
+                if (notification.getMessage() != null && Objects.equals(notification.getMessage().getType(), EmailNotificationMessage.TYPE)) {
+                    EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
 
                     boolean hasBody = !TextUtil.isNullOrEmpty(email.getHtml()) || !TextUtil.isNullOrEmpty(email.getText());
                     boolean isHtml = !TextUtil.isNullOrEmpty(email.getHtml());
@@ -672,12 +676,20 @@ public class JsonRulesBuilder extends RulesBuilder {
                         String body = isHtml ? email.getHtml() : email.getText();
 
                         if (body.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
-                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, triggerStateMap, isHtml);
-                            body = body.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
-                            if (isHtml) {
-                                email.setHtml(body);
-                            } else {
-                                email.setText(body);
+
+                            // Need to clone the notification
+                            try {
+                                notification = JSON.readValue(JSON.writeValueAsString(notification), Notification.class);
+                                email = (EmailNotificationMessage) notification.getMessage();
+                                String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, triggerStateMap, isHtml);
+                                body = body.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
+                                if (isHtml) {
+                                    email.setHtml(body);
+                                } else {
+                                    email.setText(body);
+                                }
+                            } catch (JsonProcessingException e) {
+                                LOG.warning("Failed to clone notification so cannot insert asset info");
                             }
                         }
                     }
@@ -688,11 +700,12 @@ public class JsonRulesBuilder extends RulesBuilder {
                 Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, triggerStateMap, assetsFacade, usersFacade, facts);
 
                 if (ids != null && !ids.isEmpty()) {
-                    notificationAction.notification.setTargets(ids.stream().map(id -> new Notification.Target(targetType, id)).collect(Collectors.toList()));
+                    notification.setTargets(ids.stream().map(id -> new Notification.Target(targetType, id)).collect(Collectors.toList()));
                 }
 
                 log(Level.FINE, "Sending notification for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
-                return new RuleActionExecution(() -> notificationsFacade.send(notificationAction.notification), 0);
+                Notification finalNotification = notification;
+                return new RuleActionExecution(() -> notificationsFacade.send(finalNotification), 0);
             }
         }
 
@@ -820,7 +833,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                                         ((ObjectValue) value).put(attributeUpdateAction.key, attributeUpdateAction.value);
                                     } else {
                                         try {
-                                            log(Level.WARNING, "JSON Rule: Rule action missing required 'key': " + Container.JSON.writeValueAsString(attributeUpdateAction));
+                                            log(Level.WARNING, "JSON Rule: Rule action missing required 'key': " + JSON.writeValueAsString(attributeUpdateAction));
                                         } catch (JsonProcessingException ignored) {
                                         }
                                     }
