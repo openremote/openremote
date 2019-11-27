@@ -376,6 +376,20 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                             min-height: 70px;
                             width: 100%;
                        }
+                        #history-controls {
+                            flex: 0;
+                            margin-bottom: 10px;
+                            position: absolute;
+                        }
+                        
+                        #history-attribute-picker {
+                            flex: 0;
+                            width: 200px;
+                        }
+                        
+                        or-attribute-history {
+                            --or-attribute-history-controls-margin: 0 0 0 204px;  
+                        }
                     </style>
                     <div id="history-controls">
                         <or-input id="history-attribute-picker" value="${historyAttrs[0].name}" .label="${i18next.t("attribute")}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${options}"></or-input>
