@@ -9,7 +9,7 @@
 #
 #   docker-compose up
 #
-# For full documentation, see profile/deploy.yml
+# For full documentation, see deploy.yml
 #
 # Steps to create a permanent installation:
 #
@@ -51,7 +51,7 @@ services:
   # This service will only populate an empty volume on startup and then exit.
   # If the volume already contains data, it exits immediately.
   deployment:
-    build: 'deployment'
+    build: '../deployment'
     image: openremote/deployment:${DATE_TAG:-latest}
     volumes:
       - deployment-data:/deployment
@@ -62,7 +62,7 @@ services:
   # and SSL certificates.
   proxy:
     extends:
-      file: profile/deploy.yml
+      file: deploy.yml
       service: proxy
     depends_on:
       manager:
@@ -79,7 +79,7 @@ services:
   # configuration files which were baked into the managers image.
   manager:
     extends:
-      file: profile/deploy.yml
+      file: deploy.yml
       service: manager
     depends_on:
       keycloak:
@@ -93,7 +93,7 @@ services:
 
   keycloak:
     extends:
-      file: profile/deploy.yml
+      file: deploy.yml
       service: keycloak
     depends_on:
       postgresql:
@@ -106,7 +106,7 @@ services:
   # Alternatively, you can store postgresql data in a directory on your host.
   postgresql:
     extends:
-      file: profile/deploy.yml
+      file: deploy.yml
       service: postgresql
     volumes:
       - postgresql-data:/deployment
