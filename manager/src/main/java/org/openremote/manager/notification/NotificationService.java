@@ -535,7 +535,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                         throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be linked to the requesting restricted user");
                     }
 
-                    // Target assets must be in the same realm as requestor
+                    // Target assets must be in the same realm as requester
                     if (!assetStorageService.isRealmAssets(realm, Collections.singletonList(target.getId()))) {
                         throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be in the same realm as the requestor");
                     }

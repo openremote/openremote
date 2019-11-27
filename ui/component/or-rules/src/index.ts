@@ -155,8 +155,8 @@ export interface RulesetNode {
 }
 
 export interface RequestEventDetail<T> {
-    allow: boolean,
-    detail: T
+    allow: boolean;
+    detail: T;
 }
 
 export interface RuleView {
