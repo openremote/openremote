@@ -253,7 +253,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         this._cleanup();
     }
 
-
     shouldUpdate(_changedProperties: PropertyValues): boolean {
 
         let returnFalse = false;
@@ -367,8 +366,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     options: {
                         // maintainAspectRatio: false,
                         // REMOVED AS DOESN'T SIZE CORRECTLY responsive: true,
-                        maintainAspectRatio: false,
-                        onResize: () => this.dispatchEvent(new OrAttributeHistoryEvent('resize')),
+                        onResize:() => this.dispatchEvent(new OrAttributeHistoryEvent('resize')),
                         legend: {
                             display: false
                         },
@@ -427,6 +425,15 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         } else if (!this._tableTemplate) {
             this._tableTemplate = this._getTableTemplate();
         }
+
+        this.onCompleted().then(() => {
+            this.dispatchEvent(new OrAttributeHistoryEvent('rendered'));
+        });
+
+    }
+
+    async onCompleted() {
+        await this.updateComplete;
     }
 
     protected _cleanup() {
