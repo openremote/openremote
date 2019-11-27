@@ -159,14 +159,14 @@ class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
         if (asset) {
             attribute = attributeName ? Util.getAssetAttribute(asset, attributeName) : undefined;
-            attributes = Util.getAssetAttributes(asset).filter((attr) => !Util.hasMetaItem(attr, MetaItemType.READ_ONLY.urn!))
+            attributes = Util.getAssetAttributes(asset)
                 .map((attr) => {
                     const attrDescriptor = AssetModelUtil.getAssetAttributeDescriptor(assetDescriptor, attr.name);
                     return [attr.name!, Util.getAttributeLabel(attr, attrDescriptor)];
                 });
         } else {
             attributes = !assetDescriptor || !assetDescriptor.attributeDescriptors ? []
-                : assetDescriptor.attributeDescriptors.filter((ad) => !AssetModelUtil.hasMetaItem(ad, MetaItemType.READ_ONLY.urn!))
+                : assetDescriptor.attributeDescriptors
                     .map((ad) => [ad.attributeName!, Util.getAttributeLabel(undefined, ad)]);
         }
 
