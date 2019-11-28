@@ -3,6 +3,10 @@ FROM openremote/deployment:latest AS deployment
 ############ EDITS ABOVE THIS LINE SHOULD BE DONE IN ALL DOCKERFILES! ################
 FROM openjdk:8-jre
 
+# Add git commit label must be specified at build time using --build-arg GIT_COMMIT=dadadadadad
+ARG GIT_COMMIT=unknown
+LABEL git-commit=$GIT_COMMIT
+
 ENV JAVA_OPTS -Xmx1g
 
 ENV APP_DOCROOT /deployment/manager/app
