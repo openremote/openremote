@@ -8,6 +8,12 @@ version: '2.4'
 
 services:
 
+  # This service will only populate an empty volume on startup and then exit.
+  # If the volume already contains data, it exits immediately.
+  deployment:
+    build: '../deployment'
+    image: openremote/deployment:${DATE_TAG:-latest}
+
   # The frontend proxy manages SSL certificates, terminates SSL/TLS connections and forwards them to the backend.
   proxy:
 
@@ -348,3 +354,4 @@ services:
       context: '../manager/build/install/manager'
       dockerfile: swarm.Dockerfile
     image: openremote/manager:${DATE_TAG:-swarm}
+    
