@@ -353,5 +353,5 @@ services:
     build:
       context: '../manager/build/install/manager'
       dockerfile: swarm.Dockerfile
-    image: openremote/manager:${DATE_TAG:-swarm}
+    image: openremote/manager-swarm:${DATE_TAG:-latest}
     

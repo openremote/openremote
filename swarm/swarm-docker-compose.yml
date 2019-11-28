@@ -90,7 +90,7 @@ services:
   # configuration files which were baked into the managers image.
   manager:
 
-    image: openremote/manager:${DATE_TAG:-swarm}
+    image: openremote/manager-swarm:${DATE_TAG:-latest}
     networks:
       - private
 

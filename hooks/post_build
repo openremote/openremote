@@ -19,4 +19,4 @@ docker push openremote/keycloak:${CACHE_TAG:-latest}
 docker push openremote/proxy:${CACHE_TAG:-latest}
 docker push openremote/postgresql:${CACHE_TAG:-latest}
 docker push openremote/tileserver-gl:${CACHE_TAG:-latest}
-docker push openremote/manager:swarm
+docker push openremote/manager-swarm:${CACHE_TAG:-latest}

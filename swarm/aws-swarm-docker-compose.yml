@@ -40,7 +40,7 @@ services:
 
   manager:
 
-    image: openremote/manager:${DATE_TAG:-swarm}
+    image: openremote/manager-swarm:${DATE_TAG:-latest}
     networks:
       - private
       - public
