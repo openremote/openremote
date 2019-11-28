@@ -341,3 +341,10 @@ services:
   map:
     build: '../map'
     image: openremote/tileserver-gl:${DATE_TAG:-latest}
+
+  # Manager for Docker swarm (embedding openremote/deployment and reduced size to save money on public cloud)
+  swarm:
+    build:
+      context: '../manager/build/install/manager'
+      dockerfile: swarm.Dockerfile
+    image: openremote/manager:${DATE_TAG:-swarm}
