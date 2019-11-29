@@ -1,4 +1,16 @@
 afterEvaluate {
+
+    // Ensure main repo ui installDist tasks are performed before the custom projects
+    if (isCustomProject() && parent == rootProject) {
+        def customUi = findProject(':ui')
+        if (customUi != null) {
+            customUi.getTasksByName('installDist', true).forEach {
+                it.mustRunAfter(project(":openremote:ui").getTasksByName('installDist', true))
+            }
+        }
+    }
+
+    // Add dependencies on model and rest typescript generation
     it.getTasksByName('prepareUi', true).forEach {
         it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
     }
