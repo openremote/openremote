@@ -20,11 +20,15 @@
 package org.openremote.model.asset;
 
 import org.openremote.model.attribute.AttributeDescriptor;
+import org.openremote.model.attribute.AttributeDescriptorImpl;
+import org.openremote.model.value.Values;
 
 import java.util.Optional;
 
 import static org.openremote.model.Constants.ASSET_NAMESPACE;
 import static org.openremote.model.attribute.AttributeType.*;
+import static org.openremote.model.attribute.AttributeValueType.SOUND_DB;
+import static org.openremote.model.attribute.MetaItemType.*;
 
 /**
  * Asset type is an arbitrary string. It should be URI. This enum contains the well-known URIs for functionality we want
@@ -60,7 +64,11 @@ public enum AssetType implements AssetDescriptor {
 
     CONSOLE(ASSET_NAMESPACE + ":console", "monitor-cellphone", null),
 
-    MICROPHONE(ASSET_NAMESPACE + ":microphone", "microphone", null),
+    MICROPHONE(ASSET_NAMESPACE + ":microphone", "microphone", "5bbbd1",
+        new AttributeDescriptorImpl("soundLevel", SOUND_DB, Values.create(0),
+            LABEL.withInitialValue(Values.create("Sound level")),
+            READ_ONLY,
+            DESCRIPTION.withInitialValue(Values.create("Current sound level")))),
 
     ENVIRONMENT_SENSOR(ASSET_NAMESPACE + ":enviroment", "periodic-table-co2", null),
 
