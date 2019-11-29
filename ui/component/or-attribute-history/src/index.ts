@@ -153,21 +153,29 @@ const style = css`
     
     #controls {
         flex: 0;
+        display: flex;
+        flex-wrap: wrap;
         justify-content: space-between;
-        padding-bottom: 10px;
         margin: var(--internal-or-attribute-history-controls-margin);
+    }
+    
+    #controls > * {
+        margin: 0 auto 20px auto;
     }
     
     #ending-controls {
         float: right;
-        padding-right: 10px;
-        display: table;
+        max-width: 100%;
+        display: flex;
+        align-items: center;
     }
     
     #ending-controls > * {
-        display: table-cell;
-        vertical-align: middle;
         padding: 0 5px;
+    }
+    
+    #ending-date {
+        min-width: 0;
     }
     
     #chart-container {
@@ -299,7 +307,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     <or-input .type="${InputType.SELECT}" ?disabled="${disabled}" .label="${i18next.t("period")}" @or-input-changed="${(evt: OrInputChangedEvent) => this.interval = evt.detail.value}" .value="${this.interval}" .options="${this._getIntervalOptions()}"></or-input>
                     <div id="ending-controls">
                         <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._updateTimestamp(this.timestamp!, false)}"></or-input>
-                        <or-input .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.timestamp}" @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
+                        <or-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.timestamp}" @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
                         <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._updateTimestamp(this.timestamp!, true)}"></or-input>
                     </div>
                 </div>
@@ -314,9 +322,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             <canvas id="chart"></canvas>
                         </div>
                     ` : html`
-                        <or-panel id="table-container">
+                        <div id="table-container">
                             ${this._tableTemplate || ``}
-                        </or-panel>
+                        </div>
                     `}                
             </div>
         `;
@@ -325,7 +333,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     updated(changedProperties: PropertyValues) {
         super.updated(changedProperties);
 
-        if (!this._type) {
+        if (!this._type || !this._data) {
             return;
         }
 
@@ -422,8 +430,10 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     this._chart.update();
                 }
             }
-        } else if (!this._tableTemplate) {
-            this._tableTemplate = this._getTableTemplate();
+        } else {
+            if (!this._tableTemplate || changedProperties.has("_data")) {
+                this._tableTemplate = this._getTableTemplate();
+            }
         }
 
         this.onCompleted().then(() => {
@@ -437,6 +447,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     }
 
     protected _cleanup() {
+        this._tableTemplate = undefined;
+
         if (this._chart) {
             this._chart.destroy();
             this._chart = undefined;

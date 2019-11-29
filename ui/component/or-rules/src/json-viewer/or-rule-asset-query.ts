@@ -165,6 +165,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         if (asset) {
             attribute = attributeName ? Util.getAssetAttribute(asset, attributeName) : undefined;
             attributes = Util.getAssetAttributes(asset)
+                .filter((attr) => Util.hasMetaItem(attr, MetaItemType.RULE_STATE.urn!))
                 .map((attr) => {
                     const attrDescriptor = AssetModelUtil.getAssetAttributeDescriptor(assetDescriptor, attr.name);
                     return [attr.name!, Util.getAttributeLabel(attr, attrDescriptor)];
@@ -466,7 +467,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             case "value-empty":
                 return AssetQueryOperator.VALUE_EMPTY;
             case "value-not-empty":
-                return AssetQueryOperator.VALUE_NOT_EMPTY;
+                return this.condition.reset ? AssetQueryOperator.VALUE_CHANGES : AssetQueryOperator.VALUE_NOT_EMPTY;
         }
     }
 
@@ -743,7 +744,6 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 }
             ],
             select: {
-                excludeAttributeMeta: true,
                 excludeAttributeTimestamp: true,
                 excludeAttributeValue: true,
                 excludeParentInfo: true,

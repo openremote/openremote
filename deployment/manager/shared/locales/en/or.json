@@ -107,5 +107,7 @@
   "history": "History",
   "attributes": "Attributes",
   "info": "Info",
-  "notSupported": "Not supported"
+  "notSupported": "Not supported",
+  "area": "Area",
+  "timestamp": "Timestamp"
 }

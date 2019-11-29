@@ -101,6 +101,10 @@ const style = css`
     #wrapper > label {
         margin-left: 10px;
     }
+    
+    #component {
+        max-width: 100%;
+    }
        
     .or-input--rounded {
         border-radius: 50% !important;

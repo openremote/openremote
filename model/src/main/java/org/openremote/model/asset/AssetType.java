@@ -124,7 +124,7 @@ public enum AssetType implements AssetDescriptor {
 
     @Override
     public String getColor() {
-        return null;
+        return color;
     }
 
     @Override

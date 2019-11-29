@@ -103,6 +103,7 @@ export const style = css`
         background-color: var(--internal-or-asset-viewer-panel-color);     
         border: 1px solid #e5e5e5;
         border-radius: 5px;
+        max-width: 100%;
     }
     
     .panel-content-wrapper {
@@ -111,6 +112,10 @@ export const style = css`
     
     #location-panel .panel-content {
         height: 100%;
+    }
+    
+    #history-panel .panel-content {
+        position: relative;
     }
     
     .panel-content {
@@ -193,7 +198,7 @@ export const style = css`
         }
         
         #container { 
-            grid-template-columns: 1fr!important;
+            grid-template-columns: 100% !important;
             padding: 20px 0;
         }
         

@@ -122,8 +122,11 @@ export interface RulesConfig {
 export interface RulesDescriptorSection {
     includeAssets?: string[];
     excludeAssets?: string[];
-    assets?: { [assetType: string]: RulesConfigAsset };
     attributeDescriptors?: {[attributeName: string]: RulesConfigAttribute };
+    /**
+     * Asset type specific config; '*' key will be used as a default fallback if no asset type specific entry exists
+     */
+    assets?: { [assetType: string]: RulesConfigAsset };
 }
 
 export interface RulesConfigAsset {
@@ -131,6 +134,7 @@ export interface RulesConfigAsset {
     excludeAttributes?: string[];
     name?: string;
     icon?: string;
+    color?: string;
     attributeDescriptors?: {[attributeName: string]: RulesConfigAttribute };
 }
 
@@ -167,7 +171,7 @@ export interface RuleView {
     config?: RulesConfig;
 }
 
-function getAssetDescriptorFromSection(assetTpe: string, config: RulesConfig | undefined, useActionConfig: boolean) {
+function getAssetDescriptorFromSection(assetType: string, config: RulesConfig | undefined, useActionConfig: boolean) {
     if (!config || !config.descriptors) {
         return;
     }
@@ -175,12 +179,12 @@ function getAssetDescriptorFromSection(assetTpe: string, config: RulesConfig | u
     const section = useActionConfig ? config.descriptors.action : config.descriptors.when;
     const allSection = config.descriptors.all;
 
-    const descriptor = section && section.assets ? section.assets[assetTpe] : undefined;
+    const descriptor = section && section.assets ? section.assets[assetType] ? section.assets[assetType] : section.assets["*"] : undefined;
     if (descriptor) {
         return descriptor;
     }
 
-    return allSection && allSection.assets ? allSection.assets[assetTpe] : undefined;
+    return allSection && allSection.assets ? allSection.assets[assetType] ? allSection.assets[assetType] : allSection.assets["*"] : undefined;
 }
 
 export function getDescriptorValueType(descriptor?: AttributeDescriptor) {
@@ -253,6 +257,7 @@ export function getAssetDescriptors(config: RulesConfig | undefined, useActionCo
             name: ad.name,
             type: ad.type,
             icon: ad.icon,
+            color: ad.color,
             attributeDescriptors: ad.attributeDescriptors ? [...ad.attributeDescriptors] : undefined
         };
 
@@ -261,6 +266,9 @@ export function getAssetDescriptors(config: RulesConfig | undefined, useActionCo
         }
         if (configDescriptor.name) {
             modifiedDescriptor.name = configDescriptor.name;
+        }
+        if (configDescriptor.color) {
+            modifiedDescriptor.color = configDescriptor.color;
         }
 
         // Remove any excluded attributes
