@@ -96,10 +96,10 @@ services:
       IDENTITY_NETWORK_HOST: ${IDENTITY_NETWORK_HOST:-localhost}
 
       # Set if SSL is enabled on the frontend reverse proxy and all internal proxies should assume https
-      IDENTITY_NETWORK_SECURE: 'true'
+      IDENTITY_NETWORK_SECURE: 'false'
 
       # The public port of this OpenRemote installation.
-      IDENTITY_NETWORK_WEBSERVER_PORT: 443
+      IDENTITY_NETWORK_WEBSERVER_PORT: 8080
 
       # The service-internal JDBC connection URL for the database service.
       DATABASE_CONNECTION_URL: jdbc:postgresql://postgresql/openremote
