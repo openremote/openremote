@@ -55,7 +55,7 @@ const style = css`
     }
     
     or-panel {
-        margin: 20px;
+        margin: 10px 10px 20px 10px;
         position: relative;
     }
     
@@ -67,6 +67,14 @@ const style = css`
         height: 24px;
         transform: translate(50%, -50%);
     }
+
+    .rule-condition:hover .button-clear {
+        visibility: visible;
+    }
+
+    or-panel:hover .remove-button.button-clear {
+        visibility: visible;
+    }
     
     .add-button-wrapper {
         display: flex;
@@ -74,7 +82,7 @@ const style = css`
     }
     
     .add-button-wrapper > * {
-        margin: 0 5px;
+        margin-right: 6px;
     }
 `;
 
@@ -102,7 +110,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
 
         const isTopLevel = !parentGroup;
         const showAddCondition = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddCondition !== true);
-        const showRemoveCondition = !this.readonly && group.items && group.items.length > 1;
+        const showRemoveCondition = !this.readonly;
         const showRemoveGroup = !this.readonly;
 
         let wrapper: (content: TemplateResult, item: LogicGroup<RuleCondition> | RuleCondition, parent: LogicGroup<RuleCondition>, isGroup: boolean, isFirst: boolean) => TemplateResult;
@@ -171,7 +179,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
             addTemplate = html`
                 <span class="add-button-wrapper">
                     ${getContentWithMenuTemplate(
-                        html`<or-input type="${InputType.BUTTON}" icon="plus"></or-input>`,
+                        html`<or-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,
                         getWhenTypesMenu(this.config, this.assetDescriptors),
                         undefined,
                         (value: string) => this.addCondition(group, value))}
@@ -226,11 +234,11 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                 <or-panel>
                     <span class="add-button-wrapper">
                         ${getContentWithMenuTemplate(
-                            html`<or-input type="${InputType.BUTTON}" icon="plus"></or-input>`,
+                            html`<or-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,
                             getWhenTypesMenu(this.config, this.assetDescriptors),
                             undefined,
                             (value: string) => this.addGroup(this.rule!.when!, value))}
-                        <strong>${i18next.t(this.rule.when.groups && this.rule.when.groups.length === 0 ? "when": "orWhen")}...</strong>
+                        <strong>${i18next.t(this.rule.when.groups == undefined || (this.rule.when.groups && this.rule.when.groups.length === 0) ? "when" : "orWhen")}...</strong>
                     </span>
                 </or-panel>
             `}

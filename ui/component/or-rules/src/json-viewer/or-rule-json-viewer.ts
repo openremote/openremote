@@ -54,6 +54,16 @@ const style = css`
     :host > * {
         flex: 1;
     }
+
+    @media screen and (max-width: 1400px) {
+        :host > * {
+            flex-grow: 0;
+        }
+
+        :host {
+            flex-direction: column;
+        }
+    }
 `;
 
 @customElement("or-rule-json-viewer")

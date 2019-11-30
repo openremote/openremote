@@ -22,12 +22,12 @@ export const style = css`
         display: block;
         height: 100%;
         width: 100%;
+        overflow-y: auto;
     }
 
     .wrapper {
         display: flex;
         flex-direction: column;
-        justify-content: center;
         align-items: center;
         height: 100%;
     }
@@ -45,9 +45,7 @@ export const style = css`
         height: var(--internal-or-rules-header-height);
         z-index: 1;
         padding: 0 20px;
-        background-color: var(--internal-or-rules-header-background-color);
         --or-icon-fill: var(--internal-or-rules-panel-color);
-        box-shadow: ${unsafeCSS(DefaultBoxShadow)};
     }
     
     #rule-header-controls {
@@ -69,9 +67,11 @@ export const style = css`
         margin-right: 10px;
     }
     
-    #rule-viewer {
+    #rule-view {
         flex-grow: 1;
         background-color: var(--internal-or-rules-background-color);
+        padding: 0px 10px;
+        width: calc(100% - 20px);
     }
 `;
 
@@ -137,7 +137,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     protected render(): TemplateResult | void {
 
         if (!this.ruleset) {
-            return html`<div class="wrapper"><or-translate value="noRuleSelected"></or-translate></div>`;
+            return html`<div class="wrapper" style="justify-content: center"><or-translate value="noRuleSelected"></or-translate></div>`;
         }
 
         let viewer: TemplateResult | string = ``;
@@ -148,7 +148,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         } else {
             switch (this.ruleset.lang!) {
                 case RulesetLang.JSON:
-                    viewer = html`<or-rule-json-viewer id="rule-viewer" .ruleset="${this.ruleset}" .config="${this.config}" .readonly="${this.readonly}"></or-rule-json-viewer>`;
+                    viewer = html`<or-rule-json-viewer id="rule-view" .ruleset="${this.ruleset}" .config="${this.config}" .readonly="${this.readonly}"></or-rule-json-viewer>`;
                     break;
                 case RulesetLang.GROOVY:
                 case RulesetLang.JAVASCRIPT:
@@ -162,8 +162,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         return html`
             <div class="wrapper">            
                 <div id="rule-header">
-                    <or-input id="rule-name" .type="${InputType.TEXT}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" fullwidth required minlength="3" maxlength="255" @or-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-input>
-                    
+                    <or-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" required minlength="3" maxlength="255" @or-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-input>
                     <div id="rule-header-controls">
                         <span id="active-wrapper">
                             <or-translate value="active"></or-translate>

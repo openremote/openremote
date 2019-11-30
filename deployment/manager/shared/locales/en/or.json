@@ -108,6 +108,12 @@
   "attributes": "Attributes",
   "info": "Info",
   "notSupported": "Not supported",
+  "ruleName": "Rule name",
+  "value": "Value",
+  "and": "and",
+  "number": "Number",
+  "string": "Text",
+  "operator": "Operator",
   "area": "Area",
   "timestamp": "Timestamp"
 }

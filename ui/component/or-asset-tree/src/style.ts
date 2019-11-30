@@ -103,7 +103,7 @@ export const style = css`
     #list {
         margin: 0;
         color: var(--internal-or-asset-tree-text-color);
-        padding: 5px 0;
+        padding: 0;
     }
     
     #list, ol {

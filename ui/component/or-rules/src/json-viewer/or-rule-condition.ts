@@ -178,7 +178,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
             typeTemplate = html`
                 <div id="type" style="color: #${buttonColor}">
                     ${getContentWithMenuTemplate(
-                        html`<or-input class="menu-button" type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
+                        html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
                         getWhenTypesMenu(this.config, this.assetDescriptors),
                         type,
                         (value: string) => this.type = value)}

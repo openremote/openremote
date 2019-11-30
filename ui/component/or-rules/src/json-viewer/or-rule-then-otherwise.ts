@@ -83,20 +83,26 @@ const style = css`
         align-items: center;
     }
     
-    .rule-action-action {
+    .rule-action-wrapper {
         flex-grow: 1;
-    }
-    
-    .rule-action-action > * {
-        margin-right: 20px;
+        display: flex;
+        align-items: center;
     }
     
     .rule-action > button {
         flex-grow: 0;
     }
+
+    .rule-action:hover .button-clear {
+        visibility: visible;
+    }
+
+    or-panel:hover .remove-button.button-clear {
+        visibility: visible;
+    }
             
     or-panel {
-        margin: 20px;
+        margin: 10px 10px 20px 10px;
     }
     
     #type-selector {
@@ -109,7 +115,7 @@ const style = css`
     }
     
     .add-button-wrapper > * {
-        margin: 0 5px;
+        margin-right: 6px;
     }
 `;
 
@@ -170,9 +176,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             }
 
             typeTemplate = html`
-                <div style="color: #${buttonColor}">
+                <div style="color: #${buttonColor}; margin-right: 6px;">
                     ${getContentWithMenuTemplate(
-                        html`<or-input class="menu-button" type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
+                        html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
                         getActionTypesMenu(this.config, this.assetDescriptors),
                         action.action,
                         (value: string) => this.setActionType(actions, action, value))}
@@ -196,11 +202,13 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
         return html`
             <div class="rule-action">
-                ${typeTemplate}
-                ${template}
-                ${thenAllowRemove ? html`
-                    <button class="button-clear" @click="${() => this.removeAction(action)}"><or-icon icon="close-circle"></or-icon></input>
-                ` : ``}
+                <div class="rule-action-wrapper">
+                    ${typeTemplate}
+                    ${template}
+                </div>
+                    ${thenAllowRemove ? html`
+                        <button class="button-clear" @click="${() => this.removeAction(action)}"><or-icon icon="close-circle"></or-icon></input>
+                    ` : ``}
             </div>
         `;
     }
@@ -215,7 +223,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     ${this.thenAllowAdd ? html`
                         <span class="add-button-wrapper">
                             ${getContentWithMenuTemplate(
-                                html`<or-input class="menu-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,
+                                html`<or-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,
                                 getActionTypesMenu(this.config, this.assetDescriptors),
                                 undefined,
                                 (value: string) => this.addAction(value))}

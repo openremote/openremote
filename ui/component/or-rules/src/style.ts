@@ -1,4 +1,5 @@
 import {css} from "lit-element";
+import {DefaultColor5} from "@openremote/core";
 
 // language=CSS
 export const invalidStyle = css`
@@ -11,12 +12,17 @@ export const invalidStyle = css`
 export const buttonStyle = css`
     .button-clear {
         background: none;
-        color: var(--internal-or-rules-button-color);
-        --or-icon-fill: var(--internal-or-rules-button-color);
+        color: ${unsafeCSS(DefaultColor2)};
+        --or-icon-fill: ${unsafeCSS(DefaultColor2)};
+        visibility: hidden;
+        display: inline-block;
         border: none;
         padding: 0;
-        display: inline-block;
         cursor: pointer;
+    }
+
+    .button-clear:hover {
+        --or-icon-fill: var(--internal-or-rules-button-color);
     }
 
     .button-clear:focus {
@@ -25,6 +31,10 @@ export const buttonStyle = css`
 
     .button-clear.hidden {
         visibility: hidden;
+    }
+
+    .plus-button {
+        --or-icon-fill: var(--internal-or-rules-button-color);
     }
     
     .add-button {

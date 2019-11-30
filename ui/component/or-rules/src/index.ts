@@ -519,7 +519,7 @@ export const style = css`
 @customElement("or-rules")
 export class OrRules extends translate(i18next)(LitElement) {
 
-    public static DEFAULT_RULESET_NAME = "New rule";
+    public static DEFAULT_RULESET_NAME = "";
 
     static get styles() {
         return [

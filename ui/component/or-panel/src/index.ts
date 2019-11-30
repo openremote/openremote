@@ -12,8 +12,10 @@ const style = css`
     :host {
         --internal-or-panel-background-color: var(--or-panel-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
         --internal-or-panel-padding: var(--or-panel-padding, 10px);
-        --internal-or-panel-heading-margin: var(--or-panel-heading-margin, 0 0 5px 0);
-                
+        --internal-or-panel-heading-margin: var(--or-panel-heading-margin, 0 0 5px 7px);
+        --internal-or-panel-border: var(--or-panel-border, 1px solid #e5e5e5);
+        --internal-or-panel-border-radius: var(--or-panel-border-radius, 5px);
+              
         display: block;
     }
 
@@ -29,10 +31,13 @@ const style = css`
     #panel {
         padding: var(--internal-or-panel-padding);
         background-color: var(--internal-or-panel-background-color);
+        border: var(--internal-or-panel-border);
+        border-radius: var(--internal-or-panel-border-radius);
     }
     
     strong {
         margin: var(--internal-or-panel-heading-margin);
+        font-size: 16px;
     }
 `;
 
@@ -76,12 +81,9 @@ export class OrPanel extends LitElement {
 
     render() {
 
-        let zLevel = this.zLevel || 1;
-        zLevel = Math.min(24, Math.max(0, zLevel));
-
         return html`
             <div id="wrapper">
-                <div id="panel" class="mdc-elevation--z${zLevel}">
+                <div id="panel">
                     ${this.heading ? html`<strong>${this.heading}</strong>` : ``}
                     <slot></slot>
                 </div>

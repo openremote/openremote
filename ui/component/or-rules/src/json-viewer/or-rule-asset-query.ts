@@ -22,7 +22,6 @@ import {
     AssetTypeAttributeName,
     getAssetIdsFromQuery,
     getAssetTypeFromQuery,
-    getDescriptorValueType,
     RulesConfig
 } from "../index";
 import {OrSelectChangedEvent} from "@openremote/or-select";
@@ -50,13 +49,13 @@ const style = css`
         flex-direction: row;
     }
     
+    .attribute > * {
+        flex-grow: 0;
+    }
+
     .attribute, .attribute-editor {
         display: flex;
         flex-grow: 1;
-    }
-    
-    .attribute > * {
-        flex-grow: 0;
     }
     
     #idSelect {
@@ -180,9 +179,9 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
         return html`
             <div class="attribute-editor">
-                <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributes}" .value="${attributeName}"></or-input>
+                <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributes}" .value="${attributeName}" .label="${i18next.t("attribute")}"></or-input>
                 
-                ${attributeName ? html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${operators}" .value="${operator}"></or-input>` : ``}
+                ${attributeName ? html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${operators}" .value="${i18next.t("operator")}" .label="${i18next.t("Operator")}"></or-input>` : ``}
                 
                 ${attributePredicate ? this.attributePredicateValueEditorTemplate(assetDescriptor, attributePredicate) : ``}
             </div>
@@ -204,22 +203,22 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
         switch (valuePredicate.predicateType) {
             case "string":
-                return getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, "")(value);
+                return getAttributeValueTemplate(assetType, { name: attributeName! }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("string"))(value);
             case "boolean":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "datetime":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "number":
                 if (valuePredicate.operator === AQO.BETWEEN) {
-                    const inputTemplate1 = getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, "");
-                    const inputTemplate2 = getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "rangeValue", v), this.config ? this.config.inputProvider : undefined, undefined, "");
+                    const inputTemplate1 = getAttributeValueTemplate(assetType, { name: attributeName! }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("between"));
+                    const inputTemplate2 = getAttributeValueTemplate(assetType, { name: attributeName! }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "rangeValue", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("and"));
                     return html`
                         ${inputTemplate1(value)}
                         <span style="display: inline-flex; align-items: center;">&</span>
                         ${inputTemplate2(valuePredicate.rangeValue)}
                     `;
                 }
-                return getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, "")(value);
+                return getAttributeValueTemplate(assetType, { name: attributeName! }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("number"))(value);
             case "string-array":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "radial":
@@ -299,7 +298,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         return html`
             <div class="attribute-group">
             
-                <or-input id="idSelect" type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" ?readonly="${this.readonly}" .options="${idOptions}" .value="${idValue}"></or-input>
+                <or-input id="idSelect" type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" ?readonly="${this.readonly}" .options="${idOptions}" .value="${idValue}" .label="${i18next.t("asset")}"></or-input>
             
                 ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate) => {
                     

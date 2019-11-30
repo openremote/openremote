@@ -92,6 +92,10 @@ const style = css`
         --mdc-theme-on-primary: var(--internal-or-input-text-color);
         --mdc-theme-secondary: var(--internal-or-input-color);
     }
+
+    :host([type=select]) {
+        height: 56px;
+    }
      
     #wrapper {
         display: flex;
@@ -142,7 +146,7 @@ const style = css`
     .mdc-select__dropdown-icon {
         background: none;
     }
-    
+
     .mdc-select--focused .mdc-select__dropdown-icon {
         --or-icon-fill: var(--internal-or-input-color);
     }
