@@ -1,4 +1,4 @@
-import {DefaultColor2, DefaultColor5} from "@openremote/core";
+import {DefaultColor5} from "@openremote/core";
 import {css, unsafeCSS} from "lit-element";
 
 // language=CSS
@@ -12,8 +12,8 @@ export const invalidStyle = css`
 export const buttonStyle = css`
     .button-clear {
         background: none;
-        color: ${unsafeCSS(DefaultColor2)};
-        --or-icon-fill: ${unsafeCSS(DefaultColor2)};
+        color: ${unsafeCSS(DefaultColor5)};
+        --or-icon-fill: ${unsafeCSS(DefaultColor5)};
         visibility: hidden;
         display: inline-block;
         border: none;
