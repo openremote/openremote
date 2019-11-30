@@ -45,7 +45,8 @@ services:
     networks:
       - public
       - private
-
+    depends_on:
+      - manager
     environment:
       TZ: Europe/Amsterdam
       DOMAINNAME: ${DOMAINNAME:-localhost}
@@ -85,6 +86,18 @@ services:
       # Override the haproxy.cfg with custom file
       # -${MY_PROXY_CONFIG_FILE}:/etc/haproxy/haproxy.cfg
 
+    deploy:
+      replicas: 1
+      restart_policy:
+        # Have a chance to look inside log before restarts to prevent hitting
+        # letsencrypt limit of nuber issued certificates per week, which is 5
+        delay: 10s
+        window: 30s
+      # Configure uninterupted updates with rollback
+      update_config:
+        failure_action: rollback
+        order: start-first
+
   # This configuration uses the manager's deployment-specific data such as map tiles,
   # console application static resources (HTML, JS, CSS), extensions, and other
   # configuration files which were baked into the managers image.
@@ -93,7 +106,8 @@ services:
     image: openremote/manager-swarm:${DATE_TAG:-latest}
     networks:
       - private
-
+    depends_on:
+      - keycloak
     environment:
 
       # It is important that all services have the same timezone and are time synchronized.
@@ -180,8 +194,12 @@ services:
                   -XX:NativeMemoryTracking=summary
                   -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof'
 
-    ports:
-      - "8080:8080"
+    deploy:
+      replicas: 1
+      # Configure uninterupted updates with rollback
+      update_config:
+        failure_action: rollback
+        order: start-first
 
   keycloak:
 
@@ -190,6 +208,8 @@ services:
     networks:
       - public
       - private
+    depends_on:
+      - postgresql
       
     environment:
 
@@ -229,6 +249,13 @@ services:
     ports:
       - "8081:8080"
 
+    deploy:
+      replicas: 1
+      # Configure uninterupted updates with rollback
+      update_config:
+        failure_action: rollback
+        order: start-first
+
   # This configuration stores postgresql data in a Docker volume. You manage this volume
   # independently from your stack with with 'docker volume ls', 'docker volume rm', etc.
   # Alternatively, you can store postgresql data in a directory on your host.
@@ -257,3 +284,10 @@ services:
 
     volumes:
       - postgresql-data:/deployment
+
+    deploy:
+      replicas: 1
+      # Configure uninterupted updates with rollback
+      update_config:
+        failure_action: rollback
+        order: start-first

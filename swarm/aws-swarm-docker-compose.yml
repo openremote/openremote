@@ -44,6 +44,8 @@ services:
     networks:
       - private
       - public
+    depends_on:
+      - keycloak
 
     environment:
 
@@ -132,6 +134,13 @@ services:
     ports:
       - "8080:8080"
 
+    deploy:
+      replicas: 1
+      # Configure uninterupted updates with rollback
+      update_config:
+        failure_action: rollback
+        order: start-first
+
   keycloak:
 
     # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
@@ -139,6 +148,8 @@ services:
     networks:
       - public
       - private
+    depends_on:
+      - postgresql
       
     environment:
 
@@ -178,6 +189,13 @@ services:
     ports:
       - "8081:8080"
 
+    deploy:
+      replicas: 1
+      # Configure uninterupted updates with rollback
+      update_config:
+        failure_action: rollback
+        order: start-first
+
   # This configuration stores postgresql data in a Docker volume. You manage this volume
   # independently from your stack with with 'docker volume ls', 'docker volume rm', etc.
   # Alternatively, you can store postgresql data in a directory on your host.
@@ -206,3 +224,10 @@ services:
 
     volumes:
       - postgresql-data:/deployment
+
+    deploy:
+      replicas: 1
+      # Configure uninterupted updates with rollback
+      update_config:
+        failure_action: rollback
+        order: start-first
