@@ -130,12 +130,12 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
             }
 
             inputTemplate = getAttributeValueTemplate(assetType, attribute, this.readonly || false, false, (v: any) => this.setActionAttributeValue(v), this.config ? this.config.inputProvider : undefined, undefined,
-                (attribute.type && (attribute.type.valueType == ValueType.BOOLEAN || attribute.type == AttributeValueType.BOOLEAN.name || attribute.type == AttributeValueType.SWITCH_TOGGLE.name)) ? `` : i18next.t("value"));
+                (attribute.type && (attribute.type.valueType === ValueType.BOOLEAN || attribute.type === AttributeValueType.BOOLEAN.name || attribute.type === AttributeValueType.SWITCH_TOGGLE.name)) ? "" : i18next.t("value"));
         }
 
         return html`
-            <or-input id="matchSelect" .label="${i18next.t("asset")}" type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" ?readonly="${this.readonly}" .options="${idOptions}" .value="${idValue}"></or-input>
-            <or-input id="attributeSelect" .label="${i18next.t("attribute")}" type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" ?readonly="${this.readonly}" .options="${attributes}" .value="${this.action.attributeName}"></or-input>
+            <or-input id="matchSelect" .label="${i18next.t("asset")}" .type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" ?readonly="${this.readonly}" .options="${idOptions}" .value="${idValue}"></or-input>
+            <or-input id="attributeSelect" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" ?readonly="${this.readonly}" .options="${attributes}" .value="${this.action.attributeName}"></or-input>
             ${inputTemplate ? inputTemplate(this.action.value) : ``}
         `;
     }

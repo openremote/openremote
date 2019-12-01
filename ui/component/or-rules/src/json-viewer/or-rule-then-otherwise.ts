@@ -331,7 +331,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             action: "write-attribute"
         };
         let template: RuleActionUnion | undefined;
-        let templateConfig = this.config && this.config.json ? this.config.json : undefined;
+        const templateConfig = this.config && this.config.json ? this.config.json : undefined;
 
         if (!otherwise) {
             if (!this.rule.then) {

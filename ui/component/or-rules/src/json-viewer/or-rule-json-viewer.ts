@@ -101,7 +101,11 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
 
         if (!ruleset.rules) {
             // New ruleset so start a new rule
-            this._rule = {};
+            if (this.config && this.config.json && this.config.json.rule) {
+                this._rule = JSON.parse(JSON.stringify(this.config.json.rule)) as JsonRule;
+            } else {
+                this._rule = {};
+            }
         } else {
             try {
                 const rules = JSON.parse(ruleset.rules) as JsonRulesetDefinition;

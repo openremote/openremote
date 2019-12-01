@@ -44,7 +44,7 @@ export const style = css`
         min-height: var(--internal-or-rules-header-height);
         height: var(--internal-or-rules-header-height);
         z-index: 1;
-        padding: 0 20px;
+        padding: 10px 20px 0 20px;
         --or-icon-fill: var(--internal-or-rules-panel-color);
     }
     
@@ -105,7 +105,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     @property({attribute: false})
     protected _supported = true;
 
-    @query("#rule-viewer")
+    @query("#rule-view")
     public view?: RuleView;
 
     protected _focusName = false;

@@ -181,7 +181,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             <div class="attribute-editor">
                 <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributes}" .value="${attributeName}" .label="${i18next.t("attribute")}"></or-input>
                 
-                ${attributeName ? html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${operators}" .value="${i18next.t("operator")}" .label="${i18next.t("Operator")}"></or-input>` : ``}
+                ${attributeName ? html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${operators}" .value="${operator}" .label="${i18next.t("operator")}"></or-input>` : ``}
                 
                 ${attributePredicate ? this.attributePredicateValueEditorTemplate(assetDescriptor, attributePredicate) : ``}
             </div>
