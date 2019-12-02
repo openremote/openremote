@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
+import jsinterop.base.Any;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.agent.protocol.udp.AbstractUdpClient;
@@ -14,8 +15,7 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.*;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
+import org.openremote.model.value.*;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
@@ -211,6 +212,23 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
         AssetAttribute attribute = getLinkedAttribute(event.getAttributeRef());
         AttributeExecuteStatus status = null;
+
+        //TODO FIX THAT IT DOESNT UPDATE PARAMETER BUT ACTUAL ATTRIBUTE
+        Optional<ArtNetPacket> artNetPacket = ArtNetPacket.fromValue(event.getValue().get());
+
+        attribute.getObjectValue().getObject("value").get().remove("universe");
+        attribute.getObjectValue().getObject("value").get().remove("dim");
+        attribute.getObjectValue().getObject("value").get().remove("r");
+        attribute.getObjectValue().getObject("value").get().remove("g");
+        attribute.getObjectValue().getObject("value").get().remove("b");
+        attribute.getObjectValue().getObject("value").get().remove("w");
+
+        attribute.getObjectValue().getObject("value").get().put("universe", artNetPacket.get().universe);
+        attribute.getObjectValue().getObject("value").get().put("dim", artNetPacket.get().dim);
+        attribute.getObjectValue().getObject("value").get().put("r", artNetPacket.get().r);
+        attribute.getObjectValue().getObject("value").get().put("g", artNetPacket.get().g);
+        attribute.getObjectValue().getObject("value").get().put("b", artNetPacket.get().b);
+        attribute.getObjectValue().getObject("value").get().put("w", artNetPacket.get().w);
 
         if (attribute.isExecutable()) {
             status = event.getValue()
