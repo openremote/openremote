@@ -272,6 +272,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         thing = assetStorageService.merge(thing);
         thingId = thing.getId();
 
+        //Add ArtNet agent/assets
+        ArtNetDemoSetup artNetDemoSetup = new ArtNetDemoSetup();
+        artNetDemoSetup.setupTreeStructure(masterTenant, assetStorageService, agentProtocolConfigName);
+
         // Some sample datapoints
         final Asset finalThing = assetStorageService.find(thingId, true);
         ZonedDateTime now = LocalDateTime.now().atZone(ZoneId.systemDefault());

@@ -204,7 +204,6 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     @Override
     protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
         AttributeInfo info = attributeInfoMap.get(event.getAttributeRef());
-
         if (info == null || info.sendConsumer == null) {
             LOG.info("Request to write unlinked attribute or attribute that doesn't support writes so ignoring: " + event);
             return;

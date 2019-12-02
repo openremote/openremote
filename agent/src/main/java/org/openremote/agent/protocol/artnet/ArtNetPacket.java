@@ -15,16 +15,26 @@ import java.util.stream.Collectors;
 public class ArtNetPacket {
     protected int universe;
     protected double dim;
-    protected int[] values;
+    protected int r;
+    protected int g;
+    protected int b;
+    protected int w;
     protected static byte[] prefix = { 65, 114, 116, 45, 78, 101, 116, 0, 0, 80, 0, 14 };
 
     @JsonCreator
     public ArtNetPacket(@JsonProperty("universe") int universe,
-                       @JsonProperty("dim") double dim,
-                       @JsonProperty("values") int[] values) {
+                        @JsonProperty("dim") double dim,
+                        @JsonProperty("r") int r,
+                        @JsonProperty("g") int g,
+                        @JsonProperty("b") int b,
+                        @JsonProperty("w") int w) {
         this.universe = universe;
         this.dim = dim;
-        this.values = values;
+        this.r = r;
+        this.g = g;
+        this.b = b;
+        this.w = w;
+
     }
 
     public static Optional<ArtNetPacket> fromValue(Value value) {
@@ -38,18 +48,18 @@ public class ArtNetPacket {
                     .mapToInt(num -> num.asAny().asByte())
                     .toArray();
 */
-            ArrayValue _values = obj.getArray("values").get();
-            int[] values = new int[_values.length()];
-            for (int i = 0; i < values.length; i++) {
-                values[i] = _values.getNumber(i).get().intValue();
-            }
-            return Optional.of(new ArtNetPacket(_universe, _dim,  values));
+            int _r = obj.getNumber("r").orElse(0.).intValue();
+            int _g = obj.getNumber("g").orElse(0.).intValue();
+            int _b = obj.getNumber("b").orElse(0.).intValue();
+            int _w = obj.getNumber("w").orElse(0.).intValue();
+            return Optional.of(new ArtNetPacket(_universe, _dim,  _r, _g, _b, _w));
         });
 
         return  a;
     }
 
     public ByteBuf toBuffer(ByteBuf buf) {
+        int[] values = { g, r, b, w };
         buf.writeBytes(prefix);
         buf.writeByte(0); // Sequence
         buf.writeByte(0); // Physical
