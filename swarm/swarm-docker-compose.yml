@@ -96,7 +96,6 @@ services:
       # Configure uninterupted updates with rollback
       update_config:
         failure_action: rollback
-        order: start-first
 
   # This configuration uses the manager's deployment-specific data such as map tiles,
   # console application static resources (HTML, JS, CSS), extensions, and other
@@ -199,7 +198,6 @@ services:
       # Configure uninterupted updates with rollback
       update_config:
         failure_action: rollback
-        order: start-first
 
   keycloak:
 
@@ -254,7 +252,6 @@ services:
       # Configure uninterupted updates with rollback
       update_config:
         failure_action: rollback
-        order: start-first
 
   # This configuration stores postgresql data in a Docker volume. You manage this volume
   # independently from your stack with with 'docker volume ls', 'docker volume rm', etc.
@@ -290,4 +287,4 @@ services:
       # Configure uninterupted updates with rollback
       update_config:
         failure_action: rollback
-        order: start-first
+
