@@ -839,7 +839,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         Asset assetArea3 = new Asset("Area 3", AREA, smartCity)
             .setAttributes(
-                new AssetAttribute(AttributeType.LOCATION, AREA_2_LOCATION.toValue()),
+                new AssetAttribute(AttributeType.LOCATION, AREA_3_LOCATION.toValue()),
                 new AssetAttribute(AttributeType.GEO_POSTAL_CODE, Values.create(5617)),
                 new AssetAttribute(AttributeType.GEO_CITY, Values.create("Eindhoven")),
                 new AssetAttribute(AttributeType.GEO_COUNTRY, Values.create("Netherlands"))
