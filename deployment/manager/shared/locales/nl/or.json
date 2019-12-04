@@ -55,6 +55,7 @@
   "notLengthEquals": "Aantal elementen ongelijk aan",
   "lengthGreaterThan": "Aantal elementen groter dan",
   "lengthLessThan": "Aantal elementen kleiner dan",
+  "valueChanges": "Waarde verandert",
   "save": "Opslaan",
   "active": "Actief",
   "continueWithoutSaving": "Als je doorgaat worden je veranderingen niet opgeslagen. Doorgaan zonder opslaan?",
