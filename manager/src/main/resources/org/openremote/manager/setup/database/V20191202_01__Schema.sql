@@ -21,7 +21,7 @@ create table ASSET (
   CREATED_ON         timestamp with time zone not null,
   NAME               varchar(1023)            not null,
   PARENT_ID          varchar(36),
-  REALM_ID           varchar(255)             not null,
+  REALM              varchar(255)             not null,
   ASSET_TYPE         varchar(255)             not null,
   ACCESS_PUBLIC_READ boolean                  not null,
   OBJ_VERSION        int8                     not null,
@@ -45,43 +45,48 @@ create table GLOBAL_RULESET (
   LAST_MODIFIED timestamp with time zone not null,
   NAME          varchar(255)             not null,
   RULES         text                     not null,
-  RULES_LANG    varchar(255)             not null default 'GROOVY',
+  RULES_LANG    varchar(255)             not null,
   OBJ_VERSION   int8                     not null,
+  META          jsonb,
   primary key (ID)
 );
 
 create table ASSET_RULESET (
-  ID            int8                     not null,
-  CREATED_ON    timestamp with time zone not null,
-  ENABLED       boolean                  not null,
-  LAST_MODIFIED timestamp with time zone not null,
-  NAME          varchar(255)             not null,
-  RULES         text                     not null,
-  RULES_LANG    varchar(255)             not null default 'GROOVY',
-  OBJ_VERSION   int8                     not null,
-  ASSET_ID      char(22)                 not null,
+  ID                    int8                     not null,
+  CREATED_ON            timestamp with time zone not null,
+  ENABLED               boolean                  not null,
+  LAST_MODIFIED         timestamp with time zone not null,
+  NAME                  varchar(255)             not null,
+  RULES                 text                     not null,
+  RULES_LANG            varchar(255)             not null default 'GROOVY',
+  OBJ_VERSION           int8                     not null,
+  ASSET_ID              char(22)                 not null,
+  ACCESS_PUBLIC_READ    boolean                  not null default false,
+  META                  jsonb,
   primary key (ID)
 );
 
 create table TENANT_RULESET (
-  ID            int8                     not null,
-  CREATED_ON    timestamp with time zone not null,
-  ENABLED       boolean                  not null,
-  LAST_MODIFIED timestamp with time zone not null,
-  NAME          varchar(255)             not null,
-  RULES         text                     not null,
-  RULES_LANG    varchar(255)             not null default 'GROOVY',
-  OBJ_VERSION   int8                     not null,
-  REALM_ID      varchar(255)             not null,
+  ID                    int8                     not null,
+  CREATED_ON            timestamp with time zone not null,
+  ENABLED               boolean                  not null,
+  LAST_MODIFIED         timestamp with time zone not null,
+  NAME                  varchar(255)             not null,
+  RULES                 text                     not null,
+  RULES_LANG            varchar(255)             not null default 'GROOVY',
+  OBJ_VERSION           int8                     not null,
+  REALM                 varchar(255)             not null,
+  ACCESS_PUBLIC_READ    boolean                  not null default false,
+  META                  jsonb,
   primary key (ID)
 );
 
 create table USER_ASSET (
   ASSET_ID   char(22)                 not null,
-  REALM_ID   varchar(36)              not null,
+  REALM      varchar(255)             not null,
   USER_ID    varchar(36)              not null,
   CREATED_ON timestamp with time zone not null,
-  primary key (ASSET_ID, REALM_ID, USER_ID)
+  primary key (ASSET_ID, REALM, USER_ID)
 );
 
 create table USER_CONFIGURATION (
@@ -90,25 +95,21 @@ create table USER_CONFIGURATION (
   primary key (USER_ID)
 );
 
-create table ALERT_NOTIFICATION (
+create table NOTIFICATION (
   ID              int8                     not null,
-  ACTIONS         jsonb,
-  APP_URL         varchar(255)             not null,
-  CREATED_ON      timestamp with time zone not null,
-  DELIVERY_STATUS varchar(255),
-  MESSAGE         varchar(255)             not null,
-  TITLE           varchar(255)             not null,
-  USER_ID         varchar(255),
+  NAME            varchar(255),
+  TYPE            varchar(50)              not null,
+  TARGET          varchar(50)              not null,
+  TARGET_ID       varchar(43)              not null,
+  SOURCE          varchar(50)              not null,
+  SOURCE_ID       varchar(43),
+  MESSAGE         jsonb,
+  ERROR           varchar(255),
+  SENT_ON         timestamp with time zone not null,
+  DELIVERED_ON    timestamp with time zone,
+  ACKNOWLEDGED_ON timestamp with time zone,
+  ACKNOWLEDGEMENT varchar(255),
   primary key (ID)
-);
-
-create table DEVICE_NOTIFICATION_TOKEN (
-  DEVICE_ID   varchar(255)             not null,
-  USER_ID     varchar(36)              not null,
-  DEVICE_TYPE varchar(255),
-  TOKEN       varchar(4096)            not null,
-  UPDATED_ON  timestamp with time zone not null,
-  primary key (DEVICE_ID, USER_ID)
 );
 
 create table SYSLOG_EVENT (
@@ -157,19 +158,16 @@ alter table ASSET
   add foreign key (PARENT_ID) references ASSET (ID);
 
 alter table ASSET
-  add foreign key (REALM_ID) references PUBLIC.REALM (ID);
+  add foreign key (REALM) references PUBLIC.REALM (NAME);
 
 alter table ASSET_DATAPOINT
   add foreign key (ENTITY_ID) references ASSET (ID) on delete cascade;
 
 alter table TENANT_RULESET
-  add foreign key (REALM_ID) references PUBLIC.REALM (ID);
+  add foreign key (REALM) references PUBLIC.REALM (NAME);
 
 alter table ASSET_RULESET
   add foreign key (ASSET_ID) references ASSET (ID) on delete cascade;
-
-alter table DEVICE_NOTIFICATION_TOKEN
-  add foreign key (USER_ID) references PUBLIC.USER_ENTITY (ID) on delete cascade;
 
 alter table USER_CONFIGURATION
   add foreign key (USER_ID) references PUBLIC.USER_ENTITY (ID) on delete cascade;
@@ -181,7 +179,7 @@ alter table USER_ASSET
   add foreign key (ASSET_ID) references ASSET (ID) on delete cascade;
 
 alter table USER_ASSET
-  add foreign key (REALM_ID) references PUBLIC.REALM (ID) on delete cascade;
+  add foreign key (REALM) references PUBLIC.REALM (NAME) on delete cascade;
 
 /*
   ############################# INDICES #############################
