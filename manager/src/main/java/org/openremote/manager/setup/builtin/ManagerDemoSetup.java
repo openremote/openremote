@@ -20,6 +20,7 @@
 package org.openremote.manager.setup.builtin;
 
 import org.apache.commons.io.IOUtils;
+import org.openremote.agent.protocol.artnet.ArtnetClientProtocol;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.container.util.UniqueIdentifierGenerator;
@@ -27,6 +28,7 @@ import org.openremote.manager.security.UserConfiguration;
 import org.openremote.manager.setup.AbstractManagerSetup;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.geo.GeoJSONPoint;
@@ -70,6 +72,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static GeoJSONPoint SMART_CITY_LOCATION = new GeoJSONPoint(5.670945, 51.435000);
     public static final String agentProtocolConfigName = "simulator123";
     public static final String thingLightToggleAttributeName = "light1Toggle";
+    public static final String ARTNET_LIGHT_STATE = "{'universe': 0,'r': 0,'g': 0,'b': 0,'w': 0,'dim': 0}";
     final protected boolean importDemoScenes;
     public String smartOfficeId;
     public String groundFloorId;
@@ -272,9 +275,53 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         thing = assetStorageService.merge(thing);
         thingId = thing.getId();
 
-        //Add ArtNet agent/assets
-        ArtNetDemoSetup artNetDemoSetup = new ArtNetDemoSetup();
-        artNetDemoSetup.setupTreeStructure(masterTenant, assetStorageService, agentProtocolConfigName);
+        //Art-Net Setup
+        //SETUP MAIN ARTNET-ASSET UNDER MASTER ASSET
+        Asset artNetNetwork = new Asset();
+        artNetNetwork.setRealm(masterTenant.getRealm());
+        artNetNetwork.setName("ArtNet Network");
+        artNetNetwork.setType(AGENT);
+        artNetNetwork.addAttributes(
+                initProtocolConfiguration(new AssetAttribute(agentProtocolConfigName), ArtnetClientProtocol.PROTOCOL_NAME)
+                        .addMeta(
+                                new MetaItem(
+                                        ArtnetClientProtocol.META_PROTOCOL_HOST,
+                                        Values.create("127.0.0.1")
+                                ),
+                                new MetaItem(
+                                        ArtnetClientProtocol.META_PROTOCOL_PORT,
+                                        Values.create(6454)
+                                )
+                        )
+        );
+        artNetNetwork = assetStorageService.merge(artNetNetwork);
+
+        //SETUP UNIVERSE-ASSET UNDER MAIN ARTNET-ASSET
+        Asset artNetUniverse = new Asset();
+        artNetUniverse.setParent(artNetNetwork);
+        artNetUniverse.setName("ArtNet Universe");
+        artNetUniverse.setType(THING);
+        List<AssetAttribute> artNetUniverseAttributes = Arrays.asList(
+                new AssetAttribute("Values", OBJECT, Values.parseOrNull(ARTNET_LIGHT_STATE)).addMeta(
+                        new MetaItem(AGENT_LINK, new AttributeRef(artNetNetwork.getId(), agentProtocolConfigName).toArrayValue())
+                )
+        );
+        artNetUniverse.setAttributes(artNetUniverseAttributes);
+        artNetUniverse = assetStorageService.merge(artNetUniverse);
+
+        //SETUP LIGHT-ASSET UNDER UNIVERSE-ASSET
+        Asset artNetLight = new Asset();
+        artNetLight.setParent(artNetUniverse);
+        artNetLight.setName("ArtNet Light");
+        artNetLight.setType(THING);
+        List<AssetAttribute> artNetLightAttributes = Arrays.asList(
+                new AssetAttribute("Values", OBJECT, Values.parseOrNull(ARTNET_LIGHT_STATE)).addMeta(
+                        new MetaItem(AGENT_LINK, new AttributeRef(artNetNetwork.getId(), agentProtocolConfigName).toArrayValue())
+                )
+        );
+        artNetLight.setAttributes(artNetLightAttributes);
+        artNetLight = assetStorageService.merge(artNetLight);
+        //END Art-Net Setup
 
         // Some sample datapoints
         final Asset finalThing = assetStorageService.find(thingId, true);

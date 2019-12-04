@@ -204,6 +204,9 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
     @Override
     protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+
+        Object a = protocolConfiguration.getReference().get();
+
         AttributeInfo info = attributeInfoMap.get(event.getAttributeRef());
         if (info == null || info.sendConsumer == null) {
             LOG.info("Request to write unlinked attribute or attribute that doesn't support writes so ignoring: " + event);
@@ -229,7 +232,6 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         attribute.getObjectValue().getObject("value").get().put("g", artNetPacket.get().g);
         attribute.getObjectValue().getObject("value").get().put("b", artNetPacket.get().b);
         attribute.getObjectValue().getObject("value").get().put("w", artNetPacket.get().w);
-        protocolConfiguration = attribute;
 
         if (attribute.isExecutable()) {
             status = event.getValue()
@@ -246,9 +248,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         Value value = status != null ? null : event.getValue().orElse(null);
         info.sendConsumer.accept(value);
 
-        if (status != null) {
-            updateLinkedAttribute(new AttributeState(event.getAttributeRef(), AttributeExecuteStatus.COMPLETED.asValue()));
-        }
+        updateLinkedAttribute(new AttributeState(event.getAttributeRef(), AttributeExecuteStatus.COMPLETED.asValue()));
     }
 
     @Override
