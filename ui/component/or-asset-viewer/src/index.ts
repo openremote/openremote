@@ -41,7 +41,7 @@ export interface PanelConfig {
 }
 
 export interface AssetViewerConfig {
-    panels: {[name: string] : PanelConfig};
+    panels: {[name: string]: PanelConfig};
     viewerStyles?: { [style: string]: string };
     propertyViewProvider?: (property: string, value: any, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     attributeViewProvider?: (attribute: Attribute, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
@@ -224,10 +224,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 </div>
                 <div id="container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
                     ${html`${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
-                        const panelTemplate = OrAssetViewer.getPanel(name, this.asset!, this._attributes!, this._viewerConfig!, panelConfig, this.shadowRoot);
-                        return panelTemplate || ``;
-                    })}`
-                    }
+            const panelTemplate = OrAssetViewer.getPanel(name, this.asset!, this._attributes!, this._viewerConfig!, panelConfig, this.shadowRoot);
+            return panelTemplate || ``;
+        })}`
+        }
                 </div>
             </div>
         `;
@@ -246,11 +246,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
         }
 
-       this.onCompleted().then(() => {
-           onRenderComplete.startCallbacks().then(()=> {
-               OrAssetViewer.generateGrid(this.shadowRoot);
-           });
-       });
+        this.onCompleted().then(() => {
+            onRenderComplete.startCallbacks().then(()=> {
+                OrAssetViewer.generateGrid(this.shadowRoot);
+            });
+        });
 
     }
 
@@ -390,6 +390,17 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         or-attribute-history {
                             --or-attribute-history-controls-margin: 0 0 0 204px;  
                         }
+                        
+                        @media screen and (max-width: 769px) {
+                            #history-controls {
+                                position: unset;
+                                margin: 0 auto 10px auto;
+                            }
+                            
+                            or-attribute-history {
+                                --or-attribute-history-controls-margin: 10px 0 0 0;  
+                            }
+                        }
                     </style>
                     <div id="history-controls">
                         <or-input id="history-attribute-picker" value="${historyAttrs[0].name}" .label="${i18next.t("attribute")}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${options}"></or-input>
@@ -428,9 +439,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         } else {
             content = html`
                 ${attrs.sort((attr1, attr2) => attr1.name! < attr2.name! ? -1 : attr1.name! > attr2.name! ? 1 : 0).map((attr) => {
-                    let style = styles ? styles[attr.name!] : undefined;
-                    return this.getField(attr.name!, false, style, OrAssetViewer.getAttributeTemplate(asset, attr, viewerConfig, panelConfig));
-                })}
+                let style = styles ? styles[attr.name!] : undefined;
+                return this.getField(attr.name!, false, style, OrAssetViewer.getAttributeTemplate(asset, attr, viewerConfig, panelConfig));
+            })}
             `;
         }
 

@@ -34,7 +34,7 @@ export const style = css`
     #container {
         box-sizing: border-box;
         display: grid;
-        padding: 30px 20px;
+        padding: 20px 20px;
         grid-gap: 10px;
         grid-template-columns: repeat(auto-fill, minmax(calc(50% - 5px),1fr));
         grid-auto-rows: 5px;
