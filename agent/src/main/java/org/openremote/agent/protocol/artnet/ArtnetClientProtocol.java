@@ -229,6 +229,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         attribute.getObjectValue().getObject("value").get().put("g", artNetPacket.get().g);
         attribute.getObjectValue().getObject("value").get().put("b", artNetPacket.get().b);
         attribute.getObjectValue().getObject("value").get().put("w", artNetPacket.get().w);
+        protocolConfiguration = attribute;
 
         if (attribute.isExecutable()) {
             status = event.getValue()
