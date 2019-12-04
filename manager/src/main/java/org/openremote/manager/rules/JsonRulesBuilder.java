@@ -878,7 +878,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         StringBuilder sb = new StringBuilder();
         if (isHtml) {
-            sb.append("<table>");
+            sb.append("<table cellpadding=\"30\">");
             sb.append("<tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr>");
             assetStates.forEach(assetState -> {
                 sb.append("<tr><td>");
@@ -893,14 +893,14 @@ public class JsonRulesBuilder extends RulesBuilder {
             });
             sb.append("</table>");
         } else {
-            sb.append("Asset ID\tAsset Name\tAttribute\tValue");
+            sb.append("Asset ID\t\tAsset Name\t\tAttribute\t\tValue");
             assetStates.forEach(assetState -> {
                 sb.append(assetState.getId());
-                sb.append("\t");
+                sb.append("\t\t");
                 sb.append(assetState.getName());
-                sb.append("\t");
+                sb.append("\t\t");
                 sb.append(assetState.getAttributeName());
-                sb.append("\t");
+                sb.append("\t\t");
                 sb.append(assetState.getValue().map(Value::toString).orElse(""));
             });
         }
