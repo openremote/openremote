@@ -6,6 +6,7 @@ afterEvaluate {
         if (customUi != null) {
             customUi.getTasksByName('installDist', true).forEach {
                 it.mustRunAfter(project(":openremote:ui").getTasksByName('installDist', true))
+                it.mustRunAfter(resolveTask(":deployment:installDist"))
             }
         }
     }
