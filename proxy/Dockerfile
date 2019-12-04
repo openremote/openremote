@@ -1,4 +1,4 @@
-FROM debian:stretch
+FROM debian:stretch-slim
 MAINTAINER support@openremote.io
 
 # Install utilities
@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN apt-get update \
       && apt-get install -y --no-install-recommends \
-            certbot rsyslog cron inotify-tools make gcc g++ libreadline-dev libssl-dev libpcre3-dev libz-dev \
+            curl certbot rsyslog cron inotify-tools make gcc g++ libreadline-dev libssl-dev libpcre3-dev libz-dev \
       && rm -rf /var/lib/apt/lists/*
 
 ARG HA_PROXY_MINOR_VERSION=1.7

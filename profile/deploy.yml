@@ -151,7 +151,7 @@ services:
       DATABASE_CONNECTION_URL: jdbc:postgresql://postgresql/openremote
 
       # The database connection settings, passwords should be changed in production!
-      DATABASE_USERNAME: openremote
+      DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
       DATABASE_MIN_POOL_SIZE: 5
       DATABASE_MAX_POOL_SIZE: 20
@@ -279,7 +279,7 @@ services:
       DB_ADDR: postgresql
       DB_PORT: 5432
       DB_DATABASE: openremote
-      DB_USER: openremote
+      DB_USER: postgres
       DB_SCHEMA: public
       DB_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
       KEYCLOAK_USER: admin
@@ -328,7 +328,7 @@ services:
       # then remove the variables and restart to preserve the stored data. It
       # doesn't hurt if you don't remove it, an existing will never be reconfigured.
       POSTGRES_DB: openremote
-      POSTGRES_USER: openremote
+      POSTGRES_USER: postgres # 9.6 image doesn't work if we use a custom user
       POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
 
       # You can open an SQL console on a running container with:
