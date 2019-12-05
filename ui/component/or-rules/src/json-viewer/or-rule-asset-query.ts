@@ -205,7 +205,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             case "string":
                 return getAttributeValueTemplate(assetType, { name: attributeName! }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("string"))(value);
             case "boolean":
-                return html `<span>NOT IMPLEMENTED</span>`;
+                return html ``; // Handled by the operator IS_TRUE or IS_FALSE
             case "datetime":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "number":

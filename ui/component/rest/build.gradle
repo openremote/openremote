@@ -15,6 +15,8 @@ dependencies {
     compile resolveProject(":model")
     compile "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
     compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    compile "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
 }
 
 task generateTypescriptModelInfo(type: cz.habarta.typescript.generator.gradle.GenerateTask) {
@@ -45,8 +47,11 @@ task generateTypescriptModelInfo(type: cz.habarta.typescript.generator.gradle.Ge
     ]
     optionalProperties = "all" // TODO: cleanup model to be more explicit about optional params
     mapEnum = cz.habarta.typescript.generator.EnumMapping.asEnum
+    mapDate = cz.habarta.typescript.generator.DateMapping.asNumber
     jackson2Modules = [
         "com.fasterxml.jackson.datatype.jdk8.Jdk8Module",
+        "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule",
+        "com.fasterxml.jackson.module.paramnames.ParameterNamesModule",
         "org.openremote.model.ModelModule"
     ]
 }
