@@ -114,12 +114,13 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             getClass().getResource("/org/openremote/test/rules/BasicJsonRules.json").text)
         ruleset = rulesetStorageService.merge(ruleset)
 
-        expect: "the rule engines to become available and be running with asset states inserted"
+        expect: "the rule engines to become available and be running with asset states inserted and no longer tracking location rules"
         conditions.eventually {
             tenantBuildingEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantBuilding.realm)
             assert tenantBuildingEngine != null
             assert tenantBuildingEngine.isRunning()
             assert tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert !tenantBuildingEngine.trackLocationPredicates
         }
 
         and: "the room lights in an apartment to be on"
