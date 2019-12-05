@@ -25,16 +25,15 @@ create table ASSET (
   ASSET_TYPE         varchar(255)             not null,
   ACCESS_PUBLIC_READ boolean                  not null,
   OBJ_VERSION        int8                     not null,
-  LOCATION           geometry,
   primary key (ID),
   check (ID != PARENT_ID)
 );
 
 create table ASSET_DATAPOINT (
-  TIMESTAMP      int8         not null,
-  ENTITY_ID      varchar(36)  not null,
-  ATTRIBUTE_NAME varchar(255) not null,
-  VALUE          jsonb        not null,
+  TIMESTAMP      timestamp with time zone   not null,
+  ENTITY_ID      varchar(36)                not null,
+  ATTRIBUTE_NAME varchar(255)               not null,
+  VALUE          jsonb                      not null,
   primary key (TIMESTAMP, ENTITY_ID, ATTRIBUTE_NAME)
 );
 
@@ -114,7 +113,7 @@ create table NOTIFICATION (
 
 create table SYSLOG_EVENT (
   ID          int8         not null,
-  TIMESTAMP   int8         not null,
+  TIMESTAMP   timestamp with time zone not null,
   CATEGORY    varchar(255) not null,
   LEVEL       int4         not null,
   MESSAGE     varchar(131072),
