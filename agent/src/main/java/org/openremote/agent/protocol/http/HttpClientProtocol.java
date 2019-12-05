@@ -1182,12 +1182,9 @@ public class HttpClientProtocol extends AbstractProtocol {
     }
 
     protected Response executePagingRequest(HttpClientRequest clientRequest, Response response) {
-        Optional<String> linkHeader = Optional.ofNullable(response.getHeaderString(HEADER_LINK));
-        if (linkHeader.isPresent()) {
-            Optional<String> nextUrl = getLinkHeaderValue(linkHeader.get(), "next");
-            if (nextUrl.isPresent()) {
-                return clientRequest.client.register(new PaginationFilter(nextUrl.get())).request().build(clientRequest.method).invoke();
-            }
+        if (response.hasLink("next")) {
+            URI nextUrl = response.getLink("next").getUri();
+            return clientRequest.client.register(new PaginationFilter(nextUrl)).request().build(clientRequest.method).invoke();
         }
         return null;
     }
@@ -1329,16 +1326,5 @@ public class HttpClientProtocol extends AbstractProtocol {
                 protocolInfo.getProtocolConfiguration(),
                 protocolConfig -> protocolConfig.setDisabled(true)
         );
-    }
-
-    protected Optional<String> getLinkHeaderValue(String linkHeader, String rel) {
-        Optional<String> nextUrl = Optional.empty();
-        String[] parts = linkHeader.split(",");
-        Optional<String> relPart = Arrays.stream(parts).filter(p -> p.endsWith("rel=\"" + rel + "\"")).findFirst();
-        if (relPart.isPresent()) {
-            parts = relPart.get().split(";");
-            nextUrl = Optional.of(parts[0].replace("<", "").replace(">", "").trim());
-        }
-        return nextUrl;
     }
 }
