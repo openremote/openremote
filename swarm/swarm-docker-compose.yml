@@ -195,7 +195,7 @@ services:
 
     deploy:
       replicas: 1
-      # Configure uninterupted updates with rollback
+      # Configure uninterrupted updates with rollback
       update_config:
         failure_action: rollback
 
