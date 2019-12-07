@@ -1,3 +1,15 @@
+## Introduction
+
+Swarm mode is a built in orchestrator which comes bundled with Docker. Although, currently industry standard 
+orchestrator is Kubernetes by Google, using swarm has its merits:
+- it covers 20% features which covers 80% of requirements
+- it is easier to learn therefore less expensive to introduce
+- learning Kubernetes after Swarm is painless
+- Kubernetes is either a full man job or an expensive tool, e.g. [Rancher](https://rancher.com/) costs ~100k/year for
+ support
+- Kubernetes being a Google product can be discontinued at any time, 
+see [Google graveyard](https://killedbygoogle.com/)
+
 ### Swarm commands primer
 ```docker stack deploy --compose-file swarm/swarm-docker-compose.yml demo```
 
@@ -33,6 +45,15 @@ Compose files v2 are generally used for development and image build, they should
 Compose files v3 are for swarm deployment and some development options are ignored, e.g. like 'build' - 
 swarm uses only prebuilt images.
 
+## Persistent data/volumes
+
+We using a trick to populate volumes with data by one container and use them by another one. This generally does not 
+work in the swarm mode because we cannot guarantee that both containers would be spin up in the same node.
+
+## Secrets
+
+TODO
+
 ## Uninterrupted updates
 
 In the v3 docker-compose file include in the deploy section
@@ -45,7 +66,7 @@ destroying the old one.
 
 However, it does not work on our current OVH server, does work on AWS though. The reason is, that with this 
 configuration and because we are updating all images at once there is not enough resources to deploy double stack 
-and hot switch them. We can either use a bigger OVH VM or configure a multinode swarm. We can also configure that 
+and hot switch them. We can either use a bigger OVH VM or configure a multi-node swarm. We can also configure that 
 only a single service updates it's image at the time, this should be done from begin. However, to do it right we 
 should split github repo into separate repos, each one with a single service, i.e. openremote/proxy, 
 openremote/postgresql, openremote/keycloak and openremote/manager. 
