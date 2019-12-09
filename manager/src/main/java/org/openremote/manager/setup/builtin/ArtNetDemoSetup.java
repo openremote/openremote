@@ -24,6 +24,18 @@ import static org.openremote.model.attribute.MetaItemType.*;
 
 public class ArtNetDemoSetup implements Setup {
 
+    @Override
+    public void onInit() throws Exception
+    {
+
+    }
+
+    @Override
+    public void onStart() throws Exception
+    {
+
+    }
+
     //TODO FIND RIGHT PLACE FOR THIS CLASS
     public void setupTreeStructure(Tenant parentTenant, AssetStorageService assetStorageService, String agentProtocolConfigName) {
 
