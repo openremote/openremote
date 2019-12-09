@@ -29,14 +29,30 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
+import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemInteger;
+import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemString;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY;
 
 public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ArtnetClientProtocol.class.getName());
-    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":artnetClient";
+    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":artnet";
     public static final String PROTOCOL_DISPLAY_NAME = "Artnet Client";
     private static final String PROTOCOL_VERSION = "1.0";
+
+    /**
+     * The universe Id of a light
+     */
+    public static final MetaItemDescriptor META_ARTNET_UNIVERSE_ID = metaItemString(
+        PROTOCOL_NAME + ":universeId",
+        ACCESS_PRIVATE,
+        true,
+        REGEXP_PATTERN_STRING_NON_EMPTY,
+        MetaItemDescriptor.PatternFailure.STRING_EMPTY);
+
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ArtnetClientProtocol.class.getName());
+
     private final Map<AttributeRef, AttributeInfo> attributeInfoMap = new HashMap<>();
     private static int DEFAULT_RESPONSE_TIMEOUT_MILLIS = 3000;
     private static int DEFAULT_SEND_RETRIES = 1;
@@ -51,7 +67,8 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             META_ATTRIBUTE_WRITE_VALUE,
             META_POLLING_MILLIS,
             META_RESPONSE_TIMEOUT_MILLIS,
-            META_SEND_RETRIES
+            META_SEND_RETRIES,
+            META_ARTNET_UNIVERSE_ID
     );
 
     @Override
