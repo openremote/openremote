@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
+import javassist.bytecode.AttributeInfo;
 import jsinterop.base.Any;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.io.IoClient;
@@ -99,10 +100,15 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
             @Override
             protected void encode(String message, ByteBuf buf) {
-                Value msg = Values.parse(message).orElseThrow(() -> {throw new IllegalArgumentException("No valid JSON provided, to construct ArtNet packet");});
-                ArtNetPacket packet = ArtNetPacket.fromValue(msg).orElseThrow(() -> {throw new IllegalArgumentException("ArtNet packet could not be made.");});
-                ByteBuf output = packet.toBuffer(buf);
-                finalEncoder.accept(message, output);
+                Value msg = null;
+                try{
+                    msg = Values.parse(message).get();
+                    ArtNetPacket packet = ArtNetPacket.fromValue(msg).get();
+                    ByteBuf output = packet.toBuffer(buf);
+                    finalEncoder.accept(message, output);
+                }catch(IllegalArgumentException ex) {
+                    ex.printStackTrace();
+                }
             }
         };
     }
@@ -205,7 +211,6 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     @Override
     protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
 
-        Object a = protocolConfiguration.getReference().get();
 
         AttributeInfo info = attributeInfoMap.get(event.getAttributeRef());
         if (info == null || info.sendConsumer == null) {
@@ -213,42 +218,10 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             return;
         }
 
-        AssetAttribute attribute = getLinkedAttribute(event.getAttributeRef());
-        AttributeExecuteStatus status = null;
-
-        //TODO FIX THAT IT DOESNT UPDATE PARAMETER BUT ACTUAL ATTRIBUTE
-        Optional<ArtNetPacket> artNetPacket = ArtNetPacket.fromValue(event.getValue().get());
-
-        attribute.getObjectValue().getObject("value").get().remove("universe");
-        attribute.getObjectValue().getObject("value").get().remove("dim");
-        attribute.getObjectValue().getObject("value").get().remove("r");
-        attribute.getObjectValue().getObject("value").get().remove("g");
-        attribute.getObjectValue().getObject("value").get().remove("b");
-        attribute.getObjectValue().getObject("value").get().remove("w");
-
-        attribute.getObjectValue().getObject("value").get().put("universe", artNetPacket.get().universe);
-        attribute.getObjectValue().getObject("value").get().put("dim", artNetPacket.get().dim);
-        attribute.getObjectValue().getObject("value").get().put("r", artNetPacket.get().r);
-        attribute.getObjectValue().getObject("value").get().put("g", artNetPacket.get().g);
-        attribute.getObjectValue().getObject("value").get().put("b", artNetPacket.get().b);
-        attribute.getObjectValue().getObject("value").get().put("w", artNetPacket.get().w);
-
-        if (attribute.isExecutable()) {
-            status = event.getValue()
-                    .flatMap(Values::getString)
-                    .flatMap(AttributeExecuteStatus::fromString)
-                    .orElse(null);
-
-            if (status != null && status != AttributeExecuteStatus.REQUEST_START) {
-                LOG.fine("Unsupported execution status: " + status);
-                return;
-            }
-        }
-
-        Value value = status != null ? null : event.getValue().orElse(null);
+        Value value = event.getValue().orElse(null);
         info.sendConsumer.accept(value);
 
-        updateLinkedAttribute(new AttributeState(event.getAttributeRef(), AttributeExecuteStatus.COMPLETED.asValue()));
+        updateLinkedAttribute(event.getAttributeState());
     }
 
     @Override

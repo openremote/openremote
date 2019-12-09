@@ -277,6 +277,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         //Art-Net Setup
         //SETUP MAIN ARTNET-ASSET UNDER MASTER ASSET
+
         Asset artNetNetwork = new Asset();
         artNetNetwork.setRealm(masterTenant.getRealm());
         artNetNetwork.setName("ArtNet Network");
