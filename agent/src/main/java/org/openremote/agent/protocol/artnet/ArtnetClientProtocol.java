@@ -42,6 +42,11 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     private static int DEFAULT_SEND_RETRIES = 1;
     private static int MIN_POLLING_MILLIS = 1000;
 
+
+    private HashMap<String, HashMap<String, ArtnetLight>> artnetControls =
+                    new HashMap<String, HashMap<String, ArtnetLight>>();
+
+
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
             META_ATTRIBUTE_WRITE_VALUE,
             META_POLLING_MILLIS,
@@ -111,6 +116,19 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
                 }
             }
         };
+    }
+
+    @Override
+    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        super.doLinkProtocolConfiguration(protocolConfiguration);
+        //TODO DO NULL-CHECK
+        artnetControls.put(protocolConfiguration.getAssetId().get(), new HashMap<>());
+    }
+
+    @Override
+    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        super.doUnlinkProtocolConfiguration(protocolConfiguration);
+        artnetControls.remove(protocolConfiguration.getAssetId().get());
     }
 
     @Override
@@ -211,6 +229,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     @Override
     protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
 
+        protocolConfiguration.getType();
 
         AttributeInfo info = attributeInfoMap.get(event.getAttributeRef());
         if (info == null || info.sendConsumer == null) {
@@ -243,4 +262,19 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
         return ATTRIBUTE_META_ITEM_DESCRIPTORS;
     }
+
+    public class ArtnetLight {
+
+        private String assetId;
+        private int r, g, b, w;
+        private double dim;
+
+        public ArtnetLight(String assetId, int r, int g, int b, double dim) {
+            this.r = r;
+            this.g = g;
+            this.b = b;
+            this.dim = dim;
+        }
+    }
+
 }

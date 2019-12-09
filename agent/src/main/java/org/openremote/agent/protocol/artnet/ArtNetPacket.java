@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class ArtNetPacket {
+
     protected int universe;
     protected double dim;
     protected int r;
@@ -34,7 +35,6 @@ public class ArtNetPacket {
         this.g = g;
         this.b = b;
         this.w = w;
-
     }
 
     public static Optional<ArtNetPacket> fromValue(Value value) {
