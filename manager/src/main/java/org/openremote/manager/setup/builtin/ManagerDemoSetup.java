@@ -317,7 +317,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         List<AssetAttribute> artNetLightAttributes = Arrays.asList(
                 new AssetAttribute("Values", OBJECT, Values.parseOrNull(ARTNET_LIGHT_STATE)).addMeta(
                         new MetaItem(AGENT_LINK, new AttributeRef(artNetNetwork.getId(), agentProtocolConfigName).toArrayValue()),
-                    new MetaItem(ArtnetClientProtocol.META_ARTNET_UNIVERSE_ID, Values.create(artNetUniverse.getId()))
+                    new MetaItem(ArtnetClientProtocol.META_ARTNET_UNIVERSE_ASSET_ID, Values.create(artNetUniverse.getId())),
+                    new MetaItem(ArtnetClientProtocol.META_ARTNET_UNIVERSE_ID, Values.create(0))
                 )
         );
         artNetLight.setAttributes(artNetLightAttributes);

@@ -33,6 +33,7 @@ import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PR
 import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemInteger;
 import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemString;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY;
 
 public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
@@ -44,12 +45,22 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     /**
      * The universe Id of a light
      */
-    public static final MetaItemDescriptor META_ARTNET_UNIVERSE_ID = metaItemString(
+    public static final MetaItemDescriptor META_ARTNET_UNIVERSE_ID = metaItemInteger(
         PROTOCOL_NAME + ":universeId",
         ACCESS_PRIVATE,
         true,
-        REGEXP_PATTERN_STRING_NON_EMPTY,
-        MetaItemDescriptor.PatternFailure.STRING_EMPTY);
+        0,
+        512);
+
+    /**
+     * The universe asset ID
+     */
+    public static final MetaItemDescriptor META_ARTNET_UNIVERSE_ASSET_ID = metaItemString(
+            PROTOCOL_NAME + ":universeAssetId",
+            ACCESS_PRIVATE,
+            true,
+            REGEXP_PATTERN_STRING_NON_EMPTY,
+            MetaItemDescriptor.PatternFailure.STRING_EMPTY);
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ArtnetClientProtocol.class.getName());
 
@@ -59,8 +70,8 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     private static int MIN_POLLING_MILLIS = 1000;
 
 
-    private HashMap<String, HashMap<String, ArtnetLight>> artnetControls =
-                    new HashMap<String, HashMap<String, ArtnetLight>>();
+    private HashMap<String, HashMap<String, List<ArtnetLight>>> artnetControls =
+                    new HashMap<String, HashMap<String, List<ArtnetLight>>>();
 
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
@@ -68,7 +79,8 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             META_POLLING_MILLIS,
             META_RESPONSE_TIMEOUT_MILLIS,
             META_SEND_RETRIES,
-            META_ARTNET_UNIVERSE_ID
+            META_ARTNET_UNIVERSE_ID,
+            META_ARTNET_UNIVERSE_ASSET_ID
     );
 
     @Override
@@ -139,7 +151,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         super.doLinkProtocolConfiguration(protocolConfiguration);
         //TODO DO NULL-CHECK
-        artnetControls.put(protocolConfiguration.getAssetId().get(), new HashMap<>());
+        artnetControls.put(protocolConfiguration.getAssetId().get(), new HashMap<>());//Initialize Parent ArtnetNetwork with empty HashMap to put Universes in
     }
 
     @Override
@@ -149,7 +161,25 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     }
 
     @Override
-    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration)
+    {
+        String networkId = protocolConfiguration.getReference().get().getEntityId();//Get ID of Network
+        //Get Asset ID of the Universe based upon one of their attributes. You can't use the attribute to get the parent Asset.
+        String universeId = Values.getMetaItemValueOrThrow(attribute, META_ARTNET_UNIVERSE_ASSET_ID, false ,true)
+                .flatMap(Values::getString)
+                .orElse(null);
+
+        HashMap<String, List<ArtnetLight>> universe = artnetControls.get(networkId);
+
+        if(universe != null)
+        {
+            LOG.info("Universe is already linked to another Network");
+            return;
+        }
+
+        artnetControls.get(networkId).put(universeId, new ArrayList<ArtnetLight>());
+
+        //List<ArtnetLight> lights = universe.get(attribute.getAssetId()/*Get ID of the Universe*/);
 
         if (!protocolConfiguration.isEnabled()) {
             LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
