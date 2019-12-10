@@ -110,7 +110,8 @@ const style = css`
     :host {
         --internal-or-attribute-history-background-color: var(--or-attribute-history-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
         --internal-or-attribute-history-text-color: var(--or-attribute-history-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
-        --internal-or-attribute-history-controls-margin: var(--or-attribute-history-controls-margin, 0);       
+        --internal-or-attribute-history-controls-margin: var(--or-attribute-history-controls-margin, 0); 
+        --internal-or-attribute-history-controls-margin-children: var(--or-attribute-history-controls-margin-children, 0 auto 20px auto);            
         --internal-or-attribute-history-graph-fill-color: var(--or-attribute-history-graph-fill-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
         --internal-or-attribute-history-graph-fill-opacity: var(--or-attribute-history-graph-fill-opacity, 1);       
         --internal-or-attribute-history-graph-line-color: var(--or-attribute-history-graph-line-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
@@ -160,7 +161,7 @@ const style = css`
     }
     
     #controls > * {
-        margin: 0 auto 20px auto;
+        margin: var(--internal-or-attribute-history-controls-margin-children);
     }
     
     #ending-controls {

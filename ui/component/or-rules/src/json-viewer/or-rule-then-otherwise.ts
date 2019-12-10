@@ -9,7 +9,7 @@ import {
 import {
     OrRulesJsonRuleChangedEvent
 } from "./or-rule-json-viewer";
-import {AssetDescriptor, JsonRule, RuleActionUnion, RuleActionNotification} from "@openremote/model";
+import {AssetDescriptor, JsonRule, RuleActionUnion, RuleConditionReset} from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-input";
 import {MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
@@ -66,6 +66,32 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
     return menu;
 }
 
+type resetOptions = {
+    [key: string]: string
+}
+
+const resetOptions:resetOptions = {
+    "everyTime": "everyTime",
+    "onlyOnce": "onlyOnce",
+    "1h": "oncePerHour",
+    "1d": "oncePerDay",
+    "1w": "oncePerWeek",
+    "1mn": "oncePerMonth"
+};
+
+function getResetMenu(config?: RulesConfig): MenuItem[] {
+
+    const menu: MenuItem[] = [];
+
+    menu.push(...Object.entries(resetOptions).map(([key, value]) => {
+        const content = html`
+                <span style="white-space: nowrap;">${i18next.t(value)}</span>
+            `;
+        return {content: content, value: key} as MenuItem
+    }));
+
+    return menu;
+}
 // language=CSS
 const style = css`
 
@@ -102,6 +128,7 @@ const style = css`
     }
             
     or-panel {
+        position: relative;
         margin: 10px 10px 20px 10px;
     }
     
@@ -117,6 +144,13 @@ const style = css`
     .add-button-wrapper > * {
         margin-right: 6px;
     }
+    
+    .rule-reset {
+        position: absolute;
+        top: 5px;
+        right: 0;
+    }
+   
 `;
 
 @customElement("or-rule-then-otherwise")
@@ -137,6 +171,38 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
     protected get thenAllowAdd() {
         return !this.config || !this.config.controls || this.config.controls.hideThenAddAction !== true;
+    }
+
+    protected ruleResetTemplate(reset: RuleConditionReset) {
+        let resetTemplate: TemplateResult | string = ``;
+
+        let buttonIcon = undefined;
+        let buttonColor = "inherit";
+
+        let value;
+
+        if (!reset) value = "onlyOnce";
+            else if (reset.valueChanges && reset.timestampChanges) value = "everyTime";
+            else if (reset.timer) value = reset.timer;
+            else if (this.config && this.config.json && this.config.json.rule && this.config.json.rule.reset) value = this.config.json.rule.reset.timer;
+
+
+        resetTemplate = html`
+                <div style="color: #${buttonColor}; margin-right: 6px;">
+                    ${getContentWithMenuTemplate(
+            html`<or-input type="${InputType.BUTTON}"  label="${value ? i18next.t(resetOptions[value]) : i18next.t('frequency') }"></or-input>`,
+            getResetMenu(this.config),
+            value,
+            (value: string) => this.setResetOption(value))}
+                </div>
+            `;
+
+        return html`
+            <div class="rule-reset">
+                ${resetTemplate}
+            </div>
+        `;
+
     }
 
     protected ruleActionTemplate(actions: RuleActionUnion[], action: RuleActionUnion) {
@@ -218,8 +284,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         return html`
             <div>
                 <or-panel .heading="${i18next.t("then")}...">
+                    ${this.ruleResetTemplate(this.rule.reset!)}
+
                     ${!this.rule.then ? `` : this.rule.then.map((action: RuleActionUnion) => this.ruleActionTemplate(this.rule.then!, action))}
-                    
                     ${this.thenAllowAdd ? html`
                         <span class="add-button-wrapper">
                             ${getContentWithMenuTemplate(
@@ -256,6 +323,33 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 }
                 break;
         }
+    }
+
+    protected setResetOption(value: string) {
+
+        switch (value) {
+            case "onlyOnce":
+                delete this.rule.reset;
+                break;
+            case "everyTime":
+                if (this.rule.reset) delete this.rule.reset.timer;
+                this.rule.reset = {
+                    valueChanges: true,
+                    timestampChanges: true
+                };
+                break;
+            default:
+                if (this.rule.reset) {
+                    if (this.rule.reset.valueChanges) delete this.rule.reset.valueChanges;
+                    if (this.rule.reset.timestampChanges) delete this.rule.reset.timestampChanges;
+                    this.rule.reset.timer = value;
+                } else {
+                    this.rule.reset = {timer: value};
+                }
+                break;
+        }
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+        this.requestUpdate();
     }
 
     protected setActionType(actions: RuleActionUnion[], action: RuleActionUnion, value: string) {

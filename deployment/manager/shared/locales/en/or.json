@@ -115,5 +115,12 @@
   "string": "Text",
   "operator": "Operator",
   "area": "Area",
-  "timestamp": "Timestamp"
+  "timestamp": "Timestamp",
+  "frequency": "Frequency",
+  "everyTime": "Every time",
+  "onlyOnce": "Only once",
+  "oncePerHour": "Once per hour",
+  "oncePerDay": "Once per day",
+  "oncePerWeek": "Once per week",
+  "oncePerMonth": "Once per month"
 }
