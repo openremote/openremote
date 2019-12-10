@@ -860,7 +860,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         );
         peopleCounter3Rules = rulesetStorageService.merge(peopleCounter3Rules);
 
-        Asset lightController_3Asset = createDemoLightControllerAsset("LightController_3", assetArea3, new GeoJSONPoint(5.487478, 51.446979));
+        Asset lightController_3Asset = createDemoLightControllerAsset("LightController 3", assetArea3, new GeoJSONPoint(5.487478, 51.446979));
         lightController_3Asset = assetStorageService.merge(lightController_3Asset);
     }
 }
