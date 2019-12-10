@@ -2,7 +2,7 @@
 
 Swarm mode is a built in orchestrator which comes bundled with Docker. Although, currently industry standard 
 orchestrator is Kubernetes by Google, using swarm has its merits:
-- it covers 20% features which covers 80% of requirements
+- it covers 20% features which covers 80% of what people need
 - it is easier to learn therefore less expensive to introduce
 - learning Kubernetes after Swarm is painless
 - Kubernetes is either a full man job or an expensive tool, e.g. [Rancher](https://rancher.com/) costs ~100k/year for
