@@ -27,7 +27,7 @@ import java.util.Optional;
 
 import static org.openremote.model.Constants.ASSET_NAMESPACE;
 import static org.openremote.model.attribute.AttributeType.*;
-import static org.openremote.model.attribute.AttributeValueType.SOUND_DB;
+import static org.openremote.model.attribute.AttributeValueType.*;
 import static org.openremote.model.attribute.MetaItemType.*;
 
 /**
@@ -38,18 +38,18 @@ import static org.openremote.model.attribute.MetaItemType.*;
  */
 public enum AssetType implements AssetDescriptor {
 
-    BUILDING(ASSET_NAMESPACE + ":building", "office-building", null,
-            SURFACE_AREA,
-            GEO_STREET,
-            GEO_CITY,
-            GEO_COUNTRY,
-            GEO_POSTAL_CODE),
+    BUILDING(ASSET_NAMESPACE + ":building", "office-building", "4b5966",
+        SURFACE_AREA,
+        GEO_STREET,
+        GEO_CITY,
+        GEO_COUNTRY,
+        GEO_POSTAL_CODE),
 
     CITY(ASSET_NAMESPACE + ":city", "city", null,
         GEO_CITY,
         GEO_COUNTRY),
 
-    AREA(ASSET_NAMESPACE + ":area", "home-city", null,
+    AREA(ASSET_NAMESPACE + ":area", "home-city", "095F6B",
         GEO_CITY,
         GEO_COUNTRY,
         GEO_POSTAL_CODE),
@@ -64,17 +64,188 @@ public enum AssetType implements AssetDescriptor {
 
     CONSOLE(ASSET_NAMESPACE + ":console", "monitor-cellphone", null),
 
-    MICROPHONE(ASSET_NAMESPACE + ":microphone", "microphone", "5bbbd1",
-        new AttributeDescriptorImpl("soundLevel", SOUND_DB, Values.create(0),
-            LABEL.withInitialValue(Values.create("Sound level")),
+    MICROPHONE(ASSET_NAMESPACE + ":microphone", "microphone", "47A5FF",
+        new AttributeDescriptorImpl("microphoneLevel", SOUND_DB, Values.create(0),
+            LABEL.withInitialValue(Values.create("Microphone Level")),
+            DESCRIPTION.withInitialValue(Values.create("DB")),
             READ_ONLY,
-            DESCRIPTION.withInitialValue(Values.create("Current sound level")))),
+            RULE_STATE
+        )
+    ),
 
-    ENVIRONMENT_SENSOR(ASSET_NAMESPACE + ":enviroment", "periodic-table-co2", null),
+    SOUND_EVENT(ASSET_NAMESPACE + ":soundEvent", "microphone-variant", "5BBBD1",
+        new AttributeDescriptorImpl("lastAgression", OBJECT, Values.createObject(),
+            LABEL.withInitialValue(Values.create("Last Aggression event")),
+            DESCRIPTION.withInitialValue(Values.create("Input from microphone")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("lastGunshot", OBJECT, Values.createObject(),
+            LABEL.withInitialValue(Values.create("Last Gunshot event")),
+            DESCRIPTION.withInitialValue(Values.create("Input from microphone")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("lastBreakingGlass", OBJECT, Values.createObject(),
+            LABEL.withInitialValue(Values.create("Last Breaking Glass event")),
+            DESCRIPTION.withInitialValue(Values.create("Input from microphone")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("lastIntensity", OBJECT, Values.createObject(),
+            LABEL.withInitialValue(Values.create("Last Intensity event")),
+            DESCRIPTION.withInitialValue(Values.create("Input from microphone")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("lastEvent", OBJECT, Values.createObject(),
+            LABEL.withInitialValue(Values.create("Last event")),
+            DESCRIPTION.withInitialValue(Values.create("Input from microphone")),
+            READ_ONLY,
+            RULE_STATE
+        )
+    ),
 
-    LIGHT(ASSET_NAMESPACE + ":light", "lightbulb", null),
+    ENVIRONMENT_SENSOR(ASSET_NAMESPACE + ":enviroment", "periodic-table-co2", "f18546",
+        new AttributeDescriptorImpl("temperature", TEMPERATURE_CELCIUS, Values.create(0),
+            LABEL.withInitialValue(Values.create("Temperature")),
+            DESCRIPTION.withInitialValue(Values.create("Temperature in celcius")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("nO2", NUMBER, Values.create(0),
+            LABEL.withInitialValue(Values.create("Nitrogen Level")),
+            DESCRIPTION.withInitialValue(Values.create("µg/m3")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("relHumidity", PERCENTAGE, Values.create(0),
+            LABEL.withInitialValue(Values.create("Humidity")),
+            DESCRIPTION.withInitialValue(Values.create("Humidity in area")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("ozon", NUMBER, Values.create(0),
+            LABEL.withInitialValue(Values.create("Ozon Level")),
+            DESCRIPTION.withInitialValue(Values.create("µg/m3")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("particlesPM1", NUMBER, Values.create(0),
+            LABEL.withInitialValue(Values.create("Particles PM 1")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("particlesPM2_5", NUMBER, Values.create(0),
+            LABEL.withInitialValue(Values.create("Particles PM 2.5")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("particlesPM10", NUMBER, Values.create(0),
+            LABEL.withInitialValue(Values.create("Particles PM 10")),
+            READ_ONLY,
+            RULE_STATE
+        )
+    ),
 
-    CAMERA(ASSET_NAMESPACE + ":camera", "camera", null),
+    LIGHT(ASSET_NAMESPACE + ":light", "lightbulb", "e6688a",
+        new AttributeDescriptorImpl("lightStatus", BOOLEAN, Values.create(false),
+            LABEL.withInitialValue(Values.create("Light status")),
+            DESCRIPTION.withInitialValue(Values.create("Indicates if the light is on or off")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("lightDimLevel", PERCENTAGE, Values.create(0),
+            LABEL.withInitialValue(Values.create("Light Dim Level")),
+            DESCRIPTION.withInitialValue(Values.create("The level of dimming of the light")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("colorGBW", OBJECT, Values.createObject(),
+            LABEL.withInitialValue(Values.create("Color RGBW")),
+            DESCRIPTION.withInitialValue(Values.create("The RGBW color of the light")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("groupNumber", STRING, Values.create(""),
+            LABEL.withInitialValue(Values.create("Group number")),
+            DESCRIPTION.withInitialValue(Values.create("Which group this light belongs to")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("Scenario", NUMBER, Values.create(0),
+            LABEL.withInitialValue(Values.create("Scenario")),
+            DESCRIPTION.withInitialValue(Values.create("The scenario the light are setup to")),
+            READ_ONLY,
+            RULE_STATE
+        )
+    ),
+
+    LIGHT_CONTROLLER(ASSET_NAMESPACE + ":lightController", "light-switch", "9e5de2",
+        new AttributeDescriptorImpl("lightAllStatus", BOOLEAN, Values.create(false),
+            LABEL.withInitialValue(Values.create("Light all status")),
+            DESCRIPTION.withInitialValue(Values.create("Indicates if all lights are on or off")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("lightAllDimLevel", PERCENTAGE, Values.create(0),
+            LABEL.withInitialValue(Values.create("Light Dim Level")),
+            DESCRIPTION.withInitialValue(Values.create("The level of dimming of all the lights")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("colorAllRGBW", OBJECT, Values.createObject(),
+            LABEL.withInitialValue(Values.create("Color RGBW")),
+            DESCRIPTION.withInitialValue(Values.create("The RGBW color of all the lights")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("Scenario", NUMBER, Values.create(0),
+            LABEL.withInitialValue(Values.create("Scenario")),
+            DESCRIPTION.withInitialValue(Values.create("The scenario the lights are setup to")),
+            READ_ONLY,
+            RULE_STATE
+        )
+    ),
+
+    PEOPLE_COUNTER(ASSET_NAMESPACE + ":peopleCounter", "account-multiple", "4b5966", false,
+        new AttributeDescriptorImpl("peopleCountIn", NUMBER, Values.create(0),
+            LABEL.withInitialValue(Values.create("People Count In")),
+            DESCRIPTION.withInitialValue(Values.create("Cumulative number of people going into area")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("peopleCountOut", NUMBER, Values.create(0),
+            LABEL.withInitialValue(Values.create("People Count Out")),
+            DESCRIPTION.withInitialValue(Values.create("Cumulative number of people leaving area")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("peopleCountInMinute", NUMBER, Values.create(0),
+            LABEL.withInitialValue(Values.create("People Count In Minute")),
+            DESCRIPTION.withInitialValue(Values.create("Number of people going into area per minute")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("peopleCountOutMinute", NUMBER, Values.create(0),
+            LABEL.withInitialValue(Values.create("People Count Out Minute")),
+            DESCRIPTION.withInitialValue(Values.create("Number of people leaving area per minute")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("peopleCountTotal", NUMBER, Values.create(0),
+            LABEL.withInitialValue(Values.create("People Count Total")),
+            DESCRIPTION.withInitialValue(Values.create("cameraCountIn - cameraCountOut")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("peopleCountGrowth", NUMBER, Values.create(0),
+            LABEL.withInitialValue(Values.create("People Count Growth")),
+            DESCRIPTION.withInitialValue(Values.create("cameraCountIn - cameraCountOut")),
+            READ_ONLY,
+            RULE_STATE
+        )
+    ),
 
     THING(ASSET_NAMESPACE + ":thing", "cube-outline", null);
 

@@ -15,7 +15,7 @@ import {connect} from "pwa-helpers/connect-mixin";
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
 
-const logoImage = require("../../images/openremote-logo.png");
+const logoImage = require("../../images/logo.png");
 const logoMobileImage = require("../../images/logo-mobile.png");
 
 @customElement("my-app")
@@ -35,7 +35,7 @@ class MyApp extends connect(store)(LitElement) {
             :host {
                 --or-app-color2: ${unsafeCSS(DefaultColor2)};
                 --or-app-color3: #22211f;
-                --or-app-color4: #07601F;
+                --or-app-color4: #4D9D2A;
                 color: ${unsafeCSS(DefaultColor3)};
                 fill: ${unsafeCSS(DefaultColor3)};
                 font-size: 14px;

@@ -2,6 +2,38 @@ import {html, LitElement, property, css, query, customElement, PropertyValues} f
 import {store} from "../../store";
 import {connect} from "pwa-helpers/connect-mixin";
 import "@openremote/or-rules";
+import {RulesConfig} from "@openremote/or-rules";
+import {RulesetLang, AssetType, AttributeType} from "@openremote/model";
+
+const rulesConfig: RulesConfig = {
+    controls: {
+        allowedLanguages: [RulesetLang.JSON]
+    },
+    descriptors: {
+        all: {
+            excludeAssets: [
+                AssetType.BUILDING.type,
+                AssetType.CITY.type,
+                AssetType.AREA.type,
+                AssetType.FLOOR.type,
+            ],
+            assets: {
+                "*": {
+                    excludeAttributes: [
+                        AttributeType.LOCATION.attributeName
+                    ]
+                }
+            }
+        }
+    },
+    json: {
+        rule: {
+            reset: {
+                timer: "1h"
+            }
+        }
+    }
+};
 
 @customElement("page-rules")
 class PageRules extends connect(store)(LitElement)  {
@@ -21,7 +53,7 @@ class PageRules extends connect(store)(LitElement)  {
 
     protected render() {
         return html`
-            <or-rules></or-rules>
+            <or-rules .config="${rulesConfig}"></or-rules>
         `;
     }
 }

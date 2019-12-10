@@ -69,9 +69,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static GeoJSONPoint SMART_OFFICE_LOCATION = new GeoJSONPoint(5.460315214821094, 51.44541688237109);
     public static GeoJSONPoint SMART_BUILDING_LOCATION = new GeoJSONPoint(5.454027, 51.446308);
     public static GeoJSONPoint SMART_CITY_LOCATION = new GeoJSONPoint(5.3814711, 51.4484647);
-    public static GeoJSONPoint AREA_1_LOCATION = new GeoJSONPoint(5.4760743, 51.4392638);
-    public static GeoJSONPoint AREA_2_LOCATION = new GeoJSONPoint(5.4719061, 51.4385647);
-    public static GeoJSONPoint AREA_3_LOCATION = new GeoJSONPoint(5.4533245, 51.4467305);
+    public static GeoJSONPoint AREA_1_LOCATION = new GeoJSONPoint(5.478478, 51.439272);
+    public static GeoJSONPoint AREA_2_LOCATION = new GeoJSONPoint(5.473829, 51.438744);
+    public static GeoJSONPoint AREA_3_LOCATION = new GeoJSONPoint(5.487478, 51.446979);
     public static final String agentProtocolConfigName = "simulator123";
     public static final String thingLightToggleAttributeName = "light1Toggle";
     final protected boolean importDemoScenes;
@@ -401,7 +401,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         /* ############################ ROOMS ############################## */
 
-        Asset apartment1Livingroom = createDemoApartmentRoom(apartment1, "Living Room")
+        Asset apartment1Livingroom = createDemoApartmentRoom(apartment1, "Living Room 1")
             .addAttributes(
                     new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(5.454213, 51.446884).toValue()),
                     new AssetAttribute("lightsCeiling", NUMBER, Values.create(0))
@@ -444,7 +444,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Livingroom = assetStorageService.merge(apartment1Livingroom);
         apartment1LivingroomId = apartment1Livingroom.getId();
 
-        Asset apartment1Kitchen = createDemoApartmentRoom(apartment1, "Kitchen")
+        Asset apartment1Kitchen = createDemoApartmentRoom(apartment1, "Kitchen 1")
             .addAttributes(
                     new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(5.454122, 51.446800).toValue()),
                     new AssetAttribute("lights", AttributeValueType.BOOLEAN, Values.create(true))
@@ -491,7 +491,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Kitchen = assetStorageService.merge(apartment1Kitchen);
         apartment1KitchenId = apartment1Kitchen.getId();
 
-        Asset apartment1Hallway = createDemoApartmentRoom(apartment1, "Hallway")
+        Asset apartment1Hallway = createDemoApartmentRoom(apartment1, "Hallway 1")
             .addAttributes(
                     new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(5.454342, 51.446762).toValue()),
                     new AssetAttribute("lights", AttributeValueType.BOOLEAN, Values.create(true))
@@ -506,7 +506,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Hallway = assetStorageService.merge(apartment1Hallway);
         apartment1HallwayId = apartment1Hallway.getId();
 
-        Asset apartment1Bedroom1 = createDemoApartmentRoom(apartment1, "Bedroom")
+        Asset apartment1Bedroom1 = createDemoApartmentRoom(apartment1, "Bedroom 1")
                 .addAttributes(
                         new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(5.454332, 51.446830).toValue()),
                         new AssetAttribute("lights", AttributeValueType.BOOLEAN, Values.create(true))
@@ -533,7 +533,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Bedroom1 = assetStorageService.merge(apartment1Bedroom1);
         apartment1Bedroom1Id = apartment1Bedroom1.getId();
 
-        Asset apartment1Bathroom = new Asset("Bathroom", ROOM, apartment1);
+        Asset apartment1Bathroom = new Asset("Bathroom 1", ROOM, apartment1);
         apartment1Bathroom.addAttributes(
             new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(5.454227,51.446753).toValue()),
             new AssetAttribute("lights", AttributeValueType.BOOLEAN, Values.create(true))
@@ -595,7 +595,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment2 = assetStorageService.merge(apartment2);
         apartment2Id = apartment2.getId();
 
-        Asset apartment2Livingroom = new Asset("Living Room", ROOM, apartment2);
+        Asset apartment2Livingroom = new Asset("Living Room 2", ROOM, apartment2);
         apartment2Livingroom.addAttributes(
             new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(5.454109, 51.446631).toValue()),
             new AssetAttribute("motionSensor", AttributeValueType.BOOLEAN, Values.create(false))
@@ -651,7 +651,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);
         apartment2LivingroomId = apartment2Livingroom.getId();
 
-        Asset apartment2Bathroom = new Asset("Bathroom", ROOM, apartment2);
+        Asset apartment2Bathroom = new Asset("Bathroom 2", ROOM, apartment2);
         apartment2Bathroom.addAttributes(
             new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(5.454015, 51.446665).toValue()),
             new AssetAttribute("motionSensor", AttributeValueType.BOOLEAN, Values.create(false))
@@ -693,7 +693,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3 = assetStorageService.merge(apartment3);
         apartment3Id = apartment3.getId();
 
-        Asset apartment3Livingroom = new Asset("Living Room", ROOM, apartment3)
+        Asset apartment3Livingroom = new Asset("Living Room 3", ROOM, apartment3)
             .addAttributes(new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(5.453932, 51.446422).toValue()));
         apartment3Livingroom.addAttributes(
             new AssetAttribute("lightSwitch", AttributeValueType.BOOLEAN)
@@ -790,26 +790,29 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             );
         assetArea1 = assetStorageService.merge(assetArea1);
 
-        Asset camera1Asset = createDemoCameraAsset("Camera1", assetArea1, new GeoJSONPoint(5.477126, 51.439137), () -> new MetaItem[]{
+        Asset peopleCounter1Asset = createDemoPeopleCounterAsset("PeopleCounter 1", assetArea1, new GeoJSONPoint(5.477126, 51.439137), () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(smartCityServiceAgentId, "citySimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
-        camera1Asset = assetStorageService.merge(camera1Asset);
+        peopleCounter1Asset = assetStorageService.merge(peopleCounter1Asset);
 
-        Asset microPhone1Asset = createDemoMicrophoneAsset("Microphone1", assetArea1, new GeoJSONPoint(5.478092, 51.438655), () -> new MetaItem[]{
+        Asset microPhone1Asset = createDemoMicrophoneAsset("Microphone 1", assetArea1, new GeoJSONPoint(5.478092, 51.438655), () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(smartCityServiceAgentId, "citySimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
         microPhone1Asset = assetStorageService.merge(microPhone1Asset);
 
-        Asset enviroment1Asset = createDemoEnviromentAsset("Enviroment1", assetArea1, new GeoJSONPoint(5.478907, 51.438943),() -> new MetaItem[]{
+        Asset enviroment1Asset = createDemoEnvironmentAsset("Environment 1", assetArea1, new GeoJSONPoint(5.478907, 51.438943),() -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(smartCityServiceAgentId, "citySimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
         enviroment1Asset = assetStorageService.merge(enviroment1Asset);
 
-        Asset light1Asset = createDemoLightAsset("Light1", assetArea1, new GeoJSONPoint(5.477126, 51.439137));
+        Asset light1Asset = createDemoLightAsset("Light 1", assetArea1, new GeoJSONPoint(5.477126, 51.439137));
         light1Asset = assetStorageService.merge(light1Asset);
+
+        Asset light2Asset = createDemoLightAsset("Light 2", assetArea1, new GeoJSONPoint(5.477126, 51.439137));
+        light2Asset = assetStorageService.merge(light2Asset);
 
         // ################################ Realm B Area 2 ###################################
 
@@ -822,17 +825,17 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             );
         assetArea2 = assetStorageService.merge(assetArea2);
 
-        Asset camera2Asset = createDemoCameraAsset("Camera2", assetArea2, new GeoJSONPoint(5.473108, 51.438331), () -> new MetaItem[]{
+        Asset peopleCounter2Asset = createDemoPeopleCounterAsset("PeopleCounter 2", assetArea2, new GeoJSONPoint(5.473686, 51.438603), () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(smartCityServiceAgentId, "citySimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
-        camera2Asset = assetStorageService.merge(camera2Asset);
+        peopleCounter2Asset = assetStorageService.merge(peopleCounter2Asset);
 
-        Asset enviroment2Asset = createDemoEnviromentAsset("Enviroment2", assetArea2, new GeoJSONPoint(5.474277, 51.438698), () -> new MetaItem[]{
+        Asset environment2Asset = createDemoEnvironmentAsset("Environment 2", assetArea2, new GeoJSONPoint(5.473552, 51.438412), () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(smartCityServiceAgentId, "citySimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
-        enviroment2Asset = assetStorageService.merge(enviroment2Asset);
+        environment2Asset = assetStorageService.merge(environment2Asset);
 
 
         // ################################ Realm B Area 3 ###################################
@@ -846,18 +849,18 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             );
         assetArea3 = assetStorageService.merge(assetArea3);
 
-        Asset camera3Asset = createDemoCameraAsset("Camera3", assetArea3, new GeoJSONPoint(5.455934, 51.447097), () -> new MetaItem[]{
+        Asset peopleCounter3Asset = createDemoPeopleCounterAsset("PeopleCounter 3", assetArea3, new GeoJSONPoint(5.487234, 51.447065), () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(smartCityServiceAgentId, "citySimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
-        camera3Asset = assetStorageService.merge(camera3Asset);
+        peopleCounter3Asset = assetStorageService.merge(peopleCounter3Asset);
 
-        AssetRuleset camera3Rules = new AssetRuleset(
-            camera3Asset.getId(), "Camera3_Rules", GROOVY, IOUtils.toString(getClass().getResource("/demo/rules/DemoSmartCityCamera.groovy"), StandardCharsets.UTF_8)
+        AssetRuleset peopleCounter3Rules = new AssetRuleset(
+            peopleCounter3Asset.getId(), "PeopleCounter 3 Rules", GROOVY, IOUtils.toString(getClass().getResource("/demo/rules/DemoSmartCityCamera.groovy"), StandardCharsets.UTF_8)
         );
-        camera3Rules = rulesetStorageService.merge(camera3Rules);
+        peopleCounter3Rules = rulesetStorageService.merge(peopleCounter3Rules);
 
-        Asset light3Asset = createDemoLightAsset("Light3", assetArea3, new GeoJSONPoint(5.454318, 51.447623));
-        light3Asset = assetStorageService.merge(light3Asset);
+        Asset lightController_3Asset = createDemoLightControllerAsset("LightController_3", assetArea3, new GeoJSONPoint(5.487478, 51.446979));
+        lightController_3Asset = assetStorageService.merge(lightController_3Asset);
     }
 }

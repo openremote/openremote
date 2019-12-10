@@ -85,6 +85,7 @@ public class RulesDemoSetup extends AbstractManagerSetup {
             Ruleset ruleset = new AssetRuleset(
                 managerDemoSetup.apartment1Id, "Demo Residence - Smart Start Switch", Ruleset.Lang.GROOVY, rules
             );
+            ruleset.setEnabled(false);
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
 

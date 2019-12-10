@@ -32,7 +32,7 @@ import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.asset.AssetType.AGENT
 import static org.openremote.model.asset.AssetType.AREA
 import static org.openremote.model.asset.AssetType.BUILDING
-import static org.openremote.model.asset.AssetType.CAMERA
+import static org.openremote.model.asset.AssetType.PEOPLE_COUNTER
 import static org.openremote.model.asset.AssetType.CITY
 import static org.openremote.model.asset.AssetType.CONSOLE
 import static org.openremote.model.asset.AssetType.ENVIRONMENT_SENSOR
@@ -83,7 +83,7 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
         assetDescriptors[8].name == MICROPHONE.name
         assetDescriptors[9].name == ENVIRONMENT_SENSOR.name
         assetDescriptors[10].name == LIGHT.name
-        assetDescriptors[11].name == CAMERA.name
+        assetDescriptors[11].name == PEOPLE_COUNTER.name
         assetDescriptors[12].name == THING.name
 
         when: "a request for Attribute types is made"
