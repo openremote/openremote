@@ -16,7 +16,6 @@ dependencies {
     compile "com.google.guava:guava:$guavaVersion"
     compile "com.devskiller.friendly-id:friendly-id:$friendlyIdVersion"
 
-    compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:$jacksonVersion"
     compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
     compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     compile "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
