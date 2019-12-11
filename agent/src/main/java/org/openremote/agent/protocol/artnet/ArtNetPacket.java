@@ -8,8 +8,8 @@ import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-import java.util.ArrayList;
-import java.util.Optional;
+import java.nio.ByteBuffer;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ArtNetPacket {
@@ -74,5 +74,39 @@ public class ArtNetPacket {
             }
         }
         return buf;
+    }
+
+    public ByteBuf[] assemblePacket(ByteBuf buf, ArrayList<ArtNetDMXLight> lights)
+    {
+        //Detect highest universe
+        int highestUniverse = Collections.max(lights, Comparator.comparing(l -> l.universe)).universe;
+
+        //Create a packet for each universe
+        for (int u = 0; u <= highestUniverse; u++)
+        {
+            ArrayList<ArtNetDMXLight> universeLights = new ArrayList<>();
+
+            int finalU = u;//Required for lambda statements.
+            List<ArtNetDMXLight> filteredLights =
+                    lights.stream().filter(x -> lights.stream().anyMatch(y -> y.universe == finalU)).collect(Collectors.toList());
+
+            universeLights.addAll(filteredLights);
+
+            /*TODO: Add to a buffer array
+            //Prefix package
+            buf.writeBytes(prefix);
+            buf.writeByte(0); // Sequence
+            buf.writeByte(0); // Physical
+            buf.writeByte((universe >> 8) & 0xff);
+            buf.writeByte(universe & 0xff);
+            */
+        }
+
+        for (ArtNetDMXLight light : lights)
+        {
+            buf = light.toBuffer(buf);//toBuffer effectively appends to the buffer.
+        }
+
+        return new ByteBuf[1];//TEST data
     }
 }

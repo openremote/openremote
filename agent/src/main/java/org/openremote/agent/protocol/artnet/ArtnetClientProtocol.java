@@ -139,6 +139,8 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
                 //Reading configuration
 
+                //Load states of all other lamps
+
                 //Build packet
 
                 //Send packet (Look over it)
@@ -322,6 +324,8 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
         return ATTRIBUTE_META_ITEM_DESCRIPTORS;
     }
+
+
 
     public class ArtnetLight {
 
