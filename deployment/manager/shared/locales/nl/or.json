@@ -115,5 +115,12 @@
   "string": "Tekst",
   "operator":  "Operator",
   "area": "Gebied",
-  "timestamp": "Tijdsaanduiding"
+  "timestamp": "Tijdsaanduiding",
+  "frequency": "Frequentie",
+  "everyTime": "Iedere keer",
+  "onlyOnce": "Eenmalig",
+  "oncePerHour": "Max. 1x per uur",
+  "oncePerDay": "Max. 1x per dag",
+  "oncePerWeek": "Max. 1x per week",
+  "oncePerMonth": "Max. 1x per maand"
 }
