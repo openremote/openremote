@@ -26,7 +26,6 @@ import java.util.Arrays;
 
 public class SyslogConfig {
 
-    public static final SyslogLevel DEFAULT_LEVEL = SyslogLevel.INFO;
     public static final int DEFAULT_LIMIT = 50;
 
     @NotNull

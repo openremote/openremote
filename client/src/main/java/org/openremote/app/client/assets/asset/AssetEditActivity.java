@@ -35,6 +35,7 @@ import org.openremote.app.client.widget.AttributeLinkEditor;
 import org.openremote.app.client.widget.AttributeRefEditor;
 import org.openremote.app.client.widget.FormButton;
 import org.openremote.app.client.widget.ValueEditors;
+import org.openremote.model.Constants;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.AgentLink;
@@ -147,7 +148,7 @@ public class AssetEditActivity
 
     @Override
     protected String[] getRequiredRoles() {
-        return new String[]{"read:assets", "write:assets"};
+        return new String[]{Constants.READ_ASSETS_ROLE, Constants.WRITE_ASSETS_ROLE};
     }
 
     @Override

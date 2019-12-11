@@ -165,31 +165,31 @@ public class HeaderPresenter implements HeaderView.Presenter {
 
     @Override
     public boolean isMapEnabled() {
-        return app.getSecurity().hasResourceRoleOrIsSuperUser("read:map", Constants.KEYCLOAK_CLIENT_ID);
+        return app.getSecurity().hasResourceRoleOrIsSuperUser(Constants.READ_MAP_ROLE, Constants.KEYCLOAK_CLIENT_ID);
     }
 
     @Override
     public boolean isAssetsEnabled() {
-        return app.getSecurity().hasResourceRoleOrIsSuperUser("read:assets", Constants.KEYCLOAK_CLIENT_ID);
+        return app.getSecurity().hasResourceRoleOrIsSuperUser(Constants.READ_ASSETS_ROLE, Constants.KEYCLOAK_CLIENT_ID);
     }
 
     @Override
     public boolean isRulesEnabled() {
-        return app.getSecurity().hasResourceRoleOrIsSuperUser("read:rules", Constants.KEYCLOAK_CLIENT_ID);
+        return app.getSecurity().hasResourceRoleOrIsSuperUser(Constants.READ_RULES_ROLE, Constants.KEYCLOAK_CLIENT_ID);
     }
 
     @Override
     public boolean isNotificationsEnabled() {
-        return app.getSecurity().hasResourceRoleOrIsSuperUser("read:admin", Constants.KEYCLOAK_CLIENT_ID);
+        return app.getSecurity().hasResourceRoleOrIsSuperUser(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID);
     }
 
     @Override
     public boolean isAppsEnabled() {
-        return app.getSecurity().hasResourceRoleOrIsSuperUser("read:consoles", Constants.KEYCLOAK_CLIENT_ID);
+        return app.getSecurity().hasResourceRoleOrIsSuperUser(Constants.READ_APPS_ROLE, Constants.KEYCLOAK_CLIENT_ID);
     }
 
     @Override
     public boolean isAdminEnabled() {
-        return app.getSecurity().hasResourceRoleOrIsSuperUser("read:admin", Constants.KEYCLOAK_CLIENT_ID);
+        return app.getSecurity().hasResourceRoleOrIsSuperUser(Constants.READ_ADMIN_ROLE, Constants.KEYCLOAK_CLIENT_ID);
     }
 }

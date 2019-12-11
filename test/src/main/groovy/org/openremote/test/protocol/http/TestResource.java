@@ -31,7 +31,7 @@ public interface TestResource {
 
     @POST
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({"write:assets"})
+    @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
     void postAsset(Asset asset);
 
     @GET

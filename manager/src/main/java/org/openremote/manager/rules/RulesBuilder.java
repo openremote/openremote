@@ -25,6 +25,8 @@ import org.jeasy.rules.core.RuleBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.openremote.manager.rules.RulesEngine.RULES_FIRED_LOG;
+
 /**
  * Call {@link #add()} to add rules.
  */
@@ -111,7 +113,10 @@ public class RulesBuilder {
                         throw new IllegalArgumentException("Error evaluating condition of rule '" + builder.name + "': result is not boolean but " + result);
                     }
                 })
-                .then(facts -> builder.action.execute((RulesFacts) facts)).build();
+                .then(facts -> {
+                    RULES_FIRED_LOG.info("Rule fired '" + builder.name + "'");
+                    builder.action.execute((RulesFacts) facts);
+                }).build();
             rules.add(rule);
         }
         return rules.toArray(new Rule[rules.size()]);

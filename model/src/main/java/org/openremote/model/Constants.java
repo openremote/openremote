@@ -25,6 +25,17 @@ public interface Constants {
     String MASTER_REALM = "master";
     String MASTER_REALM_ADMIN_USER = "admin";
     String REALM_ADMIN_ROLE = "admin";
+    String READ_LOGS_ROLE = "read:logs";
+    String READ_ADMIN_ROLE = "read:admin";
+    String READ_MAP_ROLE = "read:map";
+    String READ_ASSETS_ROLE = "read:assets";
+    String READ_RULES_ROLE = "read:rules";
+    String READ_APPS_ROLE = "read:apps";
+    String WRITE_USER_ROLE = "write:user";
+    String WRITE_ADMIN_ROLE = "write:admin";
+    String WRITE_LOGS_ROLE = "write:logs";
+    String WRITE_ASSETS_ROLE = "write:assets";
+    String WRITE_RULES_ROLE = "write:rules";
     String AUTH_CONTEXT = "AUTH_CONTEXT";
     int ACCESS_TOKEN_LIFESPAN_SECONDS = 60; // 1 minute
     String PERSISTENCE_SEQUENCE_ID_GENERATOR = "SEQUENCE_ID_GENERATOR";

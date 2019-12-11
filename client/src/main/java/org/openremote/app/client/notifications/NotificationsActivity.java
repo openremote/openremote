@@ -35,6 +35,7 @@ import org.openremote.app.client.assets.browser.TenantTreeNode;
 import org.openremote.app.client.event.ShowSuccessEvent;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetResource;
 import org.openremote.model.event.bus.EventBus;
@@ -267,7 +268,7 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
 
     @Override
     protected String[] getRequiredRoles() {
-        return new String[]{"read:admin", "write:admin"};
+        return new String[]{Constants.READ_ADMIN_ROLE, Constants.WRITE_ADMIN_ROLE};
     }
 
     @Override

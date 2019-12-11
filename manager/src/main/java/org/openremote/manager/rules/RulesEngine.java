@@ -78,6 +78,9 @@ public class RulesEngine<T extends Ruleset> {
     // Separate logger for execution of rules
     public static final Logger RULES_LOG = Logger.getLogger("org.openremote.rules.Rules");
 
+    // Separate logger for fired rules
+    public static final Logger RULES_FIRED_LOG = Logger.getLogger("org.openremote.rules.RulesFired");
+
     // Separate logger for periodic stats printer
     public static final Logger STATS_LOG = Logger.getLogger("org.openremote.rules.RulesEngineStats");
 

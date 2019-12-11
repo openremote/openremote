@@ -19,14 +19,17 @@
  */
 package org.openremote.model.http;
 
+import javaemul.internal.annotations.GwtIncompatible;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import org.openremote.model.interop.Function;
 
 import javax.ws.rs.HeaderParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.UriInfo;
 
 @JsType
 public class RequestParams<IN, OUT> {
@@ -34,6 +37,11 @@ public class RequestParams<IN, OUT> {
     @HeaderParam(HttpHeaders.AUTHORIZATION)
     @JsProperty(name = HttpHeaders.AUTHORIZATION)
     public String authorization;
+
+    @JsIgnore
+    @Context
+    @GwtIncompatible
+    public UriInfo uriInfo;
 
     @JsProperty(name = "$entity")
     public String entity;

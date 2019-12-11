@@ -19,6 +19,8 @@
  */
 package org.openremote.app.client.admin.syslog;
 
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsType;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.admin.AbstractAdminActivity;
 import org.openremote.app.client.admin.AdminView;
@@ -26,15 +28,17 @@ import org.openremote.app.client.admin.navigation.AdminNavigation;
 import org.openremote.app.client.event.SharedEventArrayMapper;
 import org.openremote.app.client.event.ShowSuccessEvent;
 import org.openremote.app.client.mvp.AcceptsView;
+import org.openremote.model.Constants;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.event.shared.SharedEvent;
-import org.openremote.model.syslog.SyslogConfig;
-import org.openremote.model.syslog.SyslogEvent;
-import org.openremote.model.syslog.SyslogLevel;
-import org.openremote.model.syslog.SyslogResource;
+import org.openremote.model.http.RequestParams;
+import org.openremote.model.syslog.*;
 
 import javax.inject.Inject;
+import javax.ws.rs.BeanParam;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -43,8 +47,15 @@ public class AdminSyslogActivity
     extends AbstractAdminActivity<AdminSyslogPlace, AdminSyslog>
     implements AdminSyslog.Presenter {
 
+    // Crappy hack to keep GWT working
+    @JsType(isNative = true)
+    public interface GwtSyslogResource extends SyslogResource {
+        @JsMethod(name = "getEvents")
+        List<SyslogEvent> getEventsGwt(@BeanParam RequestParams requestParams, @QueryParam("level") SyslogLevel level, @QueryParam("per_page") Integer perPage, @QueryParam("page") Integer page, @QueryParam("from") Long from, @QueryParam("to") Long to, @QueryParam("category") List<SyslogCategory> categories, @QueryParam("subCategory") List<String> subCategories);
+    }
+
     final Environment environment;
-    final SyslogResource syslogResource;
+    final GwtSyslogResource syslogResource;
     final SyslogConfigMapper syslogConfigMapper;
     final SharedEventArrayMapper sharedEventArrayMapper;
 
@@ -57,7 +68,7 @@ public class AdminSyslogActivity
                                AdminView adminView,
                                AdminNavigation.Presenter adminNavigationPresenter,
                                AdminSyslog view,
-                               SyslogResource syslogResource,
+                               GwtSyslogResource syslogResource,
                                SyslogConfigMapper syslogConfigMapper,
                                SharedEventArrayMapper sharedEventArrayMapper) {
         super(adminView, adminNavigationPresenter, view);
@@ -69,7 +80,7 @@ public class AdminSyslogActivity
 
     @Override
     protected String[] getRequiredRoles() {
-        return new String[]{"read:admin"};
+        return new String[]{Constants.READ_ADMIN_ROLE};
     }
 
     @Override
@@ -166,7 +177,7 @@ public class AdminSyslogActivity
         adminContent.setFormBusy(true);
         environment.getApp().getRequests().sendAndReturn(
             sharedEventArrayMapper,
-            requestParams -> syslogResource.getEvents(requestParams, filterLevel, filterLimit),
+            requestParams -> syslogResource.getEventsGwt(requestParams, filterLevel, filterLimit, null, null, null, null, null),
             200,
             events -> {
                 List<SyslogEvent> syslogEvents = new ArrayList<>();

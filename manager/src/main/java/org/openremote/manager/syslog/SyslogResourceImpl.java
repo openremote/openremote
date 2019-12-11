@@ -20,16 +20,16 @@
 package org.openremote.manager.syslog;
 
 import org.openremote.container.web.WebResource;
-import org.openremote.model.syslog.SyslogConfig;
-import org.openremote.model.syslog.SyslogResource;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.syslog.SyslogEvent;
-import org.openremote.model.syslog.SyslogLevel;
+import org.openremote.model.syslog.*;
+import org.openremote.model.util.Pair;
 
 import javax.ws.rs.BeanParam;
+import javax.ws.rs.core.Response;
+import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 
-import static org.openremote.model.syslog.SyslogConfig.DEFAULT_LEVEL;
 import static org.openremote.model.syslog.SyslogConfig.DEFAULT_LIMIT;
 
 public class SyslogResourceImpl extends WebResource implements SyslogResource {
@@ -41,12 +41,35 @@ public class SyslogResourceImpl extends WebResource implements SyslogResource {
     }
 
     @Override
-    public SyslogEvent[] getEvents(@BeanParam RequestParams requestParams, SyslogLevel level, Integer limit) {
-        List<SyslogEvent> events = syslogService.getLastStoredEvents(
-            level != null ? level : DEFAULT_LEVEL,
-            limit != null ? limit : DEFAULT_LIMIT
+    public Response getEvents(@BeanParam RequestParams requestParams, SyslogLevel level, Integer perPage, Integer page, Long from, Long to, List<SyslogCategory> categories, List<String> subCategories) {
+
+        perPage = perPage != null ? perPage : DEFAULT_LIMIT;
+        page = page != null ? page : 1;
+
+        Pair<Long, List<SyslogEvent>> result = syslogService.getEvents(
+            level,
+            perPage,
+            page,
+            from != null ? Instant.ofEpochMilli(from) : null,
+            to != null ? Instant.ofEpochMilli(to) : null,
+            categories,
+            subCategories
         );
-        return events.toArray(new SyslogEvent[events.size()]);
+
+        if (result == null) {
+            return Response.ok(Collections.emptyList()).build();
+        }
+
+        long lastPage = (result.key / perPage) + 1L;
+        Response.ResponseBuilder rb = Response.ok(result.value.toArray(new SyslogEvent[0]));
+
+        if (page != lastPage) {
+            rb.link(requestParams.uriInfo.getRequestUriBuilder().replaceQueryParam("page", page + 1).build(), "next");
+        }
+
+        rb.link(requestParams.uriInfo.getRequestUriBuilder().replaceQueryParam("page", lastPage).build(), "last");
+
+        return rb.build();
     }
 
     @Override

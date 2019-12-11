@@ -20,7 +20,6 @@
 package org.openremote.manager.rules;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.openremote.container.Container;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
