@@ -134,6 +134,15 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
             @Override
             protected void encode(String message, ByteBuf buf) {
+
+                //Receive Values (Id of the lamp and values to be sent (Maybe also Dim and On/Off values))
+
+                //Reading configuration
+
+                //Build packet
+
+                //Send packet (Look over it)
+
                 Value msg = null;
                 try{
                     msg = Values.parse(message).get();
@@ -147,19 +156,23 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         };
     }
 
+    //Runs if a new Asset is created with an ArtNet Client as attribute.
     @Override
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         super.doLinkProtocolConfiguration(protocolConfiguration);
         //TODO DO NULL-CHECK
-        artnetControls.put(protocolConfiguration.getAssetId().get(), new HashMap<>());//Initialize Parent ArtnetNetwork with empty HashMap to put Universes in
+        //Initialize Parent ArtNet Network with empty HashMap to house the Universes
+        artnetControls.put(protocolConfiguration.getAssetId().get(), new HashMap<>());
     }
 
+    //Runs if an Asset is deleted with an ArtNet Client as attribute.
     @Override
     protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         super.doUnlinkProtocolConfiguration(protocolConfiguration);
         artnetControls.remove(protocolConfiguration.getAssetId().get());
     }
 
+    //Runs if an Attribute with an Agent protocol link is being linked to this ArtNet Network
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration)
     {
@@ -174,7 +187,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         if(universe != null)
         {
             LOG.info("Universe is already linked to another Network");
-            return;
+            //return;
         }
 
         artnetControls.get(networkId).put(universeId, new ArrayList<ArtnetLight>());
