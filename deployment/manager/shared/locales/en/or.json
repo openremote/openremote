@@ -119,8 +119,8 @@
   "frequency": "Frequency",
   "everyTime": "Every time",
   "onlyOnce": "Only once",
-  "oncePerHour": "Once per hour",
-  "oncePerDay": "Once per day",
-  "oncePerWeek": "Once per week",
-  "oncePerMonth": "Once per month"
+  "oncePerHour": "Max. once per hour",
+  "oncePerDay": "Max. once per day",
+  "oncePerWeek": "Max. once per week",
+  "oncePerMonth": "Max. once per month"
 }
