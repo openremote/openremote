@@ -32,6 +32,7 @@ import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.asset.AssetType.AGENT
 import static org.openremote.model.asset.AssetType.AREA
 import static org.openremote.model.asset.AssetType.BUILDING
+import static org.openremote.model.asset.AssetType.LIGHT_CONTROLLER
 import static org.openremote.model.asset.AssetType.PEOPLE_COUNTER
 import static org.openremote.model.asset.AssetType.CITY
 import static org.openremote.model.asset.AssetType.CONSOLE
@@ -41,6 +42,7 @@ import static org.openremote.model.asset.AssetType.LIGHT
 import static org.openremote.model.asset.AssetType.MICROPHONE
 import static org.openremote.model.asset.AssetType.RESIDENCE
 import static org.openremote.model.asset.AssetType.ROOM
+import static org.openremote.model.asset.AssetType.SOUND_EVENT
 import static org.openremote.model.asset.AssetType.THING
 
 class AssetModelResourceTest extends Specification implements ManagerContainerTrait {
@@ -69,7 +71,7 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
         def assetDescriptors = assetModelResource.getAssetDescriptors(null)
 
         then: "the default asset types should be present"
-        assetDescriptors.size() == 13
+        assetDescriptors.size() == 15
         assetDescriptors[0].name == BUILDING.name
         assetDescriptors[0].attributeDescriptors.length == 5
         assetDescriptors[0].attributeDescriptors.find {it.attributeName == AttributeType.SURFACE_AREA.attributeName}.valueDescriptor.valueType == ValueType.NUMBER
@@ -81,10 +83,12 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
         assetDescriptors[6].name == AGENT.name
         assetDescriptors[7].name == CONSOLE.name
         assetDescriptors[8].name == MICROPHONE.name
-        assetDescriptors[9].name == ENVIRONMENT_SENSOR.name
-        assetDescriptors[10].name == LIGHT.name
-        assetDescriptors[11].name == PEOPLE_COUNTER.name
-        assetDescriptors[12].name == THING.name
+        assetDescriptors[9].name == SOUND_EVENT.name
+        assetDescriptors[10].name == ENVIRONMENT_SENSOR.name
+        assetDescriptors[11].name == LIGHT.name
+        assetDescriptors[12].name == LIGHT_CONTROLLER.name
+        assetDescriptors[13].name == PEOPLE_COUNTER.name
+        assetDescriptors[14].name == THING.name
 
         when: "a request for Attribute types is made"
 

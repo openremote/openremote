@@ -186,7 +186,6 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_EVENT_EXPIRES, Values.create("45m")),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
                     new MetaItem(FORMAT, Values.create("%4d ppm")),
                     new MetaItem(STORE_DATA_POINTS)
@@ -204,7 +203,6 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_EVENT_EXPIRES, Values.create("45m")),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
                     new MetaItem(FORMAT, Values.create("%3d %%")),
                     new MetaItem(STORE_DATA_POINTS)
@@ -222,7 +220,6 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
                     new MetaItem(FORMAT, Values.create("%0.1f° C")),
                     new MetaItem(STORE_DATA_POINTS)

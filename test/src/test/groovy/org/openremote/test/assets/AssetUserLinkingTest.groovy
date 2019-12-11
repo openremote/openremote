@@ -64,7 +64,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
             it.id.realm == keycloakDemoSetup.tenantBuilding.realm &&
                     it.id.userId == keycloakDemoSetup.testuser3Id &&
                     it.id.assetId == managerDemoSetup.apartment1LivingroomId &&
-                    it.assetName == "Living Room" &&
+                    it.assetName == "Living Room 1" &&
                     it.parentAssetName == "Apartment 1" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
@@ -72,7 +72,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
             it.id.realm == keycloakDemoSetup.tenantBuilding.realm &&
                     it.id.userId == keycloakDemoSetup.testuser3Id &&
                     it.id.assetId == managerDemoSetup.apartment1KitchenId &&
-                    it.assetName == "Kitchen" &&
+                    it.assetName == "Kitchen 1" &&
                     it.parentAssetName == "Apartment 1" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
@@ -80,7 +80,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
             it.id.realm == keycloakDemoSetup.tenantBuilding.realm &&
                     it.id.userId == keycloakDemoSetup.testuser3Id &&
                     it.id.assetId == managerDemoSetup.apartment1HallwayId &&
-                    it.assetName == "Hallway" &&
+                    it.assetName == "Hallway 1" &&
                     it.parentAssetName == "Apartment 1" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
@@ -88,7 +88,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
             it.id.realm == keycloakDemoSetup.tenantBuilding.realm &&
                     it.id.userId == keycloakDemoSetup.testuser3Id &&
                     it.id.assetId == managerDemoSetup.apartment1Bedroom1Id &&
-                    it.assetName == "Bedroom" &&
+                    it.assetName == "Bedroom 1" &&
                     it.parentAssetName == "Apartment 1" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
@@ -96,7 +96,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
             it.id.realm == keycloakDemoSetup.tenantBuilding.realm &&
                     it.id.userId == keycloakDemoSetup.testuser3Id &&
                     it.id.assetId == managerDemoSetup.apartment1BathroomId &&
-                    it.assetName == "Bathroom" &&
+                    it.assetName == "Bathroom 1" &&
                     it.parentAssetName == "Apartment 1" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }

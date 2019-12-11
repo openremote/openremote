@@ -421,7 +421,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
         assets.get(1).getAttribute("currentTemperature").get().meta.size() == 6
         !assets.get(1).getAttribute("targetTemperature").get().getValue().isPresent()
-        assets.get(1).getAttribute("targetTemperature").get().meta.size() == 4
+        assets.get(1).getAttribute("targetTemperature").get().meta.size() == 5
         assets.get(2).id == managerDemoSetup.apartment1KitchenId
         assets.get(3).id == managerDemoSetup.apartment1HallwayId
         assets.get(4).id == managerDemoSetup.apartment1Bedroom1Id
@@ -629,7 +629,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.id == managerDemoSetup.apartment1LivingroomId
         asset.version == 0
         asset.createdOn.time < System.currentTimeMillis()
-        asset.name == "Living Room"
+        asset.name == "Living Room 1"
         asset.wellKnownType == AssetType.ROOM
         asset.parentId != null
         asset.parentName == "Apartment 1"
@@ -642,7 +642,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.getAttribute("lastPresenceDetected").isPresent()
         asset.getAttribute("lastPresenceDetected").get().meta.size() == 3
         asset.getAttribute("motionSensor").isPresent()
-        asset.getAttribute("motionSensor").get().meta.size() == 6
+        asset.getAttribute("motionSensor").get().meta.size() == 7
 
         when: "a query is executed to select a subset of protected attributes"
         asset = assetStorageService.find(
@@ -656,7 +656,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.id == managerDemoSetup.apartment1LivingroomId
         asset.version == 0
         asset.createdOn.time < System.currentTimeMillis()
-        asset.name == "Living Room"
+        asset.name == "Living Room 1"
         asset.wellKnownType == AssetType.ROOM
         asset.parentId != null
         asset.parentName == "Apartment 1"

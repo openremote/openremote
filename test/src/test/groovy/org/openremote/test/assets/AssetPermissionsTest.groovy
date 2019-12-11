@@ -584,23 +584,23 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         Asset apartment1Livingroom = assets[1]
         apartment1Livingroom.id == managerDemoSetup.apartment1LivingroomId
-        apartment1Livingroom.name == "Living Room"
+        apartment1Livingroom.name == "Living Room 1"
 
         Asset apartment1Kitchen = assets[2]
         apartment1Kitchen.id == managerDemoSetup.apartment1KitchenId
-        apartment1Kitchen.name == "Kitchen"
+        apartment1Kitchen.name == "Kitchen 1"
 
         Asset apartment1Hallway = assets[3]
         apartment1Hallway.id == managerDemoSetup.apartment1HallwayId
-        apartment1Hallway.name == "Hallway"
+        apartment1Hallway.name == "Hallway 1"
 
         Asset apartment1Bedroom1 = assets[4]
         apartment1Bedroom1.id == managerDemoSetup.apartment1Bedroom1Id
-        apartment1Bedroom1.name == "Bedroom"
+        apartment1Bedroom1.name == "Bedroom 1"
 
         Asset apartment1Bathroom = assets[5]
         apartment1Bathroom.id == managerDemoSetup.apartment1BathroomId
-        apartment1Bathroom.name == "Bathroom"
+        apartment1Bathroom.name == "Bathroom 1"
 
         when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -670,7 +670,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "the restricted asset details should be available"
         apartment1Livingroom.id == managerDemoSetup.apartment1LivingroomId
-        apartment1Livingroom.name == "Living Room"
+        apartment1Livingroom.name == "Living Room 1"
         def resultAttributes = apartment1Livingroom.getAttributesList()
         resultAttributes.size() == 7
         def currentTemperature = apartment1Livingroom.getAttribute("currentTemperature").get()
@@ -736,7 +736,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
 
         then: "the update should be ignored"
-        assert testAsset.getName() == "Living Room"
+        assert testAsset.getName() == "Living Room 1"
 
         when: "an asset is created in the authenticated realm"
         testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.tenantBuilding.realm)
