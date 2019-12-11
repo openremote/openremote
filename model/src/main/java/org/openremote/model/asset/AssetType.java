@@ -56,9 +56,9 @@ public enum AssetType implements AssetDescriptor {
 
     FLOOR(ASSET_NAMESPACE + ":floor", "stairs", null),
 
-    RESIDENCE(ASSET_NAMESPACE + ":residence", "home", null),
+    RESIDENCE(ASSET_NAMESPACE + ":residence", "home", "4c879b"),
 
-    ROOM(ASSET_NAMESPACE + ":room", "door", null),
+    ROOM(ASSET_NAMESPACE + ":room", "door", "2eaaa2"),
 
     AGENT(ASSET_NAMESPACE + ":agent", "cogs", null),
 

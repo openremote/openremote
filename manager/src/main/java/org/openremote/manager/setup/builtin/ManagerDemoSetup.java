@@ -808,10 +808,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         });
         enviroment1Asset = assetStorageService.merge(enviroment1Asset);
 
-        Asset light1Asset = createDemoLightAsset("Light 1", assetArea1, new GeoJSONPoint(5.477126, 51.439137));
+        Asset light1Asset = createDemoLightAsset("Light 1", assetArea1, new GeoJSONPoint(5.476111, 51.438492));
         light1Asset = assetStorageService.merge(light1Asset);
 
-        Asset light2Asset = createDemoLightAsset("Light 2", assetArea1, new GeoJSONPoint(5.477126, 51.439137));
+        Asset light2Asset = createDemoLightAsset("Light 2", assetArea1, new GeoJSONPoint(5.477272, 51.439214));
         light2Asset = assetStorageService.merge(light2Asset);
 
         // ################################ Realm B Area 2 ###################################

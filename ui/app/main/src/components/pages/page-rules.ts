@@ -16,6 +16,8 @@ const rulesConfig: RulesConfig = {
                 AssetType.CITY.type,
                 AssetType.AREA.type,
                 AssetType.FLOOR.type,
+                AssetType.AGENT.type,
+                AssetType.CONSOLE.type
             ],
             assets: {
                 "*": {
