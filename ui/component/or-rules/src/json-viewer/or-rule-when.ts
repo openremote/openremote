@@ -79,6 +79,8 @@ const style = css`
     .add-button-wrapper {
         display: flex;
         align-items: center;
+        white-space: nowrap;
+        text-transform: capitalize;
     }
     
     .add-button-wrapper > * {

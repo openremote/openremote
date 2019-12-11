@@ -74,11 +74,11 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
     return menu;
 }
 
-type resetOptions = {
-    [key: string]: string
+interface ResetOptions {
+    [key: string]: string;
 }
 
-const resetOptions:resetOptions = {
+const resetOptions: ResetOptions = {
     "everyTime": "everyTime",
     "onlyOnce": "onlyOnce",
     "1h": "oncePerHour",
@@ -89,16 +89,12 @@ const resetOptions:resetOptions = {
 
 function getResetMenu(config?: RulesConfig): MenuItem[] {
 
-    const menu: MenuItem[] = [];
-
-    menu.push(...Object.entries(resetOptions).map(([key, value]) => {
-        const content = html`
-                <span style="white-space: nowrap;">${i18next.t(value)}</span>
-            `;
-        return {content: content, value: key} as MenuItem
-    }));
-
-    return menu;
+    return Object.entries(resetOptions).map(([key, value]) => {
+        return {
+            text: i18next.t(value),
+            value: key
+        };
+    });
 }
 // language=CSS
 const style = css`
@@ -189,25 +185,27 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
     protected ruleResetTemplate(reset: RuleConditionReset) {
         let resetTemplate: TemplateResult | string = ``;
-
-        let buttonIcon = undefined;
-        let buttonColor = "inherit";
+        const buttonColor = "inherit";
 
         let value;
 
-        if (!reset) value = "onlyOnce";
-            else if (reset.valueChanges && reset.timestampChanges) value = "everyTime";
-            else if (reset.timer) value = reset.timer;
-            else if (this.config && this.config.json && this.config.json.rule && this.config.json.rule.reset) value = this.config.json.rule.reset.timer;
-
+        if (!reset) {
+            value = "onlyOnce";
+        } else if (reset.valueChanges && reset.timestampChanges) {
+            value = "everyTime";
+        } else if (reset.timer) {
+            value = reset.timer;
+        } else if (this.config && this.config.json && this.config.json.rule && this.config.json.rule.reset) {
+            value = this.config.json.rule.reset.timer;
+        }
 
         resetTemplate = html`
                 <div style="color: #${buttonColor}; margin-right: 6px;">
                     ${getContentWithMenuTemplate(
-            html`<or-input type="${InputType.BUTTON}"  label="${value ? i18next.t(resetOptions[value]) : i18next.t('frequency') }"></or-input>`,
-            getResetMenu(this.config),
-            value,
-            (value: string) => this.setResetOption(value))}
+                        html`<or-input type="${InputType.BUTTON}"  label="${value ? i18next.t(resetOptions[value]) : i18next.t("frequency") }"></or-input>`,
+                        getResetMenu(this.config),
+                        value,
+                        (values: string | string[]) => this.setResetOption(values as string))}
                 </div>
             `;
 
@@ -346,7 +344,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 delete this.rule.reset;
                 break;
             case "everyTime":
-                if (this.rule.reset) delete this.rule.reset.timer;
+                if (this.rule.reset) {
+                    delete this.rule.reset.timer;
+                }
                 this.rule.reset = {
                     valueChanges: true,
                     timestampChanges: true
@@ -354,8 +354,12 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 break;
             default:
                 if (this.rule.reset) {
-                    if (this.rule.reset.valueChanges) delete this.rule.reset.valueChanges;
-                    if (this.rule.reset.timestampChanges) delete this.rule.reset.timestampChanges;
+                    if (this.rule.reset.valueChanges) {
+                        delete this.rule.reset.valueChanges;
+                    }
+                    if (this.rule.reset.timestampChanges) {
+                        delete this.rule.reset.timestampChanges;
+                    }
                     this.rule.reset.timer = value;
                 } else {
                     this.rule.reset = {timer: value};
@@ -405,7 +409,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                         }
                     ]
                 }
-            }
+            };
         }
 
         const index = actions.indexOf(action);

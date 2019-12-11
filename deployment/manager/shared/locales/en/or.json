@@ -125,7 +125,7 @@
   "subCategory": "Sub category",
   "message": "Message",
   "warn": "Warning",
-  "error": "Error"
+  "error": "Error",
   "frequency": "Frequency",
   "everyTime": "Every time",
   "onlyOnce": "Only once",

@@ -248,6 +248,14 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
             }
         }
 
+        if (this.config && this.config.initialFilter) {
+            this.filter = this.config.initialFilter;
+        }
+
+        if (this.config && this.config.initialLevel) {
+            this.level = this.config.initialLevel;
+        }
+
         if (!this.live && !this.timestamp) {
             this.timestamp = new Date();
         }

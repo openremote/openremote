@@ -121,10 +121,6 @@ const style = css`
         flex-grow: 1;
     }
 
-    #type-selector {
-        margin-top: 10px;
-    }
-    
     #type {
         white-space: nowrap;
         text-transform: capitalize;
