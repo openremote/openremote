@@ -69,7 +69,8 @@ public enum AssetType implements AssetDescriptor {
             LABEL.withInitialValue(Values.create("Microphone Level")),
             DESCRIPTION.withInitialValue(Values.create("DB")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         )
     ),
 
@@ -78,31 +79,36 @@ public enum AssetType implements AssetDescriptor {
             LABEL.withInitialValue(Values.create("Last Aggression event")),
             DESCRIPTION.withInitialValue(Values.create("Input from microphone")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("lastGunshot", OBJECT, Values.createObject(),
             LABEL.withInitialValue(Values.create("Last Gunshot event")),
             DESCRIPTION.withInitialValue(Values.create("Input from microphone")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("lastBreakingGlass", OBJECT, Values.createObject(),
             LABEL.withInitialValue(Values.create("Last Breaking Glass event")),
             DESCRIPTION.withInitialValue(Values.create("Input from microphone")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("lastIntensity", OBJECT, Values.createObject(),
             LABEL.withInitialValue(Values.create("Last Intensity event")),
             DESCRIPTION.withInitialValue(Values.create("Input from microphone")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("lastEvent", OBJECT, Values.createObject(),
             LABEL.withInitialValue(Values.create("Last event")),
             DESCRIPTION.withInitialValue(Values.create("Input from microphone")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         )
     ),
 
@@ -111,40 +117,47 @@ public enum AssetType implements AssetDescriptor {
             LABEL.withInitialValue(Values.create("Temperature")),
             DESCRIPTION.withInitialValue(Values.create("Temperature in celcius")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("nO2", NUMBER, Values.create(0),
             LABEL.withInitialValue(Values.create("Nitrogen Level")),
             DESCRIPTION.withInitialValue(Values.create("µg/m3")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("relHumidity", PERCENTAGE, Values.create(0),
             LABEL.withInitialValue(Values.create("Humidity")),
             DESCRIPTION.withInitialValue(Values.create("Humidity in area")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("ozon", NUMBER, Values.create(0),
             LABEL.withInitialValue(Values.create("Ozon Level")),
             DESCRIPTION.withInitialValue(Values.create("µg/m3")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("particlesPM1", NUMBER, Values.create(0),
             LABEL.withInitialValue(Values.create("Particles PM 1")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("particlesPM2_5", NUMBER, Values.create(0),
             LABEL.withInitialValue(Values.create("Particles PM 2.5")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("particlesPM10", NUMBER, Values.create(0),
             LABEL.withInitialValue(Values.create("Particles PM 10")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         )
     ),
 
@@ -153,19 +166,22 @@ public enum AssetType implements AssetDescriptor {
             LABEL.withInitialValue(Values.create("Light status")),
             DESCRIPTION.withInitialValue(Values.create("Indicates if the light is on or off")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("lightDimLevel", PERCENTAGE, Values.create(0),
             LABEL.withInitialValue(Values.create("Light Dim Level")),
             DESCRIPTION.withInitialValue(Values.create("The level of dimming of the light")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("colorGBW", OBJECT, Values.createObject(),
             LABEL.withInitialValue(Values.create("Color RGBW")),
             DESCRIPTION.withInitialValue(Values.create("The RGBW color of the light")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("groupNumber", STRING, Values.create(""),
             LABEL.withInitialValue(Values.create("Group number")),
@@ -186,19 +202,22 @@ public enum AssetType implements AssetDescriptor {
             LABEL.withInitialValue(Values.create("Light all status")),
             DESCRIPTION.withInitialValue(Values.create("Indicates if all lights are on or off")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("lightAllDimLevel", PERCENTAGE, Values.create(0),
             LABEL.withInitialValue(Values.create("Light Dim Level")),
             DESCRIPTION.withInitialValue(Values.create("The level of dimming of all the lights")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("colorAllRGBW", OBJECT, Values.createObject(),
             LABEL.withInitialValue(Values.create("Color RGBW")),
             DESCRIPTION.withInitialValue(Values.create("The RGBW color of all the lights")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("Scenario", NUMBER, Values.create(0),
             LABEL.withInitialValue(Values.create("Scenario")),
@@ -213,37 +232,43 @@ public enum AssetType implements AssetDescriptor {
             LABEL.withInitialValue(Values.create("People Count In")),
             DESCRIPTION.withInitialValue(Values.create("Cumulative number of people going into area")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("peopleCountOut", NUMBER, Values.create(0),
             LABEL.withInitialValue(Values.create("People Count Out")),
             DESCRIPTION.withInitialValue(Values.create("Cumulative number of people leaving area")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("peopleCountInMinute", NUMBER, Values.create(0),
             LABEL.withInitialValue(Values.create("People Count In Minute")),
             DESCRIPTION.withInitialValue(Values.create("Number of people going into area per minute")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("peopleCountOutMinute", NUMBER, Values.create(0),
             LABEL.withInitialValue(Values.create("People Count Out Minute")),
             DESCRIPTION.withInitialValue(Values.create("Number of people leaving area per minute")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("peopleCountTotal", NUMBER, Values.create(0),
             LABEL.withInitialValue(Values.create("People Count Total")),
             DESCRIPTION.withInitialValue(Values.create("cameraCountIn - cameraCountOut")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("peopleCountGrowth", NUMBER, Values.create(0),
             LABEL.withInitialValue(Values.create("People Count Growth")),
             DESCRIPTION.withInitialValue(Values.create("cameraCountIn - cameraCountOut")),
             READ_ONLY,
-            RULE_STATE
+            RULE_STATE,
+            STORE_DATA_POINTS
         )
     ),
 

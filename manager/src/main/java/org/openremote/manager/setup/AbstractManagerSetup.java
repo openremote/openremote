@@ -148,7 +148,8 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(LABEL, Values.create("Motion sensor")),
                     new MetaItem(DESCRIPTION, Values.create("Greater than zero when motion is sensed")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null),
             new AssetAttribute("presenceDetected", AttributeValueType.BOOLEAN)
                 .setMeta(
@@ -187,7 +188,8 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
-                    new MetaItem(FORMAT, Values.create("%4d ppm"))
+                    new MetaItem(FORMAT, Values.create("%4d ppm")),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
         );
     }
@@ -204,7 +206,8 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
-                    new MetaItem(FORMAT, Values.create("%3d %%"))
+                    new MetaItem(FORMAT, Values.create("%3d %%")),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
         );
     }
@@ -221,7 +224,8 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
-                    new MetaItem(FORMAT, Values.create("%0.1f° C"))
+                    new MetaItem(FORMAT, Values.create("%0.1f° C")),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
         );
     }
@@ -237,7 +241,8 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
-                    new MetaItem(FORMAT, Values.create("%0f° C"))
+                    new MetaItem(FORMAT, Values.create("%0f° C")),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
         );
     }
@@ -313,7 +318,8 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
-                    new MetaItem(FORMAT, Values.create("%d"))
+                    new MetaItem(FORMAT, Values.create("%d")),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null),
             new AssetAttribute("ventilationAuto", BOOLEAN)
                 .setMeta(
@@ -518,42 +524,48 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(LABEL, Values.create("People Count In")),
                     new MetaItem(DESCRIPTION, Values.create("Cumulative number of people going into area")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get()),
             new AssetAttribute("peopleCountOut", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("People Count Out")),
                     new MetaItem(DESCRIPTION, Values.create("Cumulative number of people leaving area")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get()),
             new AssetAttribute("peopleCountInMinute", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("People Count In Minute")),
                     new MetaItem(DESCRIPTION, Values.create("Number of people going into area per minute")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get()),
             new AssetAttribute("peopleCountOutMinute", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("People Count Out Minute")),
                     new MetaItem(DESCRIPTION, Values.create("Number of people leaving area per minute")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get()),
             new AssetAttribute("peopleCountTotal", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("People Count Total")),
                     new MetaItem(DESCRIPTION, Values.create("cameraCountIn - cameraCountOut")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ),
             new AssetAttribute("peopleCountGrowth", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("People Count Growth")),
                     new MetaItem(DESCRIPTION, Values.create("cameraCountIn - cameraCountOut")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 )
         );
 
@@ -569,7 +581,8 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(LABEL, Values.create("Microphone Level")),
                     new MetaItem(DESCRIPTION, Values.create("dB")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get())
         );
         return microphoneAsset;
@@ -583,35 +596,40 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(LABEL, Values.create("Last Aggression event")),
                     new MetaItem(DESCRIPTION, Values.create("Input from microphone")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ),
             new AssetAttribute("lastGunshot", OBJECT)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last Gunshot event")),
                     new MetaItem(DESCRIPTION, Values.create("Input from microphone")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get()),
             new AssetAttribute("lastBreakingGlass", OBJECT)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last Breaking Glass event")),
                     new MetaItem(DESCRIPTION, Values.create("Input from microphone")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get()),
             new AssetAttribute("lastIntensity", OBJECT)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last Intensity event")),
                     new MetaItem(DESCRIPTION, Values.create("Input from microphone")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get()),
             new AssetAttribute("lastEvent", OBJECT)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last event")),
                     new MetaItem(DESCRIPTION, Values.create("Input from microphone")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 )
         );
         return soundEventAsset;
@@ -626,49 +644,56 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(LABEL, Values.create("Tempature Level")),
                     new MetaItem(DESCRIPTION, Values.create("oC")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get()),
             new AssetAttribute("nO2", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Nitrogen Level")),
                     new MetaItem(DESCRIPTION, Values.create("µg/m3")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get()),
             new AssetAttribute("relHumidity", PERCENTAGE)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Humidity")),
                     new MetaItem(DESCRIPTION, Values.create("Humidity in area")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get()),
             new AssetAttribute("ozon", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Ozon Level")),
                     new MetaItem(DESCRIPTION, Values.create("µg/m3")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get()),
             new AssetAttribute("particlesPM1", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Particles PM 1")),
                     new MetaItem(DESCRIPTION, Values.create("Particles PM 1")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get()),
             new AssetAttribute("particlesPM2_5", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Particles PM 2.5")),
                     new MetaItem(DESCRIPTION, Values.create("Particles PM 2.5")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get()),
             new AssetAttribute("particlesPM10", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Particles PM 10")),
                     new MetaItem(DESCRIPTION, Values.create("Particles PM 10")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get())
         );
 
@@ -683,25 +708,29 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Light Status")),
                     new MetaItem(DESCRIPTION, Values.create("On or off")),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ),
             new AssetAttribute("lightDimLevel", PERCENTAGE)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Light Dim Level")),
                     new MetaItem(DESCRIPTION, Values.create("The level of dimming of the light")),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ),
             new AssetAttribute("colorRGBW", OBJECT)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Color RGBW")),
                     new MetaItem(DESCRIPTION, Values.create("The RGBW color of the light")),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ),
             new AssetAttribute("groupNumber", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Group number")),
                     new MetaItem(DESCRIPTION, Values.create("Which group this lights belongs to")),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ),
             new AssetAttribute("scenario", STRING)
                 .setMeta(
@@ -722,19 +751,22 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Light Status")),
                     new MetaItem(DESCRIPTION, Values.create("On or off")),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ),
             new AssetAttribute("lightAllDimLevel", PERCENTAGE)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Light Dim Level")),
                     new MetaItem(DESCRIPTION, Values.create("The level of dimming of all the lights")),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ),
             new AssetAttribute("colorAllRGBW", OBJECT)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Color RGBW")),
                     new MetaItem(DESCRIPTION, Values.create("The RGBW color of all the lights")),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS)
                 ),
             new AssetAttribute("scenario", STRING)
                 .setMeta(
