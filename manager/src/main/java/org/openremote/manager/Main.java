@@ -24,6 +24,14 @@ import org.openremote.container.Container;
 public class Main {
 
     public static void main(String[] args) throws Exception {
-        new Container().startBackground();
+
+        Container container = new Container();
+
+        try {
+            container.startBackground();
+        } catch (Exception e) {
+            container.stop();
+            System.exit(1);
+        }
     }
 }

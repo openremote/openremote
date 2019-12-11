@@ -35,6 +35,7 @@ import org.openremote.container.util.LogUtil;
 
 import java.util.*;
 import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -142,7 +143,7 @@ public class Container {
         return waitingThread != null;
     }
 
-    public void start() {
+    public void start() throws Exception {
         synchronized (services) {
             if (isRunning())
                 return;
@@ -156,10 +157,9 @@ public class Container {
                     LOG.fine("Starting service: " + service);
                     service.start(Container.this);
                 }
-            } catch (RuntimeException ex) {
-                throw ex;
             } catch (Exception ex) {
-                throw new RuntimeException(ex);
+                LOG.log(Level.SEVERE, ">>> Runtime container startup failed", ex);
+                throw ex;
             }
             LOG.info(">>> Runtime container startup complete");
         }
