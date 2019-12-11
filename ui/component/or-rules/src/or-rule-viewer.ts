@@ -7,7 +7,7 @@ import {
     RulesConfig,
     RuleView
 } from "./index";
-import {RulesetLang, RulesetUnion} from "@openremote/model";
+import {RulesetLang, RulesetUnion, ClientRole} from "@openremote/model";
 import manager, {DefaultBoxShadow} from "@openremote/core";
 import "./json-viewer/or-rule-json-viewer";
 import "@openremote/or-input";
@@ -44,7 +44,7 @@ export const style = css`
         min-height: var(--internal-or-rules-header-height);
         height: var(--internal-or-rules-header-height);
         z-index: 1;
-        padding: 10px 20px 0 20px;
+        padding: 15px 20px;
         --or-icon-fill: var(--internal-or-rules-panel-color);
     }
     
@@ -72,6 +72,7 @@ export const style = css`
         background-color: var(--internal-or-rules-background-color);
         padding: 0px 10px;
         width: calc(100% - 20px);
+        margin-top: -10px;
     }
 `;
 
@@ -188,7 +189,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     }
 
     protected _isReadonly() {
-        return this.readonly || !manager.hasRole("write:rules");
+        return this.readonly || !manager.hasRole(ClientRole.WRITE_RULES);
     }
 
     protected _cannotSave() {

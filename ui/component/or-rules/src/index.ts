@@ -27,7 +27,8 @@ import {
     RulesetLang,
     RulesetUnion,
     TenantRuleset,
-    ValueType
+    ValueType,
+    ClientRole
 } from "@openremote/model";
 import "@openremote/or-translate";
 import {translate} from "@openremote/or-translate";
@@ -495,7 +496,7 @@ export const style = css`
         --internal-or-rules-list-button-size: var(--or-rules-list-button-size, 24px);
         
         --internal-or-rules-header-background-color: var(--or-rules-header-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
-        --internal-or-rules-header-height: var(--or-rules-header-height, 80px);
+        --internal-or-rules-header-height: var(--or-rules-header-height, unset);
         
         --or-panel-background-color: var(--internal-or-rules-panel-color);
     }
@@ -586,7 +587,7 @@ export class OrRules extends translate(i18next)(LitElement) {
     }
 
     protected isReadonly(): boolean {
-        return this.readonly || !manager.hasRole("write:rules");
+        return this.readonly || !manager.hasRole(ClientRole.WRITE_RULES);
     }
 
     protected _onRequestAdd(e: OrRulesRequestAddEvent) {

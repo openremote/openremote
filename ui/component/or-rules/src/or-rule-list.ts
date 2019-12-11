@@ -1,5 +1,5 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
-import {JsonRule, RuleCondition, RulesetLang, Tenant, TenantRuleset} from "@openremote/model";
+import {JsonRule, RuleCondition, RulesetLang, Tenant, TenantRuleset, ClientRole} from "@openremote/model";
 import "@openremote/or-translate";
 import manager, {EventCallback, OREvent} from "@openremote/core";
 import moment from "moment";
@@ -158,6 +158,10 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
         const result = super.shouldUpdate(_changedProperties);
 
+        if (!this.sortBy) {
+            this.sortBy = "name";
+        }
+
         if (_changedProperties.has("language")) {
             this._updateLanguage();
         }
@@ -211,7 +215,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                 addTemplate = getContentWithMenuTemplate(
                     html`<or-input type="${InputType.BUTTON}" icon="plus"></or-input>`,
                     allowedLanguages.map((l) => {
-                        return {value: l, content: html`<span>${l}</span>`} as MenuItem;
+                        return {value: l, text: l} as MenuItem;
                     }),
                     this.language,
                     (v) => this._onAddClicked(v as RulesetLang));
@@ -236,9 +240,9 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                         
                         ${getContentWithMenuTemplate(
                             html`<or-input type="${InputType.BUTTON}" icon="sort-variant"></or-input>`,
-                            ["name", "createdOn"].map((sort) => {return {value: sort, content: html`<span>${i18next.t(sort)}</span>`} as MenuItem;}),
+                            ["name", "createdOn"].map((sort) => { return {value: sort, text: i18next.t(sort)} as MenuItem; }),
                             this.sortBy,
-                            (v) => this._onSortClicked(v))}
+                            (v) => this._onSortClicked(v as string))}
                     </div>
                 </div>
         
@@ -262,7 +266,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     }
 
     protected _isReadonly() {
-        return this.readonly || !manager.hasRole("write:rules");
+        return this.readonly || !manager.hasRole(ClientRole.WRITE_RULES);
     }
 
     protected _nodeTemplate(node: RulesetNode): TemplateResult | string {

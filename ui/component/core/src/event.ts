@@ -529,7 +529,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
                 let str = msg.substring(EVENT_MESSAGE_PREFIX.length);
                 let triggered = JSON.parse(str) as TriggeredEventSubscription;
                 if (triggered.events) {
-                    triggered.events.forEach(event => {
+                    triggered.events.forEach((event) => {
                         this._onMessageReceived(triggered.subscriptionId!, event);
                     });
                 }

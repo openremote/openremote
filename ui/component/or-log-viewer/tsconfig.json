@@ -3,10 +3,14 @@
   "compilerOptions": {
     "outDir": "./dist",
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
-    "rootDir": "src",
-    "preserveConstEnums": true
+    "rootDir": "src"
   },
   "include": [
     "./src"
+  ],
+  "references": [
+    { "path": "../core" },
+    { "path": "../or-input" },
+    { "path": "../or-translate" }
   ]
 }

@@ -110,7 +110,7 @@ const style = css`
     :host {
         --internal-or-attribute-history-background-color: var(--or-attribute-history-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
         --internal-or-attribute-history-text-color: var(--or-attribute-history-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
-        --internal-or-attribute-history-controls-margin: var(--or-attribute-history-controls-margin, 0); 
+        --internal-or-attribute-history-controls-margin: var(--or-attribute-history-controls-margin, 0 0 20px 0);       
         --internal-or-attribute-history-controls-margin-children: var(--or-attribute-history-controls-margin-children, 0 auto 20px auto);            
         --internal-or-attribute-history-graph-fill-color: var(--or-attribute-history-graph-fill-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
         --internal-or-attribute-history-graph-fill-opacity: var(--or-attribute-history-graph-fill-opacity, 1);       
@@ -128,7 +128,7 @@ const style = css`
         display: block;                
     }
     
-    :host[hidden] {
+    :host([hidden]) {
         display: none;
     }
     
@@ -310,6 +310,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._updateTimestamp(this.timestamp!, false)}"></or-input>
                         <or-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.timestamp}" @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
                         <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._updateTimestamp(this.timestamp!, true)}"></or-input>
+                        <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" icon="chevron-double-right" @click="${() => this._updateTimestamp(new Date())}"></or-input>
                     </div>
                 </div>
                 
@@ -510,7 +511,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             path: "$." + prop,
                             stringify: typeof(value) === "object",
                             numeric: !isNaN(Number(value))
-                        } as TableColumnConfig
+                        } as TableColumnConfig;
                     });
                 } else {
                     config.columns.push({
@@ -525,7 +526,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 config.columns.push({
                     header: "timestamp",
                     type: "timestamp"
-                })
+                });
             }
         }
 

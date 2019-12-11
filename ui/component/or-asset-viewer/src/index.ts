@@ -388,7 +388,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         }
                         
                         or-attribute-history {
-                            --or-attribute-history-controls-margin: 0 0 0 204px;  
+                            --or-attribute-history-controls-margin: 0 0 20px 204px;  
                         }
                         
                         @media screen and (max-width: 2028px) {
@@ -410,7 +410,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                             }
                             
                             or-attribute-history {
-                                --or-attribute-history-controls-margin: 10px 0 0 0;  
+                                --or-attribute-history-controls-margin: 10px 0 20px 0;  
                                 --or-attribute-history-controls-margin-children: 0 auto 20px auto;
                             }
                         }

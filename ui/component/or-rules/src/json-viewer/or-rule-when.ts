@@ -169,7 +169,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                             </div>
                         </div>
                     `;
-                    return wrapper(content, condition, group, true, isFirst && index == 0);
+                    return wrapper(content, condition, group, true, isFirst && index === 0);
                 })}
             `;
             isFirst = false;
@@ -182,7 +182,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                         html`<or-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,
                         getWhenTypesMenu(this.config, this.assetDescriptors),
                         undefined,
-                        (value: string) => this.addCondition(group, value))}
+                        (values: string[] | string) => this.addCondition(group, values as string))}
                     <span>${i18next.t("rulesEditorAddCondition")}</span>
                 </span>
             `;
@@ -237,7 +237,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                             html`<or-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,
                             getWhenTypesMenu(this.config, this.assetDescriptors),
                             undefined,
-                            (value: string) => this.addGroup(this.rule!.when!, value))}
+                            (values: string[] | string) => this.addGroup(this.rule!.when!, values as string))}
                         <strong>${i18next.t(this.rule.when.groups == undefined || (this.rule.when.groups && this.rule.when.groups.length === 0) ? "when" : "orWhen")}...</strong>
                     </span>
                 </or-panel>

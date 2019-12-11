@@ -340,7 +340,7 @@ class OrSmartNotify extends LitElement {
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
-        this.isDisabled = !manager.hasRole("write:assets");
+        this.isDisabled = !manager.hasRole(Constants.WRITE_ASSETS_ROLE);
     }
 
 }

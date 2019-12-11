@@ -1,6 +1,7 @@
 import {customElement, html, css, LitElement, property, TemplateResult, query} from "lit-element";
-import {AssetDescriptor, AssetQueryMatch, RuleCondition} from "@openremote/model";
+import {AssetDescriptor, AssetQueryMatch, RuleCondition, AssetType} from "@openremote/model";
 import {
+    ActionType,
     ConditionType,
     getAssetTypeFromQuery,
     RulesConfig
@@ -37,28 +38,36 @@ export function getWhenTypesMenu(config?: RulesConfig, assetDescriptors?: AssetD
 
     if (addAssetTypes && assetDescriptors) {
         menu.push(...assetDescriptors.map((ad) => {
-            const content = html`
-                    ${getAssetDescriptorIconTemplate(ad)}
-                    &nbsp;&nbsp;<span style="text-transform: capitalize">${i18next.t(ad.name!, {defaultValue: ad.name!.replace(/_/g, " ").toLowerCase()})}</span>
-                `;
-            return {content: content, value: ad.type} as MenuItem
+
+            const color = AssetModelUtil.getAssetDescriptorColor(ad);
+            const icon = AssetModelUtil.getAssetDescriptorIcon(ad);
+            const styleMap = color ? {"--or-icon-fill": "#" + color} : undefined;
+
+            return {
+                text: i18next.t(ad.name!, {defaultValue: ad.name!.replace(/_/g, " ").toLowerCase()}),
+                value: ad.type,
+                icon: icon ? icon : AssetType.THING.icon,
+                styleMap: styleMap
+            } as MenuItem;
         }));
     }
 
     if (addDatetime) {
-        const content = html`
-                <or-icon style="--or-icon-fill: #${DATE_TIME_COLOR}" icon="clock"></or-icon>
-                <span style="text-transform: capitalize">&nbsp;<or-translate value="datetime"></or-translate></span>
-            `;
-        menu.push({content: content, value: ConditionType.DATE_TIME} as MenuItem);
+        menu.push({
+            text: i18next.t("datetime"),
+            icon: "clock",
+            value: ConditionType.DATE_TIME,
+            styleMap: {"--or-icon-fill": "#" + DATE_TIME_COLOR}
+        } as MenuItem);
     }
 
     if (addTimer) {
-        const content = html`
-                <or-icon style="--or-icon-fill: #${TIMER_COLOR}" icon="timer"></or-icon>
-                <span style="text-transform: capitalize">&nbsp;<or-translate value="timer"></or-translate></span>
-            `;
-        menu.push({content: content, value: ConditionType.TIMER} as MenuItem);
+        menu.push({
+            text: i18next.t("timer"),
+            icon: "timer",
+            value: ConditionType.TIMER,
+            styleMap: {"--or-icon-fill": "#" + TIMER_COLOR}
+        } as MenuItem);
     }
 
     return menu;
@@ -117,6 +126,8 @@ const style = css`
     }
     
     #type {
+        white-space: nowrap;
+        text-transform: capitalize;
         margin-right: 6px;
     }
 `;
@@ -154,7 +165,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
 
         if (showTypeSelect) {
             
-            let buttonIcon = undefined;
+            let buttonIcon;
             let buttonColor = "inherit";
 
             if (type) {
@@ -181,7 +192,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                         html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
                         getWhenTypesMenu(this.config, this.assetDescriptors),
                         type,
-                        (value: string) => this.type = value)}
+                        (values: string[] | string) => this.type = values as string)}
                 </div>
             `;
         }

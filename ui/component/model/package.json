@@ -6,7 +6,7 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "npx tsc -b",
+    "build": "npx tsc -b --force",
     "test": "echo \"No tests\" && exit 0",
     "prepublishOnly": "npx tsc -b"
   },

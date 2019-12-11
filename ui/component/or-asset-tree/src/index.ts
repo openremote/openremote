@@ -1,7 +1,7 @@
 import {customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
 import "@openremote/or-input";
 import "@openremote/or-icon";
-import {Asset, AssetQuery, AssetTreeNode, AssetType, Tenant} from "@openremote/model";
+import {Asset, AssetQuery, AssetTreeNode, Constants, Tenant, ClientRole} from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
 import manager, {AssetModelUtil, OREvent, EventCallback} from "@openremote/core";
@@ -20,16 +20,16 @@ export interface UiAssetTreeNode extends AssetTreeNode {
 }
 
 interface RequestEventDetail<T> {
-    allow: boolean,
-    detail: T
+    allow: boolean;
+    detail: T;
 }
 
 interface NodeClickEventDetail {
-    node: UiAssetTreeNode,
-    clickEvent: MouseEvent
+    node: UiAssetTreeNode;
+    clickEvent: MouseEvent;
 }
 
-export {style}
+export {style};
 
 export class OrAssetTreeRequestSelectEvent extends CustomEvent<RequestEventDetail<NodeClickEventDetail>> {
 
@@ -118,8 +118,8 @@ declare global {
     }
 }
 
-//TODO: Add websocket support
-//TODO: Make modal a standalone component
+// TODO: Add websocket support
+// TODO: Make modal a standalone component
 @customElement("or-asset-tree")
 export class OrAssetTree extends LitElement {
 
@@ -225,9 +225,9 @@ export class OrAssetTree extends LitElement {
                     
                     ${getContentWithMenuTemplate(
                             html`<or-input type="${InputType.BUTTON}" icon="sort-variant"></or-input>`,
-                            ["name", "type", "createdOn", "status"].map((sort) => {return {value: sort, content: html`<span class="no-wrap">${i18next.t(sort)}</span>`} as MenuItem;}),
+                            ["name", "type", "createdOn", "status"].map((sort) => { return {value: sort, text: i18next.t(sort)} as MenuItem; }),
                             this.sortBy,
-                            (v) => this._onSortClicked(v))}
+                            (v) => this._onSortClicked(v as string))}
                 </div>
             </div>
 
@@ -250,7 +250,7 @@ export class OrAssetTree extends LitElement {
     }
 
     protected _isReadonly() {
-        return this.readonly || !manager.hasRole("write:rules");
+        return this.readonly || !manager.hasRole(ClientRole.WRITE_RULES);
     }
 
     protected _treeNodeTemplate(treeNode: UiAssetTreeNode, level: number): TemplateResult | string {

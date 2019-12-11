@@ -9,7 +9,7 @@ import {
 import {
     OrRulesJsonRuleChangedEvent
 } from "./or-rule-json-viewer";
-import {AssetDescriptor, JsonRule, RuleActionUnion, RuleConditionReset} from "@openremote/model";
+import {AssetDescriptor, JsonRule, RuleActionUnion, RuleConditionReset, RuleActionNotification, AssetType} from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-input";
 import {MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
@@ -39,28 +39,36 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
 
     if (addAssetTypes && assetDescriptors) {
         menu.push(...assetDescriptors.map((ad) => {
-            const content = html`
-                    ${getAssetDescriptorIconTemplate(ad)}
-                    &nbsp;&nbsp;<span style="white-space: nowrap; text-transform: capitalize">${i18next.t(ad.name!, {defaultValue: ad.name!.replace(/_/g, " ").toLowerCase()})}</span>
-                `;
-            return {content: content, value: ad.type} as MenuItem
+
+            const color = AssetModelUtil.getAssetDescriptorColor(ad);
+            const icon = AssetModelUtil.getAssetDescriptorIcon(ad);
+            const styleMap = color ? {"--or-icon-fill": "#" + color} : undefined;
+
+            return {
+                text: i18next.t(ad.name!, {defaultValue: ad.name!.replace(/_/g, " ").toLowerCase()}),
+                value: ad.type,
+                icon: icon ? icon : AssetType.THING.icon,
+                styleMap: styleMap
+            } as MenuItem;
         }));
     }
 
     if (addNotification) {
-        const content = html`
-                <or-icon style="--or-icon-fill: #${NOTIFICATION_COLOR}" icon="email"></or-icon>
-                <span style="text-transform: capitalize">&nbsp;<or-translate value="notification"></or-translate></span>
-            `;
-        menu.push({content: content, value: ActionType.NOTIFICATION} as MenuItem);
+        menu.push({
+            text: i18next.t("notification"),
+            icon: "email",
+            value: ActionType.NOTIFICATION,
+            styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
+        } as MenuItem);
     }
 
     if (addWait) {
-        const content = html`
-                <or-icon style="--or-icon-fill: #${WAIT_COLOR}" icon="timer"></or-icon>
-                <span style="text-transform: capitalize">&nbsp;<or-translate value="wait"></or-translate></span>
-            `;
-        menu.push({content: content, value: ActionType.WAIT} as MenuItem);
+        menu.push({
+            text: i18next.t("wait"),
+            icon: "timer",
+            value: ActionType.WAIT,
+            styleMap: {"--or-icon-fill": "#" + WAIT_COLOR}
+        } as MenuItem);
     }
 
     return menu;
@@ -145,6 +153,12 @@ const style = css`
         margin-right: 6px;
     }
     
+    #type {
+        white-space: nowrap;
+        text-transform: capitalize;
+        margin-right: 6px;
+    }
+    
     .rule-reset {
         position: absolute;
         top: 5px;
@@ -220,7 +234,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
         if (showTypeSelect) {
 
-            let buttonIcon = undefined;
+            let buttonIcon;
             let buttonColor = "inherit";
 
             if (action.action) {
@@ -235,19 +249,19 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                         break;
                     default:
                         const ad = AssetModelUtil.getAssetDescriptor(type);
-                        buttonIcon = AssetModelUtil.getAssetDescriptorIcon(ad) || buttonIcon;
+                        buttonIcon = AssetModelUtil.getAssetDescriptorIcon(ad);
                         buttonColor = AssetModelUtil.getAssetDescriptorColor(ad) || buttonColor;
                         break;
                 }
             }
 
             typeTemplate = html`
-                <div style="color: #${buttonColor}; margin-right: 6px;">
+                <div id="type" style="color: #${buttonColor}">
                     ${getContentWithMenuTemplate(
                         html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
                         getActionTypesMenu(this.config, this.assetDescriptors),
                         action.action,
-                        (value: string) => this.setActionType(actions, action, value))}
+                        (values: string[] | string) => this.setActionType(actions, action, values as string))}
                 </div>
             `;
         }
@@ -288,12 +302,12 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
                     ${!this.rule.then ? `` : this.rule.then.map((action: RuleActionUnion) => this.ruleActionTemplate(this.rule.then!, action))}
                     ${this.thenAllowAdd ? html`
-                        <span class="add-button-wrapper">
+                        <span class="add-button-wrapper" style="white-space: nowrap; text-transform: capitalize">
                             ${getContentWithMenuTemplate(
                                 html`<or-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,
                                 getActionTypesMenu(this.config, this.assetDescriptors),
                                 undefined,
-                                (value: string) => this.addAction(value))}
+                                (values: string[] | string) => this.addAction(values as string))}
                             <span>${i18next.t("rulesEditorAddAction")}</span>
                         </span>
                     ` : ``}

@@ -85,6 +85,7 @@ generateTypeScript {
     outputFileType = "implementationFile"
     outputKind = "module"
     mapEnum = cz.habarta.typescript.generator.EnumMapping.asEnum
+    mapDate = cz.habarta.typescript.generator.DateMapping.asNumber
     restNamespacing = "perResource"
     extensions = [
         "AggregatedApiClient",
