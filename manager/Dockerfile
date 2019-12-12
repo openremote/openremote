@@ -27,8 +27,8 @@ RUN mkdir -p /opt/app
 
 WORKDIR /opt/app
 
-RUN mkdir -p /deployment/extensions
+RUN mkdir -p /deployment/manager/extensions
 
 ADD lib /opt/app/lib
 
-ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/extensions/* org.openremote.manager.Main
+ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main
