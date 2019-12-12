@@ -113,5 +113,8 @@
   "smartSwitchModeB": "Smart Switch B",
   "smartSwitchModeC": "Smart Switch C",
   "plantsWaterLevels": "Plant waterniveau",
-  "lightSwitch": "Licht schakelaar"
+  "lightSwitch": "Licht schakelaar",
+  "windowOpen": "Raam open",
+  "lightSwitchTriggerTimes": "Lichtschakelaar tijden",
+  "lightsStand": "Staande lamp"
 }
