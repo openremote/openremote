@@ -40,13 +40,26 @@ export class OrMwcMenuChangedEvent extends CustomEvent<string | string[]> {
     }
 }
 
-declare global {
-    export interface HTMLElementEventMap {
-        [OrMwcMenuChangedEvent.NAME]: OrMwcMenuChangedEvent;
+export class OrMwcMenuClosedEvent extends CustomEvent<void> {
+
+    public static readonly NAME = "or-mwc-menu-closed";
+
+    constructor() {
+        super(OrMwcMenuClosedEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
     }
 }
 
-export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (MenuItem | MenuItem[] | null)[], selectedValues: string[] | string | undefined, valueChangedCallback: (values: string[] | string) => void, multiSelect = false): TemplateResult {
+declare global {
+    export interface HTMLElementEventMap {
+        [OrMwcMenuChangedEvent.NAME]: OrMwcMenuChangedEvent;
+        [OrMwcMenuClosedEvent.NAME]: OrMwcMenuClosedEvent;
+    }
+}
+
+export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (MenuItem | MenuItem[] | null)[], selectedValues: string[] | string | undefined, valueChangedCallback: (values: string[] | string) => void, closedCallback?: () => void, multiSelect = false): TemplateResult {
 
     const openMenu = (evt: Event) => {
         if (!menuItems) {
@@ -59,7 +72,7 @@ export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (
     return html`
         <span>
             <span @click="${openMenu}">${content}</span>
-            ${menuItems ? html`<or-mwc-menu ?multiselect="${multiSelect}" @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => valueChangedCallback(evt.detail)}" .values="${selectedValues}" .menuItems="${menuItems}" id="menu"></or-mwc-menu>` : ``}
+            ${menuItems ? html`<or-mwc-menu ?multiselect="${multiSelect}" @or-mwc-menu-closed="${() => {if (closedCallback) { closedCallback(); }} }" @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => {if (valueChangedCallback) { valueChangedCallback(evt.detail); }} }" .values="${selectedValues}" .menuItems="${menuItems}" id="menu"></or-mwc-menu>` : ``}
         </span>
     `;
 }
@@ -139,7 +152,7 @@ export class OrMwcMenu extends LitElement {
 
         return html`
             <div id="wrapper" class="mdc-menu-surface--anchor">
-                <div class="mdc-menu mdc-menu-surface" id="menu">
+                <div class="mdc-menu mdc-menu-surface" id="menu" @MDCMenuSurface:closed="${this._onMenuClosed}">
                     <ul class="mdc-list ${this.twoLine ? "mdc-list--two-line" : ""}" role="menu" aria-hidden="true" aria-orientation="vertical" tabindex="-1">
                         ${this.getItemsTemplate(this.menuItems)}
                     </ul>
@@ -231,6 +244,10 @@ export class OrMwcMenu extends LitElement {
         if (_changedProperties.has("visible")) {
             this._mdcComponent!.open = this.visible || false;
         }
+    }
+
+    protected _onMenuClosed() {
+        this.dispatchEvent(new OrMwcMenuClosedEvent());
     }
 
     private _itemClicked(e: MouseEvent, item: MenuItem) {

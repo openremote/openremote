@@ -112,12 +112,11 @@ const style = css`
     }
     
     #component {
-        width: inherit;
         max-width: 100%;
     }
     
     #menu-anchor {
-        width: inherit;
+        max-width: 100%;
     }
        
     .or-input--rounded {
@@ -363,7 +362,7 @@ export class OrInput extends LitElement {
                         "mdc-select--outlined": outlined,
                         "mdc-select--disabled": this.disabled,
                         "mdc-select--required": this.required,
-                        "mdc-select--dense": this.dense,
+                        "mdc-select--dense": false, // this.dense,
                         "mdc-select--no-label": !this.label,
                         "mdc-select--with-leading-icon": !!this.icon
                     };
@@ -427,12 +426,12 @@ export class OrInput extends LitElement {
                         "mdc-icon-button": isIconButton,
                         "mdc-fab": !isIconButton && this.action,
                         "mdc-fab--extended": !isIconButton && this.action && !!this.label,
-                        "mdc-fab--mini": !isIconButton && this.action && this.dense,
+                        "mdc-fab--mini": !isIconButton && this.action, // && this.dense,
                         "mdc-button": !isIconButton && !this.action,
                         "mdc-button--raised": !isIconButton && !this.action && this.raised,
                         "mdc-button--unelevated": !isIconButton && !this.action && this.unElevated,
                         "mdc-button--outlined": !isIconButton && !this.action && this.outlined,
-                        "mdc-button--dense": !isIconButton && !this.action && this.dense,
+                        "mdc-button--dense": false, // !isIconButton && !this.action && this.dense,
                         "or-input--rounded": !isIconButton && !this.action && this.rounded
                     };
                     return html`
@@ -449,8 +448,8 @@ export class OrInput extends LitElement {
                 }
                 case InputType.CHECKBOX:
                     return html`
-                        <div id="field" class="mdc-form-field ${this.dense ? "mdc-form-field--dense" : ""}">
-                            <div id="component" class="mdc-checkbox ${this.dense ? "mdc-checkbox--dense" : ""}">
+                        <div id="field" class="mdc-form-field">
+                            <div id="component" class="mdc-checkbox">
                                 <input type="checkbox" 
                                     ?checked="${this.value}"
                                     ?required="${this.required}"
@@ -509,7 +508,7 @@ export class OrInput extends LitElement {
                         "mdc-text-field--textarea": this.type === InputType.TEXTAREA || this.type === InputType.JSON,
                         "mdc-text-field--disabled": this.disabled,
                         "mdc-text-field--fullwidth": this.fullWidth,
-                        "mdc-text-field--dense": this.type !== InputType.TEXTAREA && this.type !== InputType.JSON && this.dense,
+                        "mdc-text-field--dense": false, // this.type !== InputType.TEXTAREA && this.type !== InputType.JSON && this.dense,
                         "mdc-text-field--no-label": !this.label,
                         "mdc-text-field--with-leading-icon": !!this.icon,
                         "mdc-text-field--with-trailing-icon": !!this.iconTrailing

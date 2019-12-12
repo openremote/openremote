@@ -201,6 +201,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
     protected _refresh?: number;
     protected _pageCount?: number;
     protected _currentPage: number = 1;
+    protected _pendingCategories?: Model.SyslogCategory[];
 
     connectedCallback() {
         super.connectedCallback();
@@ -232,10 +233,6 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
             this.interval = OrLogViewer.DEFAULT_INTERVAL;
         }
 
-        if (!this.level) {
-            this.level = OrLogViewer.DEFAULT_LEVEL;
-        }
-
         if (!this.limit) {
             this.limit = OrLogViewer.DEFAULT_LIMIT;
         }
@@ -248,12 +245,16 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
             }
         }
 
-        if (this.config && this.config.initialFilter) {
+        if (this.filter === undefined && this.config && this.config.initialFilter) {
             this.filter = this.config.initialFilter;
         }
 
-        if (this.config && this.config.initialLevel) {
-            this.level = this.config.initialLevel;
+        if (!this.level) {
+            if (this.config && this.config.initialLevel) {
+                this.level = this.config.initialLevel;
+            } else {
+                this.level = OrLogViewer.DEFAULT_LEVEL;
+            }
         }
 
         if (!this.live && !this.timestamp) {
@@ -291,9 +292,10 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                             this._getCategoryMenuItems(),
                             this.categories,
                             (v) => this._onCategoriesChanged(v as Model.SyslogCategory[]),
+                            () => this._onCategoriesClosed(),
                             true
                         )}
-                        <or-input ?hidden="${hideFilter}" .type="${InputType.TEXT}" outlined ?disabled="${disabled}" icontrailing="magnify" .label="${i18next.t("subCategoryFilters")}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onFilterChanged(evt.detail.value)}"></or-input>
+                        <or-input ?hidden="${hideFilter}" .type="${InputType.TEXT}" outlined ?disabled="${disabled}" icontrailing="magnify" .label="${i18next.t("subCategoryFilters")}" .value="${this.filter}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onFilterChanged(evt.detail.value)}"></or-input>
                         <or-input ?hidden="${hideLevel}" .type="${InputType.SELECT}" id="level-select" outlined ?disabled="${disabled}" .label="${i18next.t("level")}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onLevelChanged(evt.detail.value)}" .value="${this.level}" .options="${this._getLevelOptions()}"></or-input>
                         <or-input .type="${ InputType.SELECT}" id="limit-select" outlined ?disabled="${disabled}" .label="${i18next.t("limit")}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onLimitChanged(evt.detail.value)}" .value="${this.limit}" .options="${this._getLimitOptions()}"></or-input>
                     </div>
@@ -341,11 +343,21 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
     }
 
     protected _onCategoriesChanged(values: Model.SyslogCategory[]) {
-        this.categories = [...values];
+        this._pendingCategories = values;
+    }
+
+    protected _onCategoriesClosed() {
+        if (!this._pendingCategories) {
+            return;
+        }
+
+        this.categories = [...this._pendingCategories];
 
         if (this.categories && this.live) {
             this._data = this._data!.filter((e) => this.categories!.find((c) => c === e.category));
         }
+
+        this._pendingCategories = undefined;
     }
 
     protected _onLiveChanged(live: boolean) {
