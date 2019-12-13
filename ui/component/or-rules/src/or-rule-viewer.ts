@@ -1,18 +1,19 @@
-import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult, unsafeCSS} from "lit-element";
+import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
 import {
-    OrRulesSaveStartEvent,
     OrRulesRuleChangedEvent,
     OrRulesRuleUnsupportedEvent,
     OrRulesSaveEndEvent,
+    OrRulesSaveStartEvent,
     RulesConfig,
     RuleView
 } from "./index";
-import {RulesetLang, RulesetUnion, ClientRole} from "@openremote/model";
-import manager, {DefaultBoxShadow} from "@openremote/core";
+import {ClientRole, RulesetLang, RulesetUnion} from "@openremote/model";
+import manager from "@openremote/core";
 import "./json-viewer/or-rule-json-viewer";
+import "./or-rule-text-viewer";
 import "@openremote/or-input";
 import {translate} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent, OrInput} from "@openremote/or-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import i18next from "i18next";
 
 // language=CSS
@@ -70,9 +71,7 @@ export const style = css`
     #rule-view {
         flex-grow: 1;
         background-color: var(--internal-or-rules-background-color);
-        padding: 0px 10px;
-        width: calc(100% - 20px);
-        margin-top: -10px;
+        width: 100%;
     }
 `;
 
@@ -142,17 +141,14 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         }
 
         let viewer: TemplateResult | string = ``;
-        if (!this._supported) {
+        if (!this._supported || this.ruleset.lang === RulesetLang.GROOVY || this.ruleset.lang === RulesetLang.JAVASCRIPT) {
             viewer = html`
-                <div>TEXT EDITOR</div>
+                <or-rule-text-viewer id="rule-view" .ruleset="${this.ruleset}" .config="${this.config}" .readonly="${this.readonly}"></or-rule-text-viewer>
             `;
         } else {
             switch (this.ruleset.lang!) {
                 case RulesetLang.JSON:
                     viewer = html`<or-rule-json-viewer id="rule-view" .ruleset="${this.ruleset}" .config="${this.config}" .readonly="${this.readonly}"></or-rule-json-viewer>`;
-                    break;
-                case RulesetLang.GROOVY:
-                case RulesetLang.JAVASCRIPT:
                     break;
                 default:
                     viewer = html`<div class="wrapper"><or-translate value="notSupported"></or-translate></div>`;
@@ -165,6 +161,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                 <div id="rule-header">
                     <or-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" required minlength="3" maxlength="255" @or-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-input>
                     <div id="rule-header-controls">
+                        
                         <span id="active-wrapper">
                             <or-translate value="active"></or-translate>
                             

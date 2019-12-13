@@ -143,16 +143,21 @@ const style = css`
     .add-button-wrapper {
         display: flex;
         align-items: center;
+        white-space: nowrap;
     }
     
     .add-button-wrapper > * {
         margin-right: 6px;
     }
     
+    .add-button-wrapper or-mwc-menu {
+        text-transform: capitalize;
+    }
+    
     #type {
         white-space: nowrap;
-        text-transform: capitalize;
         margin-right: 6px;
+        text-transform: capitalize;
     }
     
     .rule-reset {
@@ -300,7 +305,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
                     ${!this.rule.then ? `` : this.rule.then.map((action: RuleActionUnion) => this.ruleActionTemplate(this.rule.then!, action))}
                     ${this.thenAllowAdd ? html`
-                        <span class="add-button-wrapper" style="white-space: nowrap; text-transform: capitalize">
+                        <span class="add-button-wrapper">
                             ${getContentWithMenuTemplate(
                                 html`<or-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,
                                 getActionTypesMenu(this.config, this.assetDescriptors),

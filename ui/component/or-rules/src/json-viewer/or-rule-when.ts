@@ -80,11 +80,14 @@ const style = css`
         display: flex;
         align-items: center;
         white-space: nowrap;
-        text-transform: capitalize;
     }
     
     .add-button-wrapper > * {
         margin-right: 6px;
+    }
+    
+    .add-button-wrapper or-mwc-menu {
+        text-transform: capitalize;
     }
 `;
 

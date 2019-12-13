@@ -49,6 +49,8 @@ const style = css`
     :host {
         display: flex;
         width: 100%;
+        padding: 0px 10px;
+        margin-top: -10px;
     }
     
     :host > * {
@@ -83,6 +85,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
     protected _ruleset!: RulesetUnion;
 
     protected _rule!: JsonRule;
+    protected _unsupported = false;
     protected _assetDescriptors?: AssetDescriptor[];
     protected _whenAssetDescriptors?: AssetDescriptor[];
     protected _actionAssetDescriptors?: AssetDescriptor[];
@@ -92,11 +95,20 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         this.addEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onJsonRuleChanged);
     }
 
+    connectedCallback(): void {
+        super.connectedCallback();
+
+        if (this._unsupported) {
+            this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
+        }
+    }
+
     public set ruleset(ruleset: RulesetUnion) {
         if (this._ruleset === ruleset) {
             return;
         }
 
+        this._unsupported = false;
         this._ruleset = ruleset;
 
         if (!ruleset.rules) {
@@ -110,14 +122,22 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             try {
                 const rules = JSON.parse(ruleset.rules) as JsonRulesetDefinition;
                 if (!rules.rules || rules.rules.length > 1) {
-                    this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
+                    if (this.isConnected) {
+                        this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
+                    } else {
+                        this._unsupported = true;
+                    }
                     return;
                 }
                 this._rule = rules.rules[0];
                 this.requestUpdate();
             } catch (e) {
                 console.error("Invalid JSON rules, failed to parse: " + e);
-                this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
+                if (this.isConnected) {
+                    this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
+                } else {
+                    this._unsupported = true;
+                }
             }
         }
     }

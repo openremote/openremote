@@ -675,7 +675,9 @@ export class OrRules extends translate(i18next)(LitElement) {
     protected _onRuleSaveEnd(event: OrRulesSaveEndEvent) {
         this._rulesList.disabled = false;
         this._ruleViewer.disabled = false;
-
+        this.selectedIds = [
+            this._ruleViewer.ruleset!.id!
+        ];
         if (event.detail) {
             this._rulesList.refresh();
         }
