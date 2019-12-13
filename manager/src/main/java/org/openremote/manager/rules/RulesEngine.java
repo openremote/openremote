@@ -37,6 +37,7 @@ import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
 import java.util.*;
@@ -79,7 +80,7 @@ public class RulesEngine<T extends Ruleset> {
     public static final Logger RULES_LOG = Logger.getLogger("org.openremote.rules.Rules");
 
     // Separate logger for fired rules
-    public static final Logger RULES_FIRED_LOG = Logger.getLogger("org.openremote.rules.RulesFired");
+    public static final Logger RULES_FIRED_LOG = SyslogCategory.getLogger(SyslogCategory.RULES, "org.openremote.rules.RulesFired");
 
     // Separate logger for periodic stats printer
     public static final Logger STATS_LOG = Logger.getLogger("org.openremote.rules.RulesEngineStats");
@@ -548,7 +549,7 @@ public class RulesEngine<T extends Ruleset> {
             Collection<Object> anonFacts = facts.getAnonymousFacts();
             long temporaryFactsCount = facts.getTemporaryFacts().count();
             long total = assetStateFacts.size() + assetEventFacts.size() + namedFacts.size() + anonFacts.size();
-            STATS_LOG.info("On " + this + ", in memory facts are Total: " + total
+            STATS_LOG.fine("Engine stats for '" + this + "', in memory facts are Total: " + total
                 + ", AssetState: " + assetStateFacts.size()
                 + ", AssetEvent: " + assetEventFacts.size()
                 + ", Named: " + namedFacts.size()
