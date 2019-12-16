@@ -75,6 +75,8 @@ export const rulesEditorStyle = css`
         display: flex;
         flex-grow: 1;
         background-color: var(--internal-or-rules-editor-background-color);
+        
+        flex-wrap: wrap;
     }
     
     .rule-editor-panel > * {
@@ -539,6 +541,8 @@ export const assetQueryEditorStyle = css`
     .attribute, .attribute-editor {
         display: flex;
         flex-grow: 1;
+        
+        flex-wrap: wrap;
     }
 
     .operator {
