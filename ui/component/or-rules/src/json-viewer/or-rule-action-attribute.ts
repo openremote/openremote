@@ -23,10 +23,12 @@ const style = css`
     :host {
         display: flex;
         align-items: center;
+
+        flex-wrap: wrap;
     }
 
     :host > * {
-        margin-right: 6px;
+        margin: 0 3px 6px;
     }
 `;
 

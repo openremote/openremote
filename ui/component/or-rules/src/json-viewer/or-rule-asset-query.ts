@@ -47,23 +47,11 @@ const style = css`
         flex-grow: 1;
         display: flex;
         flex-direction: row;
+        flex-wrap: wrap;
     }
     
-    .attribute > * {
-        flex-grow: 0;
-    }
-
-    .attribute, .attribute-editor {
-        display: flex;
-        flex-grow: 1;
-    }
-    
-    #idSelect {
-        margin-right: 3px;
-    }
-    
-    .attribute-editor > * {
-        margin: 0 3px;    
+    .attribute-group > * {
+        margin: 0 3px 6px;
     }
 `;
 
@@ -178,13 +166,11 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const operators = this.getOperators(assetDescriptor, attribute, attributeName);
 
         return html`
-            <div class="attribute-editor">
-                <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributes}" .value="${attributeName}" .label="${i18next.t("attribute")}"></or-input>
-                
-                ${attributeName ? html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${operators}" .value="${operator}" .label="${i18next.t("operator")}"></or-input>` : ``}
-                
-                ${attributePredicate ? this.attributePredicateValueEditorTemplate(assetDescriptor, attributePredicate) : ``}
-            </div>
+            <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributes}" .value="${attributeName}" .label="${i18next.t("attribute")}"></or-input>
+            
+            ${attributeName ? html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${operators}" .value="${operator}" .label="${i18next.t("operator")}"></or-input>` : ``}
+            
+            ${attributePredicate ? this.attributePredicateValueEditorTemplate(assetDescriptor, attributePredicate) : ``}
         `;
     }
 
@@ -303,12 +289,10 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate) => {
                     
                     return html`
-                        <div class="attribute">
-                            ${this.attributePredicateEditorTemplate(assetDescriptor, idValue !== "*" ? this._assets!.find((asset) => asset.id === idValue) : undefined, attributePredicate)}
-                            ${showRemoveAttribute ? html`
-                                <button class="button-clear" @click="${() => this.removeAttributePredicate(this.query!.attributes!, attributePredicate)}"><or-icon icon="close-circle"></or-icon></input>
-                            ` : ``}
-                        </div>
+                        ${this.attributePredicateEditorTemplate(assetDescriptor, idValue !== "*" ? this._assets!.find((asset) => asset.id === idValue) : undefined, attributePredicate)}
+                        ${showRemoveAttribute ? html`
+                            <button class="button-clear" @click="${() => this.removeAttributePredicate(this.query!.attributes!, attributePredicate)}"><or-icon icon="close-circle"></or-icon></input>
+                        ` : ``}
                     `;
                 }) : ``}
             </div>

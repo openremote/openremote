@@ -153,7 +153,6 @@ const style = css`
     }
     
     #controls {
-        flex: 0;
         display: flex;
         flex-wrap: wrap;
         justify-content: space-between;

@@ -112,6 +112,7 @@ const style = css`
     }
     
     #component {
+        flex: 1 1 0;
         max-width: 100%;
     }
     

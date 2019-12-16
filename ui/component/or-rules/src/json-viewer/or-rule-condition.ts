@@ -114,7 +114,6 @@ const style = css`
     :host {
         display: flex;
         flex-direction: row;
-        align-items: center;
     }
     
     or-rule-asset-query {
@@ -124,7 +123,7 @@ const style = css`
     #type {
         white-space: nowrap;
         text-transform: capitalize;
-        margin-right: 6px;
+        margin: 4px 3px auto 0;
     }
 `;
 

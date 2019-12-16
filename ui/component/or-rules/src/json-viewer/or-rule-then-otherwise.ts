@@ -110,13 +110,12 @@ const style = css`
     .rule-action {
         display: flex;
         margin: 10px 0;
-        align-items: center;
     }
     
     .rule-action-wrapper {
         flex-grow: 1;
         display: flex;
-        align-items: center;
+        align-items: baseline;
     }
     
     .rule-action > button {
@@ -156,7 +155,7 @@ const style = css`
     
     #type {
         white-space: nowrap;
-        margin-right: 6px;
+        margin: 4px 3px auto 0;
         text-transform: capitalize;
     }
     

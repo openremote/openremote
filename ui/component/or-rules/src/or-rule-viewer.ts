@@ -34,7 +34,9 @@ export const style = css`
     }
     
     #rule-name {
-        width: 400px;
+        max-width: 400px;
+        flex: 1 1 0;
+        display: flex;
     }
     
     #rule-header {
@@ -71,7 +73,6 @@ export const style = css`
     #rule-view {
         flex-grow: 1;
         background-color: var(--internal-or-rules-background-color);
-        width: 100%;
     }
 `;
 

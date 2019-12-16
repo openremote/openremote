@@ -48,7 +48,7 @@ declare global {
 const style = css`
     :host {
         display: flex;
-        width: 100%;
+        width: calc(100% - 20px);
         padding: 0px 10px;
         margin-top: -10px;
     }

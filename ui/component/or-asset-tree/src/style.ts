@@ -148,6 +148,9 @@ export const style = css`
         background-repeat: no-repeat;                
         background-size: 18px;
         background-position: center;
+        
+        margin-left: -4px;
+        border-left: 4px solid transparent;
     }
     
     .expander[data-expandable] {
