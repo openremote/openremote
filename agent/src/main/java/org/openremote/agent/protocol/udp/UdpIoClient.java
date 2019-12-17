@@ -20,14 +20,10 @@
 package org.openremote.agent.protocol.udp;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
-import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.MessageToMessageEncoder;
 import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.agent.protocol.io.AbstractNettyIoClient;
@@ -43,19 +39,21 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This is a {@link IoClient} implementation for UDP.
+ * <p>
+ * Users of this {@link IoClient} are responsible for adding encoders for converting messages of type &lt;T&gt; to
+ * {@link io.netty.buffer.ByteBuf} (see {@link MessageToByteEncoder}) and adding decoders to convert from
+ * {@link io.netty.buffer.ByteBuf} to messages of type &lt;T&gt; and ensuring these decoded messages are passed back
+ * to this client via {@link AbstractNettyIoClient#onMessageReceived} (see {@link ByteToMessageDecoder and
+ * {@link MessageToMessageDecoder}).
  */
-public abstract class AbstractUdpClient<T> extends AbstractNettyIoClient<T, InetSocketAddress> {
+public class UdpIoClient<T> extends AbstractNettyIoClient<T, InetSocketAddress> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractUdpClient.class);
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, UdpIoClient.class);
     protected String host;
     protected int port;
     protected int bindPort;
 
-    public AbstractUdpClient(String host, int port, ProtocolExecutorService executorService) {
-        this(host, port, null, executorService);
-    }
-
-    public AbstractUdpClient(String host, int port, Integer bindPort, ProtocolExecutorService executorService) {
+    public UdpIoClient(String host, int port, Integer bindPort, ProtocolExecutorService executorService) {
         super(executorService);
         TextUtil.requireNonNullAndNonEmpty(host);
 
@@ -75,7 +73,7 @@ public abstract class AbstractUdpClient<T> extends AbstractNettyIoClient<T, Inet
     }
 
     @Override
-    protected void addEncoders(Channel channel) {
+    protected void addEncodersDecoders(Channel channel) {
         channel.pipeline().addLast(new MessageToMessageEncoder<ByteBuf>() {
             @Override
             protected void encode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
@@ -83,14 +81,9 @@ public abstract class AbstractUdpClient<T> extends AbstractNettyIoClient<T, Inet
             }
         });
 
-        super.addEncoders(channel);
-    }
+        super.addEncodersDecoders(channel);
 
-    @Override
-    protected void addDecoders(Channel channel) {
-        super.addDecoders(channel);
-
-        channel.pipeline().addFirst(new MessageToMessageDecoder<DatagramPacket>() {
+        channel.pipeline().addFirst(new io.netty.handler.codec.MessageToMessageDecoder<DatagramPacket>() {
             @Override
             protected void decode(ChannelHandlerContext ctx, DatagramPacket msg, List<Object> out) throws Exception {
                 out.add(msg.content().retain());
@@ -109,7 +102,7 @@ public abstract class AbstractUdpClient<T> extends AbstractNettyIoClient<T, Inet
     }
 
     @Override
-    protected String getSocketAddressString() {
+    public String getClientUri() {
         return "udp://" + host + ":" + port + " (bindPort: " + bindPort + ")";
     }
 

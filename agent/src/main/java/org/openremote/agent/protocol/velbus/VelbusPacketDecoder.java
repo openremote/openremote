@@ -20,15 +20,17 @@
 package org.openremote.agent.protocol.velbus;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.util.List;
 
 import static org.openremote.agent.protocol.velbus.VelbusPacket.MAX_PACKET_SIZE;
 
-public final class VelbusPacketEncoderDecoder {
-    private VelbusPacketEncoderDecoder() {}
+public final class VelbusPacketDecoder extends ByteToMessageDecoder {
 
-    public static void decode(ByteBuf buf, List<VelbusPacket> messages) {
+    @Override
+    protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> messages) throws Exception {
         int startIndex = buf.indexOf(0, buf.capacity() - 1, VelbusPacket.STX);
 
         if (startIndex < 0) {
@@ -69,9 +71,5 @@ public final class VelbusPacketEncoderDecoder {
         if (packet.isValid()) {
             messages.add(packet);
         }
-    }
-
-    public static void encode(VelbusPacket message, ByteBuf buf) {
-        buf.writeBytes(message.pack());
     }
 }

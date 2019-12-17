@@ -195,19 +195,19 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
             new AssetAttribute("readWriteTargetTemp", AttributeValueType.NUMBER)
                 .addMeta(
                     new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
-                    new MetaItem(Protocol.META_ATTRIBUTE_WRITE_VALUE, Values.create(SharedEvent.MESSAGE_PREFIX +
+                    new MetaItem(Protocol.META_ATTRIBUTE_WRITE_VALUE, Values.create("\'" + SharedEvent.MESSAGE_PREFIX +
                         Container.JSON.writeValueAsString(new AttributeEvent(
                             managerDemoSetup.apartment1LivingroomId,
                             "targetTemperature",
-                            Values.create(0.12345))).replace("0.12345", Protocol.DYNAMIC_VALUE_PLACEHOLDER))),
-                    new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MESSAGE_MATCH_FILTERS,
+                            Values.create(0.12345))).replace("0.12345", Protocol.DYNAMIC_VALUE_PLACEHOLDER) + "\'")),
+                    new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_FILTERS,
                         Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..attributeState.attributeRef", false)
+                                new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false)
                             ] as ValueFilter[]
                         , Container.JSON).orElse(null)),
-                    new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MESSAGE_MATCH_PREDICATE,
+                    new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_PREDICATE,
                         new StringPredicate(AssetQuery.Match.CONTAINS, true, "targetTemperature").toModelValue()),
                     new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
                         Values.convert(
@@ -228,14 +228,14 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                 .addMeta(
                     new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
                         new MetaItem(MetaItemType.READ_ONLY),
-                    new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MESSAGE_MATCH_FILTERS,
+                    new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_FILTERS,
                         Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..attributeState.attributeRef", false)
+                                new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false)
                             ] as ValueFilter[]
                         , Container.JSON).orElse(null)),
-                    new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MESSAGE_MATCH_PREDICATE,
+                    new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_PREDICATE,
                         new StringPredicate(AssetQuery.Match.CONTAINS, "co2Level").toModelValue()),
                     new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
                         Values.convert(

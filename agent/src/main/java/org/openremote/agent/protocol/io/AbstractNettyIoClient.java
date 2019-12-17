@@ -22,17 +22,19 @@ package org.openremote.agent.protocol.io;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
-import io.netty.handler.codec.ByteToMessageDecoder;
-import io.netty.handler.codec.MessageToByteEncoder;
 import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 
+import javax.validation.constraints.NotNull;
 import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,32 +45,54 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <p>
  * It uses the netty component for managing the connection.
  * <p>
- * By default it uses a single {@link ByteToMessageDecoder} to intercept incoming data and to delegate the construction
- * of messages to the abstract {@link #decode} method.
+ * Concrete implementations are responsible for providing the {@link ChannelOutboundHandler}s and
+ * {@link ChannelInboundHandler}s required to encode/decode the specific type of messages sent/received to/from this
+ * client. For {@link IoClient}s that require some specific encoders/decoders irrespective of the message type (e.g.
+ * {@link org.openremote.agent.protocol.udp.UdpIoClient} and {@link org.openremote.agent.protocol.websocket.WebsocketIoClient})
+ * the {@link #addEncodersDecoders} method can be overridden so the {@link IoClient} can exactly control
+ * the order and types of encoders/decoders in the pipeline.
  * <p>
- * For outgoing messages it uses a single
- * {@link MessageToByteEncoder} to delegate the filling of the {@link ByteBuf} to the abstract {@link #encode} method.
+ * Users of the {@link IoClient} can add encoders/decoders for their specific message type using the
+ * {@link #setEncoderDecoderProvider}, each {@link IoClient} should make it clear to users what the required output
+ * type(s) are for the last encoder and decoder that a user may wish to add, if adding encoders/decoders is not
+ * supported then {@link IoClient}s should override this setter and throw an {@link UnsupportedOperationException}.
  * <p>
- * Consumers wanting to add and/or replace the default encoder/decoder should override {@link #initChannel} and insert
- * the desired {@link ChannelHandler}s into the pipeline.
+ * Typically for outgoing messages a single {@link ChannelOutboundHandler} is sufficient and the
+ * {@link MessageToByteEncoder} can be used as a base.
+ * <p>
+ * For inbound messages; the decoders required are very much dependent on the message type and {@link IoClient} type,
+ * any number of standard netty {@link ChannelInboundHandler}s can be used but the last handler should build messages
+ * of type &lt;T&gt; and pass them to the {@link #onMessageReceived} method of the client; the {@link ByteToMessageDecoder}
+ * or {@link MessageToByteEncoder} can be used for this purpose, which one to use will depend on the previous
+ * {@link ChannelInboundHandler}s in the pipeline.
  * <p>
  * <b>NOTE: Care must be taken when working with Netty {@link ByteBuf} as Netty uses reference counting to manage their
  * lifecycle. Refer to the Netty documentation for more information.</b>
  */
 public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implements IoClient<T> {
 
-    public class MessageDecoder extends ByteToMessageDecoder {
+    /**
+     * This is intended to be used at the end of a decoder chain where the previous decoder outputs a {@link ByteBuf};
+     * the provided {@link #decoder} should extract the messages of type &lt;T&gt; from the {@link ByteBuf} and add them
+     * to the {@link List} and they will then be passed to the {@link IoClient}.
+     */
+    public static class ByteToMessageDecoder<T> extends io.netty.handler.codec.ByteToMessageDecoder {
         protected List<T> messages = new ArrayList<>(1);
+        protected AbstractNettyIoClient<T, ?> client;
+        protected BiConsumer<ByteBuf, List<T>> decoder;
+
+        public ByteToMessageDecoder(AbstractNettyIoClient<T, ?> client, @NotNull BiConsumer<ByteBuf, List<T>> decoder) {
+            this.client = client;
+            this.decoder = decoder;
+        }
 
         @Override
         protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
-            AbstractNettyIoClient.this.decode(in, messages);
+            decoder.accept(in, messages);
 
             if (!messages.isEmpty()) {
-                @SuppressWarnings("unchecked")
-                U address = (U)ctx.channel().remoteAddress();
                 // Don't pass them along the channel pipeline just consume them
-                messages.forEach(m -> AbstractNettyIoClient.this.onMessageReceived(address, m));
+                messages.forEach(m -> client.onMessageReceived(m));
                 messages.clear();
             }
         }
@@ -76,26 +100,56 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             super.exceptionCaught(ctx, cause);
-            AbstractNettyIoClient.this.onDecodeException(ctx, cause);
+            client.onDecodeException(ctx, cause);
         }
     }
 
-    public class MessageEncoder extends MessageToByteEncoder<T> {
+    /**
+     * This is intended to be used at the end of a decoder chain where the previous decoder outputs messages of type &lt;T&gt;.
+     */
+    public static class MessageToMessageDecoder<T> extends SimpleChannelInboundHandler<T> {
+        protected AbstractNettyIoClient<T,?> client;
+
+        public MessageToMessageDecoder(Class<? extends T> typeClazz, AbstractNettyIoClient<T, ?> client) {
+            super(typeClazz);
+            this.client = client;
+        }
+
         @Override
-        public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) throws Exception {
-            super.connect(ctx, remoteAddress, localAddress, promise);
+        public void channelRead0(ChannelHandlerContext ctx, T msg) throws Exception {
+            client.onMessageReceived(msg);
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+            super.exceptionCaught(ctx, cause);
+            client.onDecodeException(ctx, cause);
+        }
+    }
+
+    /**
+     * Concrete implementations must provide an encoder to fill the {@link ByteBuf} ready to be sent `over the wire`.
+     */
+    public static class MessageToByteEncoder<T> extends io.netty.handler.codec.MessageToByteEncoder<T> {
+        protected AbstractNettyIoClient<T, ?> client;
+        protected BiConsumer<T, ByteBuf> encoder;
+
+        public MessageToByteEncoder(Class<? extends T> typeClazz, AbstractNettyIoClient<T, ?> client, BiConsumer<T, ByteBuf> encoder) {
+            super(typeClazz);
+            this.client = client;
+            this.encoder = encoder;
         }
 
         @Override
         protected void encode(ChannelHandlerContext ctx, T msg, ByteBuf out) {
-            AbstractNettyIoClient.this.encode(msg, out);
+            encoder.accept(msg, out);
         }
 
         @SuppressWarnings("deprecation")
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             super.exceptionCaught(ctx, cause);
-            AbstractNettyIoClient.this.onEncodeException(ctx, cause);
+            client.onEncodeException(ctx, cause);
         }
     }
 
@@ -114,14 +168,18 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
     protected ScheduledFuture reconnectTask;
     protected int reconnectDelayMilliseconds = INITIAL_RECONNECT_DELAY_MILLIS;
     protected boolean permanentError;
+    protected Supplier<ChannelHandler[]> encoderDecoderProvider;
 
-    public AbstractNettyIoClient(ProtocolExecutorService executorService) {
+    protected AbstractNettyIoClient(ProtocolExecutorService executorService) {
         this.executorService = executorService;
     }
 
-    protected abstract Class<? extends Channel> getChannelClass();
+    @Override
+    public void setEncoderDecoderProvider(Supplier<ChannelHandler[]> encodersProvider) throws UnsupportedOperationException {
+        this.encoderDecoderProvider = encodersProvider;
+    }
 
-    protected abstract String getSocketAddressString();
+    protected abstract Class<? extends Channel> getChannelClass();
 
     protected abstract EventLoopGroup getWorkerGroup();
 
@@ -139,11 +197,11 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
         }
 
         if (connectionStatus != ConnectionStatus.DISCONNECTED && connectionStatus != ConnectionStatus.WAITING) {
-            LOG.finest("Must be disconnected before calling connect: " + getSocketAddressString());
+            LOG.finest("Must be disconnected before calling connect: " + getClientUri());
             return;
         }
 
-        LOG.fine("Connecting IO Client: " + getSocketAddressString());
+        LOG.fine("Connecting IO Client: " + getClientUri());
         onConnectionStatusChanged(ConnectionStatus.CONNECTING);
 
         if (workerGroup == null) {
@@ -179,11 +237,11 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
                     }
 
                     if (future.isSuccess()) {
-                        LOG.log(Level.INFO, "Connection initialising: " + getSocketAddressString());
+                        LOG.log(Level.INFO, "Connection initialising: " + getClientUri());
                         reconnectTask = null;
                         reconnectDelayMilliseconds = INITIAL_RECONNECT_DELAY_MILLIS;
                     } else if (future.cause() != null) {
-                        LOG.log(Level.WARNING, "Connection error: " + getSocketAddressString(), future.cause());
+                        LOG.log(Level.WARNING, "Connection error: " + getClientUri(), future.cause());
                         // Failed to connect so schedule reconnection attempt
                         scheduleReconnect();
                     }
@@ -202,11 +260,11 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
     @Override
     public synchronized void disconnect() {
         if ((permanentError && connectionStatus == ConnectionStatus.ERROR) || connectionStatus == ConnectionStatus.DISCONNECTING || connectionStatus == ConnectionStatus.DISCONNECTED) {
-            LOG.finest("Already disconnecting or disconnected: " + getSocketAddressString());
+            LOG.finest("Already disconnecting or disconnected: " + getClientUri());
             return;
         }
 
-        LOG.finest("Disconnecting IO client: " + getSocketAddressString());
+        LOG.finest("Disconnecting IO client: " + getClientUri());
         onConnectionStatusChanged(permanentError ? ConnectionStatus.ERROR : ConnectionStatus.DISCONNECTING);
 
         try {
@@ -238,16 +296,16 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
     @Override
     public void sendMessage(T message) {
         if (connectionStatus != ConnectionStatus.CONNECTED) {
-            LOG.warning("Cannot send message: Status = " + connectionStatus + ": " + getSocketAddressString());
+            LOG.warning("Cannot send message: Status = " + connectionStatus + ": " + getClientUri());
             return;
         }
 
         try {
             // Don't block here as it can cause deadlock
             channel.writeAndFlush(message);
-            LOG.finest("Message sent to server: " + getSocketAddressString());
+            LOG.finest("Message sent to server: " + getClientUri());
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Message send failed: " + getSocketAddressString(), e);
+            LOG.log(Level.WARNING, "Message send failed: " + getClientUri(), e);
         }
     }
 
@@ -304,7 +362,7 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
             @Override
             public void channelActive(ChannelHandlerContext ctx) throws Exception {
                 synchronized (AbstractNettyIoClient.this) {
-                    LOG.fine("Connected: " + getSocketAddressString());
+                    LOG.fine("Connected: " + getClientUri());
                     onConnectionStatusChanged(ConnectionStatus.CONNECTED);
                 }
                 super.channelActive(ctx);
@@ -318,40 +376,42 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
                         return;
                     }
 
-                    LOG.fine("Disconnected: " + getSocketAddressString());
+                    LOG.fine("Disconnected: " + getClientUri());
                     onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
                 }
                 super.channelInactive(ctx);
             }
         });
-        addDecoders(channel);
-        addEncoders(channel);
+        addEncodersDecoders(channel);
     }
 
-    protected void addDecoders(Channel channel) {
-        channel.pipeline().addLast(new MessageDecoder());
+    protected void addEncodersDecoders(Channel channel) {
+        if (encoderDecoderProvider != null) {
+            ChannelHandler[] handlers = encoderDecoderProvider.get();
+            if (handlers != null) {
+                Arrays.stream(handlers).forEach(
+                    handler -> channel.pipeline().addLast(handler)
+                );
+            }
+        }
     }
 
-    protected void addEncoders(Channel channel) {
-        channel.pipeline().addLast(new MessageEncoder());
-    }
-
-    protected void onMessageReceived(U address, T message) {
+    protected void onMessageReceived(T message) {
         if (connectionStatus != ConnectionStatus.CONNECTED) {
             return;
         }
 
-        LOG.finest("Message received notifying consumers: " + getSocketAddressString());
+        LOG.finest("Message received notifying consumers: " + getClientUri());
         messageConsumers.forEach(consumer -> consumer.accept(message));
     }
 
     protected void onDecodeException(ChannelHandlerContext ctx, Throwable cause) {
-        LOG.log(Level.SEVERE, "Exception occurred on in-bound message: " + getSocketAddressString(), cause);
+        LOG.log(Level.SEVERE, "Exception occurred on in-bound message: " + getClientUri(), cause);
         onConnectionStatusChanged(ConnectionStatus.ERROR);
     }
 
     protected void onEncodeException(ChannelHandlerContext ctx, Throwable cause) {
-        LOG.log(Level.SEVERE, "Exception occurred on out-bound message: " + getSocketAddressString(), cause);
+        LOG.log(Level.SEVERE, "Exception occurred on out-bound message: " + getClientUri(), cause);
         onConnectionStatusChanged(ConnectionStatus.ERROR);
     }
 
@@ -377,7 +437,7 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
             reconnectDelayMilliseconds = Math.min(MAX_RECONNECT_DELAY_MILLIS, reconnectDelayMilliseconds);
         }
 
-        LOG.finest("Scheduling reconnection in '" + reconnectDelayMilliseconds + "' milliseconds: " + getSocketAddressString());
+        LOG.finest("Scheduling reconnection in '" + reconnectDelayMilliseconds + "' milliseconds: " + getClientUri());
 
         reconnectTask = executorService.schedule(() -> {
             synchronized (AbstractNettyIoClient.this) {
@@ -391,30 +451,18 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
         }, reconnectDelayMilliseconds);
     }
 
-
-    /**
-     * Implementations of this message processor need to implement this method in order
-     * to decode incoming data.
-     * <p>
-     * When one or more messages are available in the {@link ByteBuf} then the messages
-     * should be constructed and added to the messages list
-     */
-    protected abstract void decode(ByteBuf buf, List<T> messages);
-
-    protected abstract void encode(T message, ByteBuf buf);
-
     protected synchronized void setPermanentError(String message) {
         if (permanentError) {
             return;
         }
 
-        LOG.info("An unrecoverable error has occurred with client '" + getSocketAddressString() + "' is no longer usable: " + message);
+        LOG.info("An unrecoverable error has occurred with client '" + getClientUri() + "' is no longer usable: " + message);
         this.permanentError = true;
         disconnect();
     }
 
     @Override
     public String toString() {
-        return getSocketAddressString();
+        return getClientUri();
     }
 }

@@ -1,6 +1,7 @@
 package org.openremote.agent.protocol.knx;
 
 import org.openremote.model.attribute.AttributeValueType;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -14,9 +15,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
 public class TypeMapper {
 
-    private static final Logger LOG = Logger.getLogger(TypeMapper.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, TypeMapper.class);
 
     /** map dpt to OpenRemote type */
     static private Map<String, AttributeValueType> dptToTypeMap;

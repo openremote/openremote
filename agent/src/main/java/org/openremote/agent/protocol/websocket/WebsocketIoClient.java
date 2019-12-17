@@ -31,6 +31,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.CharsetUtil;
+import io.netty.util.ReferenceCountUtil;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.agent.protocol.http.OAuthFilter;
@@ -52,9 +53,17 @@ import static org.openremote.agent.protocol.http.WebTargetBuilder.CONNECTION_TIM
 import static org.openremote.agent.protocol.http.WebTargetBuilder.createClient;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
-public class WebsocketClient extends AbstractNettyIoClient<String, InetSocketAddress> {
+/**
+ * This is an {@link org.openremote.agent.protocol.io.IoClient} implementation based on {@link AbstractNettyIoClient}.
+ * For custom decoders, the initial message type is of type {@link String}.
+ * For custom encoders, the final message type must be of type {@link String}.
+ */
+public class WebsocketIoClient<T> extends AbstractNettyIoClient<T, InetSocketAddress> {
 
-    public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
+    /**
+     * Extracts the text from the {@link WebSocketFrame} and sends it to the next handler in the pipeline
+     */
+    protected class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
 
         private final WebSocketClientHandshaker handshaker;
         private ChannelPromise handshakeFuture;
@@ -80,17 +89,18 @@ public class WebsocketClient extends AbstractNettyIoClient<String, InetSocketAdd
         @Override
         public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
             Channel ch = ctx.channel();
+
             if (!handshaker.isHandshakeComplete()) {
                 try {
                     handshaker.finishHandshake(ch, (FullHttpResponse) msg);
-                    synchronized (WebsocketClient.this) {
-                        LOG.fine("Connected: " + getSocketAddressString());
+                    synchronized (WebsocketIoClient.this) {
+                        LOG.fine("Connected: " + getClientUri());
                         onConnectionStatusChanged(ConnectionStatus.CONNECTED);
                     }
 
                     handshakeFuture.setSuccess();
                 } catch (WebSocketHandshakeException e) {
-                    LOG.log(Level.SEVERE, "Connection failed: " + getSocketAddressString(), e);
+                    LOG.log(Level.SEVERE, "Connection failed: " + getClientUri(), e);
                     setPermanentError("Connection failed: " + e.getMessage());
                     handshakeFuture.setFailure(e);
                 }
@@ -100,13 +110,14 @@ public class WebsocketClient extends AbstractNettyIoClient<String, InetSocketAdd
             if (msg instanceof FullHttpResponse) {
                 FullHttpResponse response = (FullHttpResponse) msg;
                 LOG.severe("Websocket client unexpected FullHttpResponse (getStatus=" + response.status() +
-                        ", content=" + response.content().toString(CharsetUtil.UTF_8) + ')');
+                    ", content=" + response.content().toString(CharsetUtil.UTF_8) + ')');
             }
 
             WebSocketFrame frame = (WebSocketFrame) msg;
             if (frame instanceof TextWebSocketFrame) {
                 TextWebSocketFrame textFrame = (TextWebSocketFrame) frame;
-                WebsocketClient.this.onMessageReceived((InetSocketAddress)ch.remoteAddress(), textFrame.text());
+                String str = textFrame.text();
+                ctx.fireChannelRead(str);
             } else if (frame instanceof PongWebSocketFrame) {
                 LOG.finest("Websocket client pong received");
             } else if (frame instanceof CloseWebSocketFrame) {
@@ -122,10 +133,11 @@ public class WebsocketClient extends AbstractNettyIoClient<String, InetSocketAdd
                 handshakeFuture.setFailure(cause);
             }
             ctx.close();
+            WebsocketIoClient.this.onDecodeException(ctx, cause);
         }
     }
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketClient.class);
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketIoClient.class);
     protected boolean useSsl;
     protected URI uri;
     protected SslContext sslCtx;
@@ -136,11 +148,7 @@ public class WebsocketClient extends AbstractNettyIoClient<String, InetSocketAdd
     protected String host;
     protected int port;
 
-    public WebsocketClient(URI uri, ProtocolExecutorService executorService) {
-        this(uri, null, null, executorService);
-    }
-
-    public WebsocketClient(URI uri, MultivaluedMap<String, String> headers, OAuthGrant oAuthGrant, ProtocolExecutorService executorService) {
+    public WebsocketIoClient(URI uri, MultivaluedMap<String, String> headers, OAuthGrant oAuthGrant, ProtocolExecutorService executorService) {
         super(executorService);
 
         this.uri = uri;
@@ -178,7 +186,7 @@ public class WebsocketClient extends AbstractNettyIoClient<String, InetSocketAdd
     }
 
     @Override
-    protected String getSocketAddressString() {
+    public String getClientUri() {
         return uri.toString();
     }
 
@@ -221,7 +229,7 @@ public class WebsocketClient extends AbstractNettyIoClient<String, InetSocketAdd
                         uri, WebSocketVersion.V13, null, true, hdrs));
 
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to initialise channel: "  + getSocketAddressString(), e);
+            LOG.log(Level.SEVERE, "Failed to initialise channel: "  + getClientUri(), e);
             setPermanentError(e.getMessage());
             return;
         }
@@ -230,35 +238,34 @@ public class WebsocketClient extends AbstractNettyIoClient<String, InetSocketAdd
     }
 
     @Override
-    protected void addDecoders(Channel channel) {
+    protected void addEncodersDecoders(Channel channel) {
+
         if (sslCtx != null) {
             channel.pipeline().addLast(sslCtx.newHandler(channel.alloc(), host, port));
         }
+
         channel.pipeline().addLast(
             new HttpClientCodec(),
             new HttpObjectAggregator(8192),
             WebSocketClientCompressionHandler.INSTANCE,
             handler);
-    }
 
-    @Override
-    protected void addEncoders(Channel channel) {
+        channel.pipeline().addLast(new MessageToMessageEncoder<ByteBuf>() {
+            @Override
+            protected void encode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
+                out.add(new TextWebSocketFrame(msg));
+            }
+        });
+
+        super.addEncodersDecoders(channel);
+
+        // Put string encoder first (encoders are called in reverse to decoders)
         channel.pipeline().addLast(new MessageToMessageEncoder<String>() {
             @Override
             protected void encode(ChannelHandlerContext ctx, String msg, List<Object> out) throws Exception {
                 out.add(new TextWebSocketFrame(msg));
             }
         });
-    }
-
-    @Override
-    protected void decode(ByteBuf buf, List<String> messages) {
-        // Not used
-    }
-
-    @Override
-    protected void encode(String message, ByteBuf buf) {
-        // Not used
     }
 
     @Override
@@ -270,7 +277,7 @@ public class WebsocketClient extends AbstractNettyIoClient<String, InetSocketAdd
         }
 
         if (oAuthGrant != null) {
-            LOG.fine("Retrieving OAuth access token: "  + getSocketAddressString());
+            LOG.fine("Retrieving OAuth access token: "  + getClientUri());
 
             ResteasyClient client = createClient(executorService, 1, CONNECTION_TIMEOUT_MILLISECONDS, null);
 
@@ -281,10 +288,10 @@ public class WebsocketClient extends AbstractNettyIoClient<String, InetSocketAdd
                 if (TextUtil.isNullOrEmpty(authHeaderValue)) {
                     throw new Exception("Returned access token is null");
                 }
-                LOG.fine("Retrieved access token via OAuth: " + getSocketAddressString());
+                LOG.fine("Retrieved access token via OAuth: " + getClientUri());
 
             } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Failed to retrieve OAuth access token: " + getSocketAddressString(), e);
+                LOG.log(Level.SEVERE, "Failed to retrieve OAuth access token: " + getClientUri(), e);
                 setPermanentError(e.getMessage());
                 return;
             } finally {

@@ -13,6 +13,7 @@ import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
 import org.openremote.model.file.FileInfo;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -43,6 +44,7 @@ import java.util.zip.ZipInputStream;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
@@ -51,7 +53,7 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty;
  */
 public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttributeImport {
 
-    private static final Logger LOG = Logger.getLogger(KNXProtocol.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, KNXProtocol.class);
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":knx";
     public static final String PROTOCOL_DISPLAY_NAME = "KNX";
@@ -219,11 +221,6 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
             return;
         }
 
-        if (!protocolConfiguration.isEnabled()) {
-            updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.DISABLED);
-            return;
-        }
-        
         String localIp = protocolConfiguration.getMetaItem(META_KNX_LOCAL_HOST).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
         Integer remotePort = protocolConfiguration.getMetaItem(META_KNX_GATEWAY_PORT).flatMap(AbstractValueHolder::getValueAsInteger).orElse(3671);
         String localKNXAddress = protocolConfiguration.getMetaItem(META_KNX_LOCAL_BUS_ADDRESS).flatMap(AbstractValueHolder::getValueAsString).orElse("0.0.0");
@@ -327,7 +324,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
     }
 
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+    protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
         if (!protocolConfiguration.isEnabled()) {
             LOG.fine("Protocol configuration is disabled so ignoring write request");
             return;

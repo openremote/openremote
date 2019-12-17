@@ -37,6 +37,8 @@ import java.util.stream.Stream;
  */
 public class Values {
 
+    public static final String NULL_LITERAL = "null";
+
     public static StringValue create(String string) {
         return instance().create(string);
     }

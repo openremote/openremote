@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.udp;
+package org.openremote.agent.protocol.tcp;
 
 import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
 import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
@@ -33,37 +34,35 @@ import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
-import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemFixedBoolean;
-import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemInteger;
+import static org.openremote.model.attribute.MetaItemDescriptorImpl.*;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
- * This is an abstract UDP client protocol for communicating with UDP servers; concrete implementations must provide
+ * This is an abstract TCP client protocol for communicating with TCP servers; concrete implementations must provide
  * an {@link IoClient<T> for handling over the wire communication}.
  */
-public abstract class AbstractUdpClientProtocol<T> extends AbstractIoClientProtocol<T, UdpIoClient<T>> {
+public abstract class AbstractTcpClientProtocol<T> extends AbstractIoClientProtocol<T, TcpIoClient<T>> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractUdpClientProtocol.class);
-    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":abstractUdpClient";
-
-    /**
-     * Optionally sets the port that this UDP client will bind to (if not set then a random ephemeral port will be used)
-     */
-    public static final MetaItemDescriptor META_PROTOCOL_BIND_PORT = metaItemInteger(
-            PROTOCOL_NAME + ":bindPort",
-            ACCESS_PRIVATE,
-            true,
-            1,
-            65536);
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractTcpClientProtocol.class);
+    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":tcpClient";
 
     public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
         META_PROTOCOL_HOST,
-        META_PROTOCOL_PORT,
-        META_PROTOCOL_BIND_PORT
+        META_PROTOCOL_PORT
     );
 
     @Override
-    protected UdpIoClient<T> createIoClient(AssetAttribute protocolConfiguration) throws Exception {
+    public AssetAttribute getProtocolConfigurationTemplate() {
+        return super.getProtocolConfigurationTemplate()
+            .addMeta(
+                new MetaItem(META_PROTOCOL_HOST, null),
+                new MetaItem(META_PROTOCOL_PORT, null)
+            );
+    }
+
+    @Override
+    protected TcpIoClient<T> createIoClient(AssetAttribute protocolConfiguration) throws Exception {
+
         String host = Values.getMetaItemValueOrThrow(
             protocolConfiguration,
             META_PROTOCOL_HOST,
@@ -78,25 +77,14 @@ public abstract class AbstractUdpClientProtocol<T> extends AbstractIoClientProto
             true
         ).flatMap(Values::getIntegerCoerced).orElse(0);
 
-        Integer bindPort = Values.getMetaItemValueOrThrow(
-            protocolConfiguration,
-            META_PROTOCOL_BIND_PORT,
-            false,
-            false
-        ).flatMap(Values::getIntegerCoerced).orElse(null);
-
         if (port < 1 || port > 65536) {
             throw new IllegalArgumentException("Port must be in the range 1-65536");
-        }
-
-        if (bindPort != null && (bindPort < 1 || bindPort > 65536)) {
-            throw new IllegalArgumentException("Bind port must be in the range 1-65536 if specified");
         }
 
         if (TextUtil.isNullOrEmpty(host)) {
             throw new IllegalArgumentException("Host cannot be empty");
         }
 
-        return new UdpIoClient<>(host, port, bindPort, executorService);
+        return new TcpIoClient<>(host, port, executorService);
     }
 }

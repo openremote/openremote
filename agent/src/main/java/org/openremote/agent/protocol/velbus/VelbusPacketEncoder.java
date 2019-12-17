@@ -20,24 +20,17 @@
 package org.openremote.agent.protocol.velbus;
 
 import io.netty.buffer.ByteBuf;
-import org.openremote.agent.protocol.serial.AbstractSerialClient;
-import org.openremote.agent.protocol.ProtocolExecutorService;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToByteEncoder;
 
 import java.util.List;
 
-public class VelbusSerialClient extends AbstractSerialClient<VelbusPacket> {
+import static org.openremote.agent.protocol.velbus.VelbusPacket.MAX_PACKET_SIZE;
 
-    public VelbusSerialClient(String port, Integer baudRate, ProtocolExecutorService executorService) {
-        super(port, baudRate, executorService);
-    }
+public final class VelbusPacketEncoder extends MessageToByteEncoder<VelbusPacket> {
 
     @Override
-    protected void decode(ByteBuf buf, List<VelbusPacket> messages) {
-        VelbusPacketEncoderDecoder.decode(buf, messages);
-    }
-
-    @Override
-    protected void encode(VelbusPacket message, ByteBuf buf) {
-        VelbusPacketEncoderDecoder.encode(message, buf);
+    protected void encode(ChannelHandlerContext ctx, VelbusPacket message, ByteBuf buf) throws Exception {
+        buf.writeBytes(message.pack());
     }
 }

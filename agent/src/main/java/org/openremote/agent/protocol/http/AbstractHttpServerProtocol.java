@@ -43,6 +43,7 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.StringValue;
@@ -59,6 +60,7 @@ import java.util.regex.Pattern;
 import static org.openremote.container.web.WebService.pathStartsWithHandler;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This is an abstract protocol for creating JAX-RS deployments; a concrete implementation should be created for each
@@ -124,7 +126,7 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
     public static final String DEFAULT_ALLOWED_METHODS = "OPTIONS, GET, POST, DELETE, PUT, PATCH";
     public static final String DEFAULT_DEPLOYMENT_NAME_FORMAT = "HttpServer %1$s Deployment %2$d";
     protected static final Map<AttributeRef, DeploymentInstance> deployments = new HashMap<>();
-    private static final Logger LOG = Logger.getLogger(AbstractHttpServerProtocol.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractHttpServerProtocol.class);
     protected static WebServiceExceptions.DefaultResteasyExceptionMapper defaultResteasyExceptionMapper;
     protected static WebServiceExceptions.ForbiddenResteasyExceptionMapper forbiddenResteasyExceptionMapper;
     protected static JacksonConfig jacksonConfig;

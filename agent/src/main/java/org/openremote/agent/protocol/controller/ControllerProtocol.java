@@ -33,12 +33,12 @@ import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.*;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -55,6 +55,7 @@ import static org.openremote.agent.protocol.http.WebTargetBuilder.createClient;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.*;
 
 /**
@@ -89,7 +90,7 @@ import static org.openremote.model.util.TextUtil.*;
 @SuppressWarnings("JavaDoc")
 public class ControllerProtocol extends AbstractProtocol {
 
-    private static final Logger LOG = Logger.getLogger(ControllerProtocol.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ControllerProtocol.class);
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":controllerClient";
 
@@ -320,18 +321,28 @@ public class ControllerProtocol extends AbstractProtocol {
     /**
      * Write action on a linked attribute mean we execute a command on the Controller. It induce a HTTP request and manage it's return code. (No value
      * is returned from the execution of a command)
-     *
-     * @param event
+     *  @param event
+     * @param processedValue
      * @param protocolConfiguration
      */
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+    protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
         LOG.fine("### Process Linked Attribute Write");
 
         AttributeRef attributeRef = event.getAttributeRef();
         ControllerCommand controllerCommand = controllersMap.get(protocolConfiguration.getReferenceOrThrow()).getCommand(attributeRef);
         HttpClientProtocol.HttpClientRequest request = RequestBuilder.buildCommandRequest(controllerCommand, event, this.controllersTargetMap.get(protocolConfiguration.getReferenceOrThrow()));
-        executeAttributeWriteRequest(request, protocolConfiguration.getReferenceOrThrow(), this::onAttributeWriteResponse);
+
+        String body = null;
+
+        if (controllerCommand instanceof ControllerCommandBasic) {
+            body = event.getValue().map(v -> {
+                ObjectValue objectValue = Values.createObject();
+                objectValue.put("parameter", v);
+                return objectValue.toString();
+            }).orElse(null);
+        }
+        executeAttributeWriteRequest(request, body, protocolConfiguration.getReferenceOrThrow(), this::onAttributeWriteResponse);
     }
 
     /**
@@ -541,11 +552,11 @@ public class ControllerProtocol extends AbstractProtocol {
         }
     }
 
-    private void executeAttributeWriteRequest(HttpClientProtocol.HttpClientRequest request, AttributeRef protocolRef, Consumer<Response> responseConsumer) {
+    private void executeAttributeWriteRequest(HttpClientProtocol.HttpClientRequest request, String body, AttributeRef protocolRef, Consumer<Response> responseConsumer) {
         Response response = null;
 
         try {
-            response = request.invoke(null);
+            response = request.invoke(body);
 
             this.updateConnectionStatus(protocolRef, ConnectionStatus.CONNECTED);
         } catch (Exception e) {

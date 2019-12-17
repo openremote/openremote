@@ -19,33 +19,31 @@
  */
 package org.openremote.agent.protocol.tcp;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.agent.protocol.io.AbstractNettyIoClient;
 import org.openremote.agent.protocol.io.IoClient;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
 import java.net.InetSocketAddress;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This is a {@link IoClient} implementation for TCP.
+ * <p>
+ * Users of this {@link IoClient} are responsible for adding encoders for converting messages of type &lt;T&gt; to
+ * {@link io.netty.buffer.ByteBuf} (see {@link MessageToByteEncoder}) and adding decoders to convert from
+ * {@link io.netty.buffer.ByteBuf} to messages of type &lt;T&gt; and ensuring these decoded messages are passed back
+ * to this client via {@link AbstractNettyIoClient#onMessageReceived} (see {@link ByteToMessageDecoder and
+ * {@link MessageToMessageDecoder}).
  */
-public abstract class AbstractTcpClient<T> extends AbstractNettyIoClient<T, InetSocketAddress> {
+public class TcpIoClient<T> extends AbstractNettyIoClient<T, InetSocketAddress> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractTcpClient.class);
     protected String host;
     protected int port;
 
-    public AbstractTcpClient(String host, int port, ProtocolExecutorService executorService) {
+    public TcpIoClient(String host, int port, ProtocolExecutorService executorService) {
         super(executorService);
         TextUtil.requireNonNullAndNonEmpty(host);
         this.host = host;
@@ -58,7 +56,7 @@ public abstract class AbstractTcpClient<T> extends AbstractNettyIoClient<T, Inet
     }
 
     @Override
-    protected String getSocketAddressString() {
+    public String getClientUri() {
         return "tcp://" + host + ":" + port;
     }
 

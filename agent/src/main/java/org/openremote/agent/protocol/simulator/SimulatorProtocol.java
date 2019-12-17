@@ -30,6 +30,7 @@ import org.openremote.model.simulator.SimulatorState;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
 import org.openremote.model.simulator.element.NumberSimulatorElement;
 import org.openremote.model.simulator.element.SwitchSimulatorElement;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
@@ -43,6 +44,7 @@ import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemType.RANGE_MAX;
 import static org.openremote.model.attribute.MetaItemType.RANGE_MIN;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE;
 
 public class SimulatorProtocol extends AbstractProtocol {
@@ -95,7 +97,7 @@ public class SimulatorProtocol extends AbstractProtocol {
         }
     }
 
-    private static final Logger LOG = Logger.getLogger(SimulatorProtocol.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, SimulatorProtocol.class);
 
     public static final int DEFAULT_WRITE_DELAY = 1000;
 
@@ -220,7 +222,7 @@ public class SimulatorProtocol extends AbstractProtocol {
                     .flatMap(AbstractValueHolder::getValueAsInteger)
                     .orElse(DEFAULT_WRITE_DELAY);
 
-                updateStatus(protocolRef, protocolConfiguration.isEnabled() ? ConnectionStatus.CONNECTED : ConnectionStatus.DISABLED);
+                updateStatus(protocolRef, ConnectionStatus.CONNECTED);
                 return new Instance(mode, writeDelay, protocolConfiguration.isEnabled());
             }
         );
@@ -273,7 +275,7 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+    protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
         if (putValue(event.getAttributeState())) {
             // Notify listener when write was successful
             if (protocolConfigurationValuesChangedHandler != null)

@@ -217,7 +217,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "a notification should have been sent to the console"
         conditions.eventually {
-            assert notificationMessages.size() == 1
+            assert notificationMessages.findAll {it.data == null || !it.data.getString("action").orElse("").equals("GEOFENCE_REFRESH")}.size() == 1
             assert targets[0].type == Notification.TargetType.ASSET
             assert targets[0].id == consoleRegistration.id
         }

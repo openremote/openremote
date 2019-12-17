@@ -3,6 +3,7 @@ package org.openremote.agent.protocol.knx;
 import org.apache.commons.lang3.StringUtils;
 import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import tuwien.auto.calimero.*;
@@ -26,6 +27,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public class KNXConnection implements NetworkLinkListener, ProcessListener {
 
@@ -57,7 +60,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
 
     private String localIp;
     
-    private static final Logger LOG = Logger.getLogger(KNXConnection.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, KNXConnection.class);
     
     public KNXConnection(String gatewayIp, String connectionType, ProtocolExecutorService executorService, String localIp, Integer remotePort, Boolean useNat, String localKNXAddress) {
         this.gatewayIp = gatewayIp;

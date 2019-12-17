@@ -29,14 +29,20 @@ import org.openremote.model.util.TextUtil;
 
 /**
  * This is a {@link IoClient} implementation for serial ports.
+ * <p>
+ * Users of this {@link IoClient} are responsible for adding encoders for converting messages of type &lt;T&gt; to
+ * {@link io.netty.buffer.ByteBuf} (see {@link MessageToByteEncoder}) and adding decoders to convert from
+ * {@link io.netty.buffer.ByteBuf} to messages of type &lt;T&gt; and ensuring these decoded messages are passed back
+ * to this client via {@link AbstractNettyIoClient#onMessageReceived} (see {@link ByteToMessageDecoder and
+ * {@link MessageToMessageDecoder}).
  */
-public abstract class AbstractSerialClient<T> extends AbstractNettyIoClient<T, NrJavaSerialAddress> {
+public class SerialIoClient<T> extends AbstractNettyIoClient<T, NrJavaSerialAddress> {
 
     protected String port;
     protected int baudRate;
     public static int DEFAULT_BAUD_RATE = 38400;
 
-    public AbstractSerialClient(String port, Integer baudRate, ProtocolExecutorService executorService) {
+    public SerialIoClient(String port, Integer baudRate, ProtocolExecutorService executorService) {
         super(executorService);
         TextUtil.requireNonNullAndNonEmpty(port);
         this.port = port;
@@ -54,7 +60,7 @@ public abstract class AbstractSerialClient<T> extends AbstractNettyIoClient<T, N
     }
 
     @Override
-    protected String getSocketAddressString() {
+    public String getClientUri() {
         return "serial://" + port;
     }
 

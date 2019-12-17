@@ -19,24 +19,23 @@
  */
 package org.openremote.agent.protocol.velbus;
 
-import org.openremote.agent.protocol.io.IoClient;
-import org.openremote.agent.protocol.serial.NrJavaSerialAddress;
+import io.netty.channel.ChannelHandler;
 import org.openremote.agent.protocol.ProtocolConfigurationDiscovery;
+import org.openremote.agent.protocol.io.AbstractNettyIoClient;
+import org.openremote.agent.protocol.io.IoClient;
+import org.openremote.agent.protocol.serial.SerialIoClient;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaItemDescriptor;
-import org.openremote.model.attribute.MetaItemDescriptorImpl;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
-import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO;
 
 public class VelbusSerialProtocol extends AbstractVelbusProtocol implements ProtocolConfigurationDiscovery {
 
@@ -45,27 +44,9 @@ public class VelbusSerialProtocol extends AbstractVelbusProtocol implements Prot
     public static final String META_VELBUS_SERIAL_PORT = PROTOCOL_NAME + ":port";
     public static final String META_VELBUS_SERIAL_BAUDRATE = PROTOCOL_NAME + ":baudRate";
     public static final int DEFAULT_BAUDRATE = 38400;
-    public static final List<MetaItemDescriptorImpl> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
-        new MetaItemDescriptorImpl(
-            META_VELBUS_SERIAL_PORT,
-            ValueType.STRING,
-            true,
-            null,
-            null,
-            1,
-            null,
-            false,
-                null, null, null),
-        new MetaItemDescriptorImpl(
-            META_VELBUS_SERIAL_BAUDRATE,
-            ValueType.NUMBER,
-            false,
-            REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO,
-            MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(),
-            1,
-            Values.create(DEFAULT_BAUDRATE),
-            false,
-                null, null, null)
+    public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
+        META_PROTOCOL_SERIAL_PORT,
+        META_PROTOCOL_SERIAL_BAUDRATE
     );
 
     @Override
@@ -101,15 +82,23 @@ public class VelbusSerialProtocol extends AbstractVelbusProtocol implements Prot
     }
 
     @Override
-    protected IoClient<VelbusPacket> createClient(AssetAttribute protocolConfiguration) throws RuntimeException {
+    protected IoClient<VelbusPacket> createIoClient(AssetAttribute protocolConfiguration) throws RuntimeException {
 
         // Extract port and baud rate
         String port = protocolConfiguration.getMetaItem(META_VELBUS_SERIAL_PORT).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
         Integer baudRate = protocolConfiguration.getMetaItem(META_VELBUS_SERIAL_BAUDRATE).flatMap(AbstractValueHolder::getValueAsInteger).orElse(DEFAULT_BAUDRATE);
 
         TextUtil.requireNonNullAndNonEmpty(port, "Port cannot be null or empty");
+        SerialIoClient<VelbusPacket> client = new SerialIoClient<>(port, baudRate, executorService);
 
-        return new VelbusSerialClient(port, baudRate, executorService);
+        client.setEncoderDecoderProvider(
+            () -> new ChannelHandler[]{
+                new VelbusPacketEncoder(),
+                new VelbusPacketDecoder(),
+                new AbstractNettyIoClient.MessageToMessageDecoder<>(VelbusPacket.class, client)
+            }
+        );
+        return client;
     }
 
     @Override

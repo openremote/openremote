@@ -206,6 +206,13 @@ public class AssetAttribute extends Attribute {
         return this;
     }
 
+    public AssetAttribute removeMeta(MetaItemDescriptor metaItemDescriptor) {
+        if (metaItemDescriptor != null) {
+            getMeta().removeIf(metaItem -> metaItem.getName().orElse("").equals(metaItemDescriptor.getUrn()));
+        }
+        return this;
+    }
+
     /**
      * @return The current value and its timestamp represented as an attribute event.
      */

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.udp;
+package org.openremote.agent.protocol.tcp;
 
 import io.netty.channel.ChannelHandler;
 import org.openremote.agent.protocol.Protocol;
@@ -41,11 +41,10 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
- * This is a UDP client protocol for communicating with UDP servers; it uses the {@link UdpIoClient} to handle the
- * communication and all messages are processed as strings; if you require custom message type handling or  more specific
- * {@link #getProtocolConfigurationMetaItemDescriptors()} or {@link #getLinkedAttributeMetaItemDescriptors()} then please
- * sub class the {@link AbstractUdpClientProtocol}).
- * <b>It is important that all data (sent and received) fits in a single datagram packet.</b>
+ * This is a generic TCP client protocol for communicating with TCP servers; it uses the {@link TcpIoClient} to
+ * handle the communication and all messages are processed as strings; if you require custom message type handling or
+ * more specific {@link #getProtocolConfigurationMetaItemDescriptors()} or {@link #getLinkedAttributeMetaItemDescriptors()}
+ * then please sub class the {@link AbstractTcpClientProtocol}).
  * <h1>Protocol Configurations</h1>
  * <p>
  * {@link Attribute}s that are configured as {@link ProtocolConfiguration}s for this protocol support the meta
@@ -76,14 +75,13 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * {@link Protocol#META_PROTOCOL_CONVERT_HEX} or {@link Protocol#META_PROTOCOL_CONVERT_BINARY} to facilitate working
  * with UDP servers that handle binary data.
  */
-public class UdpClientProtocol extends AbstractUdpClientProtocol<String> {
+public class TcpClientProtocol extends AbstractTcpClientProtocol<String> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, UdpClientProtocol.class);
-    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":udpClient";
-    public static final String PROTOCOL_DISPLAY_NAME = "UDP Client";
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, TcpClientProtocol.class);
+    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":tcpClient";
+    public static final String PROTOCOL_DISPLAY_NAME = "TCP Client";
     public static final String PROTOCOL_VERSION = "1.0";
-
-    public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = joinCollections(AbstractUdpClientProtocol.PROTOCOL_META_ITEM_DESCRIPTORS, AbstractIoClientProtocol.PROTOCOL_GENERIC_META_ITEM_DESCRIPTORS);
+    public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = joinCollections(AbstractTcpClientProtocol.PROTOCOL_META_ITEM_DESCRIPTORS, AbstractIoClientProtocol.PROTOCOL_GENERIC_META_ITEM_DESCRIPTORS);
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
         META_ATTRIBUTE_MATCH_FILTERS,
@@ -168,7 +166,7 @@ public class UdpClientProtocol extends AbstractUdpClientProtocol<String> {
     }
 
     @Override
-    protected Supplier<ChannelHandler[]> getEncoderDecoderProvider(UdpIoClient<String> client, AssetAttribute protocolConfiguration) {
+    protected Supplier<ChannelHandler[]> getEncoderDecoderProvider(TcpIoClient<String> client, AssetAttribute protocolConfiguration) {
         return getGenericStringEncodersAndDecoders(client, protocolConfiguration);
     }
 
@@ -194,6 +192,18 @@ public class UdpClientProtocol extends AbstractUdpClientProtocol<String> {
         if (attribute.isReadOnly()) {
             LOG.fine("Attempt to write to an attribute that doesn't support writes: " + event.getAttributeRef());
             return null;
+        }
+
+        if (attribute.isExecutable()) {
+            AttributeExecuteStatus status = event.getValue()
+                .flatMap(Values::getString)
+                .flatMap(AttributeExecuteStatus::fromString)
+                .orElse(null);
+
+            if (status != null && status != AttributeExecuteStatus.REQUEST_START) {
+                LOG.fine("Unsupported execution status: " + status);
+                return null;
+            }
         }
 
         return processedValue != null ? processedValue.toString() : null;

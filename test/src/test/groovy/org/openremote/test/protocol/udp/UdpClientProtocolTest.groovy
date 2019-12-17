@@ -21,11 +21,11 @@ package org.openremote.test.protocol.udp
 
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext
-import io.netty.channel.ChannelOutboundHandler
 import io.netty.channel.socket.DatagramChannel
 import io.netty.handler.codec.FixedLengthFrameDecoder
 import io.netty.handler.codec.MessageToMessageEncoder
 import io.netty.handler.codec.bytes.ByteArrayDecoder
+import org.openremote.agent.protocol.Protocol
 import org.openremote.agent.protocol.ProtocolExecutorService
 import org.openremote.agent.protocol.udp.AbstractUdpServer
 import org.openremote.agent.protocol.udp.UdpClientProtocol
@@ -39,6 +39,8 @@ import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.*
+import org.openremote.model.query.AssetQuery
+import org.openremote.model.query.filter.StringPredicate
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -52,9 +54,6 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 1)
-
-        and: "the UDP client protocol min times are adjusted for testing"
-        UdpClientProtocol.MIN_POLLING_MILLIS = 10
 
         when: "the container starts"
         def serverPort = findEphemeralPort()
@@ -120,8 +119,11 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
                         Values.create(clientPort)
                     ),
                     new MetaItem(
-                        UdpClientProtocol.META_RESPONSE_TIMEOUT_MILLIS,
-                        Values.create(200)
+                        Protocol.META_PROTOCOL_DELIMITER,
+                        Values.create(";")
+                    ),
+                    new MetaItem(
+                        Protocol.META_PROTOCOL_STRIP_DELIMITER
                     )
                 )
         )
@@ -138,48 +140,39 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         when: "an asset is created with attributes linked to the protocol configuration"
         def asset = new Asset("Test Asset", AssetType.THING, agent)
         asset.setAttributes(
-            // simple send with no retries
             new AssetAttribute("echoHello", AttributeValueType.STRING)
                 .addMeta(
                     new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
-                    new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create('Hello {$value};')),
-                    new MetaItem(UdpClientProtocol.META_SEND_RETRIES, Values.create(0)),
-                    new MetaItem(UdpClientProtocol.META_SERVER_ALWAYS_RESPONDS, Values.create(true)),
+                    new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create('"Hello {$value};"')),
                     new MetaItem(MetaItemType.EXECUTABLE)
                 ),
-            // attribute send with 10 retries
             new AssetAttribute("echoWorld", AttributeValueType.STRING)
                 .addMeta(
                     new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
-                    new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create("World;")),
-                    new MetaItem(UdpClientProtocol.META_SEND_RETRIES, Values.create(10)),
-                    new MetaItem(UdpClientProtocol.META_SERVER_ALWAYS_RESPONDS, Values.create(true)),
-                    new MetaItem(MetaItemType.EXECUTABLE)
+                    new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create("World;"))
                 ),
-            // attribute poll with 3 retries
-            new AssetAttribute("pollTest", AttributeValueType.STRING)
+            new AssetAttribute("responseHello", AttributeValueType.STRING)
                 .addMeta(
                     new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
-                    new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create("Test;")),
-                    new MetaItem(UdpClientProtocol.META_POLLING_MILLIS, Values.create(100)),
-                    new MetaItem(UdpClientProtocol.META_SEND_RETRIES, Values.create(3))
+                    new MetaItem(Protocol.META_ATTRIBUTE_MATCH_PREDICATE,
+                        new StringPredicate(AssetQuery.Match.BEGIN, true, "Hello").toModelValue())
                 ),
+            new AssetAttribute("responseWorld", AttributeValueType.STRING)
+                .addMeta(
+                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
+                    new MetaItem(Protocol.META_ATTRIBUTE_MATCH_PREDICATE,
+                        new StringPredicate(AssetQuery.Match.BEGIN, true, "Hello").toModelValue())
+                )
         )
 
         and: "the asset is merged into the asset service"
         asset = assetStorageService.merge(asset)
 
-        then: "the polling attribute should have the correct values"
-        def messageCount = 0
+        then: "the protocol should be linked"
         conditions.eventually {
-            asset = assetStorageService.find(asset.getId(), true)
-            assert asset.getAttribute("pollTest").flatMap({ it.getValueAsString() }).orElse(null) == "Test"
-            messageCount = receivedMessages.size()
-        }
-
-        and: "the attribute should continue sending to the server"
-        conditions.eventually {
-            receivedMessages.size() > messageCount + 1
+            assert udpClientProtocol.protocolIoClientMap.size() == 1
+            assert udpClientProtocol.protocolMessageConsumers.size() == 1
+            assert udpClientProtocol.protocolMessageConsumers.get(new AttributeRef(agent.id, "protocolConfig")).size() == 2
         }
 
         when: "a linked attribute value is updated"
@@ -199,8 +192,8 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
 
         then: "the protocol should be unlinked"
         conditions.eventually {
-            assert udpClientProtocol.clientMap.isEmpty()
-            assert udpClientProtocol.attributeInfoMap.isEmpty()
+            assert udpClientProtocol.protocolIoClientMap.isEmpty()
+            assert udpClientProtocol.protocolMessageConsumers.isEmpty()
         }
 
         when: "the received messages are cleared"
@@ -211,62 +204,15 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
             assert receivedMessages.isEmpty()
         }
 
-        when: "the polling attribute is removed"
-        asset.removeAttribute("pollTest")
-        asset = assetStorageService.merge(asset)
-
-        and: "the protocol configuration is re-enabled"
+        when: "the protocol configuration is re-enabled"
         agent.getAttribute("protocolConfig").ifPresent{it.meta.removeIf{it.name.orElse(null) == MetaItemType.DISABLED.urn}}
         agent = assetStorageService.merge(agent)
 
-        then: "the two remaining attributes should be linked"
+        then: "the attributes should be re-linked"
         conditions.eventually {
-            assert udpClientProtocol.clientMap.size() == 1
-            assert udpClientProtocol.attributeInfoMap.size() == 2
-        }
-
-        when: "the server stops responding to the next request"
-        echoSkipCount = 1
-        lastSend = null
-
-        and: "the attribute that is configured for no retries is executed"
-        attributeEvent = new AttributeEvent(asset.id,
-            "echoHello",
-            AttributeExecuteStatus.REQUEST_START.asValue())
-        assetProcessingService.sendAttributeEvent(attributeEvent)
-
-        then: "the server should have received the attribute write value but it doesn't reply"
-        conditions.eventually {
-            assert receivedMessages.size() == 1
-            assert lastSend == null
-        }
-
-        then: "after a while no more messages should be received by the server and the send queue is clear"
-        new PollingConditions(initialDelay: 1, timeout: 2).eventually {
-            assert receivedMessages.size() == 1
-            assert udpClientProtocol.clientMap.get(new AttributeRef(agent.id, "protocolConfig")).actionQueue.isEmpty()
-        }
-
-        when: "the server stops responding to the next 3 requests"
-        echoSkipCount = 3
-        lastSend = null
-        receivedMessages.clear()
-
-        and: "the attribute that is configured for retries is executed"
-        attributeEvent = new AttributeEvent(asset.id,
-            "echoWorld",
-            AttributeExecuteStatus.REQUEST_START.asValue())
-        assetProcessingService.sendAttributeEvent(attributeEvent)
-
-        then: "the server should have received the attribute write value 4 times and responded on the 4th"
-        conditions.eventually {
-            assert receivedMessages.size() == 4
-            assert lastSend == "World"
-        }
-
-        then: "after a while no more messages should be received by the server"
-        new PollingConditions(initialDelay: 1, timeout: 2).eventually {
-            assert receivedMessages.size() == 4
+            assert udpClientProtocol.protocolIoClientMap.size() == 1
+            assert udpClientProtocol.protocolMessageConsumers.size() == 1
+            assert udpClientProtocol.protocolMessageConsumers.get(new AttributeRef(agent.id, "protocolConfig")).size() == 2
         }
 
         when: "the echo server is changed to a byte based server"
@@ -304,26 +250,29 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         }
 
         when: "the protocol configuration is updated to use HEX mode"
-        def client = udpClientProtocol.clientMap.get(new AttributeRef(agent.id, "protocolConfig"))
+        def client = udpClientProtocol.protocolIoClientMap.get(new AttributeRef(agent.id, "protocolConfig"))
         agent.getAttribute("protocolConfig").ifPresent{it.addMeta(UdpClientProtocol.META_PROTOCOL_CONVERT_HEX)}
+        agent.getAttribute("protocolConfig").ifPresent{it.getMeta().removeIf({Protocol.META_PROTOCOL_DELIMITER.getUrn().equals(it.name.orElse(""))})}
         agent = assetStorageService.merge(agent)
 
         then: "the protocol should be relinked"
         conditions.eventually {
-            assert udpClientProtocol.clientMap.size() == 1
-            assert udpClientProtocol.clientMap.get(new AttributeRef(agent.id, "protocolConfig")) != client
+            assert udpClientProtocol.protocolIoClientMap.size() == 1
+            assert udpClientProtocol.protocolIoClientMap.get(new AttributeRef(agent.id, "protocolConfig")) != client
+            assert udpClientProtocol.protocolMessageConsumers.size() == 1
         }
 
         when: "the linked attributes are also updated to work with hex server"
-        def attributeInfo = udpClientProtocol.attributeInfoMap.get(new AttributeRef(asset.id, "echoHello"))
-        asset.getAttribute("echoHello").ifPresent({it.meta.replaceAll{it.name.get() == UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE.urn ? new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create("abcdef")) : it}})
-        asset.getAttribute("echoWorld").ifPresent({it.meta.replaceAll{it.name.get() == UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE.urn ? new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create("123456")) : it}})
+        def consumer = udpClientProtocol.protocolMessageConsumers.get(new AttributeRef(agent.id, "protocolConfig")).stream().filter({it.key.equals(new AttributeRef(asset.id, "echoHello"))})
+        asset.getAttribute("echoHello").ifPresent({it.meta.replaceAll{it.name.get() == UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE.urn ? new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create('"abcdef"')) : it}})
+        asset.getAttribute("echoWorld").ifPresent({it.meta.replaceAll{it.name.get() == UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE.urn ? new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create('"123456"')) : it}})
         asset = assetStorageService.merge(asset)
 
         then: "the attributes should be relinked"
         conditions.eventually {
-            assert udpClientProtocol.attributeInfoMap.size() == 2
-            assert udpClientProtocol.attributeInfoMap.get(new AttributeRef(asset.id, "echoHello")) != attributeInfo
+            assert udpClientProtocol.protocolMessageConsumers.size() == 1
+            assert udpClientProtocol.protocolMessageConsumers.get(new AttributeRef(agent.id, "protocolConfig")).size() == 2
+            assert udpClientProtocol.protocolMessageConsumers.get(new AttributeRef(agent.id, "protocolConfig")).stream().filter({it.key.equals(new AttributeRef(asset.id, "echoHello"))}) != consumer
         }
 
         when: "the hello linked attribute is executed"
@@ -342,7 +291,9 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         }
 
         cleanup: "the server should be stopped"
-        echoServer.stop()
+        if (echoServer != null) {
+            echoServer.stop()
+        }
         stopContainer(container)
     }
 }

@@ -42,7 +42,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
     static AbstractVelbusProtocol velbusProtocol = new AbstractVelbusProtocol() {
 
         @Override
-        protected IoClient<VelbusPacket> createClient(AssetAttribute protocolConfiguration) throws RuntimeException {
+        protected IoClient<VelbusPacket> createIoClient(AssetAttribute protocolConfiguration) throws RuntimeException {
             return messageProcessor
         }
 

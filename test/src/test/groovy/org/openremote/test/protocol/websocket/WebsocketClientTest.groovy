@@ -19,9 +19,11 @@
  */
 package org.openremote.test.protocol.websocket
 
+import io.netty.channel.ChannelHandler
 import org.apache.http.client.utils.URIBuilder
 import org.openremote.agent.protocol.http.OAuthPasswordGrant
-import org.openremote.agent.protocol.websocket.WebsocketClient
+import org.openremote.agent.protocol.io.AbstractNettyIoClient
+import org.openremote.agent.protocol.websocket.WebsocketIoClient
 import org.openremote.container.Container
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.concurrent.ManagerExecutorService
@@ -45,7 +47,7 @@ import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 
 /**
- * This tests the {@link WebsocketClient} by connecting to the manager web socket
+ * This tests the {@link WebsocketIoClient} by connecting to the manager web socket
  */
 class WebsocketClientTest extends Specification implements ManagerContainerTrait {
 
@@ -62,7 +64,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "a simple Websocket client"
-        def client = new WebsocketClient(
+        def client = new WebsocketIoClient<String>(
                 new URIBuilder("ws://localhost:$serverPort/websocket/events?Auth-Realm=master").build(),
                 null,
                 new OAuthPasswordGrant("http://localhost:$serverPort/auth/realms/master/protocol/openid-connect/token",
@@ -72,6 +74,9 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
                     MASTER_REALM_ADMIN_USER,
                     getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)),
                 protocolExecutorService)
+        client.setEncoderDecoderProvider({
+            [new AbstractNettyIoClient.MessageToMessageDecoder<String>(String.class, client)].toArray(new ChannelHandler[0])
+        })
 
         and: "we add callback consumers to the client"
         def connectionStatus = client.getConnectionStatus()

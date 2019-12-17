@@ -102,9 +102,6 @@ class ValueTokenizer {
         while (true) {
             c = next();
             switch (c) {
-                case '\r':
-                case '\n':
-                    throw new ValueException("");
                 case INVALID_CHAR:
                     throw new ValueException("Invalid string: closing " + startChar + " is not found");
                 case '\\':

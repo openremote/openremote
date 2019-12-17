@@ -32,12 +32,17 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.filter.StringPredicate;
+import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.*;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -46,7 +51,9 @@ import java.util.logging.Logger;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
 import static org.openremote.model.attribute.MetaItemDescriptorImpl.*;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY;
+import static org.openremote.model.value.Values.NULL_LITERAL;
 
 /**
  * A protocol is a thread-safe singleton {@link ContainerService} that connects devices and
@@ -88,18 +95,34 @@ import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY
  * body will be an {@link AttributeEvent}. Each message also contains the target protocol name in
  * header {@link #ACTUATOR_TOPIC_TARGET_PROTOCOL}.
  * <p>
- * Data type conversion is also delegated to the protocol implementation: If an attribute has a particular
- * {@link AttributeValueType} and therefore a base {@link ValueType}, the protocol implementation must
- * receive and send value change messages with values of that type.
+ * To simplify protocol development some common protocol behaviour is recommended:
+ * <h1>Inbound value conversion (Protocol -> Linked Attribute)</h1>
  * <p>
- * Generic protocols should implement support for filtering state messages from devices (or services) before the
- * protocol updates the linked attribute, to implement this protocols should use the {@link #META_ATTRIBUTE_VALUE_FILTERS}
- * {@link MetaItem}.
- * <p>
- * <h1>Dynamic value injection</h1>
- * This allows values to be dynamically injected into strings when a protocol linked attribute write occurs; the value
- * contained within the {@link AttributeEvent} can be dynamically injected into the string by using the
- * {@value Protocol#DYNAMIC_VALUE_PLACEHOLDER} as a placeholder and this will be dynamically replaced at request time.
+ * Standard value filtering and/or conversion should be performed in the following order, this is encapsulated in
+ * {@link #doInboundValueProcessing}:
+ * <ol>
+ * <li>Configurable value filtering which allows the value produced by the protocol to be filtered through any
+ * number of {@link ValueFilter}s before being written to the linked attribute
+ * (see {@link #META_ATTRIBUTE_VALUE_FILTERS})</li>
+ * <li>Configurable value conversion which allows the value produced by the protocol to be converted in a configurable
+ * way before being written to the linked attribute (see {@link #META_ATTRIBUTE_VALUE_CONVERTER})</li>
+ * <li>Automatic basic value conversion should be performed when the {@link ValueType} of the value produced by the
+ * protocol and any configured value conversion does not match the linked attributes underlying {@link ValueType}; this
+ * basic conversion should use the {@link Values#convert} method</li>
+ * </ol>
+ * <h1>Outbound value conversion (Linked Attribute -> Protocol)</h1>
+ * Standard value conversion should be performed in the following order, this is encapsulated in
+ * {@link #doOutboundValueProcessing}:
+ * <ol>
+ * <li>Configurable value conversion which allows the value sent from the linked attribute to be converted in a
+ * configurable way before being sent to the protocol for processing (see {@link #META_ATTRIBUTE_WRITE_VALUE_CONVERTER})
+ * <li>Configurable dynamic value insertion (replacement of {@link #DYNAMIC_VALUE_PLACEHOLDER} strings within a
+ * pre-defined JSON string with the value sent from the linked attribute (this allows for attribute values to be inserted
+ * into a larger payload before processing by the protocol; it also allows the written value to be fixed or statically
+ * converted.
+ * </ol>
+ * When sending the converted value onto the actual protocol implementation for processing the original
+ * {@link AttributeEvent} as well as the converted value should be made available.
  * <p>
  * NOTE: That {@link #linkProtocolConfiguration} will always be called
  * before {@link #linkAttributes} and {@link #unlinkAttributes} will always be called before
@@ -145,7 +168,7 @@ import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY
  */
 public interface Protocol extends ContainerService {
 
-    Logger LOG = Logger.getLogger(Protocol.class.getName());
+    Logger LOG = SyslogCategory.getLogger(PROTOCOL, Protocol.class);
     String ACTUATOR_TOPIC_TARGET_PROTOCOL = "Protocol";
     String SENSOR_QUEUE_SOURCE_PROTOCOL = "Protocol";
 
@@ -170,6 +193,51 @@ public interface Protocol extends ContainerService {
             ACCESS_PRIVATE,
             false,
             Charset.availableCharsets().keySet().toArray(new String[0])
+    );
+
+    /**
+     * Max length of messages received by a {@link Protocol}; what this actually means will be protocol specific
+     * i.e. for {@link String} protocols it could be the number of characters but for {@link Byte} protocols it could be
+     * the number of bytes. This is typically used for {@link org.openremote.agent.protocol.io.IoClient} based
+     * {@link Protocol}s.
+     */
+    MetaItemDescriptor META_PROTOCOL_MAX_LENGTH = metaItemInteger(
+        PROTOCOL_NAMESPACE + ":maxLength",
+        ACCESS_PRIVATE,
+        false,
+        0,
+        Integer.MAX_VALUE
+    );
+
+    /**
+     * Defines a delimiter for messages received by a {@link Protocol}. Multiples of this {@link MetaItem} can be used
+     * to add multiple delimiters (the first matched delimiter should be used to generate the shortest possible match(.
+     * This is typically used for {@link org.openremote.agent.protocol.io.IoClient} based {@link Protocol}s.
+     */
+    MetaItemDescriptor META_PROTOCOL_DELIMITER = new MetaItemDescriptorImpl(
+        PROTOCOL_NAMESPACE + ":delimiter",
+        ValueType.STRING,
+        ACCESS_PRIVATE,
+        false,
+        null,
+        null,
+        null,
+        null,
+        false,
+        null,
+        null,
+        null,
+        false
+    );
+
+    /**
+     * For protocols that use {@link #META_PROTOCOL_DELIMITER}, this indicates whether or not the matched delimiter
+     * should be stripped from the message.
+     */
+    MetaItemDescriptor META_PROTOCOL_STRIP_DELIMITER = metaItemFixedBoolean(
+        PROTOCOL_NAMESPACE + ":stripDelimiter",
+        ACCESS_PRIVATE,
+        false
     );
 
     /**
@@ -203,12 +271,49 @@ public interface Protocol extends ContainerService {
         REGEXP_PATTERN_STRING_NON_EMPTY,
         PatternFailure.STRING_EMPTY);
 
+
     /**
-     * Defines {@link ValueFilter}s to apply to values before they are sent through the system (e.g. before it is used
-     * to update a protocol linked attribute); this is particularly useful for generic protocols.
-     * The {@link MetaItem} value should be an {@link ArrayValue} of {@link ObjectValue}s
-     * where each {@link ObjectValue} represents a serialised {@link ValueFilter}. The message should pass through the
-     * filters in array order.
+     * TCP/IP network host name/IP address
+     */
+    MetaItemDescriptor META_PROTOCOL_HOST =  metaItemString(
+        PROTOCOL_NAMESPACE + ":host",
+        ACCESS_PRIVATE,
+        true,
+        TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY_NO_WHITESPACE,
+        PatternFailure.STRING_EMPTY_OR_CONTAINS_WHITESPACE);
+
+    /**
+     * TCP/IP network port number
+     */
+    MetaItemDescriptor META_PROTOCOL_PORT = metaItemInteger(
+        PROTOCOL_NAMESPACE + ":port",
+        ACCESS_PRIVATE,
+        true,
+        1,
+        65536);
+
+    /**
+     * Serial port name/address
+     */
+    MetaItemDescriptor META_PROTOCOL_SERIAL_PORT = metaItemString(
+        PROTOCOL_NAMESPACE + ":serialPort",
+        ACCESS_PRIVATE,
+        true,
+        REGEXP_PATTERN_STRING_NON_EMPTY,
+        PatternFailure.STRING_EMPTY);
+
+    MetaItemDescriptor META_PROTOCOL_SERIAL_BAUDRATE = metaItemInteger(
+        PROTOCOL_NAMESPACE + ":baudrate",
+        ACCESS_PRIVATE,
+        true,
+        1,
+        Integer.MAX_VALUE);
+
+    /**
+     * Defines {@link ValueFilter}s to apply to an incoming value before it is written to a protocol linked attribute;
+     * this is particularly useful for generic protocols. The {@link MetaItem} value should be an {@link ArrayValue} of
+     * {@link ObjectValue}s where each {@link ObjectValue} represents a serialised {@link ValueFilter}. The message
+     * should pass through the filters in array order.
      */
     MetaItemDescriptor META_ATTRIBUTE_VALUE_FILTERS = metaItemArray(
         PROTOCOL_NAMESPACE + ":valueFilters",
@@ -239,9 +344,14 @@ public interface Protocol extends ContainerService {
         null);
 
     /**
-     * Value to be used for attribute writes, protocols that support this should also support dynamic value insertion,
-     * see interface javadoc for more details; use the {@link #createDynamicAttributeWriteConsumer} helper method where
-     * possible.
+     * JSON string to be used for attribute writes and can contain {@link #DYNAMIC_VALUE_PLACEHOLDER}s; this allows the
+     * written value to be injected into a bigger JSON payload or to even hardcode the value sent to the protocol
+     * (i.e. ignore the written value). If this {@link MetaItem} is not defined then the written value is passed through
+     * to the protocol as is. The resulting JSON string (after any dynamic value insertion) is then parsed using
+     * {@link Values#parse} so it is important the value of this {@link MetaItem} is a valid JSON string so literal
+     * strings must be quoted (e.g. '"string value"' not 'string value' otherwise parsing will fail).
+     * <p>
+     * A value of 'null' will produce a literal null.
      */
     MetaItemDescriptor META_ATTRIBUTE_WRITE_VALUE = metaItemAny(
             PROTOCOL_NAMESPACE + ":writeValue",
@@ -255,12 +365,38 @@ public interface Protocol extends ContainerService {
      * Polling frequency in milliseconds for {@link Attribute}s whose value should be polled; can be set on the
      * {@link ProtocolConfiguration} or the {@link Attribute} (the latter takes precedence).
      */
-    MetaItemDescriptor META_POLLING_MILLIS = metaItemInteger(
+    MetaItemDescriptor META_ATTRIBUTE_POLLING_MILLIS = metaItemInteger(
             PROTOCOL_NAMESPACE + ":pollingMillis",
             ACCESS_PRIVATE,
             false,
             1000,
             null);
+
+    /**
+     * The predicate to use on incoming messages to determine if the message is intended for the {@link Attribute} that
+     * has this {@link MetaItem}; it is particularly useful for pub-sub based {@link Protocol}s.
+     */
+    MetaItemDescriptor META_ATTRIBUTE_MATCH_PREDICATE = metaItemObject(
+        PROTOCOL_NAMESPACE + ":matchPredicate",
+        ACCESS_PRIVATE,
+        false,
+        new StringPredicate(AssetQuery.Match.EXACT, false, "").toModelValue());
+
+    /**
+     * {@link ValueFilter}s to apply to incoming messages prior to comparison with the
+     * {@link Protocol#META_ATTRIBUTE_MATCH_PREDICATE}, if the predicate matches then the original un-filtered
+     * message is intended for this linked {@link Attribute} and the message should be written to the {@link Attribute}
+     * where the actual {@link Value} written can be filtered using the {@link Protocol#META_ATTRIBUTE_VALUE_FILTERS}.
+     * <p>
+     * The {@link Value} of this {@link MetaItem} must be an {@link ArrayValue} of {@link ObjectValue}s where each
+     * {@link ObjectValue} represents a serialised {@link ValueFilter}. The message will pass through the filters in
+     * array order and the resulting final {@link Value} should be written to the {@link Attribute}
+     */
+    MetaItemDescriptor META_ATTRIBUTE_MATCH_FILTERS = metaItemArray(
+        PROTOCOL_NAMESPACE + ":matchFilters",
+        ACCESS_PRIVATE,
+        false,
+        null);
 
     // TODO: Some of these options should be configurable depending on expected load etc.
     // Message topic for communicating from asset/thing to protocol layer (asset attribute changed, trigger actuator)
@@ -405,24 +541,201 @@ public interface Protocol extends ContainerService {
         }
     }
 
-    static Consumer<Value> createDynamicAttributeWriteConsumer(AssetAttribute attribute, Consumer<String> writeConsumer) {
+    /**
+     * Will perform recommended value processing for outbound values (Linked Attribute -> Protocol); the
+     * containsDynamicPlaceholder flag is required so that the entire {@link #META_ATTRIBUTE_WRITE_VALUE} payload is
+     * not searched on every single write request (for performance reasons), instead this should be recorded when the
+     * attribute is first linked.
+     */
+    static Pair<Boolean, Value> doOutboundValueProcessing(AssetAttribute attribute, Value value, boolean containsDynamicPlaceholder) {
 
-        final String writeValue = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_WRITE_VALUE, false, true)
+        String writeValue = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_WRITE_VALUE, false, true)
             .map(Object::toString).orElse(null);
 
-        return value -> {
+        if (attribute.isExecutable()) {
+            AttributeExecuteStatus status = Values.getString(value)
+                .flatMap(AttributeExecuteStatus::fromString)
+                .orElse(null);
 
-            String str = value != null ? value.toString() : "";
-
-            if (!TextUtil.isNullOrEmpty(writeValue)) {
-                if (str.isEmpty()) {
-                    str = writeValue;
-                } else if (writeValue.contains(DYNAMIC_VALUE_PLACEHOLDER)) {
-                    str = writeValue.replaceAll(DYNAMIC_VALUE_PLACEHOLDER_REGEXP, str);
+            if (status == AttributeExecuteStatus.REQUEST_START && writeValue != null) {
+                try {
+                    value = Values.parse(writeValue).orElse(null);
+                } catch (Exception e) {
+                    value = null;
+                    LOG.log(Level.INFO, "Failed to pass attribute write payload generated by META_ATTRIBUTE_WRITE_VALUE", e);
                 }
+                return new Pair<>(false, value);
+            }
+        }
+
+        // value conversion
+        ObjectValue converter = Values.getMetaItemValueOrThrow(
+            attribute,
+            META_ATTRIBUTE_WRITE_VALUE_CONVERTER,
+            false,
+            false)
+            .flatMap(Values::getObject)
+            .orElse(null);
+
+        if (converter != null) {
+            LOG.fine("Applying attribute value converter to attribute write: " + attribute.getReferenceOrThrow());
+
+            Pair<Boolean, Value> converterResult = applyValueConverter(value, converter);
+
+            if (converterResult.key) {
+                return converterResult;
+            }
+        }
+
+        // dynamic value insertion
+        boolean hasWriteValue = attribute.hasMetaItem(META_ATTRIBUTE_WRITE_VALUE);
+
+        if (hasWriteValue) {
+            if (writeValue == null) {
+                LOG.fine("META_ATTRIBUTE_WRITE_VALUE contains null so sending null to protocol for attribute write on: " + attribute.getReferenceOrThrow());
+                return new Pair<>(false, null);
             }
 
-            writeConsumer.accept(str);
+            if (containsDynamicPlaceholder) {
+                String valueStr = value == null ? NULL_LITERAL : value.toString();
+                writeValue = writeValue.replaceAll(DYNAMIC_VALUE_PLACEHOLDER_REGEXP, valueStr);
+            }
+
+            try {
+                value = Values.parse(writeValue).orElse(null);
+            } catch (Exception e) {
+                LOG.log(Level.INFO, "Failed to pass attribute write payload generated by META_ATTRIBUTE_WRITE_VALUE", e);
+            }
+        }
+
+        return new Pair<>(false, value);
+    }
+
+    static Pair<Boolean, Value> doInboundValueProcessing(AssetAttribute attribute, Value value, ProtocolAssetService assetService) {
+
+        // filtering
+        ValueFilter[] filters = Protocol.getLinkedAttributeValueFilters(attribute).orElse(null);
+        if (filters != null) {
+            value = assetService.applyValueFilters(value, filters);
+        }
+
+        // value conversion
+        ObjectValue converter = Values.getMetaItemValueOrThrow(
+            attribute,
+            META_ATTRIBUTE_VALUE_CONVERTER,
+            false,
+            false)
+            .flatMap(Values::getObject)
+            .orElse(null);
+
+        if (converter != null) {
+            LOG.fine("Applying attribute value converter to attribute: " + attribute.getReferenceOrThrow());
+
+            Pair<Boolean, Value> convertedValue = applyValueConverter(value, converter);
+
+            if (convertedValue.key) {
+                return convertedValue;
+            }
+
+            value = convertedValue.value;
+        }
+
+        // built in value conversion
+        Optional<ValueType> attributeValueType = attribute.getType().map(AttributeValueDescriptor::getValueType);
+
+        if (value != null && attributeValueType.isPresent()) {
+            if (attributeValueType.get() != value.getType()) {
+                LOG.fine("Trying to convert value: " + value.getType() + " -> " + attributeValueType.get());
+                Optional<Value> convertedValue = Values.convert(value, attributeValueType.get());
+
+                if (!convertedValue.isPresent()) {
+                    LOG.warning("Failed to convert value: " + value.getType() + " -> " + attributeValueType.get());
+                    LOG.warning("Cannot send linked attribute update");
+                    return new Pair<>(true, null);
+                }
+
+                value = convertedValue.get();
+            }
+        }
+
+        return new Pair<>(false, value);
+    }
+
+    static Pair<Boolean, Value> applyValueConverter(Value value, ObjectValue converter) {
+
+        if (converter == null) {
+            return new Pair<>(false, value);
+        }
+
+        String converterKey = value == null ? NULL_LITERAL.toUpperCase() : value.toString().toUpperCase(Locale.ROOT);
+        return converter.get(converterKey)
+            .map(v -> {
+                if (v.getType() == ValueType.STRING) {
+                    String valStr = v.toString();
+                    if ("@IGNORE".equalsIgnoreCase(valStr)) {
+                        return new Pair<>(true, (Value)null);
+                    }
+
+                    if ("@NULL".equalsIgnoreCase(valStr)) {
+                        return new Pair<>(false, (Value)null);
+                    }
+                }
+
+                return new Pair<>(false, v);
+            })
+            .orElse(new Pair<>(true, value));
+    }
+
+    static Consumer<String> createGenericAttributeMessageConsumer(AssetAttribute attribute, ProtocolAssetService assetService, Consumer<AttributeState> stateConsumer) {
+
+        ValueFilter[] matchFilters = Values.getMetaItemValueOrThrow(
+            attribute,
+            META_ATTRIBUTE_MATCH_FILTERS,
+            false,
+            true)
+            .map(Value::toJson)
+            .map(json -> {
+                try {
+                    return Container.JSON.readValue(json, ValueFilter[].class);
+                } catch (IOException e) {
+                    LOG.log(Level.WARNING, "Failed to deserialize ValueFilter[]", e);
+                    return null;
+                }
+            }).orElse(null);
+
+        StringPredicate matchPredicate = Values.getMetaItemValueOrThrow(
+            attribute,
+            META_ATTRIBUTE_MATCH_PREDICATE,
+            false,
+            true)
+            .map(Value::toJson)
+            .map(s -> {
+                try {
+                    return Container.JSON.readValue(s, StringPredicate.class);
+                } catch (IOException e) {
+                    LOG.log(Level.WARNING, "Failed to deserialise StringPredicate", e);
+                    return null;
+                }
+            })
+            .orElse(null);
+
+        if (matchPredicate == null) {
+            return null;
+        }
+
+        AttributeRef attributeRef = attribute.getReferenceOrThrow();
+
+        return message -> {
+            if (!TextUtil.isNullOrEmpty(message)) {
+                StringValue stringValue = Values.create(message);
+                Value val = assetService.applyValueFilters(stringValue, matchFilters);
+                if (val != null) {
+                    if (StringPredicate.asPredicate(matchPredicate).test(message)) {
+                        LOG.finest("Message matches attribute so writing state to state consumer for attribute: " + attributeRef);
+                        stateConsumer.accept(new AttributeState(attributeRef, stringValue));
+                    }
+                }
+            }
         };
     }
 }
