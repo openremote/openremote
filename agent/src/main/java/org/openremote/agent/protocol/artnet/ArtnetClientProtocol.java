@@ -31,9 +31,7 @@ import java.util.stream.Collectors;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
 import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemInteger;
-import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemString;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY;
 
 public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
@@ -42,32 +40,19 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     public static final String PROTOCOL_DISPLAY_NAME = "Artnet Client";
     private static final String PROTOCOL_VERSION = "1.0";
 
-    /**
-     * The universe Id of a light
-     */
-    public static final MetaItemDescriptor META_ARTNET_UNIVERSE_ID = metaItemInteger(
-        PROTOCOL_NAME + ":universeId",
-        ACCESS_PRIVATE,
-        true,
-        0,
-        512);
-
-    /**
-     * The universe asset ID
-     */
-    public static final MetaItemDescriptor META_ARTNET_UNIVERSE_ASSET_ID = metaItemString(
-            PROTOCOL_NAME + ":universeAssetId",
-            ACCESS_PRIVATE,
-            true,
-            REGEXP_PATTERN_STRING_NON_EMPTY,
-            MetaItemDescriptor.PatternFailure.STRING_EMPTY);
-
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ArtnetClientProtocol.class.getName());
 
     private final Map<AttributeRef, AttributeInfo> attributeInfoMap = new HashMap<>();
     private static int DEFAULT_RESPONSE_TIMEOUT_MILLIS = 3000;
     private static int DEFAULT_SEND_RETRIES = 1;
     private static int MIN_POLLING_MILLIS = 1000;
+    public static final MetaItemDescriptor META_ARTNET_LIGHT_ID = metaItemInteger(
+        PROTOCOL_NAME + ":lightId",
+            ACCESS_PRIVATE,
+            true,
+            0,
+            Integer.MAX_VALUE
+    );
 
 
     private HashMap<String, HashMap<String, List<ArtnetLight>>> artnetControls =
@@ -79,8 +64,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             META_POLLING_MILLIS,
             META_RESPONSE_TIMEOUT_MILLIS,
             META_SEND_RETRIES,
-            META_ARTNET_UNIVERSE_ID,
-            META_ARTNET_UNIVERSE_ASSET_ID
+            META_ARTNET_LIGHT_ID
     );
 
     @Override
@@ -184,6 +168,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration)
     {
+        /*
         String networkId = protocolConfiguration.getReference().get().getEntityId();//Get ID of Network
         //Get Asset ID of the Universe based upon one of their attributes. You can't use the attribute to get the parent Asset.
         String universeId = Values.getMetaItemValueOrThrow(attribute, META_ARTNET_UNIVERSE_ASSET_ID, false ,true)
@@ -199,8 +184,6 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         }
 
         artnetControls.get(networkId).put(universeId, new ArrayList<ArtnetLight>());
-
-        //List<ArtnetLight> lights = universe.get(attribute.getAssetId()/*Get ID of the Universe*/);
 
         if (!protocolConfiguration.isEnabled()) {
             LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
@@ -277,6 +260,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         attributeInfoMap.put(attribute.getReferenceOrThrow(), info);
         info.pollingTask = pollingTask;
         info.sendConsumer = sendConsumer;
+         */
     }
 
     protected ScheduledFuture schedulePollingRequest(ClientAndQueue clientAndQueue,
