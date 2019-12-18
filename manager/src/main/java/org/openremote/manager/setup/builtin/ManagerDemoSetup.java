@@ -45,6 +45,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.openremote.model.asset.AssetType.*;
@@ -73,7 +74,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static GeoJSONPoint SMART_CITY_LOCATION = new GeoJSONPoint(5.670945, 51.435000);
     public static final String agentProtocolConfigName = "simulator123";
     public static final String thingLightToggleAttributeName = "light1Toggle";
-    public static final String ARTNET_AREA_CONFIGURATION = "{'lights': [{'id': 0, 'universe': 0, 'amountOfLeds': 3}" + "]}";
+    //public static final String ARTNET_AREA_CONFIGURATION = "{'lights': [{'id': 0, 'universe': 0, 'amountOfLeds': 3}" + "]}";
     public static final String ARTNET_DEFAULT_LIGHT_STATE = "{'r': 0, 'g': 0, 'b': 0, 'w': 0}";
     final protected boolean importDemoScenes;
     public String smartOfficeId;
@@ -293,10 +294,18 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                 new MetaItem(
                                         ArtnetClientProtocol.META_PROTOCOL_PORT,
                                         Values.create(6454)
+                                ),
+                                new MetaItem(
+                                        ArtnetClientProtocol.META_ARTNET_CONFIGURATION,
+                                        Values.createObject().putAll(new HashMap<String, Value>() {{
+                                            put("lights", Values.createArray().add(Values.createObject().putAll(new HashMap<String, Value>() {{
+                                                put("id", Values.create(0));
+                                                put("universe", Values.create(0));
+                                                put("amountOfLeds", Values.create(3));
+                                            }})));
+                                        }})
                                 )
-                        ),
-                new AssetAttribute("Configuration", OBJECT, Values.parseOrNull(ARTNET_AREA_CONFIGURATION))
-
+                        )
         );
         artNetArea = assetStorageService.merge(artNetArea);
 

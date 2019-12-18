@@ -1,13 +1,7 @@
 package org.openremote.agent.protocol.artnet;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
-import javassist.bytecode.AttributeInfo;
-import jsinterop.base.Any;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.agent.protocol.udp.AbstractUdpClient;
@@ -17,8 +11,6 @@ import org.openremote.model.attribute.*;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.*;
-
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
@@ -26,11 +18,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
-import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemInteger;
+import static org.openremote.model.attribute.MetaItemDescriptorImpl.*;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY;
 
@@ -39,9 +30,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":artnet";
     public static final String PROTOCOL_DISPLAY_NAME = "Artnet Client";
     private static final String PROTOCOL_VERSION = "1.0";
-
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ArtnetClientProtocol.class.getName());
-
     private final Map<AttributeRef, AttributeInfo> attributeInfoMap = new HashMap<>();
     private static int DEFAULT_RESPONSE_TIMEOUT_MILLIS = 3000;
     private static int DEFAULT_SEND_RETRIES = 1;
@@ -53,18 +42,28 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             0,
             Integer.MAX_VALUE
     );
+    public static final MetaItemDescriptor META_ARTNET_CONFIGURATION = metaItemObject(
+            PROTOCOL_NAME + ":areaConfiguration",
+            ACCESS_PRIVATE,
+            true,
+            Values.createObject().putAll(new HashMap<String, Value>() {{
+                put("lights", Values.createArray().add(Values.createObject().putAll(new HashMap<String, Value>() {{
+                    put("id", Values.create(0));
+                    put("universe", Values.create(0));
+                    put("amountOfLeds", Values.create(3));
+                }})));
+            }})
+    );
 
 
-    private HashMap<String, HashMap<String, List<ArtnetLight>>> artnetControls =
-                    new HashMap<String, HashMap<String, List<ArtnetLight>>>();
-
+    private HashMap<Integer, ArtnetLight> artnetLightStates = new HashMap<Integer, ArtnetLight>();
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
             META_ATTRIBUTE_WRITE_VALUE,
             META_POLLING_MILLIS,
             META_RESPONSE_TIMEOUT_MILLIS,
             META_SEND_RETRIES,
-            META_ARTNET_LIGHT_ID
+            META_ARTNET_CONFIGURATION
     );
 
     @Override
@@ -118,6 +117,18 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
             @Override
             protected void encode(String message, ByteBuf buf) {
+                //INPUT IS A TOGGLE SWITCH FOR THE LAMP (BOOLEAN)
+                if(Boolean.parseBoolean(message)) {
+                    //LAMP SHOULD BE TOGGLED ON/OFF
+                }
+                //INPUT IS A LIST OF COLOUR-VALUES (JSONObject)
+                else if(Values.parseOrNull(message) != null) {
+                    //LAMP VALUES SHOULD BE CHANGED (R,G,B,W)
+                }
+                //INPUT IS THE DIM VALUE (NUMBER)
+                else if(Integer.parseInt(message) >= 0) {
+                    //LAMP DIM SHOULD BE CHANGED
+                }
 
                 //Receive Values (Id of the lamp and values to be sent (Maybe also Dim and On/Off values))
 
@@ -152,38 +163,24 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     @Override
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         super.doLinkProtocolConfiguration(protocolConfiguration);
-        //TODO DO NULL-CHECK
-        //Initialize Parent ArtNet Network with empty HashMap to house the Universes
-        artnetControls.put(protocolConfiguration.getAssetId().get(), new HashMap<>());
+
     }
 
     //Runs if an Asset is deleted with an ArtNet Client as attribute.
     @Override
     protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         super.doUnlinkProtocolConfiguration(protocolConfiguration);
-        artnetControls.remove(protocolConfiguration.getAssetId().get());
+
+
     }
 
     //Runs if an Attribute with an Agent protocol link is being linked to this ArtNet Network
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration)
     {
-        /*
-        String networkId = protocolConfiguration.getReference().get().getEntityId();//Get ID of Network
-        //Get Asset ID of the Universe based upon one of their attributes. You can't use the attribute to get the parent Asset.
-        String universeId = Values.getMetaItemValueOrThrow(attribute, META_ARTNET_UNIVERSE_ASSET_ID, false ,true)
-                .flatMap(Values::getString)
-                .orElse(null);
-
-        HashMap<String, List<ArtnetLight>> universe = artnetControls.get(networkId);
-
-        if(universe != null)
-        {
-            LOG.info("Universe is already linked to another Network");
-            //return;
-        }
-
-        artnetControls.get(networkId).put(universeId, new ArrayList<ArtnetLight>());
+        //TODO CHECK IF LIGHT ID IS RETRIEVED SUCCESSFULLY
+        int lightId = protocolConfiguration.getMetaItem(META_ARTNET_CONFIGURATION.getUrn()).get().getValueAsInteger().get();
+        artnetLightStates.put(lightId, new ArtnetLight(0, 0, 0, 0));
 
         if (!protocolConfiguration.isEnabled()) {
             LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
@@ -260,7 +257,6 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         attributeInfoMap.put(attribute.getReferenceOrThrow(), info);
         info.pollingTask = pollingTask;
         info.sendConsumer = sendConsumer;
-         */
     }
 
     protected ScheduledFuture schedulePollingRequest(ClientAndQueue clientAndQueue,
@@ -275,13 +271,18 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
     @Override
     protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-
+        //TODO CHECK IF LIGHT ID IS RETRIEVED SUCCESSFULLY
+        int lightId = protocolConfiguration.getMetaItem(META_ARTNET_CONFIGURATION.getUrn()).get().getValueAsInteger().get();
+        artnetLightStates.remove(lightId);
     }
 
     @Override
     protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
 
+
         protocolConfiguration.getType();
+
+
 
         AttributeInfo info = attributeInfoMap.get(event.getAttributeRef());
         if (info == null || info.sendConsumer == null) {
@@ -319,11 +320,10 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
     public class ArtnetLight {
 
-        private String assetId;
         private int r, g, b, w;
         private double dim;
 
-        public ArtnetLight(String assetId, int r, int g, int b, double dim) {
+        public ArtnetLight(int r, int g, int b, double dim) {
             this.r = r;
             this.g = g;
             this.b = b;
