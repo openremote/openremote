@@ -157,6 +157,8 @@ const style = css`
         flex-wrap: wrap;
         justify-content: space-between;
         margin: var(--internal-or-attribute-history-controls-margin);
+        
+        flex-direction: column;
     }
     
     #controls > * {
@@ -164,9 +166,9 @@ const style = css`
     }
     
     #ending-controls {
-        float: right;
         max-width: 100%;
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
     }
     
