@@ -29,6 +29,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
+import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemInteger;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
@@ -41,6 +43,13 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     private static int DEFAULT_RESPONSE_TIMEOUT_MILLIS = 3000;
     private static int DEFAULT_SEND_RETRIES = 1;
     private static int MIN_POLLING_MILLIS = 1000;
+    public static final MetaItemDescriptor META_ARTNET_LIGHT_ID = metaItemInteger(
+        PROTOCOL_NAME + ":lightId",
+            ACCESS_PRIVATE,
+            true,
+            0,
+            Integer.MAX_VALUE
+    );
 
 
     private HashMap<String, HashMap<String, ArtnetLight>> artnetControls =
