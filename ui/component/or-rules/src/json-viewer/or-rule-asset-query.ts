@@ -189,22 +189,22 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
         switch (valuePredicate.predicateType) {
             case "string":
-                return getAttributeValueTemplate(assetType, { name: attributeName! }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("string"))(value);
+                return getAttributeValueTemplate(assetType, { name: attributeName!, type: AttributeValueType.STRING }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("string"))(value);
             case "boolean":
                 return html ``; // Handled by the operator IS_TRUE or IS_FALSE
             case "datetime":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "number":
                 if (valuePredicate.operator === AQO.BETWEEN) {
-                    const inputTemplate1 = getAttributeValueTemplate(assetType, { name: attributeName! }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("between"));
-                    const inputTemplate2 = getAttributeValueTemplate(assetType, { name: attributeName! }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "rangeValue", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("and"));
+                    const inputTemplate1 = getAttributeValueTemplate(assetType, { name: attributeName!, type: AttributeValueType.NUMBER }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("between"));
+                    const inputTemplate2 = getAttributeValueTemplate(assetType, { name: attributeName!, type: AttributeValueType.NUMBER }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "rangeValue", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("and"));
                     return html`
                         ${inputTemplate1(value)}
                         <span style="display: inline-flex; align-items: center;">&</span>
                         ${inputTemplate2(valuePredicate.rangeValue)}
                     `;
                 }
-                return getAttributeValueTemplate(assetType, { name: attributeName! }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("number"))(value);
+                return getAttributeValueTemplate(assetType, { name: attributeName!, type: AttributeValueType.NUMBER }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("number"))(value);
             case "string-array":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "radial":
@@ -220,7 +220,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             case "array":
                 // TODO: Update once we can determine inner type of array
                 // Assume string array
-                return getAttributeValueTemplate(assetType, {name: attributeName!}, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, InputType.TEXT, undefined)(value);
+                return getAttributeValueTemplate(assetType, {name: attributeName!, type: AttributeValueType.ARRAY }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, InputType.TEXT, undefined)(value);
             default:
                 return html `<span>NOT IMPLEMENTED</span>`;
         }
