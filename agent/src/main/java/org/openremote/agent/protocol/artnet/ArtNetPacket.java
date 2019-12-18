@@ -4,11 +4,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.buffer.ByteBuf;
 
-import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -81,32 +79,39 @@ public class ArtNetPacket {
         //Detect highest universe
         int highestUniverse = Collections.max(lights, Comparator.comparing(l -> l.universe)).universe;
 
+        ByteBuf[] output = new ByteBuf[highestUniverse + 1];
+
         //Create a packet for each universe
         for (int u = 0; u <= highestUniverse; u++)
         {
-            ArrayList<ArtNetDMXLight> universeLights = new ArrayList<>();
-
             int finalU = u;//Required for lambda statements.
-            List<ArtNetDMXLight> filteredLights =
-                    lights.stream().filter(x -> lights.stream().anyMatch(y -> y.universe == finalU)).collect(Collectors.toList());
+            List<ArtNetDMXLight> universeLights =
+                    lights.stream().filter(x -> x.universe == finalU).collect(Collectors.toList());
 
-            universeLights.addAll(filteredLights);
+            //Sort lights from low ID to high ID
+            universeLights.sort(Comparator.comparingInt(ArtNetDMXLight::getId));
 
-            /*TODO: Add to a buffer array
-            //Prefix package
-            buf.writeBytes(prefix);
-            buf.writeByte(0); // Sequence
-            buf.writeByte(0); // Physical
-            buf.writeByte((universe >> 8) & 0xff);
-            buf.writeByte(universe & 0xff);
-            */
+            //Add the prefix and the universe to the
+            ByteBuf prefixedBuffer = initializeBuffer(buf, prefix, u);
+
+            for (ArtNetDMXLight light : universeLights){
+                prefixedBuffer = light.appendToBuffer(prefixedBuffer);
+            }
+
+            output[u] = prefixedBuffer;
         }
 
-        for (ArtNetDMXLight light : lights)
-        {
-            buf = light.toBuffer(buf);//toBuffer effectively appends to the buffer.
-        }
+        return output;
+    }
 
-        return new ByteBuf[1];//TEST data
+    private ByteBuf initializeBuffer(ByteBuf buf, byte[] prefix, int universe)
+    {
+        int[] values = { g, r, b, w };
+        buf.writeBytes(prefix);
+        buf.writeByte(0); // Sequence
+        buf.writeByte(0); // Physical
+        buf.writeByte((universe >> 8) & 0xff);
+        buf.writeByte(universe & 0xff);
+        return buf;
     }
 }

@@ -140,8 +140,14 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
                 //Reading configuration
 
                 //Load states of all other lamps
+                ArrayList<ArtNetDMXLight> lights = new ArrayList<>();
+                lights.add(new ArtNetDMXLight(100,0,3,0,255,255,255,255));
+                lights.add(new ArtNetDMXLight(5,0,3,0,255,255,255,255));
+                lights.add(new ArtNetDMXLight(3,1,3,0,255,255,255,255));
 
                 //Build packet
+                ArtNetPacket artNetPacket = ArtNetPacket.fromValue(Values.parse(message).get()).get();
+                artNetPacket.assemblePacket(buf, lights);
 
                 //Send packet (Look over it)
 
