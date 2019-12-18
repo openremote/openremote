@@ -32,13 +32,16 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
 import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemInteger;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY;
 
 public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ArtnetClientProtocol.class.getName());
-    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":artnetClient";
+    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":artnet";
     public static final String PROTOCOL_DISPLAY_NAME = "Artnet Client";
     private static final String PROTOCOL_VERSION = "1.0";
+
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ArtnetClientProtocol.class.getName());
+
     private final Map<AttributeRef, AttributeInfo> attributeInfoMap = new HashMap<>();
     private static int DEFAULT_RESPONSE_TIMEOUT_MILLIS = 3000;
     private static int DEFAULT_SEND_RETRIES = 1;
@@ -52,15 +55,16 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     );
 
 
-    private HashMap<String, HashMap<String, ArtnetLight>> artnetControls =
-                    new HashMap<String, HashMap<String, ArtnetLight>>();
+    private HashMap<String, HashMap<String, List<ArtnetLight>>> artnetControls =
+                    new HashMap<String, HashMap<String, List<ArtnetLight>>>();
 
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
             META_ATTRIBUTE_WRITE_VALUE,
             META_POLLING_MILLIS,
             META_RESPONSE_TIMEOUT_MILLIS,
-            META_SEND_RETRIES
+            META_SEND_RETRIES,
+            META_ARTNET_LIGHT_ID
     );
 
     @Override
@@ -114,6 +118,17 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
             @Override
             protected void encode(String message, ByteBuf buf) {
+
+                //Receive Values (Id of the lamp and values to be sent (Maybe also Dim and On/Off values))
+
+                //Reading configuration
+
+                //Load states of all other lamps
+
+                //Build packet
+
+                //Send packet (Look over it)
+
                 Value msg = null;
                 try{
                     msg = Values.parse(message).get();
@@ -127,21 +142,42 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         };
     }
 
+    //Runs if a new Asset is created with an ArtNet Client as attribute.
     @Override
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         super.doLinkProtocolConfiguration(protocolConfiguration);
         //TODO DO NULL-CHECK
+        //Initialize Parent ArtNet Network with empty HashMap to house the Universes
         artnetControls.put(protocolConfiguration.getAssetId().get(), new HashMap<>());
     }
 
+    //Runs if an Asset is deleted with an ArtNet Client as attribute.
     @Override
     protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         super.doUnlinkProtocolConfiguration(protocolConfiguration);
         artnetControls.remove(protocolConfiguration.getAssetId().get());
     }
 
+    //Runs if an Attribute with an Agent protocol link is being linked to this ArtNet Network
     @Override
-    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration)
+    {
+        /*
+        String networkId = protocolConfiguration.getReference().get().getEntityId();//Get ID of Network
+        //Get Asset ID of the Universe based upon one of their attributes. You can't use the attribute to get the parent Asset.
+        String universeId = Values.getMetaItemValueOrThrow(attribute, META_ARTNET_UNIVERSE_ASSET_ID, false ,true)
+                .flatMap(Values::getString)
+                .orElse(null);
+
+        HashMap<String, List<ArtnetLight>> universe = artnetControls.get(networkId);
+
+        if(universe != null)
+        {
+            LOG.info("Universe is already linked to another Network");
+            //return;
+        }
+
+        artnetControls.get(networkId).put(universeId, new ArrayList<ArtnetLight>());
 
         if (!protocolConfiguration.isEnabled()) {
             LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
@@ -218,6 +254,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         attributeInfoMap.put(attribute.getReferenceOrThrow(), info);
         info.pollingTask = pollingTask;
         info.sendConsumer = sendConsumer;
+         */
     }
 
     protected ScheduledFuture schedulePollingRequest(ClientAndQueue clientAndQueue,
@@ -271,6 +308,8 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
         return ATTRIBUTE_META_ITEM_DESCRIPTORS;
     }
+
+
 
     public class ArtnetLight {
 
