@@ -35,7 +35,7 @@ export function getAttributeValueTemplate(
     let valueDescriptor: AttributeValueDescriptor | undefined;
 
     attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attribute.name!, assetType);
-    valueDescriptor = AssetModelUtil.getAttributeValueDescriptorFromAsset(attributeDescriptor && attributeDescriptor.valueDescriptor ? attributeDescriptor.valueDescriptor.name : attribute && attribute.type ? attribute.type.name : undefined, assetType, attribute.name);
+    valueDescriptor = AssetModelUtil.getAttributeValueDescriptorFromAsset(attributeDescriptor && attributeDescriptor.valueDescriptor ? attributeDescriptor.valueDescriptor.name : attribute ? attribute.type as string : undefined, assetType, attribute.name);
 
     if (customProvider) {
         template = customProvider(assetType, attribute, attributeDescriptor, valueDescriptor, (newValue: any) => valueChangedCallback(newValue), readonly, disabled);
