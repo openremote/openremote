@@ -20,7 +20,6 @@
 package org.openremote.agent.protocol.udp;
 
 import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
-import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.syslog.SyslogCategory;
@@ -33,13 +32,12 @@ import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
-import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemFixedBoolean;
 import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemInteger;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
- * This is an abstract UDP client protocol for communicating with UDP servers; concrete implementations must provide
- * an {@link IoClient<T> for handling over the wire communication}.
+ * This is an abstract UDP client protocol for communicating with UDP servers; concrete implementations must implement
+ * {@link #getEncoderDecoderProvider} to provide encoders/decoders for messages of type &lt;T&gt;.
  */
 public abstract class AbstractUdpClientProtocol<T> extends AbstractIoClientProtocol<T, UdpIoClient<T>> {
 

@@ -20,6 +20,7 @@
 package org.openremote.model.calendar;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -82,7 +83,7 @@ public class CalendarEvent {
     protected RecurrenceRule recurrence;
 
     @JsonCreator
-    public CalendarEvent(Date start, Date end, RecurrenceRule recurrence) {
+    public CalendarEvent(@JsonProperty("start") Date start, @JsonProperty("end") Date end, @JsonProperty("recurrence") RecurrenceRule recurrence) {
         this.start = start;
         this.end = end;
         this.recurrence = recurrence;

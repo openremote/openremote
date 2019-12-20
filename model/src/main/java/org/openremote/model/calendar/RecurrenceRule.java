@@ -19,6 +19,8 @@
  */
 package org.openremote.model.calendar;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -42,7 +44,8 @@ public class RecurrenceRule {
     protected Integer count;
     protected Date until;
 
-    public RecurrenceRule(Frequency frequency, Integer interval, Integer count, Date until) {
+    @JsonCreator
+    public RecurrenceRule(@JsonProperty("frequency") Frequency frequency, @JsonProperty("interval") Integer interval, @JsonProperty("count") Integer count, @JsonProperty("until") Date until) {
         this.frequency = frequency;
         this.interval = interval;
         this.count = count;

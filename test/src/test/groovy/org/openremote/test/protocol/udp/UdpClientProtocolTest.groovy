@@ -131,7 +131,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         and: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)
 
-        then: "the protocol should authenticate and start pinging the server and the connection status should become CONNECTED"
+        then: "the protocol should become CONNECTED"
         conditions.eventually {
             def status = agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig"))
             assert status == ConnectionStatus.CONNECTED

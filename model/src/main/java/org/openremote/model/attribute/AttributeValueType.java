@@ -146,6 +146,8 @@ public enum AttributeValueType implements AttributeValueDescriptor {
 
     SPEED_MPH("circle", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.1f mi/h"))),
 
+    SPEED_KNOTS("circle", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.1f knots"))),
+
     CO2_PPM("leaf", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%4d ppm"))),
 
     HUMIDITY_PERCENTAGE("water", ValueType.NUMBER, value -> Values.getNumber(value)
@@ -206,6 +208,7 @@ public enum AttributeValueType implements AttributeValueDescriptor {
 
     ASSET_STATUS("heart-pulse", ValueType.STRING),
 
+    BEARING("compass", ValueType.NUMBER),
 
     CALENDAR_EVENT("calendar", ValueType.OBJECT);
 

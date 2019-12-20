@@ -133,6 +133,11 @@ public interface ProtocolAssetService extends ContainerService {
     boolean deleteAsset(String assetId);
 
     /**
+     * Get asset from the store by ID.
+     */
+    Asset findAsset(String assetId);
+
+    /**
      * Protocols can send arbitrary attribute change events for regular processing.
      */
     void sendAttributeEvent(AttributeEvent attributeEvent);

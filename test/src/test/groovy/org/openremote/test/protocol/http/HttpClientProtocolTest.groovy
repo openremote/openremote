@@ -406,7 +406,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                 ),
                 new MetaItem(
                     HttpClientProtocol.META_PROTOCOL_PING_MILLIS,
-                    Values.create(100) // Note for testing time unit is set to milliseconds
+                    Values.create(100)
                 ),
                 new MetaItem(
                     HttpClientProtocol.META_PROTOCOL_PING_METHOD,

@@ -22,8 +22,6 @@ package org.openremote.agent.protocol.io;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelInboundHandler;
-import io.netty.channel.ChannelOutboundHandler;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.FixedLengthFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
@@ -39,11 +37,9 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -72,7 +68,7 @@ public abstract class AbstractIoClientProtocol<T, U extends IoClient<T>> extends
     );
 
     /**
-     * Supplies decoders that convert from ByteBuf to
+     * Supplies a set of encoders/decoders that convert from/to {@link String} to/from {@link ByteBuf} based on the generic protocol {@link MetaItem}s
      */
     public static Supplier<ChannelHandler[]> getGenericStringEncodersAndDecoders(AbstractNettyIoClient<String, ?> client, AssetAttribute protocolConfiguration) {
 
@@ -171,17 +167,6 @@ public abstract class AbstractIoClientProtocol<T, U extends IoClient<T>> extends
         };
 
         return encoderDecoderProvider;
-    }
-
-    public static <T, U extends SocketAddress> Pair<ChannelOutboundHandler[], ChannelInboundHandler[]> createBasicEncoderAndDecoder(Class<T> typeClazz, AbstractNettyIoClient<T, U> client, BiConsumer<T, ByteBuf> encoder, BiConsumer<ByteBuf, List<T>> decoder) {
-        return new Pair<>(
-            new ChannelOutboundHandler[] {
-                new AbstractNettyIoClient.MessageToByteEncoder<>(typeClazz, client, encoder)
-            },
-            new ChannelInboundHandler[] {
-                new AbstractNettyIoClient.ByteToMessageDecoder<>(client, decoder)
-            }
-        );
     }
 
     public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractIoClientProtocol.class);

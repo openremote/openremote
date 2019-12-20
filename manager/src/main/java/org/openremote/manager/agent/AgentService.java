@@ -293,6 +293,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     }
 
     @Override
+    public Asset findAsset(String assetId) {
+        LOG.fine("Getting protocol-provided: " + assetId);
+        return assetStorageService.find(assetId);
+    }
+
+    @Override
     public void sendAttributeEvent(AttributeEvent attributeEvent) {
         assetProcessingService.sendAttributeEvent(attributeEvent);
     }

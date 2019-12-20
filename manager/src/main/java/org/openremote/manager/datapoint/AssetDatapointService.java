@@ -55,7 +55,7 @@ import static java.util.stream.Collectors.toList;
 public class AssetDatapointService implements ContainerService, AssetUpdateProcessor {
 
     public static final String DATA_POINTS_MAX_AGE_DAYS = "DATA_POINTS_MAX_AGE_DAYS";
-    public static final String DATA_POINTS_MAX_AGE_DAYS_DEFAULT = "30";
+    public static final String DATA_POINTS_MAX_AGE_DAYS_DEFAULT = "31";
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
@@ -102,7 +102,6 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
 
                 getFirstRunMillis(timerService.getNow()),
                 Duration.ofDays(1).toMillis());
-
         }
     }
 

@@ -20,9 +20,13 @@
 package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.openremote.model.attribute.AttributeDescriptor;
+
+import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * Describes an {@link Asset} that can be added to the manager; the {@link #getType()} is the unique identifier.
@@ -36,14 +40,30 @@ public interface AssetDescriptor {
 
     @JsonProperty
     String getName();
+
     @JsonProperty
     String getType();
+
     @JsonProperty
     String getIcon();
+
     @JsonProperty
     String getColor();
+
     @JsonProperty
     boolean getAccessPublicRead();
+
     @JsonProperty
     AttributeDescriptor[] getAttributeDescriptors();
+
+    @JsonIgnore
+    static Optional<AttributeDescriptor> getAttributeDescriptor(AssetDescriptor descriptor, String attributeName) {
+        if (descriptor == null || descriptor.getAttributeDescriptors() == null) {
+            return Optional.empty();
+        }
+
+        return Arrays.stream(descriptor.getAttributeDescriptors())
+            .filter(ad -> ad.getAttributeName().equals(attributeName))
+            .findFirst();
+    }
 }
