@@ -11,7 +11,7 @@ ENV JAVA_HOME /etc/alternatives/java
 ARG GIT_COMMIT=unknown
 LABEL git-commit=$GIT_COMMIT
 
-ENV JAVA_OPTS -Xmx1g
+ENV JAVA_OPTS=${JAVA_OPTS:-Xmx1g}
 
 ENV APP_DOCROOT /deployment/manager/app
 ENV SHARED_DOCROOT /deployment/manager/shared
