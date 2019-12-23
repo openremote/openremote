@@ -283,6 +283,23 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 isSecret);
     }
 
+    @JsIgnore
+    public static MetaItemDescriptor metaItemNumber(String urn, Access access, boolean required, Double minValue, Double maxValue) {
+        return new MetaItemDescriptorImpl(
+                urn,
+                ValueType.NUMBER,
+                access,
+                required,
+                null,
+                null,
+                1,
+                minValue != null ? Values.create(minValue) : null,
+                false,
+                minValue != null ? Values.create(minValue) : null,
+                maxValue != null ? Values.create(maxValue) : null,
+                null,
+                false);
+    }
 
     @JsIgnore
     public static MetaItemDescriptor metaItemInteger(String urn, Access access, boolean required, Integer minValue, Integer maxValue) {

@@ -65,16 +65,16 @@ public abstract class AbstractUdpClientProtocol<T> extends AbstractIoClientProto
         String host = Values.getMetaItemValueOrThrow(
             protocolConfiguration,
             META_PROTOCOL_HOST,
-            true,
-            true
+            false,
+            false
         ).flatMap(Values::getString).orElse(null);
 
-        int port = Values.getMetaItemValueOrThrow(
+        Integer port = Values.getMetaItemValueOrThrow(
             protocolConfiguration,
             META_PROTOCOL_PORT,
-            true,
-            true
-        ).flatMap(Values::getIntegerCoerced).orElse(0);
+            false,
+            false
+        ).flatMap(Values::getIntegerCoerced).orElse(null);
 
         Integer bindPort = Values.getMetaItemValueOrThrow(
             protocolConfiguration,
@@ -83,16 +83,12 @@ public abstract class AbstractUdpClientProtocol<T> extends AbstractIoClientProto
             false
         ).flatMap(Values::getIntegerCoerced).orElse(null);
 
-        if (port < 1 || port > 65536) {
+        if (port != null && (port < 1 || port > 65536)) {
             throw new IllegalArgumentException("Port must be in the range 1-65536");
         }
 
         if (bindPort != null && (bindPort < 1 || bindPort > 65536)) {
             throw new IllegalArgumentException("Bind port must be in the range 1-65536 if specified");
-        }
-
-        if (TextUtil.isNullOrEmpty(host)) {
-            throw new IllegalArgumentException("Host cannot be empty");
         }
 
         return new UdpIoClient<>(host, port, bindPort, executorService);

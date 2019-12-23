@@ -53,11 +53,12 @@ public class UdpIoClient<T> extends AbstractNettyIoClient<T, InetSocketAddress> 
     protected int port;
     protected int bindPort;
 
-    public UdpIoClient(String host, int port, Integer bindPort, ProtocolExecutorService executorService) {
+    public UdpIoClient(String host, Integer port, Integer bindPort, ProtocolExecutorService executorService) {
         super(executorService);
-        TextUtil.requireNonNullAndNonEmpty(host);
 
-        if (port < 1 || port > 65536) {
+        if (port == null) {
+            port = 0;
+        } else if (port < 1 || port > 65536) {
             throw new IllegalArgumentException("Port must be between 1 and 65536");
         }
 
@@ -77,7 +78,7 @@ public class UdpIoClient<T> extends AbstractNettyIoClient<T, InetSocketAddress> 
         channel.pipeline().addLast(new MessageToMessageEncoder<ByteBuf>() {
             @Override
             protected void encode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
-                out.add(new DatagramPacket(msg.retain(), new InetSocketAddress(host, port)));
+                out.add(new DatagramPacket(msg.retain(), host != null ? new InetSocketAddress(host, port) : new InetSocketAddress(port)));
             }
         });
 
@@ -103,7 +104,7 @@ public class UdpIoClient<T> extends AbstractNettyIoClient<T, InetSocketAddress> 
 
     @Override
     public String getClientUri() {
-        return "udp://" + host + ":" + port + " (bindPort: " + bindPort + ")";
+        return "udp://" + (host != null ? host : "0.0.0.0") + ":" + port + " (bindPort: " + bindPort + ")";
     }
 
     @Override
