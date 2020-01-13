@@ -15,7 +15,7 @@ services:
       file: deploy.yml
       service: keycloak
     volumes:
-      - ../ui/keycloak/themes:/deployment/keycloak/themes
+      - C:/Users/Damien/or-dmx/ui/keycloak/themes:/deployment/keycloak/themes
     # Access directly if needed on localhost
     ports:
       - "8081:8080"

@@ -1,5 +1,11 @@
 package org.openremote.agent.protocol.artnet;
 
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 import org.openremote.agent.protocol.Protocol;
@@ -11,6 +17,8 @@ import org.openremote.model.attribute.*;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.*;
+
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
@@ -18,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
@@ -36,7 +45,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     private static int DEFAULT_SEND_RETRIES = 1;
     private static int MIN_POLLING_MILLIS = 1000;
     public static final MetaItemDescriptor META_ARTNET_LIGHT_ID = metaItemInteger(
-        PROTOCOL_NAME + ":lightId",
+        "lightId",
             ACCESS_PRIVATE,
             true,
             0,
@@ -120,6 +129,8 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
                 //INPUT IS A TOGGLE SWITCH FOR THE LAMP (BOOLEAN)
                 if(Boolean.parseBoolean(message)) {
                     //LAMP SHOULD BE TOGGLED ON/OFF
+                    //artnetLightStates.get(0) //get colours of lamp
+
                 }
                 //INPUT IS A LIST OF COLOUR-VALUES (JSONObject)
                 else if(Values.parseOrNull(message) != null) {
@@ -176,11 +187,24 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
     //Runs if an Attribute with an Agent protocol link is being linked to this ArtNet Network
     @Override
-    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration)
-    {
+    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) throws IOException {
         //TODO CHECK IF LIGHT ID IS RETRIEVED SUCCESSFULLY
-        int lightId = protocolConfiguration.getMetaItem(META_ARTNET_CONFIGURATION.getUrn()).get().getValueAsInteger().get();
-        artnetLightStates.put(lightId, new ArtnetLight(0, 0, 0, 0));
+        //int lightId = protocolConfiguration.getMetaItem(META_ARTNET_CONFIGURATION.getUrn()).get().getValueAsInteger().get();
+        //int lightId = 0;
+        MetaItem metaItem = protocolConfiguration.getMetaItem(META_ARTNET_CONFIGURATION.getUrn()).orElse(null);
+
+        String configJsonString = metaItem.getValue().orElse(null).toJson();
+        JsonObject configJson = new JsonParser().parse(configJsonString).getAsJsonObject();
+        JsonArray jerry = configJson.getAsJsonArray("lights");
+
+        for(JsonElement l : jerry)
+        {
+            JsonObject light = l.getAsJsonObject();
+            int id = light.get("id").getAsInt();
+
+            artnetLightStates.put(id, new ArtnetLight(0, 0, 0, 0));
+        }
+
 
         if (!protocolConfiguration.isEnabled()) {
             LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
@@ -279,10 +303,17 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     @Override
     protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
 
-
         protocolConfiguration.getType();
+        AttributeRef reference = event.getAttributeRef();
+        Attribute attr =  getLinkedAttribute(reference);
+        MetaItem metaItem = attr.getMetaItem("lightId").orElse(null);
+        int lampId = metaItem.getValueAsInteger().orElse(-1);
 
+        Value brouh = event.getAttributeState().getValue().get();//TODO get rgb values from map
 
+        artnetLightStates.put(lampId, new ArtnetLight(0, 0, 0, 0));
+
+        //in event is an ID, referencing the attribute being send, if we can get this FULL attribut (as AssetAttribute) we can get the meta data items
 
         AttributeInfo info = attributeInfoMap.get(event.getAttributeRef());
         if (info == null || info.sendConsumer == null) {
@@ -328,6 +359,19 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             this.g = g;
             this.b = b;
             this.dim = dim;
+        }
+    }
+
+    public class ArtnetLightMetaData {
+
+        public int id;
+        public int universe;
+        public int amountOfLeds;
+
+        public ArtnetLightMetaData(int id, int universe, int amountOfLeds) {
+            this.id = id;
+            this.universe = universe;
+            this.amountOfLeds = amountOfLeds;
         }
     }
 
