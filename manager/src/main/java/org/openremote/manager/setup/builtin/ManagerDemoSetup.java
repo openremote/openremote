@@ -20,13 +20,16 @@
 package org.openremote.manager.setup.builtin;
 
 import org.apache.commons.io.IOUtils;
+import org.openremote.agent.protocol.http.HttpClientProtocol;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
+import org.openremote.agent.protocol.udp.UdpClientProtocol;
 import org.openremote.container.Container;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.security.UserConfiguration;
 import org.openremote.manager.setup.AbstractManagerSetup;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.geo.GeoJSONPoint;
@@ -45,6 +48,9 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.openremote.agent.protocol.http.HttpClientProtocol.*;
+import static org.openremote.agent.protocol.http.HttpClientProtocol.META_ATTRIBUTE_PATH;
+import static org.openremote.agent.protocol.udp.UdpClientProtocol.*;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 import static org.openremote.model.attribute.AttributeValueType.*;
@@ -97,6 +103,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String realmBuildingTenant;
     public String realmCityTenant;
     public String smartCityServiceAgentId;
+    public String tueId;
+    public String markthalId;
+    public String pharosId;
 
 
 
@@ -860,7 +869,53 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         );
         peopleCounter3Rules = rulesetStorageService.merge(peopleCounter3Rules);
 
+        // #### TU/e ####
+
+        Asset tueAgent = new Asset("Protocol's Agents (HTTP, UDP)", AssetType.AGENT, assetArea3);
+        tueAgent.setId(UniqueIdentifierGenerator.generateId(tueAgent.getName()));
+
+        String cameraApiClient = "cameraApiClient";
+        String pharosClient = "pharosClient";
+        tueAgent.addAttributes(
+                initProtocolConfiguration(new AssetAttribute(cameraApiClient), HttpClientProtocol.PROTOCOL_NAME)
+                        .addMeta(
+                                new MetaItem(META_PROTOCOL_BASE_URI, Values.create("https://camapi.simpleremote.nl/"))
+                        ),
+                initProtocolConfiguration(new AssetAttribute(pharosClient), UdpClientProtocol.PROTOCOL_NAME)
+                        .addMeta(
+                                new MetaItem(META_PROTOCOL_HOST, Values.create("192.168.1.1")),
+                                new MetaItem(META_PROTOCOL_PORT, Values.create(5005)),
+                                new MetaItem(META_PROTOCOL_BIND_PORT, Values.create(55056))
+                        )
+        );
+        tueAgent = assetStorageService.merge(tueAgent);
+
         Asset lightController_3Asset = createDemoLightControllerAsset("LightController 3", assetArea3, new GeoJSONPoint(5.487478, 51.446979));
+        for(int timeline = 1; timeline <= 6; timeline++) {
+            lightController_3Asset.addAttributes(new AssetAttribute(String.format("StartTimeLine1%02d", timeline), STRING, Values.create(String.format("PHTRIG101%02d\r", timeline)))
+                    .addMeta(
+                            new MetaItem(AGENT_LINK, new AttributeRef(tueAgent.getId(), pharosClient).toArrayValue()),
+                            new MetaItem(META_ATTRIBUTE_WRITE_VALUE, Values.create(String.format("PHTRIG101%02d\r", timeline))),
+                            new MetaItem(EXECUTABLE, Values.create(true))
+                    )
+            );
+        }
         lightController_3Asset = assetStorageService.merge(lightController_3Asset);
+
+        for(int cam = 1; cam <= 3; cam++){
+            Asset camera = new Asset(String.format("Camera %d", cam), THING, assetArea3)
+                    .addAttributes(new AssetAttribute(AttributeType.LOCATION, (new GeoJSONPoint(5.48735, 51.44731-0.00012*(cam-1))).toValue()));
+            camera.addAttributes(new AssetAttribute("movement", NUMBER, Values.create(0))
+                    .addMeta(
+                            new MetaItem(DESCRIPTION, Values.create("of movement events since the previous read")),
+                            new MetaItem(AGENT_LINK, new AttributeRef(tueAgent.getId(), cameraApiClient).toArrayValue()),
+                            new MetaItem(META_ATTRIBUTE_POLLING_MILLIS, Values.create(60000)),
+                            new MetaItem(META_ATTRIBUTE_PATH, Values.create(String.format("pull/cam%d", cam))),
+                            new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
+                            new MetaItem(STORE_DATA_POINTS, Values.create(true)),
+                            new MetaItem(DATA_POINTS_MAX_AGE_DAYS, Values.create(62))
+                    ));
+            camera = assetStorageService.merge(camera);
+        }
     }
 }
