@@ -1,13 +1,13 @@
 package org.openremote.agent.protocol.artnet;
 
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
+import jdk.nashorn.internal.parser.JSONParser;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.agent.protocol.udp.AbstractUdpClient;
@@ -193,6 +193,8 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         //int lightId = 0;
         MetaItem metaItem = protocolConfiguration.getMetaItem(META_ARTNET_CONFIGURATION.getUrn()).orElse(null);
 
+
+
         String configJsonString = metaItem.getValue().orElse(null).toJson();
         JsonObject configJson = new JsonParser().parse(configJsonString).getAsJsonObject();
         JsonArray jerry = configJson.getAsJsonArray("lights");
@@ -202,9 +204,8 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             JsonObject light = l.getAsJsonObject();
             int id = light.get("id").getAsInt();
 
-            artnetLightStates.put(id, new ArtnetLight(0, 0, 0, 0));
+            artnetLightStates.put(id, new ArtnetLight(0, 0, 0, 0, 0));
         }
-
 
         if (!protocolConfiguration.isEnabled()) {
             LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
@@ -302,18 +303,44 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
     @Override
     protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
-
         protocolConfiguration.getType();
         AttributeRef reference = event.getAttributeRef();
         Attribute attr =  getLinkedAttribute(reference);
         MetaItem metaItem = attr.getMetaItem("lightId").orElse(null);
         int lampId = metaItem.getValueAsInteger().orElse(-1);
-
-        Value brouh = event.getAttributeState().getValue().get();//TODO get rgb values from map
-
-        artnetLightStates.put(lampId, new ArtnetLight(0, 0, 0, 0));
-
-        //in event is an ID, referencing the attribute being send, if we can get this FULL attribut (as AssetAttribute) we can get the meta data items
+        //TODO NOW IT ONLY CHANGES IN MEMORY STATE, TODO SEND PROTOCOL
+        //DIM ATTRIBUTE
+        if(attr.getType().get().getValueType() == ValueType.NUMBER)
+            if(attr.getName().get().equalsIgnoreCase("Dim")) {
+                String val = event.getAttributeState().getValue().get().toString();
+                int dimValue = (int) Math.floor((double)Double.parseDouble(val));
+                artnetLightStates.get(lampId).dim = dimValue;
+            }
+        //VALUES ATTRIBUTE
+        if(attr.getType().get().getValueType() == ValueType.OBJECT)
+            if(attr.getName().get().equalsIgnoreCase("Values")) {
+                Value brouh = event.getAttributeState().getValue().orElse(null);
+                JsonObject jobject = new JsonParser().parse(brouh.toJson()).getAsJsonObject();
+                int r = jobject.get("r").getAsInt();
+                int g = jobject.get("g").getAsInt();
+                int b = jobject.get("b").getAsInt();
+                int w = jobject.get("w").getAsInt();
+                artnetLightStates.get(lampId).r = r;
+                artnetLightStates.get(lampId).r = g;
+                artnetLightStates.get(lampId).r = b;
+                artnetLightStates.get(lampId).r = w;
+            }
+        //SWITCH ATTRIBUTE
+        if(attr.getType().get().getValueType() == ValueType.BOOLEAN)
+            if(attr.getName().get().equalsIgnoreCase("Switch")) {
+                String val = event.getAttributeState().getValue().get().toString();
+                boolean switchState = (boolean) Boolean.parseBoolean(val);
+                if(switchState) {
+                    //TODO SEND PROTOCOL TO TURN ON LIGHTS, DO NOT UPDATE LOCAL MEMORY TO KEEP COLOURS
+                }else{
+                    //TODO SEND PROTOCOL TO TURN OFF LIGHTS, DO NOT UPDATE LOCAL MEMORY TO KEEP COLOURS
+                }
+            }
 
         AttributeInfo info = attributeInfoMap.get(event.getAttributeRef());
         if (info == null || info.sendConsumer == null) {
@@ -354,10 +381,11 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         private int r, g, b, w;
         private double dim;
 
-        public ArtnetLight(int r, int g, int b, double dim) {
+        public ArtnetLight(int r, int g, int b, int w, double dim) {
             this.r = r;
             this.g = g;
             this.b = b;
+            this.w = w;
             this.dim = dim;
         }
     }

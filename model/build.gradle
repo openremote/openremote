@@ -2,7 +2,6 @@ apply plugin: "java"
 
 dependencies {
     compile("com.google.gwt.inject:gin:$ginVersion")
-
     compile "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
     compile "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     compile("com.google.gwt:gwt-user:$gwtVersion") {
