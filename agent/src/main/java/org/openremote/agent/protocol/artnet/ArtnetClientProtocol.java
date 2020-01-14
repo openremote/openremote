@@ -296,7 +296,6 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
     @Override
     protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        //TODO CHECK IF LIGHT ID IS RETRIEVED SUCCESSFULLY
         int lightId = protocolConfiguration.getMetaItem(META_ARTNET_CONFIGURATION.getUrn()).get().getValueAsInteger().get();
         artnetLightStates.remove(lightId);
     }
@@ -348,6 +347,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             return;
         }
 
+        //TODO CHANGE VALUE TO NEW OBJECT -> ArtnetXObject containing light id, universe id and Value (event.getvalue)
         Value value = event.getValue().orElse(null);
         info.sendConsumer.accept(value);
 
