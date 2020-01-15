@@ -441,10 +441,10 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     public class ArtnetFixture {
         protected Byte dim;
         protected Byte[] values;
-        public bool Enabled = true;
-//TODO fix
+        public boolean enabled = true;
+        //TODO fix
         public Byte[] getValues() {
-            int enable = this.Enabled? 1 : 0;
+            int enable = this.enabled? 1 : 0;
             return Arrays.asList(values).stream().map(y -> (byte)(y * (dim/100) * enable)).toArray(size -> new Byte[size]);
         }
 
@@ -454,6 +454,10 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         
         public Byte getDim() {
             return dim;   
+        }
+
+        public boolean isEnabled() {
+            return this.enabled;
         }
     }
 
