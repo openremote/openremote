@@ -289,7 +289,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         .addMeta(
                                 new MetaItem(
                                         ArtnetClientProtocol.META_PROTOCOL_HOST,
-                                        Values.create("127.0.0.1")
+                                        Values.create("192.168.0.200")
                                 ),
                                 new MetaItem(
                                         ArtnetClientProtocol.META_PROTOCOL_PORT,

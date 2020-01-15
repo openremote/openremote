@@ -144,18 +144,40 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
                 // Create packet
                 // TODO: clean pls
+                int amountOfLeds = messageObject.get("amountOfLeds").getAsInt();
                 getPrefix(buf, messageObject.get("universe").getAsInt());
-                int len = 512;
-                buf.writeByte((len >> 8) & 0xff);
-                buf.writeByte(len & 0xff);
+                int lenIndex = buf.writerIndex();
+                buf.writerIndex(buf.writerIndex()+2);
+
+
+                //TODO CHANGE TO FULL LIGHT OBJECT TO GET AMOUNT OF LEDS FOR EACH LAMP (FOR NOW DEFAULT 3)
                 for (int lightId : lightIds)
                 {
-                    buf.writeBytes(ArrayUtils.toPrimitive(artnetLightStates.get(lightId).getValues()));
+                    for(int i = 0; i < amountOfLeds; i++) {
+                        byte[] vals = ArrayUtils.toPrimitive(artnetLightStates.get(lightId).getValues());
+                        buf.writeBytes(vals);
+                    }
                 }
+
+                // Move back to the len field to write the difference in size
+                int len = buf.writerIndex() - lenIndex - 2;
+                buf.writerIndex(lenIndex);
+                buf.writeByte((len >> 8) & 0xff);
+                buf.writeByte(len & 0xff);
+
+                for (int lightId : lightIds)
+                {
+                    for(int i = 0; i < amountOfLeds; i++) {
+                        byte[] vals = ArrayUtils.toPrimitive(artnetLightStates.get(lightId).getValues());
+                        buf.writeBytes(vals);
+                    }
+                }
+
+
 
                 //Send packet (Look over it)
                 try{
-                    finalEncoder.accept(message, buf);
+                    finalEncoder.accept("", buf);
                 }catch(IllegalArgumentException ex) {
                     ex.printStackTrace();
                 }
@@ -312,6 +334,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         MetaItem metaItem = attr.getMetaItem("lightId").orElse(null);
         int lampId = metaItem.getValueAsInteger().orElse(-1);
         int universeId = -1;
+        int amountOfLeds = 0;
         ArrayValue protocolMetaItemsArray = protocolConfiguration.getObjectValue().getArray("meta").get();
         List<Integer> lightIdsWithinUniverse = new ArrayList<>();
         for(int i = 0; i < protocolMetaItemsArray.length(); i++) {
@@ -325,6 +348,8 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
                         universeId = individualLightConfig.getAsJsonObject().get("universe").getAsInt();
                     if(individualLightConfig.getAsJsonObject().get("universe").getAsInt() == universeId)
                         lightIdsWithinUniverse.add(individualLightConfig.getAsJsonObject().get("id").getAsInt());
+                    //TODO FIX SENDING THROUGH FULL LIGHT OBJECT (contains amount of leds per lamp), now just take the amount of lets of the last index.
+                    amountOfLeds = individualLightConfig.getAsJsonObject().get("amountOfLeds").getAsInt();
                 }
             }
         }
@@ -382,9 +407,11 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         String finalLightIdsString = lightIdsString;
         int finalUniverseId = universeId;
 
+        int finalAmountOfLeds = amountOfLeds;
         Value value = Values.createObject().putAll(new HashMap<String, Value>() {{
             put("universe", Values.create(finalUniverseId));
             put("lightIds", Values.create(finalLightIdsString));
+            put("amountOfLeds", Values.create(finalAmountOfLeds));
         }});
 
         info.sendConsumer.accept(value);
@@ -414,9 +441,11 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     public class ArtnetFixture {
         protected Byte dim;
         protected Byte[] values;
-
+        public bool Enabled = true;
+//TODO fix
         public Byte[] getValues() {
-            return Arrays.asList(values).stream().map(y -> y * (dim/100)).toArray(size -> new Byte[size]);
+            int enable = this.Enabled? 1 : 0;
+            return Arrays.asList(values).stream().map(y -> (byte)(y * (dim/100) * enable)).toArray(size -> new Byte[size]);
         }
 
         public Byte[] getRawValues() {
