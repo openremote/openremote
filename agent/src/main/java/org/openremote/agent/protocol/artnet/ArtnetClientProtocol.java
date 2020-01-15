@@ -326,10 +326,10 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
                 int g = jobject.get("g").getAsInt();
                 int b = jobject.get("b").getAsInt();
                 int w = jobject.get("w").getAsInt();
-                artnetLightStates.get(lampId).r = r;
-                artnetLightStates.get(lampId).g = g;
-                artnetLightStates.get(lampId).b = b;
-                artnetLightStates.get(lampId).w = w;
+                artnetLightStates.get(lampId).setR(r);
+                artnetLightStates.get(lampId).setG(g);
+                artnetLightStates.get(lampId).setB(b);
+                artnetLightStates.get(lampId).setW(w);
             }
         //SWITCH ATTRIBUTE
         if(attr.getType().get().getValueType() == ValueType.BOOLEAN)
@@ -390,20 +390,35 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         return ATTRIBUTE_META_ITEM_DESCRIPTORS;
     }
 
+    public class ArnetFixture {
+        protected double dim;
+        protected byte[] values;
+        
+        public byte[] getValues() {
+            return values;   
+        }
+        
+        public double getDim() {
+            return dim;   
+        }
+    }
 
-
-    public class ArtnetLight {
-
-        private int r, g, b, w;
-        private double dim;
-
-        public ArtnetLight(int r, int g, int b, int w, double dim) {
-            this.r = r;
-            this.g = g;
-            this.b = b;
-            this.w = w;
+    public class ArtnetLight extends ArtnetFixture {
+        public ArtnetLight(byte r, byte g, byte b, byte w, double dim) {
+            this.values = {r,g,b,w};
             this.dim = dim;
         }
+        
+        public getR() {return this.values[0];}
+        public getG() {return this.values[1];}
+        public getB() {return this.values[2];}
+        public getW() {return this.values[3];}
+        
+        public setR(byte r) { this.values[0] = r; }
+        public setG(byte g) { this.values[0] = g; }
+        public setB(byte b) { this.values[0] = b; }
+        public setW(byte w) { this.values[0] = w; }
+        
     }
 
     public class ArtnetLightMetaData {
