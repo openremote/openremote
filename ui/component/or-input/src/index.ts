@@ -112,10 +112,13 @@ const style = css`
     }
     
     #component {
-        flex: 1 1 0;
         max-width: 100%;
     }
-    
+
+    .mdc-text-field {
+        flex: 1 1 0;
+    }
+
     #menu-anchor {
         max-width: 100%;
     }
@@ -123,7 +126,13 @@ const style = css`
     .or-input--rounded {
         border-radius: 50% !important;
     }
-    
+
+    ::-webkit-clear-button {display: none;}
+    ::-webkit-inner-spin-button { display: none; }
+    ::-webkit-datetime-edit { padding: 0em;}
+    ::-webkit-datetime-edit-text { padding: 0; }
+
+
     /* MDC TEXT FIELD AND SELECT DON'T USE THEME VARS */
     .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label {
         color: var(--mdc-theme-primary);

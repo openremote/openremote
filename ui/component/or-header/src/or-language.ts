@@ -1,6 +1,9 @@
 import {customElement, html, css, LitElement, property} from "lit-element";
 import "@openremote/or-icon";
+import i18next from "i18next";
 import manager from "@openremote/core";
+import {MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 
 // language=CSS
 const style = css`
@@ -8,35 +11,33 @@ const style = css`
         position: relative;
     }
     
-    .dropdown-menu {
-        position: absolute;
-        top: 100%;
-        box-shadow: rgba(0, 0, 0, 0.3) 0 5px 5px -2px;
-        width: 120px;
-        background-color: white;
-        right: 0;
-    }
-    
-    span {
-        display: block;
-        height: 40px;
-        line-height: 40px;
-    }
-    
-    .background-close {
-        display: none;
-        position: fixed;
-        width: 100vw;
-        height: 100vh;
-        top: 0;
-        left: 0;
-        z-index: 0;
-    }
-    
-    .background-close.active {
-        display: block;
+    .or-language-container {
+        display: flex;
+        height: 50px;
+        align-items: center;
     }
 `;
+interface languageOptions {
+    [key: string]: string;
+}
+
+const languageOptions: languageOptions = {
+    "en": "english",
+    "nl": "dutch",
+    "fr": "french",
+    "de": "german",
+    "es": "spanish"
+};
+
+function getLanguageMenu(): MenuItem[] {
+
+    return Object.entries(languageOptions).map(([key, value]) => {
+        return {
+            text: i18next.t(value),
+            value: key
+        };
+    });
+}
 
 @customElement("or-language")
 export class OrLanguage extends LitElement {
@@ -45,34 +46,33 @@ export class OrLanguage extends LitElement {
     @property({type: Boolean})
     isVisible?: boolean = false;
 
+    @property({type: String})
+    language: string = manager.language;
+
     static styles = style;
+
+    firstUpdated() {
+        this.language = manager.language ? manager.language : "en";
+    }
 
     protected render() {
         return html`
-            <or-icon icon="web" @click="${this.toggleMenu}"></or-icon>
-            <div class="background-close ${this.isVisible ? "active" : ""}" @click="${this.closeMenu}"></div>
-            ${this.isVisible ? html`
-                <div class="dropdown-menu">
-                      <span @click="${() => this.changeLanguage("en")}"><or-translate value="english"></or-translate></span>
-                      <span @click="${() => this.changeLanguage("nl")}"><or-translate value="dutch"></or-translate></span>
-                      <span @click="${() => this.changeLanguage("fr")}"><or-translate value="french"></or-translate></span>
-                      <span @click="${() => this.changeLanguage("de")}"><or-translate value="german"></or-translate></span>
-                      <span @click="${() => this.changeLanguage("es")}"><or-translate value="spanish"></or-translate></span>
-                </div>
-            ` : ``}
+            ${getContentWithMenuTemplate(
+                html`
+                    <div class="or-language-container">
+                        <strong style="text-transform: uppercase;">${this.language}</strong>
+                        <or-icon icon="web"></or-icon>
+                    </div>
+                `,
+                getLanguageMenu(),
+                this.language,
+                (values: string | string[]) => this.changeLanguage(values as string))}
         `;
     }
 
     changeLanguage(language: string) {
         manager.language = language;
+        this.language = language;
         this.isVisible = false;
-    }
-
-    closeMenu() {
-        this.isVisible = false;
-    }
-
-    toggleMenu() {
-        this.isVisible = !this.isVisible;
     }
 }

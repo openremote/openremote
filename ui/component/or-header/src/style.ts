@@ -51,6 +51,10 @@ export const style = css`
             z-index: 9999999;
         }
 
+        slot {
+            display: flex;
+        }
+
         .shadow {
             -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
             -moz-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
