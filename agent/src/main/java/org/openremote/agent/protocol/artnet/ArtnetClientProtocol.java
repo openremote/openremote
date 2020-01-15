@@ -126,25 +126,6 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
             @Override
             protected void encode(String message, ByteBuf buf) {
-                //INPUT IS A TOGGLE SWITCH FOR THE LAMP (BOOLEAN)
-                if(Boolean.parseBoolean(message)) {
-                    //LAMP SHOULD BE TOGGLED ON/OFF
-                    //artnetLightStates.get(0) //get colours of lamp
-
-                }
-                //INPUT IS A LIST OF COLOUR-VALUES (JSONObject)
-                else if(Values.parseOrNull(message) != null) {
-                    //LAMP VALUES SHOULD BE CHANGED (R,G,B,W)
-                }
-                //INPUT IS THE DIM VALUE (NUMBER)
-                else if(Integer.parseInt(message) >= 0) {
-                    //LAMP DIM SHOULD BE CHANGED
-                }
-
-                //Receive Values (Id of the lamp and values to be sent (Maybe also Dim and On/Off values))
-
-                //Reading configuration
-
                 //Load states of all other lamps
                 ArrayList<ArtNetDMXLight> lights = new ArrayList<>();
                 lights.add(new ArtNetDMXLight(100,0,3,0,255,255,255,255));
@@ -296,8 +277,10 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
     @Override
     protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+        /*
         int lightId = protocolConfiguration.getMetaItem(META_ARTNET_CONFIGURATION.getUrn()).get().getValueAsInteger().get();
         artnetLightStates.remove(lightId);
+        */
     }
 
     @Override
@@ -307,6 +290,25 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         Attribute attr =  getLinkedAttribute(reference);
         MetaItem metaItem = attr.getMetaItem("lightId").orElse(null);
         int lampId = metaItem.getValueAsInteger().orElse(-1);
+        int universeId = -1;
+        ArrayValue protocolMetaItemsArray = protocolConfiguration.getObjectValue().getArray("meta").get();
+        List<Integer> lightIdsWithinUniverse = new ArrayList<>();
+        for(int i = 0; i < protocolMetaItemsArray.length(); i++) {
+            ObjectValue objvl = protocolMetaItemsArray.getObject(i).get();
+            if(objvl.getString("name").get().equals("urn:openremote:protocol:artnet:areaConfiguration")) {
+                String lightConfig = objvl.get("value").get().toJson();
+                JsonObject configurationObject = new JsonParser().parse(lightConfig).getAsJsonObject();
+                JsonArray jerry = configurationObject.get("lights").getAsJsonArray();
+                for(JsonElement individualLightConfig : jerry) {
+                    if(individualLightConfig.getAsJsonObject().get("id").getAsInt() == lampId)
+                        universeId = individualLightConfig.getAsJsonObject().get("universe").getAsInt();
+                    if(individualLightConfig.getAsJsonObject().get("universe").getAsInt() == universeId)
+                        lightIdsWithinUniverse.add(individualLightConfig.getAsJsonObject().get("id").getAsInt());
+                }
+            }
+        }
+
+
         //TODO NOW IT ONLY CHANGES IN MEMORY STATE, TODO SEND PROTOCOL
         //DIM ATTRIBUTE
         if(attr.getType().get().getValueType() == ValueType.NUMBER)
@@ -325,9 +327,9 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
                 int b = jobject.get("b").getAsInt();
                 int w = jobject.get("w").getAsInt();
                 artnetLightStates.get(lampId).r = r;
-                artnetLightStates.get(lampId).r = g;
-                artnetLightStates.get(lampId).r = b;
-                artnetLightStates.get(lampId).r = w;
+                artnetLightStates.get(lampId).g = g;
+                artnetLightStates.get(lampId).b = b;
+                artnetLightStates.get(lampId).w = w;
             }
         //SWITCH ATTRIBUTE
         if(attr.getType().get().getValueType() == ValueType.BOOLEAN)
@@ -335,9 +337,9 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
                 String val = event.getAttributeState().getValue().get().toString();
                 boolean switchState = (boolean) Boolean.parseBoolean(val);
                 if(switchState) {
-                    //TODO SEND PROTOCOL TO TURN ON LIGHTS, DO NOT UPDATE LOCAL MEMORY TO KEEP COLOURS
+                    //TODO CREATE SWITCH PROPERTY IN ARTNETLIGHT CLASS
                 }else{
-                    //TODO SEND PROTOCOL TO TURN OFF LIGHTS, DO NOT UPDATE LOCAL MEMORY TO KEEP COLOURS
+
                 }
             }
 
@@ -347,10 +349,24 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             return;
         }
 
-        //TODO CHANGE VALUE TO NEW OBJECT -> ArtnetXObject containing light id, universe id and Value (event.getvalue)
-        Value value = event.getValue().orElse(null);
-        info.sendConsumer.accept(value);
+        //TODO FIND BETTER WAY OF SENDING LIGHT IDS
+        String lightIdsString = "";
 
+        for(int lid : lightIdsWithinUniverse)
+            if(lightIdsString.length() == 0)
+                lightIdsString += lid;
+            else
+                lightIdsString += "," + lid;
+
+        String finalLightIdsString = lightIdsString;
+        int finalUniverseId = universeId;
+
+        Value value = Values.createObject().putAll(new HashMap<String, Value>() {{
+            put("universe", Values.create(finalUniverseId));
+            put("lightIds", Values.create(finalLightIdsString));
+        }});
+
+        info.sendConsumer.accept(value);
         updateLinkedAttribute(event.getAttributeState());
     }
 
