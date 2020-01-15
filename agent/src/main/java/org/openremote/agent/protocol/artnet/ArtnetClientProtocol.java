@@ -7,7 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
-import jdk.nashorn.internal.parser.JSONParser;
+import org.apache.commons.lang.ArrayUtils;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.agent.protocol.udp.AbstractUdpClient;
@@ -132,23 +132,44 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
                 lights.add(new ArtNetDMXLight(5,0,3,0,255,255,255,255));
                 lights.add(new ArtNetDMXLight(3,1,3,0,255,255,255,255));
 
-                //Build packet
-                ArtNetPacket artNetPacket = ArtNetPacket.fromValue(Values.parse(message).get()).get();
-                artNetPacket.assemblePacket(buf, lights);
+                JsonParser parser = new JsonParser();
+                JsonObject messageObject = parser.parse(message).getAsJsonObject();
+
+                List<String> lightIdsStrings = Arrays.asList(messageObject.get("lightIds").getAsString().split(","));
+                int[] lightIds = new int[lightIdsStrings.size()];
+                for (int i = 0; i < lightIdsStrings.size(); i++)
+                    lightIds[i] = Integer.parseInt(lightIdsStrings.get(i));
+
+                Arrays.sort(lightIds);
+
+                // Create packet
+                // TODO: clean pls
+                getPrefix(buf, messageObject.get("universe").getAsInt());
+                int len = 512;
+                buf.writeByte((len >> 8) & 0xff);
+                buf.writeByte(len & 0xff);
+                for (int lightId : lightIds)
+                {
+                    buf.writeBytes(ArrayUtils.toPrimitive(artnetLightStates.get(lightId).getValues()));
+                }
 
                 //Send packet (Look over it)
-
-                Value msg = null;
                 try{
-                    msg = Values.parse(message).get();
-                    ArtNetPacket packet = ArtNetPacket.fromValue(msg).get();
-                    ByteBuf output = packet.toBuffer(buf);
-                    finalEncoder.accept(message, output);
+                    finalEncoder.accept(message, buf);
                 }catch(IllegalArgumentException ex) {
                     ex.printStackTrace();
                 }
             }
         };
+    }
+
+    public ByteBuf getPrefix(ByteBuf buf, int universe) {
+        buf.writeBytes(new byte[]{ 65, 114, 116, 45, 78, 101, 116, 0, 0, 80, 0, 14 });
+        buf.writeByte(0); // Sequence
+        buf.writeByte(0); // Physical
+        buf.writeByte((universe >> 8) & 0xff);
+        buf.writeByte(universe & 0xff);
+        return buf;
     }
 
     //Runs if a new Asset is created with an ArtNet Client as attribute.
@@ -185,7 +206,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             JsonObject light = l.getAsJsonObject();
             int id = light.get("id").getAsInt();
 
-            artnetLightStates.put(id, new ArtnetLight(0, 0, 0, 0, 0));
+            artnetLightStates.put(id, new ArtnetLight((byte)0, (byte)0, (byte)0, (byte)0, (byte)0));
         }
 
         if (!protocolConfiguration.isEnabled()) {
@@ -314,7 +335,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         if(attr.getType().get().getValueType() == ValueType.NUMBER)
             if(attr.getName().get().equalsIgnoreCase("Dim")) {
                 String val = event.getAttributeState().getValue().get().toString();
-                int dimValue = (int) Math.floor((double)Double.parseDouble(val));
+                Byte dimValue = (Byte)(byte)(int) Math.floor((double)Double.parseDouble(val));
                 artnetLightStates.get(lampId).dim = dimValue;
             }
         //VALUES ATTRIBUTE
@@ -322,10 +343,10 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             if(attr.getName().get().equalsIgnoreCase("Values")) {
                 Value brouh = event.getAttributeState().getValue().orElse(null);
                 JsonObject jobject = new JsonParser().parse(brouh.toJson()).getAsJsonObject();
-                int r = jobject.get("r").getAsInt();
-                int g = jobject.get("g").getAsInt();
-                int b = jobject.get("b").getAsInt();
-                int w = jobject.get("w").getAsInt();
+                Byte r = jobject.get("r").getAsByte();
+                Byte g = jobject.get("g").getAsByte();
+                Byte b = jobject.get("b").getAsByte();
+                Byte w = jobject.get("w").getAsByte();
                 artnetLightStates.get(lampId).setR(r);
                 artnetLightStates.get(lampId).setG(g);
                 artnetLightStates.get(lampId).setB(b);
@@ -390,34 +411,38 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
         return ATTRIBUTE_META_ITEM_DESCRIPTORS;
     }
 
-    public class ArnetFixture {
-        protected double dim;
-        protected byte[] values;
-        
-        public byte[] getValues() {
+    public class ArtnetFixture {
+        protected Byte dim;
+        protected Byte[] values;
+
+        public Byte[] getValues() {
+            return Arrays.asList(values).stream().map(y -> y * (dim/100)).toArray(size -> new Byte[size]);
+        }
+
+        public Byte[] getRawValues() {
             return values;   
         }
         
-        public double getDim() {
+        public Byte getDim() {
             return dim;   
         }
     }
 
     public class ArtnetLight extends ArtnetFixture {
-        public ArtnetLight(byte r, byte g, byte b, byte w, double dim) {
-            this.values = {r,g,b,w};
+        public ArtnetLight(Byte r, Byte g, Byte b, Byte w, Byte dim) {
+            this.values = new Byte[]{g,r,b,w};
             this.dim = dim;
         }
         
-        public getR() {return this.values[0];}
-        public getG() {return this.values[1];}
-        public getB() {return this.values[2];}
-        public getW() {return this.values[3];}
+        public Byte getR() {return this.values[1];}
+        public Byte getG() {return this.values[0];}
+        public Byte getB() {return this.values[2];}
+        public Byte getW() {return this.values[3];}
         
-        public setR(byte r) { this.values[0] = r; }
-        public setG(byte g) { this.values[0] = g; }
-        public setB(byte b) { this.values[0] = b; }
-        public setW(byte w) { this.values[0] = w; }
+        public void setR(Byte r) { this.values[1] = r; }
+        public void setG(Byte g) { this.values[0] = g; }
+        public void setB(Byte b) { this.values[2] = b; }
+        public void setW(Byte w) { this.values[3] = w; }
         
     }
 
