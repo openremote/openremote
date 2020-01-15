@@ -109,4 +109,4 @@ services:
       file: deploy.yml
       service: postgresql
     volumes:
-      - postgresql-data:/deployment
+      - postgresql-data:/var/lib/postgresql/data
