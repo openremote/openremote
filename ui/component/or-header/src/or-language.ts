@@ -60,8 +60,8 @@ export class OrLanguage extends LitElement {
             ${getContentWithMenuTemplate(
                 html`
                     <div class="or-language-container">
-                        <strong style="text-transform: uppercase;">${this.language}</strong>
                         <or-icon icon="web"></or-icon>
+                        <span style="margin-left: 10px; text-transform: uppercase;">${this.language}</span>
                     </div>
                 `,
                 getLanguageMenu(),
