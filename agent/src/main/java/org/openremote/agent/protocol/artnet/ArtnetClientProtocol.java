@@ -212,6 +212,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     //Runs if an Attribute with an Agent protocol link is being linked to this ArtNet Network
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) throws IOException {
+        //TODO: Edit standard values (Dim to 100)
         //TODO CHECK IF LIGHT ID IS RETRIEVED SUCCESSFULLY
         //int lightId = protocolConfiguration.getMetaItem(META_ARTNET_CONFIGURATION.getUrn()).get().getValueAsInteger().get();
         //int lightId = 0;
