@@ -383,9 +383,9 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
                 String val = event.getAttributeState().getValue().get().toString();
                 boolean switchState = (boolean) Boolean.parseBoolean(val);
                 if(switchState) {
-                    //TODO CREATE SWITCH PROPERTY IN ARTNETLIGHT CLASS
+                    artnetLightStates.get(lampId).setEnabled(true);
                 }else{
-
+                    artnetLightStates.get(lampId).setEnabled(false);
                 }
             }
 
@@ -458,6 +458,10 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
 
         public boolean isEnabled() {
             return this.enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
         }
     }
 
