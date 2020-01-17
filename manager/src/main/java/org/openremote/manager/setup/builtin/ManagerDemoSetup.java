@@ -298,15 +298,19 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                 new MetaItem(
                                         ArtnetClientProtocol.META_ARTNET_CONFIGURATION,
                                         Values.createObject().putAll(new HashMap<String, Value>() {{
-                                            put("lights", Values.createArray().add(Values.createObject().putAll(new HashMap<String, Value>() {{
+                                            put("lights", Values.createArray()
+                                            .add(Values.createObject().putAll(new HashMap<String, Value>() {{
                                                 put("id", Values.create(0));
                                                 put("universe", Values.create(0));
                                                 put("amountOfLeds", Values.create(3));
+                                            }}))
+                                            .add(
+                                            Values.createObject().putAll(new HashMap<String, Value>() {{
+                                                put("id", Values.create(1));
+                                                put("universe", Values.create(0));
+                                                put("amountOfLeds", Values.create(3));
                                             }})));
-                                        }})
-                                )
-                        )
-        );
+                                        }}))));
         artNetArea = assetStorageService.merge(artNetArea);
 
         //SETUP LIGHT-ASSETS UNDER AREA

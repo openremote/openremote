@@ -355,8 +355,6 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             }
         }
 
-
-        //TODO NOW IT ONLY CHANGES IN MEMORY STATE, TODO SEND PROTOCOL
         //DIM ATTRIBUTE
         if(attr.getType().get().getValueType() == ValueType.NUMBER)
             if(attr.getName().get().equalsIgnoreCase("Dim")) {
@@ -395,8 +393,6 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             LOG.info("Request to write unlinked attribute or attribute that doesn't support writes so ignoring: " + event);
             return;
         }
-
-        //TODO FIND BETTER WAY OF SENDING LIGHT IDS
         String lightIdsString = "";
 
         for(int lid : lightIdsWithinUniverse)
@@ -467,6 +463,7 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
     }
 
     public class ArtnetLight extends ArtnetFixture {
+
         public ArtnetLight(Byte r, Byte g, Byte b, Byte w, Byte dim) {
             this.values = new Byte[]{g,r,b,w};
             this.dim = dim;
