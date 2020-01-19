@@ -288,11 +288,11 @@ services:
       # docker exec -it <container ID> psql -U openremote
 
     volumes:
-      - postgresql-data:/deployment
+      - postgresql-data:/var/lib/postgresql/data
 
     deploy:
       replicas: 1
-      # Configure uninterupted updates with rollback
+      # Configure uninterrupted updates with rollback
       update_config:
         failure_action: rollback
         order: start-first
