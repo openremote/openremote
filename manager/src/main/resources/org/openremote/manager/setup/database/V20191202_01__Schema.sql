@@ -103,7 +103,7 @@ create table NOTIFICATION (
   SOURCE          varchar(50)              not null,
   SOURCE_ID       varchar(43),
   MESSAGE         jsonb,
-  ERROR           varchar(255),
+  ERROR           varchar(4096),
   SENT_ON         timestamp with time zone not null,
   DELIVERED_ON    timestamp with time zone,
   ACKNOWLEDGED_ON timestamp with time zone,

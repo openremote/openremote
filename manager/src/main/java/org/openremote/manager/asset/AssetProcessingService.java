@@ -447,7 +447,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                                          Asset asset,
                                          AssetAttribute attribute,
                                          Source source) throws AssetProcessingException {
-        LOG.fine(">>> Processing start: " + attribute);
+
+        String attributeStr = attribute.toString();
+
+        LOG.fine(">>> Processing start: " + attributeStr);
 
         // Need to record time here otherwise an infinite loop generated inside one of the processors means the timestamp
         // is not updated so tests can't then detect the problem.
@@ -455,7 +458,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         boolean complete = false;
         for (AssetUpdateProcessor processor : processors) {
-            LOG.finest("==> Processor " + processor + " accepts: " + attribute);
+            LOG.finest("==> Processor " + processor + " accepts: " + attributeStr);
             try {
                 complete = processor.processAssetUpdate(em, asset, attribute, source);
             } catch (AssetProcessingException ex) {
@@ -468,20 +471,20 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 );
             }
             if (complete) {
-                LOG.finest("<== Processor " + processor + " completely consumed: " + attribute);
+                LOG.fine("<== Processor " + processor + " completely consumed: " + attributeStr);
                 break;
             } else {
-                LOG.finest("<== Processor " + processor + " done with: " + attribute);
+                LOG.finest("<== Processor " + processor + " done with: " + attributeStr);
             }
         }
 
         if (!complete) {
-            LOG.finest("No processor consumed the update completely, storing: " + attribute);
+            LOG.fine("No processor consumed the update completely, storing: " + attributeStr);
             storeAttributeValue(em, asset, attribute);
             em.flush(); // Make sure constraint violations are immediately visible
         }
 
-        LOG.fine("<<< Processing complete: " + attribute);
+        LOG.fine("<<< Processing complete: " + attributeStr);
         return complete;
     }
 

@@ -40,6 +40,7 @@ import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
@@ -148,9 +149,17 @@ public class SyslogService extends Handler implements ContainerService {
     public void publish(LogRecord record) {
         SyslogEvent syslogEvent = SyslogCategory.mapSyslogEvent(record);
         if (syslogEvent != null) {
-            store(syslogEvent);
-            if (clientEventService != null)
-                clientEventService.publishEvent(syslogEvent);
+            try {
+                store(syslogEvent);
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Failed to store syslog event", e);
+            }
+            try {
+                if (clientEventService != null)
+                    clientEventService.publishEvent(syslogEvent);
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Failed to send syslog event to subscribed clients", e);
+            }
         }
     }
 
@@ -272,18 +281,23 @@ public class SyslogService extends Handler implements ContainerService {
             if (transientEvents.size() == 0)
                 return;
             LOG.fine("Flushing syslog batch: " + transientEvents.size());
-            persistenceService.doTransaction(em -> {
-                try {
-                    for (SyslogEvent e : transientEvents) {
-                        em.persist(e);
+            try {
+                persistenceService.doTransaction(em -> {
+                    try {
+                        for (SyslogEvent e : transientEvents) {
+                            em.persist(e);
+                        }
+                    } catch (RuntimeException ex) {
+                        // This is not a big problem, it may happen on shutdown of database connections during tests, just inform the user
+                        // TODO Or is it a serious problem and we need to escalate? In any case, just throwing the ex is not good
+                        LOG.info("Error flushing syslog to database, some events are lost: " + ex);
+                    } finally {
+                        em.flush();
                     }
-                    em.flush();
-                } catch (RuntimeException ex) {
-                    // This is not a big problem, it may happen on shutdown of database connections during tests, just inform the user
-                    // TODO Or is it a serious problem and we need to escalate? In any case, just throwing the ex is not good
-                    LOG.info("Error flushing syslog to database, some events are lost: " + ex);
-                }
-            });
+                });
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Exception occurred whilst flushing the syslog", e);
+            }
         }
     }
 
