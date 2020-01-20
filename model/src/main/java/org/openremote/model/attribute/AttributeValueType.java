@@ -150,6 +150,8 @@ public enum AttributeValueType implements AttributeValueDescriptor {
 
     CO2_PPM("leaf", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%4d ppm"))),
 
+    CO2_KG("leaf", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f kg"))),
+
     HUMIDITY_PERCENTAGE("water", ValueType.NUMBER, value -> Values.getNumber(value)
             .filter(number -> number < 0 || number > 100)
             .map(number -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_PERCENTAGE_OUT_OF_RANGE)),
@@ -184,6 +186,8 @@ public enum AttributeValueType implements AttributeValueDescriptor {
 
     ENERGY_MEGAJOULE("plug", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f MJ"))),
 
+    ENERGY_CARBON("leaf", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f kg CO2/kWH"))),
+
     FLOW_LPM("dot-circle", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f L/m"))),
 
     FLOW_CMPS("dot-circle", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f m³/s"))),
@@ -211,7 +215,6 @@ public enum AttributeValueType implements AttributeValueDescriptor {
     BEARING("compass", ValueType.NUMBER),
 
     CALENDAR_EVENT("calendar", ValueType.OBJECT);
-
 
     public enum AttributeValueTypeFailureReason implements ValidationFailure.Reason {
         ATTRIBUTE_TYPE_VALUE_DOES_NOT_MATCH
