@@ -102,7 +102,7 @@ public class EmailNotificationHandler implements NotificationHandler {
             try {
                 mailer.testConnection();
             } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Failed to connect to SMTP server so disabling email notifications");
+                LOG.log(Level.SEVERE, "Failed to connect to SMTP server so disabling email notifications", e);
                 mailer = null;
             }
         }

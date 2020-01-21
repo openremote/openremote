@@ -132,7 +132,6 @@ services:
       #SETUP_EMAIL_USER: 'smtp-user'
       #SETUP_EMAIL_PASSWORD: 'smtp-password'
       #SETUP_EMAIL_PORT: 25
-      #SETUP_EMAIL_AUTH: 'true'
       #SETUP_EMAIL_TLS: 'true'
       #SETUP_EMAIL_FROM_KEYCLOAK: 'no-reply@openremote.io'
       #SETUP_EMAIL_FROM_DEFAULT: 'no-reply@openremote.io'
