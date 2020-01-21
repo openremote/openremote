@@ -460,6 +460,14 @@ public class AssetAttribute extends Attribute {
         return copy;
     }
 
+    public void setSpecificType(String  specificType) {
+        if (!isNullOrEmpty(specificType)) {
+            replaceMetaByName(getMeta(), SPECIFIC_TYPE, Values.create(specificType));
+        } else {
+            getMeta().removeIf(isMetaNameEqualTo(SPECIFIC_TYPE));
+        }
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +

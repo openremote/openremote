@@ -124,6 +124,8 @@ public enum AttributeValueType implements AttributeValueDescriptor {
             .map(n -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_TEMPERATURE_OUT_OF_RANGE))
     ),
 
+    CURRENCY("money", ValueType.NUMBER, SPECIFIC_TYPE.withInitialValue(Values.create("EUR"))),
+
     RAINFALL("water", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.1f mm/h"))),
 
     BRIGHTNESS_LUX("lightbulb", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%d lx"))),
