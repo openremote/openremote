@@ -249,6 +249,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                     .setSourceId(sourceId.get())
                                     .setTarget(target.getType())
                                     .setTargetId(target.getId())
+                                    .setMessage(notification.getMessage().toValue())
                                     .setSentOn(Date.from(timerService.getNow()));
 
                                 sentNotification = em.merge(sentNotification);
@@ -277,7 +278,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                         e);
                                     sentNotification.setError(TextUtil.isNullOrEmpty(e.getMessage()) ? "Unknown error" : e.getMessage());
                                     em.merge(sentNotification);
-                                    throw e;
                                 }
                             })
                     );
