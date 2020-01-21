@@ -335,18 +335,18 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                 RadialGeofencePredicate radialLocationPredicate = (RadialGeofencePredicate) predicate;
                 GeodeticCalculator calculator = new GeodeticCalculator();
                 calculator.setStartingGeographicPoint(radialLocationPredicate.lng, radialLocationPredicate.lat);
-                calculator.setDestinationGeographicPoint(coordinate.y, coordinate.x);
+                calculator.setDestinationGeographicPoint(coordinate.x, coordinate.y);
                 if (predicate.negated) {
                     return calculator.getOrthodromicDistance() > radialLocationPredicate.radius;
                 }
                 return calculator.getOrthodromicDistance() <= radialLocationPredicate.radius;
             } else if (predicate instanceof RectangularGeofencePredicate) {
-                // Again this is a euclidean plane so doesn't work perfectly for WGS lat/lng - the bigger the rectangle to less accurate it is)
+                // Again this is a euclidean plane so doesn't work perfectly for WGS lat/lng - the bigger the rectangle the less accurate it is)
                 RectangularGeofencePredicate rectangularLocationPredicate = (RectangularGeofencePredicate) predicate;
-                Envelope envelope = new Envelope(rectangularLocationPredicate.latMin,
-                    rectangularLocationPredicate.lngMin,
-                    rectangularLocationPredicate.latMax,
-                    rectangularLocationPredicate.lngMax);
+                Envelope envelope = new Envelope(rectangularLocationPredicate.lngMin,
+                    rectangularLocationPredicate.lngMax,
+                    rectangularLocationPredicate.latMin,
+                    rectangularLocationPredicate.latMax);
                 if (predicate.negated) {
                     return !envelope.contains(coordinate);
                 }
@@ -439,7 +439,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                 GeofencePredicate p = (GeofencePredicate) predicate;
                 return asPredicate(p).test(Optional.ofNullable(value)
                         .flatMap(GeoJSONPoint::fromValue)
-                        .map(point -> new Coordinate(point.getY(), point.getX()))
+                        .map(point -> new Coordinate(point.getX(), point.getY()))
                         .orElse(null));
             } else if (predicate instanceof ObjectValueKeyPredicate) {
 

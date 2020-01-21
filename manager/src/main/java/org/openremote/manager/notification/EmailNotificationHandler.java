@@ -222,12 +222,14 @@ public class EmailNotificationHandler implements NotificationHandler {
         }
         EmailNotificationMessage email = (EmailNotificationMessage)message;
 
+        // Move to/cc/bcc to targets (for traceability) in sent notifications
         if (email.getTo() != null) {
             mappedTargets.addAll(
                 email.getTo().stream()
                     .map(recipient ->
                         new Notification.Target(Notification.TargetType.CUSTOM, recipient.getAddress()))
                     .collect(Collectors.toList()));
+            email.setTo((String) null);
         }
         if (email.getCc() != null) {
             mappedTargets.addAll(
@@ -235,6 +237,7 @@ public class EmailNotificationHandler implements NotificationHandler {
                     .map(recipient ->
                         new Notification.Target(Notification.TargetType.CUSTOM, recipient.getAddress()))
                     .collect(Collectors.toList()));
+            email.setCc((String) null);
         }
         if (email.getBcc() != null) {
             mappedTargets.addAll(
@@ -242,6 +245,7 @@ public class EmailNotificationHandler implements NotificationHandler {
                     .map(recipient ->
                         new Notification.Target(Notification.TargetType.CUSTOM, recipient.getAddress()))
                     .collect(Collectors.toList()));
+            email.setBcc((String) null);
         }
 
         return mappedTargets;

@@ -137,8 +137,9 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
         return replyTo;
     }
 
-    public void setReplyTo(Recipient replyTo) {
+    public EmailNotificationMessage setReplyTo(Recipient replyTo) {
         this.replyTo = replyTo;
+        return this;
     }
 
     public List<Recipient> getTo() {
@@ -146,16 +147,17 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
     }
 
     public EmailNotificationMessage setTo(String...addresses) {
-        return setTo(Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()));
+        return setTo(addresses != null ? Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()) : null);
     }
 
     public EmailNotificationMessage setTo(Recipient...recipients) {
-        return setTo(Arrays.asList(recipients));
+        return setTo(recipients != null ? Arrays.asList(recipients) : null);
     }
 
     public EmailNotificationMessage setTo(List<Recipient> recipients) {
-        if (to != null) {
-            to.clear();
+        to = null;
+        if (recipients == null) {
+            return this;
         }
 
         return addTo(recipients);
@@ -183,16 +185,17 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
     }
 
     public EmailNotificationMessage setCc(String...addresses) {
-        return setCc(Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()));
+        return setCc(addresses != null ? Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()) : null);
     }
 
     public EmailNotificationMessage setCc(Recipient...recipients) {
-        return setCc(Arrays.asList(recipients));
+        return setCc(recipients != null ? Arrays.asList(recipients) : null);
     }
 
     public EmailNotificationMessage setCc(List<Recipient> recipients) {
-        if (cc != null) {
-            cc.clear();
+        cc = null;
+        if (recipients == null) {
+            return this;
         }
 
         return addCc(recipients);
@@ -220,16 +223,17 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
     }
 
     public EmailNotificationMessage setBcc(String...addresses) {
-        return setBcc(Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()));
+        return setBcc(addresses != null ? Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()) : null);
     }
 
     public EmailNotificationMessage setBcc(Recipient...recipients) {
-        return setBcc(Arrays.asList(recipients));
+        return setBcc(recipients != null ? Arrays.asList(recipients) : null);
     }
 
     public EmailNotificationMessage setBcc(List<Recipient> recipients) {
-        if (bcc != null) {
-            bcc.clear();
+        bcc = null;
+        if (recipients == null) {
+            return this;
         }
 
         return addBcc(recipients);
