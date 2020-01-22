@@ -14,6 +14,7 @@ import {
 } from "@openremote/model";
 import * as Util from "./util";
 import orIconSet from "./or-icon-set";
+import {TemplateResult} from "lit-element";
 
 // Re-exports
 export {Util};
@@ -87,6 +88,16 @@ export interface LoginOptions {
     credentials?: Credentials;
 }
 
+export interface RealmConfig {
+    colors?: TemplateResult;
+    logo?: HTMLTemplateElement | string;
+    logoMobile?: HTMLTemplateElement | string;
+    language?: string;
+}
+export interface RealmConfigs {
+    [key: string]: RealmConfig
+}
+
 export interface ManagerConfig {
     managerUrl: string;
     keycloakUrl?: string;
@@ -103,6 +114,7 @@ export interface ManagerConfig {
     loadDescriptors?: boolean;
     loadTranslations?: string[];
     translationsLoadPath?: string;
+    realmConfigs?: RealmConfigs;
     configureTranslationsOptions?: (i18next: i18next.InitOptions) => void;
 }
 
@@ -473,7 +485,7 @@ export class Manager implements EventProviderFactory {
         if (normalisedConfig.clientId === undefined) {
             normalisedConfig.clientId = "openremote";
         }
-
+        
         return normalisedConfig;
     }
 
@@ -549,7 +561,6 @@ export class Manager implements EventProviderFactory {
         // if (success) {
         //     success = await this.doEventsSubscriptionInit();
         // }
-
         if (success) {
             this._ready = true;
             this._emitEvent(OREvent.READY);
@@ -604,7 +615,6 @@ export class Manager implements EventProviderFactory {
 
         // Look for language preference in local storage
         const language = await this.console.retrieveData("LANGUAGE");
-
         const initOptions: i18next.InitOptions = {
             lng: language,
             fallbackLng: "en",

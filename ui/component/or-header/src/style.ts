@@ -51,10 +51,6 @@ export const style = css`
             z-index: 9999999;
         }
 
-        slot {
-            display: flex;
-        }
-
         .shadow {
             -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
             -moz-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
@@ -105,6 +101,10 @@ export const style = css`
             display: none;
         }
         
+        #desktop-right slot {
+            display: flex;
+        }
+
         #mobile-bottom {
             margin-top: 20px;
         }
@@ -152,9 +152,9 @@ export const style = css`
             line-height: var(--internal-or-header-height);
         }
         
-        /* Wide layout: when the viewport width is bigger than 640px, layout
+        /* Wide layout: when the viewport width is bigger than 780px, layout
         changes to a wide layout. */
-        @media (min-width: 640px) {
+        @media (min-width: 780px) {
 
             #logo {
                 margin: var(--internal-or-header-logo-margin);
