@@ -88,6 +88,9 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             }
         }
 
+        and: "the geofence notifier debounce is set to a small value for testing"
+        ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = 100
+
         and: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 15, delay: 1)
         def serverPort = findEphemeralPort()
@@ -174,8 +177,11 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 ["manager"] as String[])
         consoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)
 
-        then: "the console should have been registered"
-        assert consoleRegistration.id != null
+        then: "the console should have been registered and a geofence refresh notification should have been sent"
+        conditions.eventually {
+            assert consoleRegistration.id != null
+            assert notificationMessages.size() == 1
+        }
 
         when: "the console location is set to the apartment"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue()), AttributeEvent.Source.CLIENT)
@@ -217,7 +223,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "a notification should have been sent to the console"
         conditions.eventually {
-            assert notificationMessages.findAll {it.data == null || !it.data.getString("action").orElse("").equals("GEOFENCE_REFRESH")}.size() == 1
+            assert notificationMessages.findAll {it.title == "Test title"}.size() == 1
             assert targets[0].type == Notification.TargetType.ASSET
             assert targets[0].id == consoleRegistration.id
         }
@@ -232,7 +238,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "after a few seconds the rule should not have fired again"
         new PollingConditions(initialDelay: 3).eventually {
-            assert notificationMessages.size() == 1
+            assert notificationMessages.findAll {it.title == "Test title"}.size() == 1
         }
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
@@ -249,7 +255,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "another notification should have been sent to the console"
         conditions.eventually {
-            assert notificationMessages.size() == 2
+            assert notificationMessages.findAll {it.title == "Test title"}.size() == 2
             assert targets[1].id == consoleRegistration.id
         }
 
@@ -259,7 +265,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "another notification should have been sent to the console (because the reset condition includes reset on timestampChanges)"
         conditions.eventually {
-            assert notificationMessages.size() == 3
+            assert notificationMessages.findAll {it.title == "Test title"}.size() == 3
             assert targets[2].id == consoleRegistration.id
         }
 
@@ -270,7 +276,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "another notification should have been sent to the console (because the reset condition includes reset on valueChanges)"
         conditions.eventually {
-            assert notificationMessages.size() == 4
+            assert notificationMessages.findAll {it.title == "Test title"}.size() == 4
             assert targets[3].id == consoleRegistration.id
         }
 
@@ -282,7 +288,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "another notification should have been sent to the console (because the reset condition includes reset on timer)"
         conditions.eventually {
-            assert notificationMessages.size() == 5
+            assert notificationMessages.findAll {it.title == "Test title"}.size() == 5
             assert targets[4].id == consoleRegistration.id
         }
 
@@ -335,7 +341,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         and: "no notification should have been sent as outside the validity period"
-        assert notificationMessages.size() == 5
+        assert notificationMessages.findAll {it.title == "Test title"}.size() == 5
 
         when: "the pause elapses"
         engine.unPauseRuleset(deployment)
@@ -358,7 +364,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "another notification should have been sent as inside the validity period"
         conditions.eventually {
-            assert notificationMessages.size() == 6
+            assert notificationMessages.findAll {it.title == "Test title"}.size() == 6
             assert targets[5].id == consoleRegistration.id
         }
 
@@ -382,7 +388,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         and: "no notification should have been sent as outside the validity period"
-        assert notificationMessages.size() == 6
+        assert notificationMessages.findAll {it.title == "Test title"}.size() == 6
 
         when: "the pause elapses"
         engine.unPauseRuleset(deployment)
