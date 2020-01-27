@@ -60,7 +60,7 @@ export interface ViewerConfig {
     historyConfig?: HistoryConfig;
 }
 
-class EventHandler{
+class EventHandler {
     _callbacks: Function[];
 
     constructor() {
@@ -68,8 +68,8 @@ class EventHandler{
     }
 
     startCallbacks() {
-        return new Promise((resolve, reject)=> {
-            if(this._callbacks && this._callbacks.length > 0){
+        return new Promise((resolve, reject) => {
+            if (this._callbacks && this._callbacks.length > 0) {
                 this._callbacks.forEach(cb => cb());
             }
             resolve();
@@ -77,7 +77,7 @@ class EventHandler{
 
     }
 
-    addCallback(callback:Function) {
+    addCallback(callback: Function) {
         this._callbacks.push(callback);
     }
 }
@@ -167,7 +167,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         super();
         window.addEventListener('resize', () => OrAssetViewer.generateGrid(this.shadowRoot));
 
-        this.addEventListener(OrAttributeHistoryEvent.NAME,() => OrAssetViewer.generateGrid(this.shadowRoot));
+        this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
     }
 
     shouldUpdate(changedProperties: PropertyValues): boolean {
@@ -220,14 +220,14 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     <div id="title">
                         <or-icon title="${descriptor && descriptor.type ? descriptor.type : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.color ? "#" + descriptor.color : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetType.THING.icon}"></or-icon>${this.asset.name}
                     </div>
-                    <div id="created" class="mobileHidden"><or-translate value="createdOnWithDate" .options="${{date: new Date(this.asset!.createdOn!)} as i18next.TOptions<i18next.InitOptions>}"></or-translate></div>
+                    <div id="created" class="mobileHidden"><or-translate value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as i18next.TOptions<i18next.InitOptions>}"></or-translate></div>
                 </div>
                 <div id="container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
                     ${html`${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
             const panelTemplate = OrAssetViewer.getPanel(name, this.asset!, this._attributes!, this._viewerConfig!, panelConfig, this.shadowRoot);
             return panelTemplate || ``;
         })}`
-        }
+            }
                 </div>
             </div>
         `;
@@ -247,7 +247,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         this.onCompleted().then(() => {
-            onRenderComplete.startCallbacks().then(()=> {
+            onRenderComplete.startCallbacks().then(() => {
                 OrAssetViewer.generateGrid(this.shadowRoot);
             });
         });
@@ -258,19 +258,19 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         await this.updateComplete;
     }
 
-    public static generateGrid(shadowRoot: ShadowRoot | null){
-        if(shadowRoot) {
+    public static generateGrid(shadowRoot: ShadowRoot | null) {
+        if (shadowRoot) {
             const grid = shadowRoot.querySelector('#container');
-            if(grid){
+            if (grid) {
                 const rowHeight = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-auto-rows'));
                 const rowGap = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-row-gap'));
                 const items = shadowRoot.querySelectorAll('.panel');
-                if(items){
+                if (items) {
                     items.forEach((item) => {
                         const content = item.querySelector('.panel-content-wrapper');
-                        if(content) {
+                        if (content) {
                             const rowSpan = Math.ceil((content.getBoundingClientRect().height + rowGap) / (rowHeight + rowGap));
-                            (item as HTMLElement).style.gridRowEnd = "span "+rowSpan;
+                            (item as HTMLElement).style.gridRowEnd = "span " + rowSpan;
                         }
                     });
                 }
@@ -343,7 +343,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             content = html`
                 ${properties.map((prop) => {
                 let style = styles ? styles[prop!] : undefined;
-                return prop === "attributes" ? `` : OrAssetViewer.getField(prop, true, style, OrAssetViewer.getPropertyTemplate(prop, (asset as {[index: string]:any})[prop], viewerConfig, panelConfig, shadowRoot));
+                return prop === "attributes" ? `` : OrAssetViewer.getField(prop, true, style, OrAssetViewer.getPropertyTemplate(prop, (asset as { [index: string]: any })[prop], viewerConfig, panelConfig, shadowRoot));
             })}
             `;
         } else if (panelConfig && panelConfig.type === "history") {
@@ -368,7 +368,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     }
                 };
                 const options = historyAttrs.map((attr) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
-                const attrName:string = historyAttrs[0].name!;
+                const attrName: string = historyAttrs[0].name!;
                 onRenderComplete.addCallback(() => attributeChanged(attrName));
                 content = html`
                     <style>
@@ -473,7 +473,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
         }
 
-        switch(property) {
+        switch (property) {
             case "path":
                 if (!value || !(Array.isArray(value))) {
                     return;
@@ -549,6 +549,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         this._loading = false;
     }
 
+
     protected _getPanelConfig(asset: Asset): AssetViewerConfig {
         let config = {...OrAssetViewer.DEFAULT_CONFIG};
 
@@ -556,6 +557,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
             config.viewerStyles = {...config.viewerStyles};
             config.panels = {...config.panels};
+            config.viewerStyles = { ...config.viewerStyles };
+            config.panels = { ...config.panels };
             const assetConfig = this.config.assetTypes && this.config.assetTypes.hasOwnProperty(asset.type!) ? this.config.assetTypes[asset.type!] : this.config.default;
 
             if (assetConfig) {

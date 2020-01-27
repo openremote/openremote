@@ -1,13 +1,13 @@
-import {html, LitElement, property, css, query, customElement, PropertyValues} from "lit-element";
+import {css, customElement, html, LitElement} from "lit-element";
 import {store} from "../../store";
 import {connect} from "pwa-helpers/connect-mixin";
 import "@openremote/or-rules";
 import {RulesConfig} from "@openremote/or-rules";
-import {RulesetLang, AssetType, AttributeType} from "@openremote/model";
+import {AssetType, AttributeType, RulesetLang} from "@openremote/model";
 
 const rulesConfig: RulesConfig = {
     controls: {
-        allowedLanguages: [RulesetLang.JSON]
+        allowedLanguages: [RulesetLang.JSON, RulesetLang.FLOW]
     },
     descriptors: {
         all: {
