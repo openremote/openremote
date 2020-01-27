@@ -1,0 +1,156 @@
+{
+  "name": "rule for testing",
+  "description": "",
+  "connections": [
+    {
+      "from": "N0CBrPgIs",
+      "to": "dT7rFX3V_"
+    },
+    {
+      "from": "B3magR7AC",
+      "to": "UwzPymiwW"
+    },
+    {
+      "from": "nUEm7wYYX",
+      "to": "e1hlx5398"
+    }
+  ],
+  "nodes": [
+    {
+      "inputs": [],
+      "internals": [
+        {
+          "name": "Attribute",
+          "picker": {
+            "type": "ASSET_ATTRIBUTE"
+          },
+          "value": {
+            "assetId": "%LIVING ROOM ID%",
+            "attributeName": "targetTemperature"
+          }
+        }
+      ],
+      "name": "READ_ATTRIBUTE",
+      "outputs": [
+        {
+          "name": "value",
+          "type": "NUMBER",
+          "nodeId": "rNVAoZc1",
+          "id": "N0CBrPgIs"
+        }
+      ],
+      "type": "INPUT",
+      "position": {
+        "x": -655.6875,
+        "y": -261.5
+      },
+      "size": {
+        "x": 225,
+        "y": 65
+      },
+      "id": "rNVAoZc1"
+    },
+    {
+      "inputs": [
+        {
+          "name": "a",
+          "type": "NUMBER",
+          "nodeId": "kZpTRGu9",
+          "id": "dT7rFX3V_"
+        },
+        {
+          "name": "b",
+          "type": "NUMBER",
+          "nodeId": "kZpTRGu9",
+          "id": "UwzPymiwW"
+        }
+      ],
+      "internals": [],
+      "name": "ADD_OPERATOR",
+      "displayCharacter": "+",
+      "outputs": [
+        {
+          "name": "c",
+          "type": "NUMBER",
+          "nodeId": "kZpTRGu9",
+          "id": "nUEm7wYYX"
+        }
+      ],
+      "type": "PROCESSOR",
+      "position": {
+        "x": -250.49999999999994,
+        "y": -149.27777777777777
+      },
+      "size": {
+        "x": 0,
+        "y": 0
+      },
+      "id": "kZpTRGu9"
+    },
+    {
+      "inputs": [],
+      "internals": [
+        {
+          "name": "value",
+          "picker": {
+            "type": "NUMBER"
+          },
+          "value": 10
+        }
+      ],
+      "name": "NUMBER_INPUT",
+      "outputs": [
+        {
+          "name": "value",
+          "type": "NUMBER",
+          "nodeId": "0UO-OCth",
+          "id": "B3magR7AC"
+        }
+      ],
+      "type": "INPUT",
+      "position": {
+        "x": -580.6102430555555,
+        "y": -100.38888888888886
+      },
+      "size": {
+        "x": 148,
+        "y": 17
+      },
+      "id": "0UO-OCth"
+    },
+    {
+      "inputs": [
+        {
+          "name": "value",
+          "type": "NUMBER",
+          "nodeId": "D35ZQrzd",
+          "id": "e1hlx5398"
+        }
+      ],
+      "internals": [
+        {
+          "name": "Attribute",
+          "picker": {
+            "type": "ASSET_ATTRIBUTE"
+          },
+          "value": {
+            "assetId": "%BEDROOM ID%",
+            "attributeName": "targetTemperature"
+          }
+        }
+      ],
+      "name": "WRITE_ATTRIBUTE",
+      "outputs": [],
+      "type": "OUTPUT",
+      "position": {
+        "x": -111.5208333333333,
+        "y": -192.44444444444434
+      },
+      "size": {
+        "x": 143,
+        "y": 65
+      },
+      "id": "D35ZQrzd"
+    }
+  ]
+}

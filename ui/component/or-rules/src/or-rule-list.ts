@@ -49,6 +49,11 @@ const style = css`
         display: none;
     }
 
+    .node-language{
+        padding-left: 10px;
+        opacity: 50%;
+    }
+
     .bg-green {
         background-color: #28b328;
     }
@@ -69,13 +74,10 @@ const style = css`
 @customElement("or-rule-list")
 export class OrRuleList extends translate(i18next)(LitElement) {
 
-    public static DEFAULT_ALLOWED_LANGUAGES = [RulesetLang.JSON, RulesetLang.GROOVY, RulesetLang.JAVASCRIPT];
+    public static DEFAULT_ALLOWED_LANGUAGES = [RulesetLang.JSON, RulesetLang.GROOVY, RulesetLang.JAVASCRIPT, RulesetLang.FLOW];
 
     @property({type: Object})
     public config?: RulesConfig;
-
-    @property({type: String})
-    public realm?: string;
 
     @property({type: Boolean})
     public readonly: boolean = false;
@@ -94,9 +96,6 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
     @property({type: String})
     public language?: RulesetLang;
-
-    @property({attribute: false})
-    protected _realms?: Tenant[];
 
     @property({attribute: false})
     protected _nodes?: RulesetNode[];
@@ -119,6 +118,11 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         this._nodes = undefined;
     }
 
+    public disconnectedCallback() {
+        super.disconnectedCallback();
+        manager.removeListener(this.onManagerEvent);
+    }
+
     protected get _allowedLanguages(): RulesetLang[] | undefined {
         return this.config && this.config.controls && this.config.controls.allowedLanguages ? this.config.controls.allowedLanguages : OrRuleList.DEFAULT_ALLOWED_LANGUAGES;
     }
@@ -134,24 +138,27 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
     protected _onReady() {
         this._ready = true;
-        this._loadRealms();
         this._loadRulesets();
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
-
-        if (!manager.ready) {
-            // Defer until openremote is initialised
-            this._initCallback = (initEvent: OREvent) => {
-                if (initEvent === OREvent.READY) {
-                    this._onReady();
-                    manager.removeListener(this._initCallback!);
-                }
-            };
-            manager.addListener(this._initCallback);
-        } else {
+        manager.addListener(this.onManagerEvent);
+        if (manager.ready) {
             this._onReady();
+        }
+    }
+
+    protected onManagerEvent = (event: OREvent) => {
+        switch (event) {
+            case OREvent.READY:
+                if (!manager.ready) {
+                    this._onReady();
+                }
+                break;
+            case OREvent.DISPLAY_REALM_CHANGED:
+                this._nodes = undefined;
+                break;
         }
     }
 
@@ -167,10 +174,6 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         }
 
         if (manager.ready) {
-            if (_changedProperties.has("realm")) {
-                this._nodes = undefined;
-            }
-
             if (!this._nodes) {
                 this._loadRulesets();
                 return true;
@@ -196,13 +199,6 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     }
 
     protected render() {
-
-        const realm = this._getRealm();
-
-        if (this.realm !== realm) {
-            this._onRealmChanged(realm);
-        }
-
         if (!this.language) {
             this._updateLanguage();
         }
@@ -223,13 +219,11 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                 addTemplate = html`<or-input type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked(this.language!)}"></or-input>`;
             }
         }
-
         return html`
             <div id="wrapper" ?data-disabled="${this.disabled}">
                 <div id="header">
                     <div id="title-container">
                         <or-translate id="title" value="rule_plural"></or-translate>
-                        ${manager.isSuperUser() ? html `<or-input id="realm-picker" type="${InputType.SELECT}" .value="${this._getRealm()}" .options="${this._realms ? this._realms.map((tenant) => [tenant.realm, tenant.displayName]) : []}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onRealmChanged(evt.detail.value)}"></or-input>` : ``}
                     </div>
         
                     <div id="header-btns">
@@ -239,24 +233,24 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                         <or-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-input>
                         
                         ${getContentWithMenuTemplate(
-                            html`<or-input type="${InputType.BUTTON}" icon="sort-variant"></or-input>`,
-                            ["name", "createdOn"].map((sort) => { return {value: sort, text: i18next.t(sort)} as MenuItem; }),
-                            this.sortBy,
-                            (v) => this._onSortClicked(v as string))}
+            html`<or-input type="${InputType.BUTTON}" icon="sort-variant"></or-input>`,
+            ["name", "createdOn", "lang"].map((sort) => { return { value: sort, text: i18next.t(sort) } as MenuItem; }),
+            this.sortBy,
+            (v) => this._onSortClicked(v as string))}
                     </div>
                 </div>
         
                 ${!this._nodes || this._showLoading
-                    ? html`
-                        <span id="loading">LOADING</span>` 
-                    : html`
+                ? html`
+                        <span id="loading">LOADING</span>`
+                : html`
                         <div id="list-container">
                             <ol id="list">
                                 ${this._nodes.map((treeNode) => this._nodeTemplate(treeNode))}
                             </ol>
                         </div>
                     `
-                }
+            }
         
                 <div id="footer">
                 
@@ -274,7 +268,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
             <li ?data-selected="${node.selected}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, node)}">
                 <div class="node-container">
                     <span class="node-status ${OrRuleList._getNodeStatusClasses(node.ruleset)}"></span>
-                    <span class="node-name">${node.ruleset.name}</span>
+                    <span class="node-name">${node.ruleset.name}<span class="node-language">${node.ruleset.lang}</span></span>
                 </div>
             </li>
         `;
@@ -283,38 +277,36 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     protected static _getNodeStatusClasses(ruleset: TenantRuleset): string {
         let status = ruleset.enabled ? "bg-green" : "bg-red";
 
-        if(ruleset.rules && ruleset.enabled) {
-            const rule: JsonRule = JSON.parse(ruleset.rules).rules[0];
+        if (ruleset.rules && ruleset.enabled) {
+            switch (ruleset.lang) {
+                case RulesetLang.JSON:
+                    const rule: JsonRule = JSON.parse(ruleset.rules).rules[0];
 
-            // HACK/WIP: the status of a rule should be better thought over see issue #95
-            // currently only checks the date of the first whenCondition
-            if(rule && rule.when && rule.when.items && rule.when.items.length > 0) {
-                const ruleCondition: RuleCondition = rule.when.items[0];
-                if(ruleCondition.datetime) {
-                    const today = moment();
-                    const startDate = ruleCondition.datetime.value;
-                    const endDate = ruleCondition.datetime.rangeValue;
+                    // HACK/WIP: the status of a rule should be better thought over see issue #95
+                    // currently only checks the date of the first whenCondition
+                    if (rule && rule.when && rule.when.items && rule.when.items.length > 0) {
+                        const ruleCondition: RuleCondition = rule.when.items[0];
+                        if (ruleCondition.datetime) {
+                            const today = moment();
+                            const startDate = ruleCondition.datetime.value;
+                            const endDate = ruleCondition.datetime.rangeValue;
 
-                    if (today.diff(startDate) < 0) {
-                        // before startDate, show blue
-                        status = "bg-blue";
-                    } else if (today.diff(endDate) > 0) {
-                        // after endDate, show grey
-                        status = "bg-grey";
+                            if (today.diff(startDate) < 0) {
+                                // before startDate, show blue
+                                status = "bg-blue";
+                            } else if (today.diff(endDate) > 0) {
+                                // after endDate, show grey
+                                status = "bg-grey";
+                            }
+                        }
                     }
-                }
+                    break;
+                default:
+                    break;
             }
         }
 
         return status;
-    }
-
-    protected _loadRealms() {
-        if (manager.isSuperUser()) {
-            manager.rest.api.TenantResource.getAll().then((response) => {
-                this._realms = response.data;
-            });
-        }
     }
 
     protected _updateSelectedNodes() {
@@ -413,15 +405,11 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     }
 
     protected _getRealm(): string | undefined {
-        if (manager.isSuperUser() && this.realm) {
-            return this.realm;
+        if (manager.isSuperUser()) {
+            return manager.displayRealm;
         }
 
         return manager.getRealm();
-    }
-
-    protected _onRealmChanged(realm: string | undefined) {
-        this.realm = realm;
     }
 
     protected _doRequest<T>(event: CustomEvent<RequestEventDetail<T>>, handler: (detail: T) => void) {
@@ -430,15 +418,12 @@ export class OrRuleList extends translate(i18next)(LitElement) {
             if (event.detail.allow) {
                 handler(event.detail.detail);
             }
-        })
+        });
     }
 
     protected _loadRulesets() {
-
         const sortFunction = this._getSortFunction();
-
-        manager.rest.api.RulesResource.getTenantRulesets(manager.config.realm, {
-            language: RulesetLang.JSON,
+        manager.rest.api.RulesResource.getTenantRulesets(this._getRealm() || manager.config.realm, {
             fullyPopulate: true
         }).then((response: any) => {
             if (response && response.data) {
