@@ -37,7 +37,7 @@ orAttributeTemplateProvider.setTemplate((attribute) => {
             template = html`<or-translate value="${attribute.value ? "On" : "Off"}"></or-translate>`;
             break;
         case AttributeValueType.NUMBER.name:
-        case AttributeValueType.SOUND_DB.name:
+        case AttributeValueType.SOUND.name:
             template = attribute.value ? new Intl.NumberFormat().format(attribute.value) : "-";
             break;
         case AttributeValueType.STRING.name:

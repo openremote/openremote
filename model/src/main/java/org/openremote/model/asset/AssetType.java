@@ -65,7 +65,7 @@ public enum AssetType implements AssetDescriptor {
     CONSOLE(ASSET_NAMESPACE + ":console", "monitor-cellphone", null),
 
     MICROPHONE(ASSET_NAMESPACE + ":microphone", "microphone", "47A5FF",
-        new AttributeDescriptorImpl("microphoneLevel", SOUND_DB, Values.create(0),
+        new AttributeDescriptorImpl("microphoneLevel", SOUND, Values.create(0),
             LABEL.withInitialValue(Values.create("Microphone Level")),
             DESCRIPTION.withInitialValue(Values.create("DB")),
             READ_ONLY,
@@ -102,7 +102,7 @@ public enum AssetType implements AssetDescriptor {
     ),
 
     ENVIRONMENT_SENSOR(ASSET_NAMESPACE + ":enviroment", "periodic-table-co2", "f18546",
-        new AttributeDescriptorImpl("temperature", TEMPERATURE_CELCIUS, Values.create(0),
+        new AttributeDescriptorImpl("temperature", TEMPERATURE, Values.create(0),
             LABEL.withInitialValue(Values.create("Temperature")),
             DESCRIPTION.withInitialValue(Values.create("Temperature in celcius")),
             READ_ONLY,

@@ -419,9 +419,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(1).getAttributesList().size() == 7
         !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
-        assets.get(1).getAttribute("currentTemperature").get().meta.size() == 6
+        assets.get(1).getAttribute("currentTemperature").get().meta.size() == 7
         !assets.get(1).getAttribute("targetTemperature").get().getValue().isPresent()
-        assets.get(1).getAttribute("targetTemperature").get().meta.size() == 5
+        assets.get(1).getAttribute("targetTemperature").get().meta.size() == 6
         assets.get(2).id == managerDemoSetup.apartment1KitchenId
         assets.get(3).id == managerDemoSetup.apartment1HallwayId
         assets.get(4).id == managerDemoSetup.apartment1Bedroom1Id
