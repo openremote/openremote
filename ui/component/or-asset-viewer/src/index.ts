@@ -3,12 +3,14 @@ import "@openremote/or-icon";
 import "@openremote/or-input";
 import "@openremote/or-attribute-input";
 import "@openremote/or-attribute-history";
+import "@openremote/or-chart";
 import "@openremote/or-translate";
 import {translate} from "@openremote/or-translate";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 import "@openremote/or-map";
 import manager, {subscribe, Util, AssetModelUtil} from "@openremote/core";
 import "@openremote/or-panel";
+import {ChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
 import {Type as MapType, Util as MapUtil} from "@openremote/or-map";
 import {
@@ -27,7 +29,7 @@ import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
 
-export type PanelType = "property" | "location" | "attribute" | "history";
+export type PanelType = "property" | "location" | "attribute" | "history" | "chart";
 
 export interface PanelConfig {
     type?: PanelType;
@@ -48,6 +50,7 @@ export interface AssetViewerConfig {
     panelViewProvider?: (attributes: AssetAttribute[], panelName: string, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     mapType?: MapType;
     historyConfig?: HistoryConfig;
+    chartConfig?: ChartConfig;
 }
 
 export interface ViewerConfig {
@@ -129,6 +132,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 type: "history",
                 panelStyles: {
                 }
+            },
+            "chart": {
+                type: "chart",
+                panelStyles: {
+                    gridColumn: "1 / -1",
+                    gridRowStart: "1"
+                }
             }
         }
     };
@@ -166,7 +176,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     constructor() {
         super();
         window.addEventListener('resize', () => OrAssetViewer.generateGrid(this.shadowRoot));
-
+        
+        this.addEventListener(OrChartEvent.NAME,() => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrAttributeHistoryEvent.NAME,() => OrAssetViewer.generateGrid(this.shadowRoot));
     }
 
@@ -367,6 +378,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         }
                     }
                 };
+
                 const options = historyAttrs.map((attr) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
                 const attrName:string = historyAttrs[0].name!;
                 onRenderComplete.addCallback(() => attributeChanged(attrName));
@@ -422,6 +434,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
                 `;
             }
+
+        } else if (panelConfig && panelConfig.type === "chart") {
+
+            content = html`
+                <or-chart id="chart" .config="${viewerConfig.chartConfig}"></or-chart>
+            `;
+
         } else if (panelConfig && panelConfig.type === "location") {
             const attribute = attrs.find((attr) => attr.name === AttributeType.LOCATION.attributeName);
             if (attribute) {

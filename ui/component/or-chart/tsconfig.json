@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "rootDir": "src"
+  },
+  "include": [
+    "./src"
+  ],
+  "references": [
+    { "path": "../core" },
+    { "path": "../or-panel" },
+    { "path": "../or-input" },
+    { "path": "../or-translate" }
+  ]
+}

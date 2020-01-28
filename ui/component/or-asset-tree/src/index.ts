@@ -520,7 +520,6 @@ export class OrAssetTree extends LitElement {
                 select: {
                     excludePath: true,
                     excludeRealm: true,
-                    excludeAttributes: true,
                     excludeParentInfo: false
                 }
             };
