@@ -367,7 +367,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
                                 new LinkedAttributeDescriptor(
                                     propertyDescriptor.getName(),
                                     propertyDescriptor.getDisplayName(),
-                                    propertyDescriptor.getAttributeValueType(),
+                                    propertyDescriptor.getAttributeValueDescriptor(),
                                     propertyDescriptor.isReadOnly(),
                                     false,
                                     createLinkedAttributeMetaItems(

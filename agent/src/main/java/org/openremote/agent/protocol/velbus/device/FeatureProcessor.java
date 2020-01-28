@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
+import org.openremote.model.attribute.AttributeValueDescriptor;
 import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.value.Value;
@@ -41,27 +42,27 @@ public abstract class FeatureProcessor {
         protected final String name;
         protected final String displayName;
         protected final String linkName;
-        protected final AttributeValueType attributeValueType;
+        protected final AttributeValueDescriptor attributeValueDescriptor;
         protected final boolean readOnly;
 
         public PropertyDescriptor(
             String name,
             String displayName,
             String linkName,
-            AttributeValueType attributeValueType) {
-            this(name, displayName, linkName, attributeValueType, false);
+            AttributeValueDescriptor attributeValueDescriptor) {
+            this(name, displayName, linkName, attributeValueDescriptor, false);
         }
 
         public PropertyDescriptor(
             String name,
             String displayName,
             String linkName,
-            AttributeValueType attributeValueType,
+            AttributeValueDescriptor attributeValueDescriptor,
             boolean readOnly) {
             this.name = name;
             this.displayName = displayName;
             this.linkName = linkName;
-            this.attributeValueType = attributeValueType;
+            this.attributeValueDescriptor = attributeValueDescriptor;
             this.readOnly = readOnly;
         }
 
@@ -73,8 +74,8 @@ public abstract class FeatureProcessor {
             return displayName;
         }
 
-        public AttributeValueType getAttributeValueType() {
-            return attributeValueType;
+        public AttributeValueDescriptor getAttributeValueDescriptor() {
+            return attributeValueDescriptor;
         }
 
         public boolean isReadOnly() {

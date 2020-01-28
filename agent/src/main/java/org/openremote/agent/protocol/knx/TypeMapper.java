@@ -79,13 +79,13 @@ public class TypeMapper {
         dptToTypeMap.put(DPTXlator2ByteUnsigned.DPT_BRIGHTNESS.getID(), AttributeValueType.NUMBER);
 
         // Datapoint Types "2-Octet Float Value", Main number 9
-        dptToTypeMap.put(DPTXlator2ByteFloat.DPT_TEMPERATURE.getID(), AttributeValueType.TEMPERATURE_CELCIUS);
+        dptToTypeMap.put(DPTXlator2ByteFloat.DPT_TEMPERATURE.getID(), AttributeValueType.TEMPERATURE);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_TEMPERATURE_DIFFERENCE.getID(), AttributeValueType.NUMBER);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_TEMPERATURE_GRADIENT.getID(), AttributeValueType.NUMBER);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_INTENSITY_OF_LIGHT.getID(), AttributeValueType.NUMBER);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_WIND_SPEED.getID(), AttributeValueType.NUMBER);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_AIR_PRESSURE.getID(), AttributeValueType.NUMBER);
-        dptToTypeMap.put(DPTXlator2ByteFloat.DPT_HUMIDITY.getID(), AttributeValueType.HUMIDITY_PERCENTAGE);
+        dptToTypeMap.put(DPTXlator2ByteFloat.DPT_HUMIDITY.getID(), AttributeValueType.HUMIDITY);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_AIRQUALITY.getID(), AttributeValueType.NUMBER);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_TIME_DIFFERENCE1.getID(), AttributeValueType.NUMBER);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_TIME_DIFFERENCE2.getID(), AttributeValueType.NUMBER);

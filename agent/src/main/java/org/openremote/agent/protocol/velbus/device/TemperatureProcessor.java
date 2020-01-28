@@ -29,9 +29,9 @@ import java.util.List;
 public class TemperatureProcessor extends FeatureProcessor {
 
     protected static final List<PropertyDescriptor> SUPPORTED_PROPERTIES = Arrays.asList(
-        new PropertyDescriptor("tempCurrent", "Temp Current", "TEMP_CURRENT", AttributeValueType.TEMPERATURE_CELCIUS, true),
-        new PropertyDescriptor("tempMin", "Temp Min", "TEMP_MIN", AttributeValueType.TEMPERATURE_CELCIUS, true),
-        new PropertyDescriptor("tempMax", "Temp Max", "TEMP_MAX", AttributeValueType.TEMPERATURE_CELCIUS, true)
+        new PropertyDescriptor("tempCurrent", "Temp Current", "TEMP_CURRENT", AttributeValueType.TEMPERATURE, true),
+        new PropertyDescriptor("tempMin", "Temp Min", "TEMP_MIN", AttributeValueType.TEMPERATURE, true),
+        new PropertyDescriptor("tempMax", "Temp Max", "TEMP_MAX", AttributeValueType.TEMPERATURE, true)
     );
 
     @Override

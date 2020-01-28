@@ -41,7 +41,7 @@ import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.RulesetStatus;
 import org.openremote.model.rules.Users;
-import org.openremote.model.rules.json.JsonRulesetDefinition;
+import org.openremote.model.rules.flow.NodeCollection;
 import org.openremote.model.util.Pair;
 
 import javax.script.*;
@@ -94,6 +94,7 @@ public class RulesetDeployment {
             throw new SecurityException("Not allowed: " + receiver);
         }
     }
+
     public static final int DEFAULT_RULE_PRIORITY = 1000;
     // Share one JS script engine manager, it's thread-safe
     static final protected ScriptEngineManager scriptEngineManager;
@@ -135,6 +136,7 @@ public class RulesetDeployment {
     protected RulesetStatus status = RulesetStatus.READY;
     protected Throwable error;
     protected JsonRulesBuilder jsonRulesBuilder;
+    protected FlowRulesBuilder flowRulesBuilder;
     protected CalendarEvent validity;
     protected Pair<Long, Long> nextValidity;
 
@@ -212,6 +214,8 @@ public class RulesetDeployment {
                 return compileRulesGroovy(ruleset, assetsFacade, usersFacade, notificationsFacade);
             case JSON:
                 return compileRulesJson(ruleset);
+            case FLOW:
+                return compileRulesFlow(ruleset, assetsFacade,usersFacade,notificationsFacade);
         }
         return false;
     }
@@ -442,6 +446,23 @@ public class RulesetDeployment {
         }
     }
 
+    protected boolean compileRulesFlow(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade consolesFacade) {
+        try {
+            flowRulesBuilder = new FlowRulesBuilder(timerService, assetStorageService, assetsFacade, usersFacade, notificationsFacade);
+            NodeCollection nodeCollection = Container.JSON.readValue(ruleset.getRules(), NodeCollection.class);
+            flowRulesBuilder.add(nodeCollection);
+            for (Rule rule : flowRulesBuilder.build()) {
+                RulesEngine.LOG.info("Registering rule: " + rule.getName());
+                rules.register(rule);
+            }
+            return true;
+        } catch (Exception e) {
+            RulesEngine.LOG.log(Level.SEVERE, "Error evaluating ruleset: " + ruleset, e);
+            setError(e);
+            return false;
+        }
+    }
+
     public RulesetStatus getStatus() {
         return status;
     }
@@ -463,7 +484,7 @@ public class RulesetDeployment {
     }
 
     public boolean isError() {
-        return getStatus() == RulesetStatus.LOOP_ERROR  || ((getStatus() == RulesetStatus.EXECUTION_ERROR || getStatus() == RulesetStatus.COMPILATION_ERROR) && !isContinueOnError());
+        return getStatus() == RulesetStatus.LOOP_ERROR || ((getStatus() == RulesetStatus.EXECUTION_ERROR || getStatus() == RulesetStatus.COMPILATION_ERROR) && !isContinueOnError());
     }
 
     public boolean isContinueOnError() {

@@ -49,13 +49,12 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.openremote.container.Container.JSON;
 import static org.openremote.container.Container.LOG;
 import static org.openremote.container.util.Util.distinctByKey;
-import static org.openremote.manager.rules.AssetQueryPredicate.conditionIsEmpty;
+import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
 import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
 
 public class JsonRulesBuilder extends RulesBuilder {
@@ -84,7 +83,7 @@ public class JsonRulesBuilder extends RulesBuilder {
      * This stores all state for a given {@link RuleCondition} and calculates which {@link AssetState}s match and don't
      * match the condition.
      */
-    static class RuleTriggerState {
+    static class RuleConditionState {
 
         final TimerService timerService;
         boolean trackUnmatched;
@@ -101,9 +100,9 @@ public class JsonRulesBuilder extends RulesBuilder {
         long resetDurationMillis;
         Runnable updateNextExecuteTime;
         CronExpression timerExpression;
-        RuleTriggerResult lastTriggerResult;
+        RuleConditionTriggerResult lastTriggerResult;
 
-        public RuleTriggerState(RuleCondition ruleCondition, boolean trackUnmatched, TimerService timerService) {
+        public RuleConditionState(RuleCondition ruleCondition, boolean trackUnmatched, TimerService timerService) {
             this.timerService = timerService;
             this.ruleCondition = ruleCondition;
             this.trackUnmatched = trackUnmatched;
@@ -193,7 +192,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             if (ruleCondition.datetime != null) {
                 if (!checkRuleValidity(timerService.getCurrentTimeMillis(), ruleCondition.datetime)) {
                     log(Level.FINEST, "Rule trigger is no longer valid so no match");
-                    lastTriggerResult = new RuleTriggerResult(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+                    lastTriggerResult = new RuleConditionTriggerResult(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
                     return;
                 }
             }
@@ -203,7 +202,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 if (updateNextExecuteTime != null && nextExecuteMillis < timerService.getCurrentTimeMillis()) {
                     updateNextExecuteTime.run();
-                    lastTriggerResult = new RuleTriggerResult(true, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+                    lastTriggerResult = new RuleConditionTriggerResult(true, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
                 }
 
                 return;
@@ -216,7 +215,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     previouslyUnmatchedAssetStates.clear();
                 }
                 log(Level.FINEST, "Rule trigger has no unfiltered asset states so no match");
-                lastTriggerResult = new RuleTriggerResult(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+                lastTriggerResult = new RuleConditionTriggerResult(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
                 return;
             }
 
@@ -351,7 +350,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                         .collect(Collectors.toList());
             }
 
-            lastTriggerResult = new RuleTriggerResult((!matchedAssetIds.isEmpty() || (trackUnmatched && !unmatchedAssetIds.isEmpty())), matchedAssetStates, matchedAssetIds, unmatchedAssetStates, unmatchedAssetIds);
+            lastTriggerResult = new RuleConditionTriggerResult((!matchedAssetIds.isEmpty() || (trackUnmatched && !unmatchedAssetIds.isEmpty())), matchedAssetStates, matchedAssetIds, unmatchedAssetStates, unmatchedAssetIds);
             log(Level.FINEST, "Rule trigger result: " + lastTriggerResult);
         }
 
@@ -372,14 +371,14 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
     }
 
-    static class RuleTriggerResult {
+    static class RuleConditionTriggerResult {
         boolean matches;
         Collection<AssetState> matchedAssetStates;
         Collection<AssetState> unmatchedAssetStates;
         Collection<String> matchedAssetIds;
         Collection<String> unmatchedAssetIds;
 
-        public RuleTriggerResult(boolean matches, Collection<AssetState> matchedAssetStates, Collection<String> matchedAssetIds, Collection<AssetState> unmatchedAssetStates, Collection<String> unmatchedAssetIds) {
+        public RuleConditionTriggerResult(boolean matches, Collection<AssetState> matchedAssetStates, Collection<String> matchedAssetIds, Collection<AssetState> unmatchedAssetStates, Collection<String> unmatchedAssetIds) {
             this.matches = matches;
             this.matchedAssetStates = matchedAssetStates;
             this.matchedAssetIds = matchedAssetIds;
@@ -389,7 +388,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         @Override
         public String toString() {
-            return RuleTriggerResult.class.getSimpleName() + "{" +
+            return RuleConditionTriggerResult.class.getSimpleName() + "{" +
                     "matches=" + matches +
                     ", matchedAssetStates=" + matchedAssetStates.size() +
                     ", unmatchedAssetStates=" + unmatchedAssetStates.size() +
@@ -401,12 +400,20 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     static class RuleEvaluationResult {
 
-        protected Map<String, RuleTriggerState> conditionStateMap;
-        protected boolean otherwiseMatched;
-        protected boolean thenMatched;
+        protected Map<String, RuleConditionState> conditionStateMap;
+        protected List<String> thenMatchedAssetIds = new ArrayList<>();
+        protected List<String> otherwiseMatchedAssetIds = new ArrayList<>();
 
-        public RuleEvaluationResult(Map<String, RuleTriggerState> conditionStateMap) {
+        public RuleEvaluationResult(Map<String, RuleConditionState> conditionStateMap) {
             this.conditionStateMap = conditionStateMap;
+        }
+
+        public boolean thenMatched() {
+            return thenMatchedAssetIds != null && !thenMatchedAssetIds.isEmpty();
+        }
+
+        public boolean otherwiseMatched() {
+            return otherwiseMatchedAssetIds != null && !otherwiseMatchedAssetIds.isEmpty();
         }
     }
 
@@ -467,7 +474,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         // Initialise trigger state - prevents rules firing based on initial asset states
         Arrays.stream(jsonRules).forEach(jsonRule -> {
             log(Level.FINEST, "Initialising rule trigger states for rule: " + jsonRule.name);
-            ruleEvaluationMap.get(jsonRule.name).conditionStateMap.values().forEach(RuleTriggerState::update);
+            ruleEvaluationMap.get(jsonRule.name).conditionStateMap.values().forEach(RuleConditionState::update);
         });
     }
 
@@ -513,7 +520,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         return this;
     }
 
-    protected void addRuleTriggerStates(LogicGroup<RuleCondition> ruleConditionGroup, boolean trackUnmatched, int index, Map<String, RuleTriggerState> triggerStateMap, RuleConditionReset defaultReset) {
+    protected void addRuleTriggerStates(LogicGroup<RuleCondition> ruleConditionGroup, boolean trackUnmatched, int index, Map<String, RuleConditionState> triggerStateMap, RuleConditionReset defaultReset) {
         if (ruleConditionGroup != null) {
             if (ruleConditionGroup.getItems().size() > 0) {
                 for (RuleCondition ruleCondition : ruleConditionGroup.getItems()) {
@@ -523,7 +530,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     if (ruleCondition.reset == null) {
                         ruleCondition.reset = defaultReset;
                     }
-                    triggerStateMap.put(ruleCondition.tag, new RuleTriggerState(ruleCondition, trackUnmatched, timerService));
+                    triggerStateMap.put(ruleCondition.tag, new RuleConditionState(ruleCondition, trackUnmatched, timerService));
                     index++;
                 }
             }
@@ -544,12 +551,14 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             // Update each trigger state
             log(Level.FINEST, "Updating rule trigger states for rule: " + rule.name);
-            ruleEvaluationResult.conditionStateMap.values().forEach(RuleTriggerState::update);
+            ruleEvaluationResult.conditionStateMap.values().forEach(RuleConditionState::update);
 
-            // Check triggers for matches
-            matches(rule.when, ruleEvaluationResult, rule.otherwise != null);
+            // Apply group operator and extract resulting matched asset IDs
+            Pair<List<String>, List<String>> matchedUnmatchedGroupResults = getGroupLastTriggerResults(rule.when, ruleEvaluationResult.conditionStateMap, rule.otherwise != null);
+            ruleEvaluationResult.thenMatchedAssetIds = matchedUnmatchedGroupResults.key;
+            ruleEvaluationResult.otherwiseMatchedAssetIds = matchedUnmatchedGroupResults.value;
 
-            return ruleEvaluationResult.thenMatched || ruleEvaluationResult.otherwiseMatched;
+            return ruleEvaluationResult.thenMatched() || ruleEvaluationResult.otherwiseMatched();
         };
     }
 
@@ -563,13 +572,13 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             try {
                 log(Level.FINER, "Triggered rule so executing 'then' actions for rule: " + rule.name);
-                if (ruleEvaluationResult.thenMatched) {
-                    executeRuleActions(rule, rule.then, "then", false, facts, ruleEvaluationResult.conditionStateMap, assetsFacade, usersFacade, notificationsFacade, timerService, assetStorageService, scheduledActionConsumer);
+                if (ruleEvaluationResult.thenMatched()) {
+                    executeRuleActions(rule, rule.then, "then", false, facts, ruleEvaluationResult, assetsFacade, usersFacade, notificationsFacade, timerService, assetStorageService, scheduledActionConsumer);
                 }
 
-                if (rule.otherwise != null && ruleEvaluationResult.otherwiseMatched) {
+                if (rule.otherwise != null && ruleEvaluationResult.otherwiseMatched()) {
                     log(Level.FINER, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleEvaluationResult.conditionStateMap, assetsFacade, usersFacade, notificationsFacade, timerService, assetStorageService, scheduledActionConsumer);
+                    executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleEvaluationResult, assetsFacade, usersFacade, notificationsFacade, timerService, assetStorageService, scheduledActionConsumer);
                 }
             } catch (Exception e) {
                 log(Level.SEVERE, "Exception thrown during rule RHS execution", e);
@@ -580,11 +589,11 @@ public class JsonRulesBuilder extends RulesBuilder {
         };
     }
 
-    public static void executeRuleActions(JsonRule rule, RuleAction[] ruleActions, String actionsName, boolean useUnmatched, RulesFacts facts, Map<String, RuleTriggerState> triggerStateMap, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationsFacade, TimerService timerService, AssetStorageService assetStorageService, BiConsumer<Runnable, Long> scheduledActionConsumer) {
+    public static void executeRuleActions(JsonRule rule, RuleAction[] ruleActions, String actionsName, boolean useUnmatched, RulesFacts facts, RuleEvaluationResult ruleEvaluationResult, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationsFacade, TimerService timerService, AssetStorageService assetStorageService, BiConsumer<Runnable, Long> scheduledActionConsumer) {
 
         // Push rule trigger results into the trigger state for future runs and store timestamps where required
-        if (triggerStateMap != null) {
-            triggerStateMap.values().forEach(ruleConditionState -> {
+        if (ruleEvaluationResult != null && ruleEvaluationResult.conditionStateMap != null) {
+            ruleEvaluationResult.conditionStateMap.values().forEach(ruleConditionState -> {
                 if (ruleConditionState.lastTriggerResult != null) {
 
                     // Replace any stale matched asset states (values may have changed equality is by asset ID and attribute name)
@@ -626,7 +635,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                         i,
                         useUnmatched,
                         facts,
-                        triggerStateMap,
+                        ruleEvaluationResult,
                         assetsFacade,
                         usersFacade,
                         notificationsFacade,
@@ -656,7 +665,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             .collect(Collectors.toList());
     }
 
-    protected static RuleActionExecution buildRuleActionExecution(JsonRule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, Map<String, RuleTriggerState> triggerStateMap, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationsFacade, AssetStorageService assetStorageService) {
+    protected static RuleActionExecution buildRuleActionExecution(JsonRule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, RuleEvaluationResult ruleEvaluationResult, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationsFacade, AssetStorageService assetStorageService) {
 
         if (ruleAction instanceof RuleActionNotification) {
             RuleActionNotification notificationAction = (RuleActionNotification) ruleAction;
@@ -680,7 +689,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                             try {
                                 notification = JSON.readValue(JSON.writeValueAsString(notification), Notification.class);
                                 email = (EmailNotificationMessage) notification.getMessage();
-                                String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, triggerStateMap, isHtml);
+                                String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleEvaluationResult, isHtml);
                                 body = body.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
                                 if (isHtml) {
                                     email.setHtml(body);
@@ -696,7 +705,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 // Override the notification targets if set in the rule
                 Notification.TargetType targetType = targetIsNotAssets(ruleAction.target) ? Notification.TargetType.USER : Notification.TargetType.ASSET;
-                Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, triggerStateMap, assetsFacade, usersFacade, facts);
+                Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleEvaluationResult, assetsFacade, usersFacade, facts);
 
                 if (ids != null && !ids.isEmpty()) {
                     notification.setTargets(ids.stream().map(id -> new Notification.Target(targetType, id)).collect(Collectors.toList()));
@@ -721,7 +730,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 return null;
             }
 
-            Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, triggerStateMap, assetsFacade, usersFacade, facts);
+            Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleEvaluationResult, assetsFacade, usersFacade, facts);
 
             if (ids == null || ids.isEmpty()) {
                 log(Level.FINEST, "No targets for write attribute rule action so skipping: " + rule.name + " '" + actionsName + "' action index " + index);
@@ -762,7 +771,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 if (ruleAction.target != null && ruleAction.target.users != null) {
                     throw new IllegalStateException("Cannot use action type '" + RuleActionUpdateAttribute.class.getSimpleName() + "' with user target");
                 }
-                matchingAssetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, triggerStateMap, assetsFacade, usersFacade, facts));
+                matchingAssetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleEvaluationResult, assetsFacade, usersFacade, facts));
             } else {
                 matchingAssetIds = facts
                     .matchAssetState(ruleAction.target.assets)
@@ -867,19 +876,31 @@ public class JsonRulesBuilder extends RulesBuilder {
         return null;
     }
 
-    private static String buildTriggeredAssetInfo(boolean useUnmatched, Map<String, RuleTriggerState> triggerStateMap, boolean isHtml) {
-        List<AssetState> assetStates = triggerStateMap.values().stream().flatMap(ruleTriggerState -> {
-            Collection<AssetState> as = useUnmatched
-                ? ruleTriggerState.lastTriggerResult.unmatchedAssetStates
-                : ruleTriggerState.lastTriggerResult.matchedAssetStates;
-            return as.stream();
-        }).collect(Collectors.toList());
+    private static String buildTriggeredAssetInfo(boolean useUnmatched, RuleEvaluationResult ruleEvaluationResult, boolean isHtml) {
+
+        List<String> assetIds = useUnmatched ? ruleEvaluationResult.otherwiseMatchedAssetIds : ruleEvaluationResult.thenMatchedAssetIds;
+
+        if (assetIds == null || assetIds.isEmpty()) {
+            return "";
+        }
+
+        // Extract asset states for matched asset IDs
+        Map<String, Set<AssetState>> assetStates = ruleEvaluationResult.conditionStateMap.values().stream()
+            .filter(conditionState -> conditionState.lastTriggerResult.matches)
+            .flatMap(conditionState -> {
+                Collection<AssetState> as = useUnmatched
+                    ? conditionState.lastTriggerResult.unmatchedAssetStates
+                    : conditionState.lastTriggerResult.matchedAssetStates;
+                return as.stream();
+            })
+            .filter(assetState -> assetIds.contains(assetState.getId()))
+            .collect(Collectors.groupingBy(AssetState::getId, Collectors.toSet()));
 
         StringBuilder sb = new StringBuilder();
         if (isHtml) {
             sb.append("<table cellpadding=\"30\">");
             sb.append("<tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr>");
-            assetStates.forEach(assetState -> {
+            assetStates.forEach((key, value) -> value.forEach(assetState -> {
                 sb.append("<tr><td>");
                 sb.append(assetState.getId());
                 sb.append("</td><td>");
@@ -889,11 +910,11 @@ public class JsonRulesBuilder extends RulesBuilder {
                 sb.append("</td><td>");
                 sb.append(assetState.getValue().map(Value::toString).orElse(""));
                 sb.append("</td></tr>");
-            });
+            }));
             sb.append("</table>");
         } else {
             sb.append("Asset ID\t\tAsset Name\t\tAttribute\t\tValue");
-            assetStates.forEach(assetState -> {
+            assetStates.forEach((key, value) -> value.forEach(assetState -> {
                 sb.append(assetState.getId());
                 sb.append("\t\t");
                 sb.append(assetState.getName());
@@ -901,16 +922,19 @@ public class JsonRulesBuilder extends RulesBuilder {
                 sb.append(assetState.getAttributeName());
                 sb.append("\t\t");
                 sb.append(assetState.getValue().map(Value::toString).orElse(""));
-            });
+            }));
         }
 
         return sb.toString();
     }
 
-    protected static Collection<String> getRuleActionTargetIds(RuleActionTarget target, boolean useUnmatched, Map<String, RuleTriggerState> triggerStateMap, Assets assetsFacade, Users usersFacade, RulesFacts facts) {
+    protected static Collection<String> getRuleActionTargetIds(RuleActionTarget target, boolean useUnmatched, RuleEvaluationResult ruleEvaluationResult, Assets assetsFacade, Users usersFacade, RulesFacts facts) {
+
+        Map<String, RuleConditionState> conditionStateMap = ruleEvaluationResult.conditionStateMap;
+
         if (target != null) {
-            if (!TextUtil.isNullOrEmpty(target.ruleConditionTag) && triggerStateMap != null) {
-                RuleTriggerState triggerState = triggerStateMap.get(target.ruleConditionTag);
+            if (!TextUtil.isNullOrEmpty(target.ruleConditionTag) && conditionStateMap != null) {
+                RuleConditionState triggerState = conditionStateMap.get(target.ruleConditionTag);
                 if (!useUnmatched) {
                     return triggerState != null ? triggerState.getMatchedAssetIds() : Collections.emptyList();
                 }
@@ -919,7 +943,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
 
             if (target.matchedAssets != null) {
-                List<String> compareAssetIds = triggerStateMap.values().stream()
+                List<String> compareAssetIds = conditionStateMap.values().stream()
                     .flatMap(triggerState ->
                         useUnmatched ? triggerState.getUnmatchedAssetIds().stream() : triggerState.getMatchedAssetIds().stream())
                     .collect(Collectors.toList());
@@ -940,14 +964,14 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
         }
 
-        if (triggerStateMap != null) {
+        if (conditionStateMap != null) {
             if (!useUnmatched) {
-                return triggerStateMap.values().stream().flatMap(triggerState ->
+                return conditionStateMap.values().stream().flatMap(triggerState ->
                         triggerState != null ? triggerState.getMatchedAssetIds().stream() : Stream.empty()
                 ).distinct().collect(Collectors.toList());
             }
 
-            return triggerStateMap.values().stream().flatMap(triggerState ->
+            return conditionStateMap.values().stream().flatMap(triggerState ->
                     triggerState != null ? triggerState.getUnmatchedAssetIds().stream() : Stream.empty()
             ).distinct().collect(Collectors.toList());
         }
@@ -955,72 +979,66 @@ public class JsonRulesBuilder extends RulesBuilder {
         return Collections.emptyList();
     }
 
-    protected static void matches(LogicGroup<RuleCondition> ruleConditionGroup, RuleEvaluationResult ruleEvaluationResult, boolean trackUnmatched) {
+    protected static Pair<List<String>, List<String>> getGroupLastTriggerResults(LogicGroup<RuleCondition> ruleConditionGroup, Map<String, RuleConditionState> conditionStateMap, boolean trackUnmatched) {
 
-        if (conditionIsEmpty(ruleConditionGroup)) {
-            return;
+        if (groupIsEmpty(ruleConditionGroup)) {
+            return new Pair<>(Collections.emptyList(), Collections.emptyList());
         }
 
+        List<String> matchedAssetIds = new ArrayList<>();
+        List<String> unmatchedAssetIds = new ArrayList<>();
         LogicGroup.Operator operator = ruleConditionGroup.operator == null ? LogicGroup.Operator.AND : ruleConditionGroup.operator;
 
-        if (operator == LogicGroup.Operator.AND) {
-            if (ruleConditionGroup.getItems().size() > 0) {
+        if (!ruleConditionGroup.getItems().isEmpty()) {
 
-                ruleEvaluationResult.thenMatched = ruleConditionGroup.getItems().stream()
-                    .map(ruleCondition -> ruleEvaluationResult.conditionStateMap.get(ruleCondition.tag))
+            if (operator == LogicGroup.Operator.AND) {
+
+                // Find asset IDs that are matched in all rule conditions
+                matchedAssetIds.addAll(ruleConditionGroup.getItems().stream()
+                    .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
                     .filter(ruleConditionState -> ruleConditionState.lastTriggerResult != null && ruleConditionState.lastTriggerResult.matches) //Only trigger results which matches
-                    .map(RuleTriggerState::getMatchedAssetIds)//Get all matched assetIds
+                    .map(RuleConditionState::getMatchedAssetIds)//Get all matched assetIds
                     .flatMap(Collection::stream)
-                    .collect(Collectors.groupingBy(assetId -> assetId, Collectors.counting()))//Group them and count the number of times appearing in the rule conditions
+                    .collect(Collectors.groupingBy(assetId -> assetId, Collectors.counting())) // Group them and count the number of times appearing in the rule conditions
                     .entrySet()
                     .stream()
-                    .anyMatch(entry -> entry.getValue() == ruleConditionGroup.getItems().size());//If at least one of the assets appear in all the rule conditions, then fire
+                    .filter(entry -> entry.getValue() == ruleConditionGroup.getItems().size())
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toList()));
 
-                if (trackUnmatched) {
-                    ruleEvaluationResult.otherwiseMatched = ruleConditionGroup.getItems().stream()
-                        .map(ruleCondition -> ruleEvaluationResult.conditionStateMap.get(ruleCondition.tag))
-                        .anyMatch(ruleConditionState -> ruleConditionState.trackUnmatched && ruleConditionState.lastTriggerResult != null && ruleConditionState.lastTriggerResult.matches);
-                }
+            } else if (operator == LogicGroup.Operator.OR) {
 
-                if (!ruleEvaluationResult.thenMatched) {
-                    return;
-                }
+                matchedAssetIds.addAll(ruleConditionGroup.getItems().stream()
+                    .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
+                    .filter(ruleConditionState -> ruleConditionState.lastTriggerResult != null && ruleConditionState.lastTriggerResult.matches)
+                    .map(RuleConditionState::getMatchedAssetIds)//Get all unmatched assetIds
+                    .flatMap(Collection::stream)
+                    .distinct()
+                    .collect(Collectors.toList()));
+
             }
 
-            if (ruleConditionGroup.groups != null) {
-                ruleConditionGroup.groups
-                    .forEach(condition -> matches(condition, ruleEvaluationResult, trackUnmatched));
+            if (trackUnmatched) {
+                // Unmatched we don't apply group AND/OR just collate them all
+                unmatchedAssetIds.addAll(ruleConditionGroup.getItems().stream()
+                    .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
+                    .filter(ruleConditionState -> ruleConditionState.trackUnmatched && ruleConditionState.lastTriggerResult != null && ruleConditionState.lastTriggerResult.matches)
+                    .map(RuleConditionState::getUnmatchedAssetIds)//Get all unmatched assetIds
+                    .flatMap(Collection::stream)
+                    .distinct()
+                    .collect(Collectors.toList()));
+            }
+        }
+
+        if (ruleConditionGroup.groups != null) {
+            for (LogicGroup<RuleCondition> childRuleConditionGroup : ruleConditionGroup.groups) {
+                Pair<List<String>, List<String>> childGroupMatchedAndUnmatched = getGroupLastTriggerResults(childRuleConditionGroup, conditionStateMap, trackUnmatched);
+                matchedAssetIds.addAll(childGroupMatchedAndUnmatched.key);
+                unmatchedAssetIds.addAll(childGroupMatchedAndUnmatched.value);
             }
         }
 
-        if (operator == LogicGroup.Operator.OR) {
-            if (ruleConditionGroup.items != null) {
-                ruleEvaluationResult.thenMatched = ruleConditionGroup.items.stream()
-                    .map(ruleCondition -> ruleEvaluationResult.conditionStateMap.get(ruleCondition.tag))
-                        .anyMatch(ruleConditionState -> ruleConditionState.lastTriggerResult != null && ruleConditionState.lastTriggerResult.matches);
-
-                if (trackUnmatched) {
-                    ruleEvaluationResult.otherwiseMatched = ruleConditionGroup.items.stream()
-                        .map(ruleCondition -> ruleEvaluationResult.conditionStateMap.get(ruleCondition.tag))
-                        .filter(ruleConditionState -> ruleConditionState.trackUnmatched && ruleConditionState.lastTriggerResult != null && ruleConditionState.lastTriggerResult.matches) //Only trigger results which matches
-                        .map(RuleTriggerState::getUnmatchedAssetIds)//Get all unmatched assetIds
-                        .flatMap(Collection::stream)
-                        .collect(Collectors.groupingBy(assetId -> assetId, Collectors.counting()))//Group them and count the number of times appearing in the rule conditions
-                        .entrySet()
-                        .stream()
-                        .anyMatch(entry -> entry.getValue() == ruleConditionGroup.items.size());//If at least one of the assets appear in all the rule conditions, then fire
-                }
-
-                if (ruleEvaluationResult.thenMatched) {
-                    return;
-                }
-            }
-
-            if (ruleConditionGroup.groups != null) {
-                ruleConditionGroup.groups
-                    .forEach(condition -> matches(condition, ruleEvaluationResult, trackUnmatched));
-            }
-        }
+        return new Pair<>(matchedAssetIds, unmatchedAssetIds);
     }
 
     protected static boolean ruleConditionResetHasTimer(RuleConditionReset reset) {

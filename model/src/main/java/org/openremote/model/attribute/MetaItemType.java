@@ -402,12 +402,12 @@ public enum MetaItemType implements MetaItemDescriptor {
         false),
 
     /**
-     * Indicates the specific type the this attribute represents.
-     * For e.g. if the attribute represents currency and it's in euro's then the specific type would be EUR.
-     * For e.g. if the attribute represents distance and it's in kilometers then the specific type would be KM.
+     * Indicates the unit type the this attribute represents.
+     * For e.g. if the attribute represents currency and it's in euro's then the unit type would be EUR.
+     * For e.g. if the attribute represents distance and it's in kilometers then the unit type would be KM.
      */
-    SPECIFIC_TYPE(
-        ASSET_META_NAMESPACE + ":specificType",
+    UNIT_TYPE(
+        ASSET_META_NAMESPACE + ":unitType",
         new Access(true, false, true),
         ValueType.STRING,
         null,

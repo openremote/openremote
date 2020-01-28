@@ -127,7 +127,8 @@ public abstract class Ruleset {
                     "    reset: null // Only trigger once ever\n" +
                     "  }\n" +
                     "]"
-                );
+                ),
+        FLOW(".json", "{\"name\":\"\", \"description\": \"\", \"nodes\":[], \"connections\":[]}");
 
         final String fileExtension;
         final String emptyRulesExample;

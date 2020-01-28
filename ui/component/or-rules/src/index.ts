@@ -31,9 +31,11 @@ import {
     ClientRole
 } from "@openremote/model";
 import "@openremote/or-translate";
+import "@openremote/or-mwc-components/dist/or-mwc-drawer";
 import {translate} from "@openremote/or-translate";
 import "./or-rule-list";
 import "./or-rule-viewer";
+import "./flow-viewer/flow-viewer";
 import {OrRuleList} from "./or-rule-list";
 import {OrRuleViewer} from "./or-rule-viewer";
 
@@ -581,7 +583,7 @@ export class OrRules extends translate(i18next)(LitElement) {
     protected render() {
 
         return html`
-            <or-rule-list id="rule-list" .realm="${this.realm}" .config="${this.config}" .language="${this.language}" .selectedIds="${this.selectedIds}"></or-rule-list>
+            <or-rule-list id="rule-list" .config="${this.config}" .language="${this.language}" .selectedIds="${this.selectedIds}"></or-rule-list>
             <or-rule-viewer id="rule-viewer" .ruleset="${this._activeRuleset}" .config="${this.config}" .readonly="${this.isReadonly()}"></or-rule-viewer>
         `;
     }
@@ -599,7 +601,7 @@ export class OrRules extends translate(i18next)(LitElement) {
         }
 
         const name = this.config && this.config.rulesetName ? this.config.rulesetName : OrRules.DEFAULT_RULESET_NAME;
-        const realm = this._rulesList.realm;
+        const realm = manager.isSuperUser() ? manager.displayRealm : manager.config.realm;
 
         const ruleset: TenantRuleset = {
             id: 0,

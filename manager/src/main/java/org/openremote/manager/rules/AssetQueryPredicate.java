@@ -21,10 +21,7 @@ package org.openremote.manager.rules;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
-import net.fortuna.ical4j.filter.PeriodRule;
 import net.fortuna.ical4j.model.*;
-import net.fortuna.ical4j.model.component.VEvent;
-import net.fortuna.ical4j.model.property.RRule;
 import org.geotools.referencing.GeodeticCalculator;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -556,7 +553,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
     }
 
     public static Predicate<AssetState> asPredicate(Supplier<Long> currentMillisProducer, LogicGroup<AttributePredicate> condition) {
-        if (conditionIsEmpty(condition)) {
+        if (groupIsEmpty(condition)) {
             return as -> true;
         }
 
@@ -586,7 +583,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
         return asPredicate(assetStatePredicates, operator);
     }
 
-    protected static boolean conditionIsEmpty(LogicGroup condition) {
+    protected static boolean groupIsEmpty(LogicGroup condition) {
         return condition.getItems().size() == 0
             && (condition.groups == null || condition.groups.isEmpty());
     }

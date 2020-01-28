@@ -70,7 +70,8 @@ export enum OREvent {
     EVENTS_CONNECTING = "EVENTS_CONNECTING",
     EVENTS_DISCONNECTED = "EVENTS_DISCONNECTED",
     TRANSLATE_INIT = "TRANSLATE_INIT",
-    TRANSLATE_LANGUAGE_CHANGED = "TRANSLATE_LANGUAGE_CHANGED"
+    TRANSLATE_LANGUAGE_CHANGED = "TRANSLATE_LANGUAGE_CHANGED",
+    DISPLAY_REALM_CHANGED = "DISPLAY_REALM_CHANGED"
 }
 
 export enum EventProviderType {
@@ -423,6 +424,15 @@ export class Manager implements EventProviderFactory {
         this.console.storeData("LANGUAGE", lang);
     }
 
+    get displayRealm() {
+        return this._displayRealm || this._config.realm;
+    }
+
+    set displayRealm(realm: string) {
+        this._displayRealm = realm;
+        this._emitEvent(OREvent.DISPLAY_REALM_CHANGED);
+    }
+
     getEventProvider(): EventProvider | undefined {
         return this.events;
     }
@@ -501,6 +511,7 @@ export class Manager implements EventProviderFactory {
     private _listeners: EventCallback[] = [];
     private _console!: Console;
     private _events?: EventProvider;
+    private _displayRealm?: string = "";
 
     public isManagerSameOrigin(): boolean {
         if (!this.initialised) {
@@ -565,6 +576,8 @@ export class Manager implements EventProviderFactory {
             this._ready = true;
             this._emitEvent(OREvent.READY);
         }
+
+        this._displayRealm = config.realm;
 
         return success;
     }

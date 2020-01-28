@@ -11,6 +11,7 @@ import {ClientRole, RulesetLang, RulesetUnion} from "@openremote/model";
 import manager from "@openremote/core";
 import "./json-viewer/or-rule-json-viewer";
 import "./or-rule-text-viewer";
+import "./flow-viewer/components/flow-editor";
 import "@openremote/or-input";
 import {translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
@@ -151,6 +152,9 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                 case RulesetLang.JSON:
                     viewer = html`<or-rule-json-viewer id="rule-view" .ruleset="${this.ruleset}" .config="${this.config}" .readonly="${this.readonly}"></or-rule-json-viewer>`;
                     break;
+                case RulesetLang.FLOW:
+                    viewer = html`<flow-editor id="rule-view" .ruleset="${this.ruleset}" .readonly="${this.readonly}"></flow-editor>`;
+                    break;
                 default:
                     viewer = html`<div class="wrapper"><or-translate value="notSupported"></or-translate></div>`;
             }
@@ -165,10 +169,9 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                         
                         <span id="active-wrapper">
                             <or-translate value="active"></or-translate>
-                            
                             <or-input .type="${InputType.SWITCH}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${!this.ruleset.id}" @or-input-changed="${this._toggleEnabled}"></or-input>
                         </span>
-    
+           
                         <or-input .type="${InputType.BUTTON}" id="save-btn" .label="${i18next.t("save")}" raised ?disabled="${this._cannotSave()}" @click="${this._doSave}" @or-input-changed="${this._doSave}"></or-input>
                     </div>                        
                 </div>
