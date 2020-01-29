@@ -23,8 +23,8 @@ import manager, {
 import "@openremote/or-asset-tree";
 import "@openremote/or-input";
 import "@openremote/or-panel";
-import "@material/mwc-dialog";
-import {Dialog} from "@material/mwc-dialog";
+import "@material/dialog";
+import {MDCDialog} from '@material/dialog';
 import "@openremote/or-translate";
 import Chart, {ChartTooltipCallback, ChartDataSets} from "chart.js";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
@@ -332,32 +332,41 @@ export class OrChart extends translate(i18next)(LitElement) {
 
                 </div>
             </div>
+            <div id="mdc-dialog"
+                role="alertdialog"
+                aria-modal="true"
+                aria-labelledby="my-dialog-title"
+                aria-describedby="my-dialog-content">
+                <div class="mdc-dialog__container">
+                    <div class="mdc-dialog__surface">
+                    <h2 class="mdc-dialog__title" id="my-dialog-title">Add attribute</h2>
+                    <div class="dialog-container mdc-dialog__content" id="my-dialog-content">
+                        <or-asset-tree id="chart-asset-tree"></or-asset-tree>
+                            ${this._activeAsset && this._activeAsset.attributes ? html`
+                                <or-input id="chart-attribute-picker" 
+                                        .label="${i18next.t("attribute")}" 
+                                        .type="${InputType.LIST}"
+                                        .options="${this._getAttributeOptions()}"></or-input>
+                            `:``}
+                    </div>
+                    <footer class="mdc-dialog__actions">
+                        <or-input class="button" 
+                            slot="primaryAction"
+                            .type="${InputType.BUTTON}" 
+                            label="${i18next.t("Add")}" 
+                            class="mdc-button mdc-dialog__button" data-mdc-dialog-action="yes"
+                            @click="${this.addAttribute}"></or-input>
 
-            <mwc-dialog id="mwc-dialog-attr" heading="Add attribute">
-                <div class="dialog-container">
-                    <or-asset-tree id="chart-asset-tree"></or-asset-tree>
-                    ${this._activeAsset && this._activeAsset.attributes ? html`
-                        <or-input id="chart-attribute-picker" 
-                                  .label="${i18next.t("attribute")}" 
-                                  .type="${InputType.LIST}"
-                                .options="${this._getAttributeOptions()}"></or-input>
-                    `:``}
+                        <or-input class="button" 
+                            slot="secondaryAction"
+                            .type="${InputType.BUTTON}" 
+                            label="${i18next.t("Cancel")}" 
+                            class="mdc-button mdc-dialog__button" data-mdc-dialog-action="no"></or-input>
+                    </footer>
+                    </div>
                 </div>
-              
-
-                <or-input class="button" 
-                    slot="primaryAction"
-                    .type="${InputType.BUTTON}" 
-                    label="${i18next.t("Add")}" 
-                    dialogAction="discard"
-                    @click="${this.addAttribute}"></or-input>
-
-                <or-input class="button" 
-                    slot="secondaryAction"
-                    .type="${InputType.BUTTON}" 
-                    label="${i18next.t("Cancel")}" 
-                    dialogAction="cancel"></or-input>
-            </mwc-dialog>
+                <div class="mdc-dialog__scrim"></div>
+            </div>
         `;
     }
     
@@ -461,10 +470,11 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     _openDialog() {
-        if(this.shadowRoot){
-            const dialog = this.shadowRoot.getElementById('mwc-dialog-attr') as Dialog;
+        const component = this.shadowRoot!.getElementById("mdc-dialog");
+        if(component){
+            const dialog = new MDCDialog(component);
             if(dialog){
-                dialog.show();
+                dialog.open();
             }
         }
     }

@@ -13,7 +13,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@material/data-table": "^4.0.0",
-    "@material/mwc-dialog": "^0.12.0",
+    "@material/dialog": "^4.0.0",
     "@openremote/core": "^1.1.0",
     "@openremote/or-input": "^1.1.0",
     "@openremote/or-panel": "^1.1.0",
