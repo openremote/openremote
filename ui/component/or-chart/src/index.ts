@@ -314,7 +314,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._updateTimestamp(this.timestamp!, true)}"></or-input>
                     </div>
                     <div id="attribute-list">
-                        ${this._attributes?.map((attr, index) => {
+                        ${this._attributes.map((attr, index) => {
                             return html`
                                 <span class="attribute-list-item">
                                     <span class="attribute-list-item-bullet" style="background-color:${this._data[index].borderColor};"></span>
