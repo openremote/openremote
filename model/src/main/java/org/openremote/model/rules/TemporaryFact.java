@@ -41,7 +41,7 @@ public class TemporaryFact<T> extends Event {
      * be designed with this margin in mind.
      */
     // TODO This is not true, need to add GlobalLockTimeout
-    public static final int GUARANTEED_MIN_EXPIRATION_MILLIS = 3000;
+    public static int GUARANTEED_MIN_EXPIRATION_MILLIS = 3000;
 
     final protected long expirationMilliseconds;
     final protected T fact;
