@@ -236,7 +236,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                     unfilteredAssetStates.stream().collect(Collectors.groupingBy(AssetState::getId)).forEach((id, states) -> {
 
-                        Map<Boolean, List<AssetState>> assetResults = unfilteredAssetStates.stream().collect(Collectors.groupingBy(assetStatePredicate::test));
+                        Map<Boolean, List<AssetState>> assetResults = states.stream().collect(Collectors.groupingBy(assetStatePredicate::test));
                         matched.addAll(assetResults.getOrDefault(true, Collections.emptyList()));
                         unmatched.addAll(assetResults.getOrDefault(false, Collections.emptyList()));
                     });
@@ -261,16 +261,12 @@ public class JsonRulesBuilder extends RulesBuilder {
                 }
             }
 
-            // Remove previous matches where a recurrence timer doesn't exist for the asset
-            // And also depending on reset option whether the asset state no longer matches or the value has changed
+            // Remove matches that have an active recurrence timer
+            matchedAssetStates.removeIf(matchedAssetState -> nextRecurAssetIdMap.containsKey(matchedAssetState.getId())
+                && nextRecurAssetIdMap.get(matchedAssetState.getId()) > timerService.getCurrentTimeMillis());
+
+            // Remove previous matches where the asset state no longer matches or the value has changed (depending on reset option)
             previouslyMatchedAssetStates.removeIf(previousAssetState -> {
-
-                boolean hasActiveRecurTimer = nextRecurAssetIdMap.containsKey(previousAssetState.getId())
-                    && nextRecurAssetIdMap.get(previousAssetState.getId()) > timerService.getCurrentTimeMillis();
-
-                if (hasActiveRecurTimer) {
-                    return false;
-                }
 
                 int matchIndex = matchedAssetStates.indexOf(previousAssetState);
                 boolean valueChangedOrNoLongerMatches = matchIndex < 0;
@@ -515,7 +511,10 @@ public class JsonRulesBuilder extends RulesBuilder {
                 return false;
             }
 
-            // Update each trigger state
+            // Clear out expired recurrence timers
+            ruleState.nextRecurAssetIdMap.entrySet().removeIf(entry -> entry.getValue() <= timerService.getCurrentTimeMillis());
+
+            // Update each condition state
             log(Level.FINEST, "Updating rule condition states for rule: " + rule.name);
             ruleState.conditionStateMap.values().forEach(ruleConditionState -> ruleConditionState.update(ruleState.nextRecurAssetIdMap));
 
@@ -551,13 +550,10 @@ public class JsonRulesBuilder extends RulesBuilder {
                 throw e;
             } finally {
 
-                // Clear out expired recurrence timers
-                ruleState.nextRecurAssetIdMap.entrySet().removeIf(entry -> entry.getValue() <= timerService.getCurrentTimeMillis());
-
                 // Store recurrence times as required
                 boolean recurPerAsset = rule.recurrence == null || rule.recurrence.scope != RuleRecurrence.Scope.GLOBAL;
                 long currentTime = timerService.getCurrentTimeMillis();
-                long nextRecur = rule.recurrence == null || rule.recurrence.mins == null ? Long.MAX_VALUE : currentTime + rule.recurrence.mins;
+                long nextRecur = rule.recurrence == null || rule.recurrence.mins == null ? Long.MAX_VALUE : currentTime + (rule.recurrence.mins * 60000);
 
                 if (nextRecur > currentTime) {
                     if (recurPerAsset) {
