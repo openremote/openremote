@@ -21,7 +21,7 @@ package org.openremote.agent.protocol.serial;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.oio.OioEventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.agent.protocol.io.AbstractNettyIoClient;
 import org.openremote.agent.protocol.io.IoClient;
@@ -67,6 +67,6 @@ public class SerialIoClient<T> extends AbstractNettyIoClient<T, NrJavaSerialAddr
     @SuppressWarnings("deprecation")
     @Override
     protected io.netty.channel.EventLoopGroup getWorkerGroup() {
-        return new OioEventLoopGroup(1);
+        return new NioEventLoopGroup(1);
     }
 }
