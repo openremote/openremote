@@ -244,9 +244,9 @@ public class RulesetDeployment {
         }
     }
 
-    public void onAssetStatesChanged(RulesFacts facts) {
+    public void onAssetStatesChanged(RulesFacts facts, RulesEngine.AssetStateChangeEvent event) {
         if (jsonRulesBuilder != null) {
-            jsonRulesBuilder.onAssetStatesChanged(facts);
+            jsonRulesBuilder.onAssetStatesChanged(facts, event);
         }
     }
 

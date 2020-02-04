@@ -29,11 +29,7 @@ const rulesConfig: RulesConfig = {
         }
     },
     json: {
-        rule: {
-            reset: {
-                timer: "1h"
-            }
-        }
+
     }
 };
 

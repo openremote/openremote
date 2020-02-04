@@ -1,10 +1,11 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
-import {JsonRule, RuleCondition, RulesetLang, Tenant, TenantRuleset, ClientRole} from "@openremote/model";
+import {JsonRule, RuleCondition, RulesetLang, TenantRuleset, ClientRole, CalendarEvent} from "@openremote/model";
 import "@openremote/or-translate";
 import manager, {EventCallback, OREvent} from "@openremote/core";
 import moment from "moment";
+import { RRule, RRuleSet, rrulestr } from "rrule";
 import "@openremote/or-input";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import {InputType} from "@openremote/or-input";
 import {style as OrAssetTreeStyle} from "@openremote/or-asset-tree";
 import {
     OrRulesRequestAddEvent,
@@ -277,32 +278,24 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     protected static _getNodeStatusClasses(ruleset: TenantRuleset): string {
         let status = ruleset.enabled ? "bg-green" : "bg-red";
 
-        if (ruleset.rules && ruleset.enabled) {
-            switch (ruleset.lang) {
-                case RulesetLang.JSON:
-                    const rule: JsonRule = JSON.parse(ruleset.rules).rules[0];
+        if (ruleset.enabled) {
 
-                    // HACK/WIP: the status of a rule should be better thought over see issue #95
-                    // currently only checks the date of the first whenCondition
-                    if (rule && rule.when && rule.when.items && rule.when.items.length > 0) {
-                        const ruleCondition: RuleCondition = rule.when.items[0];
-                        if (ruleCondition.datetime) {
-                            const today = moment();
-                            const startDate = ruleCondition.datetime.value;
-                            const endDate = ruleCondition.datetime.rangeValue;
+            // Look at validity meta
+            if (ruleset.meta && ruleset.meta.hasOwnProperty("urn:openremote:rule:meta:validity")) {
+                let calendarEvent = ruleset.meta["urn:openremote:rule:meta:validity"] as CalendarEvent;
+                let now = new Date().getTime();
 
-                            if (today.diff(startDate) < 0) {
-                                // before startDate, show blue
-                                status = "bg-blue";
-                            } else if (today.diff(endDate) > 0) {
-                                // after endDate, show grey
-                                status = "bg-grey";
-                            }
-                        }
+                if (calendarEvent.start) {
+                    if (now < calendarEvent.start) {
+                        // before startDate, show blue
+                        status = "bg-blue";
+                    } else if (calendarEvent.end && now > calendarEvent.end) {
+                        // after endDate, show grey
+                        status = "bg-grey";
+                    } else if (calendarEvent.recurrence) {
+                        // TODO: Implement RRule support
                     }
-                    break;
-                default:
-                    break;
+                }
             }
         }
 

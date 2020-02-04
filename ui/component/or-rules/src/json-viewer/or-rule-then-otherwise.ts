@@ -1,24 +1,23 @@
 import {css, customElement, html, LitElement, property, TemplateResult} from "lit-element";
 import {buttonStyle} from "../style";
 import "./or-rule-asset-query";
+import {ActionType, getAssetTypeFromQuery, RulesConfig} from "../index";
+import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {
-    ActionType,
-    getAssetTypeFromQuery,
-    RulesConfig
-} from "../index";
-import {
-    OrRulesJsonRuleChangedEvent
-} from "./or-rule-json-viewer";
-import {AssetDescriptor, JsonRule, RuleActionUnion, RuleConditionReset, RuleActionNotification, AssetType} from "@openremote/model";
+    AssetDescriptor,
+    AssetType,
+    JsonRule,
+    RuleActionUnion,
+    RuleRecurrence,
+    RuleRecurrenceScope
+} from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-input";
-import {MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
-import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
+import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import {AssetModelUtil} from "@openremote/core";
 import "./or-rule-action-attribute";
 import "./or-rule-action-notification";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
-import { translate } from "@openremote/or-translate";
+import {translate} from "@openremote/or-translate";
 
 const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
@@ -75,24 +74,38 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
 }
 
 interface ResetOptions {
-    [key: string]: string;
+    [key: string]: (jsonRule: JsonRule) => void;
 }
 
-const resetOptions: ResetOptions = {
-    "everyTime": "everyTime",
-    "onlyOnce": "onlyOnce",
-    "1h": "oncePerHour",
-    "1d": "oncePerDay",
-    "1w": "oncePerWeek",
-    "1mn": "oncePerMonth"
-};
+export enum RecurrenceOption {
+    ALWAYS = "always",
+    ONCE = "once",
+    ONCE_PER_ASSET = "oncePerAsset",
+    ONCE_PER_HOUR = "oncePerHour",
+    ONCE_PER_HOUR_PER_ASSET = "oncePerHourPerAsset",
+    ONCE_PER_DAY = "oncePerDay",
+    ONCE_PER_DAY_PER_ASSET = "oncePerDayPerAsset",
+    ONCE_PER_WEEK = "oncePerWeek",
+    ONCE_PER_WEEK_PER_ASSET = "oncePerWeekPerAsset",
+    ONCE_PER_MONTH = "oncePerMonth",
+    ONCE_PER_MONTH_PER_ASSET = "oncePerMonthPerAsset"
+}
 
-function getResetMenu(config?: RulesConfig): MenuItem[] {
+function getRecurrenceMenu(config?: RulesConfig): MenuItem[] {
 
-    return Object.entries(resetOptions).map(([key, value]) => {
+    if (config && config.controls && config.controls.allowedRecurrenceOptions) {
+        return config.controls.allowedRecurrenceOptions.map((value) => {
+            return {
+                text: i18next.t(value),
+                value: value
+            };
+        });
+    }
+
+    return Object.values(RecurrenceOption).map((value) => {
         return {
             text: i18next.t(value),
-            value: key
+            value: value
         };
     });
 }
@@ -159,7 +172,7 @@ const style = css`
         text-transform: capitalize;
     }
     
-    .rule-reset {
+    .rule-recurrence {
         position: absolute;
         top: 5px;
         right: 0;
@@ -187,38 +200,43 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         return !this.config || !this.config.controls || this.config.controls.hideThenAddAction !== true;
     }
 
-    protected ruleResetTemplate(reset: RuleConditionReset) {
-        let resetTemplate: TemplateResult | string = ``;
+    protected ruleRecurrenceTemplate(reset: RuleRecurrence | undefined) {
+        let recurrenceTemplate: TemplateResult | string = ``;
         const buttonColor = "inherit";
+        let value = RecurrenceOption.ONCE_PER_ASSET;
 
-        let value;
-
-        if (!reset) {
-            value = "onlyOnce";
-        } else if (reset.valueChanges && reset.timestampChanges) {
-            value = "everyTime";
-        } else if (reset.timer) {
-            value = reset.timer;
-        } else if (this.config && this.config.json && this.config.json.rule && this.config.json.rule.reset) {
-            value = this.config.json.rule.reset.timer;
+        if (reset) {
+            let isGlobal = reset.scope === RuleRecurrenceScope.GLOBAL;
+            if (reset.mins === undefined || reset.mins === null) {
+                value = isGlobal ? RecurrenceOption.ONCE : RecurrenceOption.ONCE_PER_ASSET;
+            } else if (reset.mins === 0) {
+                value = RecurrenceOption.ALWAYS;
+            } else if (reset.mins === 60) {
+                value = isGlobal ? RecurrenceOption.ONCE_PER_HOUR : RecurrenceOption.ONCE_PER_HOUR_PER_ASSET;
+            } else if (reset.mins === 1440) {
+                value = isGlobal ? RecurrenceOption.ONCE_PER_DAY : RecurrenceOption.ONCE_PER_DAY_PER_ASSET;
+            } else if (reset.mins === 10080) {
+                value = isGlobal ? RecurrenceOption.ONCE_PER_WEEK : RecurrenceOption.ONCE_PER_WEEK_PER_ASSET;
+            } else if (reset.mins === 43200) {
+                value = isGlobal ? RecurrenceOption.ONCE_PER_MONTH : RecurrenceOption.ONCE_PER_MONTH_PER_ASSET;
+            }
         }
 
-        resetTemplate = html`
-                <div style="color: #${buttonColor}; margin-right: 6px;">
+        recurrenceTemplate = html`
+                <div style="color: #${buttonColor}; margin-right: 6px;"><span><or-translate value="recurrence"></or-translate>:</span>
                     ${getContentWithMenuTemplate(
-                        html`<or-input type="${InputType.BUTTON}"  label="${value ? i18next.t(resetOptions[value]) : i18next.t("frequency") }"></or-input>`,
-                        getResetMenu(this.config),
+                        html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-input>`,
+                        getRecurrenceMenu(this.config),
                         value,
-                        (values: string | string[]) => this.setResetOption(values as string))}
+                        (value) => this.setRecurrenceOption(value as RecurrenceOption))}
                 </div>
             `;
 
         return html`
-            <div class="rule-reset">
-                ${resetTemplate}
+            <div class="rule-recurrence">
+                ${recurrenceTemplate}
             </div>
         `;
-
     }
 
     protected ruleActionTemplate(actions: RuleActionUnion[], action: RuleActionUnion) {
@@ -300,7 +318,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         return html`
             <div>
                 <or-panel .heading="${i18next.t("then")}...">
-                    ${this.ruleResetTemplate(this.rule.reset!)}
+                    ${this.ruleRecurrenceTemplate(this.rule.recurrence)}
 
                     ${!this.rule.then ? `` : this.rule.then.map((action: RuleActionUnion) => this.ruleActionTemplate(this.rule.then!, action))}
                     ${this.thenAllowAdd ? html`
@@ -341,35 +359,45 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         }
     }
 
-    protected setResetOption(value: string) {
+    protected setRecurrenceOption(value: RecurrenceOption) {
 
         switch (value) {
-            case "onlyOnce":
-                delete this.rule.reset;
+            case RecurrenceOption.ALWAYS:
+                this.rule.recurrence = {mins: 0};
                 break;
-            case "everyTime":
-                if (this.rule.reset) {
-                    delete this.rule.reset.timer;
-                }
-                this.rule.reset = {
-                    valueChanges: true,
-                    timestampChanges: true
-                };
+            case RecurrenceOption.ONCE:
+                this.rule.recurrence = {scope: RuleRecurrenceScope.GLOBAL};
                 break;
+            case RecurrenceOption.ONCE_PER_HOUR:
+                this.rule.recurrence = {scope: RuleRecurrenceScope.GLOBAL, mins: 60};
+                break;
+            case RecurrenceOption.ONCE_PER_HOUR_PER_ASSET:
+                this.rule.recurrence = {mins: 60};
+                break;
+            case RecurrenceOption.ONCE_PER_DAY:
+                this.rule.recurrence = {scope: RuleRecurrenceScope.GLOBAL, mins: 1440};
+                break;
+            case RecurrenceOption.ONCE_PER_DAY_PER_ASSET:
+                this.rule.recurrence = {mins: 1440};
+                break;
+            case RecurrenceOption.ONCE_PER_WEEK:
+                this.rule.recurrence = {scope: RuleRecurrenceScope.GLOBAL, mins: 10080};
+                break;
+            case RecurrenceOption.ONCE_PER_WEEK_PER_ASSET:
+                this.rule.recurrence = {mins: 10080};
+                break;
+            case RecurrenceOption.ONCE_PER_MONTH:
+                this.rule.recurrence = {scope: RuleRecurrenceScope.GLOBAL, mins: 43200};
+                break;
+            case RecurrenceOption.ONCE_PER_MONTH_PER_ASSET:
+                this.rule.recurrence = {mins: 43200};
+                break;
+            case RecurrenceOption.ONCE_PER_ASSET:
             default:
-                if (this.rule.reset) {
-                    if (this.rule.reset.valueChanges) {
-                        delete this.rule.reset.valueChanges;
-                    }
-                    if (this.rule.reset.timestampChanges) {
-                        delete this.rule.reset.timestampChanges;
-                    }
-                    this.rule.reset.timer = value;
-                } else {
-                    this.rule.reset = {timer: value};
-                }
+                delete this.rule.recurrence;
                 break;
         }
+
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
     }

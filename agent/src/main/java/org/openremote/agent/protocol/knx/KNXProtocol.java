@@ -1,5 +1,6 @@
 package org.openremote.agent.protocol.knx;
 
+import org.apache.commons.io.IOUtils;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
@@ -33,9 +34,9 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -446,23 +447,30 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
             }
 
             // Create a transform factory instance.
-            System.setProperty("javax.xml.transform.TransformerFactory", "net.sf.saxon.TransformerFactoryImpl");
-            TransformerFactory tfactory = TransformerFactory.newInstance();
+            TransformerFactory tfactory = new net.sf.saxon.TransformerFactoryImpl();
 
             // Create a transformer for the stylesheet.
-            Transformer transformer = tfactory.newTransformer(new StreamSource(this.getClass().getResourceAsStream("/org/openremote/agent/protocol/knx/ets_calimero_group_name.xsl")));
+            InputStream inputStream = KNXProtocol.class.getResourceAsStream("/org/openremote/agent/protocol/knx/ets_calimero_group_name.xsl");
+            String xsd = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            xsd = xsd.trim().replaceFirst("^([\\W]+)<","<"); // Get weird behaviour sometimes without this
+            LOG.warning(xsd);
+            Transformer transformer = tfactory.newTransformer(new StreamSource(new StringReader(xsd)));
 
             // Set the URIResolver
             transformer.setURIResolver(new EtsFileUriResolver(data));
 
-            // Transform the source XML into byte array
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            transformer.transform(new StreamSource(zin), new StreamResult(bos));
-            byte[] result = bos.toByteArray();
+            // Transform the source XML
+            String xml = IOUtils.toString(zin, StandardCharsets.UTF_8);
+            xml = xml.trim().replaceFirst("^([\\W]+)<","<"); // Get weird behaviour sometimes without this
+            LOG.warning(xml);
+            StringWriter writer = new StringWriter();
+            StringReader reader = new StringReader(xml);
+            transformer.transform(new StreamSource(reader), new StreamResult(writer));
+            xml = writer.toString();
 
-            // we use a map of state-based datapoints and read from the transformed xml
+            // we use a map of state-based data points and read from the transformed xml
             final DatapointMap<StateDP> datapoints = new DatapointMap<>();
-            try (final XmlReader r = XmlInputFactory.newInstance().createXMLStreamReader(new ByteArrayInputStream(result))) {
+            try (final XmlReader r = XmlInputFactory.newInstance().createXMLStreamReader(new StringReader(xml))) {
                 datapoints.load(r);
             } catch (final KNXMLException e) {
                 String msg = "Error loading parsed ETS file: " + e.getMessage();

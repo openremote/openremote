@@ -38,10 +38,10 @@ import "./or-rule-viewer";
 import "./flow-viewer/flow-viewer";
 import {OrRuleList} from "./or-rule-list";
 import {OrRuleViewer} from "./or-rule-viewer";
+import {RecurrenceOption} from "./json-viewer/or-rule-then-otherwise";
 
 export const enum ConditionType {
     ASSET_QUERY = "assetQuery",
-    DATE_TIME = "datetime",
     TIMER = "timer"
 }
 
@@ -81,8 +81,7 @@ export enum AssetQueryOperator {
     WITHIN_RADIUS = "withinRadius",
     OUTSIDE_RADIUS = "outsideRadius",
     WITHIN_RECTANGLE = "withinRectangle",
-    OUTSIDE_RECTANGLE = "outsideRectangle",
-    VALUE_CHANGES = "valueChanges"
+    OUTSIDE_RECTANGLE = "outsideRectangle"
 }
 
 export interface AssetTypeAttributeName {
@@ -96,6 +95,7 @@ export interface RulesConfig {
         allowedConditionTypes?: ConditionType[];
         allowedActionTypes?: ActionType[];
         allowedAssetQueryOperators?: Map<AssetTypeAttributeName | AttributeDescriptor | AttributeValueDescriptor | ValueType, AssetQueryOperator[]>;
+        allowedRecurrenceOptions?: RecurrenceOption[];
         hideActionTypeOptions?: boolean;
         hideActionTargetOptions?: boolean;
         hideActionUpdateOptions?: boolean;
