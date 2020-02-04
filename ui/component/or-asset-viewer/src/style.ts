@@ -183,18 +183,22 @@ export const style = css`
             border-right: none;
             border-left: none;
         }
-        
-        #attributes-panel {
+
+        #chart-panel {
             grid-row-start: 1;
+        }
+
+        #attributes-panel {
+            grid-row-start: 2;
         }
         
         #location-panel {
          
-            grid-row-start: 2;
+            grid-row-start: 3;
         }
         
         #history-panel {
-            grid-row-start: 3;
+            grid-row-start: 4;
         }
         
         #container { 

@@ -23,7 +23,6 @@ import manager, {
 import "@openremote/or-asset-tree";
 import "@openremote/or-input";
 import "@openremote/or-panel";
-import "@material/dialog";
 import {MDCDialog} from '@material/dialog';
 import "@openremote/or-translate";
 import Chart, {ChartTooltipCallback, ChartDataSets} from "chart.js";
@@ -33,6 +32,7 @@ import {JSONPath} from "jsonpath-plus";
 import moment from "moment";
 import {styleMap} from "lit-html/directives/style-map";
 import { OrAssetTreeSelectionChangedEvent } from "@openremote/or-asset-tree";
+import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
 
 
 export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
@@ -68,7 +68,11 @@ export interface ChartConfig {
 }
 
 
+export interface OrChartConfig {
+    chart?: ChartConfig;
+}
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
+const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
 const tableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-table.css");
 
 // language=CSS
@@ -79,8 +83,6 @@ const style = css`
         --internal-or-chart-dataset-3-color: #8A273B;
         --internal-or-chart-dataset-4-color: #1C7C8A;
         
-
-
         --internal-or-chart-background-color: var(--or-chart-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
         --internal-or-chart-text-color: var(--or-chart-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
         --internal-or-chart-controls-margin: var(--or-chart-controls-margin, 0 0 20px 0);       
@@ -102,10 +104,9 @@ const style = css`
         display: block; 
     }
 
-    mwc-dialog {
-        z-index: 9999;
-        --mdc-dialog-min-width: 600px;
-        --mdc-dialog-max-height: calc(100vh - 50%);
+    .mdc-dialog .mdc-dialog__surface {
+        min-width: 600px;
+        height: calc(100vh - 50%);
     }
     
     :host([hidden]) {
@@ -135,7 +136,7 @@ const style = css`
         flex-wrap: wrap;
         align-items: center;
         margin: var(--internal-or-chart-controls-margin);
-        min-width: 300px;
+        min-width: 325px;
         padding-left: 40px;
         flex-direction: column;
         margin: 0;
@@ -144,7 +145,7 @@ const style = css`
     #attribute-list {
         overflow: auto;
         flex: 1 1 0;
-
+        min-height: 150px;
         width: 100%;
         display: flex;
         flex-direction: column;
@@ -152,10 +153,12 @@ const style = css`
     }
     
     .attribute-list-item {
+        cursor: pointer;
         display: flex;
         flex-direction: row;
         align-items: center;
         padding: 0;
+        height: 50px;
     }
 
     .attribute-list-item-label {
@@ -169,6 +172,14 @@ const style = css`
         height: 14px;
         border-radius: 7px;
         margin-right: 10px;
+    }
+
+    .attribute-list-item .button.delete {
+        display: none;
+    }
+
+    .attribute-list-item:hover .button.delete {
+        display: block;
     }
 
     #controls > * {
@@ -194,6 +205,23 @@ const style = css`
         flex: 1 1 0;
         position: relative;
     }
+
+    @media screen and (max-width: 769px) {
+        .mdc-dialog .mdc-dialog__surface {
+            min-width: auto;
+
+            max-width: calc(100vw - 32px);
+            max-height: calc(100% - 32px);
+        }
+
+        #container {
+            flex-direction: column;
+        }
+
+        #controls {
+            min-width: 100%;
+            padding-left: 0;
+        }
 `;
 
 
@@ -205,18 +233,19 @@ export class OrChart extends translate(i18next)(LitElement) {
     static get styles() {
         return [
             css`${unsafeCSS(tableStyle)}`,
+            css`${unsafeCSS(dialogStyle)}`,
             style
         ];
     }
 
     @property({type: Object})
-    private _assets: Asset[] = [];
+    public assets: Asset[] = [];
 
     @property({type: Object})
-    private _activeAsset?: Asset;
+    private activeAsset?: Asset;
 
     @property({type: Object})
-    private _attributes: AssetAttribute[] = [];
+    public assetAttributes: AssetAttribute[] = [];
 
     @property({type: Object})
     public attributeRef?: AttributeRef;
@@ -228,7 +257,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     public timestamp?: Date = new Date();
 
     @property({type: Object})
-    public config?: ChartConfig;
+    public config?: OrChartConfig;
 
     @property()
     protected _loading: boolean = false;
@@ -243,15 +272,21 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _chartElem!: HTMLCanvasElement;
 
     protected _chart?: Chart;
+
+    @query("#mdc-dialog")
+    protected _dialogElem!: HTMLElement;
+
+    protected _dialog!: MDCDialog;
+
     protected _style!: CSSStyleDeclaration;
 
     firstUpdated() {
-        
         if(this.shadowRoot) {
             const assetTreeElement = this.shadowRoot.getElementById('chart-asset-tree');
             if(assetTreeElement){
                 assetTreeElement.addEventListener(OrAssetTreeSelectionChangedEvent.NAME, (evt) => this._onTreeSelectionChanged(evt));
             }
+            this._dialog = new MDCDialog(this._dialogElem);
         }
     }
 
@@ -259,7 +294,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _onTreeSelectionChanged(event: OrAssetTreeSelectionChangedEvent) {
         const nodes = event.detail;
         if(nodes[0] && nodes[0].asset){
-           this._activeAsset = nodes[0].asset;
+           this.activeAsset = nodes[0].asset;
         }
     }
     
@@ -275,7 +310,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     shouldUpdate(_changedProperties: PropertyValues): boolean {
 
-        let reloadData = _changedProperties.has("interval") || _changedProperties.has("timestamp") || _changedProperties.has("_attributes");
+        let reloadData = _changedProperties.has("interval") || _changedProperties.has("timestamp") || _changedProperties.has("assetAttributes");
 
         if (reloadData) {
             this._data = [];
@@ -314,15 +349,15 @@ export class OrChart extends translate(i18next)(LitElement) {
                         <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._updateTimestamp(this.timestamp!, true)}"></or-input>
                     </div>
                     <div id="attribute-list">
-                        ${this._attributes.map((attr, index) => {
+                        ${this.assetAttributes.map((attr, index) => {
                             return html`
-                                <span class="attribute-list-item">
-                                    <span class="attribute-list-item-bullet" style="background-color:${this._data[index].borderColor};"></span>
+                                <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(index)}" @mouseout="${()=> this.removeDatasetHighlight(index)}">
+                                    ${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[index]!.type!))}
                                     <div class="attribute-list-item-label">
-                                        <strong>${this._assets[index].name}</strong>
+                                        <strong>${this.assets[index].name}</strong>
                                         <span>${i18next.t(attr.name ? attr.name : "")}</span>
                                     </div>
-                                    <or-input style="--or-icon-width: 20px;" class="button" .type="${InputType.BUTTON}" icon="close" @click="${() => this._deleteAttribute(index)}"></or-input>
+                                    <or-input style="--or-icon-width: 20px;" class="button delete" .type="${InputType.BUTTON}" icon="close" @click="${() => this._deleteAttribute(index)}"></or-input>
 
                                 </div>
                             `
@@ -333,6 +368,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 </div>
             </div>
             <div id="mdc-dialog"
+                class="mdc-dialog"
                 role="alertdialog"
                 aria-modal="true"
                 aria-labelledby="my-dialog-title"
@@ -341,8 +377,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                     <div class="mdc-dialog__surface">
                     <h2 class="mdc-dialog__title" id="my-dialog-title">Add attribute</h2>
                     <div class="dialog-container mdc-dialog__content" id="my-dialog-content">
-                        <or-asset-tree id="chart-asset-tree"></or-asset-tree>
-                            ${this._activeAsset && this._activeAsset.attributes ? html`
+                        <or-asset-tree id="chart-asset-tree" .selectedIds="${this.activeAsset ? [this.activeAsset.id] : null}]"></or-asset-tree>
+                            ${this.activeAsset && this.activeAsset.attributes ? html`
                                 <or-input id="chart-attribute-picker" 
                                         .label="${i18next.t("attribute")}" 
                                         .type="${InputType.LIST}"
@@ -351,17 +387,20 @@ export class OrChart extends translate(i18next)(LitElement) {
                     </div>
                     <footer class="mdc-dialog__actions">
                         <or-input class="button" 
+                                slot="secondaryAction"
+                                .type="${InputType.BUTTON}" 
+                                label="${i18next.t("Cancel")}" 
+                                class="mdc-button mdc-dialog__button" 
+                                data-mdc-dialog-action="no"></or-input>
+
+                        <or-input class="button" 
                             slot="primaryAction"
                             .type="${InputType.BUTTON}" 
                             label="${i18next.t("Add")}" 
-                            class="mdc-button mdc-dialog__button" data-mdc-dialog-action="yes"
+                            class="mdc-button mdc-dialog__button" 
+                            data-mdc-dialog-action="yes"
                             @click="${this.addAttribute}"></or-input>
 
-                        <or-input class="button" 
-                            slot="secondaryAction"
-                            .type="${InputType.BUTTON}" 
-                            label="${i18next.t("Cancel")}" 
-                            class="mdc-button mdc-dialog__button" data-mdc-dialog-action="no"></or-input>
                     </footer>
                     </div>
                 </div>
@@ -374,7 +413,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     getInputType() {
         switch(this.interval) {
             case DatapointInterval.HOUR:
-                return InputType.TIME
+                return InputType.DATETIME
               break;
             case DatapointInterval.DAY:
                 return InputType.DATE
@@ -389,6 +428,30 @@ export class OrChart extends translate(i18next)(LitElement) {
                 return InputType.MONTH
                 break;
           }
+    }
+
+    removeDatasetHighlight(index:number) {
+        if(this._chart && this._chart.data && this._chart.data.datasets){
+            this._chart.data.datasets.map((dataset, idx) => {
+                if(index !== idx) {
+                    const bgColor = this._style.getPropertyValue("--internal-or-chart-dataset-"+(idx+1)+"-color").trim();
+                    dataset.borderColor = bgColor;
+                }
+            })
+            this._chart.update();
+        }
+    }
+
+    addDatasetHighlight(index:number) {
+        if(this._chart && this._chart.data && this._chart.data.datasets){
+            this._chart.data.datasets.map((dataset, idx) => {
+                if(index !== idx) {
+                    const bgColor = this._style.getPropertyValue("--internal-or-chart-dataset-"+(idx+1)+"-color").trim();
+                    dataset.borderColor = bgColor+"4D";
+                }
+            })
+            this._chart.update();
+        }
     }
 
     updated(changedProperties: PropertyValues) {
@@ -411,6 +474,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                         display: false
                     },
                     tooltips: {
+                        mode: 'index',
+                        intersect: false,
                         displayColors: false,
                         callbacks: {
                             label: (tooltipItem, data) => {
@@ -482,12 +547,12 @@ export class OrChart extends translate(i18next)(LitElement) {
     addAttribute() {
         if(this.shadowRoot && this.shadowRoot.getElementById('chart-attribute-picker')){
             const elm = this.shadowRoot.getElementById('chart-attribute-picker') as HTMLInputElement;
-            if(this._activeAsset){
-                const attr = Util.getAssetAttribute(this._activeAsset, elm.value);
+            if(this.activeAsset){
+                const attr = Util.getAssetAttribute(this.activeAsset, elm.value);
 
                 if(attr){
-                    this._assets = [...this._assets, this._activeAsset];
-                    this._attributes = [...this._attributes, attr];
+                    this.assets = [...this.assets, this.activeAsset];
+                    this.assetAttributes = [...this.assetAttributes, attr];
                 }
             }
         }
@@ -506,18 +571,17 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _deleteAttribute (index:number) {
-        this._attributes = [...this._attributes.slice(0, index).concat(this._attributes.slice(index + 1, this._attributes.length))]
+        this.assetAttributes = [...this.assetAttributes.slice(0, index).concat(this.assetAttributes.slice(index + 1, this.assetAttributes.length))]
     }
 
     protected _getAttributeOptions() {
-        if(!this._activeAsset || !this._activeAsset.attributes) {
+        if(!this.activeAsset || !this.activeAsset.attributes) {
             return;
         }
 
-        let attributes = [...Util.getAssetAttributes(this._activeAsset)];
+        let attributes = [...Util.getAssetAttributes(this.activeAsset)];
         if(attributes && attributes.length > 0) {
-            // TODO change when assets have store_data_points
-            // attributes = attributes.filter((attr:Attribute) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
+            attributes = attributes.filter((attr:Attribute) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
         
             const options = attributes.map((attr:Attribute) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
             return options
@@ -537,16 +601,17 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-        if(!this._attributes) {
+        if(!this.assetAttributes) {
             return;
         }
 
-        const data = this._attributes.map(async (attribute, index) => {
+        const data = this.assetAttributes.map(async (attribute, index) => {
             const valuepoints = await this._loadAttributeData(attribute);
             let bgColor = this._style.getPropertyValue("--internal-or-chart-dataset-"+(index+1)+"-color").trim();
             const dataset: ChartDataSets = {
                 data: valuepoints,
                 borderColor: bgColor,
+                pointRadius: 2,
                 backgroundColor: "transparent"
             }
             return dataset;
@@ -582,11 +647,6 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._loading = false;
 
             if (response.status === 200) {
-                if(response.data) {
-                    response.data.map(item => {
-                        item.y = Math.random();
-                    });
-                }
                 return response.data;
             }
         }

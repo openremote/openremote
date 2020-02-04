@@ -10,7 +10,7 @@ import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 import "@openremote/or-map";
 import manager, {subscribe, Util, AssetModelUtil} from "@openremote/core";
 import "@openremote/or-panel";
-import {ChartConfig, OrChartEvent} from "@openremote/or-chart";
+import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
 import {Type as MapType, Util as MapUtil} from "@openremote/or-map";
 import {
@@ -50,7 +50,7 @@ export interface AssetViewerConfig {
     panelViewProvider?: (attributes: AssetAttribute[], panelName: string, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     mapType?: MapType;
     historyConfig?: HistoryConfig;
-    chartConfig?: ChartConfig;
+    chartConfig?: OrChartConfig;
 }
 
 export interface ViewerConfig {
@@ -436,9 +436,12 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
 
         } else if (panelConfig && panelConfig.type === "chart") {
-
+            let chartAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
+            if(chartAttrs.length > 0){
+                chartAttrs.length = 1;
+            }
             content = html`
-                <or-chart id="chart" .config="${viewerConfig.chartConfig}"></or-chart>
+                <or-chart id="chart" .config="${viewerConfig.chartConfig}" .activeAsset="${asset}" .assets="${asset ? [asset] : asset}" .assetAttributes="${chartAttrs}"></or-chart>
             `;
 
         } else if (panelConfig && panelConfig.type === "location") {

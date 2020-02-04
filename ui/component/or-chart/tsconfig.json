@@ -12,6 +12,7 @@
     { "path": "../core" },
     { "path": "../or-panel" },
     { "path": "../or-input" },
+    { "path": "../or-icon" },
     { "path": "../or-translate" }
   ]
 }

@@ -16,6 +16,7 @@
     "@material/dialog": "^4.0.0",
     "@openremote/core": "^1.1.0",
     "@openremote/or-input": "^1.1.0",
+    "@openremote/or-icon": "^1.1.0",
     "@openremote/or-panel": "^1.1.0",
     "@openremote/or-translate": "^1.1.0",
     "chart.js": "^2.8.0",
