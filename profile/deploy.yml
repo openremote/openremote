@@ -74,6 +74,7 @@ services:
     # Resource limits
     mem_limit: 100m
     memswap_limit: 100m
+    oom_kill_disable: true
 
     # Configure logging of the container
     logging:
@@ -239,8 +240,7 @@ services:
                   -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof'
 
     # Resource limits
-    mem_limit: 600m
-    memswap_limit: 600m
+    mem_reservation: 512m
 
     # Configure logging of the container, see deployment/logging.properties
     logging:
@@ -289,8 +289,7 @@ services:
                   -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true'
 
     # Resource limits
-    mem_limit: 600m
-    memswap_limit: 600m
+    mem_reservation: 512m
 
     # Configure logging of the container
     logging:
@@ -326,8 +325,7 @@ services:
       # docker exec -it <container ID> psql -U openremote
 
     # Resource limits
-    mem_limit: 400m
-    memswap_limit: 400m
+    mem_reservation: 512m
 
     # Configure logging of the container
     logging:
