@@ -571,7 +571,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         this._loading = false;
     }
 
-
     protected _getPanelConfig(asset: Asset): AssetViewerConfig {
         let config = {...OrAssetViewer.DEFAULT_CONFIG};
 
@@ -579,8 +578,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
             config.viewerStyles = {...config.viewerStyles};
             config.panels = {...config.panels};
-            config.viewerStyles = { ...config.viewerStyles };
-            config.panels = { ...config.panels };
             const assetConfig = this.config.assetTypes && this.config.assetTypes.hasOwnProperty(asset.type!) ? this.config.assetTypes[asset.type!] : this.config.default;
 
             if (assetConfig) {

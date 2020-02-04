@@ -63,4 +63,7 @@ public interface Constants {
     String SETUP_EMAIL_FROM = "SETUP_EMAIL_FROM";
     String SETUP_EMAIL_FROM_DEFAULT = "no-reply@openremote.io";
     String REQUEST_HEADER_REALM = "Auth-Realm";
+
+    String UNITS_TEMPERATURE_CELCIUS = "CELCIUS";
+    String UNITS_TIME_MINUTES = "MINUTES";
 }

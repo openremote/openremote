@@ -217,7 +217,8 @@ public enum AttributeValueType implements AttributeValueDescriptor {
         return Optional.ofNullable(validator);
     }
 
-    public AttributeValueDescriptor withUnitType(MetaItemDescriptor unitType) {
+    public AttributeValueDescriptor withUnitType(String units) {
+        MetaItemDescriptor unitType = UNIT_TYPE.withInitialValue(units);
         if (unitType.getUrn().equals(UNIT_TYPE.getUrn())) {
             return new AttributeValueDescriptorImpl(getName(), getIcon(), getValueType(), new MetaItemDescriptor[]{unitType});
         } else {
