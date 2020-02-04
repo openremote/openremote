@@ -239,8 +239,8 @@ services:
                   -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof'
 
     # Resource limits
-    mem_limit: 512m
-    memswap_limit: 512m
+    mem_limit: 600m
+    memswap_limit: 600m
 
     # Configure logging of the container, see deployment/logging.properties
     logging:
@@ -289,8 +289,8 @@ services:
                   -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true'
 
     # Resource limits
-    mem_limit: 512m
-    memswap_limit: 512m
+    mem_limit: 600m
+    memswap_limit: 600m
 
     # Configure logging of the container
     logging:
