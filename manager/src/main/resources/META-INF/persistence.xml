@@ -15,6 +15,7 @@
         <class>org.openremote.model.notification.SentNotification</class>
         <class>org.openremote.manager.security.UserConfiguration</class>
         <class>org.openremote.model.datapoint.AssetDatapoint</class>
+        <class>org.openremote.model.predicted.AssetPredictedDatapoint</class>
         <class>org.openremote.model.asset.UserAsset</class>
         <class>org.openremote.model.security.Tenant</class>
         <class>org.openremote.model.security.User</class>

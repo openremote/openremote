@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.datapoint;
+package org.openremote.manager.predicted;
 
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -25,38 +25,37 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.datapoint.AssetDatapointResource;
-import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.predicted.AssetPredictedDatapointResource;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.util.logging.Logger;
 
-public class AssetDatapointResourceImpl extends ManagerWebResource implements AssetDatapointResource {
+public class AssetPredictedDatapointResourceImpl extends ManagerWebResource implements AssetPredictedDatapointResource {
 
-    private static final Logger LOG = Logger.getLogger(AssetDatapointResourceImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(AssetPredictedDatapointResourceImpl.class.getName());
 
     protected final AssetStorageService assetStorageService;
-    protected final AssetDatapointService assetDatapointService;
+    protected final AssetPredictedDatapointService assetPredictedDatapointService;
 
-    public AssetDatapointResourceImpl(TimerService timerService,
-                                      ManagerIdentityService identityService,
-                                      AssetStorageService assetStorageService,
-                                      AssetDatapointService assetDatapointService) {
+    public AssetPredictedDatapointResourceImpl(TimerService timerService,
+                                               ManagerIdentityService identityService,
+                                               AssetStorageService assetStorageService,
+                                               AssetPredictedDatapointService assetPredictedDatapointService) {
         super(timerService, identityService);
         this.assetStorageService = assetStorageService;
-        this.assetDatapointService = assetDatapointService;
+        this.assetPredictedDatapointService = assetPredictedDatapointService;
     }
 
     @Override
-    public ValueDatapoint[] getDatapoints(@BeanParam RequestParams requestParams,
-                                                 String assetId,
-                                                 String attributeName,
-                                                 DatapointInterval interval,
-                                                 long timestamp) {
+    public ValueDatapoint[] getPredictedDatapoints(@BeanParam RequestParams requestParams,
+                                          String assetId,
+                                          String attributeName,
+                                          long fromTimestamp,
+                                          long toTimestamp) {
         try {
 
             if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
@@ -78,14 +77,13 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 new WebApplicationException(Response.Status.NOT_FOUND)
             );
 
-            return assetDatapointService.getValueDatapoints(
+            return assetPredictedDatapointService.getValueDatapoints(
                 attribute,
-                interval,
-                timestamp
+                toTimestamp,
+                fromTimestamp
             );
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
     }
-
 }

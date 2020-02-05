@@ -121,6 +121,14 @@ create table SYSLOG_EVENT (
   primary key (ID)
 );
 
+create table ASSET_PREDICTED_DATAPOINT (
+  TIMESTAMP      timestamp with time zone   not null,
+  ENTITY_ID      varchar(36)                not null,
+  ATTRIBUTE_NAME varchar(255)               not null,
+  VALUE          jsonb                      not null,
+  primary key (TIMESTAMP, ENTITY_ID, ATTRIBUTE_NAME)
+);
+
 /*
   ############################# FUNCTIONS #############################
  */

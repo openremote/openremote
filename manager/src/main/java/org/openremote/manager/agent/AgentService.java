@@ -21,6 +21,7 @@ package org.openremote.manager.agent;
 
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ParseContext;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
@@ -139,10 +140,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         );
 
         jsonPathParser = JsonPath.using(
-            new Configuration.ConfigurationBuilder()
+            Configuration.builder()
                 .jsonProvider(new JacksonJsonNodeJsonProvider())
                 .mappingProvider(new JacksonMappingProvider())
                 .build()
+                .addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL)
         );
     }
 

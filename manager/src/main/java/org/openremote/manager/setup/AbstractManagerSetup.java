@@ -28,6 +28,7 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.persistence.ManagerPersistenceService;
+import org.openremote.manager.predicted.AssetPredictedDatapointService;
 import org.openremote.manager.rules.RulesetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
@@ -60,6 +61,7 @@ public abstract class AbstractManagerSetup implements Setup {
     final protected AssetStorageService assetStorageService;
     final protected AssetProcessingService assetProcessingService;
     final protected AssetDatapointService assetDatapointService;
+    final protected AssetPredictedDatapointService assetPredictedDatapointService;
     final protected RulesetStorageService rulesetStorageService;
     final protected SetupService setupService;
 
@@ -70,6 +72,7 @@ public abstract class AbstractManagerSetup implements Setup {
         this.assetStorageService = container.getService(AssetStorageService.class);
         this.assetProcessingService = container.getService(AssetProcessingService.class);
         this.assetDatapointService = container.getService(AssetDatapointService.class);
+        this.assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
         this.rulesetStorageService = container.getService(RulesetStorageService.class);
         this.setupService = container.getService(SetupService.class);
     }
