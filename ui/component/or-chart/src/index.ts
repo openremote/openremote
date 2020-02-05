@@ -134,10 +134,9 @@ const style = css`
     #controls {
         display: flex;
         flex-wrap: wrap;
-        align-items: center;
         margin: var(--internal-or-chart-controls-margin);
         min-width: 325px;
-        padding-left: 40px;
+        padding-left: 20px;
         flex-direction: column;
         margin: 0;
     }
@@ -158,12 +157,13 @@ const style = css`
         flex-direction: row;
         align-items: center;
         padding: 0;
-        height: 50px;
+        min-height: 50px;
     }
 
     .attribute-list-item-label {
         display: flex;
         flex: 1 1 0;
+        line-height: 16px;
         flex-direction: column;
     }
 
@@ -340,10 +340,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                   
                     <div id="ending-controls">
                         <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._updateTimestamp(this.timestamp!, false)}"></or-input>
-                        <or-input id="ending-date" 
+                       <or-input id="ending-date" 
                         .type="${endDateInputType}" 
                         ?disabled="${disabled}" 
-                        label="${i18next.t("ending")}" 
                         .value="${this.timestamp}" 
                         @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
                         <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._updateTimestamp(this.timestamp!, true)}"></or-input>
@@ -352,10 +351,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                         ${this.assetAttributes.map((attr, index) => {
                             return html`
                                 <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(index)}" @mouseout="${()=> this.removeDatasetHighlight(index)}">
-                                    ${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[index]!.type!))}
+                                    <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[index]!.type!))}</span>
                                     <div class="attribute-list-item-label">
-                                        <strong>${this.assets[index].name}</strong>
-                                        <span>${i18next.t(attr.name ? attr.name : "")}</span>
+                                        <span>${this.assets[index].name}</span>
+                                        <span style="font-size:14px; color:grey;">${i18next.t(attr.name ? attr.name : "")}</span>
                                     </div>
                                     <or-input style="--or-icon-width: 20px;" class="button delete" .type="${InputType.BUTTON}" icon="close" @click="${() => this._deleteAttribute(index)}"></or-input>
 
