@@ -422,7 +422,6 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                 return (valuePredicate.index && !valuePredicate.value) || valuePredicate.value || valuePredicate.lengthEquals || valuePredicate.lengthLessThan || valuePredicate.lengthGreaterThan;
             case "value-empty":
             case "value-not-empty":
-            case "value-changed":
                 return true;
             default:
                 return false;
