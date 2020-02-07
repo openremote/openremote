@@ -94,12 +94,6 @@ const style = css`
     .add-button-wrapper or-mwc-menu {
         text-transform: capitalize;
     }
-    
-    .rule-reset {
-        position: absolute;
-        top: 5px;
-        right: 0;
-    }
 `;
 
 @customElement("or-rule-when")
@@ -118,33 +112,6 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
 
     public assetDescriptors?: AssetDescriptor[];
 
-    protected conditionResetTemplate(condition: RuleCondition): TemplateResult | string {
-
-        if (!condition.assets) {
-            return ``;
-        }
-
-        const buttonColor = "inherit";
-        let value = condition.resetOnValueChange ? ResetOption.VALUE_CHANGES : ResetOption.NO_LONGER_MATCHES;
-        let menuItems: MenuItem[] = Object.values(ResetOption).map((resetOption) => {
-            return {
-                text: i18next.t(resetOption),
-                value: resetOption
-            } as MenuItem;
-        });
-
-        return html`
-            <div class="rule-reset">
-                <div style="color: #${buttonColor}; margin-right: 6px;"><span><or-translate value="reset"></or-translate>:</span>
-                    ${getContentWithMenuTemplate(
-                        html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-input>`,
-                        menuItems,
-                        value,
-                        (value) => this.setResetOption(condition, value as ResetOption))}
-                </div>
-            </div>`;
-    }
-
     protected ruleGroupTemplate(group: LogicGroup<RuleCondition>, parentGroup?: LogicGroup<RuleCondition>): TemplateResult | undefined {
 
         if (!group) {
@@ -161,8 +128,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
         if (isTopLevel) {
             wrapper = (content, item, parent, isGroup, isFirst) => {
                 return html`
-                    
-                    <or-panel .heading="${i18next.t(isFirst ? "when": "orWhen")}...">
+                    <or-panel .heading="${i18next.t(isFirst ? "when" : "orWhen")}...">
                         ${showRemoveGroup ? html`
                             <button class="button-clear remove-button" @click="${() => this.removeItem(item, parent, isGroup)}">
                                 <or-icon icon="close-circle"></or-icon>  
@@ -173,13 +139,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
             };
         } else {
             wrapper = (content, item, parent, isGroup, isFirst) => {
-
-                let isCondition = (item as LogicGroup<RuleCondition>).items === undefined;
-
                 return html`
-                    
-                    ${isCondition ? this.conditionResetTemplate(item as RuleCondition) : ``}
-                
                     ${!isFirst ? html`
                         <or-icon class="small" icon="ampersand"></or-icon>
                     ` : ``}
@@ -417,15 +377,5 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
             this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
             this.requestUpdate();
         }
-    }
-
-    private setResetOption(condition: RuleCondition, value: ResetOption) {
-        if (value === ResetOption.NO_LONGER_MATCHES) {
-            delete condition.resetOnValueChange;
-        } else {
-            condition.resetOnValueChange = true;
-        }
-        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-        this.requestUpdate();
     }
 }

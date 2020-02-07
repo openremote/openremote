@@ -1,9 +1,7 @@
-import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
-import {JsonRule, RuleCondition, RulesetLang, TenantRuleset, ClientRole, CalendarEvent} from "@openremote/model";
+import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
+import {CalendarEvent, ClientRole, RulesetLang, TenantRuleset} from "@openremote/model";
 import "@openremote/or-translate";
 import manager, {EventCallback, OREvent} from "@openremote/core";
-import moment from "moment";
-import { RRule, RRuleSet, rrulestr } from "rrule";
 import "@openremote/or-input";
 import {InputType} from "@openremote/or-input";
 import {style as OrAssetTreeStyle} from "@openremote/or-asset-tree";
@@ -15,7 +13,8 @@ import {
     OrRulesSelectionChangedEvent,
     RequestEventDetail,
     RulesConfig,
-    RulesetNode} from "./index";
+    RulesetNode
+} from "./index";
 import "@openremote/or-mwc-components/dist/or-mwc-menu";
 import {MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import {translate} from "@openremote/or-translate";
@@ -269,7 +268,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
             <li ?data-selected="${node.selected}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, node)}">
                 <div class="node-container">
                     <span class="node-status ${OrRuleList._getNodeStatusClasses(node.ruleset)}"></span>
-                    <span class="node-name">${node.ruleset.name}<span class="node-language">${node.ruleset.lang}</span></span>
+                    <span class="node-name">${node.ruleset.name}<span class="node-language">${node.ruleset.lang !== RulesetLang.JSON ? node.ruleset.lang : ""}</span></span>
                 </div>
             </li>
         `;

@@ -33,10 +33,6 @@ import org.openremote.model.query.AssetQuery;
  * returned after applying the query.</li>
  * </ol>
  * <p>
- * The {@link #resetOnValueChange} is used to indicate that an {@link org.openremote.model.rules.AssetState} is
- * re-eligible for triggering the rule again when its' value changes (the default behaviour is that it only becomes
- * re-eligible when it no longer matches the condition).
- * <p>
  * The {@link #tag} is used to name the {@link org.openremote.model.asset.Asset}s that are filtered by the query and can
  * be used in the rule RHS to perform actions on these specific assets.
  */
@@ -44,6 +40,5 @@ public class RuleCondition {
 
     public String timer;
     public AssetQuery assets;
-    public boolean resetOnValueChange;
     public String tag;
 }

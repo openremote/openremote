@@ -160,18 +160,11 @@
   "message": "Message",
   "warn": "Warning",
   "error": "Error",
-  "recurrence": "Recurrence",
   "always": "Always",
   "once": "Once",
-  "oncePerAsset": "Once per asset",
   "oncePerHour": "Once per hour",
-  "oncePerHourPerAsset": "Once per hour per asset",
   "oncePerDay": "Once per day",
-  "oncePerDayPerAsset": "Once per day per asset",
   "oncePerWeek": "Once per week",
-  "oncePerWeekPerAsset": "Once per week per asset",
-  "oncePerMonth": "Once per month",
-  "oncePerMonthPerAsset": "Once per month per asset",
   "reset": "Reset",
   "noLongerMatches": "No longer matches"
 }

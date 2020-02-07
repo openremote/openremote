@@ -80,15 +80,9 @@ interface ResetOptions {
 export enum RecurrenceOption {
     ALWAYS = "always",
     ONCE = "once",
-    ONCE_PER_ASSET = "oncePerAsset",
     ONCE_PER_HOUR = "oncePerHour",
-    ONCE_PER_HOUR_PER_ASSET = "oncePerHourPerAsset",
     ONCE_PER_DAY = "oncePerDay",
-    ONCE_PER_DAY_PER_ASSET = "oncePerDayPerAsset",
     ONCE_PER_WEEK = "oncePerWeek",
-    ONCE_PER_WEEK_PER_ASSET = "oncePerWeekPerAsset",
-    ONCE_PER_MONTH = "oncePerMonth",
-    ONCE_PER_MONTH_PER_ASSET = "oncePerMonthPerAsset"
 }
 
 function getRecurrenceMenu(config?: RulesConfig): MenuItem[] {
@@ -203,27 +197,24 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
     protected ruleRecurrenceTemplate(reset: RuleRecurrence | undefined) {
         let recurrenceTemplate: TemplateResult | string = ``;
         const buttonColor = "inherit";
-        let value = RecurrenceOption.ONCE_PER_ASSET;
+        let value = RecurrenceOption.ONCE;
 
         if (reset) {
-            let isGlobal = reset.scope === RuleRecurrenceScope.GLOBAL;
             if (reset.mins === undefined || reset.mins === null) {
-                value = isGlobal ? RecurrenceOption.ONCE : RecurrenceOption.ONCE_PER_ASSET;
+                value = RecurrenceOption.ONCE;
             } else if (reset.mins === 0) {
                 value = RecurrenceOption.ALWAYS;
             } else if (reset.mins === 60) {
-                value = isGlobal ? RecurrenceOption.ONCE_PER_HOUR : RecurrenceOption.ONCE_PER_HOUR_PER_ASSET;
+                value = RecurrenceOption.ONCE_PER_HOUR;
             } else if (reset.mins === 1440) {
-                value = isGlobal ? RecurrenceOption.ONCE_PER_DAY : RecurrenceOption.ONCE_PER_DAY_PER_ASSET;
+                value = RecurrenceOption.ONCE_PER_DAY;
             } else if (reset.mins === 10080) {
-                value = isGlobal ? RecurrenceOption.ONCE_PER_WEEK : RecurrenceOption.ONCE_PER_WEEK_PER_ASSET;
-            } else if (reset.mins === 43200) {
-                value = isGlobal ? RecurrenceOption.ONCE_PER_MONTH : RecurrenceOption.ONCE_PER_MONTH_PER_ASSET;
+                value = RecurrenceOption.ONCE_PER_WEEK;
             }
         }
 
         recurrenceTemplate = html`
-                <div style="color: #${buttonColor}; margin-right: 6px;"><span><or-translate value="recurrence"></or-translate>:</span>
+                <div style="color: #${buttonColor}; margin-right: 6px;">
                     ${getContentWithMenuTemplate(
                         html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-input>`,
                         getRecurrenceMenu(this.config),
@@ -365,34 +356,16 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             case RecurrenceOption.ALWAYS:
                 this.rule.recurrence = {mins: 0};
                 break;
-            case RecurrenceOption.ONCE:
-                this.rule.recurrence = {scope: RuleRecurrenceScope.GLOBAL};
-                break;
             case RecurrenceOption.ONCE_PER_HOUR:
-                this.rule.recurrence = {scope: RuleRecurrenceScope.GLOBAL, mins: 60};
-                break;
-            case RecurrenceOption.ONCE_PER_HOUR_PER_ASSET:
                 this.rule.recurrence = {mins: 60};
                 break;
             case RecurrenceOption.ONCE_PER_DAY:
-                this.rule.recurrence = {scope: RuleRecurrenceScope.GLOBAL, mins: 1440};
-                break;
-            case RecurrenceOption.ONCE_PER_DAY_PER_ASSET:
                 this.rule.recurrence = {mins: 1440};
                 break;
             case RecurrenceOption.ONCE_PER_WEEK:
-                this.rule.recurrence = {scope: RuleRecurrenceScope.GLOBAL, mins: 10080};
-                break;
-            case RecurrenceOption.ONCE_PER_WEEK_PER_ASSET:
                 this.rule.recurrence = {mins: 10080};
                 break;
-            case RecurrenceOption.ONCE_PER_MONTH:
-                this.rule.recurrence = {scope: RuleRecurrenceScope.GLOBAL, mins: 43200};
-                break;
-            case RecurrenceOption.ONCE_PER_MONTH_PER_ASSET:
-                this.rule.recurrence = {mins: 43200};
-                break;
-            case RecurrenceOption.ONCE_PER_ASSET:
+            case RecurrenceOption.ONCE:
             default:
                 delete this.rule.recurrence;
                 break;

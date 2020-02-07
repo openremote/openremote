@@ -498,49 +498,56 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             } else {
                 if (ruleset instanceof GlobalRuleset) {
 
-                    RulesEngine<GlobalRuleset> newEngine = deployGlobalRuleset((GlobalRuleset) ruleset);
-                    if (newEngine != null) {
+                    boolean isNewEngine = globalEngine == null;
+                    RulesEngine<GlobalRuleset> engine = deployGlobalRuleset((GlobalRuleset) ruleset);
+
+                    if (isNewEngine) {
                         // Push all existing facts into the engine
-                        assetStates.forEach(assetState -> newEngine.updateOrInsertAssetState(assetState, true));
-                        newEngine.start();
+                        assetStates.forEach(assetState -> engine.updateOrInsertAssetState(assetState, true));
                     }
+
+                    engine.start();
 
                 } else if (ruleset instanceof TenantRuleset) {
 
-                    RulesEngine<TenantRuleset> newEngine = deployTenantRuleset((TenantRuleset) ruleset);
-                    if (newEngine != null) {
+                    boolean isNewEngine = !tenantEngines.containsKey(((TenantRuleset)ruleset).getRealm());
+                    RulesEngine<TenantRuleset> engine = deployTenantRuleset((TenantRuleset) ruleset);
+
+                    if (isNewEngine) {
                         // Push all existing facts into the engine
                         assetStates.forEach(assetState -> {
                             if (assetState.getRealm().equals(((TenantRuleset) ruleset).getRealm())) {
-                                newEngine.updateOrInsertAssetState(assetState, true);
+                                engine.updateOrInsertAssetState(assetState, true);
                             }
                         });
-                        newEngine.start();
                     }
+
+                    engine.start();
 
                 } else if (ruleset instanceof AssetRuleset) {
 
                     // Must reload from the database, the ruleset might not be completely hydrated on CREATE or UPDATE
                     AssetRuleset assetRuleset = rulesetStorageService.find(AssetRuleset.class, ruleset.getId());
-                    RulesEngine<AssetRuleset> newEngine = deployAssetRuleset(assetRuleset);
-                    if (newEngine != null) {
+                    boolean isNewEngine = !assetEngines.containsKey(((AssetRuleset)ruleset).getAssetId());
+                    RulesEngine<AssetRuleset> engine = deployAssetRuleset(assetRuleset);
+
+                    if (isNewEngine) {
                         // Push all existing facts for this asset (and it's children into the engine)
                         getAssetStatesInScope(((AssetRuleset) ruleset).getAssetId())
-                            .forEach(assetState -> newEngine.updateOrInsertAssetState(assetState, true));
-                        newEngine.start();
+                            .forEach(assetState -> engine.updateOrInsertAssetState(assetState, true));
                     }
+
+                    engine.start();
                 }
             }
         });
     }
 
     /**
-     * Deploy the ruleset into the global engine creating the engine if necessary; if the engine was created then it is
-     * returned from the method.
+     * Deploy the ruleset into the global engine creating the engine if necessary.
      */
     protected RulesEngine<GlobalRuleset> deployGlobalRuleset(GlobalRuleset ruleset) {
         return withLockReturning(getClass().getSimpleName() + "::deployGlobalRuleset", () -> {
-            boolean created = globalEngine == null;
 
             // Global rules have access to everything in the system
             if (globalEngine == null) {
@@ -559,7 +566,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
             globalEngine.addRuleset(ruleset);
 
-            return created ? globalEngine : null;
+            return globalEngine;
         });
     }
 
@@ -578,13 +585,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
     protected RulesEngine<TenantRuleset> deployTenantRuleset(TenantRuleset ruleset) {
         return withLockReturning(getClass().getSimpleName() + "::deployTenantRuleset", () -> {
-            AtomicBoolean created = new AtomicBoolean(false);
+
 
             // Look for existing rules engines for this tenant
             RulesEngine<TenantRuleset> tenantRulesEngine = tenantEngines
-                .computeIfAbsent(ruleset.getRealm(), (realm) -> {
-                    created.set(true);
-                    return new RulesEngine<>(
+                .computeIfAbsent(ruleset.getRealm(), (realm) ->
+                    new RulesEngine<>(
                         timerService,
                         identityService,
                         executorService,
@@ -594,12 +600,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         clientEventService,
                         new RulesEngineId<>(realm),
                         locationPredicateRulesConsumer
-                    );
-                });
+                    ));
 
             tenantRulesEngine.addRuleset(ruleset);
 
-            return created.get() ? tenantRulesEngine : null;
+            return tenantRulesEngine;
         });
     }
 
@@ -641,20 +646,17 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 return tenantAssetAndRules.stream()
                     //.sorted(Comparator.comparingInt(item -> item.key.getPath().length))
                     .flatMap(assetAndRules -> assetAndRules.value.stream())
-                    .map(this::deployAssetRuleset)
-                    .filter(Objects::nonNull);
+                    .map(this::deployAssetRuleset);
             });
     }
 
     protected RulesEngine<AssetRuleset> deployAssetRuleset(AssetRuleset ruleset) {
         return withLockReturning(getClass().getSimpleName() + "::deployAssetRuleset", () -> {
-            AtomicBoolean created = new AtomicBoolean(false);
 
             // Look for existing rules engine for this asset
             RulesEngine<AssetRuleset> assetRulesEngine = assetEngines
-                .computeIfAbsent(ruleset.getAssetId(), (assetId) -> {
-                    created.set(true);
-                    return new RulesEngine<>(
+                .computeIfAbsent(ruleset.getAssetId(), (assetId) ->
+                    new RulesEngine<>(
                         timerService,
                         identityService,
                         executorService,
@@ -664,12 +666,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         clientEventService,
                         new RulesEngineId<>(ruleset.getRealm(), assetId),
                         locationPredicateRulesConsumer
-                    );
-                });
+                    ));
 
             assetRulesEngine.addRuleset(ruleset);
 
-            return created.get() ? assetRulesEngine : null;
+            return assetRulesEngine;
         });
     }
 

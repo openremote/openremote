@@ -32,7 +32,7 @@ import manager, {AssetModelUtil, Util} from "@openremote/core";
 import i18next from "i18next";
 import {buttonStyle} from "../style";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
-import { translate } from "@openremote/or-translate";
+import {translate} from "@openremote/or-translate";
 
 // language=CSS
 const style = css`
