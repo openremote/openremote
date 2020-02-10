@@ -20,6 +20,7 @@
 package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.value.Value;
@@ -102,14 +103,14 @@ public enum AttributeValueType implements AttributeValueDescriptor {
     SOUND("headphone", ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(n -> n < 0)
         .map(n -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_SOUND_OUT_OF_RANGE)),
-        UNIT_TYPE.withInitialValue("DB"),
+        UNIT_TYPE.withInitialValue(Constants.UNITS_SOUND_DECIBELS),
         FORMAT.withInitialValue(Values.create("%d dB"))
     ),
 
     TEMPERATURE("temperature-high", ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(n -> n < -273.15)
         .map(n -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_TEMPERATURE_OUT_OF_RANGE)),
-        UNIT_TYPE.withInitialValue("CELSIUS"),
+        UNIT_TYPE.withInitialValue(Constants.UNITS_TEMPERATURE_CELCIUS),
         FORMAT.withInitialValue(Values.create("%0.1f C")
         )
     ),
