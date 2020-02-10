@@ -1136,7 +1136,7 @@ public class HttpClientProtocol extends AbstractProtocol {
     }
 
     protected void executePollingRequest(HttpClientRequest clientRequest, String body, Consumer<Response> responseConsumer) {
-        Response originalResponse = null, lastResponse;
+        Response originalResponse, lastResponse;
         List<String> entities = new ArrayList<>();
 
         try {
@@ -1149,11 +1149,11 @@ public class HttpClientProtocol extends AbstractProtocol {
                 }
                 originalResponse = PagingResponse.fromResponse(originalResponse).entity(entities).build();
             }
+
+            responseConsumer.accept(originalResponse);
         } catch (Exception e) {
             LOG.log(Level.WARNING, getProtocolDisplayName() + " exception thrown whilst doing polling request [" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: " + clientRequest.requestTarget.getUriBuilder().build().toString());
         }
-
-        responseConsumer.accept(originalResponse);
     }
 
     protected Response executePagingRequest(HttpClientRequest clientRequest, Response response) {
