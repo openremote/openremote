@@ -127,11 +127,6 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
             @Override
             protected void encode(String message, ByteBuf buf) {
                 //Load states of all other lamps
-                ArrayList<ArtNetDMXLight> lights = new ArrayList<>();
-                lights.add(new ArtNetDMXLight(100,0,3,0,255,255,255,255));
-                lights.add(new ArtNetDMXLight(5,0,3,0,255,255,255,255));
-                lights.add(new ArtNetDMXLight(3,1,3,0,255,255,255,255));
-
                 JsonParser parser = new JsonParser();
                 JsonObject messageObject = parser.parse(message).getAsJsonObject();
 
@@ -143,35 +138,14 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
                 Arrays.sort(lightIds);
 
                 // Create packet
-                // TODO: clean pls
                 int amountOfLeds = messageObject.get("amountOfLeds").getAsInt();
-                getPrefix(buf, messageObject.get("universe").getAsInt());
-                int lenIndex = buf.writerIndex();
-                buf.writerIndex(buf.writerIndex()+2);
-
-
-                //TODO CHANGE TO FULL LIGHT OBJECT TO GET AMOUNT OF LEDS FOR EACH LAMP (FOR NOW DEFAULT 3)
+                ArtNetPacket.writePrefix(buf, messageObject.get("universe").getAsInt());
                 for (int lightId : lightIds)
                 {
-                    for(int i = 0; i < amountOfLeds; i++) {
-                        byte[] vals = ArrayUtils.toPrimitive(artnetLightStates.get(lightId).getValues());
-                        buf.writeBytes(vals);
-                    }
+                    ArtNetPacket.writeLight(buf, artnetLightStates.get(lightId).getValues(), amountOfLeds);
                 }
 
-                // Move back to the len field to write the difference in size
-                int len = buf.writerIndex() - lenIndex - 2;
-                buf.writerIndex(lenIndex);
-                buf.writeByte((len >> 8) & 0xff);
-                buf.writeByte(len & 0xff);
-
-                for (int lightId : lightIds)
-                {
-                    for(int i = 0; i < amountOfLeds; i++) {
-                        byte[] vals = ArrayUtils.toPrimitive(artnetLightStates.get(lightId).getValues());
-                        buf.writeBytes(vals);
-                    }
-                }
+                ArtNetPacket.updateLength(buf);
 
 
 
@@ -183,15 +157,6 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
                 }
             }
         };
-    }
-
-    public ByteBuf getPrefix(ByteBuf buf, int universe) {
-        buf.writeBytes(new byte[]{ 65, 114, 116, 45, 78, 101, 116, 0, 0, 80, 0, 14 });
-        buf.writeByte(0); // Sequence
-        buf.writeByte(0); // Physical
-        buf.writeByte((universe >> 8) & 0xff);
-        buf.writeByte(universe & 0xff);
-        return buf;
     }
 
     //Runs if a new Asset is created with an ArtNet Client as attribute.

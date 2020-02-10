@@ -3,6 +3,7 @@ package org.openremote.agent.protocol.artnet;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.buffer.ByteBuf;
+import org.apache.commons.lang.ArrayUtils;
 
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -35,25 +36,32 @@ public class ArtNetPacket {
         this.w = w;
     }
 
-    public static Optional<ArtNetPacket> fromValue(Value value) {
+    public static void writePrefix(ByteBuf buf, int universe)
+    {
+        buf.writeBytes(prefix);
+        buf.writeByte(0); // Sequence
+        buf.writeByte(0); // Physical
+        buf.writeByte((universe >> 8) & 0xff);
+        buf.writeByte(universe & 0xff);
+        buf.writeByte(0); // dummy length hi
+        buf.writeByte(0); // dummy length lo
+    }
 
-        Optional<ArtNetPacket> a = Values.getObject(value).flatMap(obj -> {
-            int _universe = obj.getNumber("universe").orElse(0.).intValue();
-            double  _dim = obj.getNumber("dim").orElse(1.);
-/*
-            int[] _values = obj.getArray("values").get()
-                    .stream()
-                    .mapToInt(num -> num.asAny().asByte())
-                    .toArray();
-*/
-            int _r = obj.getNumber("r").orElse(0.).intValue();
-            int _g = obj.getNumber("g").orElse(0.).intValue();
-            int _b = obj.getNumber("b").orElse(0.).intValue();
-            int _w = obj.getNumber("w").orElse(0.).intValue();
-            return Optional.of(new ArtNetPacket(_universe, _dim,  _r, _g, _b, _w));
-        });
+    // Required as we do not know how many light ids we will need to send
+    public static void updateLength(ByteBuf buf)
+    {
+        int len_idx = prefix.length() + 4;
+        int len = buf.length() - len_idx - 2;
+        buf.setByte(len_idx, (len >> 8) & 0xff);
+        buf.setByte(len_idx+1, len & 0xff);
+    }
 
-        return  a;
+    public static void writeLight(ByteBuf buf, Byte[] light, int repeat = 1) 
+    {
+        byte[] vals = ArrayUtils.toPrimitive(light);
+        for(int i = 0; i < repeat; i++) {
+            buf.writeBytes(vals);
+        }
     }
 
     public ByteBuf toBuffer(ByteBuf buf) {
@@ -71,47 +79,6 @@ public class ArtNetPacket {
                 buf.writeByte(values[i]);
             }
         }
-        return buf;
-    }
-
-    public ByteBuf[] assemblePacket(ByteBuf buf, ArrayList<ArtNetDMXLight> lights)
-    {
-        //Detect highest universe
-        int highestUniverse = Collections.max(lights, Comparator.comparing(l -> l.universe)).universe;
-
-        ByteBuf[] output = new ByteBuf[highestUniverse + 1];
-
-        //Create a packet for each universe
-        for (int u = 0; u <= highestUniverse; u++)
-        {
-            int finalU = u;//Required for lambda statements.
-            List<ArtNetDMXLight> universeLights =
-                    lights.stream().filter(x -> x.universe == finalU).collect(Collectors.toList());
-
-            //Sort lights from low ID to high ID
-            universeLights.sort(Comparator.comparingInt(ArtNetDMXLight::getId));
-
-            //Add the prefix and the universe to the
-            ByteBuf prefixedBuffer = initializeBuffer(buf, prefix, u);
-
-            for (ArtNetDMXLight light : universeLights){
-                prefixedBuffer = light.appendToBuffer(prefixedBuffer);
-            }
-
-            output[u] = prefixedBuffer;
-        }
-
-        return output;
-    }
-
-    private ByteBuf initializeBuffer(ByteBuf buf, byte[] prefix, int universe)
-    {
-        int[] values = { g, r, b, w };
-        buf.writeBytes(prefix);
-        buf.writeByte(0); // Sequence
-        buf.writeByte(0); // Physical
-        buf.writeByte((universe >> 8) & 0xff);
-        buf.writeByte(universe & 0xff);
         return buf;
     }
 }
