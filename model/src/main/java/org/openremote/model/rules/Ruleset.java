@@ -207,7 +207,9 @@ public abstract class Ruleset {
 
     protected Ruleset(String name, Lang language, String rules) {
         this.name = name;
-        this.lang = language;
+        if (language != null) {
+            this.lang = language;
+        }
         this.rules = rules;
     }
 

@@ -109,7 +109,7 @@ public interface RulesResource {
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(204)
+    @SuccessStatusCode(200)
     @RolesAllowed({Constants.WRITE_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     long createGlobalRuleset(@BeanParam RequestParams requestParams, @Valid GlobalRuleset ruleset);
@@ -160,7 +160,7 @@ public interface RulesResource {
     @Path("tenant")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(204)
+    @SuccessStatusCode(200)
     @RolesAllowed({Constants.WRITE_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     long createTenantRuleset(@BeanParam RequestParams requestParams, @Valid TenantRuleset ruleset);
@@ -212,7 +212,7 @@ public interface RulesResource {
     @Path("asset")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(204)
+    @SuccessStatusCode(200)
     @RolesAllowed({Constants.WRITE_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     long createAssetRuleset(@BeanParam RequestParams requestParams, @Valid AssetRuleset ruleset);
