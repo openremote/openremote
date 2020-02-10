@@ -131,8 +131,8 @@ public class RulesetDeployment {
     final protected ManagerExecutorService executorService;
     final protected Assets assetsFacade;
     final protected Users usersFacade;
-    final protected NotificationsFacade notificationsFacade;
-    final protected List<ScheduledFuture> scheduledRuleActions = new ArrayList<>();
+    final protected NotificationsFacade<?> notificationsFacade;
+    final protected List<ScheduledFuture<?>> scheduledRuleActions = new ArrayList<>();
     protected RulesetStatus status = RulesetStatus.READY;
     protected Throwable error;
     protected JsonRulesBuilder jsonRulesBuilder;
@@ -140,7 +140,7 @@ public class RulesetDeployment {
     protected CalendarEvent validity;
     protected Pair<Long, Long> nextValidity;
 
-    public RulesetDeployment(Ruleset ruleset, TimerService timerService, AssetStorageService assetStorageService, ManagerExecutorService executorService, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationsFacade) {
+    public RulesetDeployment(Ruleset ruleset, TimerService timerService, AssetStorageService assetStorageService, ManagerExecutorService executorService, Assets assetsFacade, Users usersFacade, NotificationsFacade<?> notificationsFacade) {
         this.ruleset = ruleset;
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
@@ -252,7 +252,7 @@ public class RulesetDeployment {
 
     protected void scheduleRuleAction(Runnable action, long delayMillis) {
         withLock(toString() + "::scheduleRuleAction", () -> {
-            ScheduledFuture future = executorService.schedule(() ->
+            ScheduledFuture<?> future = executorService.schedule(() ->
                     withLock(toString() + "::scheduledRuleActionFire", () -> {
                         scheduledRuleActions.removeIf(Future::isDone);
                         action.run();
@@ -278,7 +278,7 @@ public class RulesetDeployment {
         }
     }
 
-    protected boolean compileRulesJavascript(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade consolesFacade) {
+    protected boolean compileRulesJavascript(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade<?> notificationsFacade) {
         // TODO https://github.com/pfisterer/scripting-sandbox/blob/master/src/main/java/de/farberg/scripting/sandbox/ScriptingSandbox.java
         ScriptEngine scriptEngine = scriptEngineManager.getEngineByName("nashorn");
         ScriptContext newContext = new SimpleScriptContext();
@@ -287,7 +287,7 @@ public class RulesetDeployment {
 
         engineScope.put("assets", assetsFacade);
         engineScope.put("users", usersFacade);
-        engineScope.put("consoles", consolesFacade);
+        engineScope.put("notifications", notificationsFacade);
 
         String script = ruleset.getRules();
 
@@ -419,7 +419,7 @@ public class RulesetDeployment {
         }
     }
 
-    protected boolean compileRulesGroovy(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationFacade) {
+    protected boolean compileRulesGroovy(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade<?> notificationFacade) {
         try {
             // TODO Implement sandbox
             // new DenyAll().register();
@@ -446,9 +446,9 @@ public class RulesetDeployment {
         }
     }
 
-    protected boolean compileRulesFlow(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade consolesFacade) {
+    protected boolean compileRulesFlow(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade<?> notificationsFacade) {
         try {
-            flowRulesBuilder = new FlowRulesBuilder(timerService, assetStorageService, assetsFacade, usersFacade, notificationsFacade);
+            flowRulesBuilder = new FlowRulesBuilder(timerService, assetStorageService, assetsFacade, usersFacade, this.notificationsFacade);
             NodeCollection nodeCollection = Container.JSON.readValue(ruleset.getRules(), NodeCollection.class);
             flowRulesBuilder.add(nodeCollection);
             for (Rule rule : flowRulesBuilder.build()) {
