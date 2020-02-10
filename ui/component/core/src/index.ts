@@ -90,6 +90,7 @@ export interface LoginOptions {
 }
 
 export interface RealmConfig {
+    appTitle?: string;
     colors?: TemplateResult;
     logo?: HTMLTemplateElement | string;
     logoMobile?: HTMLTemplateElement | string;
