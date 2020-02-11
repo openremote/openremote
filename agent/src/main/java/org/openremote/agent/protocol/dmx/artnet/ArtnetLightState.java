@@ -15,55 +15,6 @@ public class ArtnetLightState extends AbstractDMXLightState {
     private int g;
     private int b;
     private int w;
-
-    public int getR() {
-        return r;
-    }
-
-    public int getG() {
-        return g;
-    }
-
-    public void setR(int r) {
-        this.r = r;
-    }
-
-    public void setG(int g) {
-        this.g = g;
-    }
-
-    public void setB(int b) {
-        this.b = b;
-    }
-
-    public void setW(int w) {
-        this.w = w;
-    }
-
-    public void setDim(double dim) {
-        this.dim = dim;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public int getB() {
-        return b;
-    }
-
-    public int getW() {
-        return w;
-    }
-
-    public double getDim() {
-        return dim;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
     private double dim;
     private boolean enabled;
 
@@ -80,8 +31,15 @@ public class ArtnetLightState extends AbstractDMXLightState {
     @Override
     public Byte[] getValues() {
         int enable = this.enabled? 1 : 0;
-        return Arrays.asList(new Byte[] {(byte)this.getG(), (byte)this.getR(), (byte)this.getB(), (byte)this.getW()}).stream().map(y -> (byte)(y * (this.getDim()/100) * enable)).toArray(size -> new Byte[size]);
-        //return new Byte[]{(byte)this.getG(),(byte)this.getR(),(byte)this.getB(),(byte)this.getW()};
+        return Arrays.asList(this.getRawValues())
+            .stream()
+            .map(y -> (byte)(y * (this.dim/100) * enable))
+            .toArray(size -> new Byte[size]);
+    }
+
+    private Byte[] getRawValues()
+    {
+        return new Byte[]{(byte)this.g,(byte)this.r,(byte)this.b,(byte)this.w};
     }
 
     @Override
@@ -104,14 +62,10 @@ public class ArtnetLightState extends AbstractDMXLightState {
             if(attr.getName().get().equalsIgnoreCase("Values")) {
                 Value brouh = event.getAttributeState().getValue().orElse(null);
                 JsonObject jobject = new JsonParser().parse(brouh.toJson()).getAsJsonObject();
-                Byte r = jobject.get("r").getAsByte();
-                Byte g = jobject.get("g").getAsByte();
-                Byte b = jobject.get("b").getAsByte();
-                Byte w = jobject.get("w").getAsByte();
-                this.setR(r);
-                this.setG(g);
-                this.setB(b);
-                this.setW(w);
+                this.r = jobject.get("r").getAsByte();
+                this.g = jobject.get("g").getAsByte();
+                this.b = jobject.get("b").getAsByte();
+                this.w = jobject.get("w").getAsByte();
             }
         //SWITCH ATTRIBUTE
         if(attr.getType().get().getValueType() == ValueType.BOOLEAN)
@@ -119,9 +73,9 @@ public class ArtnetLightState extends AbstractDMXLightState {
                 String val = event.getAttributeState().getValue().get().toString();
                 boolean switchState = (boolean) Boolean.parseBoolean(val);
                 if(switchState) {
-                    this.setEnabled(true);
+                    this.enabled = true;
                 }else{
-                    this.setEnabled(false);
+                    this.enabled = false;
                 }
             }
     }

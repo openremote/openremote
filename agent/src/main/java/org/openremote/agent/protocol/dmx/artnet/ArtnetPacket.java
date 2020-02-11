@@ -6,29 +6,7 @@ import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang.ArrayUtils;
 
 public class ArtnetPacket {
-
-    protected int universe;
-    protected double dim;
-    protected int r;
-    protected int g;
-    protected int b;
-    protected int w;
     protected static byte[] prefix = { 65, 114, 116, 45, 78, 101, 116, 0, 0, 80, 0, 14 };
-
-    @JsonCreator
-    public ArtnetPacket(@JsonProperty("universe") int universe,
-                        @JsonProperty("dim") double dim,
-                        @JsonProperty("r") int r,
-                        @JsonProperty("g") int g,
-                        @JsonProperty("b") int b,
-                        @JsonProperty("w") int w) {
-        this.universe = universe;
-        this.dim = dim;
-        this.r = r;
-        this.g = g;
-        this.b = b;
-        this.w = w;
-    }
 
     public static void writePrefix(ByteBuf buf, int universe)
     {
@@ -56,23 +34,5 @@ public class ArtnetPacket {
         for(int i = 0; i < repeat; i++) {
             buf.writeBytes(vals);
         }
-    }
-
-    public ByteBuf toBuffer(ByteBuf buf) {
-        int[] values = { g, r, b, w };
-        buf.writeBytes(prefix);
-        buf.writeByte(0); // Sequence
-        buf.writeByte(0); // Physical
-        buf.writeByte((universe >> 8) & 0xff);
-        buf.writeByte(universe & 0xff);
-        buf.writeByte((values.length >> 8) & 0xff);
-        buf.writeByte(values.length & 0xff);
-        for (int x = 0; x < 6; x++)//Each lamp has 6 lights
-        {
-            for(int i = 0; i < values.length; i++) {
-                buf.writeByte(values[i]);
-            }
-        }
-        return buf;
     }
 }
