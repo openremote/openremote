@@ -141,14 +141,8 @@ public class ArtnetClientProtocol extends AbstractUdpClientProtocol<String> {
                 int amountOfLeds = messageObject.get("amountOfLeds").getAsInt();
                 ArtNetPacket.writePrefix(buf, messageObject.get("universe").getAsInt());
                 for (int lightId : lightIds)
-                {
                     ArtNetPacket.writeLight(buf, artnetLightStates.get(lightId).getValues(), amountOfLeds);
-                }
-
                 ArtNetPacket.updateLength(buf);
-
-
-
                 //Send packet (Look over it)
                 try{
                     finalEncoder.accept("", buf);

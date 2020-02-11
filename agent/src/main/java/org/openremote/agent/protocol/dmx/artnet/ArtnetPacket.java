@@ -1,17 +1,11 @@
-package org.openremote.agent.protocol.artnet;
+package org.openremote.agent.protocol.dmx.artnet;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang.ArrayUtils;
 
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
-public class ArtNetPacket {
+public class ArtnetPacket {
 
     protected int universe;
     protected double dim;
@@ -22,7 +16,7 @@ public class ArtNetPacket {
     protected static byte[] prefix = { 65, 114, 116, 45, 78, 101, 116, 0, 0, 80, 0, 14 };
 
     @JsonCreator
-    public ArtNetPacket(@JsonProperty("universe") int universe,
+    public ArtnetPacket(@JsonProperty("universe") int universe,
                         @JsonProperty("dim") double dim,
                         @JsonProperty("r") int r,
                         @JsonProperty("g") int g,
@@ -50,10 +44,10 @@ public class ArtNetPacket {
     // Required as we do not know how many light ids we will need to send
     public static void updateLength(ByteBuf buf)
     {
-        /*int len_idx = prefix.length() + 4;
-        int len = buf.length() - len_idx - 2;
+        int len_idx = prefix.length + 4;
+        int len = buf.array().length - len_idx - 2;
         buf.setByte(len_idx, (len >> 8) & 0xff);
-        buf.setByte(len_idx+1, len & 0xff);*/
+        buf.setByte(len_idx+1, len & 0xff);
     }
 
     public static void writeLight(ByteBuf buf, Byte[] light, int repeat)

@@ -17,6 +17,30 @@ public class ArtnetLightState extends AbstractDMXLightState {
         return g;
     }
 
+    public void setR(int r) {
+        this.r = r;
+    }
+
+    public void setG(int g) {
+        this.g = g;
+    }
+
+    public void setB(int b) {
+        this.b = b;
+    }
+
+    public void setW(int w) {
+        this.w = w;
+    }
+
+    public void setDim(double dim) {
+        this.dim = dim;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
     public int getB() {
         return b;
     }
@@ -46,4 +70,8 @@ public class ArtnetLightState extends AbstractDMXLightState {
         this.enabled = enabled;
     }
 
+    @Override
+    public Byte[] getValues() {
+        return new Byte[]{(byte)this.getG(),(byte)this.getR(),(byte)this.getB(),(byte)this.getW()};
+    }
 }

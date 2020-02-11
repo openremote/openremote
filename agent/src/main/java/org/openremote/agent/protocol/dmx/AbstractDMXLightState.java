@@ -1,6 +1,6 @@
 package org.openremote.agent.protocol.dmx;
 
-public class AbstractDMXLightState {
+public abstract class AbstractDMXLightState {
 
     private int lightId;
 
@@ -11,5 +11,7 @@ public class AbstractDMXLightState {
     public int getLightId() {
         return this.lightId;
     }
+
+    public abstract Byte[] getValues();
 
 }
