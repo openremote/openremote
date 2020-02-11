@@ -309,11 +309,12 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
                         universeId = individualLightConfig.getAsJsonObject().get("universe").getAsInt();
                 }
                 for(JsonElement individualLightConfig : jerry) {
-                    if(individualLightConfig.getAsJsonObject().get("universe").getAsInt() == universeId)
+                    if(individualLightConfig.getAsJsonObject().get("universe").getAsInt() == universeId) {
+                        int childLightId = individualLightConfig.getAsJsonObject().get("id").getAsInt();
                         lightIdsWithinUniverse.add(individualLightConfig.getAsJsonObject().get("id").getAsInt());
-                    //TODO FIX SENDING THROUGH FULL LIGHT OBJECT (contains amount of leds per lamp), now just take the amount of lets of the last index.
-                    //amountOfLeds = individualLightConfig.getAsJsonObject().get("amountOfLeds").getAsInt();
-                    amountOfLedsPerLightId.put(lampId + "", Values.create(amountOfLeds));
+                        amountOfLeds = individualLightConfig.getAsJsonObject().get("amountOfLeds").getAsInt();
+                        amountOfLedsPerLightId.put(childLightId + "", Values.create(amountOfLeds));
+                    }
                 }
             }
         }
