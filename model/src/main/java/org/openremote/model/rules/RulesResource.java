@@ -29,6 +29,8 @@ import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
 import javax.ws.rs.*;
 
+import java.util.List;
+
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("rules")
@@ -74,7 +76,7 @@ public interface RulesResource {
     @SuccessStatusCode(200)
     @RolesAllowed({Constants.READ_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
-    GlobalRuleset[] getGlobalRulesets(@BeanParam RequestParams requestParams, @QueryParam("language")Ruleset.Lang language, @QueryParam("fullyPopulate") boolean fullyPopulate);
+    GlobalRuleset[] getGlobalRulesets(@BeanParam RequestParams requestParams, @QueryParam("language") List<Ruleset.Lang> languages, @QueryParam("fullyPopulate") boolean fullyPopulate);
 
     /**
      * Retrieve rules of a tenant. The superuser can retrieve rules of all realms, a 403 status is returned if a regular
@@ -86,7 +88,7 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
-    TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @QueryParam("language")Ruleset.Lang language, @QueryParam("fullyPopulate") boolean fullyPopulate);
+    TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @QueryParam("language") List<Ruleset.Lang> languages, @QueryParam("fullyPopulate") boolean fullyPopulate);
 
     /**
      * Retrieve rules of an asset. The superuser can retrieve rules of all realms and assets, a 403 status is returned
@@ -98,7 +100,7 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
-    AssetRuleset[] getAssetRulesets(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @QueryParam("language")Ruleset.Lang language, @QueryParam("fullyPopulate") boolean fullyPopulate);
+    AssetRuleset[] getAssetRulesets(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @QueryParam("language") List<Ruleset.Lang> languages, @QueryParam("fullyPopulate") boolean fullyPopulate);
 
     /* ################################################################################################# */
 
