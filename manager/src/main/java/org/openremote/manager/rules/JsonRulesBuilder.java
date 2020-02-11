@@ -263,10 +263,6 @@ public class JsonRulesBuilder extends RulesBuilder {
                 }
             }
 
-            // Remove matches that have an active recurrence timer
-            matchedAssetStates.removeIf(matchedAssetState -> nextRecurAssetIdMap.containsKey(matchedAssetState.getId())
-                && nextRecurAssetIdMap.get(matchedAssetState.getId()) > timerService.getCurrentTimeMillis());
-
             // Remove previous matches where the asset state no longer matches
             previouslyMatchedAssetStates.removeIf(previousAssetState -> {
 
@@ -278,6 +274,10 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 return noLongerMatches;
             });
+
+            // Remove matches that have an active recurrence timer
+            matchedAssetStates.removeIf(matchedAssetState -> nextRecurAssetIdMap.containsKey(matchedAssetState.getId())
+                && nextRecurAssetIdMap.get(matchedAssetState.getId()) > timerService.getCurrentTimeMillis());
 
             // Filter out previous matches to avoid re-triggering
             matchedAssetStates.removeIf(previouslyMatchedAssetStates::contains);
