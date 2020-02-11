@@ -180,14 +180,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
 
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) throws IOException {
-        //TODO: Edit standard values (Dim to 100)
-        //TODO CHECK IF LIGHT ID IS RETRIEVED SUCCESSFULLY
-        //int lightId = protocolConfiguration.getMetaItem(META_ARTNET_CONFIGURATION.getUrn()).get().getValueAsInteger().get();
-        //int lightId = 0;
         MetaItem metaItem = protocolConfiguration.getMetaItem(META_ARTNET_CONFIGURATION.getUrn()).orElse(null);
-
-
-
         String configJsonString = metaItem.getValue().orElse(null).toJson();
         JsonObject configJson = new JsonParser().parse(configJsonString).getAsJsonObject();
         JsonArray jerry = configJson.getAsJsonArray("lights");

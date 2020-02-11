@@ -329,7 +329,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                             new MetaItem(AGENT_LINK, new AttributeRef(artNetArea.getId(), agentProtocolConfigName).toArrayValue()),
                             new MetaItem(ArtnetClientProtocol.META_ARTNET_LIGHT_ID, Values.create(i))
                     ),
-                    new AssetAttribute("Dim", NUMBER, Values.create(0)).addMeta(
+                    new AssetAttribute("Dim", NUMBER, Values.create(100)).addMeta(
                             new MetaItem(AGENT_LINK, new AttributeRef(artNetArea.getId(), agentProtocolConfigName).toArrayValue()),
                             new MetaItem(ArtnetClientProtocol.META_ARTNET_LIGHT_ID, Values.create(i))
                     )
