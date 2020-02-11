@@ -7,11 +7,8 @@ public abstract class AbstractDMXLightState {
     public AbstractDMXLightState(int lightId) {
         this.lightId = lightId;
     }
-
     public int getLightId() {
         return this.lightId;
     }
-
     public abstract Byte[] getValues();
-
 }
