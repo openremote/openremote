@@ -42,7 +42,7 @@ export const surveyResultStyle = html`
             }
 
             .button-default.active {
-                background-color: var(--app-primary-color);
+                background-color: var(--or-survey-color-button, var(--app-primary-color))
             }
 
             .bar span {
