@@ -143,11 +143,10 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
                 Arrays.sort(lightIds);
 
                 // Create packet
-                int amountOfLeds = messageObject.get("amountOfLeds").getAsInt();
                 ArtnetPacket.writePrefix(buf, messageObject.get("universe").getAsInt());
                 for (int lightId : lightIds) {
                     ArtnetLightState lightState = (ArtnetLightState) artnetLightMemory.get(lightId);
-                    ArtnetPacket.writeLight(buf, lightState.getValues(), amountOfLeds);
+                    ArtnetPacket.writeLight(buf, lightState.getValues(), messageObject.get("amountOfLeds").getAsJsonObject().get(lightId + "").getAsInt());
                 }
                 ArtnetPacket.updateLength(buf);
                 //Send packet (Look over it)
@@ -305,6 +304,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
         int amountOfLeds = 0;
         ArrayValue protocolMetaItemsArray = protocolConfiguration.getObjectValue().getArray("meta").get();
         List<Integer> lightIdsWithinUniverse = new ArrayList<>();
+        HashMap<String,Value> amountOfLedsPerLightId = new HashMap<String, Value>();
         for(int i = 0; i < protocolMetaItemsArray.length(); i++) {
             ObjectValue objvl = protocolMetaItemsArray.getObject(i).get();
             if(objvl.getString("name").get().equals("urn:openremote:protocol:artnet:areaConfiguration")) {
@@ -319,7 +319,8 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
                     if(individualLightConfig.getAsJsonObject().get("universe").getAsInt() == universeId)
                         lightIdsWithinUniverse.add(individualLightConfig.getAsJsonObject().get("id").getAsInt());
                     //TODO FIX SENDING THROUGH FULL LIGHT OBJECT (contains amount of leds per lamp), now just take the amount of lets of the last index.
-                    amountOfLeds = individualLightConfig.getAsJsonObject().get("amountOfLeds").getAsInt();
+                    //amountOfLeds = individualLightConfig.getAsJsonObject().get("amountOfLeds").getAsInt();
+                    amountOfLedsPerLightId.put(lampId + "", Values.create(amountOfLeds));
                 }
             }
         }
@@ -383,7 +384,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
         Value value = Values.createObject().putAll(new HashMap<String, Value>() {{
             put("universe", Values.create(finalUniverseId));
             put("lightIds", Values.create(finalLightIdsString));
-            put("amountOfLeds", Values.create(finalAmountOfLeds));
+            put("amountOfLeds", Values.createObject().putAll(amountOfLedsPerLightId));
         }});
 
         info.sendConsumer.accept(value);
