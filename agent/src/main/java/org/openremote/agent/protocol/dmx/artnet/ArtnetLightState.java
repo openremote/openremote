@@ -1,5 +1,6 @@
 package org.openremote.agent.protocol.dmx.artnet;
 
+import org.openremote.model.attribute.*;
 import org.openremote.agent.protocol.dmx.AbstractDMXLightState;
 
 public class ArtnetLightState extends AbstractDMXLightState {
@@ -73,5 +74,48 @@ public class ArtnetLightState extends AbstractDMXLightState {
     @Override
     public Byte[] getValues() {
         return new Byte[]{(byte)this.getG(),(byte)this.getR(),(byte)this.getB(),(byte)this.getW()};
+    }
+
+    @Override
+    public void FromAttribute(AttributeEvent event){
+        AttributeRef reference = event.getAttributeRef();
+        Attribute attr =  getLinkedAttribute(reference);
+        MetaItem metaItem = attr.getMetaItem("lightId").orElse(null);
+        int lampId = metaItem.getValueAsInteger().orElse(-1);
+
+        if (lampId != lightId) return;
+
+        //DIM ATTRIBUTE
+        if(attr.getType().get().getValueType() == ValueType.NUMBER)
+            if(attr.getName().get().equalsIgnoreCase("Dim")) {
+                String val = event.getAttributeState().getValue().get().toString();
+                Byte dimValue = (Byte)(byte)(int) Math.floor((double)Double.parseDouble(val));
+                this.dim = dimValue;
+            }
+        //VALUES ATTRIBUTE
+        if(attr.getType().get().getValueType() == ValueType.OBJECT)
+            if(attr.getName().get().equalsIgnoreCase("Values")) {
+                Value brouh = event.getAttributeState().getValue().orElse(null);
+                JsonObject jobject = new JsonParser().parse(brouh.toJson()).getAsJsonObject();
+                Byte r = jobject.get("r").getAsByte();
+                Byte g = jobject.get("g").getAsByte();
+                Byte b = jobject.get("b").getAsByte();
+                Byte w = jobject.get("w").getAsByte();
+                this.setR(r);
+                this.setG(g);
+                this.setB(b);
+                this.setW(w);
+            }
+        //SWITCH ATTRIBUTE
+        if(attr.getType().get().getValueType() == ValueType.BOOLEAN)
+            if(attr.getName().get().equalsIgnoreCase("Switch")) {
+                String val = event.getAttributeState().getValue().get().toString();
+                boolean switchState = (boolean) Boolean.parseBoolean(val);
+                if(switchState) {
+                    this.setEnabled(true);
+                }else{
+                    this.setEnabled(false);
+                }
+            }
     }
 }

@@ -324,44 +324,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
             }
         }
 
-        ArtnetLightState lightState = (ArtnetLightState) artnetLightMemory.get(lampId);
-
-        //DIM ATTRIBUTE
-        if(attr.getType().get().getValueType() == ValueType.NUMBER)
-            if(attr.getName().get().equalsIgnoreCase("Dim")) {
-                String val = event.getAttributeState().getValue().get().toString();
-                Byte dimValue = (Byte)(byte)(int) Math.floor((double)Double.parseDouble(val));
-                //TODO CHECK IF THIS UPDATES IN LIST OR ONLY LOCAL VARIABLE
-                lightState.setDim(dimValue);
-                updateLightInMemory(lightState.getLightId(), lightState);
-            }
-        //VALUES ATTRIBUTE
-        if(attr.getType().get().getValueType() == ValueType.OBJECT)
-            if(attr.getName().get().equalsIgnoreCase("Values")) {
-                Value brouh = event.getAttributeState().getValue().orElse(null);
-                JsonObject jobject = new JsonParser().parse(brouh.toJson()).getAsJsonObject();
-                Byte r = jobject.get("r").getAsByte();
-                Byte g = jobject.get("g").getAsByte();
-                Byte b = jobject.get("b").getAsByte();
-                Byte w = jobject.get("w").getAsByte();
-                lightState.setR(r);
-                lightState.setG(g);
-                lightState.setB(b);
-                lightState.setW(w);
-                updateLightInMemory(lightState.getLightId(), lightState);
-            }
-        //SWITCH ATTRIBUTE
-        if(attr.getType().get().getValueType() == ValueType.BOOLEAN)
-            if(attr.getName().get().equalsIgnoreCase("Switch")) {
-                String val = event.getAttributeState().getValue().get().toString();
-                boolean switchState = (boolean) Boolean.parseBoolean(val);
-                if(switchState) {
-                    lightState.setEnabled(true);
-                }else{
-                    lightState.setEnabled(false);
-                }
-                updateLightInMemory(lightState.getLightId(), lightState);
-            }
+        ((ArtnetLightState)artnetLightMemory.get(lampId)).FromAttribute(attr);
 
         AttributeInfo info = attributeInfoMap.get(event.getAttributeRef());
         if (info == null || info.sendConsumer == null) {

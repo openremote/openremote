@@ -1,5 +1,7 @@
 package org.openremote.agent.protocol.dmx;
 
+import org.openremote.model.attribute.*;
+
 public abstract class AbstractDMXLightState {
 
     private int lightId;
@@ -13,5 +15,7 @@ public abstract class AbstractDMXLightState {
     }
 
     public abstract Byte[] getValues();
+
+    public abstract void FromAttribute(AttributeEvent event);
 
 }
