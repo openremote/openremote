@@ -48,6 +48,11 @@ class OrSurveyResults extends LitElement {
             };
             manager.addListener(this._initCallback);
         } else {
+        }
+    }
+
+    updated(_changedProperties: PropertyValues) {
+        if(_changedProperties.has('surveyId')) {
             this.getSurvey();
         }
     }
@@ -149,15 +154,7 @@ class OrSurveyResults extends LitElement {
         }
 
         const surveyQuery: AssetQuery = {
-            select: {
-                excludeAttributeMeta: false,
-                excludeAttributes: false,
-                excludeAttributeValue: false,
-                excludeAttributeTimestamp: false,
-                excludeAttributeType: false
-            },
-            ids: [surveyId],
-            types: [{predicateType: "string", value: "urn:openremote:asset:eindhoven:survey"}]
+            ids: [surveyId]
         };
 
         manager.rest.api.AssetResource.queryPublicAssets(surveyQuery).then((response) => {

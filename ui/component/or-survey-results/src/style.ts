@@ -5,7 +5,7 @@ export const surveyResultStyle = html`
            :host {
                 width: 100%;
                 background-color: #FFFFFF;
-                --internal-or-survey-results-max-width: var(--or-survey-results-max-width, 0);
+                --internal-or-survey-results-max-width: var(--or-survey-results-max-width, none);
            }
            
            .flex {

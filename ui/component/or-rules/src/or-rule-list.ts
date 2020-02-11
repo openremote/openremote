@@ -415,9 +415,12 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
     protected _loadRulesets() {
         const sortFunction = this._getSortFunction();
-        manager.rest.api.RulesResource.getTenantRulesets(this._getRealm() || manager.config.realm, {
-            fullyPopulate: true
-        }).then((response: any) => {
+        const params = {
+            fullyPopulate: true,
+            language:  this._allowedLanguages
+        }
+        
+        manager.rest.api.RulesResource.getTenantRulesets(this._getRealm() || manager.config.realm, params).then((response: any) => {
             if (response && response.data) {
                 this._buildTreeNodes(response.data, sortFunction);
             }
@@ -436,7 +439,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                     ruleset: ruleset
                 } as RulesetNode;
             });
-
+            
             nodes.sort(sortFunction);
 
             this._nodes = nodes;
