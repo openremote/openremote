@@ -20,7 +20,7 @@
 package org.openremote.manager.setup.builtin;
 
 import org.apache.commons.io.IOUtils;
-import org.openremote.agent.protocol.artnet.ArtnetClientProtocol;
+import org.openremote.agent.protocol.dmx.artnet.ArtnetClientProtocol;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.container.util.UniqueIdentifierGenerator;
@@ -289,7 +289,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         .addMeta(
                                 new MetaItem(
                                         ArtnetClientProtocol.META_PROTOCOL_HOST,
-                                        Values.create("192.168.0.200")
+                                        Values.create("192.168.70.200")
                                 ),
                                 new MetaItem(
                                         ArtnetClientProtocol.META_PROTOCOL_PORT,
@@ -314,27 +314,30 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         artNetArea = assetStorageService.merge(artNetArea);
 
         //SETUP LIGHT-ASSETS UNDER AREA
-        Asset artNetLight = new Asset();
-        artNetLight.setParent(artNetArea);
-        artNetLight.setName("ArtNet Light");
-        artNetLight.setType(THING);
-        List<AssetAttribute> artNetLightAttributes = Arrays.asList(
-                new AssetAttribute("Id", NUMBER, Values.create(0)).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
-                new AssetAttribute("Values", OBJECT, Values.parseOrNull(ARTNET_DEFAULT_LIGHT_STATE)).addMeta(
-                        new MetaItem(AGENT_LINK, new AttributeRef(artNetArea.getId(), agentProtocolConfigName).toArrayValue()),
-                        new MetaItem(ArtnetClientProtocol.META_ARTNET_LIGHT_ID, Values.create(0))
-                ),
-                new AssetAttribute("Switch", BOOLEAN, Values.create(true)).addMeta(
-                        new MetaItem(AGENT_LINK, new AttributeRef(artNetArea.getId(), agentProtocolConfigName).toArrayValue()),
-                        new MetaItem(ArtnetClientProtocol.META_ARTNET_LIGHT_ID, Values.create(0))
-                ),
-                new AssetAttribute("Dim", NUMBER, Values.create(0)).addMeta(
-                        new MetaItem(AGENT_LINK, new AttributeRef(artNetArea.getId(), agentProtocolConfigName).toArrayValue()),
-                        new MetaItem(ArtnetClientProtocol.META_ARTNET_LIGHT_ID, Values.create(0))
-                )
-        );
-        artNetLight.setAttributes(artNetLightAttributes);
-        artNetLight = assetStorageService.merge(artNetLight);
+        for(int i = 0; i <= 1; i++) {
+            Asset artNetLight = new Asset();
+            artNetLight.setParent(artNetArea);
+            artNetLight.setName("ArtNet Light " + i);
+            artNetLight.setType(THING);
+            List<AssetAttribute> artNetLightAttributes = Arrays.asList(
+                    new AssetAttribute("Id", NUMBER, Values.create(i)).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
+                    new AssetAttribute("Values", OBJECT, Values.parseOrNull(ARTNET_DEFAULT_LIGHT_STATE)).addMeta(
+                            new MetaItem(AGENT_LINK, new AttributeRef(artNetArea.getId(), agentProtocolConfigName).toArrayValue()),
+                            new MetaItem(ArtnetClientProtocol.META_ARTNET_LIGHT_ID, Values.create(i))
+                    ),
+                    new AssetAttribute("Switch", BOOLEAN, Values.create(true)).addMeta(
+                            new MetaItem(AGENT_LINK, new AttributeRef(artNetArea.getId(), agentProtocolConfigName).toArrayValue()),
+                            new MetaItem(ArtnetClientProtocol.META_ARTNET_LIGHT_ID, Values.create(i))
+                    ),
+                    new AssetAttribute("Dim", NUMBER, Values.create(i)).addMeta(
+                            new MetaItem(AGENT_LINK, new AttributeRef(artNetArea.getId(), agentProtocolConfigName).toArrayValue()),
+                            new MetaItem(ArtnetClientProtocol.META_ARTNET_LIGHT_ID, Values.create(i))
+                    )
+            );
+            artNetLight.setAttributes(artNetLightAttributes);
+            artNetLight = assetStorageService.merge(artNetLight);
+
+        }
         //END Art-Net Setup
 
         // Some sample datapoints

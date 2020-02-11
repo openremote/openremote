@@ -9,4 +9,6 @@ public abstract class AbstractDMXClientProtocol extends AbstractUdpClientProtoco
 
     public abstract Map<Integer, AbstractDMXLightState> getLightStateMemory();
 
+    public abstract void updateLightInMemory(Integer lightId, AbstractDMXLightState updatedLightState);
+
 }

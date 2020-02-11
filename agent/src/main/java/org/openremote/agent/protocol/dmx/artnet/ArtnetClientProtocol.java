@@ -73,6 +73,16 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
     }
 
     @Override
+    public void updateLightInMemory(Integer lightId, AbstractDMXLightState updatedLightState) {
+        Optional<Integer> foundLightId = this.artnetLightMemory.keySet().stream().filter(lid -> lid == lightId).findAny();
+        if(foundLightId.orElse(null) != null) {
+            ArtnetLightState lightState = (ArtnetLightState) this.artnetLightMemory.get(this.artnetLightMemory.keySet().stream().filter(lid -> lid == foundLightId.get()).findAny().orElse(null));
+            this.artnetLightMemory.replace(foundLightId.get(), updatedLightState);
+        }
+            this.artnetLightMemory.get(this.artnetLightMemory.keySet().stream().filter(lid -> lid == lightId).findAny().get());
+    }
+
+    @Override
     protected IoClient<String> createIoClient(String host, int port, Integer bindPort, Charset charset, boolean binaryMode, boolean hexMode) {
         BiConsumer<ByteBuf, List<String>> decoder;
         BiConsumer<String, ByteBuf> encoder;
@@ -130,7 +140,6 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
                 int[] lightIds = new int[lightIdsStrings.size()];
                 for (int i = 0; i < lightIdsStrings.size(); i++)
                     lightIds[i] = Integer.parseInt(lightIdsStrings.get(i));
-
                 Arrays.sort(lightIds);
 
                 // Create packet
@@ -305,6 +314,8 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
                 for(JsonElement individualLightConfig : jerry) {
                     if(individualLightConfig.getAsJsonObject().get("id").getAsInt() == lampId)
                         universeId = individualLightConfig.getAsJsonObject().get("universe").getAsInt();
+                }
+                for(JsonElement individualLightConfig : jerry) {
                     if(individualLightConfig.getAsJsonObject().get("universe").getAsInt() == universeId)
                         lightIdsWithinUniverse.add(individualLightConfig.getAsJsonObject().get("id").getAsInt());
                     //TODO FIX SENDING THROUGH FULL LIGHT OBJECT (contains amount of leds per lamp), now just take the amount of lets of the last index.
@@ -322,6 +333,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
                 Byte dimValue = (Byte)(byte)(int) Math.floor((double)Double.parseDouble(val));
                 //TODO CHECK IF THIS UPDATES IN LIST OR ONLY LOCAL VARIABLE
                 lightState.setDim(dimValue);
+                updateLightInMemory(lightState.getLightId(), lightState);
             }
         //VALUES ATTRIBUTE
         if(attr.getType().get().getValueType() == ValueType.OBJECT)
@@ -333,9 +345,10 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
                 Byte b = jobject.get("b").getAsByte();
                 Byte w = jobject.get("w").getAsByte();
                 lightState.setR(r);
-                lightState.setR(g);
-                lightState.setR(b);
-                lightState.setR(w);
+                lightState.setG(g);
+                lightState.setB(b);
+                lightState.setW(w);
+                updateLightInMemory(lightState.getLightId(), lightState);
             }
         //SWITCH ATTRIBUTE
         if(attr.getType().get().getValueType() == ValueType.BOOLEAN)
@@ -347,6 +360,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
                 }else{
                     lightState.setEnabled(false);
                 }
+                updateLightInMemory(lightState.getLightId(), lightState);
             }
 
         AttributeInfo info = attributeInfoMap.get(event.getAttributeRef());
@@ -390,4 +404,5 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
     public String getVersion() {
         return PROTOCOL_VERSION;
     }
+
 }

@@ -45,7 +45,7 @@ public class ArtnetPacket {
     public static void updateLength(ByteBuf buf)
     {
         int len_idx = prefix.length + 4;
-        int len = buf.array().length - len_idx - 2;
+        int len = buf.writerIndex() - len_idx - 2;
         buf.setByte(len_idx, (len >> 8) & 0xff);
         buf.setByte(len_idx+1, len & 0xff);
     }
