@@ -3,6 +3,7 @@ package org.openremote.manager.rules.flow;
 import org.openremote.manager.rules.RulesFacts;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Notifications;
+import org.openremote.model.rules.PredictedDatapoints;
 import org.openremote.model.rules.Users;
 import org.openremote.model.rules.flow.*;
 
@@ -27,6 +28,7 @@ public class NodeExecutionRequestInfo {
     private Assets assets;
     private Users users;
     private Notifications notifications;
+    private PredictedDatapoints predictedDatapoints;
 
     public NodeExecutionRequestInfo() {
         collection = new NodeCollection();
@@ -40,9 +42,10 @@ public class NodeExecutionRequestInfo {
         assets = null;
         users = null;
         notifications = null;
+        predictedDatapoints = null;
     }
 
-    public NodeExecutionRequestInfo(NodeCollection collection, int outputSocketIndex, NodeSocket outputSocket, Node node, NodeSocket[] inputs, NodeSocket[] outputs, NodeInternal[] internals, RulesFacts facts, Assets assets, Users users, Notifications notifications) {
+    public NodeExecutionRequestInfo(NodeCollection collection, int outputSocketIndex, NodeSocket outputSocket, Node node, NodeSocket[] inputs, NodeSocket[] outputs, NodeInternal[] internals, RulesFacts facts, Assets assets, Users users, Notifications notifications, PredictedDatapoints predictedDatapoints) {
         this.collection = collection;
         this.outputSocketIndex = outputSocketIndex;
         this.outputSocket = outputSocket;
@@ -54,9 +57,10 @@ public class NodeExecutionRequestInfo {
         this.assets = assets;
         this.users = users;
         this.notifications = notifications;
+        this.predictedDatapoints = predictedDatapoints;
     }
 
-    public NodeExecutionRequestInfo(NodeCollection collection, Node node, NodeSocket socket, RulesFacts facts, Assets assets, Users users, Notifications notifications) {
+    public NodeExecutionRequestInfo(NodeCollection collection, Node node, NodeSocket socket, RulesFacts facts, Assets assets, Users users, Notifications notifications, PredictedDatapoints predictedDatapoints) {
         if (socket != null && Arrays.stream(node.getOutputs()).noneMatch(c -> c.getNodeId().equals(node.getId())))
             throw new IllegalArgumentException("Given socket does not belong to given node");
 
@@ -83,13 +87,14 @@ public class NodeExecutionRequestInfo {
         this.assets = assets;
         this.users = users;
         this.notifications = notifications;
+        this.predictedDatapoints = predictedDatapoints;
     }
 
     public Object getValueFromInput(int index) {
         NodeSocket aSocket = getInputs()[index];
         Node aNode = getCollection().getNodeById(aSocket.getNodeId());
         return NodeModel.getImplementationFor(aNode.getName()).execute(
-                new NodeExecutionRequestInfo(getCollection(), aNode, aSocket, getFacts(), getAssets(), getUsers(), getNotifications())
+                new NodeExecutionRequestInfo(getCollection(), aNode, aSocket, getFacts(), getAssets(), getUsers(), getNotifications(), getPredictedDatapoints())
         );
     }
 
@@ -176,6 +181,14 @@ public class NodeExecutionRequestInfo {
 
     public void setNotifications(Notifications notifications) {
         this.notifications = notifications;
+    }
+
+    public PredictedDatapoints getPredictedDatapoints() {
+        return predictedDatapoints;
+    }
+
+    public void setPredictedDatapoints(PredictedDatapoints predictedDatapoints) {
+        this.predictedDatapoints = predictedDatapoints;
     }
 
     public RulesFacts getFacts() {

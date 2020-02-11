@@ -149,7 +149,7 @@ public class AssetPredictedDatapointService implements ContainerService {
                                 Value value = rs.getObject(2) != null ? Values.parseOrNull(rs.getString(2)) : null;
                                 result.add(new ValueDatapoint<>(rs.getTimestamp(1).getTime(), value));
                             }
-                            return result.toArray(new ValueDatapoint[result.size()]);
+                            return result.toArray(new ValueDatapoint[0]);
                         }
                     }
                 }
