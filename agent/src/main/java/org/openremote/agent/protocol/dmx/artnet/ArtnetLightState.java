@@ -1,7 +1,13 @@
 package org.openremote.agent.protocol.dmx.artnet;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.openremote.model.attribute.*;
 import org.openremote.agent.protocol.dmx.AbstractDMXLightState;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
+
+import java.util.Arrays;
 
 public class ArtnetLightState extends AbstractDMXLightState {
 
@@ -73,17 +79,18 @@ public class ArtnetLightState extends AbstractDMXLightState {
 
     @Override
     public Byte[] getValues() {
-        return new Byte[]{(byte)this.getG(),(byte)this.getR(),(byte)this.getB(),(byte)this.getW()};
+        int enable = this.enabled? 1 : 0;
+        return Arrays.asList(new Byte[] {(byte)this.getG(), (byte)this.getR(), (byte)this.getB(), (byte)this.getW()}).stream().map(y -> (byte)(y * (this.getDim()/100) * enable)).toArray(size -> new Byte[size]);
+        //return new Byte[]{(byte)this.getG(),(byte)this.getR(),(byte)this.getB(),(byte)this.getW()};
     }
 
     @Override
-    public void FromAttribute(AttributeEvent event){
+    public void fromAttribute(AttributeEvent event, Attribute attr) {
         AttributeRef reference = event.getAttributeRef();
-        Attribute attr =  getLinkedAttribute(reference);
         MetaItem metaItem = attr.getMetaItem("lightId").orElse(null);
         int lampId = metaItem.getValueAsInteger().orElse(-1);
 
-        if (lampId != lightId) return;
+        if (lampId != this.getLightId()) return;
 
         //DIM ATTRIBUTE
         if(attr.getType().get().getValueType() == ValueType.NUMBER)

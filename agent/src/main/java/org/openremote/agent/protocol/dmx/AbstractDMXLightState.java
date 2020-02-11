@@ -14,6 +14,6 @@ public abstract class AbstractDMXLightState {
     }
     public abstract Byte[] getValues();
 
-    public abstract void FromAttribute(AttributeEvent event);
+    public abstract void fromAttribute(AttributeEvent event, Attribute attribute);
 
 }

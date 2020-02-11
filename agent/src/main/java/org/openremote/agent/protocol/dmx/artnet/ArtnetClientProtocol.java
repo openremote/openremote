@@ -324,7 +324,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
             }
         }
 
-        ((ArtnetLightState)artnetLightMemory.get(lampId)).FromAttribute(attr);
+        artnetLightMemory.get(lampId).fromAttribute(event, attr);
 
         AttributeInfo info = attributeInfoMap.get(event.getAttributeRef());
         if (info == null || info.sendConsumer == null) {
