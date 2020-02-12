@@ -1037,8 +1037,6 @@ export class Manager implements EventProviderFactory {
     }
 }
 
-const manager = new Manager();
-const _iconSets = new ORIconSets();
-
-export const IconSets = _iconSets;
+export const manager = new Manager(); // Needed for webpack bundling
+export const IconSets = new ORIconSets();
 export default manager;
