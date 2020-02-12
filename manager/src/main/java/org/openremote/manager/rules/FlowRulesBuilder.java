@@ -8,6 +8,7 @@ import org.openremote.manager.rules.facade.NotificationsFacade;
 import org.openremote.manager.rules.flow.*;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Notifications;
+import org.openremote.model.rules.PredictedDatapoints;
 import org.openremote.model.rules.Users;
 import org.openremote.model.rules.flow.*;
 
@@ -21,6 +22,7 @@ public class FlowRulesBuilder {
     private Assets assetsFacade;
     private Users usersFacade;
     private Notifications notificationFacade;
+    private PredictedDatapoints predictedDatapointsFacade;
 
     private TimerService timerService;
 
@@ -29,12 +31,14 @@ public class FlowRulesBuilder {
             AssetStorageService assetStorageService,
             Assets assetsFacade,
             Users usersFacade,
-            NotificationsFacade notificationFacade) {
+            Notifications notificationFacade,
+            PredictedDatapoints predictedDatapointsFacade) {
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
         this.assetsFacade = assetsFacade;
         this.usersFacade = usersFacade;
         this.notificationFacade = notificationFacade;
+        this.predictedDatapointsFacade = predictedDatapointsFacade;
     }
 
     public void add(NodeCollection nodeCollection) {
@@ -60,7 +64,7 @@ public class FlowRulesBuilder {
     }
 
     private Rule createRule(String name, NodeCollection collection, Node outputNode) throws Exception {
-        Object implementationResult = NodeModel.getImplementationFor(outputNode.getName()).execute(new NodeExecutionRequestInfo(collection, outputNode, null, null, assetsFacade, usersFacade, notificationFacade));
+        Object implementationResult = NodeModel.getImplementationFor(outputNode.getName()).execute(new NodeExecutionRequestInfo(collection, outputNode, null, null, assetsFacade, usersFacade, notificationFacade, predictedDatapointsFacade));
 
         if (implementationResult == null)
             throw new NullPointerException(outputNode.getName() + " node returns null");

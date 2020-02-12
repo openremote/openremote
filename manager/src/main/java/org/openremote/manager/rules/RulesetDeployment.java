@@ -37,10 +37,8 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.rules.facade.NotificationsFacade;
 import org.openremote.model.calendar.CalendarEvent;
-import org.openremote.model.rules.Assets;
-import org.openremote.model.rules.Ruleset;
-import org.openremote.model.rules.RulesetStatus;
-import org.openremote.model.rules.Users;
+import org.openremote.model.notification.Notification;
+import org.openremote.model.rules.*;
 import org.openremote.model.rules.flow.NodeCollection;
 import org.openremote.model.util.Pair;
 
@@ -131,7 +129,8 @@ public class RulesetDeployment {
     final protected ManagerExecutorService executorService;
     final protected Assets assetsFacade;
     final protected Users usersFacade;
-    final protected NotificationsFacade<?> notificationsFacade;
+    final protected Notifications notificationsFacade;
+    final protected PredictedDatapoints predictedDatapointsFacade;
     final protected List<ScheduledFuture<?>> scheduledRuleActions = new ArrayList<>();
     protected RulesetStatus status = RulesetStatus.READY;
     protected Throwable error;
@@ -140,7 +139,7 @@ public class RulesetDeployment {
     protected CalendarEvent validity;
     protected Pair<Long, Long> nextValidity;
 
-    public RulesetDeployment(Ruleset ruleset, TimerService timerService, AssetStorageService assetStorageService, ManagerExecutorService executorService, Assets assetsFacade, Users usersFacade, NotificationsFacade<?> notificationsFacade) {
+    public RulesetDeployment(Ruleset ruleset, TimerService timerService, AssetStorageService assetStorageService, ManagerExecutorService executorService, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, PredictedDatapoints predictedDatapointsFacade) {
         this.ruleset = ruleset;
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
@@ -148,6 +147,7 @@ public class RulesetDeployment {
         this.assetsFacade = assetsFacade;
         this.usersFacade = usersFacade;
         this.notificationsFacade = notificationsFacade;
+        this.predictedDatapointsFacade = predictedDatapointsFacade;
 
         if (ruleset.hasMeta(Ruleset.META_KEY_VALIDITY)) {
             validity = ruleset.getValidity();
@@ -209,13 +209,13 @@ public class RulesetDeployment {
 
         switch (ruleset.getLang()) {
             case JAVASCRIPT:
-                return compileRulesJavascript(ruleset, assetsFacade, usersFacade, notificationsFacade);
+                return compileRulesJavascript(ruleset, assetsFacade, usersFacade, notificationsFacade, predictedDatapointsFacade);
             case GROOVY:
-                return compileRulesGroovy(ruleset, assetsFacade, usersFacade, notificationsFacade);
+                return compileRulesGroovy(ruleset, assetsFacade, usersFacade, notificationsFacade, predictedDatapointsFacade);
             case JSON:
                 return compileRulesJson(ruleset);
             case FLOW:
-                return compileRulesFlow(ruleset, assetsFacade,usersFacade,notificationsFacade);
+                return compileRulesFlow(ruleset, assetsFacade,usersFacade,notificationsFacade, predictedDatapointsFacade);
         }
         return false;
     }
@@ -264,7 +264,7 @@ public class RulesetDeployment {
     protected boolean compileRulesJson(Ruleset ruleset) {
 
         try {
-            jsonRulesBuilder = new JsonRulesBuilder(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationsFacade, this::scheduleRuleAction);
+            jsonRulesBuilder = new JsonRulesBuilder(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationsFacade, predictedDatapointsFacade, this::scheduleRuleAction);
 
             for (Rule rule : jsonRulesBuilder.build()) {
                 RulesEngine.LOG.fine("Registering JSON rule: " + rule.getName());
@@ -278,7 +278,7 @@ public class RulesetDeployment {
         }
     }
 
-    protected boolean compileRulesJavascript(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade<?> notificationsFacade) {
+    protected boolean compileRulesJavascript(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, PredictedDatapoints predictedDatapointsFacade) {
         // TODO https://github.com/pfisterer/scripting-sandbox/blob/master/src/main/java/de/farberg/scripting/sandbox/ScriptingSandbox.java
         ScriptEngine scriptEngine = scriptEngineManager.getEngineByName("nashorn");
         ScriptContext newContext = new SimpleScriptContext();
@@ -288,6 +288,7 @@ public class RulesetDeployment {
         engineScope.put("assets", assetsFacade);
         engineScope.put("users", usersFacade);
         engineScope.put("notifications", notificationsFacade);
+        engineScope.put("predictedDatapoints", predictedDatapointsFacade);
 
         String script = ruleset.getRules();
 
@@ -419,7 +420,7 @@ public class RulesetDeployment {
         }
     }
 
-    protected boolean compileRulesGroovy(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade<?> notificationFacade) {
+    protected boolean compileRulesGroovy(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Notifications notificationFacade, PredictedDatapoints predictedDatapointsFacade) {
         try {
             // TODO Implement sandbox
             // new DenyAll().register();
@@ -431,6 +432,7 @@ public class RulesetDeployment {
             binding.setVariable("assets", assetsFacade);
             binding.setVariable("users", usersFacade);
             binding.setVariable("notifications", notificationFacade);
+            binding.setVariable("predictedDatapoints", predictedDatapointsFacade);
             script.setBinding(binding);
             script.run();
             for (Rule rule : rulesBuilder.build()) {
@@ -446,9 +448,9 @@ public class RulesetDeployment {
         }
     }
 
-    protected boolean compileRulesFlow(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade<?> notificationsFacade) {
+    protected boolean compileRulesFlow(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, PredictedDatapoints predictedDatapointsFacade) {
         try {
-            flowRulesBuilder = new FlowRulesBuilder(timerService, assetStorageService, assetsFacade, usersFacade, this.notificationsFacade);
+            flowRulesBuilder = new FlowRulesBuilder(timerService, assetStorageService, assetsFacade, usersFacade, notificationsFacade, predictedDatapointsFacade);
             NodeCollection nodeCollection = Container.JSON.readValue(ruleset.getRules(), NodeCollection.class);
             flowRulesBuilder.add(nodeCollection);
             for (Rule rule : flowRulesBuilder.build()) {
