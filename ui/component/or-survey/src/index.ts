@@ -454,12 +454,13 @@ class OrSurvey extends LitElement {
         manager.rest.api.AssetResource.queryPublicAssets(questionQuery).then((response) => {
             if (response && response.data) {
                 const questions = response.data;
+                questions.sort((a, b) => a.attributes && b.attributes ? a.attributes.order.value - b.attributes.order.value : 0);
                 this.questions = [...questions];
 
                 if(this.survey){
                     this.questions = filter(this.questions, ['parentId', this.survey.id]);
                 }
-
+                    
                 this.checkButtons();
                 this.requestUpdate();
             }
