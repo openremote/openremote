@@ -146,7 +146,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the apartment rules engine should be removed"
         conditions.eventually {
-            assert rulesService.assetEngines.size() == 2
+            assert rulesService.assetEngines.size() == 1
             def apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
             def apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
             assert apartment2Engine == null
@@ -204,7 +204,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         and: "other rule engines should be unaffected"
         conditions.eventually {
             assert rulesService.tenantEngines.size() == 2
-            assert rulesService.assetEngines.size() == 1
+            assert rulesService.assetEngines.size() == 0
             def masterEngine = rulesService.tenantEngines.get(keycloakDemoSetup.masterTenant.realm)
             def tenantCity = rulesService.tenantEngines.get(keycloakDemoSetup.tenantCity.realm)
             assert masterEngine != null
@@ -222,7 +222,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             tenantBuildingEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantBuilding.realm)
             apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
             assert rulesService.tenantEngines.size() == 3
-            assert rulesService.assetEngines.size() == 2
+            assert rulesService.assetEngines.size() == 1
             assert tenantBuildingEngine != null
             assert tenantBuildingEngine.isRunning()
             assert tenantBuildingEngine.deployments.size() == 2

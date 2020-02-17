@@ -21,14 +21,17 @@ package org.openremote.manager.rules;
 
 import org.jeasy.rules.core.InferenceRulesEngine;
 import org.jeasy.rules.core.RulesEngineParameters;
+import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.notification.NotificationService;
+import org.openremote.manager.predicted.AssetPredictedDatapointService;
 import org.openremote.manager.rules.facade.AssetsFacade;
 import org.openremote.manager.rules.facade.NotificationsFacade;
+import org.openremote.manager.rules.facade.PredictedFacade;
 import org.openremote.manager.rules.facade.UsersFacade;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
@@ -51,6 +54,19 @@ import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.model.rules.RulesetStatus.*;
 
 public class RulesEngine<T extends Ruleset> {
+
+    /**
+     * Allows rule deployments to track changes to the {@link AssetState}s in scope
+     */
+    public static final class AssetStateChangeEvent {
+        public PersistenceEvent.Cause cause;
+        public AssetState assetState;
+
+        public AssetStateChangeEvent(PersistenceEvent.Cause cause, AssetState assetState) {
+            this.cause = cause;
+            this.assetState = assetState;
+        }
+    }
 
     /**
      * Identifies a set of {@link LocationAttributePredicate}s associated with a particular {@link Asset}
@@ -86,8 +102,8 @@ public class RulesEngine<T extends Ruleset> {
     public static final Logger STATS_LOG = Logger.getLogger("org.openremote.rules.RulesEngineStats");
 
     // Here to facilitate testing
-    protected static BiConsumer<RulesEngine, RulesetDeployment> PAUSE_SCHEDULER = RulesEngine::schedulePause;
-    protected static BiConsumer<RulesEngine, RulesetDeployment> UNPAUSE_SCHEDULER = RulesEngine::scheduleUnpause;
+    protected static BiConsumer<RulesEngine<?>, RulesetDeployment> PAUSE_SCHEDULER = RulesEngine::schedulePause;
+    protected static BiConsumer<RulesEngine<?>, RulesetDeployment> UNPAUSE_SCHEDULER = RulesEngine::scheduleUnpause;
 
     final protected TimerService timerService;
     final protected ManagerExecutorService executorService;
@@ -97,7 +113,8 @@ public class RulesEngine<T extends Ruleset> {
     final protected RulesEngineId<T> id;
     final protected Assets assetsFacade;
     final protected Users usersFacade;
-    final protected NotificationsFacade notificationFacade;
+    final protected Notifications notificationFacade;
+    final protected PredictedDatapoints predictedFacade;
     final protected AssetLocationPredicateProcessor assetLocationPredicatesConsumer;
 
     final protected Map<Long, RulesetDeployment> deployments = new LinkedHashMap<>();
@@ -107,11 +124,10 @@ public class RulesEngine<T extends Ruleset> {
     protected boolean running;
     protected long lastFireTimestamp;
     protected boolean trackLocationPredicates;
-    protected ScheduledFuture fireTimer;
-    protected ScheduledFuture statsTimer;
-    protected Map<Long, ScheduledFuture> pauseTimers = new HashMap<>();
-    protected Map<Long, ScheduledFuture> unpauseTimers = new HashMap<>();
-    protected boolean assetStatesChanged = false;
+    protected ScheduledFuture<?> fireTimer;
+    protected ScheduledFuture<?> statsTimer;
+    protected Map<Long, ScheduledFuture<?>> pauseTimers = new HashMap<>();
+    protected Map<Long, ScheduledFuture<?>> unpauseTimers = new HashMap<>();
 
     // Only used to optimize toString(), contains the details of this engine
     protected String deploymentInfo;
@@ -126,6 +142,7 @@ public class RulesEngine<T extends Ruleset> {
                        AssetProcessingService assetProcessingService,
                        NotificationService notificationService,
                        ClientEventService clientEventService,
+                       AssetPredictedDatapointService assetPredictedDatapointService,
                        RulesEngineId<T> id,
                        AssetLocationPredicateProcessor assetLocationPredicatesConsumer) {
         this.timerService = timerService;
@@ -137,6 +154,7 @@ public class RulesEngine<T extends Ruleset> {
         this.assetsFacade = assetsFacade;
         this.usersFacade = new UsersFacade<>(id, assetStorageService, notificationService, identityService);
         this.notificationFacade = new NotificationsFacade<>(id, notificationService);
+        this.predictedFacade = new PredictedFacade<>(id, assetPredictedDatapointService);
         this.assetLocationPredicatesConsumer = assetLocationPredicatesConsumer;
 
         this.facts = new RulesFacts(timerService, assetStorageService, assetsFacade, this, RULES_LOG);
@@ -220,7 +238,7 @@ public class RulesEngine<T extends Ruleset> {
             removeRuleset(deployment.ruleset);
         }
 
-        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade);
+        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade, predictedFacade);
         boolean compiled;
 
         if (TextUtil.isNullOrEmpty(ruleset.getRules())) {
@@ -276,7 +294,7 @@ public class RulesEngine<T extends Ruleset> {
         publishRulesetStatus(deployment);
         deployments.remove(ruleset.getId());
 
-        ScheduledFuture timer = pauseTimers.remove(ruleset.getId());
+        ScheduledFuture<?> timer = pauseTimers.remove(ruleset.getId());
         if (timer != null) timer.cancel(true);
         timer = unpauseTimers.remove(ruleset.getId());
         if (timer != null) timer.cancel(true);
@@ -304,13 +322,13 @@ public class RulesEngine<T extends Ruleset> {
 
         LOG.info("Starting: " + this);
         running = true;
-        trackLocationPredicates = true;
+        trackLocationPredicates(true);
 
         deployments.values().forEach(this::startRuleset);
 
         updateDeploymentInfo();
         publishRulesEngineStatus();
-        fire();
+        scheduleFire();
 
         // Start a background stats printer if INFO level logging is enabled
         if (STATS_LOG.isLoggable(Level.INFO) || STATS_LOG.isLoggable(Level.FINEST)) {
@@ -323,7 +341,20 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
+    protected void trackLocationPredicates(boolean track) {
+        if (trackLocationPredicates == track) {
+            return;
+        }
 
+        trackLocationPredicates = track;
+        if (track) {
+            facts.startTrackingLocationRules();
+        } else {
+            if (assetLocationPredicatesConsumer != null) {
+                processLocationRules(facts.stopTrackingLocationRules());
+            }
+        }
+    }
     public void stop() {
         stop(false);
     }
@@ -400,7 +431,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public void fire() {
+    public void scheduleFire() {
         withLock(toString() + "::scheduleFire", () -> {
             // Schedule a firing within the guaranteed expiration time (so not immediately), and
             // only if the last firing is done. This effectively limits how often the rules engine
@@ -422,7 +453,7 @@ public class RulesEngine<T extends Ruleset> {
                         if ((facts.hasTemporaryFacts() || (hadTemporaryFactsBefore && !facts.hasTemporaryFacts()))
                             && !disableTemporaryFactExpiration) {
                             LOG.fine("Temporary facts require firing rules on: " + this);
-                            executorService.schedule(this::fire, 0);
+                            executorService.schedule(this::scheduleFire, 0);
                         } else if (!disableTemporaryFactExpiration) {
                             LOG.fine("No temporary facts present/changed when firing rules on: " + this);
                         }
@@ -450,10 +481,6 @@ public class RulesEngine<T extends Ruleset> {
         // Remove any expired temporary facts
         facts.removeExpiredTemporaryFacts();
 
-        // Notify rulesets if assetstates changed
-        boolean notifyAssetStatesChanged = assetStatesChanged;
-        assetStatesChanged = false;
-
         for (RulesetDeployment deployment : deployments.values()) {
             try {
 
@@ -469,10 +496,6 @@ public class RulesEngine<T extends Ruleset> {
 
                     // Reset facts for this firing (loop detection etc.)
                     facts.reset();
-
-                    if (notifyAssetStatesChanged) {
-                        deployment.onAssetStatesChanged(facts);
-                    }
 
                     long startTimestamp = System.currentTimeMillis();
                     lastFireTimestamp = startTimestamp;
@@ -498,38 +521,41 @@ public class RulesEngine<T extends Ruleset> {
             }
         }
 
-        if (trackLocationPredicates) {
-            trackLocationPredicates = false;
-            if (assetLocationPredicatesConsumer != null) {
-                processLocationRules(facts.stopTrackingLocationRules());
+        trackLocationPredicates(false);
+    }
+
+    protected void notifyAssetStatesChanged(AssetStateChangeEvent event) {
+        for (RulesetDeployment deployment : deployments.values()) {
+            if (!deployment.isError()) {
+                deployment.onAssetStatesChanged(facts, event);
             }
         }
     }
 
-    public void updateFact(AssetState assetState, boolean fireImmediately) {
-        assetStatesChanged = true;
+    public void updateOrInsertAssetState(AssetState assetState, boolean insert) {
         facts.putAssetState(assetState);
-        trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals(AttributeType.LOCATION.getAttributeName());
-        if (running && fireImmediately) {
-            fire();
+        // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
+        trackLocationPredicates(trackLocationPredicates || (insert && assetState.getAttributeName().equals(AttributeType.LOCATION.getAttributeName())));
+        notifyAssetStatesChanged(new AssetStateChangeEvent(insert ? PersistenceEvent.Cause.CREATE : PersistenceEvent.Cause.UPDATE, assetState));
+        if (running) {
+            scheduleFire();
         }
     }
 
-    public void removeFact(AssetState assetState) {
-        assetStatesChanged = true;
+    public void removeAssetState(AssetState assetState) {
         facts.removeAssetState(assetState);
-        trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals(AttributeType.LOCATION.getAttributeName());
+        // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
+        trackLocationPredicates(trackLocationPredicates || assetState.getAttributeName().equals(AttributeType.LOCATION.getAttributeName()));
+        notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.DELETE, assetState));
         if (running) {
-            fire();
+            scheduleFire();
         }
     }
 
-    public void insertFact(String expires, AssetState assetState) {
-        assetStatesChanged = true;
+    public void insertAssetEvent(String expires, AssetState assetState) {
         facts.insertAssetEvent(expires, assetState);
-        trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals(AttributeType.LOCATION.getAttributeName());
         if (running) {
-            fire();
+            scheduleFire();
         }
     }
 

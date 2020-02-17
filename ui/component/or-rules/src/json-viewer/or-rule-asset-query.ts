@@ -32,7 +32,7 @@ import manager, {AssetModelUtil, Util} from "@openremote/core";
 import i18next from "i18next";
 import {buttonStyle} from "../style";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
-import { translate } from "@openremote/or-translate";
+import {translate} from "@openremote/or-translate";
 
 // language=CSS
 const style = css`
@@ -80,8 +80,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.WITHIN_RECTANGLE,
             AssetQueryOperator.OUTSIDE_RECTANGLE,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY,
-            AssetQueryOperator.VALUE_CHANGES]
+            AssetQueryOperator.VALUE_NOT_EMPTY]
         ],
         [ValueType.STRING, [
             AssetQueryOperator.EQUALS,
@@ -105,15 +104,13 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.BETWEEN,
             AssetQueryOperator.NOT_BETWEEN,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY,
-            AssetQueryOperator.VALUE_CHANGES]
+            AssetQueryOperator.VALUE_NOT_EMPTY]
         ],
         [ValueType.BOOLEAN, [
             AssetQueryOperator.IS_TRUE,
             AssetQueryOperator.IS_FALSE,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY,
-            AssetQueryOperator.VALUE_CHANGES]
+            AssetQueryOperator.VALUE_NOT_EMPTY]
         ],
         [ValueType.ARRAY, [
             AssetQueryOperator.CONTAINS,
@@ -125,15 +122,13 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.LENGTH_LESS_THAN,
             AssetQueryOperator.LENGTH_GREATER_THAN,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY,
-            AssetQueryOperator.VALUE_CHANGES]
+            AssetQueryOperator.VALUE_NOT_EMPTY]
         ],
         [ValueType.OBJECT, [
             AssetQueryOperator.CONTAINS_KEY,
             AssetQueryOperator.NOT_CONTAINS_KEY,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY,
-            AssetQueryOperator.VALUE_CHANGES]
+            AssetQueryOperator.VALUE_NOT_EMPTY]
         ]
     ]);
 
@@ -450,7 +445,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             case "value-empty":
                 return AssetQueryOperator.VALUE_EMPTY;
             case "value-not-empty":
-                return this.condition.reset ? AssetQueryOperator.VALUE_CHANGES : AssetQueryOperator.VALUE_NOT_EMPTY;
+                return AssetQueryOperator.VALUE_NOT_EMPTY;
         }
     }
 
@@ -462,8 +457,6 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             || this.query.attributes.items.length === 0) {
             return;
         }
-
-        this.condition.reset = undefined;
 
         if (!operator) {
             attributePredicate.value = undefined;
@@ -641,15 +634,9 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 };
                 break;
             case AssetQueryOperator.VALUE_NOT_EMPTY:
-            case AssetQueryOperator.VALUE_CHANGES:
                 predicate = {
                     predicateType: "value-not-empty"
                 };
-                if (value === AssetQueryOperator.VALUE_CHANGES) {
-                    this.condition.reset = {
-                        valueChanges: true
-                    };
-                }
                 break;
             case AssetQueryOperator.CONTAINS:
             case AssetQueryOperator.NOT_CONTAINS:

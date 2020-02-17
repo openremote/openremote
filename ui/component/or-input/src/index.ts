@@ -6,7 +6,9 @@ import {MDCComponent} from "@material/base";
 import {MDCRipple} from "@material/ripple";
 import {MDCCheckbox} from "@material/checkbox";
 import {MDCSwitch} from "@material/switch";
-import {MDCSelect, MDCSelectEvent, } from "@material/select";
+import {MDCSelect, MDCSelectEvent } from "@material/select";
+import {MDCList, MDCListActionEvent} from '@material/list';
+
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
 import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
 import moment from "moment";
@@ -77,7 +79,8 @@ export enum InputType {
     TIME = "time",
     URL = "url",
     WEEK = "week",
-    SELECT = "select"
+    SELECT = "select",
+    LIST = "list"
 }
 
 // language=CSS
@@ -112,10 +115,13 @@ const style = css`
     }
     
     #component {
-        flex: 1 1 0;
         max-width: 100%;
     }
-    
+
+    .mdc-text-field {
+        flex: 1 1 0;
+    }
+
     #menu-anchor {
         max-width: 100%;
     }
@@ -123,7 +129,13 @@ const style = css`
     .or-input--rounded {
         border-radius: 50% !important;
     }
-    
+
+    ::-webkit-clear-button {display: none;}
+    ::-webkit-inner-spin-button { display: none; }
+    ::-webkit-datetime-edit { padding: 0em;}
+    ::-webkit-datetime-edit-text { padding: 0; }
+
+
     /* MDC TEXT FIELD AND SELECT DON'T USE THEME VARS */
     .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label {
         color: var(--mdc-theme-primary);
@@ -358,6 +370,43 @@ export class OrInput extends LitElement {
                             <label for="elem">${this.label}</label>
                         </span>
                     `;
+                    case InputType.LIST:
+                        const classesList = {
+                            "mdc-select--outlined": outlined,
+                            "mdc-select--disabled": this.disabled,
+                            "mdc-select--required": this.required,
+                            "mdc-select--dense": false, // this.dense,
+                            "mdc-select--no-label": !this.label,
+                            "mdc-select--with-leading-icon": !!this.icon
+                        };
+                        const helperClassesList = {
+                            "mdc-select-helper-text--persistent": this.helperPersistent,
+                            "mdc-select-helper-text--validation-msg": showValidationMessage,
+                        };
+    
+                        let optsList: [string, string][] | undefined;
+                        if (this.options && this.options.length > 0) {
+                            if (Array.isArray(this.options[0])) {
+                                optsList = this.options as [string, string][];
+                            } else {
+                                optsList = (this.options as string[]).map((option) => [option, option]);
+                            }
+                        }
+    
+                        this._selectedIndex = -1;
+    
+                        return html`
+                            <div id="component" class="mdc-select ${classMap(classesList)}" @MDCList:action="${(e: MDCListActionEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
+                                <ul class="mdc-list">
+                                    ${optsList ? optsList.map(([optValue, optDisplay], index) => {
+                                        if (this.value === optValue) {
+                                            this._selectedIndex = index;
+                                        }
+                                        return html`<li class="mdc-list-item" role="option" data-value="${optValue}">${optDisplay}</li>`;
+                                    }) : ``}
+                                </ul>
+                            </div>
+                        `;
                 case InputType.SELECT:
                     const classes = {
                         "mdc-select--outlined": outlined,
@@ -385,28 +434,28 @@ export class OrInput extends LitElement {
 
                     return html`
                         <div id="component" class="mdc-select ${classMap(classes)}" @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
-                            <div id="menu-anchor" class="mdc-select__anchor select-class">
-                                <or-icon class="mdc-select__dropdown-icon" icon="menu-down"></or-icon>
-                                <div id="elem" class="mdc-select__selected-text" role="button" aria-haspopup="listbox" aria-controls="component-helper-text" aria-describedby="component-helper-text" aria-labelledby="component-label component"></div>
-                                ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
-                                ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
-                            </div>                            
-
-                            <div class="mdc-select__menu mdc-menu mdc-menu-surface select-class" role="listbox">
-                                <ul class="mdc-list">
-                                    ${opts ? opts.map(([optValue, optDisplay], index) => {
-                                        if (this.value === optValue) {
-                                            this._selectedIndex = index;
-                                        }
-                                        return html`<li class="mdc-list-item" role="option" data-value="${optValue}">${optDisplay}</li>`;
-                                    }) : ``}
-                                </ul>
-                            </div>                                
-                                
-                            ${hasHelper ? html`
-                                <p id="component-helper-text" class="mdc-select-helper-text ${classMap(helperClasses)}" aria-hidden="true">
-                                    ${showValidationMessage ? this.validationMessage : this.helperText}
-                                </p>` : ``}
+                                <div id="menu-anchor" class="mdc-select__anchor select-class">
+                                    <or-icon class="mdc-select__dropdown-icon" icon="menu-down"></or-icon>
+                                    <div id="elem" class="mdc-select__selected-text" role="button" aria-haspopup="listbox" aria-controls="component-helper-text" aria-describedby="component-helper-text" aria-labelledby="component-label component"></div>
+                                    ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
+                                    ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
+                                </div>                            
+    
+                                <div class="mdc-select__menu mdc-menu mdc-menu-surface select-class" role="listbox">
+                                    <ul class="mdc-list">
+                                        ${opts ? opts.map(([optValue, optDisplay], index) => {
+                                            if (this.value === optValue) {
+                                                this._selectedIndex = index;
+                                            }
+                                            return html`<li class="mdc-list-item" role="option" data-value="${optValue}">${optDisplay}</li>`;
+                                        }) : ``}
+                                    </ul>
+                                </div>                                
+                                    
+                                ${hasHelper ? html`
+                                    <p id="component-helper-text" class="mdc-select-helper-text ${classMap(helperClasses)}" aria-hidden="true">
+                                        ${showValidationMessage ? this.validationMessage : this.helperText}
+                                    </p>` : ``}
                         </div>
                     `;
                 case InputType.BUTTON_TOGGLE:
@@ -486,8 +535,27 @@ export class OrInput extends LitElement {
 
                     if (typeof(val) !== "string") {
                         switch (this.type) {
+                            case InputType.TIME:
+                                if (val instanceof Date) {
+                                   val = moment(val).format("HH:mm");
+                                }
+                               break;
+                            case InputType.DATE:
+                                 if (val instanceof Date) {
+                                    val = moment(val).format("YYYY-MM-DD");
+                                }
+                                break;
+                            case InputType.WEEK:
+                                     if (val instanceof Date) {
+                                        val = moment(val).format("YYYY-")+"W"+moment(val).format("WW");
+                                    }
+                                    break;
+                            case InputType.MONTH:
+                                 if (val instanceof Date) {
+                                    val = moment(val).format("YYYY-MM");
+                                }
+                                break;
                             case InputType.DATETIME:
-                                // Date time conversion for UNIX timestamps in millis
                                 if (val instanceof Date) {
                                     val = moment(val).format("YYYY-MM-DDTHH:mm");
                                 } else if (typeof(val) === "number") {
@@ -540,10 +608,10 @@ export class OrInput extends LitElement {
                                     ?readonly="${this.readonly}"
                                     ?disabled="${this.disabled}"
                                     @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}"
-                                    .value="${val ? val : ""}"
+                                    .value="${val !== null && val !== undefined ? val : ""}"
                                     min="${ifDefined(this.min)}"
                                     max="${ifDefined(this.max)}"
-                                    step="${ifDefined(this.step)}"
+                                    step="${this.step ? this.step : "any"}"
                                     aria-label="${ifDefined(this.label)}"
                                     minlength="${ifDefined(this.minLength)}"
                                     maxlength="${ifDefined(this.maxLength)}"
@@ -583,6 +651,11 @@ export class OrInput extends LitElement {
 
             if (component && this.type) {
                 switch (this.type) {
+                    case InputType.LIST:
+                        const mdcList = new MDCList(component);
+                        this._mdcComponent = mdcList;
+                        mdcList.selectedIndex = this._selectedIndex;
+                        break;
                     case InputType.SELECT:
                         const mdcSelect = new MDCSelect(component);
                         this._mdcComponent = mdcSelect;
@@ -657,7 +730,6 @@ export class OrInput extends LitElement {
     }
 
     protected onValueChange(elem: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | undefined, newValue: any | undefined) {
-
         let valid = true;
 
         if (elem && this._mdcComponent) {

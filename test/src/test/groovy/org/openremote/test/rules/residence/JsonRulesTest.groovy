@@ -2,6 +2,7 @@ package org.openremote.test.rules.residence
 
 import com.google.common.collect.Lists
 import com.google.firebase.messaging.Message
+import org.openremote.container.Container
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -28,7 +29,9 @@ import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RulesetStatus
+import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.rules.TenantRuleset
+import org.openremote.model.rules.json.JsonRulesetDefinition
 import org.openremote.model.value.ObjectValue
 import org.openremote.test.ManagerContainerTrait
 import org.simplejavamail.email.Email
@@ -87,6 +90,12 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                     return NotificationSendResult.success()
             }
         }
+
+        and: "the geofence notifier debounce is set to a small value for testing"
+        ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = 100
+
+        and: "the rule firing delay time is set to a small value for testing"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 100
 
         and: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 15, delay: 1)
@@ -174,8 +183,11 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 ["manager"] as String[])
         consoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)
 
-        then: "the console should have been registered"
-        assert consoleRegistration.id != null
+        then: "the console should have been registered and a geofence refresh notification should have been sent"
+        conditions.eventually {
+            assert consoleRegistration.id != null
+            assert notificationMessages.size() == 1
+        }
 
         when: "the console location is set to the apartment"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue()), AttributeEvent.Source.CLIENT)
@@ -217,7 +229,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "a notification should have been sent to the console"
         conditions.eventually {
-            assert notificationMessages.findAll {it.data == null || !it.data.getString("action").orElse("").equals("GEOFENCE_REFRESH")}.size() == 1
+            assert notificationMessages.findAll {it.title == "Test title"}.size() == 1
             assert targets[0].type == Notification.TargetType.ASSET
             assert targets[0].id == consoleRegistration.id
         }
@@ -231,8 +243,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         and: "after a few seconds the rule should not have fired again"
-        new PollingConditions(initialDelay: 3).eventually {
-            assert notificationMessages.size() == 1
+        new PollingConditions(initialDelay: 1).eventually {
+            assert notificationMessages.findAll {it.title == "Test title"}.size() == 1
         }
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
@@ -249,18 +261,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "another notification should have been sent to the console"
         conditions.eventually {
-            assert notificationMessages.size() == 2
+            assert notificationMessages.findAll {it.title == "Test title"}.size() == 2
             assert targets[1].id == consoleRegistration.id
-        }
-
-        when: "the console sends a location update with the same location but a newer timestamp"
-        advancePseudoClock(35, MINUTES, container)
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(0d, 0d).toValue()), AttributeEvent.Source.CLIENT)
-
-        then: "another notification should have been sent to the console (because the reset condition includes reset on timestampChanges)"
-        conditions.eventually {
-            assert notificationMessages.size() == 3
-            assert targets[2].id == consoleRegistration.id
         }
 
         when: "the console sends a location update with a new location but still outside the geofence"
@@ -268,22 +270,68 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def attributeEvent = new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(10d, 10d).toValue(), timestamp)
         assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
 
-        then: "another notification should have been sent to the console (because the reset condition includes reset on valueChanges)"
+        then: "after a few seconds the rule should not have fired again"
+        new PollingConditions(initialDelay: 1).eventually {
+            assert notificationMessages.findAll {it.title == "Test title"}.size() == 2
+        }
+
+        when: "the ruleset is modified to add a 4hr recurrence per asset"
+        def version = ruleset.version
+        JsonRulesetDefinition jsonRules = Container.JSON.readValue(ruleset.rules, JsonRulesetDefinition.class)
+        jsonRules.rules[0].recurrence.mins = 240
+        ruleset.rules = Container.JSON.writeValueAsString(jsonRules)
+        ruleset = rulesetStorageService.merge(ruleset)
+
+        then: "the ruleset to be redeployed"
         conditions.eventually {
-            assert notificationMessages.size() == 4
-            assert targets[3].id == consoleRegistration.id
+            assert tenantBuildingEngine.deployments.find{it.key == ruleset.id}.value.version == version+1
+            assert tenantBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+        }
+
+        and: "another notification should have been sent to the console when rule is redeployed"
+        conditions.eventually {
+            assert notificationMessages.findAll {it.title == "Test title"}.size() == 3
+            assert targets[2].id == consoleRegistration.id
+        }
+
+        when: "the console device moves back inside the home geofence (as defined in the rule)"
+        lastFireTimestamp = tenantBuildingEngine.lastFireTimestamp
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue()), AttributeEvent.Source.CLIENT)
+
+        then: "the engine fires at least one more time"
+        conditions.eventually {
+            assert tenantBuildingEngine.lastFireTimestamp > lastFireTimestamp
+        }
+
+        when: "the console device moves outside the home geofence again (as defined in the rule)"
+        attributeEvent = new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(0d, 0d).toValue())
+        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+
+        then: "after a few seconds the rule should not have fired again"
+        new PollingConditions(initialDelay: 1).eventually {
+            assert notificationMessages.findAll {it.title == "Test title"}.size() == 3
+        }
+
+        when: "the console device moves back inside the home geofence (as defined in the rule)"
+        lastFireTimestamp = tenantBuildingEngine.lastFireTimestamp
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue()), AttributeEvent.Source.CLIENT)
+
+        then: "the engine fires at least one more time"
+        conditions.eventually {
+            assert tenantBuildingEngine.lastFireTimestamp > lastFireTimestamp
         }
 
         when: "when time advances 5 hours"
         advancePseudoClock(5, HOURS, container)
 
-        and: "the same AttributeEvent is sent"
+        and: "the console device moves outside the home geofence again (as defined in the rule)"
+        attributeEvent = new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(0d, 0d).toValue())
         assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
 
-        then: "another notification should have been sent to the console (because the reset condition includes reset on timer)"
+        then: "another notification should have been sent to the console"
         conditions.eventually {
-            assert notificationMessages.size() == 5
-            assert targets[4].id == consoleRegistration.id
+            assert notificationMessages.findAll {it.title == "Test title"}.size() == 4
+            assert targets[3].id == consoleRegistration.id
         }
 
         when: "the Rules PAUSE_SCHEDULER is overridden to facilitate testing"
@@ -308,7 +356,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         and: "a validity period is added to the ruleset (fictional times to ensure firing in sensible time within test)"
-        def version = ruleset.version
+        version = ruleset.version
         def validityStart = Instant.ofEpochMilli(getClockTimeOf(container)).plus(2000, ChronoUnit.MILLIS)
         def validityEnd = Instant.ofEpochMilli(getClockTimeOf(container)).plus(4000, ChronoUnit.MILLIS)
         def calendarEvent = new CalendarEvent(
@@ -335,7 +383,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         and: "no notification should have been sent as outside the validity period"
-        assert notificationMessages.size() == 5
+        assert notificationMessages.findAll {it.title == "Test title"}.size() == 4
 
         when: "the pause elapses"
         engine.unPauseRuleset(deployment)
@@ -358,8 +406,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "another notification should have been sent as inside the validity period"
         conditions.eventually {
-            assert notificationMessages.size() == 6
-            assert targets[5].id == consoleRegistration.id
+            assert notificationMessages.findAll {it.title == "Test title"}.size() == 5
+            assert targets[4].id == consoleRegistration.id
         }
 
         when: "the un-pause elapses"
@@ -382,7 +430,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         and: "no notification should have been sent as outside the validity period"
-        assert notificationMessages.size() == 6
+        assert notificationMessages.findAll {it.title == "Test title"}.size() == 5
 
         when: "the pause elapses"
         engine.unPauseRuleset(deployment)

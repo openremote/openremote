@@ -1221,7 +1221,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     isFirst = false;
 
                     sb.append("(");
-                    sb.append(buildAttributeFilter(attributePredicate, joinCounter.get(), binders));
+                    if (attributePredicate.notExists && attributePredicate.name != null && attributePredicate.name.value != null) {
+                        sb.append("NOT A.ATTRIBUTES ?? ?");
+                        final int pos = binders.size() + 1;
+                        binders.add(st -> st.setString(pos, attributePredicate.name.value));
+                    } else {
+                        sb.append(buildAttributeFilter(attributePredicate, joinCounter.get(), binders));
+                    }
                     sb.append(")");
                 }
                 joinCounter.incrementAndGet();
@@ -1504,7 +1510,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 final int pos = binders.size() + 1;
                 java.sql.Timestamp when = new java.sql.Timestamp(((CalendarEventPredicate)attributePredicate.value).timestamp.getTime());
 
-                // The recurrence logic is applied post DB query just start key is present and in the past and also
+                // The recurrence logic is applied post DB query just check start key is present and in the past and also
                 // that the end key is numeric and in the future if no recurrence value
                 attributeBuilder.append("(jsonb_typeof(AX")
                     .append(joinCounter)

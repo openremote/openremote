@@ -674,16 +674,17 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def resultAttributes = apartment1Livingroom.getAttributesList()
         resultAttributes.size() == 7
         def currentTemperature = apartment1Livingroom.getAttribute("currentTemperature").get()
-        currentTemperature.getType().get() == AttributeValueType.TEMPERATURE_CELCIUS
+        currentTemperature.getType().get() == AttributeValueType.TEMPERATURE
         !currentTemperature.getValue().isPresent()
         Meta resultMeta = currentTemperature.getMeta()
-        resultMeta.size() == 6
+        resultMeta.size() == 7
         resultMeta.stream().filter(isMetaNameEqualTo(LABEL)).findFirst().get().getValueAsString().get() == "Current temperature"
         resultMeta.stream().filter(isMetaNameEqualTo(READ_ONLY)).findFirst().get().getValueAsBoolean().get()
         resultMeta.stream().filter(isMetaNameEqualTo(RULE_STATE)).findFirst().get().getValueAsBoolean().get()
         resultMeta.stream().filter(isMetaNameEqualTo(STORE_DATA_POINTS)).findFirst().get().getValueAsBoolean().get()
         resultMeta.stream().filter(isMetaNameEqualTo(SHOW_ON_DASHBOARD)).findFirst().get().getValueAsBoolean().get()
         resultMeta.stream().filter(isMetaNameEqualTo(FORMAT)).findFirst().get().getValueAsString().get() == "%0.1f° C"
+        resultMeta.stream().filter(isMetaNameEqualTo(UNIT_TYPE)).findFirst().get().getValueAsString().get() == "CELSIUS"
 
         when: "an asset is retrieved by ID in a foreign realm"
         assetResource.get(null, managerDemoSetup.thingId)

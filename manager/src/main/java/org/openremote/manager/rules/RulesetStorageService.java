@@ -200,10 +200,18 @@ public class RulesetStorageService implements ContainerService {
         if (query.enabledOnly) {
             sb.append(" AND R.ENABLED");
         }
-        if (query.language != null) {
-            sb.append(" AND R.RULES_LANG = ?");
+        if (query.languages != null && query.languages.length > 0) {
+            sb.append(" AND R.RULES_LANG IN (?");
             final int pos = binders.size() + 1;
-            binders.add(st -> st.setString(pos, query.language.toString()));
+            binders.add(st -> st.setString(pos, query.languages[0].toString()));
+
+            for (int i = 1; i < query.languages.length; i++) {
+                sb.append(",?");
+                final int pos2 = binders.size() + 1;
+                final int index = i;
+                binders.add(st -> st.setString(pos2, query.languages[index].toString()));
+            }
+            sb.append(")");
         }
         if (query.ids != null && query.ids.length > 0) {
             sb.append(" AND R.ID IN (?");

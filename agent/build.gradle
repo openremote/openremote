@@ -5,7 +5,9 @@ dependencies {
 
     compile resolveProject(":container")
 
-    compile "io.netty:netty-transport-rxtx:$nettyVersion"
+    compile("io.netty:netty-transport-rxtx:$nettyVersion") {
+        exclude group: "org.rxtx"
+    }
     compile "io.netty:netty-codec:$nettyVersion"
     compile "io.netty:netty-codec-http:$nettyVersion"
     compile "com.neuronrobotics:nrjavaserial:$nrjavaserialVersion"

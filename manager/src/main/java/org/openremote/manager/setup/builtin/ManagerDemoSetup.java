@@ -242,7 +242,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                  SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ColorSimulatorElement.ELEMENT_NAME))
                          )
                 ),
-            new AssetAttribute("light1PowerConsumption", ENERGY_KWH, Values.create(12.345))
+            new AssetAttribute("light1PowerConsumption", ENERGY, Values.create(12.345))
                 .setMeta(new Meta(
                              new MetaItem(
                                  LABEL,
@@ -620,19 +620,19 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(DESCRIPTION, Values.create("Someone is currently present in the room")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("firstPresenceDetected", AttributeValueType.TIMESTAMP_MILLIS)
+            new AssetAttribute("firstPresenceDetected", AttributeValueType.TIMESTAMP)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("First Presence Timestamp")),
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of the first detected presence")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("lastPresenceDetected", AttributeValueType.TIMESTAMP_MILLIS)
+            new AssetAttribute("lastPresenceDetected", AttributeValueType.TIMESTAMP)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last Presence Timestamp")),
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of last detected presence")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("co2Level", AttributeValueType.CO2_PPM, Values.create(350))
+            new AssetAttribute("co2Level", AttributeValueType.CO2, Values.create(350))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("CO2 Level")),
                     new MetaItem(RULE_STATE, Values.create(true))
@@ -676,13 +676,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(DESCRIPTION, Values.create("Someone is currently present in the room")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("firstPresenceDetected", AttributeValueType.TIMESTAMP_MILLIS)
+            new AssetAttribute("firstPresenceDetected", AttributeValueType.TIMESTAMP)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("First Presence Timestamp")),
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of the first detected presence")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("lastPresenceDetected", AttributeValueType.TIMESTAMP_MILLIS)
+            new AssetAttribute("lastPresenceDetected", AttributeValueType.TIMESTAMP)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last Presence Timestamp")),
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of last detected presence")),

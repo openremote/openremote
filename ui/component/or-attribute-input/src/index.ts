@@ -69,7 +69,7 @@ export function getAttributeValueTemplate(
                 case AttributeValueType.ARRAY.name:
                     inputType = InputType.JSON;
                     break;
-                case AttributeValueType.BRIGHTNESS_LUX.name:
+                case AttributeValueType.BRIGHTNESS.name:
                     inputType = InputType.NUMBER;
                     step = 1;
                     break;

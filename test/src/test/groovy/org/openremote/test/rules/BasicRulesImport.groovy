@@ -122,7 +122,7 @@ class BasicRulesImport {
         def tenantCityEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantCity.realm)
         assert tenantCityEngine == null
 
-        assert rulesService.assetEngines.size() == 3
+        assert rulesService.assetEngines.size() == 2
         apartment1Engine = rulesService.assetEngines.get(managerDemoSetup.apartment1Id)
         assert apartment1Engine == null
         apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)

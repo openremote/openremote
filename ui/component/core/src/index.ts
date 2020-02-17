@@ -14,6 +14,7 @@ import {
 } from "@openremote/model";
 import * as Util from "./util";
 import orIconSet from "./or-icon-set";
+import {TemplateResult} from "lit-element";
 
 // Re-exports
 export {Util};
@@ -69,7 +70,8 @@ export enum OREvent {
     EVENTS_CONNECTING = "EVENTS_CONNECTING",
     EVENTS_DISCONNECTED = "EVENTS_DISCONNECTED",
     TRANSLATE_INIT = "TRANSLATE_INIT",
-    TRANSLATE_LANGUAGE_CHANGED = "TRANSLATE_LANGUAGE_CHANGED"
+    TRANSLATE_LANGUAGE_CHANGED = "TRANSLATE_LANGUAGE_CHANGED",
+    DISPLAY_REALM_CHANGED = "DISPLAY_REALM_CHANGED"
 }
 
 export enum EventProviderType {
@@ -85,6 +87,17 @@ export interface Credentials {
 export interface LoginOptions {
     redirectUrl?: string;
     credentials?: Credentials;
+}
+
+export interface RealmConfig {
+    appTitle?: string;
+    colors?: TemplateResult;
+    logo?: HTMLTemplateElement | string;
+    logoMobile?: HTMLTemplateElement | string;
+    language?: string;
+}
+export interface RealmConfigs {
+    [key: string]: RealmConfig
 }
 
 export interface ManagerConfig {
@@ -103,6 +116,7 @@ export interface ManagerConfig {
     loadDescriptors?: boolean;
     loadTranslations?: string[];
     translationsLoadPath?: string;
+    realmConfigs?: RealmConfigs;
     configureTranslationsOptions?: (i18next: i18next.InitOptions) => void;
 }
 
@@ -411,6 +425,15 @@ export class Manager implements EventProviderFactory {
         this.console.storeData("LANGUAGE", lang);
     }
 
+    get displayRealm() {
+        return this._displayRealm || this._config.realm;
+    }
+
+    set displayRealm(realm: string) {
+        this._displayRealm = realm;
+        this._emitEvent(OREvent.DISPLAY_REALM_CHANGED);
+    }
+
     getEventProvider(): EventProvider | undefined {
         return this.events;
     }
@@ -473,7 +496,7 @@ export class Manager implements EventProviderFactory {
         if (normalisedConfig.clientId === undefined) {
             normalisedConfig.clientId = "openremote";
         }
-
+        
         return normalisedConfig;
     }
 
@@ -489,6 +512,7 @@ export class Manager implements EventProviderFactory {
     private _listeners: EventCallback[] = [];
     private _console!: Console;
     private _events?: EventProvider;
+    private _displayRealm?: string = "";
 
     public isManagerSameOrigin(): boolean {
         if (!this.initialised) {
@@ -549,11 +573,12 @@ export class Manager implements EventProviderFactory {
         // if (success) {
         //     success = await this.doEventsSubscriptionInit();
         // }
-
         if (success) {
             this._ready = true;
             this._emitEvent(OREvent.READY);
         }
+
+        this._displayRealm = config.realm;
 
         return success;
     }
@@ -604,7 +629,6 @@ export class Manager implements EventProviderFactory {
 
         // Look for language preference in local storage
         const language = await this.console.retrieveData("LANGUAGE");
-
         const initOptions: i18next.InitOptions = {
             lng: language,
             fallbackLng: "en",
@@ -1013,8 +1037,6 @@ export class Manager implements EventProviderFactory {
     }
 }
 
-const manager = new Manager();
-const _iconSets = new ORIconSets();
-
-export const IconSets = _iconSets;
+export const manager = new Manager(); // Needed for webpack bundling
+export const IconSets = new ORIconSets();
 export default manager;

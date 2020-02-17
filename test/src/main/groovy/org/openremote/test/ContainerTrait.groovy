@@ -63,7 +63,7 @@ trait ContainerTrait {
         ResteasyClientBuilder clientBuilder =
                 new ResteasyClientBuilder()
                         .establishConnectionTimeout(2, SECONDS)
-                        .socketTimeout(10, SECONDS)
+                        .socketTimeout(15, SECONDS)
                         .connectionPoolSize(10)
         return WebClient.registerDefaults(clientBuilder)
     }

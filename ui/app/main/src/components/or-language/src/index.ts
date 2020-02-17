@@ -18,11 +18,11 @@ export class OrLanguage extends LitElement {
             <div class="background-close ${this.isVisible ? "active" : ""}" @click="${this.closeMenu}"></div>
             ${this.isVisible ? html`
                 <div class="dropdown-menu">
-                      <span @click="${() => this.changeLanguage("en")}"><or-translate value="English"></or-translate></span>
-                      <span @click="${() => this.changeLanguage("nl")}"><or-translate value="Dutch"></or-translate></span>
-                      <span @click="${() => this.changeLanguage("fr")}"><or-translate value="French"></or-translate></span>
-                      <span @click="${() => this.changeLanguage("de")}"><or-translate value="German"></or-translate></span>
-                      <span @click="${() => this.changeLanguage("es")}"><or-translate value="Spanish"></or-translate></span>
+                      <span @click="${() => this.changeLanguage("en")}"><or-translate value="english"></or-translate></span>
+                      <span @click="${() => this.changeLanguage("nl")}"><or-translate value="dutch"></or-translate></span>
+                      <span @click="${() => this.changeLanguage("fr")}"><or-translate value="french"></or-translate></span>
+                      <span @click="${() => this.changeLanguage("de")}"><or-translate value="german"></or-translate></span>
+                      <span @click="${() => this.changeLanguage("es")}"><or-translate value="spanish"></or-translate></span>
                 </div>
             ` : ``}
         `;

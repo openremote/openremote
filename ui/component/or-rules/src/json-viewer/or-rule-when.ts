@@ -7,8 +7,13 @@ import i18next from "i18next";
 import {InputType} from "@openremote/or-input";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {getWhenTypesMenu, updateRuleConditionType} from "./or-rule-condition";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import { translate } from "@openremote/or-translate";
+
+enum ResetOption {
+    NO_LONGER_MATCHES = "noLongerMatches",
+    VALUE_CHANGES = "valueChanges"
+}
 
 // language=CSS
 const style = css`
@@ -123,7 +128,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
         if (isTopLevel) {
             wrapper = (content, item, parent, isGroup, isFirst) => {
                 return html`
-                    <or-panel .heading="${i18next.t(isFirst ? "when": "orWhen")}...">
+                    <or-panel .heading="${i18next.t(isFirst ? "when" : "orWhen")}...">
                         ${showRemoveGroup ? html`
                             <button class="button-clear remove-button" @click="${() => this.removeItem(item, parent, isGroup)}">
                                 <or-icon icon="close-circle"></or-icon>  

@@ -28,6 +28,7 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.persistence.ManagerPersistenceService;
+import org.openremote.manager.predicted.AssetPredictedDatapointService;
 import org.openremote.manager.rules.RulesetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
@@ -60,6 +61,7 @@ public abstract class AbstractManagerSetup implements Setup {
     final protected AssetStorageService assetStorageService;
     final protected AssetProcessingService assetProcessingService;
     final protected AssetDatapointService assetDatapointService;
+    final protected AssetPredictedDatapointService assetPredictedDatapointService;
     final protected RulesetStorageService rulesetStorageService;
     final protected SetupService setupService;
 
@@ -70,6 +72,7 @@ public abstract class AbstractManagerSetup implements Setup {
         this.assetStorageService = container.getService(AssetStorageService.class);
         this.assetProcessingService = container.getService(AssetProcessingService.class);
         this.assetDatapointService = container.getService(AssetDatapointService.class);
+        this.assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
         this.rulesetStorageService = container.getService(RulesetStorageService.class);
         this.setupService = container.getService(SetupService.class);
     }
@@ -98,7 +101,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 )),
-            new AssetAttribute("vacationUntil", TIMESTAMP_MILLIS)
+            new AssetAttribute("vacationUntil", TIMESTAMP)
                 .setMeta(new Meta(
                     new MetaItem(LABEL, Values.create("Vacation until")),
                     new MetaItem(DESCRIPTION, Values.create("Vacation mode enabled until")),
@@ -161,13 +164,13 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 ),
-            new AssetAttribute("firstPresenceDetected", TIMESTAMP_MILLIS)
+            new AssetAttribute("firstPresenceDetected", TIMESTAMP)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("First time movement was detected")),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("lastPresenceDetected", TIMESTAMP_MILLIS)
+            new AssetAttribute("lastPresenceDetected", TIMESTAMP)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last time movement was detected")),
                     new MetaItem(READ_ONLY, Values.create(true)),
@@ -178,7 +181,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected void addDemoApartmentRoomCO2Sensor(Asset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
-            new AssetAttribute("co2Level", CO2_PPM)
+            new AssetAttribute("co2Level", CO2)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("CO2 level")),
                     new MetaItem(RULE_STATE, Values.create(true)),
@@ -195,7 +198,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected void addDemoApartmentRoomHumiditySensor(Asset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
-            new AssetAttribute("humidity", HUMIDITY_PERCENTAGE)
+            new AssetAttribute("humidity", HUMIDITY)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Humidity")),
                     new MetaItem(RULE_STATE, Values.create(true)),
@@ -214,13 +217,14 @@ public abstract class AbstractManagerSetup implements Setup {
                                                    boolean shouldBeLinked,
                                                    Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
-            new AssetAttribute("currentTemperature", TEMPERATURE_CELCIUS)
+            new AssetAttribute("currentTemperature", TEMPERATURE)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Current temperature")),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
+                    new MetaItem(UNIT_TYPE, Values.create("CELSIUS")),
                     new MetaItem(FORMAT, Values.create("%0.1f° C")),
                     new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
@@ -231,13 +235,14 @@ public abstract class AbstractManagerSetup implements Setup {
                                                       boolean shouldBeLinked,
                                                       Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
-            new AssetAttribute("targetTemperature", TEMPERATURE_CELCIUS)
+            new AssetAttribute("targetTemperature", TEMPERATURE)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Target temperature")),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
+                    new MetaItem(UNIT_TYPE, Values.create("CELSIUS")),
                     new MetaItem(FORMAT, Values.create("%0f° C")),
                     new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
@@ -268,7 +273,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_EVENT_EXPIRES, Values.create("48h"))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(0) : null),
             // Time
-            new AssetAttribute("smartSwitchBeginEnd" + switchName, TIMESTAMP_MILLIS)
+            new AssetAttribute("smartSwitchBeginEnd" + switchName, TIMESTAMP)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Smart Switch begin/end cycle " + switchName)),
                     new MetaItem(DESCRIPTION, Values.create("User-provided begin/end time of appliance cycle")),
@@ -277,19 +282,21 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_STATE, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(1) : null),
             // StartTime
-            new AssetAttribute("smartSwitchStartTime" + switchName, TIMESTAMP_SECONDS)
+            new AssetAttribute("smartSwitchStartTime" + switchName, TIMESTAMP)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Smart Switch actuator earliest start time " + switchName)),
                     new MetaItem(DESCRIPTION, Values.create("Earliest computed start time sent to actuator")),
                     new MetaItem(READ_ONLY, Values.create(true)),
+                    new MetaItem(UNIT_TYPE, Values.create("SECONDS")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(2) : null),
             // StopTime
-            new AssetAttribute("smartSwitchStopTime" + switchName, TIMESTAMP_SECONDS)
+            new AssetAttribute("smartSwitchStopTime" + switchName, TIMESTAMP)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Smart Switch actuator latest stop time " + switchName)),
                     new MetaItem(DESCRIPTION, Values.create("Latest computed stop time sent to actuator")),
                     new MetaItem(READ_ONLY, Values.create(true)),
+                    new MetaItem(UNIT_TYPE, Values.create("SECONDS")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(3) : null),
             // Enabled
@@ -573,7 +580,7 @@ public abstract class AbstractManagerSetup implements Setup {
         Asset microphoneAsset = new Asset(name, MICROPHONE, area);
         microphoneAsset.setAttributes(
             new AssetAttribute(AttributeType.LOCATION, location.toValue()),
-            new AssetAttribute("microphoneLevel", SOUND_DB)
+            new AssetAttribute("microphoneLevel", SOUND)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Microphone Level")),
                     new MetaItem(DESCRIPTION, Values.create("dB")),
@@ -636,12 +643,13 @@ public abstract class AbstractManagerSetup implements Setup {
         Asset environmentAsset = new Asset(name, ENVIRONMENT_SENSOR, area);
         environmentAsset.setAttributes(
             new AssetAttribute(AttributeType.LOCATION, location.toValue()),
-            new AssetAttribute("temperature", TEMPERATURE_CELCIUS)
+            new AssetAttribute("temperature", TEMPERATURE)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("Tempature Level")),
+                    new MetaItem(LABEL, Values.create("Temperature Level")),
                     new MetaItem(DESCRIPTION, Values.create("oC")),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(UNIT_TYPE, Values.create("CELSIUS")),
                     new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get()),
             new AssetAttribute("nO2", NUMBER)

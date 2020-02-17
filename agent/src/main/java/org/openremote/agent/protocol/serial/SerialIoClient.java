@@ -67,6 +67,8 @@ public class SerialIoClient<T> extends AbstractNettyIoClient<T, NrJavaSerialAddr
     @SuppressWarnings("deprecation")
     @Override
     protected io.netty.channel.EventLoopGroup getWorkerGroup() {
+        // Note that OioEventLoopGroup has to be used because NioEventLoopGroup is *NOT* compatible
+        // with io.netty.channel.rxtx.RxtxChannel and causes IllegalStateException.
         return new OioEventLoopGroup(1);
     }
 }

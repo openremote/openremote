@@ -31,15 +31,17 @@ import {
     ClientRole
 } from "@openremote/model";
 import "@openremote/or-translate";
+import "@openremote/or-mwc-components/dist/or-mwc-drawer";
 import {translate} from "@openremote/or-translate";
 import "./or-rule-list";
 import "./or-rule-viewer";
+import "./flow-viewer/flow-viewer";
 import {OrRuleList} from "./or-rule-list";
 import {OrRuleViewer} from "./or-rule-viewer";
+import {RecurrenceOption} from "./json-viewer/or-rule-then-otherwise";
 
 export const enum ConditionType {
     ASSET_QUERY = "assetQuery",
-    DATE_TIME = "datetime",
     TIMER = "timer"
 }
 
@@ -79,8 +81,7 @@ export enum AssetQueryOperator {
     WITHIN_RADIUS = "withinRadius",
     OUTSIDE_RADIUS = "outsideRadius",
     WITHIN_RECTANGLE = "withinRectangle",
-    OUTSIDE_RECTANGLE = "outsideRectangle",
-    VALUE_CHANGES = "valueChanges"
+    OUTSIDE_RECTANGLE = "outsideRectangle"
 }
 
 export interface AssetTypeAttributeName {
@@ -94,6 +95,7 @@ export interface RulesConfig {
         allowedConditionTypes?: ConditionType[];
         allowedActionTypes?: ActionType[];
         allowedAssetQueryOperators?: Map<AssetTypeAttributeName | AttributeDescriptor | AttributeValueDescriptor | ValueType, AssetQueryOperator[]>;
+        allowedRecurrenceOptions?: RecurrenceOption[];
         hideActionTypeOptions?: boolean;
         hideActionTargetOptions?: boolean;
         hideActionUpdateOptions?: boolean;
@@ -581,7 +583,7 @@ export class OrRules extends translate(i18next)(LitElement) {
     protected render() {
 
         return html`
-            <or-rule-list id="rule-list" .realm="${this.realm}" .config="${this.config}" .language="${this.language}" .selectedIds="${this.selectedIds}"></or-rule-list>
+            <or-rule-list id="rule-list" .config="${this.config}" .language="${this.language}" .selectedIds="${this.selectedIds}"></or-rule-list>
             <or-rule-viewer id="rule-viewer" .ruleset="${this._activeRuleset}" .config="${this.config}" .readonly="${this.isReadonly()}"></or-rule-viewer>
         `;
     }
@@ -599,7 +601,7 @@ export class OrRules extends translate(i18next)(LitElement) {
         }
 
         const name = this.config && this.config.rulesetName ? this.config.rulesetName : OrRules.DEFAULT_RULESET_NAME;
-        const realm = this._rulesList.realm;
+        const realm = manager.isSuperUser() ? manager.displayRealm : manager.config.realm;
 
         const ruleset: TenantRuleset = {
             id: 0,
@@ -665,6 +667,7 @@ export class OrRules extends translate(i18next)(LitElement) {
 
     protected _onRuleSelectionChanged(event: OrRulesSelectionChangedEvent) {
         this._activeRuleset = event.detail.length === 1 ? {...event.detail[0]} : undefined;
+        this.selectedIds = event.detail.length === 1 ? [event.detail[0].id!] : undefined;
     }
 
     protected _onRuleSaveStart(event: OrRulesSaveStartEvent) {

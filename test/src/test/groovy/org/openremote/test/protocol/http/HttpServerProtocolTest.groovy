@@ -420,7 +420,11 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         }
 
         when: "an attempt is made to use the removed endpoint"
-        authenticatedTestResource.postAsset(testAsset)
+        try {
+            authenticatedTestResource.postAsset(testAsset)
+        } catch (Exception e) {
+            // For some reason the NotAllowedException isn't always thrown - weird
+        }
 
         then: "the asset should not have been posted"
         new PollingConditions(initialDelay: 3).eventually {

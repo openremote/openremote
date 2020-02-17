@@ -29,7 +29,7 @@ public class RulesetQuery {
     public long[] ids;
     public MetaPredicate[] meta;
     public int limit;
-    public Ruleset.Lang language;
+    public Ruleset.Lang[] languages;
     public boolean fullyPopulate;
     public boolean publicOnly;
     public boolean enabledOnly;
@@ -54,8 +54,8 @@ public class RulesetQuery {
         return this;
     }
 
-    public RulesetQuery setLanguage(Ruleset.Lang language) {
-        this.language = language;
+    public RulesetQuery setLanguages(Ruleset.Lang...languages) {
+        this.languages = languages;
         return this;
     }
 
@@ -90,7 +90,7 @@ public class RulesetQuery {
             "ids=" + Arrays.toString(ids) +
             ", meta=" + Arrays.toString(meta) +
             ", limit=" + limit +
-            ", language=" + language +
+            ", languages=" + Arrays.toString(languages) +
             ", fullyPopulate=" + fullyPopulate +
             ", publicOnly=" + publicOnly +
             ", realm='" + realm + '\'' +

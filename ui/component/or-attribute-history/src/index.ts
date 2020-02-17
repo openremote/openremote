@@ -158,7 +158,7 @@ const style = css`
         justify-content: space-between;
         margin: var(--internal-or-attribute-history-controls-margin);
         
-        flex-direction: column;
+        flex-direction: row;
     }
     
     #controls > * {
@@ -173,7 +173,7 @@ const style = css`
     }
     
     #ending-controls > * {
-        padding: 0 5px;
+        padding: 0 3px;
     }
     
     #ending-date {

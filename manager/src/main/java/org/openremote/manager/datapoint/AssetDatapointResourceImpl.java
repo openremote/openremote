@@ -29,7 +29,6 @@ import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.value.Value;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;

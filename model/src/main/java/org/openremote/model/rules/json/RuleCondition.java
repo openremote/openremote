@@ -20,16 +20,18 @@
 package org.openremote.model.rules.json;
 
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.DateTimePredicate;
 
 /**
- * Consists of a timer expression (interval, absolute, CRON etc.) or query for filtering
- * {@link org.openremote.model.rules.AssetState}s, if both are specified then the timer is used.
- * <p>
- * For timer based trigger it evaluates to true if the timer expression matches the current time. For query based trigger
- * it evaluates to true when one or more {@link org.openremote.model.rules.AssetState}s (referencing unique
- * {@link org.openremote.model.asset.Asset}s) are returned after applying the query to the
- * {@link org.openremote.model.rules.AssetState}s in the RuleEngine that this rule is loaded into.
+ * Consists of one of the following triggers in order of precedence:
+ * <ol>
+ * <li>{@link #timer} - Timer expression (interval e.g. '1h' or CRON expression) which means the condition becomes
+ * true when the interval duration passes or the cron expression matches the current time - note the firing of the
+ * rule will not be precise</li>
+ * <li>{@link #assets} - {@link AssetQuery} to be applied to the {@link org.openremote.model.rules.AssetState}s
+ * available within the rule engine this rule is loaded into. Evaluates to true when one or more
+ * {@link org.openremote.model.rules.AssetState}s (referencing unique {@link org.openremote.model.asset.Asset}s) are
+ * returned after applying the query.</li>
+ * </ol>
  * <p>
  * The {@link #tag} is used to name the {@link org.openremote.model.asset.Asset}s that are filtered by the query and can
  * be used in the rule RHS to perform actions on these specific assets.
@@ -37,8 +39,6 @@ import org.openremote.model.query.filter.DateTimePredicate;
 public class RuleCondition {
 
     public String timer;
-    public DateTimePredicate datetime;
     public AssetQuery assets;
     public String tag;
-    public RuleConditionReset reset;
 }

@@ -116,7 +116,11 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             if (this.config && this.config.json && this.config.json.rule) {
                 this._rule = JSON.parse(JSON.stringify(this.config.json.rule)) as JsonRule;
             } else {
-                this._rule = {};
+                this._rule = {
+                    recurrence: {
+                        mins: 0 //always
+                    }
+                };
             }
         } else {
             try {
@@ -267,15 +271,11 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
 
         if (group.items) {
             for (const condition of group.items) {
-                if (!condition.assets && !condition.datetime && !condition.timer) {
+                if (!condition.assets && !condition.timer) {
                     return false;
                 }
 
                 if (condition.assets && !this._validateAssetQuery(condition.assets, true, false)) {
-                    return false;
-                }
-
-                if (condition.datetime && !this._validateValuePredicate(condition.datetime)) {
                     return false;
                 }
 

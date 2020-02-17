@@ -12,9 +12,9 @@
     { "path": "../core" },
     { "path": "../rest" },
     { "path": "../model" },
+    { "path": "../or-mwc-components" },
     { "path": "../or-translate" },
     { "path": "../or-input" },
-    { "path": "../or-icon" },
-    { "path": "../or-mwc-components" }
+    { "path": "../or-icon" }
   ]
 }

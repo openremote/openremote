@@ -1122,17 +1122,21 @@ public class HttpClientProtocol extends AbstractProtocol {
         LOG.fine("Scheduling polling request '" + clientRequest + "' to execute every " + pollingMillis + " ms for attribute: " + attributeRef);
 
         return executorService.scheduleWithFixedDelay(() ->
-                executePollingRequest(clientRequest, body, response ->
+                executePollingRequest(clientRequest, body, response -> {
+                    try {
                         onPollingResponse(
-                                clientRequest,
-                                response,
-                                attributeRef,
-                                protocolConfigurationRef)
-                ), 0, pollingMillis, TimeUnit.MILLISECONDS);
+                            clientRequest,
+                            response,
+                            attributeRef,
+                            protocolConfigurationRef);
+                    } catch (Exception e) {
+                        LOG.log(Level.WARNING, getProtocolDisplayName() + " exception thrown whilst processing polling response [" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: " + clientRequest.requestTarget.getUriBuilder().build().toString());
+                    }
+                }), 0, pollingMillis, TimeUnit.MILLISECONDS);
     }
 
     protected void executePollingRequest(HttpClientRequest clientRequest, String body, Consumer<Response> responseConsumer) {
-        Response originalResponse = null, lastResponse;
+        Response originalResponse, lastResponse;
         List<String> entities = new ArrayList<>();
 
         try {
@@ -1145,11 +1149,11 @@ public class HttpClientProtocol extends AbstractProtocol {
                 }
                 originalResponse = PagingResponse.fromResponse(originalResponse).entity(entities).build();
             }
+
+            responseConsumer.accept(originalResponse);
         } catch (Exception e) {
             LOG.log(Level.WARNING, getProtocolDisplayName() + " exception thrown whilst doing polling request [" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: " + clientRequest.requestTarget.getUriBuilder().build().toString());
         }
-
-        responseConsumer.accept(originalResponse);
     }
 
     protected Response executePagingRequest(HttpClientRequest clientRequest, Response response) {

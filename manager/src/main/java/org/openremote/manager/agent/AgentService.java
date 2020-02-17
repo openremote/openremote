@@ -21,6 +21,7 @@ package org.openremote.manager.agent;
 
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ParseContext;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
@@ -139,10 +140,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         );
 
         jsonPathParser = JsonPath.using(
-            new Configuration.ConfigurationBuilder()
+            Configuration.builder()
                 .jsonProvider(new JacksonJsonNodeJsonProvider())
                 .mappingProvider(new JacksonMappingProvider())
                 .build()
+                .addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL)
         );
     }
 
@@ -791,7 +793,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
             if (!filterOk) {
                 // Try and convert the value
-                ValueType filterValueType = ValueType.fromModelType(filter.getValueType());
+                ValueType filterValueType = null;
+                try {
+                    filterValueType = ValueType.fromModelType(filter.getValueType());
+                } catch (RuntimeException e) {
+                    LOG.fine("Failed to get model type from value type: " + filter.getValueType());
+                }
                 if (filterValueType == null) {
                     LOG.fine("Value filter type unknown: " + filter.getValueType().getName());
                     value = null;

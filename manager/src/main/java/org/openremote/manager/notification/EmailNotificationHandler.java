@@ -102,7 +102,7 @@ public class EmailNotificationHandler implements NotificationHandler {
             try {
                 mailer.testConnection();
             } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Failed to connect to SMTP server so disabling email notifications");
+                LOG.log(Level.SEVERE, "Failed to connect to SMTP server so disabling email notifications", e);
                 mailer = null;
             }
         }
@@ -222,12 +222,14 @@ public class EmailNotificationHandler implements NotificationHandler {
         }
         EmailNotificationMessage email = (EmailNotificationMessage)message;
 
+        // Move to/cc/bcc to targets (for traceability) in sent notifications
         if (email.getTo() != null) {
             mappedTargets.addAll(
                 email.getTo().stream()
                     .map(recipient ->
                         new Notification.Target(Notification.TargetType.CUSTOM, recipient.getAddress()))
                     .collect(Collectors.toList()));
+            email.setTo((List<EmailNotificationMessage.Recipient>) null);
         }
         if (email.getCc() != null) {
             mappedTargets.addAll(
@@ -235,6 +237,7 @@ public class EmailNotificationHandler implements NotificationHandler {
                     .map(recipient ->
                         new Notification.Target(Notification.TargetType.CUSTOM, recipient.getAddress()))
                     .collect(Collectors.toList()));
+            email.setCc((List<EmailNotificationMessage.Recipient>) null);
         }
         if (email.getBcc() != null) {
             mappedTargets.addAll(
@@ -242,6 +245,7 @@ public class EmailNotificationHandler implements NotificationHandler {
                     .map(recipient ->
                         new Notification.Target(Notification.TargetType.CUSTOM, recipient.getAddress()))
                     .collect(Collectors.toList()));
+            email.setBcc((List<EmailNotificationMessage.Recipient>) null);
         }
 
         return mappedTargets;
@@ -269,7 +273,8 @@ public class EmailNotificationHandler implements NotificationHandler {
                 recipient = getAssetRecipient(targetId);
                 break;
             case CUSTOM:
-                // This recipient is in the message already
+                // This recipient is the target ID
+                recipient = new EmailNotificationMessage.Recipient(targetId);
                 break;
             default:
                 LOG.warning("Target type not supported: " + targetType);

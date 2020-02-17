@@ -307,7 +307,7 @@ public abstract class AbstractWebsocketClientProtocol<T> extends AbstractIoClien
         );
     }
 
-    protected void doSubscription(WebsocketIoClient websocketClient, MultivaluedMap<String, String> headers, WebsocketSubscription subscription) {
+    protected void doSubscription(WebsocketIoClient<String> websocketClient, MultivaluedMap<String, String> headers, WebsocketSubscription subscription) {
         if (subscription instanceof WebsocketHttpSubscription) {
             WebsocketHttpSubscription httpSubscription = (WebsocketHttpSubscription)subscription;
 

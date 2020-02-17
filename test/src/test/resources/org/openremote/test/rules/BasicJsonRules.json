@@ -28,8 +28,8 @@
                         "value": {
                           "predicateType": "radial",
                           "radius": 50,
-                          "lat": 51.438000,
-                          "lng": 5.470945,
+                          "lat": 51.446308,
+                          "lng": 5.454027,
                           "negated": true
                         }
                       }
@@ -155,11 +155,8 @@
           "updateAction": "REPLACE"
         }
       ],
-      "reset": {
-        "noLongerMatches": true,
-        "valueChanges": true,
-        "timestampChanges": true,
-        "timer": "4h"
+      "recurrence": {
+        "mins": 0
       }
     }
   ]

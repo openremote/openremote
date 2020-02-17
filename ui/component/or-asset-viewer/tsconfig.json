@@ -13,6 +13,7 @@
     { "path": "../core" },
     { "path": "../rest" },
     { "path": "../model" },
+    { "path": "../or-chart" },
     { "path": "../or-panel" },
     { "path": "../or-translate" },
     { "path": "../or-icon" },

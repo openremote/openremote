@@ -127,7 +127,8 @@ public abstract class Ruleset {
                     "    reset: null // Only trigger once ever\n" +
                     "  }\n" +
                     "]"
-                );
+                ),
+        FLOW(".json", "{\"name\":\"\", \"description\": \"\", \"nodes\":[], \"connections\":[]}");
 
         final String fileExtension;
         final String emptyRulesExample;
@@ -206,7 +207,9 @@ public abstract class Ruleset {
 
     protected Ruleset(String name, Lang language, String rules) {
         this.name = name;
-        this.lang = language;
+        if (language != null) {
+            this.lang = language;
+        }
         this.rules = rules;
     }
 

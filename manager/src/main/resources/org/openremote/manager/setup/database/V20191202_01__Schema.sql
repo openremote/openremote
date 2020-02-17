@@ -103,7 +103,7 @@ create table NOTIFICATION (
   SOURCE          varchar(50)              not null,
   SOURCE_ID       varchar(43),
   MESSAGE         jsonb,
-  ERROR           varchar(255),
+  ERROR           varchar(4096),
   SENT_ON         timestamp with time zone not null,
   DELIVERED_ON    timestamp with time zone,
   ACKNOWLEDGED_ON timestamp with time zone,
@@ -119,6 +119,14 @@ create table SYSLOG_EVENT (
   MESSAGE     varchar(131072),
   SUBCATEGORY varchar(1024),
   primary key (ID)
+);
+
+create table ASSET_PREDICTED_DATAPOINT (
+  TIMESTAMP      timestamp with time zone   not null,
+  ENTITY_ID      varchar(36)                not null,
+  ATTRIBUTE_NAME varchar(255)               not null,
+  VALUE          jsonb                      not null,
+  primary key (TIMESTAMP, ENTITY_ID, ATTRIBUTE_NAME)
 );
 
 /*

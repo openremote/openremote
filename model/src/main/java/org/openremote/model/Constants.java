@@ -61,6 +61,16 @@ public interface Constants {
     String SETUP_EMAIL_TLS = "SETUP_EMAIL_TLS";
     boolean SETUP_EMAIL_TLS_DEFAULT = true;
     String SETUP_EMAIL_FROM = "SETUP_EMAIL_FROM";
-    String SETUP_EMAIL_FROM_DEFAULT = "admin@openremote.io";
+    String SETUP_EMAIL_FROM_DEFAULT = "no-reply@openremote.io";
     String REQUEST_HEADER_REALM = "Auth-Realm";
+
+    String UNITS_TEMPERATURE_CELCIUS = "CELCIUS";
+    String UNITS_TIME_MINUTES = "MINUTES";
+    String UNITS_SPEED_KNOTS = "KNOTS";
+    String UNITS_SPEED_KPH = "SPEED_KPH";
+    String UNITS_SPEED_MPS = "SPEED_MPS";
+    String UNITS_SOUND_DECIBELS = "DECIBELS";
+    String UNITS_DISTANCE_METRES = "METRES";
+    String UNITS_DIRECTION_DEGREES = "DEGREES";
+    String UNITS_FLOW_LPM = "FLOW_LPM";
 }

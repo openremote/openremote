@@ -25,12 +25,10 @@ const DATE_TIME_COLOR = "6AEAA4";
 export function getWhenTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescriptor[]): MenuItem[] {
 
     let addAssetTypes = true;
-    let addDatetime = true;
     let addTimer = true;
 
     if (config && config.controls && config.controls.allowedConditionTypes) {
         addAssetTypes = config.controls.allowedConditionTypes.indexOf(ConditionType.ASSET_QUERY) >= 0;
-        addDatetime = config.controls.allowedConditionTypes.indexOf(ConditionType.DATE_TIME) >= 0;
         addTimer = config.controls.allowedConditionTypes.indexOf(ConditionType.TIMER) >= 0;
     }
 
@@ -52,15 +50,6 @@ export function getWhenTypesMenu(config?: RulesConfig, assetDescriptors?: AssetD
         }));
     }
 
-    if (addDatetime) {
-        menu.push({
-            text: i18next.t("datetime"),
-            icon: "clock",
-            value: ConditionType.DATE_TIME,
-            styleMap: {"--or-icon-fill": "#" + DATE_TIME_COLOR}
-        } as MenuItem);
-    }
-
     if (addTimer) {
         menu.push({
             text: i18next.t("timer"),
@@ -73,25 +62,16 @@ export function getWhenTypesMenu(config?: RulesConfig, assetDescriptors?: AssetD
     return menu;
 }
 
-export function updateRuleConditionType(ruleCondition: RuleCondition, value: string | undefined, config?: RulesConfig) {
+export function updateRuleConditionType(ruleCondition: RuleCondition, value: string | ConditionType | undefined, config?: RulesConfig) {
 
-    if (!value || value === "") {
+    if (!value) {
         ruleCondition.assets = undefined;
         ruleCondition.timer = undefined;
-        ruleCondition.datetime = undefined;
     } else if (value === ConditionType.TIMER) {
         ruleCondition.assets = undefined;
-        ruleCondition.datetime = undefined;
         ruleCondition.timer = "1h";
-    } else if (value === ConditionType.DATE_TIME) {
-        ruleCondition.assets = undefined;
-        ruleCondition.timer = undefined;
-        ruleCondition.datetime = {
-            predicateType: "datetime"
-        };
     } else {
         ruleCondition.timer = undefined;
-        ruleCondition.datetime = undefined;
 
         if (config && config.json && config.json.whenAssetQuery) {
             ruleCondition.assets = JSON.parse(JSON.stringify(config.json.whenAssetQuery));
@@ -165,10 +145,6 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
 
             if (type) {
                 switch (type) {
-                    case ConditionType.DATE_TIME:
-                        buttonIcon = "clock";
-                        buttonColor = DATE_TIME_COLOR;
-                        break;
                     case ConditionType.TIMER:
                         buttonIcon = "timer";
                         buttonColor = TIMER_COLOR;
@@ -187,16 +163,13 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                         html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
                         getWhenTypesMenu(this.config, this.assetDescriptors),
                         type,
-                        (values: string[] | string) => this.type = values as string)}
+                        (values: string[] | string) => this.type = values as ConditionType)}
                 </div>
             `;
         }
         
         if (type) {
             switch (type) {
-                case ConditionType.DATE_TIME:
-                    template = html`<span>DATE TIME NOT IMPLEMENTED</span>`;
-                    break;
                 case ConditionType.TIMER:
                     template = html`<span>TIMER NOT IMPLEMENTED</span>`;
                     break;
@@ -212,7 +185,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
         `;
     }
 
-    protected get type(): string | undefined {
+    protected get type(): string | ConditionType | undefined {
 
         const assetType = getAssetTypeFromQuery(this.ruleCondition.assets);
         if (assetType) {
@@ -222,13 +195,9 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
         if (this.ruleCondition.timer) {
             return ConditionType.TIMER;
         }
-
-        if (this.ruleCondition.datetime) {
-            return ConditionType.DATE_TIME;
-        }
     }
 
-    protected set type(value: string | undefined) {
+    protected set type(value: string | ConditionType | undefined) {
         updateRuleConditionType(this.ruleCondition, value, this.config);
         if (this._assetQuery) {
             this._assetQuery.refresh();

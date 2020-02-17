@@ -398,13 +398,6 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesImport.apartment3Engine.lastFireTimestamp > apartment3LastFireTimestamp
         }
 
-        then: "the broken rules engine should prevent a database update"
-        conditions.eventually {
-            def asset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
-            assert asset.getAttribute("presenceDetected").get().getValueAsBoolean().isPresent()
-            assert !asset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-        }
-
         cleanup: "the server should be stopped"
         stopContainer(container)
     }
