@@ -198,8 +198,8 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
                     .getMetaItem(META_PROTOCOL_ALLOWED_ORIGINS);
 
             allowedOrigins = allowedOriginsMeta
-                    .flatMap(AbstractValueHolder::getValueAsString)
-                    .map(Collections::singletonList)
+                .flatMap(AbstractValueHolder::getValueAsString)
+                .map(originString -> Arrays.asList(originString.split(";")))
                     .orElseGet(() ->
                             allowedOriginsMeta.flatMap(AbstractValueHolder::getValueAsArray)
                                     .flatMap(arrayValue ->
