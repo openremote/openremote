@@ -204,6 +204,9 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         }
 
         const allowedLanguages = this._allowedLanguages;
+        const sortOptions = ["name", "createdOn"]
+        if (allowedLanguages && allowedLanguages.length > 1) sortOptions.push("lang")
+        
         let addTemplate: TemplateResult | string = ``;
 
         if (!this._isReadonly()) {
@@ -234,7 +237,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                         
                         ${getContentWithMenuTemplate(
             html`<or-input type="${InputType.BUTTON}" icon="sort-variant"></or-input>`,
-            ["name", "createdOn", "lang"].map((sort) => { return { value: sort, text: i18next.t(sort) } as MenuItem; }),
+            sortOptions.map((sort) => { return { value: sort, text: i18next.t(sort) } as MenuItem; }),
             this.sortBy,
             (v) => this._onSortClicked(v as string))}
                     </div>

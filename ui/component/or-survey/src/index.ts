@@ -268,6 +268,9 @@ class OrSurvey extends LitElement {
             return;
         }
 
+        this.questions.sort((a, b) => a.attributes && b.attributes ? a.attributes.order.value - b.attributes.order.value : 0);
+        this.questions = [...this.questions];
+        
         if (this.questionIndex > 0) {
             this.previousButton = true;
             this.nextButton = true;
