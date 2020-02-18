@@ -113,8 +113,8 @@ class OrSurveyResults extends LitElement {
                                                          ${item.value.map((bar: ProcessedResultAnswer) => {
                 return html`
                                                                 <div class="bar">
-                                                                <span style="height:${this.computeHeight(bar.count)}%;">
-                                                                    <div class="bar-top-label">${this.computeHeight(bar.count)}%</div>
+                                                                <span style="height:${this.computeHeight(bar.count)};">
+                                                                    <div class="bar-top-label">${this.computeHeight(bar.count)}</div>
                                                                     <label>${bar.name} (${bar.count})</label>
                                                                 </span>
                                                                 </div>
@@ -169,12 +169,13 @@ class OrSurveyResults extends LitElement {
 
 
     }
+    
     computeHeight(barAmount: number) {
         if (barAmount && this.survey && this.survey.attributes) {
             const maxAmount = this.survey.attributes.responseAmount.value;
-            return Math.round((barAmount / maxAmount) * 100);
+            return Math.round((barAmount / maxAmount) * 100)+"%";
         } else {
-            return 0;
+            return "0%";
         }
     }
 

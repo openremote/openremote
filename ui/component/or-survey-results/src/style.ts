@@ -167,7 +167,7 @@ export const surveyResultStyle = html`
                 position: relative;
                 margin-top: -16px;
                 line-height: 12px;
-                font-size: 12px;
+                font-size: 11px;
             }
 
             @keyframes draw {
