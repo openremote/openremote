@@ -5,7 +5,6 @@
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
-  "sideEffects": false,
   "scripts": {
     "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
