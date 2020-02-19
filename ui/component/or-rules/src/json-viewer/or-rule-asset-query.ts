@@ -608,7 +608,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             // multiple
             case AssetQueryOperator.EQUALS:
             case AssetQueryOperator.NOT_EQUALS:
-                if (descriptor && descriptor.valueDescriptor && descriptor.valueDescriptor.name === AttributeValueType.DATETIME.name) {
+                if (descriptor && descriptor.valueDescriptor && descriptor.valueDescriptor.name === AttributeValueType.TIMESTAMP_ISO8601.name) {
                     predicate = {
                         predicateType: "datetime",
                         negate: value === AssetQueryOperator.NOT_EQUALS,
