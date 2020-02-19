@@ -78,7 +78,7 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
             );
 
             return assetPredictedDatapointService.getValueDatapoints(
-                attribute,
+                attribute.getReferenceOrThrow(),
                 toTimestamp,
                 fromTimestamp
             );

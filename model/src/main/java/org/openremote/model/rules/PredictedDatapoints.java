@@ -19,14 +19,17 @@
  */
 package org.openremote.model.rules;
 
-import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.ValueDatapoint;
-
-import java.util.stream.Stream;
+import org.openremote.model.value.Value;
 
 public abstract class PredictedDatapoints {
 
-    public abstract Stream<ValueDatapoint> getValueDataPoints(AssetAttribute attribute,
-                                                              long fromTimestamp,
-                                                              long toTimestamp);
+
+    public abstract ValueDatapoint[] getValueDataPoints(AttributeRef attributeRef,
+                                                        long fromTimestamp,
+                                                        long toTimestamp);
+
+    public abstract void updateValue(String assetId, String attributeName, Value value, long timestamp);
+    public abstract void updateValue(AttributeRef attributeRef, Value value, long timestamp);
 }

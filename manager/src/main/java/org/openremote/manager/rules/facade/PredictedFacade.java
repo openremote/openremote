@@ -21,14 +21,13 @@ package org.openremote.manager.rules.facade;
 
 import org.openremote.manager.predicted.AssetPredictedDatapointService;
 import org.openremote.manager.rules.RulesEngineId;
-import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.rules.PredictedDatapoints;
 import org.openremote.model.rules.Ruleset;
+import org.openremote.model.value.Value;
 
-import java.util.Arrays;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 
 public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
 
@@ -43,7 +42,17 @@ public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
     }
 
     @Override
-    public Stream<ValueDatapoint> getValueDataPoints(AssetAttribute attribute, long fromTimestamp, long toTimestamp) {
-        return Arrays.stream(assetPredictedDatapointService.getValueDatapoints(attribute, fromTimestamp, toTimestamp));
+    public ValueDatapoint[] getValueDataPoints(AttributeRef attributeRef, long fromTimestamp, long toTimestamp) {
+        return assetPredictedDatapointService.getValueDatapoints(attributeRef, fromTimestamp, toTimestamp);
+    }
+
+    @Override
+    public void updateValue(String assetId, String attributeName, Value value, long timestamp) {
+        assetPredictedDatapointService.updateValue(assetId, attributeName, value, timestamp);
+    }
+
+    @Override
+    public void updateValue(AttributeRef attributeRef, Value value, long timestamp) {
+        updateValue(attributeRef.getEntityId(), attributeRef.getAttributeName(), value, timestamp);
     }
 }

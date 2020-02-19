@@ -29,12 +29,12 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
+import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -109,11 +109,9 @@ public class AssetPredictedDatapointService implements ContainerService {
         });
     }
 
-    public ValueDatapoint[] getValueDatapoints(AssetAttribute attribute,
+    public ValueDatapoint[] getValueDatapoints(AttributeRef attributeRef,
                                                long fromTimestamp,
                                                long toTimestamp) {
-
-        AttributeRef attributeRef = attribute.getReferenceOrThrow();
 
         LOG.fine("Getting predicted datapoints for: " + attributeRef);
 
@@ -126,7 +124,7 @@ public class AssetPredictedDatapointService implements ContainerService {
 
                     query.append("select distinct TIMESTAMP AS X, value AS Y from ASSET_PREDICTED_DATAPOINT " +
                         "where " +
-                        "TIMESTAMP >= to_timestamp(?) - ? " +
+                        "TIMESTAMP >= to_timestamp(?) " +
                         "and " +
                         "TIMESTAMP < to_timestamp(?) " +
                         "and " +
@@ -149,11 +147,29 @@ public class AssetPredictedDatapointService implements ContainerService {
                                 Value value = rs.getObject(2) != null ? Values.parseOrNull(rs.getString(2)) : null;
                                 result.add(new ValueDatapoint<>(rs.getTimestamp(1).getTime(), value));
                             }
-                            return result.toArray(new ValueDatapoint[0]);
+                            return result.toArray(new ValueDatapoint[result.size()]);
                         }
                     }
                 }
             })
         );
+    }
+
+    public void updateValue(AttributeRef attributeRef, Value value, long timestamp) {
+        updateValue(attributeRef.getEntityId(), attributeRef.getAttributeName(), value, timestamp);
+    }
+
+    public void updateValue(String assetId, String attributeName, Value value, long timestamp) {
+        persistenceService.doTransaction(em -> {
+            upsertValue(em, assetId, attributeName, value, timestamp);
+        });
+    }
+
+    private void upsertValue(EntityManager entityManager, String assetId, String attributeName, Value value, long timestamp) {
+        entityManager.createNativeQuery(String.format("INSERT INTO asset_predicted_datapoint (entity_id, attribute_name, value, timestamp) \n" +
+            "VALUES ('%1$s', '%2$s', '%3$s', to_timestamp(%4$d))\n" +
+            "ON CONFLICT (entity_id, attribute_name, timestamp) DO UPDATE \n" +
+            "  SET value = excluded.value", assetId, attributeName, value.toJson(), timestamp))
+            .executeUpdate();
     }
 }
