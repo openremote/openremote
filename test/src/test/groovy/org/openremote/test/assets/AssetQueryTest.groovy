@@ -34,7 +34,7 @@ import java.util.function.Function
 
 import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME
 import static org.openremote.model.asset.AssetType.THING
-import static org.openremote.model.attribute.AttributeValueType.DATETIME
+import static org.openremote.model.attribute.AttributeValueType.TIMESTAMP_ISO8601
 import static org.openremote.model.query.AssetQuery.*
 import static org.openremote.model.query.AssetQuery.Access.PRIVATE
 import static org.openremote.model.query.AssetQuery.Access.PROTECTED
@@ -953,7 +953,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         def lobby = assetStorageService.find(managerDemoSetup.lobbyId, true)
 
         lobby.addAttributes(
-                new AssetAttribute("openingDate", DATETIME, Values.create("2018-01-28T15:00:00+00:00"))
+                new AssetAttribute("openingDate", TIMESTAMP_ISO8601, Values.create("2018-01-28T15:00:00+00:00"))
         )
         lobby = assetStorageService.merge(lobby)
 

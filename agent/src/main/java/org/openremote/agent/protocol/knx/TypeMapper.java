@@ -100,10 +100,10 @@ public class TypeMapper {
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_WIND_SPEED_KMH.getID(), AttributeValueType.NUMBER);
 
         // Datapoint Types "Time", Main number 10
-        dptToTypeMap.put(DPTXlatorTime.DPT_TIMEOFDAY.getID(), AttributeValueType.DATETIME);
+        dptToTypeMap.put(DPTXlatorTime.DPT_TIMEOFDAY.getID(), AttributeValueType.TIMESTAMP_ISO8601);
 
         // Datapoint Types "Date", Main number 11
-        dptToTypeMap.put(DPTXlatorDate.DPT_DATE.getID(), AttributeValueType.DATETIME);
+        dptToTypeMap.put(DPTXlatorDate.DPT_DATE.getID(), AttributeValueType.TIMESTAMP_ISO8601);
 
         // Datapoint Types "4-Octet Unsigned Value", Main number 12
         dptToTypeMap.put(DPTXlator4ByteUnsigned.DPT_VALUE_4_UCOUNT.getID(), AttributeValueType.NUMBER);
@@ -138,7 +138,7 @@ public class TypeMapper {
         dptToTypeMap.put(DPTXlatorSceneControl.DPT_SCENE_CONTROL.getID(), AttributeValueType.NUMBER);
 
         // Datapoint Types "DateTime", Main number 19
-        dptToTypeMap.put(DPTXlatorDateTime.DPT_DATE_TIME.getID(), AttributeValueType.DATETIME);
+        dptToTypeMap.put(DPTXlatorDateTime.DPT_DATE_TIME.getID(), AttributeValueType.TIMESTAMP_ISO8601);
 
         // Datapoint Types "RGB Color", Main number 232
         dptToTypeMap.put(DPTXlatorRGB.DPT_RGB.getID(), AttributeValueType.COLOR_RGB);
@@ -147,7 +147,7 @@ public class TypeMapper {
         typeToDptMap.put(AttributeValueType.BOOLEAN, DPTXlatorBoolean.DPT_SWITCH.getID());
         typeToDptMap.put(AttributeValueType.PERCENTAGE, DPTXlator8BitUnsigned.DPT_SCALING.getID());
         typeToDptMap.put(AttributeValueType.NUMBER, DPTXlator2ByteFloat.DPT_TEMPERATURE.getID());
-        typeToDptMap.put(AttributeValueType.DATETIME, DPTXlatorTime.DPT_TIMEOFDAY.getID());
+        typeToDptMap.put(AttributeValueType.TIMESTAMP_ISO8601, DPTXlatorTime.DPT_TIMEOFDAY.getID());
         typeToDptMap.put(AttributeValueType.STRING, DPTXlatorString.DPT_STRING_8859_1.getID());
         typeToDptMap.put(AttributeValueType.COLOR_RGB, DPTXlatorRGB.DPT_RGB.getID());
     }

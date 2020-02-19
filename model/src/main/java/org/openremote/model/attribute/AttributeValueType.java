@@ -81,9 +81,11 @@ public enum AttributeValueType implements AttributeValueDescriptor {
 
     TIMESTAMP("clock", ValueType.NUMBER),
 
-    TIME("clock", ValueType.NUMBER),
+    TIMESTAMP_ISO8601("clock", ValueType.STRING),
 
-    DATETIME("calendar-alt", ValueType.STRING),
+    DURATION("clock", ValueType.NUMBER),
+
+    DURATION_STRING("clock", ValueType.NUMBER),
 
     COLOR_RGB("palette", ValueType.ARRAY, value -> Values.getArray(value)
         .filter(array -> array.length() != 3)
@@ -155,8 +157,6 @@ public enum AttributeValueType implements AttributeValueDescriptor {
     RULES_TEMPLATE_FILTER("filter", ValueType.ARRAY),
 
     ASSET_STATUS("heart-pulse", ValueType.STRING),
-
-    BEARING("compass", ValueType.NUMBER),
 
     CALENDAR_EVENT("calendar", ValueType.OBJECT);
 
