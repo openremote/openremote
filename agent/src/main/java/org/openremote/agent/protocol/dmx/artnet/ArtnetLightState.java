@@ -28,6 +28,30 @@ public class ArtnetLightState extends AbstractDMXLightState {
         this.enabled = enabled;
     }
 
+    public int getR() {
+        return r;
+    }
+
+    public int getG() {
+        return g;
+    }
+
+    public int getB() {
+        return b;
+    }
+
+    public int getW() {
+        return w;
+    }
+
+    public double getDim() {
+        return dim;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
     @Override
     public Byte[] getValues() {
         int enable = this.enabled? 1 : 0;

@@ -6,6 +6,7 @@ import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang.ArrayUtils;
 
 public class ArtnetPacket {
+
     protected static byte[] prefix = { 65, 114, 116, 45, 78, 101, 116, 0, 0, 80, 0, 14 };
 
     public static void writePrefix(ByteBuf buf, int universe)
