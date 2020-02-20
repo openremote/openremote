@@ -293,6 +293,7 @@ public class MapService implements ContainerService {
 
                     ArrayValue tilesArray = Values.createArray();
                     String tileUrl = baseUriBuilder.clone().replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
+                    //String tileUrl = UriBuilder.fromPath("/").path(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
                     tilesArray.set(0, tileUrl);
                     vectorTilesObj.put("tiles", tilesArray);
 

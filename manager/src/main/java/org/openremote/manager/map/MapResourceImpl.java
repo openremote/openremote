@@ -42,7 +42,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     public ObjectValue getSettings(RequestParams requestParams) {
         return mapService.getMapSettings(
                 getRequestRealm(),
-                identityService.getExternalServerUri().clone()
+                requestParams.uriInfo.getRequestUriBuilder()
         );
     }
 
@@ -50,7 +50,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     public ObjectValue getSettingsJs(RequestParams requestParams) {
         return mapService.getMapSettingsJs(
                 getAuthenticatedRealm(),
-                identityService.getExternalServerUri().clone()
+                requestParams.uriInfo.getRequestUriBuilder()
         );
     }
 
