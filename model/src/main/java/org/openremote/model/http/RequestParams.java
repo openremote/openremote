@@ -106,6 +106,7 @@ public class RequestParams<IN, OUT> {
      * Handles reverse proxying and returns the request base URI
      */
     @JsIgnore
+    @GwtIncompatible
     public UriBuilder getRequestBaseUri() {
         URI uri = this.uriInfo.getRequestUri();
         String scheme = TextUtil.isNullOrEmpty(this.forwardedProtoHeader) ? uri.getScheme() : this.forwardedProtoHeader;
