@@ -321,7 +321,7 @@ public enum NodeModel {
                     return Values.create((float) Math.abs(a.getNumber()));
                 } catch (Exception e) {
                     RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return Values.create(false);
+                    return Values.create(0);
                 }
             }),
 
@@ -338,7 +338,7 @@ public enum NodeModel {
                     return Values.create((float) Math.pow(a.getNumber(), b.getNumber()));
                 } catch (Exception e) {
                     RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return Values.create(false);
+                    return Values.create(0);
                 }
             }),
 
@@ -432,15 +432,86 @@ public enum NodeModel {
                     return Values.create(0);
                 }
             }),
+
+    SIN(new Node(NodeType.PROCESSOR, "sin", new NodeInternal[0], new NodeSocket[]{
+            new NodeSocket("in", NodeDataType.NUMBER),
+    }, new NodeSocket[]{
+            new NodeSocket("out", NodeDataType.NUMBER)
+    }),
+            info -> {
+                try {
+                    NumberValue a = (NumberValue) info.getValueFromInput(0);
+                    return Values.create((float) Math.sin(a.getNumber()));
+                } catch (Exception e) {
+                    return Values.create(0);
+                }
+            }),
+
+    COS(new Node(NodeType.PROCESSOR, "cos", new NodeInternal[0], new NodeSocket[]{
+            new NodeSocket("in", NodeDataType.NUMBER),
+    }, new NodeSocket[]{
+            new NodeSocket("out", NodeDataType.NUMBER)
+    }),
+            info -> {
+                try {
+                    NumberValue a = (NumberValue) info.getValueFromInput(0);
+                    return Values.create((float) Math.cos(a.getNumber()));
+                } catch (Exception e) {
+                    return Values.create(0);
+                }
+            }),
+
+    TAN(new Node(NodeType.PROCESSOR, "tan", new NodeInternal[0], new NodeSocket[]{
+            new NodeSocket("in", NodeDataType.NUMBER),
+    }, new NodeSocket[]{
+            new NodeSocket("out", NodeDataType.NUMBER)
+    }),
+            info -> {
+                try {
+                    NumberValue a = (NumberValue) info.getValueFromInput(0);
+                    return Values.create((float) Math.tan(a.getNumber()));
+                } catch (Exception e) {
+                    return Values.create(0);
+                }
+            }),
+
+    SQRT(new Node(NodeType.PROCESSOR, "√", new NodeInternal[0], new NodeSocket[]{
+            new NodeSocket("in", NodeDataType.NUMBER),
+    }, new NodeSocket[]{
+            new NodeSocket("out", NodeDataType.NUMBER)
+    }),
+            info -> {
+                try {
+                    NumberValue a = (NumberValue) info.getValueFromInput(0);
+                    return Values.create((float) Math.sqrt(a.getNumber()));
+                } catch (Exception e) {
+                    return Values.create(0);
+                }
+            }),
+
+    MOD(new Node(NodeType.PROCESSOR, "%", new NodeInternal[0], new NodeSocket[]{
+            new NodeSocket("a", NodeDataType.NUMBER),
+            new NodeSocket("b", NodeDataType.NUMBER),
+    }, new NodeSocket[]{
+            new NodeSocket("c", NodeDataType.NUMBER)
+    }),
+            info -> {
+                try {
+                    NumberValue a = (NumberValue) info.getValueFromInput(0);
+                    NumberValue b = (NumberValue) info.getValueFromInput(1);
+                    return Values.create((float) (a.getNumber() % b.getNumber()));
+                } catch (Exception e) {
+                    return Values.create(0);
+                }
+            }),
     ;
+
 
     NodeModel(Node definition, NodeImplementation implementation) {
         this.definition = definition;
         definition.setName(this.name());
         this.implementation = implementation;
-        this.triggerFunction = (params) -> {
-            return false;
-        };
+        this.triggerFunction = (params) -> false;
     }
 
     NodeModel(Node definition, NodeImplementation implementation, NodeTriggerFunction triggerFunction) {
