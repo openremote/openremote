@@ -277,7 +277,7 @@
 
             getAuthHeader() {
                 if (this.keycloak) {
-                    return 'Bearer ' + security.keycloak.token;
+                    return 'Bearer ' + this.keycloak.token;
                 } else {
                     return "Basic " + btoa(this.user + ":" + this.basicAuthPassword);
                 }
