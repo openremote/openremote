@@ -131,7 +131,13 @@ public class GlobalRuleset extends Ruleset {
     public GlobalRuleset setValidity(CalendarEvent calendarEvent) {
         super.setValidity(calendarEvent);
         return this;
-    }    
+    }
+
+    @Override
+    public GlobalRuleset setTriggerOnPredictedData(boolean triggerOnPredictedData) {
+        super.setTriggerOnPredictedData(triggerOnPredictedData);
+        return this;
+    }
 
     @Override
     public String toString() {

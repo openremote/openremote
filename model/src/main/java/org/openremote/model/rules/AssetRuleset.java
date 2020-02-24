@@ -173,6 +173,12 @@ public class AssetRuleset extends Ruleset {
     }
 
     @Override
+    public AssetRuleset setTriggerOnPredictedData(boolean triggerOnPredictedData) {
+        super.setTriggerOnPredictedData(triggerOnPredictedData);
+        return this;
+    }
+
+    @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
                 "id='" + id + '\'' +

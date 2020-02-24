@@ -35,9 +35,7 @@ import org.openremote.container.Container;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
-import org.openremote.manager.rules.facade.NotificationsFacade;
 import org.openremote.model.calendar.CalendarEvent;
-import org.openremote.model.notification.Notification;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.flow.NodeCollection;
 import org.openremote.model.util.Pair;
@@ -493,13 +491,17 @@ public class RulesetDeployment {
         return ruleset.isContinueOnError();
     }
 
+    public boolean isTriggerOnPredictedData() {
+        return ruleset.isTriggerOnPredictedData();
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-                "id=" + getId() +
-                ", name='" + getName() + '\'' +
-                ", version=" + getVersion() +
-                ", status=" + status +
-                '}';
+            "id=" + getId() +
+            ", name='" + getName() + '\'' +
+            ", version=" + getVersion() +
+            ", status=" + status +
+            '}';
     }
 }

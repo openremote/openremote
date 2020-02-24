@@ -41,13 +41,13 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.attribute.AttributeEvent.Source;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.RulesetQuery;
-import org.openremote.model.query.filter.MetaPredicate;
 import org.openremote.model.query.filter.BooleanPredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
+import org.openremote.model.query.filter.MetaPredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.security.ClientRole;
@@ -57,7 +57,6 @@ import org.openremote.model.value.ObjectValue;
 
 import javax.persistence.EntityManager;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -955,6 +954,17 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         }
 
         return Optional.empty();
+    }
+
+    public void fireDeploymentsWithPredictedDataForAsset(String assetId) {
+        List<AssetState> assetStates = getAssetStatesInScope(assetId);
+        if (assetStates.size() > 0) {
+            String realm = assetStates.get(0).getRealm();
+            String[] assetPaths = assetStates.stream().flatMap(assetState -> Arrays.stream(assetState.getPath())).toArray(String[]::new);
+            for (RulesEngine<?> rulesEngine : getEnginesInScope(realm, assetPaths)) {
+                rulesEngine.fireAllDeploymentsWithPredictedData();
+            }
+        }
     }
 
     @Override

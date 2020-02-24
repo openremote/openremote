@@ -49,6 +49,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.model.rules.RulesetStatus.*;
@@ -465,7 +466,7 @@ public class RulesEngine<T extends Ruleset> {
         });
     }
 
-    protected void fireAllDeployments() {
+    private void fireDeployments(Collection<RulesetDeployment> deploymentList) {
         if (!running) {
             return;
         }
@@ -481,7 +482,7 @@ public class RulesEngine<T extends Ruleset> {
         // Remove any expired temporary facts
         facts.removeExpiredTemporaryFacts();
 
-        for (RulesetDeployment deployment : deployments.values()) {
+        for (RulesetDeployment deployment : deploymentList) {
             try {
 
                 if (deployment.getStatus() == DEPLOYED) {
@@ -522,6 +523,14 @@ public class RulesEngine<T extends Ruleset> {
         }
 
         trackLocationPredicates(false);
+    }
+
+    protected void fireAllDeployments() {
+        fireDeployments(deployments.values());
+    }
+
+    protected void fireAllDeploymentsWithPredictedData() {
+        fireDeployments(deployments.values().stream().filter(RulesetDeployment::isTriggerOnPredictedData).collect(Collectors.toList()));
     }
 
     protected void notifyAssetStatesChanged(AssetStateChangeEvent event) {

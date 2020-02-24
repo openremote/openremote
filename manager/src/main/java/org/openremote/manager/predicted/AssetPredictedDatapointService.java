@@ -26,7 +26,6 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.attribute.AttributeRef;
@@ -47,10 +46,8 @@ import java.util.logging.Logger;
 public class AssetPredictedDatapointService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(AssetPredictedDatapointService.class.getName());
+
     protected PersistenceService persistenceService;
-    protected AssetStorageService assetStorageService;
-    protected TimerService timerService;
-    protected ManagerExecutorService managerExecutorService;
 
     @Override
     public int getPriority() {
@@ -60,9 +57,6 @@ public class AssetPredictedDatapointService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
         persistenceService = container.getService(PersistenceService.class);
-        assetStorageService = container.getService(AssetStorageService.class);
-        timerService = container.getService(TimerService.class);
-        managerExecutorService = container.getService(ManagerExecutorService.class);
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
             new AssetPredictedDatapointResourceImpl(
@@ -156,13 +150,11 @@ public class AssetPredictedDatapointService implements ContainerService {
     }
 
     public void updateValue(AttributeRef attributeRef, Value value, long timestamp) {
-        updateValue(attributeRef.getEntityId(), attributeRef.getAttributeName(), value, timestamp);
+        persistenceService.doTransaction(em -> upsertValue(em, attributeRef.getEntityId(), attributeRef.getAttributeName(), value, timestamp));
     }
 
     public void updateValue(String assetId, String attributeName, Value value, long timestamp) {
-        persistenceService.doTransaction(em -> {
-            upsertValue(em, assetId, attributeName, value, timestamp);
-        });
+        updateValue(new AttributeRef(assetId, attributeName), value, timestamp);
     }
 
     private void upsertValue(EntityManager entityManager, String assetId, String attributeName, Value value, long timestamp) {

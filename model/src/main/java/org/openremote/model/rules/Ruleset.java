@@ -201,6 +201,7 @@ public abstract class Ruleset {
 
     public static final String META_KEY_CONTINUE_ON_ERROR = "urn:openremote:rule:meta:continueOnError";
     public static final String META_KEY_VALIDITY = "urn:openremote:rule:meta:validity";
+    public static final String META_KEY_TRIGGER_ON_PREDICTED_DATA = "urn:openremote:rule:meta:triggerOnPredictedData";
 
     protected Ruleset() {
     }
@@ -370,6 +371,22 @@ public abstract class Ruleset {
             meta.remove(META_KEY_VALIDITY);
         } else {
             meta.put(META_KEY_VALIDITY, calendarEvent.toValue());
+        }
+        return this;
+    }
+
+    public boolean isTriggerOnPredictedData() {
+        return Values.getObject(meta).flatMap(objValue -> objValue.getBoolean(META_KEY_TRIGGER_ON_PREDICTED_DATA)).orElse(false);
+    }
+
+    public Ruleset setTriggerOnPredictedData(boolean triggerOnPredictedData) {
+        if (meta == null) {
+            meta = Values.createObject();
+        }
+        if (!triggerOnPredictedData) {
+            meta.remove(META_KEY_TRIGGER_ON_PREDICTED_DATA);
+        } else {
+            meta.put(META_KEY_TRIGGER_ON_PREDICTED_DATA, true);
         }
         return this;
     }

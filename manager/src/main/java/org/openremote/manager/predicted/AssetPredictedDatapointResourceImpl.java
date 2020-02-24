@@ -79,8 +79,8 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
 
             return assetPredictedDatapointService.getValueDatapoints(
                 attribute.getReferenceOrThrow(),
-                toTimestamp,
-                fromTimestamp
+                fromTimestamp,
+                toTimestamp
             );
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);

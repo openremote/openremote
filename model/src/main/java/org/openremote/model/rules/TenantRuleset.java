@@ -157,7 +157,13 @@ public class TenantRuleset extends Ruleset {
     public TenantRuleset setValidity(CalendarEvent calendarEvent) {
         super.setValidity(calendarEvent);
         return this;
-    }    
+    }
+
+    @Override
+    public TenantRuleset setTriggerOnPredictedData(boolean triggerOnPredictedData) {
+        super.setTriggerOnPredictedData(triggerOnPredictedData);
+        return this;
+    }
 
     @Override
     public String toString() {

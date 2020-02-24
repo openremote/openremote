@@ -414,7 +414,19 @@ public enum MetaItemType implements MetaItemDescriptor {
         null,
         null,
         false
-    );
+    ),
+
+    /**
+     * Could possible have predicted datapoints
+     */
+    HAS_PREDICTED_DATA_POINTS(
+        ASSET_META_NAMESPACE + ":hasPredictedDatapoints",
+        new Access(true, false, true),
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true);
 
     final protected String urn;
     final protected Access access;
