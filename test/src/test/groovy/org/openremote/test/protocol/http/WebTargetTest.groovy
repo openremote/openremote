@@ -471,7 +471,7 @@ class WebTargetTest extends Specification {
         params.add("param1", "param1Value2")
         params.add("param3", "param3Value1")
         response = target.path("get")
-            .register(new QueryParameterInjectorFilter(params, null))
+            .register(new QueryParameterInjectorFilter(params, null, null))
             .request()
             .get()
 
@@ -489,7 +489,7 @@ class WebTargetTest extends Specification {
         and: "a web target for a server"
         def target = new WebTargetBuilder(client, new URIBuilder("https://dynamicparamserver").build())
             .build()
-            .register(new QueryParameterInjectorFilter(params, /"{0,1}\{\$(value)\}"{0,1}/))
+            .register(new QueryParameterInjectorFilter(params, /"{0,1}\{\$(value)\}"{0,1}/, null))
 
         when: "a request is made to the server"
         def response = target.request()

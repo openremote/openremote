@@ -222,7 +222,8 @@ public class HttpClientProtocol extends AbstractProtocol {
             }
 
             if (queryParameters != null) {
-                requestTarget.register(new QueryParameterInjectorFilter(queryParameters, dynamicQueryParameters ? DYNAMIC_VALUE_PLACEHOLDER_REGEXP : null));
+                requestTarget.register(new QueryParameterInjectorFilter(queryParameters, dynamicQueryParameters ? DYNAMIC_VALUE_PLACEHOLDER_REGEXP : null,
+                    DYNAMIC_TIME_PLACEHOLDER_REGEXP));
             }
 
             return requestTarget;
