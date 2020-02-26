@@ -83,6 +83,10 @@ const style = css`
         --internal-or-chart-dataset-1-color: #CC9423;
         --internal-or-chart-dataset-2-color: #8A273B;
         --internal-or-chart-dataset-3-color: #1C7C8A;
+        --internal-or-chart-dataset-4-color: #FF7486;
+        --internal-or-chart-dataset-5-color: #4796EE;
+        --internal-or-chart-dataset-6-color: #EC885E;
+        --internal-or-chart-dataset-7-color: #009085;
         
         --internal-or-chart-background-color: var(--or-chart-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
         --internal-or-chart-text-color: var(--or-chart-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
@@ -104,10 +108,10 @@ const style = css`
         width: 100%;
         display: block; 
     }
-    
+
     .line-label {
-        border-width: 2px;
-        border-color: var(--or-app-color1);
+        border-width: 1px;
+        border-color: var(--or-app-color3);
         margin-right: 5px;
     }
 
@@ -116,7 +120,11 @@ const style = css`
     }
 
     .line-label.dashed {
-        border-style: dashed;
+        background-image: linear-gradient(to bottom, var(--or-app-color3) 50%, white 50%);
+        width: 2px;
+        border: none;
+        background-size: 10px 16px;
+        background-repeat: repeat-y;
     }
     
     .button-icon {
@@ -160,19 +168,23 @@ const style = css`
     #msg:not([hidden]) {
         display: flex;    
     }
-
+    .interval-controls,
     .period-controls {
         display: flex;
         flex-wrap: wrap;
         flex-direction: row;
     }
 
+    .period-controls {
+        --or-icon-fill: var(--or-app-color3);
+    }
+
     #controls {
         display: flex;
         flex-wrap: wrap;
         margin: var(--internal-or-chart-controls-margin);
-        min-width: 325px;
-        padding-left: 20px;
+        min-width: 320px;
+        padding-left: 10px;
         flex-direction: column;
         margin: 0;
     }
@@ -184,8 +196,6 @@ const style = css`
         width: 100%;
         display: flex;
         flex-direction: column;
-        border-top: 1px solid var(--or-app-color2);
-
     }
     
     .attribute-list-item {
@@ -197,6 +207,28 @@ const style = css`
         min-height: 50px;
     }
 
+    .button-clear {
+        background: none;
+        visibility: hidden;
+        color: ${unsafeCSS(DefaultColor5)};
+        --or-icon-fill: ${unsafeCSS(DefaultColor5)};
+        display: inline-block;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+    }
+
+    .attribute-list-item:hover .button-clear {
+        visibility: visible;
+    }
+
+    .button-clear:hover {
+        --or-icon-fill: var(--or-app-color4);
+    }
+    
+    #attribute-list {
+    }
+    
     .attribute-list-item-label {
         display: flex;
         flex: 1 1 0;
@@ -220,7 +252,8 @@ const style = css`
     }
 
     #controls > * {
-        margin: 5px 0;
+        margin-top: 5px;
+        margin-bottom: 5px;
     }
 
     .dialog-container {
@@ -311,10 +344,10 @@ export class OrChart extends translate(i18next)(LitElement) {
     public interval?: DatapointInterval = DatapointInterval.DAY;
 
     @property({type: Number})
-    public timestamp?: Date = new Date();
+    public timestamp?: Date = moment().set('minute', 0).toDate();
 
     @property({type: Number})
-    public compareTimestamp?: Date = new Date();
+    public compareTimestamp?: Date = moment().set('minute', 0).toDate();
 
     @property({type: Object})
     public config?: OrChartConfig;
@@ -398,16 +431,25 @@ export class OrChart extends translate(i18next)(LitElement) {
                 </div>
 
                 <div id="controls">
-                    <div style="margin-right: 6px;">
+                    <div class="interval-controls" style="margin-right: 6px;">
                         ${getContentWithMenuTemplate(
-                            html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t("period")}: ${i18next.t(this.interval ? this.interval : "-")}"></or-input>`,
+                            html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t("timeframe")}: ${i18next.t(this.interval ? this.interval : "-")}"></or-input>`,
                             this._getIntervalOptions(),
                             this.interval,
                             (value) => this.setPeriodOption(value))}
+
+                        ${this.periodCompare ? html `
+                                <or-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @click="${() => this.setPeriodCompare(false)}" icon="minus"></or-input>
+                        ` : html`
+                                <or-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @click="${() => this.setPeriodCompare(true)}" icon="plus"></or-input>
+                        `}
                     </div>
                   
                     <div class="period-controls">
-                        <span class="line-label solid"></span>
+
+                        ${this.periodCompare ? html `
+                            <span class="line-label solid"></span>
+                        `: ``}
                         <or-input id="ending-date" 
                             .type="${endDateInputType}" 
                             ?disabled="${disabled}" 
@@ -427,10 +469,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             <or-icon class="button-icon" icon="chevron-left" @click="${() => this.compareTimestamp = this._updateTimestamp(this.compareTimestamp!, false)}"></or-icon>
                             <or-icon class="button-icon" icon="chevron-right" @click="${() => this.compareTimestamp = this._updateTimestamp(this.compareTimestamp!, true)}"></or-icon>
                         </div>
-                        <a @click="${() => this.periodCompare = false}"><or-icon icon="minus"></or-icon> ${i18next.t("remove period")}</a>
-                    ` : html`
-                        <a @click="${() => this.periodCompare = true}"><or-icon icon="plus"></or-icon> ${i18next.t("add period")}</a>
-                    `}
+                    ` : html``}
 
                     <div id="attribute-list">
                         ${this.assetAttributes.map((attr, index) => {
@@ -440,10 +479,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[index]!.type!), undefined, undefined, bgColor)}</span>
                                     <div class="attribute-list-item-label">
                                         <span>${this.assets[index].name}</span>
-                                        <span style="font-size:14px; color:grey;">${i18next.t(attr.name ? attr.name : "")}</span>
+                                        <span style="font-size:14px; color:grey;">${Util.getAttributeLabel(attr, undefined)}</span>
                                     </div>
-                                    <or-input style="--or-icon-width: 20px;" class="button delete" .type="${InputType.BUTTON}" icon="close" @click="${() => this._deleteAttribute(index)}"></or-input>
-
+                                    <button class="button-clear" @click="${() => this._deleteAttribute(index)}"><or-icon icon="close-circle"></or-icon></button>
                                 </div>
                             `
                         })}
@@ -655,7 +693,8 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _deleteAttribute (index:number) {
-        this.assetAttributes = [...this.assetAttributes.slice(0, index).concat(this.assetAttributes.slice(index + 1, this.assetAttributes.length))]
+        this.assets = [...this.assets.slice(0, index).concat(this.assets.slice(index + 1, this.assets.length))];
+        this.assetAttributes = [...this.assetAttributes.slice(0, index).concat(this.assetAttributes.slice(index + 1, this.assetAttributes.length))];
     }
 
     protected _getAttributeOptions() {
@@ -697,6 +736,11 @@ export class OrChart extends translate(i18next)(LitElement) {
         ];
     }
 
+    setPeriodCompare(periodCompare:boolean) {
+        this.periodCompare = periodCompare;
+        this._loadData();
+    }
+
     protected async _loadData() {
         if(!this.assetAttributes) {
             return;
@@ -710,7 +754,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                 label: attribute.name,
                 borderColor: bgColor,
                 pointRadius: 2,
-                backgroundColor: "transparent"
+                backgroundColor: bgColor,
+                fill: false
             }
             return dataset;
         });
@@ -727,12 +772,14 @@ export class OrChart extends translate(i18next)(LitElement) {
                 data: valuepoints,
                 label: attribute.name+" "+i18next.t("predicted"),
                 borderColor: bgColor,
-                borderDash: [2, 2],
+                borderDash: [2, 4],
                 pointRadius: 2,
-                backgroundColor: "transparent"
+                backgroundColor: bgColor,
+                fill: false
             }
             return dataset;
         });
+        
         data = data.concat(predictedData);
 
         if(this.periodCompare) {
@@ -745,7 +792,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                     borderColor: bgColor,
                     borderDash: [10, 10],
                     pointRadius: 2,
-                    backgroundColor: "transparent"
+                    backgroundColor: bgColor,
+                    fill: false
                 }
                 return dataset;
             });
@@ -757,9 +805,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                     data: valuepoints,
                     label: attribute.name+" "+i18next.t("compare")+" "+i18next.t("predicted"),
                     borderColor: bgColor,
-                    borderDash: [2, 2],
+                    borderDash: [2, 4],
                     pointRadius: 2,
-                    backgroundColor: "transparent"
+                    backgroundColor: bgColor,
+                    fill: false
                 }
                 return dataset;
             });
@@ -779,7 +828,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         let newMoment;
         switch (this.interval) {
             case DatapointInterval.HOUR:
-                newMoment = moment(timestamp)//.set('day', 1)
+                newMoment = moment(timestamp)
                 break;
             case DatapointInterval.DAY:
                 newMoment = moment(timestamp).set('day', 1)
@@ -848,16 +897,17 @@ export class OrChart extends translate(i18next)(LitElement) {
             return [];
         }
         const period = this._getUnitOfTime();
-        const now = moment(timestamp).toDate().getTime();
+        const now = moment().toDate().getTime();
         const startOfPeriod = moment(timestamp).startOf(period).toDate().getTime();
         const endOfPeriod = moment(timestamp).endOf(period).toDate().getTime();
-        
+        const fromTimestamp = now < startOfPeriod ? startOfPeriod : now;
+
         if(attribute.assetId &&  attribute.name && endOfPeriod){
             const response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(
                 attribute.assetId,
                 attribute.name,
                 {
-                    fromTimestamp: startOfPeriod,
+                    fromTimestamp: fromTimestamp,
                     toTimestamp: endOfPeriod
                 }
             );
