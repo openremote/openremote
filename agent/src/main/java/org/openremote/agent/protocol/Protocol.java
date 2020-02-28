@@ -588,6 +588,8 @@ public interface Protocol extends ContainerService {
             if (converterResult.key) {
                 return converterResult;
             }
+
+            value = converterResult.value;
         }
 
         // dynamic value insertion

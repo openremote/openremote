@@ -69,6 +69,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         private int pollCountSlow = 0
         private boolean putRequestWithHeadersCalled = false
         private int successFailureCount = 0
+        private String dynamicPathParam = ""
 
         @Override
         void filter(ClientRequestContext requestContext) throws IOException {
@@ -215,7 +216,12 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                         }
                     }
                     break
-                case "https://mockapi/value/50/set":
+                case "https://mockapi/value/on/set":
+                    dynamicPathParam = "on"
+                    requestContext.abortWith(Response.ok().build())
+                    return
+                case "https://mockapi/value/off/set":
+                    dynamicPathParam = "off"
                     requestContext.abortWith(Response.ok().build())
                     return
                 case "https://mockapi/get_poll_slow":
@@ -484,10 +490,14 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     )
                 ),
             // attribute that sends requests to the server using GET with dynamic path
-            new AssetAttribute("getRequestWithDynamicPath", AttributeValueType.OBJECT)
+            new AssetAttribute("getRequestWithDynamicPath", AttributeValueType.BOOLEAN)
                 .addMeta(
                     new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
-                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create('value/{$value}/set'))
+                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create('value/{$value}/set')),
+                    new MetaItem(Protocol.META_ATTRIBUTE_WRITE_VALUE_CONVERTER, Values.parse("{\n" +
+                        "    \"TRUE\": \"on\",\n" +
+                        "    \"FALSE\": \"off\"\n" +
+                        "}").get())
                 ),
             // attribute that polls the server using GET and uses regex filter on response
             new AssetAttribute("getPollSlow", AttributeValueType.NUMBER)
@@ -545,6 +555,30 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         then: "the server should have received the request"
         conditions.eventually {
             assert mockServer.putRequestWithHeadersCalled
+        }
+
+        when: "a linked attribute value is updated to true the path should contain the dynamic mapped value of 'on'"
+        def count = mockServer.successFailureCount
+        attributeEvent = new AttributeEvent(asset.id,
+            "getRequestWithDynamicPath",
+            Values.create(true))
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        then: "the server should have received the request and returned a 200"
+        conditions.eventually {
+            assert mockServer.dynamicPathParam == "on"
+        }
+
+        when: "a linked attribute value is updated to false the path should contain the dynamic mapped value of 'off'"
+        count = mockServer.successFailureCount
+        attributeEvent = new AttributeEvent(asset.id,
+            "getRequestWithDynamicPath",
+            Values.create(false))
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        then: "the server should have received the request and returned a 200"
+        conditions.eventually {
+            assert mockServer.dynamicPathParam == "off"
         }
 
         when: "a protocol configurations are added to the agent that don't use ping mechanism"
@@ -675,8 +709,10 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             assert agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig3")) == ConnectionStatus.DISABLED
         }
 
-        and: "the poll request will no longer reach the server"
-        def count = mockServer.successFailureCount
+        when: "the success/failure count is stored"
+        count = mockServer.successFailureCount
+
+        then: "the poll request will no longer reach the server (the success/failure count shouldn't change)"
         Thread.sleep(50)
         assert mockServer.successFailureCount == count
 
