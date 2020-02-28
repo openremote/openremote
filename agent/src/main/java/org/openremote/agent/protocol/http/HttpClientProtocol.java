@@ -191,7 +191,7 @@ public class HttpClientProtocol extends AbstractProtocol {
 
             this.client = client;
             this.path = path;
-            this.method = method;
+            this.method = method != null ? method : HttpMethod.GET;
             this.headers = headers;
             this.queryParameters = queryParameters;
             this.failureCodes = failureCodes;
@@ -254,10 +254,10 @@ public class HttpClientProtocol extends AbstractProtocol {
                 requestBuilder.property(QueryParameterInjectorFilter.DYNAMIC_VALUE, value);
             }
 
-            if (value == null) {
-                invocation = requestBuilder.build(method);
-            } else {
+            if (method != null && !HttpMethod.GET.equals(method) && value != null) {
                 invocation = requestBuilder.build(method, Entity.entity(value, contentType));
+            } else {
+                invocation = requestBuilder.build(method);
             }
 
             return invocation;
