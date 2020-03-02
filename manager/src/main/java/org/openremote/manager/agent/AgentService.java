@@ -911,10 +911,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             return null;
         }
 
-        if (filter.returnFirst) {
+        if (filter.returnFirst || filter.returnLast) {
             Value pathValue = Values.parse(pathJson).orElse(null);
             if (pathValue != null && pathValue.getType() == ValueType.ARRAY) {
-                pathValue = Values.getArray(pathValue).flatMap(arr -> arr.length() > 0 ? arr.get(0) : Optional.empty()).orElse(null);
+                pathValue = Values.getArray(pathValue).flatMap(arr -> arr.length() > 0 ? filter.returnFirst ? arr.get(0) : arr.get(arr.length() - 1) : Optional.empty()).orElse(null);
             }
             return pathValue;
         }
