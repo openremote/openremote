@@ -291,6 +291,11 @@ class ValueTokenizer {
             return valueFactory.create(false);
         }
 
+        // Be tolerant of bad JSON with NaN
+        if ("NaN".equalsIgnoreCase(literal)) {
+            return null;
+        }
+
         final char c = literal.charAt(0);
         if (c == '-' || Character.isDigit(c)) {
             return getNumberForLiteral(literal);

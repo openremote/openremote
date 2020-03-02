@@ -403,7 +403,14 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
         }
 
         LOG.finest("Message received notifying consumers: " + getClientUri());
-        messageConsumers.forEach(consumer -> consumer.accept(message));
+        messageConsumers.forEach(consumer -> {
+            try {
+                consumer.accept(message);
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Exception occurred in message handler: " + getClientUri(), e);
+                onConnectionStatusChanged(ConnectionStatus.ERROR);
+            }
+        });
     }
 
     protected void onDecodeException(ChannelHandlerContext ctx, Throwable cause) {
