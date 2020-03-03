@@ -79,14 +79,6 @@ const tableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-tabl
 // language=CSS
 const style = css`
     :host {
-        --internal-or-chart-dataset-0-color: #9257A9;
-        --internal-or-chart-dataset-1-color: #CC9423;
-        --internal-or-chart-dataset-2-color: #8A273B;
-        --internal-or-chart-dataset-3-color: #1C7C8A;
-        --internal-or-chart-dataset-4-color: #FF7486;
-        --internal-or-chart-dataset-5-color: #4796EE;
-        --internal-or-chart-dataset-6-color: #EC885E;
-        --internal-or-chart-dataset-7-color: #009085;
         
         --internal-or-chart-background-color: var(--or-chart-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
         --internal-or-chart-text-color: var(--or-chart-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
@@ -274,6 +266,18 @@ const style = css`
     #chart-container {
         flex: 1 1 0;
         position: relative;
+        overflow: auto;
+        max-height: 550px;
+    }
+
+    canvas {
+        width: 100% !important;
+    }
+
+    @media screen and (max-width: 1280px) {
+        #chart-container {
+            max-height: 330px;
+        }
     }
 
     @media screen and (max-width: 769px) {
@@ -292,6 +296,7 @@ const style = css`
             min-width: 100%;
             padding-left: 0;
         }
+    }
 `;
 
 export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (MenuItem | MenuItem[] | null)[], selectedValues: string[] | string | undefined, valueChangedCallback: (values: string[] | string) => void, closedCallback?: () => void, multiSelect = false): TemplateResult {
@@ -340,6 +345,12 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Object})
     public attributeRef?: AttributeRef;
 
+    @property({type: Array})
+    public colors: string[] = ["#9257A9", "#CC9423", "#8A273B", "#1C7C8A", "#FF7486", "#4796EE", "#EC885E", "#009085"];
+
+    @property({type: Array})
+    public usedColors: string[] = [];
+
     @property({type: String})
     public interval?: DatapointInterval = DatapointInterval.DAY;
 
@@ -386,6 +397,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                 assetTreeElement.addEventListener(OrAssetTreeSelectionChangedEvent.NAME, (evt) => this._onTreeSelectionChanged(evt));
             }
             this._dialog = new MDCDialog(this._dialogElem);
+
+            this.assetAttributes.map((attr, index) => {
+                attr.meta?.push({name: "color", value: this.colors[index]})
+                this.usedColors = [...this.usedColors, this.colors[index]];
+            });
         }
     }
 
@@ -473,10 +489,10 @@ export class OrChart extends translate(i18next)(LitElement) {
 
                     <div id="attribute-list">
                         ${this.assetAttributes.map((attr, index) => {
-                            const bgColor = this._style.getPropertyValue("--internal-or-chart-dataset-"+(index)+"-color").trim().split("#")[1];
+                            const bgColor = Util.getMetaValue('color', attr, undefined) ? Util.getMetaValue('color', attr, undefined) : "";
                             return html`
-                                <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(index)}" @mouseout="${()=> this.removeDatasetHighlight(index)}">
-                                    <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[index]!.type!), undefined, undefined, bgColor)}</span>
+                                <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(bgColor)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
+                                    <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[index]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
                                     <div class="attribute-list-item-label">
                                         <span>${this.assets[index].name}</span>
                                         <span style="font-size:14px; color:grey;">${Util.getAttributeLabel(attr, undefined)}</span>
@@ -557,8 +573,7 @@ export class OrChart extends translate(i18next)(LitElement) {
           }
     }
 
-    removeDatasetHighlight(index:number) {
-        const bgColor = this._style.getPropertyValue("--internal-or-chart-dataset-"+(index)+"-color").trim();
+    removeDatasetHighlight(bgColor:string) {
         if(this._chart && this._chart.data && this._chart.data.datasets){
             this._chart.data.datasets.map((dataset, idx) => {
                 if(dataset.borderColor === bgColor) {
@@ -572,8 +587,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    addDatasetHighlight(index:number) {
-        const bgColor = this._style.getPropertyValue("--internal-or-chart-dataset-"+(index)+"-color").trim();
+    addDatasetHighlight(bgColor:string) {
 
         if(this._chart && this._chart.data && this._chart.data.datasets){
             this._chart.data.datasets.map((dataset, idx) => {
@@ -599,8 +613,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                     datasets: this._data
                 },
                 options: {
-                    // maintainAspectRatio: false,
-                    // REMOVED AS DOESN'T SIZE CORRECTLY responsive: true,
+                    maintainAspectRatio: false,
+                    // REMOVED AS DOESN'T SIZE CORRECTLY 
+                    responsive: true,
                     onResize:() => this.dispatchEvent(new OrChartEvent('resize')),
                     legend: {
                         display: false
@@ -673,6 +688,10 @@ export class OrChart extends translate(i18next)(LitElement) {
             if(this.activeAsset){
                 const attr = Util.getAssetAttribute(this.activeAsset, elm.value);
                 if(attr){
+                    const color = this.colors.filter(color => this.usedColors.indexOf( color ) < 0)[0]
+
+                    attr.meta?.push({name: "color", value: color})
+                    this.usedColors = [...this.usedColors, color];
                     this.assets = [...this.assets, this.activeAsset];
                     this.assetAttributes = [...this.assetAttributes, attr];
                 }
@@ -695,6 +714,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _deleteAttribute (index:number) {
         this.assets = [...this.assets.slice(0, index).concat(this.assets.slice(index + 1, this.assets.length))];
         this.assetAttributes = [...this.assetAttributes.slice(0, index).concat(this.assetAttributes.slice(index + 1, this.assetAttributes.length))];
+        this.usedColors = [...this.usedColors.slice(0, index).concat(this.usedColors.slice(index + 1, this.usedColors.length))];
     }
 
     protected _getAttributeOptions() {
@@ -704,7 +724,9 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         let attributes = [...Util.getAssetAttributes(this.activeAsset)];
         if(attributes && attributes.length > 0) {
-            attributes = attributes.filter((attr:Attribute) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
+            attributes = attributes
+            .filter((attr:Attribute) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
+            .filter((attr) => (this.assetAttributes && !this.assetAttributes.some(assetAttr => assetAttr.name === attr.name)));
         
             const options = attributes.map((attr:Attribute) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
             return options
@@ -745,13 +767,12 @@ export class OrChart extends translate(i18next)(LitElement) {
         if(!this.assetAttributes) {
             return;
         }
-
         let data = this.assetAttributes.map(async (attribute, index) => {
             const valuepoints = await this._loadAttributeData(attribute, this.timestamp);
-            let bgColor = this._style.getPropertyValue("--internal-or-chart-dataset-"+(index)+"-color").trim();
+            const bgColor = Util.getMetaValue('color', attribute, undefined);
             const dataset: ChartDataSets = {
                 data: valuepoints,
-                label: attribute.name,
+                label: this.assets[index].name +" "+ Util.getAttributeLabel(attribute, undefined),
                 borderColor: bgColor,
                 pointRadius: 2,
                 backgroundColor: bgColor,
@@ -767,10 +788,10 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         let predictedData = this.assetAttributes.map(async (attribute, index) => {
             const valuepoints = await this._loadPredictedAttributeData(attribute, this.timestamp);
-            let bgColor = this._style.getPropertyValue("--internal-or-chart-dataset-"+(index)+"-color").trim();
+            const bgColor = Util.getMetaValue('color', attribute, undefined);
             const dataset: ChartDataSets = {
                 data: valuepoints,
-                label: attribute.name+" "+i18next.t("predicted"),
+                label: this.assets[index].name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("predicted"),
                 borderColor: bgColor,
                 borderDash: [2, 4],
                 pointRadius: 2,
@@ -785,11 +806,11 @@ export class OrChart extends translate(i18next)(LitElement) {
         if(this.periodCompare) {
             const cData = this.assetAttributes.map(async (attribute, index) => {
                 const valuepoints = await this._loadAttributeData(attribute, this.compareTimestamp);
-                let bgColor = this._style.getPropertyValue("--internal-or-chart-dataset-"+(index)+"-color").trim();
+                const bgColor = Util.getMetaValue('color', attribute, undefined);
                 const dataset: ChartDataSets = {
                     data: valuepoints,
-                    label: attribute.name+" "+i18next.t("compare"),
-                    borderColor: bgColor,
+                    label: this.assets[index].name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("compare"),
+                    borderColor: Util.getMetaValue('color', attribute, undefined),
                     borderDash: [10, 10],
                     pointRadius: 2,
                     backgroundColor: bgColor,
@@ -800,10 +821,10 @@ export class OrChart extends translate(i18next)(LitElement) {
             
             let cPredictedData = this.assetAttributes.map(async (attribute, index) => {
                 const valuepoints = await this._loadPredictedAttributeData(attribute, this.compareTimestamp);
-                let bgColor = this._style.getPropertyValue("--internal-or-chart-dataset-"+(index)+"-color").trim();
+                const bgColor = Util.getMetaValue('color', attribute, undefined);
                 const dataset: ChartDataSets = {
                     data: valuepoints,
-                    label: attribute.name+" "+i18next.t("compare")+" "+i18next.t("predicted"),
+                    label: this.assets[index].name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("compare")+" "+i18next.t("predicted"),
                     borderColor: bgColor,
                     borderDash: [2, 4],
                     pointRadius: 2,

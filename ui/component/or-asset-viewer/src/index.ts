@@ -35,6 +35,7 @@ export interface PanelConfig {
     type?: PanelType;
     hide?: boolean;
     hideOnMobile?: boolean;
+    defaults?: string[];
     include?: string[];
     exclude?: string[];
     readonly?: string[];
@@ -335,7 +336,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         let styles = panelConfig ? panelConfig.fieldStyles : undefined;
-
+        const defaultAttributes = panelConfig && panelConfig.defaults ? panelConfig.defaults : undefined;
         const includedAttributes = panelConfig && panelConfig.include ? panelConfig.include : undefined;
         const excludedAttributes = panelConfig && panelConfig.exclude ? panelConfig.exclude : [];
         const attrs = attributes.filter((attr) =>
@@ -437,12 +438,20 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
 
         } else if (panelConfig && panelConfig.type === "chart") {
-            let chartAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
-            if(chartAttrs.length > 0){
-                chartAttrs.length = 1;
+            let storeDataPointAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
+            let defaultAttrs = storeDataPointAttrs.filter((attr) => (defaultAttributes && defaultAttributes.indexOf(attr.name!) >= 0));
+            let assetAttributes;
+
+            if(defaultAttrs.length > 0){
+                assetAttributes = defaultAttrs;
+            } else if(storeDataPointAttrs.length > 0) {
+                assetAttributes = storeDataPointAttrs;
+                assetAttributes.length = 1;
             }
+            const assetList:Asset[] = [];
+            assetAttributes?.forEach(attr => assetList.push(asset));
             content = html`
-                <or-chart id="chart" .config="${viewerConfig.chartConfig}" .activeAsset="${asset}" .assets="${asset ? [asset] : asset}" .assetAttributes="${chartAttrs}"></or-chart>
+                <or-chart id="chart" .config="${viewerConfig.chartConfig}" .activeAsset="${asset}" .assets="${assetList ? assetList : [asset]}" .assetAttributes="${assetAttributes}"></or-chart>
             `;
 
         } else if (panelConfig && panelConfig.type === "location") {
@@ -592,7 +601,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         if (config.panels.hasOwnProperty(name)) {
                             const panelStyles = {...config.panels[name].panelStyles};
                             const fieldStyles = {...config.panels[name].fieldStyles};
-                            Object.assign(config.panels[name], {...assetPanelConfig});
+                            config.panels[name] = Object.assign(config.panels[name], {...assetPanelConfig});
                             config.panels[name].panelStyles = Object.assign(panelStyles, assetPanelConfig.panelStyles);
                             config.panels[name].fieldStyles = Object.assign(fieldStyles, assetPanelConfig.fieldStyles);
                         } else {
@@ -608,7 +617,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 config.historyConfig = assetConfig.historyConfig || this.config.historyConfig;
             }
         }
-
         return config;
     }
 
