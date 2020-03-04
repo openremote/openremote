@@ -4,6 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gwt.json.client.JSONObject;
+import com.google.gwt.json.client.JSONParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 import org.openremote.agent.protocol.Protocol;
@@ -13,16 +15,35 @@ import org.openremote.agent.protocol.dmx.AbstractDMXClientProtocol;
 import org.openremote.agent.protocol.dmx.AbstractDMXLight;
 import org.openremote.agent.protocol.dmx.AbstractDMXLightState;
 import org.openremote.agent.protocol.io.IoClient;
+import org.openremote.agent.protocol.knx.EtsFileUriResolver;
 import org.openremote.agent.protocol.udp.AbstractUdpClient;
+import org.openremote.container.util.CodecUtil;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetTreeNode;
+import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.*;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.*;
+import org.openremote.model.value.impl.NumberValueImpl;
+import org.openremote.model.value.impl.StringValueImpl;
+import tuwien.auto.calimero.datapoint.DatapointMap;
+import tuwien.auto.calimero.datapoint.StateDP;
+import tuwien.auto.calimero.xml.KNXMLException;
+import tuwien.auto.calimero.xml.XmlInputFactory;
+import tuwien.auto.calimero.xml.XmlReader;
 
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
@@ -30,6 +51,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
@@ -368,8 +391,56 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
 
     @Override
     public AssetTreeNode[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException {
-        //TODO CREATE-ASSET FUNCTIONALITY
-        System.out.println("test");
-        return new AssetTreeNode[0];
+
+        String jsonString;
+        if(fileInfo.isBinary())//Read any file that isn't an XML file
+        {
+            //Read from .json file || Works on files without extention || Works on CSV
+            byte[] rawBinaryData = CodecUtil.decodeBase64(fileInfo.getContents());
+            jsonString = new String(rawBinaryData);
+        }
+        else
+            jsonString = fileInfo.getContents();//Read from .xml file
+
+        JsonObject jobj = new JsonParser().parse(jsonString).getAsJsonObject();//Contents of the file as JSON object
+
+        byte[] prefix = jobj.get("protocol_prefix").toString().getBytes();
+        JsonArray jGroups = jobj.getAsJsonArray("groups");
+
+        AssetTreeNode[] output = new AssetTreeNode[1];
+
+        output[0] = createGroupAsset("Calvusstraat", null);
+
+        return output;
+    }
+
+    protected AssetTreeNode createGroupAsset(String name, ArtnetLight[] lights)
+    {
+        Asset group = new Asset();
+        group.setName(name);
+        group.setType("Group");
+
+        AssetTreeNode output = new AssetTreeNode(group);
+        //TODO: Add all lamp childs by looping
+        output.addChild(createLightAsset(1,"r,g,b,w"));
+
+        return output;
+    }
+
+    protected AssetTreeNode createLightAsset(int id, String requiredValues)
+    {
+        Asset light = new Asset();
+        light.setName("ArtNetLight" + id);
+        light.setType("Light");
+
+        AssetTreeNode output = new AssetTreeNode(light);
+
+        List<AssetAttribute> lightAttributes = new ArrayList<>();
+        lightAttributes.add(new AssetAttribute("id", AttributeValueType.NUMBER, Values.create(id)));
+        //TODO: add other attributes
+
+        output.asset.setAttributes(lightAttributes);
+
+        return output;
     }
 }
