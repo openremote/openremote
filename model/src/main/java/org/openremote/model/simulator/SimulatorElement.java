@@ -27,8 +27,8 @@ import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeValueDescriptor;
-import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
+import org.openremote.model.simulator.element.ReplaySimulatorElement;
 import org.openremote.model.simulator.element.NumberSimulatorElement;
 import org.openremote.model.simulator.element.SwitchSimulatorElement;
 import org.openremote.model.value.ArrayValue;
@@ -45,6 +45,7 @@ import java.util.Optional;
     @JsonSubTypes.Type(value = NumberSimulatorElement.class, name = NumberSimulatorElement.ELEMENT_NAME),
     @JsonSubTypes.Type(value = SwitchSimulatorElement.class, name = SwitchSimulatorElement.ELEMENT_NAME),
     @JsonSubTypes.Type(value = ColorSimulatorElement.class, name = ColorSimulatorElement.ELEMENT_NAME),
+    @JsonSubTypes.Type(value = ReplaySimulatorElement.class, name = ReplaySimulatorElement.ELEMENT_NAME),
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -60,7 +61,7 @@ public abstract class SimulatorElement implements ValueHolder {
     protected SimulatorElement() {
     }
 
-    public SimulatorElement(AttributeRef attributeRef, AttributeValueType expectedType) {
+    public SimulatorElement(AttributeRef attributeRef, AttributeValueDescriptor expectedType) {
         this.attributeRef = attributeRef;
         this.expectedType = expectedType;
     }
