@@ -404,30 +404,24 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
 
         JsonObject jobj = new JsonParser().parse(jsonString).getAsJsonObject();//Contents of the file as JSON object
 
-        byte[] prefix = jobj.get("protocol_prefix").toString().getBytes();
-        JsonArray jGroups = jobj.getAsJsonArray("groups");
+        byte[] prefix = jobj.get("protocolPrefix").toString().getBytes();
+        JsonArray jLights = jobj.getAsJsonArray("lights");
 
-        AssetTreeNode[] output = new AssetTreeNode[1];
+        List<AssetTreeNode> output = new ArrayList<AssetTreeNode>();
 
-        output[0] = createGroupAsset("Calvusstraat", null);
+        for (JsonElement jel : jLights) {
 
-        return output;
+            int id = jel.getAsJsonObject().get("id").getAsInt();
+            int groupId = jel.getAsJsonObject().get("groupId").getAsInt();
+            String requiredValues = jel.getAsJsonObject().get("requiredValues").getAsString();
+
+            output.add(createLightAsset(id, groupId, requiredValues));
+        }
+
+        return output.toArray(new AssetTreeNode[output.size()]);
     }
 
-    protected AssetTreeNode createGroupAsset(String name, ArtnetLight[] lights)
-    {
-        Asset group = new Asset();
-        group.setName(name);
-        group.setType("Group");
-
-        AssetTreeNode output = new AssetTreeNode(group);
-        //TODO: Add all lamp childs by looping
-        output.addChild(createLightAsset(1,"r,g,b,w"));
-
-        return output;
-    }
-
-    protected AssetTreeNode createLightAsset(int id, String requiredValues)
+    protected AssetTreeNode createLightAsset(int id, int groupId, String requiredValues)
     {
         Asset light = new Asset();
         light.setName("ArtNetLight" + id);
@@ -437,7 +431,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
 
         List<AssetAttribute> lightAttributes = new ArrayList<>();
         lightAttributes.add(new AssetAttribute("id", AttributeValueType.NUMBER, Values.create(id)));
-        //TODO: add other attributes
+        //TODO: add other attributes (mainly json with rgbw...)
 
         output.asset.setAttributes(lightAttributes);
 
