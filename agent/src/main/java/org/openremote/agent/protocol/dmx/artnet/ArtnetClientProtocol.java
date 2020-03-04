@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 import org.openremote.agent.protocol.Protocol;
+import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
 import org.openremote.agent.protocol.artnet.ArtNetPacket;
 import org.openremote.agent.protocol.dmx.AbstractDMXClientProtocol;
 import org.openremote.agent.protocol.dmx.AbstractDMXLight;
@@ -14,7 +15,9 @@ import org.openremote.agent.protocol.dmx.AbstractDMXLightState;
 import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.agent.protocol.udp.AbstractUdpClient;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.attribute.*;
+import org.openremote.model.file.FileInfo;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.*;
@@ -34,7 +37,7 @@ import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemInte
 import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemObject;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
-public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
+public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements ProtocolLinkedAttributeImport {
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":artnet";
     public static final String PROTOCOL_DISPLAY_NAME = "Artnet Client";
@@ -363,4 +366,10 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol {
         return PROTOCOL_VERSION;
     }
 
+    @Override
+    public AssetTreeNode[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException {
+        //TODO CREATE-ASSET FUNCTIONALITY
+        System.out.println("test");
+        return new AssetTreeNode[0];
+    }
 }
