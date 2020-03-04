@@ -21,6 +21,7 @@ import org.openremote.container.util.CodecUtil;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetTreeNode;
+import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.*;
 import org.openremote.model.file.FileInfo;
@@ -415,17 +416,18 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
             int groupId = jel.getAsJsonObject().get("groupId").getAsInt();
             String requiredValues = jel.getAsJsonObject().get("requiredValues").getAsString();
 
-            output.add(createLightAsset(id, groupId, requiredValues));
+            output.add(createLightAsset(id, groupId, requiredValues, protocolConfiguration));
         }
 
         return output.toArray(new AssetTreeNode[output.size()]);
     }
 
-    protected AssetTreeNode createLightAsset(int id, int groupId, String requiredValues)
+    protected AssetTreeNode createLightAsset(int id, int groupId, String requiredValues, AssetAttribute parent)
     {
         Asset light = new Asset();
+        light.setParent(assetService.getAgent(parent));
         light.setName("ArtNetLight" + id);
-        light.setType("Light");
+        light.setType(AssetType.THING);
 
         AssetTreeNode output = new AssetTreeNode(light);
 
