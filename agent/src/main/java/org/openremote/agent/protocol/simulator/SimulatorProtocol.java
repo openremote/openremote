@@ -149,8 +149,8 @@ public class SimulatorProtocol extends AbstractProtocol {
             CONFIG_MODE,
             ValueType.STRING,
             false,
-            "^(WRITE_THROUGH_IMMEDIATE|WRITE_THROUGH_DELAYED|MANUAL)$",
-            "WRITE_THROUGH_IMMEDIATE|WRITE_THROUGH_DELAYED|MANUAL",
+            "^(WRITE_THROUGH_IMMEDIATE|WRITE_THROUGH_DELAYED|MANUAL|REPLAY)$",
+            "WRITE_THROUGH_IMMEDIATE|WRITE_THROUGH_DELAYED|MANUAL|REPLAY",
             null,
             null,
             false, null, null, null),
@@ -183,12 +183,14 @@ public class SimulatorProtocol extends AbstractProtocol {
                 SwitchSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
                 NumberSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
                 NumberSimulatorElement.ELEMENT_NAME_RANGE.toUpperCase(Locale.ROOT) + "|" +
-                ColorSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) +
+                ColorSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
+                ReplaySimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) +
                 ")$",
             SwitchSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
                 NumberSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
                 NumberSimulatorElement.ELEMENT_NAME_RANGE.toUpperCase(Locale.ROOT) + "|" +
-                ColorSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT),
+                ColorSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
+                ReplaySimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT),
             null,
             null,
             false, null, null, null)
@@ -561,7 +563,9 @@ public class SimulatorProtocol extends AbstractProtocol {
             }
             Duration duration = Duration.between(now, nextRun);
 
+            LOG.info("Next update for asset " + attributeRef.getEntityId() + "for attribute " + attributeRef.getAttributeName() + " in " + duration.getSeconds() + " second(s)");
             return executorService.schedule(() -> {
+                LOG.info("Updating asset " + attributeRef.getEntityId() + "for attribute " + attributeRef.getAttributeName() + " with value " + nextDatapoint.value.toString());
                 updateLinkedAttribute(new AttributeState(attributeRef, nextDatapoint.value));
                 replayMap.put(attributeRef, scheduleReplay(attributeRef, replaySimulatorElement));
             }, duration.getSeconds(), TimeUnit.SECONDS);
