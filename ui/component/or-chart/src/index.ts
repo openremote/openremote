@@ -399,7 +399,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._dialog = new MDCDialog(this._dialogElem);
 
             this.assetAttributes.map((attr, index) => {
-                attr.meta?.push({name: "color", value: this.colors[index]})
+  //              attr.meta?.push({name: "color", value: this.colors[index]})
                 this.usedColors = [...this.usedColors, this.colors[index]];
             });
         }
@@ -690,7 +690,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 if(attr){
                     const color = this.colors.filter(color => this.usedColors.indexOf( color ) < 0)[0]
 
-                    attr.meta?.push({name: "color", value: color})
+//                    attr.meta?.push({name: "color", value: color})
                     this.usedColors = [...this.usedColors, color];
                     this.assets = [...this.assets, this.activeAsset];
                     this.assetAttributes = [...this.assetAttributes, attr];

@@ -449,7 +449,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 assetAttributes.length = 1;
             }
             const assetList:Asset[] = [];
-            assetAttributes?.forEach(attr => assetList.push(asset));
+//            assetAttributes?.forEach(attr => assetList.push(asset));
             content = html`
                 <or-chart id="chart" .config="${viewerConfig.chartConfig}" .activeAsset="${asset}" .assets="${assetList ? assetList : [asset]}" .assetAttributes="${assetAttributes}"></or-chart>
             `;
