@@ -56,6 +56,7 @@ import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import static org.openremote.model.Constants.MASTER_REALM;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
 import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemInteger;
@@ -431,13 +432,16 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
         light.setParent(assetService.getAgent(parent));
         light.setName("ArtNetLight" + id);
         light.setType(AssetType.THING);
+        light.setRealm(MASTER_REALM);
 
+        //Append the required values to a HashMap, these are interpreted by the 'Values' JSON OBJECT parameter
         HashMap<String, Value> jsonProperties = new HashMap<String, Value>();
 
         requiredValues = requiredValues.replaceAll(",", "");
         for (char prop : requiredValues.toCharArray())
             jsonProperties.put(Character.toString(prop), Values.create(0));
 
+        //Create Attributes for the Asset
         List<AssetAttribute> lightAttributes = new ArrayList<>();
         lightAttributes.add(new AssetAttribute("Id", AttributeValueType.NUMBER, Values.create(id)));
         lightAttributes.add(light.getAttribute("Dim").orElse(new AssetAttribute("Dim", AttributeValueType.NUMBER, Values.create(100)).setMeta(
