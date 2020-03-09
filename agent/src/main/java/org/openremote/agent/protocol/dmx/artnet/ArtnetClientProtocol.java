@@ -16,6 +16,7 @@ import org.openremote.agent.protocol.dmx.AbstractDMXLight;
 import org.openremote.agent.protocol.dmx.AbstractDMXLightState;
 import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.agent.protocol.knx.EtsFileUriResolver;
+import org.openremote.agent.protocol.knx.KNXProtocol;
 import org.openremote.agent.protocol.udp.AbstractUdpClient;
 import org.openremote.container.util.CodecUtil;
 import org.openremote.model.asset.Asset;
@@ -408,6 +409,8 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
         byte[] prefix = jobj.get("protocolPrefix").toString().getBytes();
         JsonArray jLights = jobj.getAsJsonArray("lights");
 
+        MetaItem agentLink = AgentLink.asAgentLinkMetaItem(protocolConfiguration.getReferenceOrThrow());
+
         List<AssetTreeNode> output = new ArrayList<AssetTreeNode>();
 
         for (JsonElement jel : jLights) {
@@ -416,25 +419,41 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
             int groupId = jel.getAsJsonObject().get("groupId").getAsInt();
             String requiredValues = jel.getAsJsonObject().get("requiredValues").getAsString();
 
-            output.add(createLightAsset(id, groupId, requiredValues, protocolConfiguration));
+            output.add(createLightAsset(id, groupId, requiredValues, protocolConfiguration, agentLink));
         }
 
         return output.toArray(new AssetTreeNode[output.size()]);
     }
 
-    protected AssetTreeNode createLightAsset(int id, int groupId, String requiredValues, AssetAttribute parent)
+    protected AssetTreeNode createLightAsset(int id, int groupId, String requiredValues, AssetAttribute parent, MetaItem agentLink)
     {
         Asset light = new Asset();
         light.setParent(assetService.getAgent(parent));
         light.setName("ArtNetLight" + id);
         light.setType(AssetType.THING);
 
-        AssetTreeNode output = new AssetTreeNode(light);
+        HashMap<String, Value> jsonProperties = new HashMap<String, Value>();
+
+        requiredValues = requiredValues.replaceAll(",", "");
+        for (char prop : requiredValues.toCharArray())
+            jsonProperties.put(Character.toString(prop), Values.create(0));
 
         List<AssetAttribute> lightAttributes = new ArrayList<>();
-        lightAttributes.add(new AssetAttribute("id", AttributeValueType.NUMBER, Values.create(id)));
-        //TODO: add other attributes (mainly json with rgbw...)
+        lightAttributes.add(new AssetAttribute("Id", AttributeValueType.NUMBER, Values.create(id)));
+        lightAttributes.add(light.getAttribute("Dim").orElse(new AssetAttribute("Dim", AttributeValueType.NUMBER, Values.create(100)).setMeta(
+                new MetaItem(ArtnetClientProtocol.META_ARTNET_LIGHT_ID, Values.create(id)),
+                agentLink
+        )));
+        lightAttributes.add(light.getAttribute("Switch").orElse(new AssetAttribute("Switch", AttributeValueType.BOOLEAN, Values.create(true)).setMeta(
+                new MetaItem(ArtnetClientProtocol.META_ARTNET_LIGHT_ID, Values.create(id)),
+                agentLink
+        )));
+        lightAttributes.add(light.getAttribute("Values").orElse(new AssetAttribute("Values", AttributeValueType.OBJECT, Values.createObject().putAll(jsonProperties)).setMeta(
+                new MetaItem(ArtnetClientProtocol.META_ARTNET_LIGHT_ID, Values.create(id)),
+                agentLink
+        )));
 
+        AssetTreeNode output = new AssetTreeNode(light);
         output.asset.setAttributes(lightAttributes);
 
         return output;
