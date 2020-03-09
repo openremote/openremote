@@ -179,9 +179,19 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
                 }
                 for(List<ArtnetLight> lightLists : lightsPerUniverse.values())
                     Collections.sort(lightLists, Comparator.comparingInt(ArtnetLight ::getLightId));
+                for(Integer universeId : lightsPerUniverse.keySet()) {
+                    for(ArtnetLight lightToAddress : lightsPerUniverse.get(universeId)) {
+                        ArtnetPacket.writePrefix(buf, lightToAddress.getUniverse());
+                        ArtnetLightState lightState = (ArtnetLightState) artnetLightMemory.get(lightToAddress.getLightId());
+                        ArtnetPacket.writeLight(buf, lightState.getValues(), lightToAddress.getAmountOfLeds());
+                    }
+                    ArtnetPacket.updateLength(buf);
+                    //TODO MULTIPLE UNIVERSES APPENDED MIGHT NOT WORK. IF IT DOES NOT, CALL FINALENCODER.ACCEPT
 
-                Map<Integer, List<ArtnetLight>> test = new HashMap<>(lightsPerUniverse);
 
+                }
+
+                /*
                 List<String> lightIdsStrings = Arrays.asList(messageObject.get("lightIds").getAsString().split(","));
                 int[] lightIds = new int[lightIdsStrings.size()];
                 for (int i = 0; i < lightIdsStrings.size(); i++)
@@ -195,6 +205,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
                     ArtnetPacket.writeLight(buf, lightState.getValues(), messageObject.get("amountOfLeds").getAsJsonObject().get(lightId + "").getAsInt());
                 }
                 ArtnetPacket.updateLength(buf);
+                 */
                 //Send packet (Look over it)
                 try{
                     finalEncoder.accept("", buf);
