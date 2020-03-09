@@ -11,7 +11,7 @@ import {
 } from "lit-element";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
-import {AssetAttribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueType, Asset, MetaItemType, Attribute, AssetEvent} from "@openremote/model";
+import {Asset, AssetAttribute, Attribute, AttributeRef, DatapointInterval, MetaItemType} from "@openremote/model";
 import manager, {
     AssetModelUtil,
     DefaultColor2,
@@ -25,15 +25,11 @@ import "@openremote/or-input";
 import "@openremote/or-panel";
 import {MDCDialog} from '@material/dialog';
 import "@openremote/or-translate";
-import Chart, {ChartTooltipCallback, ChartDataSets, PluginServiceGlobalRegistration} from "chart.js";
+import Chart, {ChartDataSets} from "chart.js";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
-import {MDCDataTable} from "@material/data-table";
-import {JSONPath} from "jsonpath-plus";
-import moment from "moment";
-import {unitOfTime} from "moment";
-import {styleMap} from "lit-html/directives/style-map";
-import { OrAssetTreeSelectionChangedEvent } from "@openremote/or-asset-tree";
-import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
+import moment, {unitOfTime} from "moment";
+import {OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
+import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {MenuItem, OrMwcMenu, OrMwcMenuChangedEvent} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 
 export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
@@ -399,7 +395,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._dialog = new MDCDialog(this._dialogElem);
 
             this.assetAttributes.map((attr, index) => {
-  //              attr.meta?.push({name: "color", value: this.colors[index]})
+                attr.meta?.push({name: "color", value: this.colors[index]});
                 this.usedColors = [...this.usedColors, this.colors[index]];
             });
         }
@@ -556,19 +552,19 @@ export class OrChart extends translate(i18next)(LitElement) {
     getInputType() {
         switch(this.interval) {
             case DatapointInterval.HOUR:
-                return InputType.DATETIME
+                return InputType.DATETIME;
               break;
             case DatapointInterval.DAY:
-                return InputType.DATE
+                return InputType.DATE;
               break;
             case DatapointInterval.WEEK:
-                return InputType.WEEK
+                return InputType.WEEK;
               break;
             case DatapointInterval.MONTH:
-                return InputType.MONTH
+                return InputType.MONTH;
               break;
             case DatapointInterval.YEAR:
-                return InputType.MONTH
+                return InputType.MONTH;
                 break;
           }
     }
@@ -576,13 +572,13 @@ export class OrChart extends translate(i18next)(LitElement) {
     removeDatasetHighlight(bgColor:string) {
         if(this._chart && this._chart.data && this._chart.data.datasets){
             this._chart.data.datasets.map((dataset, idx) => {
-                if(dataset.borderColor === bgColor) {
+                if (dataset.borderColor === bgColor) {
                     return
                 }
-                if(dataset.borderColor && typeof dataset.borderColor === "string"){
+                if (dataset.borderColor && typeof dataset.borderColor === "string") {
                     dataset.borderColor = dataset.borderColor.slice(0, -2);
                 }
-        })
+            });
             this._chart.update();
         }
     }
@@ -591,11 +587,11 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         if(this._chart && this._chart.data && this._chart.data.datasets){
             this._chart.data.datasets.map((dataset, idx) => {
-                if(dataset.borderColor === bgColor) {
+                if (dataset.borderColor === bgColor) {
                     return
                 }
-                dataset.borderColor = dataset.borderColor+"36";
-            })
+                dataset.borderColor = dataset.borderColor + "36";
+            });
             this._chart.update();
         }
     }
@@ -688,9 +684,9 @@ export class OrChart extends translate(i18next)(LitElement) {
             if(this.activeAsset){
                 const attr = Util.getAssetAttribute(this.activeAsset, elm.value);
                 if(attr){
-                    const color = this.colors.filter(color => this.usedColors.indexOf( color ) < 0)[0]
+                    const color = this.colors.filter(color => this.usedColors.indexOf(color) < 0)[0];
 
-//                    attr.meta?.push({name: "color", value: color})
+                    attr.meta?.push({name: "color", value: color});
                     this.usedColors = [...this.usedColors, color];
                     this.assets = [...this.assets, this.activeAsset];
                     this.assetAttributes = [...this.assetAttributes, attr];
@@ -772,32 +768,32 @@ export class OrChart extends translate(i18next)(LitElement) {
             const bgColor = Util.getMetaValue('color', attribute, undefined);
             const dataset: ChartDataSets = {
                 data: valuepoints,
-                label: this.assets[index].name +" "+ Util.getAttributeLabel(attribute, undefined),
+                label: this.assets[index].name + " " + Util.getAttributeLabel(attribute, undefined),
                 borderColor: bgColor,
                 pointRadius: 2,
                 backgroundColor: bgColor,
                 fill: false
-            }
+            };
             return dataset;
         });
 
-       
-        Promise.all(data).then((completed=> {
+
+        Promise.all(data).then((completed => {
             this._baseData = [...completed];
-        }))
+        }));
 
         let predictedData = this.assetAttributes.map(async (attribute, index) => {
             const valuepoints = await this._loadPredictedAttributeData(attribute, this.timestamp);
             const bgColor = Util.getMetaValue('color', attribute, undefined);
             const dataset: ChartDataSets = {
                 data: valuepoints,
-                label: this.assets[index].name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("predicted"),
+                label: this.assets[index].name + " " + Util.getAttributeLabel(attribute, undefined) + " " + i18next.t("predicted"),
                 borderColor: bgColor,
                 borderDash: [2, 4],
                 pointRadius: 2,
                 backgroundColor: bgColor,
                 fill: false
-            }
+            };
             return dataset;
         });
         
@@ -809,13 +805,13 @@ export class OrChart extends translate(i18next)(LitElement) {
                 const bgColor = Util.getMetaValue('color', attribute, undefined);
                 const dataset: ChartDataSets = {
                     data: valuepoints,
-                    label: this.assets[index].name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("compare"),
+                    label: this.assets[index].name + " " + Util.getAttributeLabel(attribute, undefined) + " " + i18next.t("compare"),
                     borderColor: Util.getMetaValue('color', attribute, undefined),
                     borderDash: [10, 10],
                     pointRadius: 2,
                     backgroundColor: bgColor,
                     fill: false
-                }
+                };
                 return dataset;
             });
             
@@ -824,13 +820,13 @@ export class OrChart extends translate(i18next)(LitElement) {
                 const bgColor = Util.getMetaValue('color', attribute, undefined);
                 const dataset: ChartDataSets = {
                     data: valuepoints,
-                    label: this.assets[index].name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("compare")+" "+i18next.t("predicted"),
+                    label: this.assets[index].name + " " + Util.getAttributeLabel(attribute, undefined) + " " + i18next.t("compare") + " " + i18next.t("predicted"),
                     borderColor: bgColor,
                     borderDash: [2, 4],
                     pointRadius: 2,
                     backgroundColor: bgColor,
                     fill: false
-                }
+                };
                 return dataset;
             });
 
@@ -849,19 +845,19 @@ export class OrChart extends translate(i18next)(LitElement) {
         let newMoment;
         switch (this.interval) {
             case DatapointInterval.HOUR:
-                newMoment = moment(timestamp)
+                newMoment = moment(timestamp);
                 break;
             case DatapointInterval.DAY:
-                newMoment = moment(timestamp).set('day', 1)
+                newMoment = moment(timestamp).set('day', 1);
                 break;
             case DatapointInterval.WEEK:
-                newMoment = moment(timestamp)
+                newMoment = moment(timestamp);
                 break;
             case DatapointInterval.MONTH:
-                newMoment = moment(timestamp)
+                newMoment = moment(timestamp);
                 break;
             case DatapointInterval.YEAR:
-                newMoment = moment(timestamp)
+                newMoment = moment(timestamp);
                 break;
         }
         return newMoment;
@@ -880,7 +876,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         const period = this._getUnitOfTime();
-        const forwardTime = this._updateTimestamp(timestamp, true)
+        const forwardTime = this._updateTimestamp(timestamp, true);
         const startOfPeriod = moment(forwardTime).startOf(period).toDate().getTime();
         if(attribute.assetId &&  attribute.name){
             const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
@@ -897,10 +893,10 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._loading = false;
 
             if (response.status === 200) {
-                data.map((datapoint:any) => {
-                    datapoint['x'] = this._timestampLabel(datapoint['x'])
-                    datapoint['y'] = Math.round(datapoint['y'] * 100)/100
-                })
+                data.map((datapoint: any) => {
+                    datapoint['x'] = this._timestampLabel(datapoint['x']);
+                    datapoint['y'] = Math.round(datapoint['y'] * 100) / 100
+                });
                 return data;
             }
         }
@@ -936,10 +932,10 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._loading = false;
             const data = response.data;
             if (response.status === 200) {
-                data.map((datapoint:any) => {
-                    datapoint['x'] = this._timestampLabel(datapoint['x'])
-                    datapoint['y'] = Math.round(datapoint['y'] * 100)/100
-                })
+                data.map((datapoint: any) => {
+                    datapoint['x'] = this._timestampLabel(datapoint['x']);
+                    datapoint['y'] = Math.round(datapoint['y'] * 100) / 100
+                });
                 return data;
             }
         }
@@ -997,5 +993,4 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         return newMoment.toDate();
     }
-    
 }
