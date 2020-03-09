@@ -11,7 +11,7 @@ import {
 } from "lit-element";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
-import {AssetAttribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueType, Asset, MetaItemType, Attribute, AssetEvent} from "@openremote/model";
+import {Asset, AssetAttribute, Attribute, AttributeRef, DatapointInterval, MetaItemType} from "@openremote/model";
 import manager, {
     AssetModelUtil,
     DefaultColor2,
@@ -25,15 +25,11 @@ import "@openremote/or-input";
 import "@openremote/or-panel";
 import {MDCDialog} from '@material/dialog';
 import "@openremote/or-translate";
-import Chart, {ChartTooltipCallback, ChartDataSets, PluginServiceGlobalRegistration} from "chart.js";
+import Chart, {ChartDataSets} from "chart.js";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
-import {MDCDataTable} from "@material/data-table";
-import {JSONPath} from "jsonpath-plus";
-import moment from "moment";
-import {unitOfTime} from "moment";
-import {styleMap} from "lit-html/directives/style-map";
-import { OrAssetTreeSelectionChangedEvent } from "@openremote/or-asset-tree";
-import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
+import moment, {unitOfTime} from "moment";
+import {OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
+import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {MenuItem, OrMwcMenu, OrMwcMenuChangedEvent} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 
 export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
@@ -559,19 +555,19 @@ export class OrChart extends translate(i18next)(LitElement) {
     getInputType() {
         switch(this.interval) {
             case DatapointInterval.HOUR:
-                return InputType.DATETIME
+                return InputType.DATETIME;
               break;
             case DatapointInterval.DAY:
-                return InputType.DATE
+                return InputType.DATE;
               break;
             case DatapointInterval.WEEK:
-                return InputType.WEEK
+                return InputType.WEEK;
               break;
             case DatapointInterval.MONTH:
-                return InputType.MONTH
+                return InputType.MONTH;
               break;
             case DatapointInterval.YEAR:
-                return InputType.MONTH
+                return InputType.MONTH;
                 break;
           }
     }
@@ -579,13 +575,13 @@ export class OrChart extends translate(i18next)(LitElement) {
     removeDatasetHighlight(bgColor:string) {
         if(this._chart && this._chart.data && this._chart.data.datasets){
             this._chart.data.datasets.map((dataset, idx) => {
-                if(dataset.borderColor === bgColor) {
+                if (dataset.borderColor === bgColor) {
                     return
                 }
-                if(dataset.borderColor && typeof dataset.borderColor === "string"){
+                if (dataset.borderColor && typeof dataset.borderColor === "string") {
                     dataset.borderColor = dataset.borderColor.slice(0, -2);
                 }
-        })
+            });
             this._chart.update();
         }
     }
@@ -594,11 +590,11 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         if(this._chart && this._chart.data && this._chart.data.datasets){
             this._chart.data.datasets.map((dataset, idx) => {
-                if(dataset.borderColor === bgColor) {
+                if (dataset.borderColor === bgColor) {
                     return
                 }
-                dataset.borderColor = dataset.borderColor+"36";
-            })
+                dataset.borderColor = dataset.borderColor + "36";
+            });
             this._chart.update();
         }
     }
@@ -787,14 +783,14 @@ export class OrChart extends translate(i18next)(LitElement) {
                 pointRadius: 2,
                 backgroundColor: bgColor,
                 fill: false
-            }
+            };
             return dataset;
         });
 
-       
-        Promise.all(data).then((completed=> {
+
+        Promise.all(data).then((completed => {
             this._baseData = [...completed];
-        }))
+        }));
 
         let predictedData = this.assetAttributes.map(async (attribute, index) => {
             const valuepoints = await this._loadPredictedAttributeData(attribute, this.timestamp);
@@ -807,7 +803,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 pointRadius: 2,
                 backgroundColor: bgColor,
                 fill: false
-            }
+            };
             return dataset;
         });
         
@@ -825,7 +821,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     pointRadius: 2,
                     backgroundColor: bgColor,
                     fill: false
-                }
+                };
                 return dataset;
             });
             
@@ -840,7 +836,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     pointRadius: 2,
                     backgroundColor: bgColor,
                     fill: false
-                }
+                };
                 return dataset;
             });
 
@@ -894,7 +890,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         const period = this._getUnitOfTime();
-        const forwardTime = this._updateTimestamp(timestamp, true)
+        const forwardTime = this._updateTimestamp(timestamp, true);
         const startOfPeriod = moment(forwardTime).startOf(period).toDate().getTime();
         if(attribute.assetId &&  attribute.name){
             const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
@@ -1030,5 +1026,4 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         return newMoment.toDate();
     }
-    
 }

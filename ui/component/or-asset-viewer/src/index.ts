@@ -8,7 +8,7 @@ import "@openremote/or-translate";
 import {translate} from "@openremote/or-translate";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 import "@openremote/or-map";
-import manager, {subscribe, Util, AssetModelUtil} from "@openremote/core";
+import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import "@openremote/or-panel";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
@@ -21,8 +21,7 @@ import {
     Attribute,
     AttributeEvent,
     AttributeType,
-    MetaItemType,
-    AttributeDescriptor
+    MetaItemType
 } from "@openremote/model";
 import {style} from "./style";
 import i18next from "i18next";
