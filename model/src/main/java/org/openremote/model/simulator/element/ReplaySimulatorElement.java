@@ -42,11 +42,14 @@ public class ReplaySimulatorElement extends SimulatorElement {
 
     public ReplaySimulatorDatapoint getNextDatapoint(long millis) throws JsonProcessingException {
         ReplaySimulatorDatapoint[] datapoints = new ObjectMapper().registerModule(new ModelModule()).readValue(elementValue.toJson(), ReplaySimulatorDatapoint[].class);
-        return Arrays.stream(datapoints).filter(replaySimulatorDatapoint -> replaySimulatorDatapoint.timestamp >= millis).findFirst().orElse(datapoints[0]);
+        return Arrays.stream(datapoints)
+            .filter(replaySimulatorDatapoint -> replaySimulatorDatapoint.timestamp > millis)
+            .findFirst()
+            .orElse(datapoints[0]);
     }
 
     public ReplaySimulatorDatapoint[] getDatapoints() throws JsonProcessingException {
-        return new ObjectMapper().readValue(elementValue.toJson(), ReplaySimulatorDatapoint[].class);
+        return new ObjectMapper().registerModule(new ModelModule()).readValue(elementValue.toJson(), ReplaySimulatorDatapoint[].class);
     }
 
     public static class ReplaySimulatorDatapoint {
