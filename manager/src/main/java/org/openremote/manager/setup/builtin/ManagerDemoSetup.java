@@ -298,23 +298,35 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                 new MetaItem(
                                         ArtnetClientProtocol.META_ARTNET_CONFIGURATION,
                                         Values.createObject().putAll(new HashMap<String, Value>() {{
+                                            put("protocolPrefix", Values.create("test"));
                                             put("lights", Values.createArray()
                                             .add(Values.createObject().putAll(new HashMap<String, Value>() {{
-                                                put("id", Values.create(0));
+                                                put("lightId", Values.create(0));
+                                                put("groupId", Values.create(0));
                                                 put("universe", Values.create(0));
                                                 put("amountOfLeds", Values.create(3));
+                                                put("requiredValues", Values.create("r,g,b,w"));
                                             }}))
                                             .add(
                                             Values.createObject().putAll(new HashMap<String, Value>() {{
-                                                put("id", Values.create(1));
+                                                put("lightId", Values.create(2));
+                                                put("groupId", Values.create(0));
                                                 put("universe", Values.create(0));
                                                 put("amountOfLeds", Values.create(3));
+                                                put("requiredValues", Values.create("r,g,b,w"));
+                                            }})).add(
+                                            Values.createObject().putAll(new HashMap<String, Value>() {{
+                                                put("lightId", Values.create(1));
+                                                put("groupId", Values.create(0));
+                                                put("universe", Values.create(1));
+                                                put("amountOfLeds", Values.create(3));
+                                                put("requiredValues", Values.create("r,g,b,w,a"));
                                             }})));
                                         }}))));
         artNetArea = assetStorageService.merge(artNetArea);
 
         //SETUP LIGHT-ASSETS UNDER AREA
-        for(int i = 0; i <= 1; i++) {
+        for(int i = 0; i <= 2; i++) {
             Asset artNetLight = new Asset();
             artNetLight.setParent(artNetArea);
             artNetLight.setName("ArtNet Light " + i);

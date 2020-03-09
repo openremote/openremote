@@ -1,9 +1,7 @@
 package org.openremote.agent.protocol.dmx.artnet;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
+import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONParser;
 import io.netty.buffer.ByteBuf;
@@ -18,6 +16,7 @@ import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.agent.protocol.knx.EtsFileUriResolver;
 import org.openremote.agent.protocol.knx.KNXProtocol;
 import org.openremote.agent.protocol.udp.AbstractUdpClient;
+import org.openremote.container.Container;
 import org.openremote.container.util.CodecUtil;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
@@ -29,6 +28,7 @@ import org.openremote.model.file.FileInfo;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.*;
+import org.openremote.model.value.impl.ArrayValueImpl;
 import org.openremote.model.value.impl.NumberValueImpl;
 import org.openremote.model.value.impl.StringValueImpl;
 import tuwien.auto.calimero.datapoint.DatapointMap;
@@ -86,7 +86,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
             true,
             Values.createObject().putAll(new HashMap<String, Value>() {{
                 put("lights", Values.createArray().add(Values.createObject().putAll(new HashMap<String, Value>() {{
-                    put("id", Values.create(0));
+                    put("lightId", Values.create(0));
                     put("universe", Values.create(0));
                     put("amountOfLeds", Values.create(3));
                 }})));
@@ -164,6 +164,23 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
                 //Load states of all other lamps
                 JsonParser parser = new JsonParser();
                 JsonObject messageObject = parser.parse(message).getAsJsonObject();
+                JsonArray array = messageObject.get("lights").getAsJsonArray();
+                List<ArtnetLight> lights = new ArrayList<>();
+                for(JsonElement element : array) {
+                    lights.add(new Gson().fromJson(element, ArtnetLight.class));
+                }
+
+                //TODO SEND PROTOCOL PER GROUP. (PER UNIVERSE ALREADY WORKS AT THIS POINT)
+                Map<Integer, List<ArtnetLight>> lightsPerUniverse = new HashMap<>();
+                for(ArtnetLight light : lights) {
+                    if(lightsPerUniverse.get(light.getUniverse()) == null)
+                        lightsPerUniverse.put(light.getUniverse(), new ArrayList<>());
+                    lightsPerUniverse.get(light.getUniverse()).add(light);
+                }
+                for(List<ArtnetLight> lightLists : lightsPerUniverse.values())
+                    Collections.sort(lightLists, Comparator.comparingInt(ArtnetLight ::getLightId));
+
+                Map<Integer, List<ArtnetLight>> test = new HashMap<>(lightsPerUniverse);
 
                 List<String> lightIdsStrings = Arrays.asList(messageObject.get("lightIds").getAsString().split(","));
                 int[] lightIds = new int[lightIdsStrings.size()];
@@ -216,8 +233,12 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
         for(JsonElement l : jerry)
         {
             JsonObject light = l.getAsJsonObject();
-            int id = light.get("id").getAsInt();
-            artnetLightMemory.put(id, new ArtnetLightState(id, 0, 0, 0, 0, 100, true));
+            int id = light.get("lightId").getAsInt();
+            String[] requiredKeys = light.get("requiredValues").getAsString().split(",");
+            ArtnetLightState state = new ArtnetLightState(id, new HashMap<String, Integer>(), 100, true);
+            for(String key : requiredKeys)
+                state.getReceivedValues().put(key, 0);
+            artnetLightMemory.put(id, state);
         }
 
         if (!protocolConfiguration.isEnabled()) {
@@ -317,10 +338,11 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
 
     @Override
     protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
-        protocolConfiguration.getType();
-        AttributeRef reference = event.getAttributeRef();
-        Attribute attr =  getLinkedAttribute(reference);
+        //TODO LATER, CHECK FOR GROUP
+
+        Attribute attr =  getLinkedAttribute(event.getAttributeRef());
         MetaItem metaItem = attr.getMetaItem("lightId").orElse(null);
+        List<ArtnetLight> lightsToSend = new ArrayList<>();
         int lampId = metaItem.getValueAsInteger().orElse(-1);
         int universeId = -1;
         int amountOfLeds = 0;
@@ -334,15 +356,21 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
                 JsonObject configurationObject = new JsonParser().parse(lightConfig).getAsJsonObject();
                 JsonArray jerry = configurationObject.get("lights").getAsJsonArray();
                 for(JsonElement individualLightConfig : jerry) {
-                    if(individualLightConfig.getAsJsonObject().get("id").getAsInt() == lampId)
+                    //TODO CHECK FOR THE GROUP WHICH UNIVERSES NEED TO BE UPDATED
+                    if(individualLightConfig.getAsJsonObject().get("lightId").getAsInt() == lampId)
                         universeId = individualLightConfig.getAsJsonObject().get("universe").getAsInt();
                 }
                 for(JsonElement individualLightConfig : jerry) {
                     if(individualLightConfig.getAsJsonObject().get("universe").getAsInt() == universeId) {
-                        int childLightId = individualLightConfig.getAsJsonObject().get("id").getAsInt();
-                        lightIdsWithinUniverse.add(individualLightConfig.getAsJsonObject().get("id").getAsInt());
+                        //TODO CHECK FOR THE GROUP WHICH UNIVERSES NEED TO BE UPDATED
+                        int childLightId = individualLightConfig.getAsJsonObject().get("lightId").getAsInt();
+                        lightIdsWithinUniverse.add(individualLightConfig.getAsJsonObject().get("lightId").getAsInt());
                         amountOfLeds = individualLightConfig.getAsJsonObject().get("amountOfLeds").getAsInt();
                         amountOfLedsPerLightId.put(childLightId + "", Values.create(amountOfLeds));
+                        String[] requiredValues = individualLightConfig.getAsJsonObject().get("requiredValues").getAsString().split(",");
+                        byte[] prefix = configurationObject.get("protocolPrefix").getAsString().getBytes();
+                        int groupId = 0;
+                        lightsToSend.add(new ArtnetLight(childLightId, groupId, universeId, amountOfLeds, requiredValues));
                     }
                 }
             }
@@ -355,6 +383,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
             LOG.info("Request to write unlinked attribute or attribute that doesn't support writes so ignoring: " + event);
             return;
         }
+
         String lightIdsString = "";
 
         for(int lid : lightIdsWithinUniverse)
@@ -366,12 +395,17 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
         String finalLightIdsString = lightIdsString;
         int finalUniverseId = universeId;
 
-        int finalAmountOfLeds = amountOfLeds;
+        Value value = Values.createObject().putAll(new HashMap<String, Value>() {{
+            put("lights", Values.convert(lightsToSend, Container.JSON).get());
+        }});
+
+        /*
         Value value = Values.createObject().putAll(new HashMap<String, Value>() {{
             put("universe", Values.create(finalUniverseId));
             put("lightIds", Values.create(finalLightIdsString));
             put("amountOfLeds", Values.createObject().putAll(amountOfLedsPerLightId));
         }});
+        */
 
         info.sendConsumer.accept(value);
         updateLinkedAttribute(event.getAttributeState());
@@ -416,7 +450,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
 
         for (JsonElement jel : jLights) {
 
-            int id = jel.getAsJsonObject().get("id").getAsInt();
+            int id = jel.getAsJsonObject().get("lightId").getAsInt();
             int groupId = jel.getAsJsonObject().get("groupId").getAsInt();
             String requiredValues = jel.getAsJsonObject().get("requiredValues").getAsString();
 

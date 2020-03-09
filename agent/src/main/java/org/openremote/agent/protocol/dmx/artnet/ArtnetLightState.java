@@ -8,40 +8,24 @@ import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ArtnetLightState extends AbstractDMXLightState {
 
-    private int r;
-    private int g;
-    private int b;
-    private int w;
+    private Map<String, Integer> receivedValues;
     private double dim;
     private boolean enabled;
 
-    public ArtnetLightState(int lightId, int r, int g, int b, int w, double dim, boolean enabled) {
+    public ArtnetLightState(int lightId, Map<String, Integer> receivedValues, double dim, boolean enabled) {
         super(lightId);
-        this.r = r;
-        this.g = g;
-        this.b = b;
-        this.w = w;
+        this.receivedValues = receivedValues;
         this.dim = dim;
         this.enabled = enabled;
     }
 
-    public int getR() {
-        return r;
-    }
-
-    public int getG() {
-        return g;
-    }
-
-    public int getB() {
-        return b;
-    }
-
-    public int getW() {
-        return w;
+    public Map<String, Integer> getReceivedValues() {
+        return this.receivedValues;
     }
 
     public double getDim() {
@@ -55,15 +39,10 @@ public class ArtnetLightState extends AbstractDMXLightState {
     @Override
     public Byte[] getValues() {
         int enable = this.enabled? 1 : 0;
-        return Arrays.asList(this.getRawValues())
+        return Arrays.asList(this.getReceivedValues().values().toArray(new Integer[this.getReceivedValues().size()]))
             .stream()
             .map(y -> (byte)(y * (this.dim/100.) * enable))
             .toArray(size -> new Byte[size]);
-    }
-
-    private Integer[] getRawValues()
-    {
-        return new Integer[]{this.g,this.r,this.b,this.w};
     }
 
     @Override
@@ -85,10 +64,9 @@ public class ArtnetLightState extends AbstractDMXLightState {
             if(attr.getName().get().equalsIgnoreCase("Values")) {
                 Value brouh = event.getAttributeState().getValue().orElse(null);
                 JsonObject jobject = new JsonParser().parse(brouh.toJson()).getAsJsonObject();
-                this.r = jobject.get("r").getAsInt();
-                this.g = jobject.get("g").getAsInt();
-                this.b = jobject.get("b").getAsInt();
-                this.w = jobject.get("w").getAsInt();
+                new HashMap<String, Integer>(this.receivedValues).keySet().forEach(keyIndicator -> {
+                    this.receivedValues.put(keyIndicator, jobject.get(keyIndicator).getAsInt());
+                });
             }
         //SWITCH ATTRIBUTE
         if(attr.getType().get().getValueType() == ValueType.BOOLEAN)
