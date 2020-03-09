@@ -346,7 +346,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     public attributeRef?: AttributeRef;
 
     @property({type: Array})
-    public colors: string[] = ["#9257A9", "#CC9423", "#8A273B", "#1C7C8A", "#FF7486", "#4796EE", "#EC885E", "#009085"];
+    public colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
 
     @property({type: Array})
     public usedColors: string[] = [];
@@ -399,7 +399,10 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._dialog = new MDCDialog(this._dialogElem);
 
             this.assetAttributes.map((attr, index) => {
-  //              attr.meta?.push({name: "color", value: this.colors[index]})
+                const meta = {name: "color", value: this.colors[index]};
+                if(attr.meta){
+                    attr.meta.push(meta);
+                }
                 this.usedColors = [...this.usedColors, this.colors[index]];
             });
         }
@@ -613,6 +616,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     datasets: this._data
                 },
                 options: {
+                    showLines: true,
                     maintainAspectRatio: false,
                     // REMOVED AS DOESN'T SIZE CORRECTLY 
                     responsive: true,
@@ -637,8 +641,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             type: "time",
                             time: {
                                 displayFormats: {
-                                    millisecond: 'HH:mm:ss.SSS',
-                                    second: 'HH:mm:ss',
+                                    quarter: 'MMM YYYY',
                                     minute: "HH:mm",
                                     hour: "HH:mm",
                                     week: "w"
@@ -689,8 +692,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                 const attr = Util.getAssetAttribute(this.activeAsset, elm.value);
                 if(attr){
                     const color = this.colors.filter(color => this.usedColors.indexOf( color ) < 0)[0]
-
-//                    attr.meta?.push({name: "color", value: color})
+                    const meta = {name: "color", value: color};
+                    if(attr.meta){
+                        attr.meta.push(meta);
+                    }
                     this.usedColors = [...this.usedColors, color];
                     this.assets = [...this.assets, this.activeAsset];
                     this.assetAttributes = [...this.assetAttributes, attr];
@@ -722,13 +727,17 @@ export class OrChart extends translate(i18next)(LitElement) {
             return;
         }
 
+        if(this.shadowRoot && this.shadowRoot.getElementById('chart-attribute-picker')) {
+            const elm = this.shadowRoot.getElementById('chart-attribute-picker') as HTMLInputElement;
+            elm.value = '';
+        }
+
         let attributes = [...Util.getAssetAttributes(this.activeAsset)];
         if(attributes && attributes.length > 0) {
             attributes = attributes
-            .filter((attr:Attribute) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
-            .filter((attr) => (this.assetAttributes && !this.assetAttributes.some(assetAttr => assetAttr.name === attr.name)));
-        
-            const options = attributes.map((attr:Attribute) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
+                .filter((attr: AssetAttribute) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
+                .filter((attr: AssetAttribute) => (this.assetAttributes && !this.assetAttributes.some(assetAttr => (assetAttr.name === attr.name) && (assetAttr.assetId === attr.assetId))));
+            const options = attributes.map((attr: AssetAttribute) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
             return options
         }
     }
@@ -764,15 +773,16 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-        if(!this.assetAttributes) {
+        if(!this.assetAttributes || !this.assets || this.assets.length === 0) {
             return;
         }
+
         let data = this.assetAttributes.map(async (attribute, index) => {
             const valuepoints = await this._loadAttributeData(attribute, this.timestamp);
             const bgColor = Util.getMetaValue('color', attribute, undefined);
             const dataset: ChartDataSets = {
                 data: valuepoints,
-                label: this.assets[index].name +" "+ Util.getAttributeLabel(attribute, undefined),
+                label: this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined),
                 borderColor: bgColor,
                 pointRadius: 2,
                 backgroundColor: bgColor,
@@ -791,7 +801,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             const bgColor = Util.getMetaValue('color', attribute, undefined);
             const dataset: ChartDataSets = {
                 data: valuepoints,
-                label: this.assets[index].name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("predicted"),
+                label: this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("predicted"),
                 borderColor: bgColor,
                 borderDash: [2, 4],
                 pointRadius: 2,
@@ -809,7 +819,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 const bgColor = Util.getMetaValue('color', attribute, undefined);
                 const dataset: ChartDataSets = {
                     data: valuepoints,
-                    label: this.assets[index].name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("compare"),
+                    label: this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("compare"),
                     borderColor: Util.getMetaValue('color', attribute, undefined),
                     borderDash: [10, 10],
                     pointRadius: 2,
@@ -824,7 +834,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 const bgColor = Util.getMetaValue('color', attribute, undefined);
                 const dataset: ChartDataSets = {
                     data: valuepoints,
-                    label: this.assets[index].name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("compare")+" "+i18next.t("predicted"),
+                    label: this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("compare")+" "+i18next.t("predicted"),
                     borderColor: bgColor,
                     borderDash: [2, 4],
                     pointRadius: 2,
@@ -839,32 +849,36 @@ export class OrChart extends translate(i18next)(LitElement) {
           
             data = data.concat(cData);
         }
-
         Promise.all(data).then((completed=> {
             this._data = completed;
         }))
     }
 
     protected _timestampLabel(timestamp: Date | number | undefined) {
-        let newMoment;
-        switch (this.interval) {
-            case DatapointInterval.HOUR:
-                newMoment = moment(timestamp)
-                break;
-            case DatapointInterval.DAY:
-                newMoment = moment(timestamp).set('day', 1)
-                break;
-            case DatapointInterval.WEEK:
-                newMoment = moment(timestamp)
-                break;
-            case DatapointInterval.MONTH:
-                newMoment = moment(timestamp)
-                break;
-            case DatapointInterval.YEAR:
-                newMoment = moment(timestamp)
-                break;
+        let newMoment = moment(timestamp);
+
+        if(this.periodCompare) {
+            const initialTimestamp = moment(this.timestamp);
+            switch (this.interval) {
+                case DatapointInterval.HOUR:
+                    newMoment = moment(timestamp)
+                    break;
+                case DatapointInterval.DAY:
+                    newMoment = moment(timestamp).set('day', initialTimestamp.day())
+                    break;
+                case DatapointInterval.WEEK:
+                    newMoment = moment(timestamp).set('week', initialTimestamp.week())
+                    break;
+                case DatapointInterval.MONTH:
+                    newMoment = moment(timestamp).set('month', initialTimestamp.month())
+                    break;
+                case DatapointInterval.YEAR:
+                    newMoment = moment(timestamp).set('year', initialTimestamp.year())
+                    break;
+            }
         }
-        return newMoment;
+
+        return newMoment.format();
     }
     
     protected async _loadAttributeData(attribute:AssetAttribute, timestamp: Date | undefined) {
@@ -898,8 +912,14 @@ export class OrChart extends translate(i18next)(LitElement) {
 
             if (response.status === 200) {
                 data.map((datapoint:any) => {
-                    datapoint['x'] = this._timestampLabel(datapoint['x'])
-                    datapoint['y'] = Math.round(datapoint['y'] * 100)/100
+                    if(datapoint['x']) {
+                        datapoint['x'] = this._timestampLabel(datapoint['x'])
+                    }
+                    if(datapoint['y']) {
+                        datapoint['y'] = Math.round(datapoint['y'] * 100)/100
+                    } else {
+                        delete datapoint['y']
+                    }
                 })
                 return data;
             }
@@ -936,9 +956,22 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._loading = false;
             const data = response.data;
             if (response.status === 200) {
+                data.sort((a, b) => {
+                    if(a.x && b.x) {
+                        return (a.x - b.x);
+                    } else {
+                        return 0;
+                    }
+                });
                 data.map((datapoint:any) => {
-                    datapoint['x'] = this._timestampLabel(datapoint['x'])
-                    datapoint['y'] = Math.round(datapoint['y'] * 100)/100
+                    if(datapoint['x']) {
+                        datapoint['x'] = this._timestampLabel(datapoint['x'])
+                    }
+                    if(datapoint['y']) {
+                        datapoint['y'] = Math.round(datapoint['y'] * 100)/100
+                    } else {
+                        delete datapoint['y']
+                    }
                 })
                 return data;
             }
