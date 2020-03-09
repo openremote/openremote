@@ -320,7 +320,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                                 put("groupId", Values.create(0));
                                                 put("universe", Values.create(1));
                                                 put("amountOfLeds", Values.create(3));
-                                                put("requiredValues", Values.create("r,g,b,w,a"));
+                                                put("requiredValues", Values.create("r,g,b,w"));
                                             }})));
                                         }}))));
         artNetArea = assetStorageService.merge(artNetArea);
