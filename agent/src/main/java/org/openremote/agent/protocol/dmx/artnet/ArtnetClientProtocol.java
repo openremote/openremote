@@ -213,6 +213,17 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
                 return consumers;
             });
         }
+        //TODO FIND A GOOD PLACE FOR THIS, DUPLICATE RIGHT NOW AT doLinkProtocol AND writeProtocol
+        Asset parentAsset = assetService.findAsset(getLinkedAttribute(attribute.getReference().get()).getAssetId().get());
+        //THIS NOW RELIES ON ALWAYS HAVING THE FOLLOWING ATTRIBUTES IN THE SAME LEVEL
+        AssetAttribute lightIdAttribute = parentAsset.getAttribute("Id").get();
+        AssetAttribute universeAttribute = parentAsset.getAttribute("Universe").get();
+
+        Integer lightId = lightIdAttribute.getValueAsInteger().get();
+        Integer universe = universeAttribute.getValueAsInteger().get();
+        //ASSUME REQUIRED VALUES IS IN CSV FORMAT
+        if(artnetLightMemory.get(universe).stream().filter(light -> light.getLightId() == lightId).findFirst().get() != null)
+            artnetLightMemory.get(universe).remove(artnetLightMemory.get(universe).stream().filter(light -> light.getLightId() == lightId).findFirst().get());
     }
 
     @Override
@@ -247,6 +258,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
         Value value = Values.createObject().putAll(new HashMap<String, Value>() {{
             put("lights", Values.convert(artnetLightMemory.get(universeId), Container.JSON).get());
         }});
+        //TODO LOOK AT ENCODER/DECODER FOR CONVERTING MESSAGE TO BYTEBUF
         return value.toJson();
     }
 
