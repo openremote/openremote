@@ -188,22 +188,6 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
                     ArtnetPacket.updateLength(buf);
                     //TODO MULTIPLE UNIVERSES APPENDED MIGHT NOT WORK. IF IT DOES NOT, CALL FINALENCODER.ACCEPT
                 }
-
-                /*
-                List<String> lightIdsStrings = Arrays.asList(messageObject.get("lightIds").getAsString().split(","));
-                int[] lightIds = new int[lightIdsStrings.size()];
-                for (int i = 0; i < lightIdsStrings.size(); i++)
-                    lightIds[i] = Integer.parseInt(lightIdsStrings.get(i));
-                Arrays.sort(lightIds);
-
-                // Create packet
-                ArtnetPacket.writePrefix(buf, messageObject.get("universe").getAsInt());
-                for (int lightId : lightIds) {
-                    ArtnetLightState lightState = (ArtnetLightState) artnetLightMemoryget(lightId);
-                    ArtnetPacket.writeLight(buf, lightState.getValues(), messageObject.get("amountOfLeds").getAsJsonObject().get(lightId + "").getAsInt());
-                }
-                ArtnetPacket.updateLength(buf);
-                 */
                 //Send packet (Look over it)
                 try{
                     finalEncoder.accept("", buf);
@@ -393,28 +377,9 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
             return;
         }
 
-        String lightIdsString = "";
-
-        for(int lid : lightIdsWithinUniverse)
-            if(lightIdsString.length() == 0)
-                lightIdsString += lid;
-            else
-                lightIdsString += "," + lid;
-
-        String finalLightIdsString = lightIdsString;
-        int finalUniverseId = universeId;
-
         Value value = Values.createObject().putAll(new HashMap<String, Value>() {{
             put("lights", Values.convert(lightsToSend, Container.JSON).get());
         }});
-
-        /*
-        Value value = Values.createObject().putAll(new HashMap<String, Value>() {{
-            put("universe", Values.create(finalUniverseId));
-            put("lightIds", Values.create(finalLightIdsString));
-            put("amountOfLeds", Values.createObject().putAll(amountOfLedsPerLightId));
-        }});
-        */
 
         info.sendConsumer.accept(value);
         updateLinkedAttribute(event.getAttributeState());
