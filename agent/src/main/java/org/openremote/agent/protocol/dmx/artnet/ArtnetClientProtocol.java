@@ -177,6 +177,27 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
                 });
             }
         }
+
+        Asset parentAsset = assetService.findAsset(getLinkedAttribute(attribute.getReference().get()).getAssetId().get());
+        //THIS NOW RELIES ON ALWAYS HAVING THE FOLLOWING ATTRIBUTES IN THE SAME LEVEL
+        AssetAttribute lightIdAttribute = parentAsset.getAttribute("Id").get();
+        AssetAttribute groupIdAttribute = parentAsset.getAttribute("GroupId").get();
+        AssetAttribute universeAttribute = parentAsset.getAttribute("Universe").get();
+        AssetAttribute amountOfLedsAttribute = parentAsset.getAttribute("AmountOfLeds").get();
+        AssetAttribute requiredValuesAttribute = parentAsset.getAttribute("RequiredValues").get();
+
+        Integer lightId = lightIdAttribute.getValueAsInteger().get();
+        Integer groupId = groupIdAttribute.getValueAsInteger().get();
+        Integer universe = universeAttribute.getValueAsInteger().get();
+        Integer amountOfLeds = amountOfLedsAttribute.getValueAsInteger().get();
+        String requiredValues = requiredValuesAttribute.getValueAsString().get();
+        //ASSUME REQUIRED VALUES IS IN CSV FORMAT
+        String[] requiredKeys = requiredValues.split(",");
+        ArtnetLightState state = new ArtnetLightState(lightId, new LinkedHashMap<String, Integer>(), 100, true);
+        for(String key : requiredKeys)
+            state.getReceivedValues().put(key, 0);
+        ArtnetLight lightToCreate = new ArtnetLight(lightId, groupId, universe, amountOfLeds, requiredKeys, state, null);
+        artnetLightMemory.put(lightId, lightToCreate);
     }
 
     @Override
