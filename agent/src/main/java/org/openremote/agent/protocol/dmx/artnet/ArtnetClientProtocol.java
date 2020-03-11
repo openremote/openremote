@@ -454,6 +454,8 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
         JsonArray jLights = jobj.getAsJsonArray("lights");
 
         MetaItem agentLink = AgentLink.asAgentLinkMetaItem(protocolConfiguration.getReferenceOrThrow());
+        //WARNING: This code overwrites the JSON config file ||| TODO: Compare the imported file with the current config file, If certain lights already exist: THEY SHOULDN'T BE ALTERED
+        //protocolConfiguration.getMetaItem("urn:openremote:protocol:artnet:areaConfiguration").orElse(null).setValue(Values.convert(jsonString, Container.JSON).get());
 
         List<AssetTreeNode> output = new ArrayList<AssetTreeNode>();
 
