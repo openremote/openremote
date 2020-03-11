@@ -321,7 +321,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             artNetLight.setType(THING);
             List<AssetAttribute> artNetLightAttributes = Arrays.asList(
                     new AssetAttribute("Id", NUMBER, Values.create(i)).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
-                    new AssetAttribute("GroupID", NUMBER, Values.create(0)).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
+                    new AssetAttribute("GroupId", NUMBER, Values.create(0)).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
                     new AssetAttribute("Universe", NUMBER, Values.create(0)).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
                     new AssetAttribute("AmountOfLeds", NUMBER, Values.create(3)).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
                     new AssetAttribute("RequiredValues", STRING, Values.create("g,r,b,w")).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
