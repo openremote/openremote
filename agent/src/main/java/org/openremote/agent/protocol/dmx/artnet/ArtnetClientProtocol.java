@@ -347,7 +347,10 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
         //Create Attributes for the Asset
         List<AssetAttribute> lightAttributes = new ArrayList<>();
         lightAttributes.add(new AssetAttribute("Id", AttributeValueType.NUMBER, Values.create(id)));
-        //TODO: Add attributes with values from the config file
+        lightAttributes.add(new AssetAttribute("GroupId", AttributeValueType.NUMBER, Values.create(groupId)));
+        lightAttributes.add(new AssetAttribute("Universe", AttributeValueType.NUMBER, Values.create(0)));//WARNING: HARDCODED
+        lightAttributes.add(new AssetAttribute("AmountOfLeds", AttributeValueType.NUMBER, Values.create(3)));//WARNING: HARDCODED
+        lightAttributes.add(new AssetAttribute("RequiredValues", AttributeValueType.STRING, Values.create(requiredValues)));
         lightAttributes.add(light.getAttribute("Dim").orElse(new AssetAttribute("Dim", AttributeValueType.NUMBER, Values.create(100)).setMeta(
                 agentLink
         )));
