@@ -238,6 +238,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
     @Override
     protected String createWriteMessage(AssetAttribute protocolConfiguration, AssetAttribute attribute, AttributeEvent event, Value processedValue) {
         //TODO LATER, CHECK FOR GROUP
+        Map<Integer, AbstractDMXLight> test = artnetLightMemory;
         Attribute attr =  getLinkedAttribute(event.getAttributeRef());
         MetaItem metaItem = attr.getMetaItem("lightId").orElse(null);
         List<ArtnetLight> lightsToSend = new ArrayList<>();
