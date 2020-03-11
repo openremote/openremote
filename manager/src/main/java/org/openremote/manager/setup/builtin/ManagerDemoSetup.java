@@ -305,7 +305,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                                 put("groupId", Values.create(0));
                                                 put("universe", Values.create(0));
                                                 put("amountOfLeds", Values.create(3));
-                                                put("requiredValues", Values.create("r,g,b,w"));
+                                                put("requiredValues", Values.create("g,r,b,w"));
                                             }}))
                                             .add(
                                             Values.createObject().putAll(new HashMap<String, Value>() {{
@@ -313,14 +313,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                                 put("groupId", Values.create(0));
                                                 put("universe", Values.create(0));
                                                 put("amountOfLeds", Values.create(3));
-                                                put("requiredValues", Values.create("r,g,b,w"));
+                                                put("requiredValues", Values.create("g,r,b,w"));
                                             }})).add(
                                             Values.createObject().putAll(new HashMap<String, Value>() {{
                                                 put("lightId", Values.create(1));
                                                 put("groupId", Values.create(0));
                                                 put("universe", Values.create(1));
                                                 put("amountOfLeds", Values.create(3));
-                                                put("requiredValues", Values.create("r,g,b,w"));
+                                                put("requiredValues", Values.create("g,r,b,w"));
                                             }})));
                                         }}))));
         artNetArea = assetStorageService.merge(artNetArea);

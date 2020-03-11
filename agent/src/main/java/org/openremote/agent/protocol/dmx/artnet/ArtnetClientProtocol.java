@@ -180,15 +180,13 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
                 for(List<ArtnetLight> lightLists : lightsPerUniverse.values())
                     Collections.sort(lightLists, Comparator.comparingInt(ArtnetLight ::getLightId));
                 for(Integer universeId : lightsPerUniverse.keySet()) {
+                    ArtnetPacket.writePrefix(buf, universeId);
                     for(ArtnetLight lightToAddress : lightsPerUniverse.get(universeId)) {
-                        ArtnetPacket.writePrefix(buf, lightToAddress.getUniverse());
                         ArtnetLightState lightState = (ArtnetLightState) artnetLightMemory.get(lightToAddress.getLightId());
                         ArtnetPacket.writeLight(buf, lightState.getValues(), lightToAddress.getAmountOfLeds());
                     }
                     ArtnetPacket.updateLength(buf);
                     //TODO MULTIPLE UNIVERSES APPENDED MIGHT NOT WORK. IF IT DOES NOT, CALL FINALENCODER.ACCEPT
-
-
                 }
 
                 /*
@@ -201,7 +199,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
                 // Create packet
                 ArtnetPacket.writePrefix(buf, messageObject.get("universe").getAsInt());
                 for (int lightId : lightIds) {
-                    ArtnetLightState lightState = (ArtnetLightState) artnetLightMemory.get(lightId);
+                    ArtnetLightState lightState = (ArtnetLightState) artnetLightMemoryget(lightId);
                     ArtnetPacket.writeLight(buf, lightState.getValues(), messageObject.get("amountOfLeds").getAsJsonObject().get(lightId + "").getAsInt());
                 }
                 ArtnetPacket.updateLength(buf);
@@ -246,7 +244,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
             JsonObject light = l.getAsJsonObject();
             int id = light.get("lightId").getAsInt();
             String[] requiredKeys = light.get("requiredValues").getAsString().split(",");
-            ArtnetLightState state = new ArtnetLightState(id, new HashMap<String, Integer>(), 100, true);
+            ArtnetLightState state = new ArtnetLightState(id, new LinkedHashMap<String, Integer>(), 100, true);
             for(String key : requiredKeys)
                 state.getReceivedValues().put(key, 0);
             artnetLightMemory.put(id, state);
@@ -482,9 +480,10 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
         //Append the required values to a HashMap, these are interpreted by the 'Values' JSON OBJECT parameter
         HashMap<String, Value> jsonProperties = new HashMap<String, Value>();
 
-        requiredValues = requiredValues.replaceAll(",", "");
-        for (char prop : requiredValues.toCharArray())
-            jsonProperties.put(Character.toString(prop), Values.create(0));
+        List<String> requiredKeys = Arrays.asList(requiredValues.split(","));
+        //TODO SORT BASED ON SEQUENCE IN CONFIG?
+        for(String key : requiredKeys)
+            jsonProperties.put(key, Values.create(0));
 
         //Create Attributes for the Asset
         List<AssetAttribute> lightAttributes = new ArrayList<>();
