@@ -44,6 +44,10 @@ public abstract class AbstractDMXLight {
         return requiredValues;
     }
 
+    public void setLightState(AbstractDMXLightState lightState) {
+        this.lightState = lightState;
+    }
+
     public void setRequiredValues(String[] requiredValues) {
         this.requiredValues = requiredValues;
     }

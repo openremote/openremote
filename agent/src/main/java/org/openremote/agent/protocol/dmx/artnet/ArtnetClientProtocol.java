@@ -94,21 +94,19 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
     );
 
 
-    private HashMap<Integer, AbstractDMXLightState> artnetLightMemory = new HashMap<Integer, AbstractDMXLightState>();
+    private HashMap<Integer, AbstractDMXLight> artnetLightMemory = new HashMap<Integer, AbstractDMXLight>();
 
     @Override
-    public Map<Integer, AbstractDMXLightState> getLightStateMemory() {
+    public Map<Integer, AbstractDMXLight> getLightMemory() {
         return this.artnetLightMemory;
     }
 
     @Override
-    public void updateLightInMemory(Integer lightId, AbstractDMXLightState updatedLightState) {
+    public void updateLightStateInMemory(Integer lightId, AbstractDMXLightState updatedLightState) {
         Optional<Integer> foundLightId = this.artnetLightMemory.keySet().stream().filter(lid -> lid == lightId).findAny();
         if(foundLightId.orElse(null) != null) {
-            ArtnetLightState lightState = (ArtnetLightState) this.artnetLightMemory.get(this.artnetLightMemory.keySet().stream().filter(lid -> lid == foundLightId.get()).findAny().orElse(null));
-            this.artnetLightMemory.replace(foundLightId.get(), updatedLightState);
+            this.artnetLightMemory.get(foundLightId).setLightState(updatedLightState);
         }
-            this.artnetLightMemory.get(this.artnetLightMemory.keySet().stream().filter(lid -> lid == lightId).findAny().get());
     }
 
     @Override
@@ -182,7 +180,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
                 for(Integer universeId : lightsPerUniverse.keySet()) {
                     ArtnetPacket.writePrefix(buf, universeId);
                     for(ArtnetLight lightToAddress : lightsPerUniverse.get(universeId)) {
-                        ArtnetLightState lightState = (ArtnetLightState) artnetLightMemory.get(lightToAddress.getLightId());
+                        ArtnetLightState lightState = (ArtnetLightState) artnetLightMemory.get(lightToAddress.getLightId()).getLightState();
                         ArtnetPacket.writeLight(buf, lightState.getValues(), lightToAddress.getAmountOfLeds());
                     }
                     ArtnetPacket.updateLength(buf);
@@ -231,7 +229,9 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
             ArtnetLightState state = new ArtnetLightState(id, new LinkedHashMap<String, Integer>(), 100, true);
             for(String key : requiredKeys)
                 state.getReceivedValues().put(key, 0);
-            artnetLightMemory.put(id, state);
+            //TODO GET UNIVERSE, AMOUNT OF LEDS ETC FROM LIGHT METADATA
+            ArtnetLight lightToCreate = new ArtnetLight(id, 0, 0, 3, new String[] {"r", "g", "b", "w"}, state, null);
+            artnetLightMemory.put(id, lightToCreate);
         }
 
         if (!protocolConfiguration.isEnabled()) {
@@ -368,7 +368,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
             }
         }
 
-        artnetLightMemory.get(lampId).fromAttribute(event, attr);
+        artnetLightMemory.get(lampId).getLightState().fromAttribute(event, attr);
 
         AttributeInfo info = attributeInfoMap.get(event.getAttributeRef());
         if (info == null || info.sendConsumer == null) {

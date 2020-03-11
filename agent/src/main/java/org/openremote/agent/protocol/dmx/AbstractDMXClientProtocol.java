@@ -7,8 +7,8 @@ import java.util.Map;
 
 public abstract class AbstractDMXClientProtocol extends AbstractUdpClientProtocol<String> {
 
-    public abstract Map<Integer, AbstractDMXLightState> getLightStateMemory();
+    public abstract Map<Integer, AbstractDMXLight> getLightMemory();
 
-    public abstract void updateLightInMemory(Integer lightId, AbstractDMXLightState updatedLightState);
+    public abstract void updateLightStateInMemory(Integer lightId, AbstractDMXLightState updatedLightState);
 
 }
