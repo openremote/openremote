@@ -82,7 +82,6 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
 
     public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = joinCollections(AbstractUdpClientProtocol.PROTOCOL_META_ITEM_DESCRIPTORS, AbstractIoClientProtocol.PROTOCOL_GENERIC_META_ITEM_DESCRIPTORS);
 
-    //TODO:Replace
     public static final MetaItemDescriptor META_ARTNET_LIGHT_ID = metaItemInteger(
             "lightId",
             ACCESS_PRIVATE,
@@ -111,7 +110,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
 
     protected final Map<AttributeRef, List<Pair<AttributeRef, Consumer<String>>>> protocolMessageConsumers = new HashMap<>();
 
-    private HashMap<Integer, AbstractDMXLight> artnetLightMemory = new HashMap<Integer, AbstractDMXLight>();
+    private HashMap<Integer, List<AbstractDMXLight>> artnetLightMemory = new HashMap<Integer, List<AbstractDMXLight>>();
 
     @Override
     public String getProtocolName() {
@@ -129,7 +128,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
     }
 
     @Override
-    public Map<Integer, AbstractDMXLight> getLightMemory() { return artnetLightMemory; }
+    public Map<Integer, List<AbstractDMXLight>> getLightMemory() { return artnetLightMemory; }
 
     @Override
     protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
@@ -178,6 +177,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
             }
         }
 
+        //TODO FIND A GOOD PLACE FOR THIS, DUPLICATE RIGHT NOW AT doLinkProtocol AND writeProtocol
         Asset parentAsset = assetService.findAsset(getLinkedAttribute(attribute.getReference().get()).getAssetId().get());
         //THIS NOW RELIES ON ALWAYS HAVING THE FOLLOWING ATTRIBUTES IN THE SAME LEVEL
         AssetAttribute lightIdAttribute = parentAsset.getAttribute("Id").get();
@@ -197,7 +197,9 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
         for(String key : requiredKeys)
             state.getReceivedValues().put(key, 0);
         ArtnetLight lightToCreate = new ArtnetLight(lightId, groupId, universe, amountOfLeds, requiredKeys, state, null);
-        artnetLightMemory.put(lightId, lightToCreate);
+        if(artnetLightMemory.get(universe) == null)
+            artnetLightMemory.put(universe, new ArrayList<AbstractDMXLight>());
+        artnetLightMemory.get(universe).add(lightToCreate);
     }
 
     @Override
@@ -238,59 +240,22 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
     @Override
     protected String createWriteMessage(AssetAttribute protocolConfiguration, AssetAttribute attribute, AttributeEvent event, Value processedValue) {
         //TODO LATER, CHECK FOR GROUP
-        Map<Integer, AbstractDMXLight> test = artnetLightMemory;
-        Attribute attr =  getLinkedAttribute(event.getAttributeRef());
-        MetaItem metaItem = attr.getMetaItem("lightId").orElse(null);
-        List<ArtnetLight> lightsToSend = new ArrayList<>();
-        int lampId = metaItem.getValueAsInteger().orElse(-1);
-        int universeId = -1;
-        int amountOfLeds = 0;
-        ArrayValue protocolMetaItemsArray = protocolConfiguration.getObjectValue().getArray("meta").get();
-        List<Integer> lightIdsWithinUniverse = new ArrayList<>();
-        HashMap<String,Value> amountOfLedsPerLightId = new HashMap<String, Value>();
-        for(int i = 0; i < protocolMetaItemsArray.length(); i++) {
-            ObjectValue objvl = protocolMetaItemsArray.getObject(i).get();
-            if(objvl.getString("name").get().equals("urn:openremote:protocol:artnet:areaConfiguration")) {
-                String lightConfig = objvl.get("value").get().toJson();
-                JsonObject configurationObject = new JsonParser().parse(lightConfig).getAsJsonObject();
-                JsonArray jerry = configurationObject.get("lights").getAsJsonArray();
-                for(JsonElement individualLightConfig : jerry) {
-                    //TODO CHECK FOR THE GROUP WHICH UNIVERSES NEED TO BE UPDATED
-                    if(individualLightConfig.getAsJsonObject().get("lightId").getAsInt() == lampId)
-                        universeId = individualLightConfig.getAsJsonObject().get("universe").getAsInt();
-                }
-                for(JsonElement individualLightConfig : jerry) {
-                    if(individualLightConfig.getAsJsonObject().get("universe").getAsInt() == universeId) {
-                        //TODO CHECK FOR THE GROUP WHICH UNIVERSES NEED TO BE UPDATED
-                        int childLightId = individualLightConfig.getAsJsonObject().get("lightId").getAsInt();
-                        lightIdsWithinUniverse.add(individualLightConfig.getAsJsonObject().get("lightId").getAsInt());
-                        amountOfLeds = individualLightConfig.getAsJsonObject().get("amountOfLeds").getAsInt();
-                        amountOfLedsPerLightId.put(childLightId + "", Values.create(amountOfLeds));
-                        String[] requiredValues = individualLightConfig.getAsJsonObject().get("requiredValues").getAsString().split(",");
-                        byte[] prefix = configurationObject.get("protocolPrefix").getAsString().getBytes();
-                        int groupId = 0;
-                        lightsToSend.add(new ArtnetLight(childLightId, groupId, universeId, amountOfLeds, requiredValues));
-                    }
-                }
-            }
-        }
-
-        artnetLightMemory.get(lampId).getLightState().fromAttribute(event, attr);
-
+        Asset parentAsset = assetService.findAsset(getLinkedAttribute(attribute.getReference().get()).getAssetId().get());
+        //THIS NOW RELIES ON ALWAYS HAVING THE FOLLOWING ATTRIBUTES IN THE SAME LEVEL
+        AssetAttribute universeAttribute = parentAsset.getAttribute("Universe").get();
+        Integer universeId = universeAttribute.getValueAsInteger().get();
         Value value = Values.createObject().putAll(new HashMap<String, Value>() {{
-            put("lights", Values.convert(lightsToSend, Container.JSON).get());
+            put("lights", Values.convert(artnetLightMemory.get(universeId), Container.JSON).get());
         }});
-
         return value.toJson();
     }
 
     @Override
     public void updateLightStateInMemory(Integer lightId, AbstractDMXLightState updatedLightState)
     {
-        Optional<Integer> foundLightId = this.artnetLightMemory.keySet().stream().filter(lid -> lid == lightId).findAny();
-        if(foundLightId.orElse(null) != null) {
-            this.artnetLightMemory.get(foundLightId).setLightState(updatedLightState);
-        }
+        for(int universe : artnetLightMemory.keySet())
+            if(artnetLightMemory.get(universe).stream().filter(light -> light.getLightId() == lightId).findFirst().get() != null)
+                artnetLightMemory.get(universe).stream().filter(light -> light.getLightId() == lightId).findFirst().get().setLightState(updatedLightState);
     }
 
     @Override
