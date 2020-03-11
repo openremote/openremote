@@ -24,15 +24,12 @@ import org.openremote.agent.protocol.controller.command.ControllerCommandBasic;
 import org.openremote.agent.protocol.controller.command.ControllerCommandMapped;
 import org.openremote.agent.protocol.http.HttpClientProtocol;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Values;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
@@ -62,18 +59,13 @@ public class RequestBuilder {
 
     public static HttpClientProtocol.HttpClientRequest buildCommandRequest(ControllerCommand controllerCommand, AttributeEvent event, ResteasyWebTarget webTarget) {
         MultivaluedMap<String, String> queryParam = new MultivaluedHashMap<>();
-        Optional<ObjectValue> body = Optional.empty();
 
         //This part could be put in a Wrapper
         if(controllerCommand instanceof ControllerCommandBasic) {
             String commandName = ((ControllerCommandBasic) controllerCommand).getCommandName();
             queryParam.add("name", commandName);
 
-            body = event.getValue().map(v -> {
-                ObjectValue objectValue = Values.createObject();
-                objectValue.put("parameter", v);
-                return objectValue;
-            });
+
         } else {
             Map<String, String> actionCommandLink = ((ControllerCommandMapped) controllerCommand).getActionCommandLink();
             String attributeValue = event.getValue().map(Object::toString).orElse(null);
@@ -90,7 +82,6 @@ public class RequestBuilder {
                 null,
                 false,
                 false,
-                body.orElse(null),
                 MediaType.APPLICATION_JSON
         );
     }
@@ -109,7 +100,6 @@ public class RequestBuilder {
                 null,
                 false,
                 false,
-                null,
                 MediaType.APPLICATION_JSON
         );
     }
@@ -128,7 +118,6 @@ public class RequestBuilder {
                 null,
                 false,
                 false,
-                null,
                 MediaType.APPLICATION_JSON
         );
     }
@@ -143,7 +132,6 @@ public class RequestBuilder {
                 null,
                 false,
                 false,
-                null,
                 null
         );
     }

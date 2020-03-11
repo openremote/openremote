@@ -116,8 +116,8 @@ public class AnalogInputProcessor extends FeatureProcessor {
 
     protected static final List<PropertyDescriptor> METEO_PROPERTIES = Arrays.asList(
         new PropertyDescriptor("rainfall", "Rainfall", "RAINFALL", AttributeValueType.RAINFALL, true),
-        new PropertyDescriptor("lightLevel", "Light Level", "LIGHT", AttributeValueType.BRIGHTNESS_LUX, true),
-        new PropertyDescriptor("windSpeed", "Wind Speed", "WIND", AttributeValueType.SPEED_KPH, true)
+        new PropertyDescriptor("lightLevel", "Light Level", "LIGHT", AttributeValueType.BRIGHTNESS, true),
+        new PropertyDescriptor("windSpeed", "Wind Speed", "WIND", AttributeValueType.SPEED, true)
     );
 
     protected static final List<PropertyDescriptor> IO_PROPERTIES = Arrays.asList(

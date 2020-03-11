@@ -47,7 +47,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
     def static MockVelbusClient messageProcessor = new MockVelbusClient()
 
     @Shared
-    def static PollingConditions conditions = new PollingConditions(timeout: 10)
+    def static PollingConditions conditions = new PollingConditions(timeout: 15)
 
     static loadDevicePackets(MockVelbusClient messageProcessor) {
         messageProcessor.mockPackets = [

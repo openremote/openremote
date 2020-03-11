@@ -19,7 +19,9 @@
  */
 package org.openremote.model.security;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.keycloak.representations.idm.RoleRepresentation;
+import org.openremote.model.Constants;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,28 +33,32 @@ import java.util.Set;
  */
 public enum ClientRole {
 
-    READ_ADMIN("read:admin", "Read system settings, tenants, and users"),
-    READ_MAP("read:map", "View map"),
-    READ_ASSETS("read:assets", "Read asset data"),
-    READ_RULES("read:rules", "Read rulesets"),
-    READ_CONSOLES("read:consoles", "Read installed console applications"),
+    READ_ADMIN(Constants.READ_ADMIN_ROLE, "Read system settings, tenants, and users"),
+    READ_LOGS(Constants.READ_LOGS_ROLE, "Read logs and log settings"),
+    READ_MAP(Constants.READ_MAP_ROLE, "View map"),
+    READ_ASSETS(Constants.READ_ASSETS_ROLE, "Read asset data"),
+    READ_RULES(Constants.READ_RULES_ROLE, "Read rulesets"),
+    READ_APPS(Constants.READ_APPS_ROLE, "Read installed applications"),
 
-    WRITE_USER("write:user", "Write data of the authenticated user"),
-    WRITE_ADMIN("write:admin", "Write system settings, tenants, and users"),
-    WRITE_ASSETS("write:assets", "Write asset data"),
-    WRITE_RULES("write:rules", "Write rulesets (NOTE: effectively super-user access!)"),
+    WRITE_USER(Constants.WRITE_USER_ROLE, "Write data of the authenticated user"),
+    WRITE_ADMIN(Constants.WRITE_ADMIN_ROLE, "Write system settings, tenants, and users"),
+    WRITE_LOGS(Constants.WRITE_LOGS_ROLE, "Write log settings"),
+    WRITE_ASSETS(Constants.WRITE_ASSETS_ROLE, "Write asset data"),
+    WRITE_RULES(Constants.WRITE_RULES_ROLE, "Write rulesets (NOTE: effectively super-user access!)"),
 
     READ("read", "Read all data", new ClientRole[]{
         READ_ADMIN,
+        READ_LOGS,
         READ_MAP,
         READ_ASSETS,
         READ_RULES,
-        READ_CONSOLES
+        READ_APPS
     }),
 
     WRITE("write", "Write all data", new ClientRole[]{
         WRITE_USER,
         WRITE_ADMIN,
+        WRITE_LOGS,
         WRITE_ASSETS,
         WRITE_RULES
     });
@@ -82,6 +88,7 @@ public enum ClientRole {
         this.composites = null;
     }
 
+    @JsonValue
     public String getValue() {
         return value;
     }

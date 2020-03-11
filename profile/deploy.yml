@@ -8,6 +8,12 @@ version: '2.4'
 
 services:
 
+  # This service will only populate an empty volume on startup and then exit.
+  # If the volume already contains data, it exits immediately.
+  deployment:
+    build: '../deployment'
+    image: openremote/deployment:${DATE_TAG:-latest}
+
   # The frontend proxy manages SSL certificates, terminates SSL/TLS connections and forwards them to the backend.
   proxy:
 
@@ -49,7 +55,7 @@ services:
       # PROXY_HOST_REDIRECT_1_NAME: www.my-console-master.tld
       # PROXY_HOST_REDIRECT_1_TARGET: /console/master
       # PROXY_HOST_REDIRECT_2_NAME: www.my-console-tenant-a.tld
-      # PROXY_HOST_REDIRECT_2_TARGET: /console/tenantA
+      # PROXY_HOST_REDIRECT_2_TARGET: /console/building
       # PROXY_HOST_REDIRECT_3_NAME: ...
 
       # Customize proxy log, defaults to 'notice', requests are logged at 'info'.
@@ -66,8 +72,8 @@ services:
       - "443:443"
 
     # Resource limits
-    mem_limit: 100m
-    memswap_limit: 100m
+    mem_reservation: 512m
+    oom_kill_disable: true
 
     # Configure logging of the container
     logging:
@@ -106,7 +112,6 @@ services:
       #SETUP_EMAIL_USER: 'smtp-user'
       #SETUP_EMAIL_PASSWORD: 'smtp-password'
       #SETUP_EMAIL_PORT: 25
-      #SETUP_EMAIL_AUTH: 'true'
       #SETUP_EMAIL_TLS: 'true'
       #SETUP_EMAIL_FROM_KEYCLOAK: 'no-reply@openremote.io'
       #SETUP_EMAIL_FROM_DEFAULT: 'no-reply@openremote.io'
@@ -145,7 +150,7 @@ services:
       DATABASE_CONNECTION_URL: jdbc:postgresql://postgresql/openremote
 
       # The database connection settings, passwords should be changed in production!
-      DATABASE_USERNAME: openremote
+      DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
       DATABASE_MIN_POOL_SIZE: 5
       DATABASE_MAX_POOL_SIZE: 20
@@ -230,16 +235,11 @@ services:
       # DATA_POINTS_MAX_AGE_DAYS = 30
 
       # Custom JVM options (increase heap size if required)
-      JAVA_OPTS: '-Xms400m -Xmx400m
-                  -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
-                  -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m
-                  -XX:MaxDirectMemorySize=25m
-                  -XX:NativeMemoryTracking=summary
+      JAVA_OPTS: '-XX:NativeMemoryTracking=summary
                   -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof'
 
     # Resource limits
-    mem_limit: 800m
-    memswap_limit: 800m
+    mem_reservation: 512m
 
     # Configure logging of the container, see deployment/logging.properties
     logging:
@@ -273,7 +273,7 @@ services:
       DB_ADDR: postgresql
       DB_PORT: 5432
       DB_DATABASE: openremote
-      DB_USER: openremote
+      DB_USER: postgres
       DB_SCHEMA: public
       DB_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
       KEYCLOAK_USER: admin
@@ -283,17 +283,12 @@ services:
       KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
 
       # Custom JVM options (increase heap size if required)
-      JAVA_OPTS: '-Xms300m -Xmx300m
-                  -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=200m
-                  -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m
-                  -XX:MaxDirectMemorySize=25m
-                  -XX:NativeMemoryTracking=summary
+      JAVA_OPTS: '-XX:NativeMemoryTracking=summary
                   -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof
                   -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true'
 
     # Resource limits
-    mem_limit: 700m
-    memswap_limit: 700m
+    mem_reservation: 512m
 
     # Configure logging of the container
     logging:
@@ -322,15 +317,14 @@ services:
       # then remove the variables and restart to preserve the stored data. It
       # doesn't hurt if you don't remove it, an existing will never be reconfigured.
       POSTGRES_DB: openremote
-      POSTGRES_USER: openremote
+      POSTGRES_USER: postgres # 9.6 image doesn't work if we use a custom user
       POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
 
       # You can open an SQL console on a running container with:
       # docker exec -it <container ID> psql -U openremote
 
     # Resource limits
-    mem_limit: 400m
-    memswap_limit: 400m
+    mem_reservation: 512m
 
     # Configure logging of the container
     logging:
@@ -341,3 +335,10 @@ services:
   map:
     build: '../map'
     image: openremote/tileserver-gl:${DATE_TAG:-latest}
+
+  # Manager for Docker swarm (embedding openremote/deployment and reduced size to save money on public cloud)
+  swarm:
+    build:
+      context: '../manager/build/install/manager'
+      dockerfile: swarm.Dockerfile
+    image: openremote/manager-swarm:${DATE_TAG:-latest}

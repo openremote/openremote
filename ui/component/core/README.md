@@ -41,7 +41,7 @@ openremote.init({
     keycloakUrl: "http://localhost:8080/auth",
     auth: Auth.KEYCLOAK,
     autoLogin: false,
-    realm: "tenantA",
+    realm: "building",
     configureTranslationsOptions: (options) => {
         options.lng = "nl"; // Change initial language to dutch rather than english
     }

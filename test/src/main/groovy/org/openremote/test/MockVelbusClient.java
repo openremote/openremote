@@ -19,6 +19,7 @@
  */
 package org.openremote.test;
 
+import io.netty.channel.ChannelHandler;
 import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.agent.protocol.velbus.VelbusPacket;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class MockVelbusClient implements IoClient<VelbusPacket> {
     protected final List<Consumer<VelbusPacket>> messageConsumers = new ArrayList<>();
@@ -117,5 +119,15 @@ public class MockVelbusClient implements IoClient<VelbusPacket> {
     @Override
     public void disconnect() {
         setConnectionStatus(ConnectionStatus.DISCONNECTED);
+    }
+
+    @Override
+    public String getClientUri() {
+        return "velbus://mock";
+    }
+
+    @Override
+    public void setEncoderDecoderProvider(Supplier<ChannelHandler[]> encoderDecoderProvider) throws UnsupportedOperationException {
+
     }
 }

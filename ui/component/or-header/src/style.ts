@@ -1,5 +1,5 @@
 import {css, unsafeCSS} from "lit-element";
-import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, DefaultBoxShadowBottom, DefaultHeaderHeight} from "@openremote/core";
+import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor4, DefaultBoxShadowBottom, DefaultHeaderHeight} from "@openremote/core";
 
 // language=CSS
 export const style = css`
@@ -15,7 +15,7 @@ export const style = css`
             --internal-or-header-drawer-color: var(--or-header-drawer-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
             --internal-or-header-drawer-text-color: var(--or-header-drawer-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
             --internal-or-header-drawer-item-size: var(--or-header-drawer-item-size, 30px);
-            --internal-or-header-drawer-separator-color: var(--or-header-drawer-separator-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
+            --internal-or-header-drawer-separator-color: var(--or-header-drawer-separator-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
             
             display: block;
         }
@@ -101,6 +101,10 @@ export const style = css`
             display: none;
         }
         
+        #desktop-right slot {
+            display: flex;
+        }
+
         #mobile-bottom {
             margin-top: 20px;
         }
@@ -148,9 +152,9 @@ export const style = css`
             line-height: var(--internal-or-header-height);
         }
         
-        /* Wide layout: when the viewport width is bigger than 640px, layout
+        /* Wide layout: when the viewport width is bigger than 780px, layout
         changes to a wide layout. */
-        @media (min-width: 640px) {
+        @media (min-width: 780px) {
 
             #logo {
                 margin: var(--internal-or-header-logo-margin);

@@ -68,5 +68,5 @@ manager.init({
     autoLogin: true,
     keycloakUrl: "https://localhost/auth",
     managerUrl: "https://localhost",
-    realm: "tenantA"
+    realm: "building"
 });

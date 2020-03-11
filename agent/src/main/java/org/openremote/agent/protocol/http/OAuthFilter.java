@@ -77,7 +77,7 @@ public class OAuthFilter implements ClientRequestFilter {
     }
 
     protected synchronized void updateToken() {
-        LOG.info("Updating OAuth token");
+        LOG.fine("Updating OAuth token");
         Response response;
 
         if (authServerResponse != null && authServerResponse.refreshToken != null) {
@@ -86,7 +86,7 @@ public class OAuthFilter implements ClientRequestFilter {
             response = requestTokenUsingRefresh();
             if (response.getStatus() == 403) {
                 // Maybe the refresh token is not valid so do full auth
-                LOG.warning("OAuth token refresh failed, trying a full authentication");
+                LOG.info("OAuth token refresh failed, trying a full authentication");
                 authServerResponse = null;
                 updateToken();
                 return;

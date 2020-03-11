@@ -21,7 +21,7 @@ import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.AttributeMetaPredicate;
+import org.openremote.model.query.filter.MetaPredicate;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
@@ -29,11 +29,10 @@ import org.postgresql.util.PGInterval;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +55,7 @@ import static java.util.stream.Collectors.toList;
 public class AssetDatapointService implements ContainerService, AssetUpdateProcessor {
 
     public static final String DATA_POINTS_MAX_AGE_DAYS = "DATA_POINTS_MAX_AGE_DAYS";
-    public static final String DATA_POINTS_MAX_AGE_DAYS_DEFAULT = "30";
+    public static final String DATA_POINTS_MAX_AGE_DAYS_DEFAULT = "31";
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
@@ -98,13 +97,11 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
     @Override
     public void start(Container container) throws Exception {
         if (maxDatapointAgeDays > 0) {
-            long period = 24L * 3600L * 1000L;
-
             dataPointsPurgeScheduledFuture = managerExecutorService.scheduleAtFixedRate(
                     this::purgeDataPoints,
-                    getFirstRunMillis(timerService.getNow()),
-                    period);
 
+                getFirstRunMillis(timerService.getNow()),
+                Duration.ofDays(1).toMillis());
         }
     }
 
@@ -230,7 +227,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                                 "       ) TS " +
                                 "  left join ( " +
                                 "       select " +
-                                "           date_trunc(?, to_timestamp(TIMESTAMP / 1000))::timestamp as TS, ");
+                                "           date_trunc(?, TIMESTAMP)::timestamp as TS, ");
 
                             if (attributeValueType == ValueType.NUMBER) {
                                 query.append(" AVG(VALUE::text::numeric) as AVG_VALUE ");
@@ -240,9 +237,9 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
 
                             query.append(" from ASSET_DATAPOINT " +
                                 "         where " +
-                                "           to_timestamp(TIMESTAMP / 1000) >= to_timestamp(?) - ? " +
+                                "           TIMESTAMP >= to_timestamp(?) - ? " +
                                 "           and " +
-                                "           to_timestamp(TIMESTAMP / 1000) <= to_timestamp(?) " +
+                                "           TIMESTAMP <= to_timestamp(?) " +
                                 "           and " +
                                 "           ENTITY_ID = ? and ATTRIBUTE_NAME = ? " +
                                 "         group by TS " +
@@ -250,11 +247,11 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                                 " order by TS asc "
                             );
                         } else {
-                            query.append("select distinct to_timestamp(TIMESTAMP / 1000) AS X, value AS Y from ASSET_DATAPOINT " +
+                            query.append("select distinct TIMESTAMP AS X, value AS Y from ASSET_DATAPOINT " +
                                 "where " +
-                                "to_timestamp(TIMESTAMP / 1000) >= to_timestamp(?) - ? " +
+                                "TIMESTAMP >= to_timestamp(?) - ? " +
                                 "and " +
-                                "to_timestamp(TIMESTAMP / 1000) <= to_timestamp(?) " +
+                                "TIMESTAMP <= to_timestamp(?) " +
                                 "and " +
                                 "ENTITY_ID = ? and ATTRIBUTE_NAME = ? "
                             );
@@ -304,8 +301,8 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
         List<Asset> assets = assetStorageService.findAll(
                 new AssetQuery()
                         .attributeMeta(
-                                new AttributeMetaPredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS),
-                                new AttributeMetaPredicate(MetaItemType.STORE_DATA_POINTS))
+                                new MetaPredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS),
+                                new MetaPredicate(MetaItemType.STORE_DATA_POINTS))
                         .select(AssetQuery.Select.selectExcludePathAndParentAndRealm()));
 
         List<AssetAttribute> attributes = assets.stream()
@@ -324,7 +321,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
         persistenceService.doTransaction(em -> em.createQuery(
                 "delete from AssetDatapoint dp " +
                         "where dp.timestamp < :dt" + buildWhereClause(attributes, true)
-        ).setParameter("dt", 1000L * timerService.getNow().truncatedTo(DAYS).minus(maxDatapointAgeDays, DAYS).getEpochSecond()).executeUpdate());
+        ).setParameter("dt", Date.from(timerService.getNow().truncatedTo(DAYS).minus(maxDatapointAgeDays, DAYS))).executeUpdate());
 
         if (!attributes.isEmpty()) {
             // Purge data points that have specific age constraints
@@ -343,7 +340,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                     persistenceService.doTransaction(em -> em.createQuery(
                             "delete from AssetDatapoint dp " +
                                     "where dp.timestamp < :dt" + buildWhereClause(attrs, false)
-                    ).setParameter("dt", 1000L * timerService.getNow().truncatedTo(DAYS).minus(age, DAYS).getEpochSecond()).executeUpdate());
+                    ).setParameter("dt", Date.from(timerService.getNow().truncatedTo(DAYS).minus(age, DAYS))).executeUpdate());
                 } catch (Exception e) {
                     LOG.log(Level.SEVERE, "An error occurred whilst deleting data points, this should not happen", e);
                 }

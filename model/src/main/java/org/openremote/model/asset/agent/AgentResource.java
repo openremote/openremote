@@ -20,6 +20,7 @@
 package org.openremote.model.asset.agent;
 
 import jsinterop.annotations.JsType;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetResource;
@@ -54,7 +55,7 @@ public interface AgentResource {
     @Path("protocol/{agentId}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:assets"})
+    @RolesAllowed({Constants.READ_ASSETS_ROLE})
     @SuppressWarnings("unusable-by-js")
     ProtocolDescriptor[] getSupportedProtocols(
         @BeanParam RequestParams requestParams,
@@ -68,7 +69,7 @@ public interface AgentResource {
     @Path("status/{agentId}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:assets"})
+    @RolesAllowed({Constants.READ_ASSETS_ROLE})
     @SuppressWarnings("unusable-by-js")
     List<AgentStatusEvent> getAgentStatus(
         @BeanParam RequestParams requestParams,
@@ -82,7 +83,7 @@ public interface AgentResource {
     @Path("protocol")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:assets"})
+    @RolesAllowed({Constants.READ_ASSETS_ROLE})
     @SuppressWarnings("unusable-by-js")
     Map<String, ProtocolDescriptor[]> getAllSupportedProtocols(
         @BeanParam RequestParams requestParams
@@ -95,7 +96,7 @@ public interface AgentResource {
     @Path("configuration/{agentId}/{protocolName}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:assets"})
+    @RolesAllowed({Constants.READ_ASSETS_ROLE})
     @SuppressWarnings("unusable-by-js")
     AssetAttribute[] getDiscoveredProtocolConfigurations(
         @BeanParam RequestParams requestParams,

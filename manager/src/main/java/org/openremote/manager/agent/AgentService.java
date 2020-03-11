@@ -21,6 +21,7 @@ package org.openremote.manager.agent;
 
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ParseContext;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
@@ -50,7 +51,7 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.AttributeRefPredicate;
+import org.openremote.model.query.filter.RefPredicate;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
@@ -139,10 +140,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         );
 
         jsonPathParser = JsonPath.using(
-            new Configuration.ConfigurationBuilder()
+            Configuration.builder()
                 .jsonProvider(new JacksonJsonNodeJsonProvider())
                 .mappingProvider(new JacksonMappingProvider())
                 .build()
+                .addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL)
         );
     }
 
@@ -290,6 +292,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     public boolean deleteAsset(String assetId) {
         LOG.fine("Deleting protocol-provided: " + assetId);
         return assetStorageService.delete(Collections.singletonList(assetId));
+    }
+
+    @Override
+    public Asset findAsset(String assetId) {
+        LOG.fine("Getting protocol-provided: " + assetId);
+        return assetStorageService.find(assetId);
     }
 
     @Override
@@ -494,7 +502,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             List<Asset> assets = assetStorageService.findAll(
                 new AssetQuery()
                     .attributeMeta(
-                        new AttributeRefPredicate(
+                        new RefPredicate(
                             MetaItemType.AGENT_LINK,
                             protocolAttributeRef.getEntityId(),
                             protocolAttributeRef.getAttributeName()
@@ -523,7 +531,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             List<Asset> assets = assetStorageService.findAll(
                 new AssetQuery()
                     .attributeMeta(
-                        new AttributeRefPredicate(
+                        new RefPredicate(
                             MetaItemType.AGENT_LINK,
                             protocolAttributeRef.getEntityId(),
                             protocolAttributeRef.getAttributeName()
@@ -769,33 +777,9 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         });
     }
 
-    public ConvertedValue applyValueConverter(Value value, ObjectValue converter) {
-
-        if (converter == null) {
-            return new ConvertedValue(false, value);
-        }
-
-        String converterKey = value == null ? "@NULL" : value.toString().toUpperCase(Locale.ROOT);
-        return converter.get(converterKey)
-            .map(v -> {
-                if (v.getType() == ValueType.STRING) {
-                    String valStr = v.toString();
-                    if (ConvertedValue.IGNORE.equalsIgnoreCase(valStr)) {
-                        return new ConvertedValue(true, null);
-                    }
-
-                    if (ConvertedValue.NULL.equalsIgnoreCase(valStr)) {
-                        return new ConvertedValue(false, null);
-                    }
-                }
-
-                return new ConvertedValue(false, v);
-            })
-            .orElse(new ConvertedValue(true, value));
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
+    /**
+     * Apply the specified set of {@link ValueFilter}s to the specified {@link Value}
+     */
     public Value applyValueFilters(Value value, ValueFilter... filters) {
 
         if (filters == null) {
@@ -809,7 +793,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
             if (!filterOk) {
                 // Try and convert the value
-                ValueType filterValueType = ValueType.fromModelType(filter.getValueType());
+                ValueType filterValueType = null;
+                try {
+                    filterValueType = ValueType.fromModelType(filter.getValueType());
+                } catch (RuntimeException e) {
+                    LOG.fine("Failed to get model type from value type: " + filter.getValueType());
+                }
                 if (filterValueType == null) {
                     LOG.fine("Value filter type unknown: " + filter.getValueType().getName());
                     value = null;
@@ -922,10 +911,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             return null;
         }
 
-        if (filter.returnFirst) {
+        if (filter.returnFirst || filter.returnLast) {
             Value pathValue = Values.parse(pathJson).orElse(null);
             if (pathValue != null && pathValue.getType() == ValueType.ARRAY) {
-                pathValue = Values.getArray(pathValue).flatMap(arr -> arr.length() > 0 ? arr.get(0) : Optional.empty()).orElse(null);
+                pathValue = Values.getArray(pathValue).flatMap(arr -> arr.length() > 0 ? filter.returnFirst ? arr.get(0) : arr.get(arr.length() - 1) : Optional.empty()).orElse(null);
             }
             return pathValue;
         }

@@ -26,14 +26,14 @@ import java.net.URI;
 
 public class PaginationFilter implements ClientRequestFilter {
 
-    protected String nextUrl;
+    protected URI nextUrl;
 
-    public PaginationFilter(String nextUrl) {
+    public PaginationFilter(URI nextUrl) {
         this.nextUrl = nextUrl;
     }
 
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
-        requestContext.setUri(URI.create(nextUrl));
+        requestContext.setUri(nextUrl);
     }
 }

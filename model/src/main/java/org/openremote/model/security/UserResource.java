@@ -20,6 +20,7 @@
 package org.openremote.model.security;
 
 import jsinterop.annotations.JsType;
+import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
 
@@ -44,7 +45,7 @@ public interface UserResource {
     @Produces(APPLICATION_JSON)
     @Path("{realm}")
     @SuccessStatusCode(200)
-    @RolesAllowed("read:admin")
+    @RolesAllowed(Constants.READ_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
     User[] getAll(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
@@ -52,7 +53,7 @@ public interface UserResource {
     @Path("{realm}/{userId}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed("read:admin")
+    @RolesAllowed(Constants.READ_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
     User get(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
@@ -61,7 +62,7 @@ public interface UserResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
-    @RolesAllowed("write:admin")
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
     void update(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, @Valid User user);
 
@@ -70,7 +71,7 @@ public interface UserResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
-    @RolesAllowed("write:admin")
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
     void create(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid User user);
 
@@ -78,7 +79,7 @@ public interface UserResource {
     @Path("{realm}/{userId}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
-    @RolesAllowed("write:admin")
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
     void delete(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
@@ -87,7 +88,7 @@ public interface UserResource {
     @SuccessStatusCode(204)
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @RolesAllowed("write:admin")
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
     void resetPassword(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Credential credential);
 
@@ -95,7 +96,7 @@ public interface UserResource {
     @Path("{realm}/{userId}/role")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed("read:admin")
+    @RolesAllowed(Constants.READ_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
     Role[] getRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
@@ -103,7 +104,7 @@ public interface UserResource {
     @Path("{realm}/{userId}/role")
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
-    @RolesAllowed("write:admin")
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
     void updateRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Role[] roles);
 }

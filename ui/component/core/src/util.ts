@@ -10,8 +10,13 @@ import {
     Attribute,
     AttributeEvent,
     MetaItem,
-    AssetAttribute
+    AssetAttribute,
+    AttributeDescriptor,
+    MetaItemType,
+    MetaItemDescriptor
 } from "@openremote/model";
+import {AssetModelUtil} from "./index";
+import i18next from "i18next";
 
 export class Deferred<T> {
 
@@ -233,6 +238,34 @@ export function getFirstMetaItem(attribute: Attribute | undefined, name: string)
     return attribute.meta.find((metaItem) => metaItem.name === name);
 }
 
+export function hasMetaItem(attribute: Attribute, name: string): boolean {
+    return !!getFirstMetaItem(attribute, name);
+}
+
+export function getMetaValue(metaItemUrn: string | MetaItemDescriptor, attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined): any {
+    const urn = typeof metaItemUrn === "string" ? metaItemUrn : (metaItemUrn as MetaItemDescriptor).urn;
+
+    if (attribute && attribute.meta) {
+        const metaItem = attribute.meta.find((mi) => mi.name === urn);
+        return metaItem ? metaItem.value : undefined;
+    }
+
+    if (descriptor && descriptor.metaItemDescriptors) {
+        const metaItemDescriptor = descriptor.metaItemDescriptors.find((mid) => mid.urn === urn);
+        return metaItemDescriptor ? metaItemDescriptor.initialValue : undefined;
+    }
+}
+
+export function getAttributeLabel(attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined, fallback?: string): string {
+    if (!attribute && !descriptor) {
+        return fallback || "";
+    }
+
+    const labelMetaValue = getMetaValue(MetaItemType.LABEL, attribute, descriptor);
+    const name = attribute ? attribute.name : descriptor!.attributeName;
+    return i18next.t([name, fallback || labelMetaValue || name]);
+}
+
 /**
  * Immutable update of an asset using the supplied attribute event
  */
@@ -260,8 +293,8 @@ export function loadJs(url: string) {
             let script = document.createElement('script');
             script.type = 'text/javascript';
             script.src = url;
-            script.addEventListener('load', () => resolve(script), false);
-            script.addEventListener('error', () => reject(script), false);
+            script.addEventListener('load', (e) => resolve(e), false);
+            script.addEventListener('error', (e) => reject(e), false);
             document.body.appendChild(script);
         });
 };

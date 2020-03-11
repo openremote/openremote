@@ -1,6 +1,6 @@
 package org.openremote.manager.setup.builtin;
 
-import org.openremote.agent.protocol.artnet.ArtnetClientProtocol;
+import org.openremote.agent.protocol.dmx.artnet.ArtnetClientProtocol;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.manager.asset.AssetStorageService;

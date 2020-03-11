@@ -48,6 +48,11 @@ class OrSurveyResults extends LitElement {
             };
             manager.addListener(this._initCallback);
         } else {
+        }
+    }
+
+    updated(_changedProperties: PropertyValues) {
+        if(_changedProperties.has('surveyId')) {
             this.getSurvey();
         }
     }
@@ -108,8 +113,8 @@ class OrSurveyResults extends LitElement {
                                                          ${item.value.map((bar: ProcessedResultAnswer) => {
                 return html`
                                                                 <div class="bar">
-                                                                <span style="height:${this.computeHeight(bar.count)}%;">
-                                                                    <div class="bar-top-label">${this.computeHeight(bar.count)}%</div>
+                                                                <span style="height:${this.computeHeight(bar.count)};">
+                                                                    <div class="bar-top-label">${this.computeHeight(bar.count)}</div>
                                                                     <label>${bar.name} (${bar.count})</label>
                                                                 </span>
                                                                 </div>
@@ -149,15 +154,7 @@ class OrSurveyResults extends LitElement {
         }
 
         const surveyQuery: AssetQuery = {
-            select: {
-                excludeAttributeMeta: false,
-                excludeAttributes: false,
-                excludeAttributeValue: false,
-                excludeAttributeTimestamp: false,
-                excludeAttributeType: false
-            },
-            ids: [surveyId],
-            types: [{predicateType: "string", value: "urn:openremote:asset:eindhoven:survey"}]
+            ids: [surveyId]
         };
 
         manager.rest.api.AssetResource.queryPublicAssets(surveyQuery).then((response) => {
@@ -172,12 +169,13 @@ class OrSurveyResults extends LitElement {
 
 
     }
+    
     computeHeight(barAmount: number) {
         if (barAmount && this.survey && this.survey.attributes) {
             const maxAmount = this.survey.attributes.responseAmount.value;
-            return Math.round((barAmount / maxAmount) * 100);
+            return Math.round((barAmount / maxAmount) * 100)+"%";
         } else {
-            return 0;
+            return "0%";
         }
     }
 

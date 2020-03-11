@@ -281,6 +281,7 @@ public abstract class WebService implements ContainerService {
                 corsFilter = new CORSFilter();
                 corsFilter.setAllowCredentials(true);
                 corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
+                corsFilter.setExposedHeaders("*");
                 corsFilter.setCorsMaxAge(1209600);
                 String[] allowedOrigins = allowedOriginsStr.split(";");
                 Arrays.stream(allowedOrigins).forEach(allowedOrigin ->
@@ -291,6 +292,7 @@ public abstract class WebService implements ContainerService {
             corsFilter = new CORSFilter();
             corsFilter.getAllowedOrigins().add("*");
             corsFilter.setAllowCredentials(true);
+            corsFilter.setExposedHeaders("*");
             corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
             corsFilter.setCorsMaxAge(1209600);
         }

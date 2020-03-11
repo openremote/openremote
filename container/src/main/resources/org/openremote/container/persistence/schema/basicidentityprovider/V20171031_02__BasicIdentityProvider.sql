@@ -1,3 +1,6 @@
+DROP SCHEMA IF EXISTS PUBLIC CASCADE;
+CREATE SCHEMA PUBLIC;
+
 drop table if exists PUBLIC.USER_ENTITY;
 drop table if exists PUBLIC.REALM_ATTRIBUTE;
 drop table if exists PUBLIC.REALM;

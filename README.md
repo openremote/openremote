@@ -4,7 +4,7 @@
 
 We are currently working on v3 of the OpenRemote platform. This is **beta** software that should be used only for development.
 
-If you want to try OpenRemote v2, [read the OpenRemote v2 documentation](https://github.com/openremote/Documentation/wiki).
+If you are using OpenRemote v2, [read the OpenRemote v2 documentation](https://github.com/openremote/Documentation/wiki).
 
 ## Quickstart
 
@@ -26,6 +26,13 @@ To run OpenRemote using Docker Hub images, execute the following command from th
 ```
 docker-compose up --no-build
 ```
+
+To run OpenRemote is swarm mode, which uses Docker Hub images:
+
+```
+docker stack deploy --compose-file docker-compose-swarm.yml openremote
+```
+you don't need to pull or build images in this case, docker swarm mode does this automatically.
 
 ### 2. Starting OpenRemote with source-build images
 
@@ -51,9 +58,13 @@ When all Docker containers are ready, you can access the OpenRemote UI and API w
 Username: admin  
 Password: secret
 
-**Demo Smart Building App:** https://localhost/smart-building-v1/  
+**Demo Smart Building App:** https://localhost/main/?realm=building
 Username: building  
 Password: building
+
+**Demo Smart City App:** https://localhost/main/?realm=smartcity
+Username: smartCity  
+Password: smartCity
 
 You must accept and make an exception for the 'insecure' self-signed SSL certificate. You can configure a production installation of OpenRemote with a your own certificate or automatically use one from [Let's Encrypt](https://letsencrypt.org/).
 

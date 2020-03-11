@@ -25,6 +25,17 @@ public interface Constants {
     String MASTER_REALM = "master";
     String MASTER_REALM_ADMIN_USER = "admin";
     String REALM_ADMIN_ROLE = "admin";
+    String READ_LOGS_ROLE = "read:logs";
+    String READ_ADMIN_ROLE = "read:admin";
+    String READ_MAP_ROLE = "read:map";
+    String READ_ASSETS_ROLE = "read:assets";
+    String READ_RULES_ROLE = "read:rules";
+    String READ_APPS_ROLE = "read:apps";
+    String WRITE_USER_ROLE = "write:user";
+    String WRITE_ADMIN_ROLE = "write:admin";
+    String WRITE_LOGS_ROLE = "write:logs";
+    String WRITE_ASSETS_ROLE = "write:assets";
+    String WRITE_RULES_ROLE = "write:rules";
     String AUTH_CONTEXT = "AUTH_CONTEXT";
     int ACCESS_TOKEN_LIFESPAN_SECONDS = 60; // 1 minute
     String PERSISTENCE_SEQUENCE_ID_GENERATOR = "SEQUENCE_ID_GENERATOR";
@@ -50,6 +61,16 @@ public interface Constants {
     String SETUP_EMAIL_TLS = "SETUP_EMAIL_TLS";
     boolean SETUP_EMAIL_TLS_DEFAULT = true;
     String SETUP_EMAIL_FROM = "SETUP_EMAIL_FROM";
-    String SETUP_EMAIL_FROM_DEFAULT = "admin@openremote.io";
+    String SETUP_EMAIL_FROM_DEFAULT = "no-reply@openremote.io";
     String REQUEST_HEADER_REALM = "Auth-Realm";
+
+    String UNITS_TEMPERATURE_CELCIUS = "CELCIUS";
+    String UNITS_TIME_MINUTES = "MINUTES";
+    String UNITS_SPEED_KNOTS = "KNOTS";
+    String UNITS_SPEED_KPH = "SPEED_KPH";
+    String UNITS_SPEED_MPS = "SPEED_MPS";
+    String UNITS_SOUND_DECIBELS = "DECIBELS";
+    String UNITS_DISTANCE_METRES = "METRES";
+    String UNITS_DIRECTION_DEGREES = "DEGREES";
+    String UNITS_FLOW_LPM = "FLOW_LPM";
 }

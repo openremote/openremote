@@ -20,6 +20,7 @@
 package org.openremote.model.datapoint;
 
 import jsinterop.annotations.JsType;
+import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
 import org.openremote.model.value.Value;
@@ -44,7 +45,7 @@ public interface AssetDatapointResource {
     @Path("{assetId}/attribute/{attributeName}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:assets"})
+    @RolesAllowed({Constants.READ_ASSETS_ROLE})
     @SuppressWarnings("unusable-by-js")
     ValueDatapoint[] getDatapoints(@BeanParam RequestParams requestParams,
                                           @PathParam("assetId") String assetId,

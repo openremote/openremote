@@ -24,11 +24,10 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.value.Value;
 
-import javax.persistence.Column;
-import javax.persistence.Id;
-import javax.persistence.IdClass;
-import javax.persistence.MappedSuperclass;
+import javax.persistence.*;
 import java.io.Serializable;
+import java.util.Date;
+import java.util.Objects;
 
 import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 
@@ -50,8 +49,8 @@ public abstract class Datapoint implements Serializable {
     protected String attributeName;
 
     @Id
-    @Column(name = "TIMESTAMP", nullable = false)
-    protected long timestamp;
+    @Column(name = "TIMESTAMP", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    protected Date timestamp;
 
     @Column(name = "VALUE", columnDefinition = "jsonb", nullable = false)
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
@@ -75,7 +74,7 @@ public abstract class Datapoint implements Serializable {
     public Datapoint(String entityId, String attributeName, Value value, long timestamp) {
         this.entityId = entityId;
         this.attributeName = attributeName;
-        this.timestamp = timestamp;
+        this.timestamp = new Date(timestamp);
         this.value = value;
     }
 
@@ -96,11 +95,11 @@ public abstract class Datapoint implements Serializable {
     }
 
     public long getTimestamp() {
-        return timestamp;
+        return timestamp != null ? timestamp.getTime() : 0L;
     }
 
     public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
+        this.timestamp = new Date(timestamp);
     }
 
     public Value getValue() {
@@ -126,11 +125,7 @@ public abstract class Datapoint implements Serializable {
 
     @Override
     public int hashCode() {
-        int result = entityId.hashCode();
-        result = 31 * result + attributeName.hashCode();
-        result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
-        result = 31 * result + value.hashCode();
-        return result;
+        return Objects.hash(entityId, attributeName, timestamp, value);
     }
 
     @Override

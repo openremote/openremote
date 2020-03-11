@@ -19,7 +19,10 @@
  */
 package org.openremote.agent.protocol.velbus;
 
+import io.netty.channel.ChannelHandler;
+import org.openremote.agent.protocol.io.AbstractNettyIoClient;
 import org.openremote.agent.protocol.io.IoClient;
+import org.openremote.agent.protocol.tcp.TcpIoClient;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeValidationResult;
@@ -37,8 +40,8 @@ import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE
 
 public class VelbusTcpProtocol extends AbstractVelbusProtocol {
 
-    public static final String PROTOCOL_NAME = PROTOCOL_BASE_NAME + "Socket";
-    public static final String PROTOCOL_DISPLAY_NAME = "VELBUS Socket";
+    public static final String PROTOCOL_NAME = PROTOCOL_BASE_NAME + "Tcp";
+    public static final String PROTOCOL_DISPLAY_NAME = "VELBUS TCP";
     public static final String META_VELBUS_HOST = PROTOCOL_NAME + ":host";
     public static final String META_VELBUS_PORT = PROTOCOL_NAME + ":port";
     public static final List<MetaItemDescriptorImpl> META_ITEM_DESCRIPTORS = Arrays.asList(
@@ -100,7 +103,7 @@ public class VelbusTcpProtocol extends AbstractVelbusProtocol {
     }
 
     @Override
-    protected IoClient<VelbusPacket> createClient(AssetAttribute protocolConfiguration) throws RuntimeException {
+    protected IoClient<VelbusPacket> createIoClient(AssetAttribute protocolConfiguration) throws RuntimeException {
 
         // Extract IP and Host
         String host = protocolConfiguration.getMetaItem(META_VELBUS_HOST).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
@@ -108,8 +111,15 @@ public class VelbusTcpProtocol extends AbstractVelbusProtocol {
 
         TextUtil.requireNonNullAndNonEmpty(host, "Host cannot be null or empty");
         Objects.requireNonNull(port, "Port cannot be null");
-
-        return new VelbusTcpClient(host, port, executorService);
+        TcpIoClient<VelbusPacket> client = new TcpIoClient<>(host, port, executorService);
+        client.setEncoderDecoderProvider(
+            () -> new ChannelHandler[] {
+                new VelbusPacketEncoder(),
+                new VelbusPacketDecoder(),
+                new AbstractNettyIoClient.MessageToMessageDecoder<>(VelbusPacket.class, client)
+            }
+        );
+        return client;
     }
 
     @Override

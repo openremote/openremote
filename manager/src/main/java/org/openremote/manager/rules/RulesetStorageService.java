@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.rules;
 
+import org.hibernate.Session;
+import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -26,16 +28,40 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.query.RulesetQuery;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.TenantRuleset;
-import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Values;
 
-import javax.persistence.TypedQuery;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 public class RulesetStorageService implements ContainerService {
+
+    protected interface ParameterBinder extends Consumer<PreparedStatement> {
+
+        @Override
+        default void accept(PreparedStatement st) {
+            try {
+                acceptStatement(st);
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        void acceptStatement(PreparedStatement st) throws SQLException;
+    }
+
+    private static final Logger LOG = Logger.getLogger(RulesetStorageService.class.getName());
 
     protected PersistenceService persistenceService;
     protected ManagerIdentityService identityService;
@@ -70,170 +96,58 @@ public class RulesetStorageService implements ContainerService {
 
     }
 
-    public List<GlobalRuleset> findGlobalRulesets(boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
-
-        String query = "select new org.openremote.model.rules.GlobalRuleset(" +
-                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.enabled, rs.name, rs.lang, rs.meta, rs.continueOnError";
-
-        query += fullyPopulate ? ", rs.rules" : ", cast(null as string)";
-
-        query += ") " +
-                "from GlobalRuleset rs where 1=1 ";
-
-        if (onlyEnabled) {
-            query += "and rs.enabled = true ";
-        }
-
-        if (language != null) {
-            query += "and rs.lang = :lang ";
-        }
-
-        query += "order by rs.createdOn asc";
-
-        String finalQuery = query;
-        return persistenceService.doReturningTransaction(entityManager -> {
-                TypedQuery<GlobalRuleset> qry = entityManager.createQuery(
-                        finalQuery,
-                        GlobalRuleset.class
-                );
-
-                if (language != null) {
-                    qry.setParameter("lang", language);
-                }
-
-                return qry.getResultList();
-        });
+    public <T extends Ruleset> T find(Class<T> rulesetType, Long id) {
+        return find(rulesetType, id, true);
     }
 
-    public List<TenantRuleset> findTenantRulesets(boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
-        return findTenantRulesets(null, onlyPublic, onlyEnabled, language, fullyPopulate);
-    }
-    public List<TenantRuleset> findTenantRulesets(String realm, boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
-
-        String query = "select new org.openremote.model.rules.TenantRuleset(" +
-                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.enabled, rs.name, rs.lang, rs.meta";
-
-        query += fullyPopulate ? ", rs.rules" : ", cast(null as string)";
-
-        query += ", rs.realm, rs.accessPublicRead, rs.continueOnError) " +
-                "from TenantRuleset rs " +
-                "where 1=1 ";
-
-        boolean includeRealm = !TextUtil.isNullOrEmpty(realm);
-
-        if (includeRealm) {
-            query += "and rs.realm = :realm ";
-        }
-
-        if (onlyPublic) {
-            query += "and rs.accessPublicRead = true ";
-        }
-
-        if (onlyEnabled) {
-            query += "and rs.enabled = true ";
-        }
-
-        if (language != null) {
-            query += "and rs.lang = :lang ";
-        }
-
-        query += "order by rs.createdOn asc";
-
-        String finalQuery = query;
-        return persistenceService.doReturningTransaction(entityManager -> {
-                    TypedQuery<TenantRuleset> qry = entityManager.createQuery(
-                            finalQuery,
-                            TenantRuleset.class
-                    );
-                    if (includeRealm) {
-                        qry.setParameter("realm", realm);
-                    }
-                    if (language != null) {
-                        qry.setParameter("lang", language);
-                    }
-
-                    return qry.getResultList();
-                }
-        );
+    public <T extends Ruleset> T find(Class<T> rulesetType, Long id, boolean loadComplete) {
+        if (id == null)
+            throw new IllegalArgumentException("Can't query null ruleset identifier");
+        return find(rulesetType, new RulesetQuery()
+            .setFullyPopulate(loadComplete)
+            .setIds(id));
     }
 
-    public List<AssetRuleset> findAssetRulesetsByRealm(String realm, boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
-        return findAssetRulesets(realm, null, onlyPublic, onlyEnabled, language, fullyPopulate);
-    }
-    public List<AssetRuleset> findAssetRulesetsByAssetId(String assetId, boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
-        return findAssetRulesets(null, assetId, onlyPublic, onlyEnabled, language, fullyPopulate);
-    }
-    public List<AssetRuleset> findAssetRulesets(String realm, String assetId, boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
-
-        String query = "select new org.openremote.model.rules.AssetRuleset(" +
-                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.enabled, rs.name, rs.lang, rs.meta";
-
-        query += fullyPopulate ? ", rs.rules" : ", cast(null as string)";
-
-        query += ", a.realm, rs.assetId, rs.accessPublicRead, rs.continueOnError) " +
-                "from AssetRuleset rs, Asset a " +
-                "where rs.assetId = a.id ";
-
-        boolean includeRealm = !TextUtil.isNullOrEmpty(realm);
-        boolean includeAssetId = !TextUtil.isNullOrEmpty(assetId);
-
-        if (includeRealm) {
-            query += "and a.realm = :realm ";
+    public <T extends Ruleset> T find(Class<T> rulesetType, RulesetQuery query) {
+        List<T> result = findAll(rulesetType, query);
+        if (result.isEmpty())
+            return null;
+        if (result.size() > 1) {
+            throw new IllegalArgumentException("Query returned more than one ruleset");
         }
-
-        if (includeAssetId) {
-            query += "and rs.assetId = :assetId ";
-        }
-
-        if (onlyPublic) {
-            query += "and rs.accessPublicRead = true ";
-        }
-
-        if (onlyEnabled) {
-            query += "and rs.enabled = true ";
-        }
-
-        if (language != null) {
-            query += "and rs.lang = :lang ";
-        }
-
-        query += "order by rs.createdOn asc";
-
-        String finalQuery = query;
-
-        return persistenceService.doReturningTransaction(entityManager -> {
-                    TypedQuery<AssetRuleset> qry = entityManager.createQuery(
-                            finalQuery,
-                            AssetRuleset.class
-                    );
-
-                    if (includeRealm) {
-                        qry.setParameter("realm", realm);
-                    }
-                    if (includeAssetId) {
-                        qry.setParameter("assetId", assetId);
-                    }
-                    if (language != null) {
-                        qry.setParameter("lang", language);
-                    }
-
-                    return qry.getResultList();
-                }
-        );
+        return result.get(0);
     }
 
-    public <T extends Ruleset> T findById(Class<T> rulesetType, Long id) {
-
+    public <T extends Ruleset> List<T> findAll(Class<T> rulesetType, RulesetQuery query) {
         return persistenceService.doReturningTransaction(em -> {
-            T ruleset = em.find(rulesetType, id);
+            LOG.fine("Building: " + query);
+            StringBuilder sb = new StringBuilder();
+            List<ParameterBinder> binders = new ArrayList<>();
+            appendSelectString(sb, rulesetType, query);
+            appendFromString(sb, rulesetType, query);
+            appendWhereString(sb, rulesetType, query, binders);
+            appendOrder(sb, query);
+            appendLimit(sb, query);
 
-            if (rulesetType == AssetRuleset.class && ruleset != null && TextUtil.isNullOrEmpty(((AssetRuleset)ruleset).getRealm())) {
-                // Asset rulesets require special treatment as realm is transient - TODO Should a JPA mapping be used?
-                String realm = em.createQuery("select a.realm from AssetRuleset rs, Asset a where a.id = rs.assetId and rs.id = :id", String.class).setParameter("id", id).getSingleResult();
-                ((AssetRuleset) ruleset).setRealm(realm);
-            }
+            String sqlQuery = sb.toString();
 
-            return ruleset;
+            return em.unwrap(Session.class).doReturningWork(new AbstractReturningWork<List<T>>() {
+                @Override
+                public List<T> execute(Connection connection) throws SQLException {
+                    LOG.fine("Executing: " + sqlQuery);
+                    try (PreparedStatement st = connection.prepareStatement(sqlQuery)) {
+                        binders.forEach(parameterBinder -> parameterBinder.accept(st));
+
+                        try (ResultSet rs = st.executeQuery()) {
+                            List<T> result = new ArrayList<>();
+                            while (rs.next()) {
+                                result.add(mapResultTuple(rulesetType, query, rs));
+                            }
+                            return result;
+                        }
+                    }
+                }
+            });
         });
     }
 
@@ -249,6 +163,139 @@ public class RulesetStorageService implements ContainerService {
             if (ruleset != null)
                 entityManager.remove(ruleset);
         });
+    }
+
+    protected <T extends Ruleset> void appendSelectString(StringBuilder sb, Class<T> rulesetType, RulesetQuery query) {
+        sb.append("SELECT R.ID, R.OBJ_VERSION, R.RULES_LANG, R.ENABLED, R.LAST_MODIFIED, R.CREATED_ON, R.NAME, R.META");
+
+        if (query.fullyPopulate) {
+            sb.append(", R.RULES");
+        }
+
+        if (rulesetType == TenantRuleset.class) {
+            sb.append(", R.ACCESS_PUBLIC_READ, R.REALM");
+        } else if (rulesetType == AssetRuleset.class) {
+            sb.append(", R.ACCESS_PUBLIC_READ, R.ASSET_ID, A.REALM AS REALM");
+        }
+    }
+
+    protected <T extends Ruleset> void appendFromString(StringBuilder sb, Class<T> rulesetType, RulesetQuery query) {
+        if (rulesetType == GlobalRuleset.class) {
+            sb.append(" FROM GLOBAL_RULESET R");
+        }else if (rulesetType == TenantRuleset.class) {
+            sb.append(" FROM TENANT_RULESET R");
+        } else if (rulesetType == AssetRuleset.class) {
+            sb.append(" FROM ASSET_RULESET R JOIN ASSET A ON (R.ASSET_ID = A.ID)");
+        } else {
+            throw new UnsupportedOperationException("Ruleset type not supported: " + rulesetType);
+        }
+    }
+
+    protected <T extends Ruleset> void appendWhereString(StringBuilder sb, Class<T> rulesetType, RulesetQuery query, List<ParameterBinder> binders) {
+        sb.append(" WHERE 1=1");
+
+        if (query.publicOnly) {
+            sb.append(" AND R.ACCESS_PUBLIC_READ");
+        }
+        if (query.enabledOnly) {
+            sb.append(" AND R.ENABLED");
+        }
+        if (query.languages != null && query.languages.length > 0) {
+            sb.append(" AND R.RULES_LANG IN (?");
+            final int pos = binders.size() + 1;
+            binders.add(st -> st.setString(pos, query.languages[0].toString()));
+
+            for (int i = 1; i < query.languages.length; i++) {
+                sb.append(",?");
+                final int pos2 = binders.size() + 1;
+                final int index = i;
+                binders.add(st -> st.setString(pos2, query.languages[index].toString()));
+            }
+            sb.append(")");
+        }
+        if (query.ids != null && query.ids.length > 0) {
+            sb.append(" AND R.ID IN (?");
+            final int pos = binders.size() + 1;
+            binders.add(st -> st.setLong(pos, query.ids[0]));
+
+            for (int i = 1; i < query.ids.length; i++) {
+                sb.append(",?");
+                final int pos2 = binders.size() + 1;
+                final int index = i;
+                binders.add(st -> st.setLong(pos2, query.ids[index]));
+            }
+            sb.append(")");
+        }
+
+        if (query.meta != null) {
+            // TODO: Add meta filtering support
+        }
+
+        if (query.realm != null && (rulesetType == TenantRuleset.class || rulesetType == AssetRuleset.class)) {
+            sb.append(" AND REALM = ?");
+            final int pos = binders.size() + 1;
+            binders.add(st -> st.setString(pos, query.realm));
+        }
+        if (query.assetIds != null && query.assetIds.length > 0 && rulesetType == AssetRuleset.class) {
+            sb.append(" AND R.ASSET_ID IN (?");
+            final int pos = binders.size() + 1;
+            binders.add(st -> st.setString(pos, query.assetIds[0]));
+
+            for (int i = 1; i < query.assetIds.length; i++) {
+                sb.append(",?");
+                final int pos2 = binders.size() + 1;
+                final int index = i;
+                binders.add(st -> st.setString(pos2, query.assetIds[index]));
+            }
+            sb.append(")");
+        }
+    }
+
+    protected void appendOrder(StringBuilder sb, RulesetQuery query) {
+        sb.append(" ORDER BY CREATED_ON ASC");
+    }
+
+    protected void appendLimit(StringBuilder sb, RulesetQuery query) {
+        if (query.limit > 0) {
+            sb.append(" LIMIT " + query.limit);
+        }
+    }
+
+    protected <T extends Ruleset> T mapResultTuple(Class<T> rulesetType, RulesetQuery query, ResultSet rs) throws SQLException {
+        T ruleset;
+
+        if (rulesetType == GlobalRuleset.class) {
+            ruleset = (T) new GlobalRuleset();
+        } else if (rulesetType == TenantRuleset.class) {
+            TenantRuleset tenantRuleset = new TenantRuleset();
+            tenantRuleset.setRealm(rs.getString("REALM"));
+            tenantRuleset.setAccessPublicRead(rs.getBoolean("ACCESS_PUBLIC_READ"));
+            ruleset = (T)tenantRuleset;
+        } else if (rulesetType == AssetRuleset.class) {
+            AssetRuleset assetRuleset = new AssetRuleset();
+            assetRuleset.setAssetId(rs.getString("ASSET_ID"));
+            assetRuleset.setRealm(rs.getString("REALM"));
+            assetRuleset.setAccessPublicRead(rs.getBoolean("ACCESS_PUBLIC_READ"));
+            ruleset = (T)assetRuleset;
+        } else {
+            throw new UnsupportedOperationException("Ruleset type not supported: " + rulesetType);
+        }
+
+        ruleset.setName(rs.getString("NAME"));
+        ruleset.setId(rs.getLong("ID"));
+        ruleset.setVersion(rs.getLong("OBJ_VERSION"));
+        ruleset.setLang(Ruleset.Lang.valueOf(rs.getString("RULES_LANG")));
+        ruleset.setEnabled(rs.getBoolean("ENABLED"));
+        ruleset.setLastModified(rs.getTimestamp("LAST_MODIFIED"));
+        ruleset.setCreatedOn(rs.getTimestamp("CREATED_ON"));
+        if (rs.getString("META") != null) {
+            ruleset.setMeta(Values.instance().<ObjectValue>parse(rs.getString("META")).orElse(null));
+        }
+        if (query.fullyPopulate) {
+            ruleset.setRules(rs.getString("RULES"));
+        }
+
+        return ruleset;
     }
 
     @Override

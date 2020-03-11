@@ -24,6 +24,7 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -38,6 +39,9 @@ import java.util.logging.Logger;
 import static java.util.logging.Level.FINER;
 import static org.openremote.agent.protocol.timer.TimerConfiguration.*;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
+import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemFixedBoolean;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This protocol can be used to trigger an {@link AttributeEvent} using a cron based timer.
@@ -55,52 +59,65 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  */
 public class TimerProtocol extends AbstractProtocol {
 
-    private static final Logger LOG = Logger.getLogger(TimerProtocol.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, TimerProtocol.class);
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":timer";
     public static final String PROTOCOL_DISPLAY_NAME = "Timer";
     public static final String META_TIMER_CRON_EXPRESSION = PROTOCOL_NAME + ":cronExpression";
     public static final String META_TIMER_ACTION = PROTOCOL_NAME + ":action";
     public static final String META_TIMER_VALUE_LINK = PROTOCOL_NAME + ":link";
+    public static final String META_TIMER_DISABLED = PROTOCOL_NAME + ":disabled";
     protected static final String VERSION = "1.0";
 
-    protected static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
-        new MetaItemDescriptorImpl(
-            META_TIMER_CRON_EXPRESSION,
-            ValueType.STRING,
+    public static final MetaItemDescriptor META_PROTOCOL_TIMER_ACTION = new MetaItemDescriptorImpl(
+        META_TIMER_ACTION,
+        ValueType.OBJECT,
+            true,
+            null,
+            null,
+            null,
+            null,
+            false, null, null, null, false);
+
+    public static final MetaItemDescriptor META_PROTOCOL_TIMER_CRON_EXPRESSION = new MetaItemDescriptorImpl(
+        META_TIMER_CRON_EXPRESSION,
+        ValueType.STRING,
             true,
             null, // TODO Should use TextUtil.REGEXP_PATTERN_CRON_EXPRESSION
-            MetaItemDescriptor.PatternFailure.CRON_EXPRESSION.name(),
+        MetaItemDescriptor.PatternFailure.CRON_EXPRESSION.name(),
             null,
-            null,
-            false, null, null, null),
-        new MetaItemDescriptorImpl(
-            META_TIMER_ACTION,
-            ValueType.OBJECT,
-            true,
-            null,
-            null,
-            null,
-            null,
-            false, null, null, null, false)
+                null,
+                false, null, null, null);
+
+    public static final MetaItemDescriptor META_PROTOCOL_TIMER_DISABLED = metaItemFixedBoolean(
+        META_TIMER_DISABLED,
+        ACCESS_PRIVATE,
+        false);
+
+    public static final MetaItemDescriptor META_ATTRIBUTE_TIMER_VALUE_LINK = new MetaItemDescriptorImpl(
+        META_TIMER_VALUE_LINK,
+        ValueType.STRING,
+        true,
+        "^(" +
+            TimerValue.ENABLED + "|" +
+            TimerValue.CRON_EXPRESSION + "|" +
+            TimerValue.TIME +
+            ")$",
+        TimerValue.ENABLED + "|" +
+            TimerValue.CRON_EXPRESSION + "|" +
+            TimerValue.TIME,
+        null,
+        null,
+        false, null, null, null);
+
+    protected static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
+        META_PROTOCOL_TIMER_ACTION,
+        META_PROTOCOL_TIMER_CRON_EXPRESSION,
+        META_PROTOCOL_TIMER_DISABLED
     );
 
     protected static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Collections.singletonList(
-        new MetaItemDescriptorImpl(
-            META_TIMER_VALUE_LINK,
-            ValueType.STRING,
-            true,
-            "^(" +
-                TimerValue.ENABLED + "|" +
-                TimerValue.CRON_EXPRESSION + "|" +
-                TimerValue.TIME +
-                ")$",
-            TimerValue.ENABLED + "|" +
-                TimerValue.CRON_EXPRESSION + "|" +
-                TimerValue.TIME,
-            null,
-            null,
-            false, null, null, null)
+        META_ATTRIBUTE_TIMER_VALUE_LINK
     );
 
     protected final Map<AttributeRef, CronExpressionParser> cronExpressionMap = new HashMap<>();
@@ -151,7 +168,7 @@ public class TimerProtocol extends AbstractProtocol {
         // Verify that this is a valid Timer Configuration
         if (!isValidTimerConfiguration(protocolConfiguration)) {
             LOG.warning("Timer Configuration is not valid so it will be ignored: " + protocolRef);
-            updateStatus(protocolRef, ConnectionStatus.ERROR);
+            updateStatus(protocolRef, ConnectionStatus.ERROR_CONFIGURATION);
             return;
         }
 
@@ -162,25 +179,30 @@ public class TimerProtocol extends AbstractProtocol {
 
         if (expressionParser == null || !expressionParser.isValid()) {
             LOG.warning("Timer cron expression is missing or invalid");
-            updateStatus(protocolRef, ConnectionStatus.ERROR);
+            updateStatus(protocolRef, ConnectionStatus.ERROR_CONFIGURATION);
+            return;
+        }
+
+        CronExpression cronExpression = createCronExpression(expressionParser.buildCronExpression());
+
+        if (cronExpression == null) {
+            LOG.warning("Timer cron expression is missing or invalid");
+            updateStatus(protocolRef, ConnectionStatus.ERROR_CONFIGURATION);
             return;
         }
 
         cronExpressionMap.put(protocolRef, expressionParser);
 
-        if (protocolConfiguration.isEnabled()) {
+        if (!isTimerDisabled(protocolConfiguration)) {
+            getCronScheduler()
+                .addOrReplaceJob(
+                    getTimerId(protocolRef),
+                    cronExpression,
+                    () -> doTriggerAction(protocolConfiguration)
+                );
             updateStatus(protocolRef, ConnectionStatus.CONNECTED);
-            CronExpression cronExpression = createCronExpression(expressionParser.buildCronExpression());
-            if (cronExpression != null) {
-                getCronScheduler()
-                    .addOrReplaceJob(
-                        getTimerId(protocolRef),
-                        cronExpression,
-                        () -> doTriggerAction(protocolConfiguration)
-                    );
-            } else {
-                updateStatus(protocolRef, ConnectionStatus.DISABLED);
-            }
+        } else {
+            updateStatus(protocolRef, ConnectionStatus.DISABLED);
         }
     }
 
@@ -194,7 +216,7 @@ public class TimerProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+    protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
         AssetAttribute attribute = getLinkedAttribute(event.getAttributeRef());
 
         TimerValue timerValue = TimerConfiguration.getValue(attribute).orElse(null);
@@ -218,13 +240,19 @@ public class TimerProtocol extends AbstractProtocol {
                     .orElse(null))
                     .orElseThrow(() -> new IllegalStateException("Writing to protocol configuration CONNECTED property requires a boolean value"));
 
-                if (enabled == protocolConfiguration.isEnabled()) {
-                    LOG.finer("Protocol configuration enabled status is already: " + enabled);
+                if (enabled != isTimerDisabled(protocolConfiguration)) {
+                    LOG.finer("Timer enabled status is already: " + enabled);
                 } else {
-                    LOG.fine("Updating protocol configuration enabled status: " + enabled);
+                    LOG.fine("Updating timer enabled status: " + enabled);
                     updateLinkedProtocolConfiguration(
                         protocolConfiguration,
-                        protocolConfig -> protocolConfig.setDisabled(!enabled)
+                        protocolConfig -> {
+                            if (!enabled) {
+                                protocolConfig.addMeta(META_PROTOCOL_TIMER_DISABLED);
+                            } else {
+                                protocolConfig.removeMeta(META_PROTOCOL_TIMER_DISABLED);
+                            }
+                        }
                     );
                 }
                 break;
@@ -282,7 +310,7 @@ public class TimerProtocol extends AbstractProtocol {
 
         switch (timerValue) {
             case ENABLED:
-                updateLinkedAttribute(new AttributeState(attribute.getReferenceOrThrow(), Values.create(protocolConfiguration.isEnabled())));
+                updateLinkedAttribute(new AttributeState(attribute.getReferenceOrThrow(), Values.create(!isTimerDisabled(protocolConfiguration))));
                 break;
             case CRON_EXPRESSION:
             case TIME:
@@ -365,5 +393,9 @@ public class TimerProtocol extends AbstractProtocol {
         }
 
         return cronExpression;
+    }
+
+    protected static boolean isTimerDisabled(Attribute protocolConfiguration) {
+        return protocolConfiguration.getMetaItem(META_TIMER_DISABLED).isPresent();
     }
 }

@@ -41,16 +41,16 @@ public class MapResourceImpl extends WebResource implements MapResource {
     @Override
     public ObjectValue getSettings(RequestParams requestParams) {
         return mapService.getMapSettings(
-                getRequestRealm(),
-                identityService.getExternalServerUri().clone()
+            getRequestRealm(),
+            requestParams.getRequestBaseUri()
         );
     }
 
     @Override
     public ObjectValue getSettingsJs(RequestParams requestParams) {
         return mapService.getMapSettingsJs(
-                getAuthenticatedRealm(),
-                identityService.getExternalServerUri().clone()
+            getAuthenticatedRealm(),
+            requestParams.getRequestBaseUri()
         );
     }
 

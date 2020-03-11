@@ -24,6 +24,11 @@ import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A filter for injecting query parameters into the request URI. If {@link #dynamicPlaceholderRegex} is set any request
@@ -39,11 +44,13 @@ public class QueryParameterInjectorFilter implements ClientRequestFilter {
     protected MultivaluedMap<String, String> queryParameters;
     protected String dynamicPlaceholderRegex;
     protected boolean dynamic;
+    protected String dynamicTimePlaceHolderRegex;
 
     public QueryParameterInjectorFilter(MultivaluedMap<String, String> queryParameters,
-                                        String dynamicPlaceholderRegex) {
+                                        String dynamicPlaceholderRegex, String dynamicTimePlaceHolderRegex) {
         this.queryParameters = queryParameters;
         this.dynamicPlaceholderRegex = dynamicPlaceholderRegex;
+        this.dynamicTimePlaceHolderRegex = dynamicTimePlaceHolderRegex;
 
         dynamic = queryParameters != null && dynamicPlaceholderRegex != null
             && queryParameters
@@ -76,6 +83,24 @@ public class QueryParameterInjectorFilter implements ClientRequestFilter {
                 if (finalDynamic) {
                     for (int i = 0; i < valueArr.length; i++) {
                         valueArr[i] = valueArr[i].replaceAll(dynamicPlaceholderRegex, finalDynamicValue);
+                    }
+                }
+                if (dynamicTimePlaceHolderRegex != null) {
+                    for (int i = 0; i < valueArr.length; i++) {
+                        if (valueArr[i].matches(dynamicTimePlaceHolderRegex)) {
+                            Matcher matcher = Pattern.compile(dynamicTimePlaceHolderRegex).matcher(valueArr[i]);
+                            long millisToAdd = 0;
+                            DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+                            if (matcher.find()) {
+                                if (matcher.groupCount() > 0) {
+                                    dateTimeFormatter = DateTimeFormatter.ofPattern(matcher.group(1));
+                                }
+                                if (matcher.groupCount() == 2) {
+                                    millisToAdd = Long.parseLong(matcher.group(2));
+                                }
+                            }
+                            valueArr[i] = dateTimeFormatter.format(Instant.now().plusMillis(millisToAdd).atZone(ZoneId.systemDefault()));
+                        }
                     }
                 }
                 uriBuilder.queryParam(name, (Object[]) valueArr);

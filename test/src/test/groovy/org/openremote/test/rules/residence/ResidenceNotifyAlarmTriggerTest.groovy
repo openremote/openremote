@@ -49,11 +49,11 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         PushNotificationHandler mockPushNotificationHandler = Spy(PushNotificationHandler) {
             isValid() >> true
 
-            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.TargetType, _ as String, _ as AbstractNotificationMessage) >> {
-                id, source, sourceId, targetType, targetId, message ->
+            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+                id, source, sourceId, target, message ->
                     notificationIds << id
-                    targetTypes << targetType
-                    targetIds << targetId
+                    targetTypes << target.type
+                    targetIds << target.id
                     messages << message
                     callRealMethod()
             }
@@ -80,11 +80,9 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Notify Alarm Trigger", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceNotifyAlarmTrigger.groovy").text,
-                managerDemoSetup.apartment1Id,
-                false,
-                false
-        )
+            managerDemoSetup.apartment1Id,
+            "Demo Apartment - Notify Alarm Trigger",
+            Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceNotifyAlarmTrigger.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
@@ -102,7 +100,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         assert !livingRoomAsset.getAttribute("presenceDetected").orElse(null).valueAsBoolean.orElse(null)
 
         and: "an authenticated test user"
-        def realm = "tenantA"
+        def realm = "building"
         def accessToken = authenticate(
                 container,
                 realm,

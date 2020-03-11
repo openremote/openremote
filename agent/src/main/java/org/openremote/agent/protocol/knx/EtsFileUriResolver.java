@@ -1,5 +1,7 @@
 package org.openremote.agent.protocol.knx;
 
+import org.openremote.model.syslog.SyslogCategory;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -18,9 +20,11 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.URIResolver;
 import javax.xml.transform.stream.StreamSource;
 
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
 public class EtsFileUriResolver implements URIResolver {
 
-    private static final Logger LOG = Logger.getLogger(KNXProtocol.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, KNXProtocol.class);
     
     private byte[] data;
 

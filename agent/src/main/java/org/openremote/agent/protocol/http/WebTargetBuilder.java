@@ -160,7 +160,7 @@ public class WebTargetBuilder {
         }
 
         if (injectQueryParameters != null) {
-            target.register(new QueryParameterInjectorFilter(injectQueryParameters, null));
+            target.register(new QueryParameterInjectorFilter(injectQueryParameters, null, null));
         }
 
         if (followRedirects) {

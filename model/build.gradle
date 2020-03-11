@@ -1,5 +1,8 @@
 apply plugin: "java"
 
+compileJava.options.compilerArgs.add '-parameters'
+compileTestJava.options.compilerArgs.add '-parameters'
+
 dependencies {
     compile("com.google.gwt.inject:gin:$ginVersion")
     compile "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"

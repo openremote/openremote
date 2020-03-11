@@ -41,10 +41,10 @@ import java.util.stream.IntStream
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_CUSTOMER_A
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.SMART_BUILDING_LOCATION
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
-import static org.openremote.model.attribute.MetaItemType.RULE_STATE
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD
 import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl
 import static org.openremote.model.attribute.AttributeType.LOCATION
+import static org.openremote.model.attribute.MetaItemType.RULE_STATE
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 import static org.openremote.model.util.TextUtil.isNullOrEmpty
 import static org.openremote.model.value.Values.parse
@@ -61,11 +61,11 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         PushNotificationHandler mockPushNotificationHandler = Spy(PushNotificationHandler) {
             isValid() >> true
 
-            sendMessage(_ as Long, _ as Notification.Source, _, _ as Notification.TargetType, _ as String, _ as AbstractNotificationMessage) >> {
-                id, source, sourceId, targetType, targetId, message ->
+            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+                id, source, sourceId, target, message ->
                     notificationIds << id
-                    targetTypes << targetType
-                    targetIds << targetId
+                    targetTypes << target.type
+                    targetIds << target.id
                     messages << message
                     callRealMethod()
             }
@@ -97,37 +97,36 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         and: "the demo location predicate console rules are loaded"
         Ruleset ruleset = new TenantRuleset(
-                "Demo Tenant A - Console Location", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoConsoleLocation.groovy").text,
-                keycloakDemoSetup.tenantA.realm,
-                false,
-                false
-        )
+            keycloakDemoSetup.tenantBuilding.realm,
+            "Demo Tenant Building - Console Location",
+            Ruleset.Lang.GROOVY,
+            getClass().getResource("/demo/rules/DemoConsoleLocation.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engine to become available and be running"
         conditions.eventually {
-            def tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm)
-            assert tenantAEngine != null
-            assert tenantAEngine.isRunning()
-            assert tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            def tenantBuildingEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantBuilding.realm)
+            assert tenantBuildingEngine != null
+            assert tenantBuildingEngine.isRunning()
+            assert tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
         }
 
         and: "an authenticated user"
         def accessToken = authenticate(
                 container,
-                keycloakDemoSetup.tenantA.realm,
+                keycloakDemoSetup.tenantBuilding.realm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
         ).token
 
         and: "authenticated and anonymous console, rules and asset resources"
-        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm, accessToken).proxy(ConsoleResource.class)
-        def authenticatedRulesResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm, accessToken).proxy(RulesResource.class)
-        def authenticatedAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm, accessToken).proxy(AssetResource.class)
-        def anonymousConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm).proxy(ConsoleResource.class)
-        def anonymousRulesResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm).proxy(RulesResource.class)
-        def anonymousAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm).proxy(AssetResource.class)
+        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(ConsoleResource.class)
+        def authenticatedRulesResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(RulesResource.class)
+        def authenticatedAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(AssetResource.class)
+        def anonymousConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm).proxy(ConsoleResource.class)
+        def anonymousRulesResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm).proxy(RulesResource.class)
+        def anonymousAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm).proxy(AssetResource.class)
 
         when: "a console registers with an authenticated user"
         def consoleRegistration = new ConsoleRegistration(null,
@@ -185,7 +184,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         }.orElse(null) == "23123213ad2313b0897efd"
 
         and: "the console should have been linked to the authenticated user"
-        def userAssets = assetStorageService.findUserAssets(keycloakDemoSetup.tenantA.realm, keycloakDemoSetup.testuser3Id, consoleId)
+        def userAssets = assetStorageService.findUserAssets(keycloakDemoSetup.tenantBuilding.realm, keycloakDemoSetup.testuser3Id, consoleId)
         assert userAssets.size() == 1
         assert userAssets.get(0).assetName == "Test Console"
 
@@ -412,10 +411,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             assert asset != null
             assert asset.getAttribute(LOCATION.attributeName).flatMap { it.valueTimestamp }.orElse(Long.MIN_VALUE) > timestamp
             assert notificationIds.size() == 1
-            def tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm)
-            assert tenantAEngine != null
-            assert tenantAEngine.isRunning()
-            assert !tenantAEngine.facts.getOptional("welcomeHome_${testUser3Console2.id}").isPresent()
+            def tenantBuildingEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantBuilding.realm)
+            assert tenantBuildingEngine != null
+            assert tenantBuildingEngine.isRunning()
+            assert !tenantBuildingEngine.facts.getOptional("welcomeHome_${testUser3Console2.id}").isPresent()
         }
 
         when: "a console's location is updated to be at the Smart Building again"
@@ -500,11 +499,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         when: "a new ruleset is deployed on the console parent asset with multiple location predicate rules (including a duplicate and a rectangular predicate)"
         def newRuleset = new AssetRuleset(
-                "Console test location predicates", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.groovy").text,
-                testUser3Console1.parentId,
-                false,
-                false
-        )
+            testUser3Console1.parentId,
+            "Console test location predicates",
+            Ruleset.Lang.GROOVY,
+            getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.groovy").text)
         newRuleset = rulesetStorageService.merge(newRuleset)
         RulesEngine consoleParentEngine = null
         def newLocationPredicate = new RadialGeofencePredicate(50, 0, -60)

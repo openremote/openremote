@@ -275,6 +275,14 @@
                 return this.authenticated && this.realm === "master" && this.hasRealmRole("admin");
             }
 
+            getAuthHeader() {
+                if (this.keycloak) {
+                    return 'Bearer ' + this.keycloak.token;
+                } else {
+                    return "Basic " + btoa(this.user + ":" + this.basicAuthPassword);
+                }
+            }
+
             hasRealmRole(role) {
                 if (!this.authenticated) {
                     return false;
@@ -493,7 +501,7 @@
             performBasicAuthentication() {
                 try {
                     // Send a request with credentials to a resource that we know returns 200 or 401
-                    let url = "/" + this.realm + "/asset/user/current";
+                    let url = "/api/" + this.realm + "/asset/user/current";
 
                     let request = new XMLHttpRequest();
 

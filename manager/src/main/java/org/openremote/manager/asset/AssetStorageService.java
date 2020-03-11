@@ -19,13 +19,6 @@
  */
 package org.openremote.manager.asset;
 
-import net.fortuna.ical4j.filter.PeriodRule;
-import net.fortuna.ical4j.model.DateTime;
-import net.fortuna.ical4j.model.Dur;
-import net.fortuna.ical4j.model.Period;
-import net.fortuna.ical4j.model.Recur;
-import net.fortuna.ical4j.model.component.VEvent;
-import net.fortuna.ical4j.model.property.RRule;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
@@ -49,7 +42,6 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.calendar.CalendarEvent;
-import org.openremote.model.calendar.RecurrenceRule;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.AssetQuery;
@@ -73,6 +65,7 @@ import java.util.Date;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -83,6 +76,7 @@ import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
 import static org.openremote.manager.event.ClientEventService.getSessionKey;
+import static org.openremote.manager.rules.AssetQueryPredicate.asPredicate;
 import static org.openremote.model.asset.AssetAttribute.*;
 import static org.openremote.model.attribute.MetaItemType.ACCESS_RESTRICTED_READ;
 import static org.openremote.model.query.AssetQuery.*;
@@ -131,41 +125,76 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected ManagerIdentityService identityService;
     protected ClientEventService clientEventService;
 
-    protected static boolean calendarEventPredicateMatches(CalendarEventActivePredicate eventActivePredicate, Asset asset) {
-        return CalendarEventConfiguration.getCalendarEvent(asset)
-            .map(calendarEvent -> calendarEventActiveOn(calendarEvent,
-                new Date(1000L * eventActivePredicate.timestampSeconds)))
-            .orElse(true);
+    /**
+     * Will evaluate each {@link CalendarEventPredicate} and apply it depending on the {@link LogicGroup} type
+     * that each appears in. It tests the recurrence rule as simple start/end is checked in the DB query.
+     */
+    protected static boolean calendarEventPredicateMatches(AssetQuery query, Asset asset) {
+
+        if (query.attributes == null) {
+            return true;
+        }
+
+        return calendarEventPredicateMatches(query.attributes, asset);
     }
 
-    protected static boolean calendarEventActiveOn(CalendarEvent calendarEvent, Date when) {
-        if (calendarEvent.getRecurrence() == null) {
-            return (!when.before(calendarEvent.getStart()) && !when.after(calendarEvent.getEnd()));
+    private static boolean calendarEventPredicateMatches(LogicGroup<AttributePredicate> group, Asset asset) {
+        boolean isOr = group.operator == LogicGroup.Operator.OR;
+        boolean matches = true;
+
+        if (group.items != null) {
+            for (AttributePredicate attributePredicate : group.items) {
+                if (attributePredicate.value instanceof CalendarEventPredicate) {
+                    Predicate<String> namePredicate = StringPredicate.asPredicate(attributePredicate.name);
+                    Predicate<CalendarEvent> valuePredicate = asPredicate((CalendarEventPredicate)attributePredicate.value);
+                    List<AssetAttribute> matchedAttributes = asset.getAttributesStream()
+                        .filter(attr -> namePredicate.test(attr.name)).collect(Collectors.toList());
+
+                    matches = true;
+
+                    if (!matchedAttributes.isEmpty()) {
+                        for (AssetAttribute attribute : matchedAttributes) {
+                            matches = valuePredicate.test(attribute.getValue().flatMap(CalendarEvent::fromValue).orElse(null));
+                            if (isOr && matches) {
+                                break;
+                            }
+                            if (!isOr && !matches) {
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isOr && matches) {
+                        break;
+                    }
+                    if (!isOr && !matches) {
+                        break;
+                    }
+                }
+            }
         }
 
-        RecurrenceRule recurrenceRule = calendarEvent.getRecurrence();
-        Recur recurrence;
-
-        if (recurrenceRule.getCount() != null) {
-            recurrence = new Recur(recurrenceRule.getFrequency().name(), recurrenceRule.getCount());
-        } else if (recurrenceRule.getUntil() != null) {
-            recurrence = new Recur(recurrenceRule.getFrequency().name(),
-                new net.fortuna.ical4j.model.Date(recurrenceRule.getUntil()));
-        } else {
-            recurrence = new Recur(recurrenceRule.getFrequency().name(), null);
+        if (isOr && matches) {
+            return true;
+        }
+        if (!isOr && !matches) {
+            return false;
         }
 
-        if (recurrenceRule.getInterval() != null) {
-            recurrence.setInterval(recurrenceRule.getInterval());
+        if (group.groups != null) {
+            for (LogicGroup<AttributePredicate> childGroup : group.groups) {
+                matches = calendarEventPredicateMatches(childGroup, asset);
+
+                if (isOr && matches) {
+                    break;
+                }
+                if (!isOr && !matches) {
+                    break;
+                }
+            }
         }
 
-        RRule rRule = new RRule(recurrence);
-        VEvent vEvent = new VEvent(new DateTime(calendarEvent.getStart()),
-            new DateTime(calendarEvent.getEnd()), "");
-        vEvent.getProperties().add(rRule);
-        Period period = new Period(new DateTime(when), new Dur(0, 0, 1, 0));
-        PeriodRule periodRule = new PeriodRule(period);
-        return periodRule.evaluate(vEvent);
+        return matches;
     }
 
     @Override
@@ -325,7 +354,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             throw new IllegalArgumentException("Query returned more than one asset");
         }
         return result.get(0);
-
     }
 
     public List<Asset> findAll(AssetQuery query) {
@@ -687,7 +715,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         if (query.orderBy == null && query.ids == null)
             query.orderBy = new OrderBy(OrderBy.Property.CREATED_ON);
 
-        PreparedAssetQuery querySql = buildQuery(query);
+        Pair<PreparedAssetQuery, Boolean> queryAndContainsCalendarPredicate = buildQuery(query);
+        PreparedAssetQuery querySql = queryAndContainsCalendarPredicate.key;
+        boolean containsCalendarPredicate = queryAndContainsCalendarPredicate.value;
+
+        if (containsCalendarPredicate && (query.select != null && (query.select.excludeAttributes || query.select.excludeAttributeValue || query.select.excludeAttributeType))) {
+            LOG.info("Asset query contains a calendar event predicate which requires the attribute values and types to be included in the select (as calendar event predicate is applied post DB query)");
+            throw new IllegalArgumentException("Asset query contains a calendar event predicate which requires the attribute values and types to be included in the select (as calendar event predicate is applied post DB query)");
+        }
 
         return em.unwrap(Session.class).doReturningWork(new AbstractReturningWork<List<Asset>>() {
             @Override
@@ -698,10 +733,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                     try (ResultSet rs = st.executeQuery()) {
                         List<Asset> result = new ArrayList<>();
-                        if (query.calendarEventActive != null) {
+                        if (containsCalendarPredicate) {
                             while (rs.next()) {
                                 Asset asset = mapResultTuple(query, rs);
-                                if (calendarEventPredicateMatches(query.calendarEventActive, asset)) {
+                                // Apply calendar event filter here (difficult to translate this into a SQL query)
+                                if (calendarEventPredicateMatches(query, asset)) {
                                     result.add(asset);
                                 }
                             }
@@ -717,30 +753,30 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         });
     }
 
-    protected PreparedAssetQuery buildQuery(AssetQuery query) {
+    protected Pair<PreparedAssetQuery, Boolean> buildQuery(AssetQuery query) {
         LOG.fine("Building: " + query);
         StringBuilder sb = new StringBuilder();
         boolean recursive = query.recursive;
         List<ParameterBinder> binders = new ArrayList<>();
         sb.append(buildSelectString(query, 1, binders));
         sb.append(buildFromString(query, 1));
-        sb.append(buildWhereClause(query, 1, binders));
+        boolean containsCalendarPredicate = appendWhereClause(sb, query, 1, binders);
 
         if (recursive) {
             sb.insert(0, "WITH RECURSIVE top_level_assets AS ((");
             sb.append(") UNION (");
             sb.append(buildSelectString(query, 2, binders));
             sb.append(buildFromString(query, 2));
-            sb.append(buildWhereClause(query, 2, binders));
+            containsCalendarPredicate = !containsCalendarPredicate && appendWhereClause(sb, query, 2, binders);
             sb.append("))");
             sb.append(buildSelectString(query, 3, binders));
             sb.append(buildFromString(query, 3));
-            sb.append(buildWhereClause(query, 3, binders));
+            containsCalendarPredicate = !containsCalendarPredicate && appendWhereClause(sb, query, 3, binders);
         }
 
         sb.append(buildOrderByString(query));
         sb.append(buildLimitString(query));
-        return new PreparedAssetQuery(sb.toString(), binders);
+        return new Pair<>(new PreparedAssetQuery(sb.toString(), binders), containsCalendarPredicate);
     }
 
     protected String buildSelectString(AssetQuery query, int level, List<ParameterBinder> binders) {
@@ -867,8 +903,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         if (query.access != PRIVATE) {
             // Filter non-private access attributes
-            AttributeMetaPredicate accessPredicate =
-                new AttributeMetaPredicate()
+            MetaPredicate accessPredicate =
+                new MetaPredicate()
                     .itemName(query.access == PROTECTED ? ACCESS_RESTRICTED_READ : MetaItemType.ACCESS_PUBLIC_READ)
                     .itemValue(new BooleanPredicate(true));
             sb.append(buildAttributeMetaFilter(binders, accessPredicate));
@@ -964,16 +1000,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return "";
     }
 
-    protected String buildWhereClause(AssetQuery query, int level, List<ParameterBinder> binders) {
+    protected boolean appendWhereClause(StringBuilder sb, AssetQuery query, int level, List<ParameterBinder> binders) {
         // level = 1 is main query
         // level = 2 is union
         // level = 3 is CTE
-        StringBuilder sb = new StringBuilder();
+        boolean containsCalendarPredicate = false;
         boolean recursive = query.recursive;
         sb.append(" where true");
 
         if (level == 2) {
-            return sb.toString();
+            return containsCalendarPredicate;
         }
 
         if (level == 1 && query.ids != null && query.ids.length > 0) {
@@ -1116,7 +1152,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             if (query.attributeMeta != null) {
-                for (AttributeMetaPredicate attributeMetaPredicate : query.attributeMeta) {
+                for (MetaPredicate attributeMetaPredicate : query.attributeMeta) {
                     String attributeMetaFilter = buildAttributeMetaFilter(binders, attributeMetaPredicate);
 
                     if (attributeMetaFilter.length() > 0) {
@@ -1136,7 +1172,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 sb.append(" jsonb_each(A.ATTRIBUTES) as AX1");
                 int offset = sb.length();
                 sb.append(" where true AND ");
-                addAttributePredicateGroupQuery(sb, binders, joinCounter, query.attributes);
+                containsCalendarPredicate = addAttributePredicateGroupQuery(sb, binders, joinCounter, query.attributes);
                 sb.append(")");
 
                 int counter = joinCounter.get();
@@ -1147,11 +1183,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             }
         }
-        return sb.toString();
+        return containsCalendarPredicate;
     }
 
-    protected void addAttributePredicateGroupQuery(StringBuilder sb, List<ParameterBinder> binders, AtomicInteger joinCounter, LogicGroup<AttributePredicate> attributePredicateGroup) {
+    protected boolean addAttributePredicateGroupQuery(StringBuilder sb, List<ParameterBinder> binders, AtomicInteger joinCounter, LogicGroup<AttributePredicate> attributePredicateGroup) {
 
+        boolean containsCalendarPredicate = false;
         LogicGroup.Operator operator = attributePredicateGroup.operator;
 
         if (operator == null) {
@@ -1175,13 +1212,22 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             for (List<AttributePredicate> group : grouped) {
                 for (AttributePredicate attributePredicate : group) {
+                    if (!containsCalendarPredicate && attributePredicate.value instanceof CalendarEventPredicate) {
+                        containsCalendarPredicate = true;
+                    }
                     if (!isFirst) {
                         sb.append(operator == LogicGroup.Operator.OR ? " or " : " and ");
                     }
                     isFirst = false;
 
                     sb.append("(");
-                    sb.append(buildAttributeFilter(attributePredicate, joinCounter.get(), binders));
+                    if (attributePredicate.notExists && attributePredicate.name != null && attributePredicate.name.value != null) {
+                        sb.append("NOT A.ATTRIBUTES ?? ?");
+                        final int pos = binders.size() + 1;
+                        binders.add(st -> st.setString(pos, attributePredicate.name.value));
+                    } else {
+                        sb.append(buildAttributeFilter(attributePredicate, joinCounter.get(), binders));
+                    }
                     sb.append(")");
                 }
                 joinCounter.incrementAndGet();
@@ -1191,10 +1237,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         if (attributePredicateGroup.groups != null && attributePredicateGroup.groups.size() > 0) {
             for (LogicGroup<AttributePredicate> group : attributePredicateGroup.groups) {
                 sb.append(operator == LogicGroup.Operator.OR ? " or " : " and ");
-                addAttributePredicateGroupQuery(sb, binders, joinCounter, group);
+                if (!containsCalendarPredicate && addAttributePredicateGroupQuery(sb, binders, joinCounter, group)) {
+                    containsCalendarPredicate = true;
+                }
             }
         }
         sb.append(")");
+
+        return containsCalendarPredicate;
     }
 
     protected boolean hasPathConstraint(PathPredicate[] pathPredicates) {
@@ -1205,7 +1255,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return Arrays.stream(pathPredicates).anyMatch(p -> p.path != null);
     }
 
-    protected String buildAttributeMetaFilter(List<ParameterBinder> binders, AttributeMetaPredicate...attributeMetaPredicates) {
+    protected String buildAttributeMetaFilter(List<ParameterBinder> binders, MetaPredicate...attributeMetaPredicates) {
         StringBuilder sb = new StringBuilder();
 
         if (attributeMetaPredicates == null || attributeMetaPredicates.length == 0) {
@@ -1215,7 +1265,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         sb.append(" AND (");
 
         boolean isFirst = true;
-        for (AttributeMetaPredicate attributeMetaPredicate : attributeMetaPredicates) {
+        for (MetaPredicate attributeMetaPredicate : attributeMetaPredicates) {
 
             if (!isFirst) {
                 sb.append(" OR (true");
@@ -1326,12 +1376,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 Pair<Long, Long> fromAndTo = AssetQueryPredicate.asFromAndTo(timerService.getCurrentTimeMillis(), dateTimePredicate);
 
                 final int pos = binders.size() + 1;
-                binders.add(st -> st.setObject(pos, new java.sql.Timestamp(fromAndTo.key).toLocalDateTime()));
+                binders.add(st -> st.setTimestamp(pos, new java.sql.Timestamp(fromAndTo.key)));
                 attributeBuilder.append(buildOperatorFilter(dateTimePredicate.operator, dateTimePredicate.negate));
 
                 if (dateTimePredicate.operator == Operator.BETWEEN) {
                     final int pos2 = binders.size() + 1;
-                    binders.add(st -> st.setObject(pos2, new java.sql.Timestamp(fromAndTo.value).toLocalDateTime()));
+                    binders.add(st -> st.setTimestamp(pos2, new java.sql.Timestamp(fromAndTo.value)));
                 }
             } else if (attributePredicate.value instanceof NumberPredicate) {
                 NumberPredicate numberPredicate = (NumberPredicate) attributePredicate.value;
@@ -1456,6 +1506,25 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 attributeBuilder.append("AX").append(joinCounter).append(".VALUE ->> 'value' IS NOT NULL");
             } else if (attributePredicate.value instanceof ValueEmptyPredicate) {
                 attributeBuilder.append("AX").append(joinCounter).append(".VALUE ->> 'value' IS NULL");
+            } else if (attributePredicate.value instanceof CalendarEventPredicate) {
+                final int pos = binders.size() + 1;
+                java.sql.Timestamp when = new java.sql.Timestamp(((CalendarEventPredicate)attributePredicate.value).timestamp.getTime());
+
+                // The recurrence logic is applied post DB query just check start key is present and in the past and also
+                // that the end key is numeric and in the future if no recurrence value
+                attributeBuilder.append("(jsonb_typeof(AX")
+                    .append(joinCounter)
+                    .append(".VALUE #> '{value, start}') = 'number' AND jsonb_typeof(AX")
+                    .append(joinCounter)
+                    .append(".VALUE #> '{value, end}') = 'number' AND to_timestamp((AX")
+                    .append(joinCounter)
+                    .append(".VALUE #>> '{value,start}')::float / 1000) <= ? AND (to_timestamp((AX")
+                    .append(joinCounter)
+                    .append(".VALUE #>> '{value,end}')::float / 1000) > ? OR jsonb_typeof(AX")
+                    .append(joinCounter)
+                    .append(".VALUE #> '{value,recurrence}') = 'object'))");
+                binders.add((st) -> st.setTimestamp(pos, when));
+                binders.add((st) -> st.setTimestamp(pos+1, when));
             } else {
                 throw new UnsupportedOperationException("Attribute value predicate is not supported: " + attributePredicate.value);
             }

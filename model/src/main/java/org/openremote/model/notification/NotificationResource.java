@@ -20,6 +20,7 @@
 package org.openremote.model.notification;
 
 import jsinterop.annotations.JsType;
+import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
 import org.openremote.model.value.Value;
@@ -45,7 +46,7 @@ public interface NotificationResource {
     @GET
     @SuccessStatusCode(200)
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({"read:admin"})
+    @RolesAllowed({Constants.READ_ADMIN_ROLE})
     @SuppressWarnings("unusable-by-js")
     SentNotification[] getNotifications(@BeanParam RequestParams requestParams,
                                         @QueryParam("id") Long id,
@@ -76,7 +77,7 @@ public interface NotificationResource {
      */
     @DELETE
     @SuccessStatusCode(204)
-    @RolesAllowed({"write:admin"})
+    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @SuppressWarnings("unusable-by-js")
     void removeNotifications(@BeanParam RequestParams requestParams,
                              @QueryParam("id") Long id,
@@ -105,7 +106,7 @@ public interface NotificationResource {
     @DELETE
     @Path("{notificationId}")
     @SuccessStatusCode(204)
-    @RolesAllowed({"write:admin"})
+    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @SuppressWarnings("unusable-by-js")
     void removeNotification(@BeanParam RequestParams requestParams,
                             @PathParam("notificationId") Long notificationId);

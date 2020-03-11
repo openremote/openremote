@@ -19,13 +19,17 @@
  */
 package org.openremote.model.syslog;
 
+import com.google.gwt.core.shared.GwtIncompatible;
 import jsinterop.annotations.JsType;
+import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
 
 import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
 import javax.ws.rs.*;
+import javax.ws.rs.core.Response;
+import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -36,14 +40,15 @@ public interface SyslogResource {
     @GET
     @Path("event")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({"read:admin"})
-    @SuppressWarnings("unusable-by-js")
-    SyslogEvent[] getEvents(@BeanParam RequestParams requestParams, @QueryParam("level") SyslogLevel level, @QueryParam("limit") Integer limit);
+    @RolesAllowed({Constants.READ_RULES_ROLE})
+    @SuppressWarnings({"unusable-by-js"})
+    @GwtIncompatible
+    Response getEvents(@BeanParam RequestParams requestParams, @QueryParam("level") SyslogLevel level, @QueryParam("per_page") Integer perPage, @QueryParam("page") Integer page, @QueryParam("from") Long from, @QueryParam("to") Long to, @QueryParam("category") List<SyslogCategory> categories, @QueryParam("subCategory") List<String> subCategories);
 
     @DELETE
     @Path("event")
     @SuccessStatusCode(204)
-    @RolesAllowed({"write:admin"})
+    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @SuppressWarnings("unusable-by-js")
     void clearEvents(@BeanParam RequestParams requestParams);
 
@@ -51,7 +56,7 @@ public interface SyslogResource {
     @Path("config")
     @SuccessStatusCode(200)
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({"read:admin"})
+    @RolesAllowed({Constants.READ_ADMIN_ROLE})
     @SuppressWarnings("unusable-by-js")
     SyslogConfig getConfig(@BeanParam RequestParams requestParams);
 
@@ -59,8 +64,7 @@ public interface SyslogResource {
     @Path("config")
     @SuccessStatusCode(204)
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({"write:admin"})
+    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @SuppressWarnings("unusable-by-js")
     void updateConfig(@BeanParam RequestParams requestParams, @Valid SyslogConfig config);
-
 }

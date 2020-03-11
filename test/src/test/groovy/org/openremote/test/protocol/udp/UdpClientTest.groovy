@@ -19,11 +19,14 @@
  */
 package org.openremote.test.protocol.udp
 
-import io.netty.buffer.ByteBuf
+import io.netty.channel.ChannelHandler
+import io.netty.handler.codec.string.StringDecoder
+import io.netty.handler.codec.string.StringEncoder
 import io.netty.util.CharsetUtil
 import io.netty.util.internal.SocketUtils
 import org.openremote.agent.protocol.ProtocolExecutorService
-import org.openremote.agent.protocol.udp.AbstractUdpClient
+import org.openremote.agent.protocol.io.AbstractNettyIoClient
+import org.openremote.agent.protocol.udp.UdpIoClient
 import org.openremote.agent.protocol.udp.UdpStringServer
 import org.openremote.manager.concurrent.ManagerExecutorService
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -34,7 +37,7 @@ import spock.util.concurrent.PollingConditions
 import java.util.function.Consumer
 
 /**
- * This tests the {@link AbstractUdpClient} by creating a simple echo server that the client communicates with
+ * This tests the {@link UdpIoClient} by creating a simple echo server that the client communicates with
  */
 class UdpClientTest extends Specification implements ManagerContainerTrait {
 
@@ -63,25 +66,18 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
         })
         
         and: "a simple UDP broadcast client"
-        def client = new AbstractUdpClient<String>(
+        UdpIoClient<String> client = new UdpIoClient<String>(
                 "255.255.255.255",
                 echoServerPort,
                 clientPort,
-                protocolExecutorService) {
-
-            @Override
-            protected void decode(ByteBuf buf, List<String> messages) {
-                ByteBuf bytes = buf.readBytes(buf.readableBytes())
-                String msg = bytes.toString(CharsetUtil.UTF_8)
-                bytes.release()
-                messages.add(msg)
-            }
-
-            @Override
-            protected void encode(String message, ByteBuf buf) {
-                buf.writeBytes(message.getBytes(CharsetUtil.UTF_8))
-            }
-        }
+                protocolExecutorService)
+        client.setEncoderDecoderProvider({
+            [
+                new StringEncoder(CharsetUtil.UTF_8),
+                new StringDecoder(CharsetUtil.UTF_8),
+                new AbstractNettyIoClient.MessageToMessageDecoder<String>(String.class, client)
+            ].toArray(new ChannelHandler[0])
+        })
 
         and: "we add callback consumers to the client"
         def connectionStatus = client.getConnectionStatus()

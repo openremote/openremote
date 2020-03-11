@@ -20,12 +20,9 @@
 package org.openremote.model.rules;
 
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetType;
-import org.openremote.model.query.AssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
-import org.openremote.model.query.LogicGroup;
-import org.openremote.model.query.filter.*;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.value.Value;
 
 import java.util.stream.Stream;

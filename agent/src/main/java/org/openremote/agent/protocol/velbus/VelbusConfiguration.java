@@ -32,6 +32,7 @@ import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public final class VelbusConfiguration {
+
     private VelbusConfiguration() {}
 
     public static int getTimeInjectionIntervalSeconds(AssetAttribute protocolConfiguration) {

@@ -85,7 +85,7 @@ import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY
  * {@link Attribute}s that are linked to this protocol using an {@link MetaItemType#AGENT_LINK} {@link MetaItem} support
  * the following meta items: <ul> <li>{@link #META_ATTRIBUTE_PATH} (<b>if not supplied then base URI is used</b>)</li>
  * <li>{@link #META_ATTRIBUTE_METHOD}</li> <li>{@link Protocol#META_ATTRIBUTE_WRITE_VALUE} (used as the body of the
- * request for writes)</li> <li>{@link #META_POLLING_MILLIS} (<b>required if attribute value should be set by
+ * request for writes)</li> <li>{@link #META_ATTRIBUTE_POLLING_MILLIS} (<b>required if attribute value should be set by
  * the response received from this endpoint</b>)</li> <li>{@link #META_QUERY_PARAMETERS}</li>
  * <li>{@link #META_FAILURE_CODES}</li>
  * <li>{@link #META_HEADERS}</li>
@@ -95,7 +95,7 @@ import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY
  * <h1>Response filtering</h1>
  * <p>
  * Any {@link Attribute} whose value is to be set by the HTTP server response (i.e. it has an {@link
- * #META_POLLING_MILLIS} {@link MetaItem}) can use the standard {@link Protocol#META_ATTRIBUTE_VALUE_FILTERS} in
+ * #META_ATTRIBUTE_POLLING_MILLIS} {@link MetaItem}) can use the standard {@link Protocol#META_ATTRIBUTE_VALUE_FILTERS} in
  * order to filter the received HTTP response.
  * <p>
  * <h1>Connection Status</h1>
@@ -164,14 +164,12 @@ public class HttpClientProtocol extends AbstractProtocol {
         public String method;
         public MultivaluedMap<String, String> headers;
         public MultivaluedMap<String, String> queryParameters;
-        public String body;
         protected String path;
         protected List<Integer> failureCodes;
         protected String contentType;
         protected WebTarget client;
         protected WebTarget requestTarget;
         protected boolean dynamicQueryParameters;
-        protected boolean dynamicBody;
         protected boolean updateConnectionStatus;
         protected boolean pagingEnabled;
 
@@ -183,7 +181,6 @@ public class HttpClientProtocol extends AbstractProtocol {
                                  List<Integer> failureCodes,
                                  boolean updateConnectionStatus,
                                  boolean pagingEnabled,
-                                 Value bodyValue,
                                  String contentType) {
 
             if (!TextUtil.isNullOrEmpty(path)) {
@@ -194,13 +191,13 @@ public class HttpClientProtocol extends AbstractProtocol {
 
             this.client = client;
             this.path = path;
-            this.method = method;
+            this.method = method != null ? method : HttpMethod.GET;
             this.headers = headers;
             this.queryParameters = queryParameters;
             this.failureCodes = failureCodes;
             this.updateConnectionStatus = updateConnectionStatus;
             this.pagingEnabled = pagingEnabled;
-            this.contentType = contentType;
+            this.contentType = contentType != null ? contentType : DEFAULT_CONTENT_TYPE;
             dynamicQueryParameters = queryParameters != null
                     && queryParameters
                     .entrySet()
@@ -210,18 +207,6 @@ public class HttpClientProtocol extends AbstractProtocol {
                                     && paramNameAndValues.getValue()
                                     .stream()
                                     .anyMatch(val -> val.contains(DYNAMIC_VALUE_PLACEHOLDER)));
-
-            if (bodyValue != null) {
-                if (contentType == null) {
-                    this.contentType = bodyValue.getType() == ValueType.OBJECT || bodyValue.getType() == ValueType.ARRAY
-                            ? MediaType.APPLICATION_JSON
-                            : DEFAULT_CONTENT_TYPE;
-                }
-                body = bodyValue.toString();
-            }
-
-            dynamicBody = !TextUtil.isNullOrEmpty(body)
-                    && body.contains(DYNAMIC_VALUE_PLACEHOLDER);
 
             boolean dynamicPath = !TextUtil.isNullOrEmpty(path) && path.contains(DYNAMIC_VALUE_PLACEHOLDER);
             if (!dynamicPath) {
@@ -237,53 +222,50 @@ public class HttpClientProtocol extends AbstractProtocol {
             }
 
             if (queryParameters != null) {
-                requestTarget.register(new QueryParameterInjectorFilter(queryParameters, dynamicQueryParameters ? DYNAMIC_VALUE_PLACEHOLDER_REGEXP : null));
+                requestTarget.register(new QueryParameterInjectorFilter(queryParameters, dynamicQueryParameters ? DYNAMIC_VALUE_PLACEHOLDER_REGEXP : null,
+                    DYNAMIC_TIME_PLACEHOLDER_REGEXP));
             }
 
             return requestTarget;
         }
 
-        protected Invocation.Builder getRequestBuilder(String dynamicRequestValue) {
+        protected Invocation.Builder getRequestBuilder(String value) {
             Invocation.Builder requestBuilder;
 
             if (requestTarget != null) {
                 requestBuilder = requestTarget.request();
             } else {
                 // This means that the path is dynamic
-                String path = this.path.replaceAll(DYNAMIC_VALUE_PLACEHOLDER_REGEXP, dynamicRequestValue);
+                String path = this.path.replaceAll(DYNAMIC_VALUE_PLACEHOLDER_REGEXP, value);
                 requestBuilder = createRequestTarget(path).request();
             }
 
             if (dynamicQueryParameters) {
-                requestBuilder.property(QueryParameterInjectorFilter.DYNAMIC_VALUE, dynamicRequestValue);
+                requestBuilder.property(QueryParameterInjectorFilter.DYNAMIC_VALUE, value);
             }
 
             return requestBuilder;
         }
 
-        protected Invocation buildInvocation(Invocation.Builder requestBuilder, String dynamicRequestValue) {
+        protected Invocation buildInvocation(Invocation.Builder requestBuilder, String value) {
             Invocation invocation;
 
-            if (body == null) {
-                invocation = requestBuilder.build(method);
-            } else {
-                String body = this.body;
+            if (dynamicQueryParameters) {
+                requestBuilder.property(QueryParameterInjectorFilter.DYNAMIC_VALUE, value);
+            }
 
-                if (dynamicBody) {
-                    body = body.replaceAll(DYNAMIC_VALUE_PLACEHOLDER_REGEXP, dynamicRequestValue);
-                }
-                if (dynamicQueryParameters) {
-                    requestBuilder.property(QueryParameterInjectorFilter.DYNAMIC_VALUE, dynamicRequestValue);
-                }
-                invocation = requestBuilder.build(method, Entity.entity(body, contentType));
+            if (method != null && !HttpMethod.GET.equals(method) && value != null) {
+                invocation = requestBuilder.build(method, Entity.entity(value, contentType));
+            } else {
+                invocation = requestBuilder.build(method);
             }
 
             return invocation;
         }
 
-        public Response invoke(String dynamicRequestValue) {
-            Invocation.Builder requestBuilder = getRequestBuilder(dynamicRequestValue);
-            Invocation invocation = buildInvocation(requestBuilder, dynamicRequestValue);
+        public Response invoke(String value) {
+            Invocation.Builder requestBuilder = getRequestBuilder(value);
+            Invocation invocation = buildInvocation(requestBuilder, value);
             return invocation.invoke();
         }
 
@@ -346,7 +328,7 @@ public class HttpClientProtocol extends AbstractProtocol {
     public static final String DEFAULT_HTTP_METHOD = HttpMethod.GET;
     public static final String DEFAULT_CONTENT_TYPE = MediaType.TEXT_PLAIN;
     protected static final String HEADER_LINK = "Link";
-    protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, HttpClientProtocol.class.getName());
+    protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, HttpClientProtocol.class);
     protected static int MIN_POLLING_MILLIS = 1000;
     protected static int MIN_PING_MILLIS = 10000;
 
@@ -459,12 +441,8 @@ public class HttpClientProtocol extends AbstractProtocol {
             HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE, HttpMethod.OPTIONS);
 
     /**
-     * Used to indicate the type of data sent in the body, a default will be used if not supplied; default is determined
-     * as follows:
-     * <ul>
-     * <li>{@link Protocol#META_ATTRIBUTE_WRITE_VALUE} value type = {@link ObjectValue} or {@link ArrayValue}: {@link MediaType#APPLICATION_JSON}</li>
-     * <li>{@link Protocol#META_ATTRIBUTE_WRITE_VALUE} value type = any other value type: {@value #DEFAULT_CONTENT_TYPE}</li>
-     * </ul>
+     * Used to indicate the type of data sent in the body, a default of {@link #DEFAULT_CONTENT_TYPE} will be used if
+     * not supplied
      */
     public static final MetaItemDescriptor META_ATTRIBUTE_CONTENT_TYPE = metaItemString(
             PROTOCOL_NAME + ":contentType",
@@ -536,6 +514,16 @@ public class HttpClientProtocol extends AbstractProtocol {
             false,
             null);
 
+    /**
+     * Set default read timeout for the request. Useful for requests which need more time completing.
+     */
+    public static final MetaItemDescriptor META_READ_TIMEOUT_MILLISECONDS = metaItemInteger(
+        PROTOCOL_NAME + ":readTimeout",
+        ACCESS_PRIVATE,
+        false,
+        (int) WebTargetBuilder.CONNECTION_TIMEOUT_MILLISECONDS,
+        null);
+
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
             META_ATTRIBUTE_PATH,
             META_ATTRIBUTE_METHOD,
@@ -543,10 +531,11 @@ public class HttpClientProtocol extends AbstractProtocol {
             META_ATTRIBUTE_CONTENT_TYPE,
             META_ATTRIBUTE_POLLING_ATTRIBUTE,
             META_HEADERS,
-            META_POLLING_MILLIS,
+            META_ATTRIBUTE_POLLING_MILLIS,
             META_QUERY_PARAMETERS,
             META_FAILURE_CODES,
-            META_PAGING_ENABLED);
+            META_PAGING_ENABLED,
+            META_READ_TIMEOUT_MILLISECONDS);
 
     public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
             META_PROTOCOL_BASE_URI,
@@ -564,7 +553,8 @@ public class HttpClientProtocol extends AbstractProtocol {
             META_QUERY_PARAMETERS,
             META_HEADERS,
             META_FAILURE_CODES,
-            META_PAGING_ENABLED);
+            META_PAGING_ENABLED,
+            META_READ_TIMEOUT_MILLISECONDS);
 
     protected final Map<AttributeRef, Pair<ResteasyWebTarget, List<Integer>>> clientMap = new HashMap<>();
     protected final Map<AttributeRef, HttpClientRequest> requestMap = new HashMap<>();
@@ -667,11 +657,6 @@ public class HttpClientProtocol extends AbstractProtocol {
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
-        if (!protocolConfiguration.isEnabled()) {
-            updateStatus(protocolRef, ConnectionStatus.DISABLED);
-            return;
-        }
-
         String baseUri = protocolConfiguration.getMetaItem(META_PROTOCOL_BASE_URI)
                 .flatMap(AbstractValueHolder::getValueAsString).orElseThrow(() ->
                         new IllegalArgumentException("Missing or invalid require meta item: " + META_PROTOCOL_BASE_URI));
@@ -734,7 +719,21 @@ public class HttpClientProtocol extends AbstractProtocol {
                 .flatMap(Values::getString)
                 .orElse(null);
 
-        WebTargetBuilder webTargetBuilder = new WebTargetBuilder(client, uri);
+        Double readTimeout = Values.getMetaItemValueOrThrow(
+            protocolConfiguration,
+            META_READ_TIMEOUT_MILLISECONDS,
+            false,
+            true)
+            .flatMap(Values::getNumber)
+            .orElse(null);
+
+        WebTargetBuilder webTargetBuilder;
+        if (readTimeout != null) {
+            webTargetBuilder = new WebTargetBuilder(WebTargetBuilder.createClient(executorService, WebTargetBuilder.CONNECTION_POOL_SIZE, readTimeout.longValue(), null), uri);
+        } else {
+            webTargetBuilder = new WebTargetBuilder(client, uri);
+        }
+
         if (oAuthGrant.isPresent()) {
             LOG.info("Adding OAuth");
             webTargetBuilder.setOAuthAuthentication(oAuthGrant.get());
@@ -810,7 +809,6 @@ public class HttpClientProtocol extends AbstractProtocol {
                 null,
                 true,
                 false,
-                pingBody,
                 contentType);
 
         LOG.info("Creating ping polling request '" + pingRequest + "'");
@@ -820,6 +818,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                 null,
                 protocolRef,
                 pingRequest,
+                pingBody != null ? pingBody.toString() : null,
                 pingPollingMillis));
     }
 
@@ -859,11 +858,6 @@ public class HttpClientProtocol extends AbstractProtocol {
                 .flatMap(Values::getString)
                 .orElse(null);
 
-        Value body = attribute
-                .getMetaItem(META_ATTRIBUTE_WRITE_VALUE)
-                .flatMap(AbstractValueHolder::getValue)
-                .orElse(null);
-
         List<Integer> failureCodes = attribute.getMetaItem(META_FAILURE_CODES)
                 .flatMap(AbstractValueHolder::getValueAsArray)
                 .flatMap(arrayValue ->
@@ -895,7 +889,7 @@ public class HttpClientProtocol extends AbstractProtocol {
 
         Optional<Integer> pollingMillis = Values.getMetaItemValueOrThrow(
                 attribute,
-                META_POLLING_MILLIS,
+            META_ATTRIBUTE_POLLING_MILLIS,
                 false,
                 true)
                 .map(polling ->
@@ -936,30 +930,29 @@ public class HttpClientProtocol extends AbstractProtocol {
         }
 
         addHttpClientRequest(protocolConfiguration,
-                attributeRef,
+                attribute,
                 path,
                 method,
                 headers,
                 queryParams,
                 failureCodes,
                 pagingEnabled,
-                body,
                 contentType,
                 pollingMillis.orElse(null));
     }
 
     protected void addHttpClientRequest(AssetAttribute protocolConfiguration,
-                                        AttributeRef attributeRef,
+                                        AssetAttribute attribute,
                                         String path,
                                         String method,
                                         MultivaluedMap<String, String> headers,
                                         MultivaluedMap<String, String> queryParams,
                                         List<Integer> failureCodes,
                                         boolean pagingEnabled,
-                                        Value body,
                                         String contentType,
                                         Integer pollingMillis) {
 
+        AttributeRef attributeRef = attribute.getReferenceOrThrow();
         AttributeRef protocolConfigurationRef = protocolConfiguration.getReferenceOrThrow();
         Pair<ResteasyWebTarget, List<Integer>> clientAndFailureCodes = clientMap.get(protocolConfigurationRef);
         ResteasyWebTarget client = clientAndFailureCodes != null ? clientAndFailureCodes.key : null;
@@ -994,18 +987,23 @@ public class HttpClientProtocol extends AbstractProtocol {
                 failureCodes,
                 updateConnectionStatus,
                 pagingEnabled,
-                body,
                 contentType);
 
         LOG.fine("Creating HTTP request for attributeRef '" + clientRequest + "': " + attributeRef);
 
         requestMap.put(attributeRef, clientRequest);
 
-        Optional.ofNullable(pollingMillis).ifPresent(seconds -> pollingMap.put(attributeRef, schedulePollingRequest(
+        Optional.ofNullable(pollingMillis).ifPresent(seconds -> {
+            String body = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_WRITE_VALUE, false, true)
+                .map(Object::toString).orElse(null);
+
+            pollingMap.put(attributeRef, schedulePollingRequest(
                 attributeRef,
                 protocolConfigurationRef,
                 clientRequest,
-                seconds)));
+                body,
+                seconds));
+        });
     }
 
     @Override
@@ -1031,7 +1029,7 @@ public class HttpClientProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+    protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
         HttpClientRequest request = requestMap.get(event.getAttributeRef());
         Pair<ResteasyWebTarget, List<Integer>> clientAndFailureCodes = clientMap.get(protocolRef);
@@ -1041,7 +1039,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         if (request != null && clientAndFailureCodes != null) {
 
             executeAttributeWriteRequest(request,
-                    event.getValue().orElse(null),
+                    processedValue,
                     response ->
                             onAttributeWriteResponse(
                                     request,
@@ -1103,7 +1101,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         return result;
     }
 
-    protected HttpClientRequest buildClientRequest(WebTarget client, String path, String method, MultivaluedMap<String, String> headers, MultivaluedMap<String, String> queryParams, List<Integer> failureCodes, boolean updateConnectionStatus, boolean pagingEnabled, Value body, String contentType) {
+    protected HttpClientRequest buildClientRequest(WebTarget client, String path, String method, MultivaluedMap<String, String> headers, MultivaluedMap<String, String> queryParams, List<Integer> failureCodes, boolean updateConnectionStatus, boolean pagingEnabled, String contentType) {
         return new HttpClientRequest(
                 client,
                 path,
@@ -1113,33 +1111,37 @@ public class HttpClientProtocol extends AbstractProtocol {
                 failureCodes,
                 updateConnectionStatus,
                 pagingEnabled,
-                body,
                 contentType);
     }
 
     protected ScheduledFuture schedulePollingRequest(AttributeRef attributeRef,
                                                      AttributeRef protocolConfigurationRef,
                                                      HttpClientRequest clientRequest,
+                                                     String body,
                                                      int pollingMillis) {
 
         LOG.fine("Scheduling polling request '" + clientRequest + "' to execute every " + pollingMillis + " ms for attribute: " + attributeRef);
 
         return executorService.scheduleWithFixedDelay(() ->
-                executePollingRequest(clientRequest, response ->
+                executePollingRequest(clientRequest, body, response -> {
+                    try {
                         onPollingResponse(
-                                clientRequest,
-                                response,
-                                attributeRef,
-                                protocolConfigurationRef)
-                ), 0, pollingMillis, TimeUnit.MILLISECONDS);
+                            clientRequest,
+                            response,
+                            attributeRef,
+                            protocolConfigurationRef);
+                    } catch (Exception e) {
+                        LOG.log(Level.WARNING, getProtocolDisplayName() + " exception thrown whilst processing polling response [" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: " + clientRequest.requestTarget.getUriBuilder().build().toString());
+                    }
+                }), 0, pollingMillis, TimeUnit.MILLISECONDS);
     }
 
-    protected void executePollingRequest(HttpClientRequest clientRequest, Consumer<Response> responseConsumer) {
-        Response originalResponse = null, lastResponse;
+    protected void executePollingRequest(HttpClientRequest clientRequest, String body, Consumer<Response> responseConsumer) {
+        Response originalResponse, lastResponse;
         List<String> entities = new ArrayList<>();
 
         try {
-            originalResponse = clientRequest.invoke(null);
+            originalResponse = clientRequest.invoke(body);
             if (clientRequest.pagingEnabled) {
                 lastResponse = originalResponse;
                 entities.add(lastResponse.readEntity(String.class));
@@ -1148,20 +1150,17 @@ public class HttpClientProtocol extends AbstractProtocol {
                 }
                 originalResponse = PagingResponse.fromResponse(originalResponse).entity(entities).build();
             }
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Exception thrown whilst doing polling request", e);
-        }
 
-        responseConsumer.accept(originalResponse);
+            responseConsumer.accept(originalResponse);
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, getProtocolDisplayName() + " exception thrown whilst doing polling request [" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: " + clientRequest.requestTarget.getUriBuilder().build().toString());
+        }
     }
 
     protected Response executePagingRequest(HttpClientRequest clientRequest, Response response) {
-        Optional<String> linkHeader = Optional.ofNullable(response.getHeaderString(HEADER_LINK));
-        if (linkHeader.isPresent()) {
-            Optional<String> nextUrl = getLinkHeaderValue(linkHeader.get(), "next");
-            if (nextUrl.isPresent()) {
-                return clientRequest.client.register(new PaginationFilter(nextUrl.get())).request().build(clientRequest.method).invoke();
-            }
+        if (response.hasLink("next")) {
+            URI nextUrl = response.getLink("next").getUri();
+            return clientRequest.client.register(new PaginationFilter(nextUrl)).request().build(clientRequest.method).invoke();
         }
         return null;
     }
@@ -1303,16 +1302,5 @@ public class HttpClientProtocol extends AbstractProtocol {
                 protocolInfo.getProtocolConfiguration(),
                 protocolConfig -> protocolConfig.setDisabled(true)
         );
-    }
-
-    protected Optional<String> getLinkHeaderValue(String linkHeader, String rel) {
-        Optional<String> nextUrl = Optional.empty();
-        String[] parts = linkHeader.split(",");
-        Optional<String> relPart = Arrays.stream(parts).filter(p -> p.endsWith("rel=\"" + rel + "\"")).findFirst();
-        if (relPart.isPresent()) {
-            parts = relPart.get().split(";");
-            nextUrl = Optional.of(parts[0].replace("<", "").replace(">", "").trim());
-        }
-        return nextUrl;
     }
 }

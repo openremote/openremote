@@ -5,7 +5,7 @@ export const surveyResultStyle = html`
            :host {
                 width: 100%;
                 background-color: #FFFFFF;
-                --internal-or-survey-results-max-width: var(--or-survey-results-max-width, 0);
+                --internal-or-survey-results-max-width: var(--or-survey-results-max-width, none);
            }
            
            .flex {
@@ -42,7 +42,7 @@ export const surveyResultStyle = html`
             }
 
             .button-default.active {
-                background-color: var(--app-primary-color);
+                background-color: var(--or-survey-color-button, var(--app-primary-color))
             }
 
             .bar span {
@@ -167,7 +167,7 @@ export const surveyResultStyle = html`
                 position: relative;
                 margin-top: -16px;
                 line-height: 12px;
-                font-size: 12px;
+                font-size: 11px;
             }
 
             @keyframes draw {

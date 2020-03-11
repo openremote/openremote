@@ -13,6 +13,7 @@
     "object-literal-sort-keys": false,
     "ban-types": false,
     "array-type": false,
-    "object-literal-shorthand": false
+    "object-literal-shorthand": false,
+    "no-string-literal": false
   }
 }

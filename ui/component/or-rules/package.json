@@ -1,0 +1,41 @@
+{
+  "name": "@openremote/or-rules",
+  "version": "1.1.0",
+  "description": "OpenRemote rules related UI components",
+  "main": "dist/umd/index.bundle.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "echo \"No tests\" && exit 0",
+    "prepublishOnly": "npx tsc -b && npx webpack"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@openremote/core": "^1.1.0",
+    "@openremote/model": "^1.1.0",
+    "@openremote/or-asset-viewer": "^1.1.0",
+    "@openremote/or-attribute-input": "^1.1.0",
+    "@openremote/or-icon": "^1.1.0",
+    "@openremote/or-input": "^1.1.0",
+    "@openremote/or-mwc-components": "^1.1.0",
+    "@openremote/or-panel": "^1.1.0",
+    "@openremote/or-select": "^1.1.0",
+    "@openremote/or-translate": "^1.1.0",
+    "@openremote/rest": "^1.1.0",
+    "ace-builds": "^1.4.7",
+    "linqts": "^1.12.6",
+    "lit-element": "^2.2.1",
+    "moment": "^2.24.0",
+    "resize-observer": "^1.0.0",
+    "rrule": "^2.6.4",
+    "shortid": "^2.2.15"
+  },
+  "devDependencies": {
+    "@types/shortid": "^0.0.29",
+    "tslint": ">=5.11.0",
+    "typescript": ">=3.4.5",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.9"
+  }
+}

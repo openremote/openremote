@@ -22,7 +22,8 @@ package org.openremote.model.notification;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Collection;
+import java.util.Arrays;
+import java.util.List;
 
 public class Notification {
 
@@ -37,43 +38,38 @@ public class Notification {
     public enum TargetType {
         TENANT,
         USER,
-        ASSET
+        ASSET,
+        CUSTOM
     }
 
-    public static class Targets {
+    public static class Target {
 
         protected TargetType type;
-        protected String[] ids;
-
-        public Targets(TargetType type, Collection<String> ids) {
-            this(type, ids.toArray(new String[ids.size()]));
-        }
+        protected String id;
 
         @JsonCreator
-        public Targets(@JsonProperty("type") TargetType type, @JsonProperty("ids")String...ids) {
+        public Target(@JsonProperty("type") TargetType type, @JsonProperty("id")String id) {
             this.type = type;
-            this.ids = ids;
+            this.id = id;
         }
 
         public TargetType getType() {
             return type;
         }
 
-        public void setIds(String[] ids) {
-            this.ids = ids;
+        public void setId(String id) {
+            this.id = id;
         }
 
-        public String[] getIds() {
-            return ids;
+        public String getId() {
+            return id;
         }
-
-
 
         @Override
         public String toString() {
             return getClass().getSimpleName()+ "{" +
                 "type=" + type +
-                ", ids=" + (ids != null ? "[" + String.join(",", ids) + "]" : null)  +
+                ", id=" + id +
                 '}';
         }
     }
@@ -85,10 +81,10 @@ public class Notification {
     protected AbstractNotificationMessage message;
     protected RepeatFrequency repeatFrequency;
     protected String repeatInterval;
-    protected Targets targets;
+    protected List<Target> targets;
 
     @JsonCreator
-    public Notification(@JsonProperty("name") String name, @JsonProperty("message") AbstractNotificationMessage message, @JsonProperty("targets") Targets targets, @JsonProperty("repeatFrequency") RepeatFrequency repeatFrequency, @JsonProperty("repeatInterval") String repeatInterval) {
+    public Notification(@JsonProperty("name") String name, @JsonProperty("message") AbstractNotificationMessage message, @JsonProperty("targets") List<Target> targets, @JsonProperty("repeatFrequency") RepeatFrequency repeatFrequency, @JsonProperty("repeatInterval") String repeatInterval) {
         this.name = name;
         this.message = message;
         this.targets = targets;
@@ -114,11 +110,19 @@ public class Notification {
         return this;
     }
 
-    public Targets getTargets() {
+    public List<Target> getTargets() {
         return targets;
     }
 
-    public void setTargets(Targets targets) {
+    public void setTargets(Target...targets) {
+        if (targets == null || targets.length == 0) {
+            this.targets = null;
+        } else {
+            this.targets = Arrays.asList(targets);
+        }
+    }
+
+    public void setTargets(List<Target> targets) {
         this.targets = targets;
     }
 

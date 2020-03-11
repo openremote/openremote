@@ -23,6 +23,9 @@ import org.openremote.model.util.TextUtil;
 
 import javax.persistence.Column;
 import javax.persistence.MappedSuperclass;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import java.util.Date;
 import java.util.logging.Logger;
 
 /**
@@ -37,11 +40,12 @@ public abstract class Event {
 
     private static final Logger LOG = Logger.getLogger(Event.class.getName());
 
-    @Column(name = "TIMESTAMP", nullable = false)
-    public long timestamp;
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "TIMESTAMP", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    public Date timestamp;
 
     protected Event(long timestamp) {
-        this.timestamp = timestamp;
+        this.timestamp = new Date(timestamp);
     }
 
     protected Event() {
@@ -63,11 +67,11 @@ public abstract class Event {
     }
 
     public long getTimestamp() {
-        return timestamp;
+        return timestamp != null ? timestamp.getTime() : 0L;
     }
 
     public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
+        this.timestamp = new Date(timestamp);
     }
 
     @Override

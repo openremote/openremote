@@ -44,12 +44,13 @@ public enum SyslogCategory {
     ),
     RULES(
         "Rules",
-        false,
+        true,
         "RulesService",
         "RulesEngine",
         "RuleExecutionLogger",
         "Rules",
-        "RulesEngineStats"
+        "RulesEngineStats",
+        "RulesFired"
     ),
     PROTOCOL(
         "Protocol",

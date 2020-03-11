@@ -20,6 +20,7 @@
 package org.openremote.model.security;
 
 import jsinterop.annotations.JsType;
+import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
 import org.openremote.model.security.Tenant;
@@ -44,7 +45,7 @@ public interface TenantResource {
     @GET
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed("read:admin")
+    @RolesAllowed(Constants.READ_LOGS_ROLE)
     @SuppressWarnings("unusable-by-js")
     Tenant[] getAll(@BeanParam RequestParams requestParams);
 
@@ -63,7 +64,7 @@ public interface TenantResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
-    @RolesAllowed("write:admin")
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
     void update(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid Tenant tenant);
 
@@ -71,7 +72,7 @@ public interface TenantResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
-    @RolesAllowed("write:admin")
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
     void create(@BeanParam RequestParams requestParams, @Valid Tenant tenant);
 
@@ -79,7 +80,7 @@ public interface TenantResource {
     @Path("{realm}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
-    @RolesAllowed("write:admin")
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
     void delete(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 }

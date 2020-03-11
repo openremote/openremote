@@ -35,9 +35,7 @@ import org.openremote.app.client.admin.users.AdminUsersImpl;
 import org.openremote.app.client.admin.users.edit.AdminUserEdit;
 import org.openremote.app.client.admin.users.edit.AdminUserEditActivity;
 import org.openremote.app.client.admin.users.edit.AdminUserEditImpl;
-import org.openremote.model.notification.NotificationResource;
 import org.openremote.model.security.UserResource;
-import org.openremote.model.syslog.SyslogResource;
 
 public class AdminModule extends AbstractGinModule {
 
@@ -65,7 +63,7 @@ public class AdminModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public native SyslogResource getSyslogResource()  /*-{
+    public native AdminSyslogActivity.GwtSyslogResource getSyslogResource()  /*-{
         return $wnd.openremote.REST.SyslogResource;
     }-*/;
 

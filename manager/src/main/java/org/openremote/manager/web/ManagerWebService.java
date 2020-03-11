@@ -20,6 +20,7 @@
 package org.openremote.manager.web;
 
 import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RedirectHandler;
 import io.undertow.servlet.Servlets;
@@ -30,7 +31,6 @@ import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.jsapi.JSAPIServlet;
@@ -309,10 +309,11 @@ public class ManagerWebService extends WebService {
         return addServletDeployment(identityService, deploymentInfo, false);
     }
 
+    // TODO: Switch to use PathResourceManager
     public HttpHandler createFileHandler(boolean devMode, IdentityService identityService, Path filePath, String[] requiredRoles) {
         requiredRoles = requiredRoles == null ? new String[0] : requiredRoles;
         DeploymentInfo deploymentInfo = ManagerFileServlet.createDeploymentInfo(devMode, "", filePath, requiredRoles);
-        return addServletDeployment(identityService, deploymentInfo, requiredRoles.length != 0);
+        return new CanonicalPathHandler(addServletDeployment(identityService, deploymentInfo, requiredRoles.length != 0));
     }
 
     @Override

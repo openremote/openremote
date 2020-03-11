@@ -34,7 +34,8 @@ import org.openremote.model.value.ObjectValue;
     @JsonSubTypes.Type(value = ObjectValueKeyPredicate.class, name = ObjectValueKeyPredicate.name),
     @JsonSubTypes.Type(value = ArrayPredicate.class, name = ArrayPredicate.name),
     @JsonSubTypes.Type(value = ValueEmptyPredicate.class, name = ValueEmptyPredicate.name),
-    @JsonSubTypes.Type(value = ValueNotEmptyPredicate.class, name = ValueNotEmptyPredicate.name)
+    @JsonSubTypes.Type(value = ValueNotEmptyPredicate.class, name = ValueNotEmptyPredicate.name),
+    @JsonSubTypes.Type(value = CalendarEventPredicate.class, name = CalendarEventPredicate.name)
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,

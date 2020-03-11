@@ -157,10 +157,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                         throw new NotificationProcessingException(MISSING_MESSAGE, "Notification message must be set");
                     }
 
-                    if (notification.getTargets() == null || notification.getTargets().getType() == null || notification.getTargets().getIds() == null || notification.getTargets().getIds().length == 0 || Arrays.stream(notification.getTargets().getIds()).anyMatch(TextUtil::isNullOrEmpty)) {
-                        throw new NotificationProcessingException(MISSING_TARGETS, "Notification targets must be set");
-                    }
-
                     Notification.Source source = exchange.getIn().getHeader(HEADER_SOURCE, () -> null, Notification.Source.class);
 
                     if (source == null) {
@@ -180,7 +176,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     String realm = null;
                     String userId = null;
                     String assetId = null;
-                    AtomicReference<String> sourceId = new AtomicReference<>();
+                    AtomicReference<String> sourceId = new AtomicReference<>("");
                     boolean isSuperUser = false;
                     boolean isRestrictedUser = false;
 
@@ -226,94 +222,65 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     // Check access permissions
                     checkAccess(source, sourceId.get(), notification.getTargets(), realm, userId, isSuperUser, isRestrictedUser, assetId);
 
-                    // Map targets to handler compatible targets
-                    List<Notification.Targets> mappedTargetsList = Arrays.stream(notification.getTargets().getIds())
-                            .map(targetId -> {
-                                Notification.Targets mappedTargets = handler.mapTarget(source, sourceId.get(), notification.getTargets().getType(), targetId, notification.getMessage());
-                                if (mappedTargets == null || mappedTargets.getIds() == null || mappedTargets.getIds().length == 0) {
-                                    LOG.fine("Failed to map target using '" + handler.getClass().getSimpleName() + "' handler: "
-                                            + notification.getTargets().getType() + ":" + targetId);
-                                }
-                                return mappedTargets;
-                            })
-                            .filter(Objects::nonNull)
-                            .collect(Collectors.toList());
+                    // Get the list of notification targets
+                    List<Notification.Target> mappedTargetsList = handler.getTargets(source, sourceId.get(), notification.getTargets(), notification.getMessage());
 
-                    if (mappedTargetsList.isEmpty()) {
-                        // TODO: Should the entire notification send request fail if any mappings fail?
-                        throw new NotificationProcessingException(ERROR_TARGET_MAPPING, "No mapped targets");
+                    if (mappedTargetsList == null || mappedTargetsList.isEmpty()) {
+                        throw new NotificationProcessingException(MISSING_TARGETS, "Notification targets must be set");
                     }
 
                     // Filter targets based on repeat frequency
                     if (!TextUtil.isNullOrEmpty(notification.getName()) && (!TextUtil.isNullOrEmpty(notification.getRepeatInterval()) || notification.getRepeatFrequency() != null)) {
-                        mappedTargetsList.forEach(
-                                targets ->
-                                        targets.setIds(
-                                                Arrays.stream(targets.getIds()).filter(
-                                                        targetId -> okToSendNotification(source,
-                                                                sourceId.get(),
-                                                                targets.getType(),
-                                                                targetId,
-                                                                notification))
-                                                        .toArray(String[]::new)
-                                        ));
+                        mappedTargetsList = mappedTargetsList.stream()
+                            .filter(target -> okToSendNotification(source, sourceId.get(), target, notification))
+                            .collect(Collectors.toList());
                     }
 
                     // Send message to each applicable target
                     mappedTargetsList.forEach(
-                            targets -> {
+                        target ->
+                            persistenceService.doTransaction(em -> {
 
-                                if (targets.getIds() != null && targets.getIds().length > 0) {
+                                // commit the notification first to get the ID
+                                SentNotification sentNotification = new SentNotification()
+                                    .setName(notification.getName())
+                                    .setType(notification.getMessage().getType())
+                                    .setSource(source)
+                                    .setSourceId(sourceId.get())
+                                    .setTarget(target.getType())
+                                    .setTargetId(target.getId())
+                                    .setMessage(notification.getMessage().toValue())
+                                    .setSentOn(Date.from(timerService.getNow()));
 
-                                    Arrays.stream(targets.getIds()).forEach(targetId ->
+                                sentNotification = em.merge(sentNotification);
+                                long id = sentNotification.getId();
 
-                                            persistenceService.doTransaction(em -> {
+                                try {
+                                    NotificationSendResult result = handler.sendMessage(
+                                        id,
+                                        source,
+                                        sourceId.get(),
+                                        target,
+                                        notification.getMessage());
 
-                                                // commit the notification first to get the ID
-                                                SentNotification sentNotification = new SentNotification()
-                                                        .setName(notification.getName())
-                                                        .setType(notification.getMessage().getType())
-                                                        .setSource(source)
-                                                        .setSourceId(sourceId.get())
-                                                        .setTarget(targets.getType())
-                                                        .setTargetId(targetId)
-                                                        .setSentOn(Date.from(timerService.getNow()));
-
-                                                sentNotification = em.merge(sentNotification);
-                                                long id = sentNotification.getId();
-
-                                                try {
-                                                    NotificationSendResult result = handler.sendMessage(
-                                                            id,
-                                                            source,
-                                                            sourceId.get(),
-                                                            targets.getType(),
-                                                            targetId,
-                                                            notification.getMessage());
-
-                                                    if (result.isSuccess()) {
-                                                        LOG.info("Notification sent '" + id + "': " + targets.getType() + ":" + targetId);
-                                                    } else {
-                                                        LOG.warning("Notification failed '" + id + "': " + targets.getType() + ":" + targetId + ", reason=" + result.getMessage());
-                                                        sentNotification.setError(TextUtil.isNullOrEmpty(result.getMessage()) ? "Unknown error" : result.getMessage());
-                                                    }
-                                                    // Merge the sent notification again with the message included just in case the handler modified the message
-                                                    sentNotification.setMessage(notification.getMessage().toValue());
-                                                    em.merge(sentNotification);
-                                                } catch (Exception e) {
-                                                    LOG.log(Level.SEVERE,
-                                                            "Notification handler threw an exception whilst sending notification '" + id + "'",
-                                                            e);
-                                                    sentNotification.setError(TextUtil.isNullOrEmpty(e.getMessage()) ? "Unknown error" : e.getMessage());
-                                                    em.merge(sentNotification);
-                                                    throw e;
-                                                }
-                                            })
-                                    );
-                                } else {
-                                    LOG.info("Notification target contains no target IDs so ignoring");
+                                    if (result.isSuccess()) {
+                                        LOG.info("Notification sent '" + id + "': " + target);
+                                    } else {
+                                        LOG.warning("Notification failed '" + id + "': " + target + ", reason=" + result.getMessage());
+                                        sentNotification.setError(TextUtil.isNullOrEmpty(result.getMessage()) ? "Unknown error" : result.getMessage());
+                                    }
+                                    // Merge the sent notification again with the message included just in case the handler modified the message
+                                    sentNotification.setMessage(notification.getMessage().toValue());
+                                    em.merge(sentNotification);
+                                } catch (Exception e) {
+                                    LOG.log(Level.SEVERE,
+                                        "Notification handler threw an exception whilst sending notification '" + id + "'",
+                                        e);
+                                    sentNotification.setError(TextUtil.isNullOrEmpty(e.getMessage()) ? "Unknown error" : e.getMessage());
+                                    em.merge(sentNotification);
                                 }
-                            });
+                            })
+                    );
                 })
                 .endDoTry()
                 .doCatch(NotificationProcessingException.class)
@@ -321,7 +288,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     }
 
     public void sendNotification(Notification notification) throws NotificationProcessingException {
-        sendNotification(notification, INTERNAL, null);
+        sendNotification(notification, INTERNAL, "");
     }
 
     public void sendNotification(Notification notification, Notification.Source source, String sourceId) throws NotificationProcessingException {
@@ -519,65 +486,72 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     }
 
     @SuppressWarnings("unchecked")
-    protected void checkAccess(Notification.Source source, String sourceId, Notification.Targets targets, String realm, String userId, boolean isSuperUser, boolean isRestrictedUser, String assetId) throws NotificationProcessingException {
+    protected void checkAccess(Notification.Source source, String sourceId, List<Notification.Target> targets, String realm, String userId, boolean isSuperUser, boolean isRestrictedUser, String assetId) throws NotificationProcessingException {
 
         if (isSuperUser) {
             return;
         }
 
-        switch (targets.getType()) {
-
-            case TENANT:
-                if (source == CLIENT || source == ASSET_RULESET) {
-                    throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
-                }
-            case USER:
-                if (TextUtil.isNullOrEmpty(realm) || isRestrictedUser) {
-                    throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
-                }
-
-                // Requester must be in the same realm as all target users
-                boolean realmMatch = false;
-
-                if (targets.getType() == Notification.TargetType.USER) {
-                    realmMatch = Arrays.stream(identityService.getIdentityProvider().getUsers(Arrays.asList(targets.getIds())))
-                            .allMatch(user -> realm.equals(user.getRealm()));
-                } else {
-                    // Can only send to the same realm as the requestor realm
-                    realmMatch = targets.getIds().length == 1 && realm.equals(targets.getIds()[0]);
-                }
-
-                if (!realmMatch) {
-                    throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be in the same realm as the requestor");
-                }
-                break;
-
-            case ASSET:
-                if (TextUtil.isNullOrEmpty(realm)) {
-                    throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
-                }
-
-                // If requestor is restricted user check all target assets are linked to that user
-                if (isRestrictedUser && !assetStorageService.isUserAssets(userId, Arrays.asList(targets.getIds()))) {
-                    throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be linked to the requesting restricted user");
-                }
-
-                // Target assets must be in the same realm as requestor
-                if (!assetStorageService.isRealmAssets(realm, Arrays.asList(targets.getIds()))) {
-                    throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be in the same realm as the requestor");
-                }
-
-                // Target assets must be descendants of the requesting asset
-                if (!TextUtil.isNullOrEmpty(assetId)) {
-                    if (!assetStorageService.isDescendantAssets(assetId, Arrays.asList(targets.getIds()))) {
-                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be descendants of the requesting asset");
-                    }
-                }
-                break;
+        if (targets == null || targets.isEmpty()) {
+            return;
         }
+
+        targets.forEach(target -> {
+
+            switch (target.getType()) {
+
+                case TENANT:
+                    if (source == CLIENT || source == ASSET_RULESET) {
+                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
+                    }
+                case USER:
+                    if (TextUtil.isNullOrEmpty(realm) || isRestrictedUser) {
+                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
+                    }
+
+                    // Requester must be in the same realm as all target users
+                    boolean realmMatch = false;
+
+                    if (target.getType() == Notification.TargetType.USER) {
+                        realmMatch = Arrays.stream(identityService.getIdentityProvider().getUsers(Collections.singletonList(target.getId())))
+                                .allMatch(user -> realm.equals(user.getRealm()));
+                    } else {
+                        // Can only send to the same realm as the requestor realm
+                        realmMatch = realm.equals(target.getId());
+                    }
+
+                    if (!realmMatch) {
+                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be in the same realm as the requestor");
+                    }
+                    break;
+
+                case ASSET:
+                    if (TextUtil.isNullOrEmpty(realm)) {
+                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
+                    }
+
+                    // If requestor is restricted user check all target assets are linked to that user
+                    if (isRestrictedUser && !assetStorageService.isUserAssets(userId, Collections.singletonList(target.getId()))) {
+                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be linked to the requesting restricted user");
+                    }
+
+                    // Target assets must be in the same realm as requester
+                    if (!assetStorageService.isRealmAssets(realm, Collections.singletonList(target.getId()))) {
+                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be in the same realm as the requestor");
+                    }
+
+                    // Target assets must be descendants of the requesting asset
+                    if (!TextUtil.isNullOrEmpty(assetId)) {
+                        if (!assetStorageService.isDescendantAssets(assetId, Collections.singletonList(target.getId()))) {
+                            throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be descendants of the requesting asset");
+                        }
+                    }
+                    break;
+            }
+        });
     }
 
-    protected boolean okToSendNotification(Notification.Source source, String sourceId, Notification.TargetType target, String targetId, Notification notification) {
+    protected boolean okToSendNotification(Notification.Source source, String sourceId, Notification.Target target, Notification notification) {
 
         if (notification.getRepeatFrequency() == RepeatFrequency.ALWAYS) {
             return true;
@@ -587,8 +561,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                 "SELECT n.sentOn FROM SentNotification n WHERE n.source =:source AND n.sourceId =:sourceId AND n.target =:target AND n.targetId =:targetId AND n.name =:name ORDER BY n.sentOn DESC", Date.class)
                 .setParameter("source", source)
                 .setParameter("sourceId", sourceId)
-                .setParameter("target", target)
-                .setParameter("targetId", targetId)
+                .setParameter("target", target.getType())
+                .setParameter("targetId", target.getId())
                 .setParameter("name", notification.getName())
                 .setMaxResults(1)
                 .getResultList()).stream().findFirst().orElse(null);

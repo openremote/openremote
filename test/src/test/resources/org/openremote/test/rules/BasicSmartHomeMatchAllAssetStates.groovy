@@ -12,7 +12,7 @@ rules.add()
         .when(
         { facts ->
             !facts.matchFirst("Living Room All").isPresent() &&
-                    facts.matchFirstAssetState(new AssetQuery().names("Living Room")).isPresent()
+                    facts.matchFirstAssetState(new AssetQuery().names("Living Room 1")).isPresent()
         })
         .then(
         { facts ->
@@ -24,7 +24,7 @@ rules.add()
         .when(
         { facts ->
             !facts.matchFirst("Kitchen All").isPresent() &&
-                    facts.matchFirstAssetState(new AssetQuery().names("Kitchen")).isPresent()
+                    facts.matchFirstAssetState(new AssetQuery().names("Kitchen 1")).isPresent()
         })
         .then(
         { facts ->
@@ -36,7 +36,7 @@ rules.add()
         .when(
         { facts ->
             !facts.matchFirst("Kitchen Number Attributes").isPresent() &&
-                    facts.matchAssetState(new AssetQuery().names("Kitchen"))
+                    facts.matchAssetState(new AssetQuery().names("Kitchen 1"))
                             .filter({ assetState -> assetState.attributeValueType == AttributeValueType.NUMBER })
                             .findFirst().isPresent()
         })

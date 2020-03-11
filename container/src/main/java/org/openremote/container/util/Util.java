@@ -9,9 +9,7 @@ import javax.validation.constraints.NotNull;
 import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -165,5 +163,27 @@ public class Util {
     public static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
         Set<Object> seen = ConcurrentHashMap.newKeySet();
         return t -> seen.add(keyExtractor.apply(t));
+    }
+
+    @SafeVarargs
+    public static <T> List<T> joinCollections(Collection<T>...collections) {
+        if (collections == null || collections.length == 0) {
+            return Collections.emptyList();
+        }
+
+        List<T> newCollection = null;
+
+        for (Collection<T> collection : collections) {
+            if (collection == null) {
+                continue;
+            }
+
+            if (newCollection == null) {
+                newCollection = new ArrayList<>(collection);
+            } else {
+                newCollection.addAll(collection);
+            }
+        }
+        return newCollection;
     }
 }

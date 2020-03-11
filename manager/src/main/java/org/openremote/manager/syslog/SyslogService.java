@@ -22,23 +22,29 @@ package org.openremote.manager.syslog;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.syslog.SyslogConfig;
+import org.openremote.model.Constants;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogConfig;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.syslog.SyslogLevel;
+import org.openremote.model.util.Pair;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+
+import static org.openremote.model.syslog.SyslogConfig.DEFAULT_LIMIT;
 
 /**
  * Act as a JUL handler, publishes (some) log messages on the client event bus, stores
@@ -78,7 +84,7 @@ public class SyslogService extends Handler implements ContainerService {
         if (clientEventService != null) {
             clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
                 // Only superuser can get logging events
-                return subscription.isEventType(SyslogEvent.class) && auth.isSuperUser();
+                return subscription.isEventType(SyslogEvent.class) && auth.hasResourceRole(Constants.READ_RULES_ROLE, Constants.KEYCLOAK_CLIENT_ID);
             });
         }
 
@@ -112,7 +118,7 @@ public class SyslogService extends Handler implements ContainerService {
                 persistenceService.doTransaction(em -> {
                     em.createQuery(
                         "delete from SyslogEvent e " +
-                            "where to_timestamp(e.timestamp/1000) < now() - make_interval(0, 0, 0, 0, 0, :minutes, 0)"
+                            "where e.timestamp < now() - make_interval(0, 0, 0, 0, 0, :minutes, 0)"
                     ).setParameter("minutes", maxAgeMinutes).executeUpdate();
                 });
             }, 60 * 1000, 60 * 1000);
@@ -143,9 +149,17 @@ public class SyslogService extends Handler implements ContainerService {
     public void publish(LogRecord record) {
         SyslogEvent syslogEvent = SyslogCategory.mapSyslogEvent(record);
         if (syslogEvent != null) {
-            store(syslogEvent);
-            if (clientEventService != null)
-                clientEventService.publishEvent(syslogEvent);
+            try {
+                store(syslogEvent);
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Failed to store syslog event", e);
+            }
+            try {
+                if (clientEventService != null)
+                    clientEventService.publishEvent(syslogEvent);
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Failed to send syslog event to subscribed clients", e);
+            }
         }
     }
 
@@ -170,17 +184,74 @@ public class SyslogService extends Handler implements ContainerService {
         }
     }
 
-    public List<SyslogEvent> getLastStoredEvents(SyslogLevel level, final int limit) {
+    public Pair<Long, List<SyslogEvent>> getEvents(SyslogLevel level, int perPage, int page, Instant from, Instant to, List<SyslogCategory> categories, List<String> subCategories) {
         if (persistenceService == null)
-            return new ArrayList<>();
-        return persistenceService.doReturningTransaction(em -> {
-            List<SyslogEvent> list = em.createQuery(
-                "select e from SyslogEvent e where e.level >= :level order by e.timestamp desc",
-                SyslogEvent.class
-            ).setParameter("level", level).setMaxResults(limit).getResultList();
-            Collections.reverse(list);
-            return list;
+            return null;
+
+        if (to == null) {
+            to = Instant.now();
+        }
+        if (from == null) {
+            from = to.minus(1, ChronoUnit.HOURS);
+        }
+
+        Date fromDate = Date.from(from);
+        Date toDate = Date.from(to);
+        AtomicLong count = new AtomicLong();
+
+        List<SyslogEvent> events = persistenceService.doReturningTransaction(em -> {
+            StringBuilder sb = new StringBuilder("from SyslogEvent e where e.timestamp >= :from and e.timestamp <= :to");
+            if (level != null) {
+                sb.append(" and e.level >= :level");
+            }
+            if (categories != null && !categories.isEmpty()) {
+                sb.append(" and e.category in :categories");
+            }
+            if (subCategories != null && !subCategories.isEmpty()) {
+                sb.append(" and e.subCategory in :subCategories");
+            }
+
+            TypedQuery<Long> countQuery = em.createQuery("select count(e.id) " + sb.toString(), Long.class);
+            countQuery.setParameter("from", fromDate);
+            countQuery.setParameter("to", toDate);
+            if (level != null) {
+                countQuery.setParameter("level", level);
+            }
+            if (categories != null && !categories.isEmpty()) {
+                countQuery.setParameter("categories", categories);
+            }
+            if (subCategories != null && !subCategories.isEmpty()) {
+                countQuery.setParameter("subCategories", subCategories);
+            }
+            count.set(countQuery.getSingleResult());
+
+            if (count.get() == 0L) {
+                return Collections.emptyList();
+            }
+
+            sb.append(" order by e.timestamp desc");
+            TypedQuery<SyslogEvent> query = em.createQuery("select e " + sb.toString(), SyslogEvent.class);
+
+            query.setParameter("from", fromDate);
+            query.setParameter("to", toDate);
+            if (level != null) {
+                query.setParameter("level", level);
+            }
+            if (categories != null && !categories.isEmpty()) {
+                query.setParameter("categories", categories);
+            }
+            if (subCategories != null && !subCategories.isEmpty()) {
+                query.setParameter("subCategories", subCategories);
+            }
+
+            query.setMaxResults(perPage);
+            if (page > 1) {
+                query.setFirstResult(((page-1) * perPage) + 1);
+            }
+            return query.getResultList();
         });
+
+        return new Pair<>(count.get(), events);
     }
 
     protected void store(SyslogEvent syslogEvent) {
@@ -210,18 +281,23 @@ public class SyslogService extends Handler implements ContainerService {
             if (transientEvents.size() == 0)
                 return;
             LOG.fine("Flushing syslog batch: " + transientEvents.size());
-            persistenceService.doTransaction(em -> {
-                try {
-                    for (SyslogEvent e : transientEvents) {
-                        em.persist(e);
+            try {
+                persistenceService.doTransaction(em -> {
+                    try {
+                        for (SyslogEvent e : transientEvents) {
+                            em.persist(e);
+                        }
+                    } catch (RuntimeException ex) {
+                        // This is not a big problem, it may happen on shutdown of database connections during tests, just inform the user
+                        // TODO Or is it a serious problem and we need to escalate? In any case, just throwing the ex is not good
+                        LOG.info("Error flushing syslog to database, some events are lost: " + ex);
+                    } finally {
+                        em.flush();
                     }
-                    em.flush();
-                } catch (RuntimeException ex) {
-                    // This is not a big problem, it may happen on shutdown of database connections during tests, just inform the user
-                    // TODO Or is it a serious problem and we need to escalate? In any case, just throwing the ex is not good
-                    LOG.info("Error flushing syslog to database, some events are lost: " + ex);
-                }
-            });
+                });
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Exception occurred whilst flushing the syslog", e);
+            }
         }
     }
 

@@ -11,6 +11,7 @@ volumes:
 services:
 
   keycloak:
+    restart: always
     extends:
       file: deploy.yml
       service: keycloak
@@ -31,4 +32,4 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgresql-data:/data
+      - postgresql-data:/var/lib/postgresql/data

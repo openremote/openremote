@@ -11,6 +11,7 @@ import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RulesetStatus
+import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -30,23 +31,22 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Failure Ruleset", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureConditionInvalidReturn.groovy").text,
-                managerDemoSetup.apartment2Id,
-                false,
-                false
-        )
+            managerDemoSetup.apartment2Id,
+            "Failure Ruleset",
+            Ruleset.Lang.GROOVY,
+            getClass().getResource("/org/openremote/test/failure/RulesFailureConditionInvalidReturn.groovy").text)
         ruleset = rulesetStorageService.merge(ruleset)
 
         expect: "the rule engine should have an error (first firing after initial asset state insert)"
         conditions.eventually {
             apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
             assert apartment2Engine != null
-            assert apartment2Engine.deployments[ruleset.id].status == RulesetStatus.EXECUTION_ERROR
-            assert apartment2Engine.deployments[ruleset.id].error instanceof IllegalArgumentException
-            assert apartment2Engine.deployments[ruleset.id].error.message == "Error evaluating condition of rule 'The when condition is illegal, it's returning an Optional instead of a boolean': result is not boolean but Optional.empty"
             assert apartment2Engine.isError()
             assert apartment2Engine.getError() instanceof RuntimeException
             assert apartment2Engine.getError().message.startsWith("Ruleset deployments have errors, failed compilation: 0, failed execution: 1")
+            assert apartment2Engine.deployments[ruleset.id].status == RulesetStatus.EXECUTION_ERROR
+            assert apartment2Engine.deployments[ruleset.id].error instanceof IllegalArgumentException
+            assert apartment2Engine.deployments[ruleset.id].error.message == "Error evaluating condition of rule 'The when condition is illegal, it's returning an Optional instead of a boolean': result is not boolean but Optional.empty"
         }
 
         cleanup: "stop the container"
@@ -66,11 +66,10 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Failure Ruleset", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureConditionThrowsException.groovy").text,
-                managerDemoSetup.apartment2Id,
-                false,
-                false
-        )
+            managerDemoSetup.apartment2Id,
+            "Failure Ruleset",
+            Ruleset.Lang.GROOVY,
+            getClass().getResource("/org/openremote/test/failure/RulesFailureConditionThrowsException.groovy").text)
         ruleset = rulesetStorageService.merge(ruleset)
 
         expect: "the rule engine should have an error (first firing after initial asset state insert)"
@@ -102,11 +101,10 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Failure Ruleset", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureActionThrowsException.groovy").text,
-                managerDemoSetup.apartment2Id,
-                false,
-                false
-        )
+            managerDemoSetup.apartment2Id,
+            "Failure Ruleset",
+            Ruleset.Lang.GROOVY,
+            getClass().getResource("/org/openremote/test/failure/RulesFailureActionThrowsException.groovy").text)
         ruleset = rulesetStorageService.merge(ruleset)
 
         expect: "the rule engine should have an error (first firing after initial asset state insert)"
@@ -138,18 +136,18 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Failure Ruleset", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text,
-                managerDemoSetup.apartment2Id,
-                false,
-                true
-        )
+            managerDemoSetup.apartment2Id,
+            "Failure Ruleset",
+            Ruleset.Lang.GROOVY,
+            getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text)
+            .addMeta(Ruleset.META_KEY_CONTINUE_ON_ERROR, Values.create(true))
         ruleset = rulesetStorageService.merge(ruleset)
 
         expect: "the rule engine should have an error (first firing after initial asset state insert)"
         conditions.eventually {
             apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
             assert apartment2Engine != null
-            assert apartment2Engine.deployments[ruleset.id].status == RulesetStatus.EXECUTION_ERROR
+            assert apartment2Engine.deployments[ruleset.id].status == RulesetStatus.LOOP_ERROR
             assert apartment2Engine.deployments[ruleset.id].error instanceof RulesLoopException
             assert apartment2Engine.deployments[ruleset.id].error.message == "Possible rules loop detected, exceeded max trigger count of " + RulesFacts.MAX_RULES_TRIGGERED_PER_EXECUTION +  " for rule: Condition loops"
             assert apartment2Engine.isError()

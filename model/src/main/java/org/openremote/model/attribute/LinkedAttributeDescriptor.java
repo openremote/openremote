@@ -31,7 +31,7 @@ public class LinkedAttributeDescriptor {
     public LinkedAttributeDescriptor(
         String name,
         String displayName,
-        AttributeValueType attributeValueTypeDescriptor,
+        AttributeValueDescriptor attributeValueTypeDescriptor,
         boolean readOnly,
         boolean executable,
         MetaItem[] metaItems) {

@@ -380,7 +380,7 @@ export const surveyLayoutStyle =html`
                 color: #FFFFFF;
                 display: block;
                 text-align: center;
-                opacity: 0.67;
+                opacity: 0.87;
                 margin: 10px;
                 padding: 40px;
                 

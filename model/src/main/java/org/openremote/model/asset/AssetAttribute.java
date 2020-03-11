@@ -85,7 +85,7 @@ public class AssetAttribute extends Attribute {
         super(name, attributeDescriptor.getValueDescriptor(), value);
         if (value != null) {
             if (value.getType() != attributeDescriptor.getValueDescriptor().getValueType()) {
-                throw new IllegalArgumentException("Provided value type is not compatible with this attribute type");
+                throw new IllegalArgumentException("Provided value type is not compatible with this attribute type for: " + attributeDescriptor.getAttributeName());
             }
         }
         setValue(value, timestamp);
@@ -202,6 +202,13 @@ public class AssetAttribute extends Attribute {
     public AssetAttribute addMeta(MetaItemDescriptor... metaItemDescriptors) {
         if (metaItemDescriptors != null) {
             getMeta().addAll(Arrays.stream(metaItemDescriptors).map(MetaItem::new).collect(Collectors.toList()));
+        }
+        return this;
+    }
+
+    public AssetAttribute removeMeta(MetaItemDescriptor metaItemDescriptor) {
+        if (metaItemDescriptor != null) {
+            getMeta().removeIf(metaItem -> metaItem.getName().orElse("").equals(metaItemDescriptor.getUrn()));
         }
         return this;
     }
@@ -451,6 +458,14 @@ public class AssetAttribute extends Attribute {
         copy.name = name;
         copy.assetId = assetId;
         return copy;
+    }
+
+    public void setUnitType(String  unitType) {
+        if (!isNullOrEmpty(unitType)) {
+            replaceMetaByName(getMeta(), UNIT_TYPE, Values.create(unitType));
+        } else {
+            getMeta().removeIf(isMetaNameEqualTo(UNIT_TYPE));
+        }
     }
 
     @Override

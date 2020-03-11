@@ -102,7 +102,7 @@ public class EmailNotificationHandler implements NotificationHandler {
             try {
                 mailer.testConnection();
             } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Failed to connect to SMTP server so disabling email notifications");
+                LOG.log(Level.SEVERE, "Failed to connect to SMTP server so disabling email notifications", e);
                 mailer = null;
             }
         }
@@ -149,70 +149,110 @@ public class EmailNotificationHandler implements NotificationHandler {
     }
 
     @Override
-    public Notification.Targets mapTarget(Notification.Source source, String sourceId, Notification.TargetType targetType, String targetId, AbstractNotificationMessage message) {
-        switch (targetType) {
+    public List<Notification.Target> getTargets(Notification.Source source, String sourceId, List<Notification.Target> targets, AbstractNotificationMessage message) {
 
-            case TENANT:
-                // Find all users in this tenant
-                User[] users = managerIdentityService
-                        .getIdentityProvider()
-                        .getUsers(new UserQuery().tenant(new TenantPredicate(targetId)));
+        List<Notification.Target> mappedTargets = new ArrayList<>();
 
-                if (users.length == 0) {
-                    LOG.fine("No users found in target realm: " + targetId);
-                    return null;
-                }
+        if (targets != null) {
 
-                Arrays.stream(users).forEach(user -> {
-                    EmailNotificationMessage.Recipient recipient =
-                            new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail());
-                    userEmails.put(user.getId(), recipient);
-                });
+            targets.forEach(target -> {
+                Notification.TargetType targetType = target.getType();
+                String targetId = target.getId();
 
-                return new Notification.Targets(
-                        Notification.TargetType.USER,
-                        Arrays.stream(users).map(User::getId).collect(Collectors.toList()));
+                switch (targetType) {
 
-            case USER:
-                // Nothing to do here
-                return new Notification.Targets(targetType, targetId);
+                    case TENANT:
+                        // Find all users in this tenant
+                        User[] users = managerIdentityService
+                            .getIdentityProvider()
+                            .getUsers(new UserQuery().tenant(new TenantPredicate(targetId)));
 
-            case ASSET:
-                // Find descendant assets with email attribute
-                List<Asset> assets = assetStorageService.findAll(
-                        new AssetQuery()
+                        if (users.length == 0) {
+                            LOG.fine("No users found in target realm: " + targetId);
+                            return;
+                        }
+
+                        Arrays.stream(users).forEach(user -> {
+                            EmailNotificationMessage.Recipient recipient =
+                                new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail());
+                            userEmails.put(user.getId(), recipient);
+                        });
+
+                        mappedTargets.addAll(
+                            Arrays.stream(users)
+                                .map(user -> new Notification.Target(Notification.TargetType.USER, user.getId()))
+                                .collect(Collectors.toList()));
+                        break;
+                    case USER:
+                        // Nothing to do here
+                        mappedTargets.add(new Notification.Target(targetType, targetId));
+                        break;
+                    case ASSET:
+                        // Find descendant assets with email attribute
+                        List<Asset> assets = assetStorageService.findAll(
+                            new AssetQuery()
                                 .select(AssetQuery.Select.selectExcludePathAndParentAndRealm()
                                     .attributes(AttributeType.EMAIL.getAttributeName()))
                                 .paths(new PathPredicate(targetId))
                                 .attributes(new AttributePredicate(
-                                        new StringPredicate(AttributeType.EMAIL.getAttributeName()),
-                                        new ValueNotEmptyPredicate())));
+                                    new StringPredicate(AttributeType.EMAIL.getAttributeName()),
+                                    new ValueNotEmptyPredicate())));
 
-                if (assets.isEmpty()) {
-                    LOG.fine("No assets with email attribute descendants of target asset");
-                    return null;
-                }
+                        if (assets.isEmpty()) {
+                            LOG.fine("No assets with email attribute descendants of target asset");
+                            return;
+                        }
 
-                assets.forEach(asset -> {
-                    EmailNotificationMessage.Recipient recipient =
-                            new EmailNotificationMessage.Recipient(
+                        assets.forEach(asset -> {
+                            EmailNotificationMessage.Recipient recipient =
+                                new EmailNotificationMessage.Recipient(
                                     asset.getName(),
                                     asset.getAttribute(AttributeType.EMAIL)
-                                            .flatMap(AbstractValueHolder::getValueAsString)
-                                            .orElse(null));
-                    assetEmails.put(asset.getId(), recipient);
-                });
+                                        .flatMap(AbstractValueHolder::getValueAsString)
+                                        .orElse(null));
+                            assetEmails.put(asset.getId(), recipient);
+                        });
 
-                return new Notification.Targets(
-                        Notification.TargetType.ASSET,
-                        assets.stream().map(Asset::getId).collect(Collectors.toList()));
+                        mappedTargets.addAll(assets.stream()
+                            .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
+                            .collect(Collectors.toList()));
+                        break;
+                }
+            });
+        }
+        EmailNotificationMessage email = (EmailNotificationMessage)message;
+
+        // Move to/cc/bcc to targets (for traceability) in sent notifications
+        if (email.getTo() != null) {
+            mappedTargets.addAll(
+                email.getTo().stream()
+                    .map(recipient ->
+                        new Notification.Target(Notification.TargetType.CUSTOM, recipient.getAddress()))
+                    .collect(Collectors.toList()));
+            email.setTo((List<EmailNotificationMessage.Recipient>) null);
+        }
+        if (email.getCc() != null) {
+            mappedTargets.addAll(
+                email.getCc().stream()
+                    .map(recipient ->
+                        new Notification.Target(Notification.TargetType.CUSTOM, recipient.getAddress()))
+                    .collect(Collectors.toList()));
+            email.setCc((List<EmailNotificationMessage.Recipient>) null);
+        }
+        if (email.getBcc() != null) {
+            mappedTargets.addAll(
+                email.getBcc().stream()
+                    .map(recipient ->
+                        new Notification.Target(Notification.TargetType.CUSTOM, recipient.getAddress()))
+                    .collect(Collectors.toList()));
+            email.setBcc((List<EmailNotificationMessage.Recipient>) null);
         }
 
-        return null;
+        return mappedTargets;
     }
 
     @Override
-    public NotificationSendResult sendMessage(long id, Notification.Source source, String sourceId, Notification.TargetType targetType, String targetId, AbstractNotificationMessage message) {
+    public NotificationSendResult sendMessage(long id, Notification.Source source, String sourceId, Notification.Target target, AbstractNotificationMessage message) {
 
         // Check handler is valid
         if (!isValid()) {
@@ -220,7 +260,9 @@ public class EmailNotificationHandler implements NotificationHandler {
             return NotificationSendResult.failure("SMTP invalid configuration so ignoring");
         }
 
-        EmailNotificationMessage.Recipient recipient;
+        EmailNotificationMessage.Recipient recipient = null;
+        Notification.TargetType targetType = target.getType();
+        String targetId = target.getId();
 
         switch (targetType) {
 
@@ -230,27 +272,35 @@ public class EmailNotificationHandler implements NotificationHandler {
             case ASSET:
                 recipient = getAssetRecipient(targetId);
                 break;
+            case CUSTOM:
+                // This recipient is the target ID
+                recipient = new EmailNotificationMessage.Recipient(targetId);
+                break;
             default:
                 LOG.warning("Target type not supported: " + targetType);
-                return NotificationSendResult.failure("Target type not supported: " + targetType);
-        }
-
-        if (recipient == null || TextUtil.isNullOrEmpty(recipient.getAddress())) {
-            LOG.warning("No recipient found for " + targetType.name().toLowerCase() + ": " + targetId);
-            return NotificationSendResult.failure("No recipient found for " + targetType.name().toLowerCase() + ": " + targetId);
         }
 
         EmailNotificationMessage emailNotificationMessage = (EmailNotificationMessage) message;
+        EmailPopulatingBuilder emailBuilder = buildEmailBuilder(id, emailNotificationMessage);
+
+        if (recipient != null && !TextUtil.isNullOrEmpty(recipient.getAddress())) {
+            emailBuilder.to(convertRecipient(recipient));
+        }
+
+        if ((emailNotificationMessage.getTo() == null || emailNotificationMessage.getTo().isEmpty())
+            && (emailNotificationMessage.getCc() == null || emailNotificationMessage.getCc().isEmpty())
+            && (emailNotificationMessage.getBcc() == null || emailNotificationMessage.getBcc().isEmpty())
+            && recipient == null) {
+            LOG.warning("No recipient found for " + targetType.name().toLowerCase() + ": " + targetId);
+            return NotificationSendResult.failure("No recipients set for " + targetType.name().toLowerCase() + ": " + targetId);
+        }
 
         // Set from based on source if not already set
         if (emailNotificationMessage.getFrom() == null) {
-            emailNotificationMessage.setFrom(defaultFrom);
+            emailBuilder.from(defaultFrom);
         }
 
-        // Override any to addresses with target recipient
-        emailNotificationMessage.setTo(recipient);
-
-        return sendMessage(buildEmail(id, emailNotificationMessage));
+        return sendMessage(emailBuilder.buildEmail());
     }
 
     public NotificationSendResult sendMessage(Email email) {
@@ -286,40 +336,43 @@ public class EmailNotificationHandler implements NotificationHandler {
         }
 
         return new EmailNotificationMessage.Recipient(asset.getName(), asset.getAttribute(AttributeType.EMAIL)
-                .flatMap(AbstractValueHolder::getValueAsString)
-                .orElse(null));
+            .flatMap(AbstractValueHolder::getValueAsString)
+            .orElse(null));
     }
 
-    protected Email buildEmail(long id, EmailNotificationMessage emailNotificationMessage) {
+    protected EmailPopulatingBuilder buildEmailBuilder(long id, EmailNotificationMessage emailNotificationMessage) {
         EmailPopulatingBuilder emailBuilder = EmailBuilder.startingBlank()
-                .from(convertRecipient(emailNotificationMessage.getFrom()))
-                .withReplyTo(convertRecipient(emailNotificationMessage.getReplyTo()))
-                .withSubject(emailNotificationMessage.getSubject())
-                .withPlainText(emailNotificationMessage.getText())
-                .withHTMLText(emailNotificationMessage.getHtml());
+            .withReplyTo(convertRecipient(emailNotificationMessage.getReplyTo()))
+            .withSubject(emailNotificationMessage.getSubject())
+            .withPlainText(emailNotificationMessage.getText())
+            .withHTMLText(emailNotificationMessage.getHtml());
+
+        if (emailNotificationMessage.getFrom() != null) {
+            emailBuilder.from(convertRecipient(emailNotificationMessage.getFrom()));
+        }
 
         if (emailNotificationMessage.getTo() != null) {
-                emailBuilder.to(
-                        emailNotificationMessage.getTo().stream()
-                                .map(this::convertRecipient).collect(Collectors.toList()));
+            emailBuilder.to(
+                emailNotificationMessage.getTo().stream()
+                    .map(this::convertRecipient).collect(Collectors.toList()));
         }
 
         if (emailNotificationMessage.getCc() != null) {
             emailBuilder.cc(
-                    emailNotificationMessage.getCc().stream()
-                            .map(this::convertRecipient).collect(Collectors.toList()));
+                emailNotificationMessage.getCc().stream()
+                    .map(this::convertRecipient).collect(Collectors.toList()));
         }
 
         if (emailNotificationMessage.getBcc() != null) {
             emailBuilder.bcc(
-                    emailNotificationMessage.getBcc().stream()
-                            .map(this::convertRecipient).collect(Collectors.toList()));
+                emailNotificationMessage.getBcc().stream()
+                    .map(this::convertRecipient).collect(Collectors.toList()));
         }
 
         // Use the notification ID as the message ID
         emailBuilder.fixingMessageId("<" + id + "@openremote.io>");
 
-        return emailBuilder.buildEmail();
+        return emailBuilder;
     }
 
     protected Recipient convertRecipient(EmailNotificationMessage.Recipient recipient) {

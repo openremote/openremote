@@ -20,6 +20,7 @@
 package org.openremote.model.apps;
 
 import jsinterop.annotations.JsType;
+import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
 
@@ -42,7 +43,7 @@ public interface ConsoleAppResource {
     @GET
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:consoles"})
+    @RolesAllowed({Constants.READ_APPS_ROLE})
     @SuppressWarnings("unusable-by-js")
     String[] getInstalledApps(@BeanParam RequestParams requestParams);
 

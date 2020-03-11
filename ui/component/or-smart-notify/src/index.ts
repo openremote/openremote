@@ -6,7 +6,7 @@ import {icon} from "@fortawesome/fontawesome-svg-core";
 import {faClock} from "@fortawesome/free-regular-svg-icons";
 import {faTimes} from "@fortawesome/free-solid-svg-icons";
 
-import {AssetQuery} from "@openremote/model";
+import {AssetQuery, ClientRole} from "@openremote/model";
 import manager from "@openremote/core";
 
 @customElement("or-smart-notify")
@@ -340,7 +340,7 @@ class OrSmartNotify extends LitElement {
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
-        this.isDisabled = !manager.hasRole("write:assets");
+        this.isDisabled = !manager.hasRole(ClientRole.WRITE_ASSETS);
     }
 
 }

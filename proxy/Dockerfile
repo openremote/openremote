@@ -1,4 +1,4 @@
-FROM debian:stretch
+FROM debian:stretch-slim
 MAINTAINER support@openremote.io
 
 # Install utilities
@@ -14,12 +14,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN apt-get update \
       && apt-get install -y --no-install-recommends \
-            certbot rsyslog cron inotify-tools make gcc g++ libreadline-dev libssl-dev libpcre3-dev libz-dev \
+            curl certbot rsyslog cron inotify-tools make gcc g++ libreadline-dev libssl-dev libpcre3-dev libz-dev \
       && rm -rf /var/lib/apt/lists/*
 
-ARG HA_PROXY_MINOR_VERSION=1.7
-ARG HA_PROXY_VERSION=1.7.9
-ARG LUA_VERSION=5.3.4
+ARG HA_PROXY_MINOR_VERSION=2.1
+ARG HA_PROXY_VERSION=2.1.2
+ARG LUA_VERSION=5.3.5
 ARG ACME_PLUGIN_VERSION=0.1.1
 ARG DOMAINNAME
 ARG LOCAL_CERT_FILE
@@ -39,7 +39,7 @@ RUN mkdir /tmp/lua && cd /tmp/lua \
 RUN mkdir /tmp/haproxy && cd /tmp/haproxy \
     && curl -sSL http://www.haproxy.org/download/${HA_PROXY_MINOR_VERSION}/src/haproxy-${HA_PROXY_VERSION}.tar.gz -o haproxy.tar.gz \
     && tar xfv haproxy.tar.gz --strip-components=1 \
-    && make TARGET=linux2628 USE_PCRE=1 USE_OPENSSL=1 USE_ZLIB=1 USE_CRYPT_H=1 USE_LIBCRYPT=1 USE_LUA=1 && make install \
+    && make -j $(nproc) TARGET=linux-glibc USE_PCRE=1 USE_OPENSSL=1 USE_ZLIB=1 USE_LUA=1 && make install \
     && cd /tmp && rm -r haproxy
 
 RUN mkdir /etc/haproxy && cd /etc/haproxy \

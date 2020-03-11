@@ -25,7 +25,6 @@ import org.openremote.app.client.i18n.ManagerMessages;
 import org.openremote.app.client.style.WidgetStyle;
 import org.openremote.model.syslog.SyslogLevel;
 
-import static org.openremote.model.syslog.SyslogConfig.DEFAULT_LEVEL;
 import static org.openremote.model.syslog.SyslogConfig.DEFAULT_LIMIT;
 
 public abstract class SyslogFilter extends FlowPanel {
@@ -107,7 +106,7 @@ public abstract class SyslogFilter extends FlowPanel {
                 limitListBox.setSelectedIndex(2);
                 break;
         }
-        levelListBox.setSelectedIndex(DEFAULT_LEVEL.ordinal());
+        levelListBox.setSelectedIndex(0);
         setPaused(false);
     }
 

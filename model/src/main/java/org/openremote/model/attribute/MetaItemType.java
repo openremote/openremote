@@ -21,20 +21,19 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.asset.AssetModelProvider;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.TemporaryFact;
-import org.openremote.model.value.*;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
+import org.openremote.model.value.Values;
 
 import java.util.Optional;
 import java.util.function.Function;
 
 import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
-import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_VALUE_MISMATCH;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
-import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemArray;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_DOUBLE;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO;
 
@@ -400,7 +399,34 @@ public enum MetaItemType implements MetaItemDescriptor {
         null,
         null,
         null,
-        false);
+        false),
+
+    /**
+     * Indicates the unit type the this attribute represents.
+     * For e.g. if the attribute represents currency and it's in euro's then the unit type would be EUR.
+     * For e.g. if the attribute represents distance and it's in kilometers then the unit type would be KM.
+     */
+    UNIT_TYPE(
+        ASSET_META_NAMESPACE + ":unitType",
+        new Access(true, false, true),
+        ValueType.STRING,
+        null,
+        null,
+        null,
+        false
+    ),
+
+    /**
+     * Could possible have predicted datapoints
+     */
+    HAS_PREDICTED_DATA_POINTS(
+        ASSET_META_NAMESPACE + ":hasPredictedDatapoints",
+        new Access(true, false, true),
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true);
 
     final protected String urn;
     final protected Access access;
@@ -525,6 +551,22 @@ public enum MetaItemType implements MetaItemDescriptor {
     @Override
     public Value[] getAllowedValues() {
         return allowedValues;
+    }
+
+    public MetaItemDescriptor withInitialValue(String initialValue) {
+        return withInitialValue(Values.create(initialValue));
+    }
+
+    public MetaItemDescriptor withInitialValue(int initialValue) {
+        return withInitialValue(Values.create(initialValue));
+    }
+
+    public MetaItemDescriptor withInitialValue(boolean initialValue) {
+        return withInitialValue(Values.create(initialValue));
+    }
+
+    public MetaItemDescriptor withInitialValue(double initialValue) {
+        return withInitialValue(Values.create(initialValue));
     }
 
     public MetaItemDescriptor withInitialValue(Value initialValue) {

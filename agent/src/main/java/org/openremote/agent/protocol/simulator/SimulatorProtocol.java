@@ -19,6 +19,7 @@
  */
 package org.openremote.agent.protocol.simulator;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
@@ -29,12 +30,22 @@ import org.openremote.model.simulator.SimulatorElement;
 import org.openremote.model.simulator.SimulatorState;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
 import org.openremote.model.simulator.element.NumberSimulatorElement;
+import org.openremote.model.simulator.element.ReplaySimulatorElement;
 import org.openremote.model.simulator.element.SwitchSimulatorElement;
+import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.ChronoField;
 import java.util.*;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -43,6 +54,7 @@ import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemType.RANGE_MAX;
 import static org.openremote.model.attribute.MetaItemType.RANGE_MIN;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE;
 
 public class SimulatorProtocol extends AbstractProtocol {
@@ -65,7 +77,12 @@ public class SimulatorProtocol extends AbstractProtocol {
         /**
          * Producer of send to actuator will have to manually update the sensor by calling {@link #updateSensor)}.
          */
-        MANUAL
+        MANUAL,
+
+        /**
+         * Will supply value(s) based on the timestamp in the ArrayValue found in {@link #REPLAY_ATTRIBUTE_LINK_DATA}
+         */
+        REPLAY
     }
 
     /**
@@ -95,7 +112,7 @@ public class SimulatorProtocol extends AbstractProtocol {
         }
     }
 
-    private static final Logger LOG = Logger.getLogger(SimulatorProtocol.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, SimulatorProtocol.class);
 
     public static final int DEFAULT_WRITE_DELAY = 1000;
 
@@ -118,19 +135,22 @@ public class SimulatorProtocol extends AbstractProtocol {
      */
     public static final String CONFIG_WRITE_DELAY_MILLISECONDS = PROTOCOL_NAME + ":delayMilliseconds";
 
+    public static final String REPLAY_ATTRIBUTE_LINK_DATA = PROTOCOL_NAME + ":replayAttributeLinkData";
+
     protected static final String VERSION = "1.0";
 
     final protected Map<AttributeRef, Instance> instances = new HashMap<>();
     final protected Map<AttributeRef, AttributeRef> attributeInstanceMap = new HashMap<>();
     final protected Map<AttributeRef, SimulatorElement> elements = new HashMap<>();
+    protected final Map<AttributeRef, ScheduledFuture> replayMap = new HashMap<>();
 
     protected static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
         new MetaItemDescriptorImpl(
             CONFIG_MODE,
             ValueType.STRING,
             false,
-            "^(WRITE_THROUGH_IMMEDIATE|WRITE_THROUGH_DELAYED|MANUAL)$",
-            "WRITE_THROUGH_IMMEDIATE|WRITE_THROUGH_DELAYED|MANUAL",
+            "^(WRITE_THROUGH_IMMEDIATE|WRITE_THROUGH_DELAYED|MANUAL|REPLAY)$",
+            "WRITE_THROUGH_IMMEDIATE|WRITE_THROUGH_DELAYED|MANUAL|REPLAY",
             null,
             null,
             false, null, null, null),
@@ -140,6 +160,15 @@ public class SimulatorProtocol extends AbstractProtocol {
             false,
             REGEXP_PATTERN_INTEGER_POSITIVE,
             MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE.name(),
+            null,
+            null,
+            false, null, null, null),
+        new MetaItemDescriptorImpl(
+            REPLAY_ATTRIBUTE_LINK_DATA,
+            ValueType.ARRAY,
+            false,
+            null,
+            null,
             null,
             null,
             false, null, null, null)
@@ -154,12 +183,14 @@ public class SimulatorProtocol extends AbstractProtocol {
                 SwitchSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
                 NumberSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
                 NumberSimulatorElement.ELEMENT_NAME_RANGE.toUpperCase(Locale.ROOT) + "|" +
-                ColorSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) +
+                ColorSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
+                ReplaySimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) +
                 ")$",
             SwitchSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
                 NumberSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
                 NumberSimulatorElement.ELEMENT_NAME_RANGE.toUpperCase(Locale.ROOT) + "|" +
-                ColorSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT),
+                ColorSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
+                ReplaySimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT),
             null,
             null,
             false, null, null, null)
@@ -220,7 +251,7 @@ public class SimulatorProtocol extends AbstractProtocol {
                     .flatMap(AbstractValueHolder::getValueAsInteger)
                     .orElse(DEFAULT_WRITE_DELAY);
 
-                updateStatus(protocolRef, protocolConfiguration.isEnabled() ? ConnectionStatus.CONNECTED : ConnectionStatus.DISABLED);
+                updateStatus(protocolRef, ConnectionStatus.CONNECTED);
                 return new Instance(mode, writeDelay, protocolConfiguration.isEnabled());
             }
         );
@@ -249,7 +280,21 @@ public class SimulatorProtocol extends AbstractProtocol {
             LOG.warning("Can't simulate element '" + elementType + "': " + attribute);
             return;
         }
-        if (attribute.getValue().isPresent()) {
+
+        if (elementType.get().equals(ReplaySimulatorElement.ELEMENT_NAME)) {
+            ReplaySimulatorElement replaySimulatorElement = (ReplaySimulatorElement) element;
+            ArrayValue link = attribute.getMetaItem(REPLAY_ATTRIBUTE_LINK_DATA)
+                .flatMap(AbstractValueHolder::getValueAsArray)
+                .orElseThrow(() -> new IllegalArgumentException("CONTINUES_ATTRIBUTE_LINK should be of value type ARRAY"));
+            element.setValue(link);
+            ScheduledFuture updateValueFuture = scheduleReplay(attributeRef, replaySimulatorElement);
+            if (updateValueFuture != null) {
+                replayMap.put(attributeRef, updateValueFuture);
+            } else {
+                LOG.warning("Failed to schedule update value for continues simulator element: " + attribute);
+                return;
+            }
+        } else if (attribute.getValue().isPresent()) {
             element.setValue(attribute.getValue().get());
             List<ValidationFailure> failures = element.getValidationFailures();
             if (!failures.isEmpty()) {
@@ -270,10 +315,14 @@ public class SimulatorProtocol extends AbstractProtocol {
         AttributeRef attributeRef = attribute.getReferenceOrThrow();
         elements.remove(attributeRef);
         attributeInstanceMap.remove(attributeRef);
+        ScheduledFuture updateValueFuture = replayMap.remove(attributeRef);
+        if (updateValueFuture != null) {
+            updateValueFuture.cancel(true);
+        }
     }
 
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+    protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
         if (putValue(event.getAttributeState())) {
             // Notify listener when write was successful
             if (protocolConfigurationValuesChangedHandler != null)
@@ -495,9 +544,36 @@ public class SimulatorProtocol extends AbstractProtocol {
                 return new NumberSimulatorElement(attribute.getReferenceOrThrow(), min, max);
             case ColorSimulatorElement.ELEMENT_NAME:
                 return new ColorSimulatorElement(attribute.getReferenceOrThrow());
+            case ReplaySimulatorElement.ELEMENT_NAME:
+                return new ReplaySimulatorElement(attribute.getReferenceOrThrow());
             default:
                 return null;
         }
+    }
+
+    protected ScheduledFuture scheduleReplay(AttributeRef attributeRef, ReplaySimulatorElement replaySimulatorElement) {
+        LOG.fine("Scheduling value update");
+        return withLockReturning(getProtocolName() + "::scheduleReplay", () -> {
+            try {
+                long now = LocalDateTime.now().get(ChronoField.SECOND_OF_DAY);
+                ReplaySimulatorElement.ReplaySimulatorDatapoint nextDatapoint = replaySimulatorElement.getNextDatapoint(now);
+                long nextRun = nextDatapoint.timestamp;
+                if (nextRun <= now) { //now is after so nextRun is next day
+                    nextRun += 86400;//day in seconds
+                }
+                long nextRunRelative = nextRun - now;
+
+                LOG.info("Next update for asset " + attributeRef.getEntityId() + "for attribute " + attributeRef.getAttributeName() + " in " + nextRunRelative + " second(s)");
+                return executorService.schedule(() -> {
+                    LOG.info("Updating asset " + attributeRef.getEntityId() + "for attribute " + attributeRef.getAttributeName() + " with value " + nextDatapoint.value.toString());
+                    updateLinkedAttribute(new AttributeState(attributeRef, nextDatapoint.value));
+                    replayMap.put(attributeRef, scheduleReplay(attributeRef, replaySimulatorElement));
+                }, nextRunRelative, TimeUnit.SECONDS);
+            } catch (JsonProcessingException e) {
+                LOG.log(Level.SEVERE, "Exception thrown when scheduling value update: %s", e);
+                return null;
+            }
+        });
     }
 
     public static Optional<String> getElementType(AssetAttribute attribute) {

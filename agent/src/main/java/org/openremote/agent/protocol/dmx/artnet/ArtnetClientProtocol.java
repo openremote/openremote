@@ -5,17 +5,21 @@ import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONParser;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandler;
 import io.netty.util.CharsetUtil;
+import javassist.bytecode.AttributeInfo;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
-import org.openremote.agent.protocol.artnet.ArtNetPacket;
 import org.openremote.agent.protocol.dmx.AbstractDMXClientProtocol;
 import org.openremote.agent.protocol.dmx.AbstractDMXLight;
 import org.openremote.agent.protocol.dmx.AbstractDMXLightState;
+import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
 import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.agent.protocol.knx.EtsFileUriResolver;
 import org.openremote.agent.protocol.knx.KNXProtocol;
-import org.openremote.agent.protocol.udp.AbstractUdpClient;
+import org.openremote.agent.protocol.udp.AbstractUdpClientProtocol;
+import org.openremote.agent.protocol.udp.UdpClientProtocol;
+import org.openremote.agent.protocol.udp.UdpIoClient;
 import org.openremote.container.Container;
 import org.openremote.container.util.CodecUtil;
 import org.openremote.model.asset.Asset;
@@ -26,6 +30,7 @@ import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.*;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.*;
 import org.openremote.model.value.impl.ArrayValueImpl;
@@ -52,10 +57,12 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import static org.openremote.container.util.Util.joinCollections;
 import static org.openremote.model.Constants.MASTER_REALM;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
@@ -64,15 +71,18 @@ import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemObje
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements ProtocolLinkedAttributeImport {
-
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":artnet";
     public static final String PROTOCOL_DISPLAY_NAME = "Artnet Client";
-    private static final String PROTOCOL_VERSION = "1.0";
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, org.openremote.agent.protocol.artnet.ArtnetClientProtocol.class.getName());
+    private static final String PROTOCOL_VERSION = "1.69";
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ArtnetClientProtocol.class.getName());
     private final Map<AttributeRef, AttributeInfo> attributeInfoMap = new HashMap<>();
     private static int DEFAULT_RESPONSE_TIMEOUT_MILLIS = 3000;
     private static int DEFAULT_SEND_RETRIES = 1;
     private static int MIN_POLLING_MILLIS = 1000;
+
+    public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = joinCollections(AbstractUdpClientProtocol.PROTOCOL_META_ITEM_DESCRIPTORS, AbstractIoClientProtocol.PROTOCOL_GENERIC_META_ITEM_DESCRIPTORS);
+
+    //TODO:Replace
     public static final MetaItemDescriptor META_ARTNET_LIGHT_ID = metaItemInteger(
             "lightId",
             ACCESS_PRIVATE,
@@ -93,244 +103,119 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
             }})
     );
 
+    public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
+            META_ATTRIBUTE_MATCH_FILTERS,
+            META_ATTRIBUTE_MATCH_PREDICATE,
+            META_ARTNET_LIGHT_ID,
+            META_ARTNET_CONFIGURATION);
+
+    protected final Map<AttributeRef, List<Pair<AttributeRef, Consumer<String>>>> protocolMessageConsumers = new HashMap<>();
 
     private HashMap<Integer, AbstractDMXLight> artnetLightMemory = new HashMap<Integer, AbstractDMXLight>();
 
     @Override
-    public Map<Integer, AbstractDMXLight> getLightMemory() {
-        return this.artnetLightMemory;
+    public String getProtocolName() {
+        return PROTOCOL_NAME;
     }
 
     @Override
-    public void updateLightStateInMemory(Integer lightId, AbstractDMXLightState updatedLightState) {
-        Optional<Integer> foundLightId = this.artnetLightMemory.keySet().stream().filter(lid -> lid == lightId).findAny();
-        if(foundLightId.orElse(null) != null) {
-            this.artnetLightMemory.get(foundLightId).setLightState(updatedLightState);
-        }
+    public String getProtocolDisplayName() {
+        return PROTOCOL_DISPLAY_NAME;
     }
 
     @Override
-    protected IoClient<String> createIoClient(String host, int port, Integer bindPort, Charset charset, boolean binaryMode, boolean hexMode) {
-        BiConsumer<ByteBuf, List<String>> decoder;
-        BiConsumer<String, ByteBuf> encoder;
-
-        if (hexMode) {
-            decoder = (buf, messages) -> {
-                byte[] bytes = new byte[buf.readableBytes()];
-                buf.readBytes(bytes);
-                String msg = Protocol.bytesToHexString(bytes);
-                messages.add(msg);
-            };
-            encoder = (message, buf) -> {
-                byte[] bytes = Protocol.bytesFromHexString(message);
-                buf.writeBytes(bytes);
-            };
-        } else if (binaryMode) {
-            decoder = (buf, messages) -> {
-                byte[] bytes = new byte[buf.readableBytes()];
-                buf.readBytes(bytes);
-                String msg = Protocol.bytesToBinaryString(bytes);
-                messages.add(msg);
-            };
-            encoder = (message, buf) -> {
-                byte[] bytes = Protocol.bytesFromBinaryString(message);
-                buf.writeBytes(bytes);
-            };
-        } else {
-            final Charset finalCharset = charset != null ? charset : CharsetUtil.UTF_8;
-            decoder = (buf, messages) -> {
-                String msg = buf.toString(finalCharset);
-                messages.add(msg);
-                buf.readerIndex(buf.readerIndex() + buf.readableBytes());
-            };
-            encoder = (message, buf) -> buf.writeBytes(message.getBytes(finalCharset));
-        }
-
-        BiConsumer<ByteBuf, List<String>> finalDecoder = decoder;
-        BiConsumer<String, ByteBuf> finalEncoder = encoder;
-
-
-        return new AbstractUdpClient<String>(host, port, bindPort, executorService) {
-
-            @Override
-            protected void decode(ByteBuf buf, List<String> messages) {
-                finalDecoder.accept(buf, messages);
-            }
-
-            @Override
-            protected void encode(String message, ByteBuf buf) {
-                //Load states of all other lamps
-                JsonParser parser = new JsonParser();
-                JsonObject messageObject = parser.parse(message).getAsJsonObject();
-                JsonArray array = messageObject.get("lights").getAsJsonArray();
-                List<ArtnetLight> lights = new ArrayList<>();
-                for(JsonElement element : array) {
-                    lights.add(new Gson().fromJson(element, ArtnetLight.class));
-                }
-
-                //TODO SEND PROTOCOL PER GROUP. (PER UNIVERSE ALREADY WORKS AT THIS POINT)
-                Map<Integer, List<ArtnetLight>> lightsPerUniverse = new HashMap<>();
-                for(ArtnetLight light : lights) {
-                    if(lightsPerUniverse.get(light.getUniverse()) == null)
-                        lightsPerUniverse.put(light.getUniverse(), new ArrayList<>());
-                    lightsPerUniverse.get(light.getUniverse()).add(light);
-                }
-                for(List<ArtnetLight> lightLists : lightsPerUniverse.values())
-                    Collections.sort(lightLists, Comparator.comparingInt(ArtnetLight ::getLightId));
-                for(Integer universeId : lightsPerUniverse.keySet()) {
-                    ArtnetPacket.writePrefix(buf, universeId);
-                    for(ArtnetLight lightToAddress : lightsPerUniverse.get(universeId)) {
-                        ArtnetLightState lightState = (ArtnetLightState) artnetLightMemory.get(lightToAddress.getLightId()).getLightState();
-                        ArtnetPacket.writeLight(buf, lightState.getValues(), lightToAddress.getAmountOfLeds());
-                    }
-                    ArtnetPacket.updateLength(buf);
-                    //TODO MULTIPLE UNIVERSES APPENDED MIGHT NOT WORK. IF IT DOES NOT, CALL FINALENCODER.ACCEPT
-                }
-                //Send packet (Look over it)
-                try{
-                    finalEncoder.accept("", buf);
-                }catch(IllegalArgumentException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        };
+    public String getVersion() {
+        return PROTOCOL_VERSION;
     }
 
-    //Runs if a new Asset is created with an ArtNet Client as attribute.
     @Override
-    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        super.doLinkProtocolConfiguration(protocolConfiguration);
+    public Map<Integer, AbstractDMXLight> getLightMemory() { return artnetLightMemory; }
 
-    }
-
-    //Runs if an Asset is deleted with an ArtNet Client as attribute.
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        super.doUnlinkProtocolConfiguration(protocolConfiguration);
+    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
+        return PROTOCOL_META_ITEM_DESCRIPTORS;
     }
 
     @Override
     protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
-        return null;
+        return ATTRIBUTE_META_ITEM_DESCRIPTORS;
     }
 
     @Override
-    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) throws IOException {
-        MetaItem metaItem = protocolConfiguration.getMetaItem(META_ARTNET_CONFIGURATION.getUrn()).orElse(null);
-        String configJsonString = metaItem.getValue().orElse(null).toJson();
-        JsonObject configJson = new JsonParser().parse(configJsonString).getAsJsonObject();
-        JsonArray jerry = configJson.getAsJsonArray("lights");
-
-        for(JsonElement l : jerry)
-        {
-            JsonObject light = l.getAsJsonObject();
-            int id = light.get("lightId").getAsInt();
-            String[] requiredKeys = light.get("requiredValues").getAsString().split(",");
-            ArtnetLightState state = new ArtnetLightState(id, new LinkedHashMap<String, Integer>(), 100, true);
-            for(String key : requiredKeys)
-                state.getReceivedValues().put(key, 0);
-            //TODO GET UNIVERSE, AMOUNT OF LEDS ETC FROM LIGHT METADATA
-            ArtnetLight lightToCreate = new ArtnetLight(id, 0, 0, 3, new String[] {"r", "g", "b", "w"}, state, null);
-            artnetLightMemory.put(id, lightToCreate);
-        }
-
-        if (!protocolConfiguration.isEnabled()) {
-            LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
-            return;
-        }
-
-        ClientAndQueue clientAndQueue = clientMap.get(protocolConfiguration.getReferenceOrThrow());
-
-        if (clientAndQueue == null) {
-            return;
-        }
-
-        final Integer pollingMillis = Values.getMetaItemValueOrThrow(attribute, META_POLLING_MILLIS, false, true)
-                .flatMap(Values::getIntegerCoerced)
-                .orElse(null);
-
-        final int responseTimeoutMillis = Values.getMetaItemValueOrThrow(attribute, META_RESPONSE_TIMEOUT_MILLIS, false, true)
-                .flatMap(Values::getIntegerCoerced)
-                .orElseGet(() ->
-                        Values.getMetaItemValueOrThrow(protocolConfiguration, META_RESPONSE_TIMEOUT_MILLIS, false, true)
-                                .flatMap(Values::getIntegerCoerced)
-                                .orElse(DEFAULT_RESPONSE_TIMEOUT_MILLIS)
+    public AssetAttribute getProtocolConfigurationTemplate() {
+        return super.getProtocolConfigurationTemplate()
+                .addMeta(
+                        new MetaItem(META_PROTOCOL_HOST, null),
+                        new MetaItem(META_PROTOCOL_PORT, null)
                 );
-
-        final int sendRetries = Values.getMetaItemValueOrThrow(attribute, META_SEND_RETRIES, false, true)
-                .flatMap(Values::getIntegerCoerced)
-                .orElseGet(() ->
-                        Values.getMetaItemValueOrThrow(protocolConfiguration, META_SEND_RETRIES, false, true)
-                                .flatMap(Values::getIntegerCoerced)
-                                .orElse(DEFAULT_SEND_RETRIES)
-                );
-
-        Consumer<Value> sendConsumer = null;
-        ScheduledFuture pollingTask = null;
-        AttributeInfo info = new AttributeInfo(attribute.getReferenceOrThrow(), sendRetries, responseTimeoutMillis);
-
-        if (!attribute.isReadOnly()) {
-            sendConsumer = Protocol.createDynamicAttributeWriteConsumer(attribute, str ->
-                    clientAndQueue.send(
-                            str,
-                            responseStr -> {
-                                // TODO: Add discovery
-                                // Just drop the response; something in the future could be used to verify send was successful
-                            },
-                            info));
-        }
-
-        if (pollingMillis != null && pollingMillis < MIN_POLLING_MILLIS) {
-            LOG.warning("Polling ms must be >= " + MIN_POLLING_MILLIS);
-            return;
-        }
-
-        final String writeValue = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_WRITE_VALUE, false, true)
-                .map(Object::toString).orElse(null);
-
-        if (pollingMillis != null && TextUtil.isNullOrEmpty(writeValue)) {
-            LOG.warning("Polling requires the META_ATTRIBUTE_WRITE_VALUE meta item to be set");
-            return;
-        }
-
-        if (pollingMillis != null) {
-            Consumer<String> responseConsumer = str -> {
-                LOG.fine("Polling response received updating attribute: " + attribute.getReferenceOrThrow());
-                updateLinkedAttribute(
-                        new AttributeState(
-                                attribute.getReferenceOrThrow(),
-                                str != null ? Values.create(str) : null));
-            };
-
-            Runnable pollingRunnable = () -> clientAndQueue.send(writeValue, responseConsumer, info);
-            pollingTask = schedulePollingRequest(clientAndQueue, attribute.getReferenceOrThrow(), pollingRunnable, pollingMillis);
-        }
-
-        attributeInfoMap.put(attribute.getReferenceOrThrow(), info);
-        info.pollingTask = pollingTask;
-        info.sendConsumer = sendConsumer;
     }
 
-    protected ScheduledFuture schedulePollingRequest(ClientAndQueue clientAndQueue,
-                                                     AttributeRef attributeRef,
-                                                     Runnable pollingTask,
-                                                     int pollingMillis) {
+    @Override
+    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        synchronized (protocolMessageConsumers) {
+            protocolMessageConsumers.remove(protocolConfiguration.getReferenceOrThrow());
+        }
+        super.doUnlinkProtocolConfiguration(protocolConfiguration);
+    }
 
-        LOG.fine("Scheduling polling request on client '" + clientAndQueue.client + "' to execute every " + pollingMillis + " ms for attribute: " + attributeRef);
+    @Override
+    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+        AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
+        Consumer<String> messageConsumer = Protocol.createGenericAttributeMessageConsumer(attribute, assetService, this::updateLinkedAttribute);
 
-        return executorService.scheduleWithFixedDelay(pollingTask, 0, pollingMillis, TimeUnit.MILLISECONDS);
+        if (messageConsumer != null) {
+            synchronized (protocolMessageConsumers) {
+                protocolMessageConsumers.compute(protocolRef, (ref, consumers) -> {
+                    if (consumers == null) {
+                        consumers = new ArrayList<>();
+                    }
+                    consumers.add(new Pair<>(
+                            attribute.getReferenceOrThrow(),
+                            messageConsumer
+                    ));
+                    return consumers;
+                });
+            }
+        }
     }
 
     @Override
     protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        /*
-        int lightId = protocolConfiguration.getMetaItem(META_ARTNET_CONFIGURATION.getUrn()).get().getValueAsInteger().get();
-        artnetLightStates.remove(lightId);
-        */
+        AttributeRef attributeRef = attribute.getReferenceOrThrow();
+        synchronized (protocolMessageConsumers) {
+            protocolMessageConsumers.compute(protocolConfiguration.getReferenceOrThrow(), (ref, consumers) -> {
+                if (consumers != null) {
+                    consumers.removeIf((attrRefConsumer) -> attrRefConsumer.key.equals(attributeRef));
+                }
+                return consumers;
+            });
+        }
     }
 
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+    protected Supplier<ChannelHandler[]> getEncoderDecoderProvider(UdpIoClient<String> client, AssetAttribute protocolConfiguration) {
+        return getGenericStringEncodersAndDecoders(client, protocolConfiguration);
+    }
+
+    @Override
+    protected void onMessageReceived(AttributeRef protocolRef, String message) {
+        List<Pair<AttributeRef, Consumer<String>>> consumers;
+
+        synchronized (protocolMessageConsumers) {
+            consumers = protocolMessageConsumers.get(protocolRef);
+
+            if (consumers != null) {
+                consumers.forEach(c -> {
+                    if (c.value != null) {
+                        c.value.accept(message);
+                    }
+                });
+            }
+        }
+    }
+
+    @Override
+    protected String createWriteMessage(AssetAttribute protocolConfiguration, AssetAttribute attribute, AttributeEvent event, Value processedValue) {
         //TODO LATER, CHECK FOR GROUP
         Attribute attr =  getLinkedAttribute(event.getAttributeRef());
         MetaItem metaItem = attr.getMetaItem("lightId").orElse(null);
@@ -370,33 +255,20 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
 
         artnetLightMemory.get(lampId).getLightState().fromAttribute(event, attr);
 
-        AttributeInfo info = attributeInfoMap.get(event.getAttributeRef());
-        if (info == null || info.sendConsumer == null) {
-            LOG.info("Request to write unlinked attribute or attribute that doesn't support writes so ignoring: " + event);
-            return;
-        }
-
         Value value = Values.createObject().putAll(new HashMap<String, Value>() {{
             put("lights", Values.convert(lightsToSend, Container.JSON).get());
         }});
 
-        info.sendConsumer.accept(value);
-        updateLinkedAttribute(event.getAttributeState());
+        return value.toJson();
     }
 
     @Override
-    public String getProtocolName() {
-        return PROTOCOL_NAME;
-    }
-
-    @Override
-    public String getProtocolDisplayName() {
-        return PROTOCOL_DISPLAY_NAME;
-    }
-
-    @Override
-    public String getVersion() {
-        return PROTOCOL_VERSION;
+    public void updateLightStateInMemory(Integer lightId, AbstractDMXLightState updatedLightState)
+    {
+        Optional<Integer> foundLightId = this.artnetLightMemory.keySet().stream().filter(lid -> lid == lightId).findAny();
+        if(foundLightId.orElse(null) != null) {
+            this.artnetLightMemory.get(foundLightId).setLightState(updatedLightState);
+        }
     }
 
     @Override
@@ -454,16 +326,14 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
         //Create Attributes for the Asset
         List<AssetAttribute> lightAttributes = new ArrayList<>();
         lightAttributes.add(new AssetAttribute("Id", AttributeValueType.NUMBER, Values.create(id)));
+        //TODO: Add attributes with values from the config file
         lightAttributes.add(light.getAttribute("Dim").orElse(new AssetAttribute("Dim", AttributeValueType.NUMBER, Values.create(100)).setMeta(
-                new MetaItem(ArtnetClientProtocol.META_ARTNET_LIGHT_ID, Values.create(id)),
                 agentLink
         )));
         lightAttributes.add(light.getAttribute("Switch").orElse(new AssetAttribute("Switch", AttributeValueType.BOOLEAN, Values.create(true)).setMeta(
-                new MetaItem(ArtnetClientProtocol.META_ARTNET_LIGHT_ID, Values.create(id)),
                 agentLink
         )));
         lightAttributes.add(light.getAttribute("Values").orElse(new AssetAttribute("Values", AttributeValueType.OBJECT, Values.createObject().putAll(jsonProperties)).setMeta(
-                new MetaItem(ArtnetClientProtocol.META_ARTNET_LIGHT_ID, Values.create(id)),
                 agentLink
         )));
 

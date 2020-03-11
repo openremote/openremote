@@ -38,8 +38,7 @@ public class SentNotification {
     @GeneratedValue(generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
     protected Long id;
 
-    @NotNull
-    @Column(name = "NAME", nullable = false)
+    @Column(name = "NAME")
     protected String name;
 
     @NotNull
@@ -67,7 +66,7 @@ public class SentNotification {
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_OBJECT_TYPE)
     protected ObjectValue message;
 
-    @Column(name = "ERROR")
+    @Column(name = "ERROR", length = 4096)
     protected String error;
 
     @Temporal(TemporalType.TIMESTAMP)

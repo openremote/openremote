@@ -139,7 +139,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
         environment.getApp().getRequests().sendWith(
             getEntityWriter(),
             createRequestConsumer(),
-            204,
+            200,
             afterCreateRunnable(),
             validationErrorHandler
         );

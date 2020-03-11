@@ -21,7 +21,6 @@ package org.openremote.agent.protocol;
 
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.model.value.*;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.concurrent.GlobalLock;
@@ -32,12 +31,16 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
+import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.Pair;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import java.io.IOException;
 import java.util.*;
@@ -48,6 +51,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * Thread-safe base implementation for protocols.
@@ -105,9 +109,10 @@ public abstract class AbstractProtocol implements Protocol {
         }
     }
 
-    private static final Logger LOG = Logger.getLogger(AbstractProtocol.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractProtocol.class);
     public static final int PRIORITY = ContainerService.DEFAULT_PRIORITY - 100;
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
+    protected final Set<AttributeRef> dynamicAttributes = new HashSet<>();
     protected final Map<AttributeRef, LinkedProtocolInfo> linkedProtocolConfigurations = new HashMap<>();
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
@@ -178,21 +183,32 @@ public abstract class AbstractProtocol implements Protocol {
     final public void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<ConnectionStatus> statusConsumer) {
         withLock(getProtocolName() + "::linkProtocolConfiguration", () -> {
             LOG.finer("Linking protocol configuration to protocol '" + getProtocolName() + "': " + protocolConfiguration);
+
+            ConnectionStatus currentStatus = protocolConfiguration.isEnabled() ? ConnectionStatus.CONNECTING : ConnectionStatus.DISABLED;
+
             linkedProtocolConfigurations.put(
                 protocolConfiguration.getReferenceOrThrow(),
-                new LinkedProtocolInfo(protocolConfiguration, statusConsumer, ConnectionStatus.CONNECTING)
+                new LinkedProtocolInfo(protocolConfiguration, statusConsumer, currentStatus)
             );
-            statusConsumer.accept(ConnectionStatus.CONNECTING);
-            doLinkProtocolConfiguration(protocolConfiguration);
+            statusConsumer.accept(currentStatus);
+            if (currentStatus == ConnectionStatus.CONNECTING) {
+                doLinkProtocolConfiguration(protocolConfiguration);
+            } else {
+                LOG.info("Protocol configuration is disabled so not linking '" + getProtocolName() + "': " + protocolConfiguration);
+            }
         });
     }
 
     @Override
     final public void unlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         withLock(getProtocolName() + "::unlinkProtocolConfiguration", () -> {
-            LOG.finer("Unlinking protocol configuration from protocol '" + getProtocolName() + "': " + protocolConfiguration);
-            doUnlinkProtocolConfiguration(protocolConfiguration);
-            updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.DISCONNECTED);
+
+            LinkedProtocolInfo protocolInfo = linkedProtocolConfigurations.get(protocolConfiguration.getReferenceOrThrow());
+            if (protocolInfo != null && protocolInfo.currentConnectionStatus != ConnectionStatus.DISABLED) {
+                LOG.finer("Unlinking protocol configuration from protocol '" + getProtocolName() + "': " + protocolConfiguration);
+                doUnlinkProtocolConfiguration(protocolConfiguration);
+                updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.DISCONNECTED);
+            }
             linkedProtocolConfigurations.remove(protocolConfiguration.getReferenceOrThrow());
         });
     }
@@ -200,12 +216,26 @@ public abstract class AbstractProtocol implements Protocol {
     @Override
     final public void linkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) {
         withLock(getProtocolName() + "::linkAttributes", () -> {
+
+            if (!protocolConfiguration.isEnabled()) {
+                LOG.info("Protocol configuration is disabled so not linking attributes '" + getProtocolName() + "': " + protocolConfiguration);
+                return;
+            }
+
             attributes.forEach(attribute -> {
                 LOG.fine("Linking attribute to '" + getProtocolName() + "': " + attribute);
                 AttributeRef attributeRef = attribute.getReferenceOrThrow();
                 // Need to add to map before actual linking as protocols may want to update the value as part of
                 // linking process and without entry in the map any update would be blocked
                 linkedAttributes.put(attributeRef, attribute);
+
+                // Check for dynamic value placeholder
+                final String writeValue = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_WRITE_VALUE, false, true)
+                    .map(Object::toString).orElse(null);
+
+                if (!TextUtil.isNullOrEmpty(writeValue) && writeValue.contains(DYNAMIC_VALUE_PLACEHOLDER)) {
+                    dynamicAttributes.add(attributeRef);
+                }
 
                 try {
                     doLinkAttribute(attribute, protocolConfiguration);
@@ -219,14 +249,22 @@ public abstract class AbstractProtocol implements Protocol {
 
     @Override
     final public void unlinkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) throws Exception {
-        withLock(getProtocolName() + "::unlinkAttributes", () ->
+        withLock(getProtocolName() + "::unlinkAttributes", () -> {
+
+            LinkedProtocolInfo protocolInfo = linkedProtocolConfigurations.get(protocolConfiguration.getReferenceOrThrow());
+            if (protocolInfo.currentConnectionStatus == ConnectionStatus.DISABLED) {
+                LOG.info("Protocol configuration is disabled so not unlinking attributes '" + getProtocolName() + "': " + protocolConfiguration);
+                return;
+            }
+
             attributes.forEach(attribute -> {
                 LOG.fine("Unlinking attribute on '" + getProtocolName() + "': " + attribute);
                 AttributeRef attributeRef = attribute.getReferenceOrThrow();
                 linkedAttributes.remove(attributeRef);
+                dynamicAttributes.remove(attributeRef);
                 doUnlinkAttribute(attribute, protocolConfiguration);
-            })
-        );
+            });
+        });
     }
 
     /**
@@ -256,34 +294,24 @@ public abstract class AbstractProtocol implements Protocol {
     final protected void processLinkedAttributeWrite(AttributeEvent event) {
         LOG.finest("Processing linked attribute write on " + getProtocolName() + ": " + event);
         withLock(getProtocolName() + "::processLinkedAttributeWrite", () -> {
-            AssetAttribute attribute = linkedAttributes.get(event.getAttributeRef());
+            AttributeRef attributeRef = event.getAttributeRef();
+            AssetAttribute attribute = linkedAttributes.get(attributeRef);
             if (attribute == null) {
-                LOG.warning("Attribute doesn't exist on this protocol: " + event.getAttributeRef());
+                LOG.warning("Attribute doesn't exist on this protocol: " + attributeRef);
             } else {
 
-                // Do outbound value conversion
-                ObjectValue converter = Values.getMetaItemValueOrThrow(
+                Pair<Boolean, Value> ignoreAndConverted = Protocol.doOutboundValueProcessing(
                     attribute,
-                    META_ATTRIBUTE_WRITE_VALUE_CONVERTER,
-                    false,
-                    false)
-                    .flatMap(Values::getObject)
-                    .orElse(null);
+                    event.getValue().orElse(null),
+                    dynamicAttributes.contains(attributeRef));
 
-                if (converter != null) {
-                    LOG.fine("Applying attribute value converter to attribute write: " + event.getAttributeRef());
-
-                    ConvertedValue convertedValue = assetService.applyValueConverter(event.getValue().orElse(null), converter);
-
-                    if (convertedValue.isIgnore()) {
-                        LOG.info("Value converter returned '" + ConvertedValue.IGNORE + "' so ignoring attribute value");
-                        return;
-                    }
-                    event.getAttributeState().setValue(convertedValue.getValue());
+                if (ignoreAndConverted.key) {
+                    LOG.fine("Value conversion returned ignore so attribute will not write to protocol: " + attribute.getReferenceOrThrow());
+                    return;
                 }
 
                 AssetAttribute protocolConfiguration = getLinkedProtocolConfiguration(attribute);
-                processLinkedAttributeWrite(event, protocolConfiguration);
+                processLinkedAttributeWrite(event, ignoreAndConverted.value, protocolConfiguration);
             }
         });
     }
@@ -313,14 +341,11 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     /**
-     * Update the value of a linked attribute. Call this to publish new sensor values. This will apply any
-     * {@link ValueFilter}s that have been set for the {@link Attribute} against the {@link AttributeState#getValue}
-     * before sending on the sensor queue.
+     * Update the value of a linked attribute. Call this to publish new sensor values. This will call
+     * {@link #doInboundValueProcessing} before sending on the sensor queue.
      */
-    @SuppressWarnings("unchecked")
-    final protected void updateLinkedAttribute(final AttributeState finalState, long timestamp) {
+    final protected void updateLinkedAttribute(final AttributeState state, long timestamp) {
         withLock(getProtocolName() + "::updateLinkedAttribute", () -> {
-            AttributeState state = finalState;
             AssetAttribute attribute = linkedAttributes.get(state.getAttributeRef());
 
             if (attribute == null) {
@@ -328,54 +353,14 @@ public abstract class AbstractProtocol implements Protocol {
                 return;
             }
 
-            if (state.getValue().isPresent()) {
-                Value value = state.getValue().get();
-                ValueFilter[] filters = Protocol.getLinkedAttributeValueFilters(attribute).orElse(null);
+            Pair<Boolean, Value> ignoreAndConverted = Protocol.doInboundValueProcessing(attribute, state.getValue().orElse(null), assetService);
 
-                if (filters != null) {
-                    value = assetService.applyValueFilters(value, filters);
-                }
-
-                ObjectValue converter = Values.getMetaItemValueOrThrow(
-                    attribute,
-                    META_ATTRIBUTE_VALUE_CONVERTER,
-                    false,
-                    false)
-                    .flatMap(Values::getObject)
-                    .orElse(null);
-
-                if (converter != null) {
-                    LOG.fine("Applying attribute value converter to attribute: " + state.getAttributeRef());
-
-                    ConvertedValue convertedValue = assetService.applyValueConverter(value, converter);
-
-                    if (convertedValue.isIgnore()) {
-                        LOG.info("Value converter returned '" + ConvertedValue.IGNORE + "' so ignoring attribute value");
-                        return;
-                    }
-                    value = convertedValue.getValue();
-                }
-
-                // Do built in value conversion
-                Optional<ValueType> attributeValueType = attribute.getType().map(AttributeValueDescriptor::getValueType);
-
-                if (value != null && attributeValueType.isPresent()) {
-                    if (attributeValueType.get() != value.getType()) {
-                        LOG.fine("Trying to convert value: " + value.getType() + " -> " + attributeValueType.get());
-                        Optional<Value> convertedValue = Values.convert(value, attributeValueType.get());
-                        if (!convertedValue.isPresent()) {
-                            LOG.warning("Failed to convert value: " + value.getType() + " -> " + attributeValueType.get());
-                            LOG.warning("Cannot send linked attribute update");
-                            return;
-                        } else {
-                            value = convertedValue.get();
-                        }
-                    }
-                }
-
-                state = new AttributeState(state.getAttributeRef(), value);
+            if (ignoreAndConverted.key) {
+                LOG.fine("Value conversion returned ignore so attribute will not be updated: " + attribute.getReferenceOrThrow());
+                return;
             }
-            AttributeEvent attributeEvent = new AttributeEvent(state, timestamp);
+
+            AttributeEvent attributeEvent = new AttributeEvent(new AttributeState(attribute.getReferenceOrThrow(), ignoreAndConverted.value), timestamp);
             LOG.fine("Sending on sensor queue: " + attributeEvent);
             producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, getProtocolName());
         });
@@ -454,6 +439,9 @@ public abstract class AbstractProtocol implements Protocol {
         if (descriptors.stream().noneMatch(d -> d.getUrn().equalsIgnoreCase(META_ATTRIBUTE_VALUE_CONVERTER.getUrn()))) {
             descriptors.add(META_ATTRIBUTE_VALUE_CONVERTER);
         }
+        if (descriptors.stream().noneMatch(d -> d.getUrn().equalsIgnoreCase(META_ATTRIBUTE_WRITE_VALUE.getUrn()))) {
+            descriptors.add(META_ATTRIBUTE_WRITE_VALUE);
+        }
         if (descriptors.stream().noneMatch(d -> d.getUrn().equalsIgnoreCase(META_ATTRIBUTE_WRITE_VALUE_CONVERTER.getUrn()))) {
             descriptors.add(META_ATTRIBUTE_WRITE_VALUE_CONVERTER);
         }
@@ -530,7 +518,12 @@ public abstract class AbstractProtocol implements Protocol {
     abstract protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration);
 
     /**
-     * Attribute event (write) has been requested for an attribute linked to the specified protocol configuration.
+     * Attribute event (write) has been requested for an attribute linked to the specified protocol configuration. The
+     * processedValue is the resulting {@link Value} after applying any {@link #META_ATTRIBUTE_WRITE_VALUE} and/or
+     * {@link #META_ATTRIBUTE_WRITE_VALUE_CONVERTER} {@link MetaItem}s that are defined on the {@link Attribute}; if
+     * neither are defined then the processedValue will be the same as {@link AttributeEvent#getValue}. Protocol
+     * implementations should generally use the processedValue but may also choose to use the original value for some
+     * purpose if required (e.g. {@link org.openremote.agent.protocol.http.HttpClientProtocol#META_QUERY_PARAMETERS}).
      */
-    abstract protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration);
+    abstract protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration);
 }

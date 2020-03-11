@@ -11,6 +11,13 @@ buildscript {
     }
 }
 
+// Give test projects more memory (Gradle 5 reduced this to 512MB)
+subprojects {
+    tasks.withType(Test) {
+        maxHeapSize = "2g"
+    }
+}
+
 // Default repositories for dependency resolution
 repositories {
     maven {

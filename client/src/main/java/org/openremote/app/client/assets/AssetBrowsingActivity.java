@@ -23,6 +23,7 @@ import com.google.gwt.place.shared.Place;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.mvp.AppActivity;
+import org.openremote.model.Constants;
 
 abstract public class AssetBrowsingActivity<P extends Place> extends AppActivity<P> {
 
@@ -38,6 +39,6 @@ abstract public class AssetBrowsingActivity<P extends Place> extends AppActivity
 
     @Override
     protected String[] getRequiredRoles() {
-        return new String[]{"read:assets"};
+        return new String[]{Constants.READ_ASSETS_ROLE};
     }
 }

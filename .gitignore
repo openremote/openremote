@@ -5,6 +5,9 @@
 local.properties
 openremote.log
 dive.log
+*.dab
+*.sh
+apminsight-javaagent/
 
 build/
 .gradle
@@ -34,3 +37,4 @@ console/iOS/Pods
 client/src/main/webapp/gwt/
 client/.externalToolBuilders/
 manager/.factorypath
+.sts4-cache/

@@ -18,10 +18,15 @@ package org.openremote.model.util;
 
 import javaemul.internal.annotations.GwtIncompatible;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.TemporalAccessor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
 
 /**
  * A helper class with utility methods for
@@ -113,5 +118,41 @@ public class TimeUtil {
     public static boolean isTimeDurationNegativeInfinity(String time) {
         time = time != null ? time.trim() : null;
         return "-*".equals(time);
+    }
+
+    /**
+     * Parses ISO8601 strings with optional time and/or offset; if no zone is provided then UTC is assumed if no
+     * time is provided then 00:00:00 is assumed.
+     */
+    public static long parseTimeIso8601(String datetime) {
+        DateTimeFormatter formatter = new DateTimeFormatterBuilder()
+            .parseCaseInsensitive()
+            .append(ISO_LOCAL_DATE)
+            .optionalStart()           // time made optional
+            .appendLiteral('T')
+            .append(ISO_LOCAL_TIME)
+            .optionalStart()           // zone and offset made optional
+            .appendOffsetId()
+            .optionalStart()
+            .appendLiteral('[')
+            .parseCaseSensitive()
+            .appendZoneRegionId()
+            .appendLiteral(']')
+            .optionalEnd()
+            .optionalEnd()
+            .optionalEnd()
+            .toFormatter();
+
+        TemporalAccessor temporalAccessor = formatter.parseBest(datetime, ZonedDateTime::from, LocalDateTime::from, LocalDate::from);
+        ZonedDateTime zonedDateTime;
+
+        if (temporalAccessor instanceof ZonedDateTime) {
+            zonedDateTime = (ZonedDateTime)temporalAccessor;
+        } else if (temporalAccessor instanceof LocalDateTime) {
+            zonedDateTime = ((LocalDateTime)temporalAccessor).atZone(ZoneOffset.UTC);
+        } else {
+            zonedDateTime = ((LocalDate) temporalAccessor).atStartOfDay(ZoneOffset.UTC);
+        }
+        return zonedDateTime.toInstant().toEpochMilli();
     }
 }

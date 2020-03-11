@@ -10,7 +10,8 @@ import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetType
-import org.openremote.model.asset.CalendarEventConfiguration
+import org.openremote.model.attribute.AttributeType
+import org.openremote.model.attribute.AttributeValueType
 import org.openremote.model.attribute.MetaItemType
 import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.calendar.RecurrenceRule
@@ -33,7 +34,7 @@ import java.util.function.Function
 
 import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME
 import static org.openremote.model.asset.AssetType.THING
-import static org.openremote.model.attribute.AttributeValueType.DATETIME
+import static org.openremote.model.attribute.AttributeValueType.TIMESTAMP_ISO8601
 import static org.openremote.model.query.AssetQuery.*
 import static org.openremote.model.query.AssetQuery.Access.PRIVATE
 import static org.openremote.model.query.AssetQuery.Access.PROTECTED
@@ -220,7 +221,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.parentId == managerDemoSetup.smartBuildingId
         asset.parentName == null
         asset.parentType == null
-        asset.realm == keycloakDemoSetup.tenantA.realm
+        asset.realm == keycloakDemoSetup.tenantBuilding.realm
         asset.path.length == 2
         asset.path[0] == managerDemoSetup.apartment1Id
         asset.path[1] == managerDemoSetup.smartBuildingId
@@ -264,7 +265,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.realm == keycloakDemoSetup.masterTenant.realm
         asset.path.length == 1
         asset.path[0] == managerDemoSetup.smartOfficeId
-        asset.getAttribute("geoStreet").get().getValueAsString().get() == "Torenallee 20"
+        asset.getAttribute(AttributeType.GEO_STREET).get().getValueAsString().get() == "Torenallee 20"
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -308,7 +309,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).realm == keycloakDemoSetup.masterTenant.realm
         assets.get(0).path.length == 1
         assets.get(0).path[0] == managerDemoSetup.smartOfficeId
-        assets.get(0).getAttribute("geoStreet").get().getValueAsString().get() == "Torenallee 20"
+        assets.get(0).getAttribute(AttributeType.GEO_STREET).get().getValueAsString().get() == "Torenallee 20"
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -326,7 +327,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).parentId == managerDemoSetup.smartBuildingId
         assets.get(0).parentName == "Smart Building"
         assets.get(0).parentType == AssetType.BUILDING.type
-        assets.get(0).realm == keycloakDemoSetup.tenantA.realm
+        assets.get(0).realm == keycloakDemoSetup.tenantBuilding.realm
         assets.get(0).path == null
         assets.get(0).attributesList.size() == 0
         assets.get(1).id == managerDemoSetup.apartment2Id
@@ -337,7 +338,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(selectExcludePathAndAttributes())
                     .parents(new ParentPredicate(managerDemoSetup.smartBuildingId))
-                    .tenant(new TenantPredicate(keycloakDemoSetup.tenantA.realm))
+                    .tenant(new TenantPredicate(keycloakDemoSetup.tenantBuilding.realm))
         )
 
         then: "result should match"
@@ -351,7 +352,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(selectExcludePathAndAttributes())
                     .parents(new ParentPredicate(managerDemoSetup.smartBuildingId))
-                    .tenant(new TenantPredicate(keycloakDemoSetup.tenantA.realm))
+                    .tenant(new TenantPredicate(keycloakDemoSetup.tenantBuilding.realm))
                     .orderBy(new OrderBy(NAME, true))
         )
 
@@ -418,9 +419,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(1).getAttributesList().size() == 7
         !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
-        assets.get(1).getAttribute("currentTemperature").get().meta.size() == 6
+        assets.get(1).getAttribute("currentTemperature").get().meta.size() == 7
         !assets.get(1).getAttribute("targetTemperature").get().getValue().isPresent()
-        assets.get(1).getAttribute("targetTemperature").get().meta.size() == 4
+        assets.get(1).getAttribute("targetTemperature").get().meta.size() == 6
         assets.get(2).id == managerDemoSetup.apartment1KitchenId
         assets.get(3).id == managerDemoSetup.apartment1HallwayId
         assets.get(4).id == managerDemoSetup.apartment1Bedroom1Id
@@ -494,7 +495,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(selectExcludePathAndAttributes())
                     .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
-                    .attributeMeta(new AttributeMetaPredicate(MetaItemType.STORE_DATA_POINTS, new BooleanPredicate(true)))
+                    .attributeMeta(new MetaPredicate(MetaItemType.STORE_DATA_POINTS, new BooleanPredicate(true)))
         )
 
         then: "result should match"
@@ -505,7 +506,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
                 new AssetQuery()
                     .select(selectExcludePathAndAttributes())
-                    .attributeMeta(new AttributeMetaPredicate().itemValue(new StringPredicate(Match.END, "kWh")))
+                    .attributeMeta(new MetaPredicate().itemValue(new StringPredicate(Match.END, "kWh")))
         )
 
         then: "result should match"
@@ -517,7 +518,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(selectExcludePathAndAttributes())
                     .attributeMeta(
-                        new AttributeRefPredicate(
+                        new RefPredicate(
                                 MetaItemType.AGENT_LINK,
                                 managerDemoSetup.agentId,
                                 managerDemoSetup.agentProtocolConfigName
@@ -534,7 +535,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(selectExcludePathAndAttributes())
                     .attributeMeta(
-                        new AttributeRefPredicate(
+                        new RefPredicate(
                                 MetaItemType.AGENT_LINK,
                                 managerDemoSetup.agentId,
                                 managerDemoSetup.agentProtocolConfigName
@@ -552,7 +553,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(selectExcludePathAndAttributes())
                     .attributeMeta(
-                        new AttributeRefPredicate(
+                        new RefPredicate(
                                 MetaItemType.AGENT_LINK,
                                 managerDemoSetup.agentId,
                                 managerDemoSetup.agentProtocolConfigName
@@ -569,7 +570,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(selectExcludePathAndAttributes())
                     .attributeMeta(
-                        new AttributeRefPredicate(
+                        new RefPredicate(
                                 MetaItemType.AGENT_LINK,
                                 managerDemoSetup.agentId,
                                 managerDemoSetup.agentProtocolConfigName
@@ -587,7 +588,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(selectExcludePathAndAttributes())
                     .attributeMeta(
-                        new AttributeRefPredicate(
+                        new RefPredicate(
                                 MetaItemType.AGENT_LINK,
                                 managerDemoSetup.agentId,
                                 managerDemoSetup.agentProtocolConfigName
@@ -604,7 +605,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(selectExcludePathAndAttributes())
                     .attributeMeta(
-                        new AttributeRefPredicate(
+                        new RefPredicate(
                                 managerDemoSetup.agentId,
                                 managerDemoSetup.agentProtocolConfigName
                         )
@@ -628,12 +629,12 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.id == managerDemoSetup.apartment1LivingroomId
         asset.version == 0
         asset.createdOn.time < System.currentTimeMillis()
-        asset.name == "Living Room"
+        asset.name == "Living Room 1"
         asset.wellKnownType == AssetType.ROOM
         asset.parentId != null
         asset.parentName == "Apartment 1"
         asset.parentType == AssetType.RESIDENCE.getType()
-        asset.realm == keycloakDemoSetup.tenantA.realm
+        asset.realm == keycloakDemoSetup.tenantBuilding.realm
         asset.path != null
         asset.getAttributesList().size() == 3
         asset.getAttribute("co2Level").isPresent()
@@ -641,7 +642,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.getAttribute("lastPresenceDetected").isPresent()
         asset.getAttribute("lastPresenceDetected").get().meta.size() == 3
         asset.getAttribute("motionSensor").isPresent()
-        asset.getAttribute("motionSensor").get().meta.size() == 6
+        asset.getAttribute("motionSensor").get().meta.size() == 7
 
         when: "a query is executed to select a subset of protected attributes"
         asset = assetStorageService.find(
@@ -655,12 +656,12 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.id == managerDemoSetup.apartment1LivingroomId
         asset.version == 0
         asset.createdOn.time < System.currentTimeMillis()
-        asset.name == "Living Room"
+        asset.name == "Living Room 1"
         asset.wellKnownType == AssetType.ROOM
         asset.parentId != null
         asset.parentName == "Apartment 1"
         asset.parentType == AssetType.RESIDENCE.getType()
-        asset.realm == keycloakDemoSetup.tenantA.realm
+        asset.realm == keycloakDemoSetup.tenantBuilding.realm
         asset.path != null
         asset.getAttributesList().size() == 1
         asset.getAttribute("co2Level").isPresent()
@@ -866,15 +867,15 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "an asset is given a calendar event configuration attribute"
         def lobby = assetStorageService.find(managerDemoSetup.lobbyId, true)
-        def calendar = Calendar.getInstance(Locale.ROOT);
+        def calendar = Calendar.getInstance(Locale.ROOT)
         calendar.setTimeInMillis(1517151600000) // 28/01/2018 @ 3:00pm (UTC)
         def start = calendar.getTime()
         calendar.add(Calendar.HOUR, 2)
         def end = calendar.getTime()
-        def recur = new RecurrenceRule(RecurrenceRule.Frequency.DAILY, 2, 5)
+        def recur = new RecurrenceRule(RecurrenceRule.Frequency.DAILY, 2, 5, null)
 
         lobby.addAttributes(
-            CalendarEventConfiguration.toAttribute(new CalendarEvent(start, end, recur))
+            new AssetAttribute("test", AttributeValueType.CALENDAR_EVENT, new CalendarEvent(start, end, recur).toValue())
         )
         lobby = assetStorageService.merge(lobby)
 
@@ -886,85 +887,65 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a calendar event filtering query is executed for the correct date and time of the event"
         def assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new Select().excludePath(true)) // Need attributes to do calendar filtering
+                .select(new Select().excludePath(true).excludeRealm(true).excludeAttributeMeta(true)) // Need attributes to do calendar filtering
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
-                .calendarEventActive(1517155200) // 28/01/2018 @ 4:00pm (UTC)
+                .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517155200000)))) // 30/01/2018 @ 6:00pm (UTC)
                 .orderBy(new OrderBy(NAME))
         )
 
-        then: "all 5 realm assets should be returned"
-        assets.size() == 5
-        assets[0].id == managerDemoSetup.agentId
-        assets[0].name == "Demo Agent"
-        assets[1].id == managerDemoSetup.thingId
-        assets[1].name == "Demo Thing"
-        assets[2].id == managerDemoSetup.groundFloorId
-        assets[2].name == "Ground Floor"
-        assets[3].id == managerDemoSetup.lobbyId
-        assets[3].name == "Lobby"
-        assets[4].id == managerDemoSetup.smartOfficeId
-        assets[4].name == "Smart Office"
+        then: "the lobby asset should be returned"
+        assets.size() == 1
+        assets[0].id == managerDemoSetup.lobbyId
+        assets[0].name == "Lobby"
 
         when: "a calendar event filtering query is executed for future event on a correct day but wrong time"
         assets = assetStorageService.findAll(
             new AssetQuery()
                 .select(new Select().excludePath(true))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
-                .calendarEventActive(1517335200) // 30/01/2018 @ 6:00pm (UTC)
+                .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517335200000)))) // 30/01/2018 @ 6:00pm (UTC)
                 .orderBy(new OrderBy(NAME))
         )
 
-        then: "the calendar event asset should not be included"
-        assets.size() == 4
-        !assets.any {it.name == "Lobby"}
+        then: "no assets should be returned"
+        assets.size() == 0
 
         when: "a calendar event filtering query is executed for a future event on a wrong day but correct time"
         assets = assetStorageService.findAll(
             new AssetQuery()
                 .select(new Select().excludePath(true))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
-                .calendarEventActive(1517238600) // 29/01/2018 @ 3:10pm (UTC)
+                .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517238600000)))) // 29/01/2018 @ 3:10pm (UTC)
                 .orderBy(new OrderBy(NAME))
         )
 
-        then: "the calendar event asset should not be included"
-        assets.size() == 4
-        !assets.any {it.name == "Lobby"}
+        then: "no assets should be returned"
+        assets.size() == 0
 
         when: "a calendar event filtering query is executed inside a valid future event date and time"
         assets = assetStorageService.findAll(
             new AssetQuery()
                 .select(new Select().excludePath(true)) // Need attributes to do calendar filtering
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
-                .calendarEventActive(1517849400) // 05/02/2018 @ 4:50pm (UTC))
+                .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517849400000)))) // 05/02/2018 @ 4:50pm (UTC))
                 .orderBy(new OrderBy(NAME))
         )
 
-        then: "all 5 realm assets should be returned"
-        assets.size() == 5
-        assets[0].id == managerDemoSetup.agentId
-        assets[0].name == "Demo Agent"
-        assets[1].id == managerDemoSetup.thingId
-        assets[1].name == "Demo Thing"
-        assets[2].id == managerDemoSetup.groundFloorId
-        assets[2].name == "Ground Floor"
-        assets[3].id == managerDemoSetup.lobbyId
-        assets[3].name == "Lobby"
-        assets[4].id == managerDemoSetup.smartOfficeId
-        assets[4].name == "Smart Office"
+        then: "the lobby asset should be returned"
+        assets.size() == 1
+        assets[0].id == managerDemoSetup.lobbyId
 
         when: "a calendar event filtering query is executed for some time after the last occurrence"
         assets = assetStorageService.findAll(
             new AssetQuery()
                 .select(new Select().excludePath(true))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
-                .calendarEventActive(1518017520) // 02/07/2018 @ 3:32pm (UTC)
+                .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1518017520000)))) // 02/07/2018 @ 3:32pm (UTC)
                 .orderBy(new OrderBy(NAME))
         )
 
-        then: "the calendar event asset should not be included"
-        assets.size() == 4
-        !assets.any {it.name == "Lobby"}
+        then: "no assets should be returned"
+        assets.size() == 0
     }
 
     def "DateTime queries"() {
@@ -972,7 +953,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         def lobby = assetStorageService.find(managerDemoSetup.lobbyId, true)
 
         lobby.addAttributes(
-                new AssetAttribute("openingDate", DATETIME, Values.create("2018-01-28T15:00:00+00:00"))
+                new AssetAttribute("openingDate", TIMESTAMP_ISO8601, Values.create("2018-01-28T15:00:00+00:00"))
         )
         lobby = assetStorageService.merge(lobby)
 

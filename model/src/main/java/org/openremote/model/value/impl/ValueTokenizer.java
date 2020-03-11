@@ -102,9 +102,6 @@ class ValueTokenizer {
         while (true) {
             c = next();
             switch (c) {
-                case '\r':
-                case '\n':
-                    throw new ValueException("");
                 case INVALID_CHAR:
                     throw new ValueException("Invalid string: closing " + startChar + " is not found");
                 case '\\':
@@ -292,6 +289,11 @@ class ValueTokenizer {
 
         if ("false".equals(literal)) {
             return valueFactory.create(false);
+        }
+
+        // Be tolerant of bad JSON with NaN
+        if ("NaN".equalsIgnoreCase(literal)) {
+            return null;
         }
 
         final char c = literal.charAt(0);

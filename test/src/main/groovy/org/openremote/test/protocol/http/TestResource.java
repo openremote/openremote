@@ -19,6 +19,7 @@
  */
 package org.openremote.test.protocol.http;
 
+import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 
 import javax.annotation.security.RolesAllowed;
@@ -31,7 +32,7 @@ public interface TestResource {
 
     @POST
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({"write:assets"})
+    @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
     void postAsset(Asset asset);
 
     @GET

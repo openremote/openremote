@@ -23,7 +23,9 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
 
 /**
- * None or one of the options should be set the precedence is:
+ * Controls which {@link org.openremote.model.asset.Asset}s the {@link RuleAction} is applied to; if not supplied or
+ * none of the options are supplied then the default behaviour is to use all {@link org.openremote.model.asset.Asset}s
+ * that caused the rule to trigger. The precedence is:
  * <ol>
  * <li>{@link #ruleConditionTag}</li>
  * <li>{@link #assets}</li>
@@ -32,6 +34,7 @@ import org.openremote.model.query.UserQuery;
  */
 public class RuleActionTarget {
     public String ruleConditionTag;
+    public AssetQuery matchedAssets;
     public AssetQuery assets;
     public UserQuery users;
 }

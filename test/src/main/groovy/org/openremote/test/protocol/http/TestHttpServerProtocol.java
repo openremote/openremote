@@ -23,6 +23,7 @@ import org.openremote.agent.protocol.http.AbstractHttpServerProtocol;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.MetaItemDescriptor;
+import org.openremote.model.value.Value;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -58,7 +59,7 @@ public class TestHttpServerProtocol extends AbstractHttpServerProtocol {
     }
 
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+    protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
     }
 
     @Override

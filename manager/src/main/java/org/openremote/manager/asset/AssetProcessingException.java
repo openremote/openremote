@@ -121,22 +121,21 @@ public class AssetProcessingException extends RuntimeException {
     }
 
     final protected Reason reason;
-    final protected String message;
 
     public AssetProcessingException(Reason reason) {
         this(reason, null);
     }
 
     public AssetProcessingException(Reason reason, String message) {
+        this(reason, message, null);
+    }
+
+    public AssetProcessingException(Reason reason, String message, Throwable cause) {
+        super(reason + (message != null ? " (" + message + ")": ""), cause);
         this.reason = reason;
-        this.message = message;
     }
 
     public Reason getReason() {
         return reason;
-    }
-
-    public String getReasonPhrase() {
-        return getReason() + (message != null ? " (" + message + ")": "");
     }
 }

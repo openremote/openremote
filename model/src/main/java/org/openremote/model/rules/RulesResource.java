@@ -20,6 +20,7 @@
 package org.openremote.model.rules;
 
 import jsinterop.annotations.JsType;
+import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
@@ -27,6 +28,8 @@ import org.openremote.model.rules.geofence.GeofenceDefinition;
 import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
 import javax.ws.rs.*;
+
+import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -40,7 +43,7 @@ public interface RulesResource {
     @GET
     @Path("info/global")
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:rules"})
+    @RolesAllowed({Constants.READ_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     RulesEngineInfo getGlobalEngineInfo(@BeanParam RequestParams requestParams);
 
@@ -50,7 +53,7 @@ public interface RulesResource {
     @GET
     @Path("info/tenant/{realm}")
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:rules"})
+    @RolesAllowed({Constants.READ_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     RulesEngineInfo getTenantEngineInfo(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
@@ -60,7 +63,7 @@ public interface RulesResource {
     @GET
     @Path("info/asset/{assetId}")
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:rules"})
+    @RolesAllowed({Constants.READ_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     RulesEngineInfo getAssetEngineInfo(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
@@ -71,9 +74,9 @@ public interface RulesResource {
     @GET
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:rules"})
+    @RolesAllowed({Constants.READ_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
-    GlobalRuleset[] getGlobalRulesets(@BeanParam RequestParams requestParams, @QueryParam("language")Ruleset.Lang language, @QueryParam("fullyPopulate") boolean fullyPopulate);
+    GlobalRuleset[] getGlobalRulesets(@BeanParam RequestParams requestParams, @QueryParam("language") List<Ruleset.Lang> languages, @QueryParam("fullyPopulate") boolean fullyPopulate);
 
     /**
      * Retrieve rules of a tenant. The superuser can retrieve rules of all realms, a 403 status is returned if a regular
@@ -85,7 +88,7 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
-    TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @QueryParam("language")Ruleset.Lang language, @QueryParam("fullyPopulate") boolean fullyPopulate);
+    TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @QueryParam("language") List<Ruleset.Lang> languages, @QueryParam("fullyPopulate") boolean fullyPopulate);
 
     /**
      * Retrieve rules of an asset. The superuser can retrieve rules of all realms and assets, a 403 status is returned
@@ -97,7 +100,7 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
-    AssetRuleset[] getAssetRulesets(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @QueryParam("language")Ruleset.Lang language, @QueryParam("fullyPopulate") boolean fullyPopulate);
+    AssetRuleset[] getAssetRulesets(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @QueryParam("language") List<Ruleset.Lang> languages, @QueryParam("fullyPopulate") boolean fullyPopulate);
 
     /* ################################################################################################# */
 
@@ -108,8 +111,8 @@ public interface RulesResource {
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(204)
-    @RolesAllowed({"write:rules"})
+    @SuccessStatusCode(200)
+    @RolesAllowed({Constants.WRITE_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     long createGlobalRuleset(@BeanParam RequestParams requestParams, @Valid GlobalRuleset ruleset);
 
@@ -121,7 +124,7 @@ public interface RulesResource {
     @Path("{id}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:rules"})
+    @RolesAllowed({Constants.READ_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     GlobalRuleset getGlobalRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
@@ -133,7 +136,7 @@ public interface RulesResource {
     @Path("{id}")
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
-    @RolesAllowed({"write:rules"})
+    @RolesAllowed({Constants.WRITE_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     void updateGlobalRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid GlobalRuleset ruleset);
 
@@ -145,7 +148,7 @@ public interface RulesResource {
     @Path("{id}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
-    @RolesAllowed({"write:rules"})
+    @RolesAllowed({Constants.WRITE_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     void deleteGlobalRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
@@ -159,8 +162,8 @@ public interface RulesResource {
     @Path("tenant")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(204)
-    @RolesAllowed({"write:rules"})
+    @SuccessStatusCode(200)
+    @RolesAllowed({Constants.WRITE_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     long createTenantRuleset(@BeanParam RequestParams requestParams, @Valid TenantRuleset ruleset);
 
@@ -172,7 +175,7 @@ public interface RulesResource {
     @Path("tenant/{id}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:rules"})
+    @RolesAllowed({Constants.READ_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     TenantRuleset getTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
@@ -184,7 +187,7 @@ public interface RulesResource {
     @Path("tenant/{id}")
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
-    @RolesAllowed({"write:rules"})
+    @RolesAllowed({Constants.WRITE_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     void updateTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid TenantRuleset ruleset);
 
@@ -196,7 +199,7 @@ public interface RulesResource {
     @Path("tenant/{id}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
-    @RolesAllowed({"write:rules"})
+    @RolesAllowed({Constants.WRITE_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     void deleteTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
@@ -211,8 +214,8 @@ public interface RulesResource {
     @Path("asset")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(204)
-    @RolesAllowed({"write:rules"})
+    @SuccessStatusCode(200)
+    @RolesAllowed({Constants.WRITE_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     long createAssetRuleset(@BeanParam RequestParams requestParams, @Valid AssetRuleset ruleset);
 
@@ -225,7 +228,7 @@ public interface RulesResource {
     @Path("asset/{id}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"write:rules"})
+    @RolesAllowed({Constants.WRITE_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     AssetRuleset getAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
@@ -238,7 +241,7 @@ public interface RulesResource {
     @Path("asset/{id}")
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
-    @RolesAllowed({"write:rules"})
+    @RolesAllowed({Constants.WRITE_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     void updateAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid AssetRuleset ruleset);
 
@@ -251,7 +254,7 @@ public interface RulesResource {
     @Path("asset/{id}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
-    @RolesAllowed({"write:rules"})
+    @RolesAllowed({Constants.WRITE_RULES_ROLE})
     @SuppressWarnings("unusable-by-js")
     void deleteAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 

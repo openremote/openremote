@@ -26,6 +26,7 @@ import org.openremote.app.client.admin.users.AdminUsersPlace;
 import org.openremote.app.client.event.ShowSuccessEvent;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
+import org.openremote.model.Constants;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.http.ConstraintViolation;
@@ -111,7 +112,7 @@ public class AdminUserEditActivity
 
     @Override
     protected String[] getRequiredRoles() {
-        return new String[]{"read:admin", "write:admin"};
+        return new String[]{Constants.READ_ADMIN_ROLE, Constants.WRITE_ADMIN_ROLE};
     }
 
     @Override

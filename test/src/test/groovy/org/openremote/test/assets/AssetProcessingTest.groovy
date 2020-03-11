@@ -10,6 +10,7 @@ import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ProtocolConfiguration
 import org.openremote.model.attribute.*
+import org.openremote.model.value.Value
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -71,7 +72,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             }
 
             @Override
-            protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+            protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
                 LOG.info("Mock Protocol: processLinkedAttributeWrite")
                 sendToActuatorEvents.add(event)
             }

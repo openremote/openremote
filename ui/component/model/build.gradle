@@ -16,7 +16,9 @@ buildscript {
 
 dependencies {
     compile resolveProject(":model")
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"    
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    compile "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
     compile "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
 }
 
@@ -45,6 +47,7 @@ generateTypeScript {
     ]
     optionalProperties = "all" // TODO: cleanup model to be more explicit about optional params
     mapEnum = cz.habarta.typescript.generator.EnumMapping.asEnum
+    mapDate = cz.habarta.typescript.generator.DateMapping.asNumber
     outputFile = "src/index.ts"
     outputFileType = "implementationFile"
     outputKind = "module"
@@ -57,6 +60,8 @@ generateTypeScript {
     ]
     jackson2Modules = [
         "com.fasterxml.jackson.datatype.jdk8.Jdk8Module",
+        "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule",
+        "com.fasterxml.jackson.module.paramnames.ParameterNamesModule",
         "org.openremote.model.ModelModule"
     ]
     extensionsWithConfiguration = [
@@ -72,9 +77,13 @@ generateTypeScript {
     ]
 }
 
+build.dependsOn generateTypeScript, npmBuild
+npmBuild.dependsOn generateTypeScript
+
 clean {
     doLast {
-        delete "dist"
+        def dir = new File("${projectDir}/dist")
+        dir.deleteDir()
     }
 }
 

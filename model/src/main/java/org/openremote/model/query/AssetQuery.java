@@ -20,7 +20,6 @@
 package org.openremote.model.query;
 
 import org.openremote.model.asset.AssetType;
-import org.openremote.model.asset.CalendarEventConfiguration;
 import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.query.filter.*;
 
@@ -254,8 +253,7 @@ public class AssetQuery {
     public String[] userIds;
     public StringPredicate[] types;
     public LogicGroup<AttributePredicate> attributes;
-    public AttributeMetaPredicate[] attributeMeta;
-    public CalendarEventActivePredicate calendarEventActive;
+    public MetaPredicate[] attributeMeta;
     // Ordering
     public OrderBy orderBy;
     public int limit;
@@ -383,7 +381,6 @@ public class AssetQuery {
         return attributes(new AttributePredicate(attributeName));
     }
 
-
     public AssetQuery attributeValue(String name, ValuePredicate valuePredicate) {
         return attributes(new AttributePredicate(new StringPredicate(name), valuePredicate));
     }
@@ -416,28 +413,13 @@ public class AssetQuery {
         return attributeValue(name, new NumberPredicate(d, operator));
     }
 
-    public AssetQuery attributeMeta(AttributeMetaPredicate... attributeMetaPredicates) {
+    public AssetQuery attributeMeta(MetaPredicate... attributeMetaPredicates) {
         this.attributeMeta = attributeMetaPredicates;
         return this;
     }
 
     public AssetQuery orderBy(OrderBy orderBy) {
         this.orderBy = orderBy;
-        return this;
-    }
-
-    /**
-     * Will filter out assets that have a {@link CalendarEventConfiguration} attribute that results in the event not
-     * being 'active/in progress' at the specified time. Assets without a {@link CalendarEventConfiguration} attribute
-     * are assumed to always be in progress (i.e. will always pass this check).
-     *
-     * <b>
-     * NOTE: This predicate is applied in memory and the results should be limited as much as possible by applying other
-     * predicates to the query to avoid performance issues.
-     * </b>
-     */
-    public AssetQuery calendarEventActive(long timestampSeconds) {
-        calendarEventActive = new CalendarEventActivePredicate(timestampSeconds);
         return this;
     }
 

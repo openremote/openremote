@@ -23,6 +23,7 @@ import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -36,6 +37,7 @@ import java.util.logging.Logger;
 import static org.openremote.agent.protocol.macro.MacroConfiguration.getMacroActionIndex;
 import static org.openremote.agent.protocol.macro.MacroConfiguration.isValidMacroConfiguration;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE;
 
 /**
@@ -49,7 +51,7 @@ import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE
  */
 public class MacroProtocol extends AbstractProtocol {
 
-    private static final Logger LOG = Logger.getLogger(MacroProtocol.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, MacroProtocol.class);
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":macro";
     public static final String PROTOCOL_DISPLAY_NAME = "Macro";
@@ -133,7 +135,7 @@ public class MacroProtocol extends AbstractProtocol {
         }
     }
 
-    protected final Map<AttributeRef, Pair<Boolean, List<MacroAction>>> macroMap = new ConcurrentHashMap<>();
+    protected final Map<AttributeRef, List<MacroAction>> macroMap = new ConcurrentHashMap<>();
     protected final Map<AttributeRef, MacroExecutionTask> executions = new ConcurrentHashMap<>();
 
     @Override
@@ -180,18 +182,17 @@ public class MacroProtocol extends AbstractProtocol {
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         // Protocol configuration is actually a Macro Configuration
         AttributeRef macroRef = protocolConfiguration.getReferenceOrThrow();
-        boolean isEnabled = protocolConfiguration.isEnabled();
 
         // Check macro configuration is valid
         if (!isValidMacroConfiguration(protocolConfiguration)) {
             LOG.fine("Macro configuration is not valid: " + protocolConfiguration);
             updateStatus(macroRef, ConnectionStatus.ERROR);
             // Put an empty list of actions against this macro
-            macroMap.put(macroRef, new Pair<>(isEnabled, Collections.emptyList()));
+            macroMap.put(macroRef, Collections.emptyList());
         } else {
             // Store the macro actions for later execution requests
-            macroMap.put(macroRef, new Pair<>(isEnabled, MacroConfiguration.getMacroActions(protocolConfiguration)));
-            updateStatus(macroRef, isEnabled ? ConnectionStatus.CONNECTED : ConnectionStatus.DISABLED);
+            macroMap.put(macroRef, MacroConfiguration.getMacroActions(protocolConfiguration));
+            updateStatus(macroRef, ConnectionStatus.CONNECTED);
         }
     }
 
@@ -257,7 +258,7 @@ public class MacroProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+    protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
 
         AssetAttribute attribute = getLinkedAttribute(event.getAttributeRef());
 
@@ -324,26 +325,18 @@ public class MacroProtocol extends AbstractProtocol {
     }
 
     protected List<MacroAction> getMacroActions(AttributeRef protocolConfigurationRef) {
-        Pair<Boolean, List<MacroAction>> actionsEnabledInfo;
-        actionsEnabledInfo = macroMap.get(protocolConfigurationRef);
+        List<MacroAction> macroActions = macroMap.get(protocolConfigurationRef);
 
-        if (actionsEnabledInfo == null || actionsEnabledInfo.value.size() == 0) {
+        if (macroActions == null || macroActions.isEmpty()) {
             LOG.fine("No macro actions found for macro configuration: " + protocolConfigurationRef);
             return Collections.emptyList();
         }
 
-        if (!actionsEnabledInfo.key) {
-            LOG.fine("Macro configuration is disabled");
-            return Collections.emptyList();
-        }
-
-        return actionsEnabledInfo.value;
+        return macroActions;
     }
 
     protected void executeMacro(AttributeRef attributeRef, List<MacroAction> actions, boolean repeat) {
         MacroExecutionTask task = new MacroExecutionTask(attributeRef, actions, repeat);
         task.start();
     }
-
-
 }

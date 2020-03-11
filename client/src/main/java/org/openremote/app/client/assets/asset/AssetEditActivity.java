@@ -21,7 +21,6 @@ package org.openremote.app.client.assets.asset;
 
 import com.google.gwt.user.client.ui.IsWidget;
 import org.openremote.app.client.Environment;
-import org.openremote.app.client.app.AppControllerImpl;
 import org.openremote.app.client.assets.*;
 import org.openremote.app.client.assets.attributes.*;
 import org.openremote.app.client.assets.browser.AssetBrowser;
@@ -36,6 +35,7 @@ import org.openremote.app.client.widget.AttributeLinkEditor;
 import org.openremote.app.client.widget.AttributeRefEditor;
 import org.openremote.app.client.widget.FormButton;
 import org.openremote.app.client.widget.ValueEditors;
+import org.openremote.model.Constants;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.AgentLink;
@@ -48,7 +48,7 @@ import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.map.MapResource;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.AttributeMetaPredicate;
+import org.openremote.model.query.filter.MetaPredicate;
 import org.openremote.model.query.filter.BooleanPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.util.EnumUtil;
@@ -148,7 +148,7 @@ public class AssetEditActivity
 
     @Override
     protected String[] getRequiredRoles() {
-        return new String[]{"read:assets", "write:assets"};
+        return new String[]{Constants.READ_ASSETS_ROLE, Constants.WRITE_ASSETS_ROLE};
     }
 
     @Override
@@ -376,7 +376,7 @@ public class AssetEditActivity
             }
 
             // Agents must have protocol configurations
-            query.attributeMeta(new AttributeMetaPredicate(MetaItemType.PROTOCOL_CONFIGURATION, new BooleanPredicate(true)));
+            query.attributeMeta(new MetaPredicate(MetaItemType.PROTOCOL_CONFIGURATION, new BooleanPredicate(true)));
 
             // Only show protocol configurations
             attributeFilter = ProtocolConfiguration::isProtocolConfiguration;

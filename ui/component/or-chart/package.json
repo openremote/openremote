@@ -1,0 +1,35 @@
+{
+  "name": "@openremote/or-chart",
+  "version": "1.1.0",
+  "description": "OpenRemote chart",
+  "main": "dist/umd/index.bundle.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "echo \"No tests\" && exit 0",
+    "prepublishOnly": "npx tsc -b && npx webpack"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@material/data-table": "^4.0.0",
+    "@material/dialog": "^4.0.0",
+    "@openremote/core": "^1.1.0",
+    "@openremote/or-input": "^1.1.0",
+    "@openremote/or-icon": "^1.1.0",
+    "@openremote/or-panel": "^1.1.0",
+    "@openremote/or-translate": "^1.1.0",
+    "@openremote/or-mwc-components": "^1.1.0",
+    "chart.js": "^2.8.0",
+    "jsonpath-plus": "^1.1.0",
+    "lit-element": "^2.2.1",
+    "moment": "^2.24.0"
+  },
+  "devDependencies": {
+    "@types/chart.js": "^2.8.5",
+    "tslint": ">=5.11.0",
+    "typescript": ">=3.4.5",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.9"
+  }
+}

@@ -33,6 +33,7 @@ import org.openremote.model.asset.agent.ProtocolConfiguration
 import org.openremote.model.attribute.*
 import org.openremote.model.value.RegexValueFilter
 import org.openremote.model.value.SubStringValueFilter
+import org.openremote.model.value.Value
 import org.openremote.model.value.Values
 import org.openremote.test.GwtClientTrait
 import org.openremote.test.ManagerContainerTrait
@@ -96,10 +97,8 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                     updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.ERROR)
                 } else if(protocolConfiguration.getMetaItem("MOCK_THROW_EXCEPTION").isPresent()) {
                     throw new IllegalStateException("Exception occurred whilst linking the protocol configuration")
-                } else if (protocolConfiguration.isEnabled()) {
-                    updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.CONNECTED)
                 } else {
-                    updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.DISABLED)
+                    updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.CONNECTED)
                 }
             }
 
@@ -142,7 +141,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
             }
 
             @Override
-            protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+            protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
                 protocolMethodCalls.add("ATTRIBUTE_WRITE")
                 if (!(protocolLinkedAttributes[protocolConfiguration.getName().orElse("")])
                         .any {(it.getReferenceOrThrow() == event.attributeRef)}) {
@@ -199,7 +198,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
 
         then: "the protocol configurations should be linked and their deployment status should be available in the agent service"
         conditions.eventually {
-            assert protocolLinkedConfigurations.size() == 4
+            assert protocolLinkedConfigurations.size() == 3
             def config1 = protocolLinkedConfigurations.find { (it.getName().orElse("") == "mockConfig1")}
             def config2 = protocolLinkedConfigurations.find { (it.getName().orElse("") == "mockConfig2")}
             def config3 = protocolLinkedConfigurations.find { (it.getName().orElse("") == "mockConfig3")}
@@ -207,11 +206,11 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
             assert config1 != null
             assert config2 != null
             assert config3 != null
-            assert config4 != null
+            assert config4 == null
             assert agentService.getProtocolConnectionStatus(config1.getReferenceOrThrow()) == ConnectionStatus.CONNECTED
             assert agentService.getProtocolConnectionStatus(config2.getReferenceOrThrow()) == ConnectionStatus.ERROR
             assert agentService.getProtocolConnectionStatus(config3.getReferenceOrThrow()) == ConnectionStatus.ERROR
-            assert agentService.getProtocolConnectionStatus(config4.getReferenceOrThrow()) == ConnectionStatus.DISABLED
+            assert agentService.getProtocolConnectionStatus(new AttributeRef(mockAgent.id, "mockConfig4")) == ConnectionStatus.DISABLED
         }
 
         when: "a mock thing asset is created that links to the mock protocol configurations"
@@ -349,15 +348,14 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
             assert protocolLinkedAttributes['mockConfig1'].size() == protocolExpectedLinkedAttributeCount['mockConfig1']
             assert protocolLinkedAttributes['mockConfig2'].size() == protocolExpectedLinkedAttributeCount['mockConfig2']
             assert protocolLinkedAttributes['mockConfig3'].size() == protocolExpectedLinkedAttributeCount['mockConfig3']
-            assert protocolLinkedAttributes['mockConfig4'].size() == protocolExpectedLinkedAttributeCount['mockConfig4']
+            assert protocolLinkedAttributes['mockConfig4'].size() == 0
         }
 
         and: "the deployment should have occurred in the correct order"
-        assert protocolMethodCalls.size() == 16
+        assert protocolMethodCalls.size() == 13
         assert protocolMethodCalls[0] == "LINK_PROTOCOL"
         assert protocolMethodCalls[1] == "LINK_PROTOCOL"
         assert protocolMethodCalls[2] == "LINK_PROTOCOL"
-        assert protocolMethodCalls[3] == "LINK_PROTOCOL"
         assert protocolMethodCalls[4] == "LINK_ATTRIBUTE"
         assert protocolMethodCalls[5] == "LINK_ATTRIBUTE"
         assert protocolMethodCalls[6] == "LINK_ATTRIBUTE"
@@ -367,9 +365,6 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         assert protocolMethodCalls[10] == "LINK_ATTRIBUTE"
         assert protocolMethodCalls[11] == "LINK_ATTRIBUTE"
         assert protocolMethodCalls[12] == "LINK_ATTRIBUTE"
-        assert protocolMethodCalls[13] == "LINK_ATTRIBUTE"
-        assert protocolMethodCalls[14] == "LINK_ATTRIBUTE"
-        assert protocolMethodCalls[15] == "LINK_ATTRIBUTE"
 
         and: "the linked attributes values should have been updated by the protocol"
         conditions.eventually {
@@ -522,13 +517,10 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
 
         then: "the newly enabled protocol configuration should be unlinked and re-linked"
         conditions.eventually {
-            assert protocolMethodCalls.size() == 6
-            assert protocolMethodCalls[0] == "UNLINK_ATTRIBUTE"
-            assert protocolMethodCalls[1] == "UNLINK_ATTRIBUTE"
-            assert protocolMethodCalls[2] == "UNLINK_PROTOCOL"
-            assert protocolMethodCalls[3] == "LINK_PROTOCOL"
-            assert protocolMethodCalls[4] == "LINK_ATTRIBUTE"
-            assert protocolMethodCalls[5] == "LINK_ATTRIBUTE"
+            assert protocolMethodCalls.size() == 3
+            assert protocolMethodCalls[0] == "LINK_PROTOCOL"
+            assert protocolMethodCalls[1] == "LINK_ATTRIBUTE"
+            assert protocolMethodCalls[2] == "LINK_ATTRIBUTE"
         }
 
         cleanup: "the server should be stopped"

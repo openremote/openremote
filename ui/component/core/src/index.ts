@@ -1,7 +1,6 @@
 import "url-search-params-polyfill";
 import {Console} from "./console";
 import rest from "@openremote/rest";
-import {IconSets} from "@openremote/or-icon";
 import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next from "i18next";
@@ -9,12 +8,13 @@ import i18nextXhr from "i18next-xhr-backend";
 import moment from "moment";
 import {
     AssetDescriptor,
-    Attribute,
     AttributeDescriptor,
     AttributeValueDescriptor,
     MetaItemDescriptor
 } from "@openremote/model";
 import * as Util from "./util";
+import orIconSet from "./or-icon-set";
+import {TemplateResult} from "lit-element";
 
 // Re-exports
 export {Util};
@@ -22,6 +22,8 @@ export * from "./asset-mixin";
 export * from "./console";
 export * from "./event";
 export * from "./defaults";
+
+export const DEFAULT_ICONSET: string = "mdi";
 
 export declare type KeycloakPromise<T> = {
     success<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | KeycloakPromise<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | KeycloakPromise<TResult2>) | undefined | null): KeycloakPromise<TResult1 | TResult2>;
@@ -68,7 +70,8 @@ export enum OREvent {
     EVENTS_CONNECTING = "EVENTS_CONNECTING",
     EVENTS_DISCONNECTED = "EVENTS_DISCONNECTED",
     TRANSLATE_INIT = "TRANSLATE_INIT",
-    TRANSLATE_LANGUAGE_CHANGED = "TRANSLATE_LANGUAGE_CHANGED"
+    TRANSLATE_LANGUAGE_CHANGED = "TRANSLATE_LANGUAGE_CHANGED",
+    DISPLAY_REALM_CHANGED = "DISPLAY_REALM_CHANGED"
 }
 
 export enum EventProviderType {
@@ -84,6 +87,17 @@ export interface Credentials {
 export interface LoginOptions {
     redirectUrl?: string;
     credentials?: Credentials;
+}
+
+export interface RealmConfig {
+    appTitle?: string;
+    colors?: TemplateResult;
+    logo?: HTMLTemplateElement | string;
+    logoMobile?: HTMLTemplateElement | string;
+    language?: string;
+}
+export interface RealmConfigs {
+    [key: string]: RealmConfig
 }
 
 export interface ManagerConfig {
@@ -102,7 +116,85 @@ export interface ManagerConfig {
     loadDescriptors?: boolean;
     loadTranslations?: string[];
     translationsLoadPath?: string;
+    realmConfigs?: RealmConfigs;
     configureTranslationsOptions?: (i18next: i18next.InitOptions) => void;
+}
+
+export class IconSetAddedEvent extends CustomEvent<void> {
+
+    public static readonly NAME = "or-iconset-added";
+
+    constructor() {
+        super(IconSetAddedEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export interface OrManagerEventDetail {
+    event: OREvent;
+    error?: ORError;
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [IconSetAddedEvent.NAME]: IconSetAddedEvent;
+    }
+}
+
+export interface IconSetSvg {
+    size: number;
+    icons: {[name: string]: string};
+}
+
+export class ORIconSets {
+    private _icons: {[name: string]: IconSetSvg} = {};
+
+    addIconSet(name: string, iconset: IconSetSvg) {
+        this._icons[name] = iconset;
+        window.dispatchEvent(new IconSetAddedEvent());
+    }
+
+    getIconSet(name: string) {
+        return this._icons[name];
+    }
+
+    getIcon(icon: string | undefined): Element | undefined {
+        if (!icon) {
+            return undefined;
+        }
+
+        let parts = (icon || "").split(":");
+        let iconName = parts.pop();
+        let iconSetName = parts.pop() || DEFAULT_ICONSET;
+        if (!iconSetName || iconSetName === "" || !iconName || iconName === "") {
+            return;
+        }
+
+        let iconSet = IconSets.getIconSet(iconSetName);
+        //iconName = iconName.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); });
+
+        if (!iconSet || !iconSet.icons.hasOwnProperty(iconName)) {
+            return;
+        }
+
+        const iconData = iconSet.icons[iconName];
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("viewBox", "0 0 " + iconSet.size + " " + iconSet.size);
+        svg.style.cssText = "pointer-events: none; display: block; width: 100%; height: 100%;";
+        svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+        svg.setAttribute("focusable", "false");
+        if (iconData.startsWith("<")) {
+            svg.innerHTML = iconData;
+        } else {
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", iconData);
+            path.style.pointerEvents = "pointer-events: var(--or-icon-pointer-events, none);";
+            svg.appendChild(path);
+        }
+        return svg;
+    }
 }
 
 export class AssetModelUtil {
@@ -215,20 +307,6 @@ export class AssetModelUtil {
         return attributeValueDescriptor1.name === attributeValueDescriptor2.name && attributeValueDescriptor1.valueType === attributeValueDescriptor2.valueType;
     }
 
-    public static getMetaValue(metaItemUrn: string | MetaItemDescriptor, attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined): any {
-        const urn = typeof metaItemUrn === "string" ? metaItemUrn : (metaItemUrn as MetaItemDescriptor).urn;
-
-        if (attribute && attribute.meta) {
-            const metaItem = attribute.meta.find((mi) => mi.name === urn);
-            return metaItem ? metaItem.value : undefined;
-        }
-
-        if (descriptor && descriptor.metaItemDescriptors) {
-            const metaItemDescriptor = descriptor.metaItemDescriptors.find((mid) => mid.urn === urn);
-            return metaItemDescriptor ? metaItemDescriptor.initialValue : undefined;
-        }
-    }
-
     public static getMetaInitialValueFromMetaDescriptors(metaItemUrn: MetaItemDescriptor | string, metaItemDescriptors: MetaItemDescriptor[] | undefined): any | undefined {
         if (!metaItemDescriptors) {
             return;
@@ -249,6 +327,22 @@ export class AssetModelUtil {
         const newMetaItem = JSON.parse(JSON.stringify(metaItemDescriptor)) as MetaItemDescriptor;
         newMetaItem.initialValue = initialValue;
         return newMetaItem;
+    }
+
+    public static getAssetDescriptorColor(descriptor: AssetDescriptor | undefined, fallbackColor?: string): string | undefined {
+        return descriptor && descriptor.color ? descriptor.color : fallbackColor;
+    }
+
+    public static getAssetDescriptorIcon(descriptor: AssetDescriptor | undefined, fallbackIcon?: string): string | undefined {
+        return descriptor && descriptor.icon ? descriptor.icon : fallbackIcon;
+    }
+
+    public static hasMetaItem(descriptor: AttributeDescriptor | undefined, name: string): boolean {
+        if (!descriptor || !descriptor.metaItemDescriptors) {
+            return false;
+        }
+
+        return !!descriptor.metaItemDescriptors.find((mid) => mid.urn === name);
     }
 }
 
@@ -331,6 +425,15 @@ export class Manager implements EventProviderFactory {
         this.console.storeData("LANGUAGE", lang);
     }
 
+    get displayRealm() {
+        return this._displayRealm || this._config.realm;
+    }
+
+    set displayRealm(realm: string) {
+        this._displayRealm = realm;
+        this._emitEvent(OREvent.DISPLAY_REALM_CHANGED);
+    }
+
     getEventProvider(): EventProvider | undefined {
         return this.events;
     }
@@ -393,7 +496,7 @@ export class Manager implements EventProviderFactory {
         if (normalisedConfig.clientId === undefined) {
             normalisedConfig.clientId = "openremote";
         }
-
+        
         return normalisedConfig;
     }
 
@@ -409,6 +512,7 @@ export class Manager implements EventProviderFactory {
     private _listeners: EventCallback[] = [];
     private _console!: Console;
     private _events?: EventProvider;
+    private _displayRealm?: string = "";
 
     public isManagerSameOrigin(): boolean {
         if (!this.initialised) {
@@ -469,11 +573,12 @@ export class Manager implements EventProviderFactory {
         // if (success) {
         //     success = await this.doEventsSubscriptionInit();
         // }
-
         if (success) {
             this._ready = true;
             this._emitEvent(OREvent.READY);
         }
+
+        this._displayRealm = config.realm;
 
         return success;
     }
@@ -494,11 +599,12 @@ export class Manager implements EventProviderFactory {
             });
             this._managerVersion = json && json.version ? json.version : "";
 
-            // Load material design icons if requested
+            // Load material design and OR icon sets if requested
             if (this._config.loadIcons) {
                 const response = await fetch(manager.config.managerUrl + "/shared/mdi-icons.json");
-                const iconSet = await response.json();
-                IconSets.addIconSet("mdi", iconSet);
+                const mdiIconSet = await response.json();
+                IconSets.addIconSet("mdi", mdiIconSet);
+                IconSets.addIconSet("or", orIconSet);
             }
 
             return true;
@@ -523,7 +629,6 @@ export class Manager implements EventProviderFactory {
 
         // Look for language preference in local storage
         const language = await this.console.retrieveData("LANGUAGE");
-
         const initOptions: i18next.InitOptions = {
             lng: language,
             fallbackLng: "en",
@@ -797,18 +902,9 @@ export class Manager implements EventProviderFactory {
     // so this will need updating.
     protected async loadAndInitialiseKeycloak(): Promise<boolean> {
 
-        // Load the keycloak JS API
-        const promise = new Promise<Event>((resolve, reject) => {
-            // Load keycloak script from keycloak server
-            const scriptElement = document.createElement("script");
-            scriptElement.src = this._config.keycloakUrl + "/js/keycloak.js";
-            scriptElement.onload = (e) => resolve(e);
-            scriptElement.onerror = (e) => reject(e);
-            document.querySelector("head")!.appendChild(scriptElement);
-        });
-
         try {
-            await promise;
+            // Load the keycloak JS API
+            await Util.loadJs(this._config.keycloakUrl + "/js/keycloak.js");
 
             // Should have Keycloak global var now
             if (!(window as any).Keycloak) {
@@ -881,6 +977,7 @@ export class Manager implements EventProviderFactory {
             }
         } catch (error) {
             this._setError(ORError.KEYCLOAK_FAILED_TO_LOAD);
+            console.error("Failed to load Keycloak");
             return false;
         }
     }
@@ -940,8 +1037,6 @@ export class Manager implements EventProviderFactory {
     }
 }
 
-const manager = new Manager();
-
-export {manager};
-
+export const manager = new Manager(); // Needed for webpack bundling
+export const IconSets = new ORIconSets();
 export default manager;

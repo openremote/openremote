@@ -19,39 +19,32 @@
  */
 package org.openremote.agent.protocol.udp;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
-import org.openremote.agent.protocol.AbstractProtocol;
+import io.netty.channel.ChannelHandler;
 import org.openremote.agent.protocol.Protocol;
-import org.openremote.agent.protocol.io.IoClient;
-import org.openremote.container.Container;
-import org.openremote.model.asset.Asset;
+import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.*;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueFilter;
-import org.openremote.model.value.Values;
 
-import java.nio.charset.Charset;
 import java.util.*;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 
+import static org.openremote.container.util.Util.joinCollections;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
-import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
-import static org.openremote.model.attribute.MetaItemDescriptorImpl.*;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
- * This is a UDP client protocol for communicating with UDP servers; it uses the {@link AbstractUdpClient} to handle the
- * communication, it is important that all data (sent and received) fits in a single datagram packet.
+ * This is a UDP client protocol for communicating with UDP servers; it uses the {@link UdpIoClient} to handle the
+ * communication and all messages are processed as strings; if you require custom message type handling or  more specific
+ * {@link #getProtocolConfigurationMetaItemDescriptors()} or {@link #getLinkedAttributeMetaItemDescriptors()} then please
+ * sub class the {@link AbstractUdpClientProtocol}).
+ * <b>It is important that all data (sent and received) fits in a single datagram packet.</b>
  * <h1>Protocol Configurations</h1>
  * <p>
  * {@link Attribute}s that are configured as {@link ProtocolConfiguration}s for this protocol support the meta
@@ -84,23 +77,18 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  */
 public class UdpClientProtocol extends AbstractUdpClientProtocol<String> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, UdpClientProtocol.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, UdpClientProtocol.class);
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":udpClient";
     public static final String PROTOCOL_DISPLAY_NAME = "UDP Client";
     public static final String PROTOCOL_VERSION = "1.0";
-    private static int DEFAULT_RESPONSE_TIMEOUT_MILLIS = 3000;
-    private static int DEFAULT_SEND_RETRIES = 1;
-    private static boolean DEFAULT_SERVER_ALWAYS_RESPONDS = false;
-    private static int MIN_POLLING_MILLIS = 1000;
-    protected final Map<AttributeRef, AttributeInfo> attributeInfoMap = new HashMap<>();
+
+    public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = joinCollections(AbstractUdpClientProtocol.PROTOCOL_META_ITEM_DESCRIPTORS, AbstractIoClientProtocol.PROTOCOL_GENERIC_META_ITEM_DESCRIPTORS);
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
-        META_ATTRIBUTE_WRITE_VALUE,
-        META_POLLING_MILLIS,
-        META_RESPONSE_TIMEOUT_MILLIS,
-        META_SEND_RETRIES,
-        META_SERVER_ALWAYS_RESPONDS
-    );
+        META_ATTRIBUTE_MATCH_FILTERS,
+        META_ATTRIBUTE_MATCH_PREDICATE);
+
+    protected final Map<AttributeRef, List<Pair<AttributeRef, Consumer<String>>>> protocolMessageConsumers = new HashMap<>();
 
     @Override
     public String getProtocolName() {
@@ -118,209 +106,95 @@ public class UdpClientProtocol extends AbstractUdpClientProtocol<String> {
     }
 
     @Override
+    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
+        return PROTOCOL_META_ITEM_DESCRIPTORS;
+    }
+
+    @Override
     protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
         return ATTRIBUTE_META_ITEM_DESCRIPTORS;
     }
 
     @Override
+    public AssetAttribute getProtocolConfigurationTemplate() {
+        return super.getProtocolConfigurationTemplate()
+            .addMeta(
+                new MetaItem(META_PROTOCOL_HOST, null),
+                new MetaItem(META_PROTOCOL_PORT, null)
+            );
+    }
+
+    @Override
+    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        synchronized (protocolMessageConsumers) {
+            protocolMessageConsumers.remove(protocolConfiguration.getReferenceOrThrow());
+        }
+        super.doUnlinkProtocolConfiguration(protocolConfiguration);
+    }
+
+    @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+        AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
+        Consumer<String> messageConsumer = Protocol.createGenericAttributeMessageConsumer(attribute, assetService, this::updateLinkedAttribute);
 
-        if (!protocolConfiguration.isEnabled()) {
-            LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
-            return;
-        }
-
-        ClientAndQueue clientAndQueue = clientMap.get(protocolConfiguration.getReferenceOrThrow());
-
-        if (clientAndQueue == null) {
-            return;
-        }
-
-        final Integer pollingMillis = Values.getMetaItemValueOrThrow(attribute, META_POLLING_MILLIS, false, true)
-                .flatMap(Values::getIntegerCoerced)
-                .orElse(null);
-
-        final int responseTimeoutMillis = Values.getMetaItemValueOrThrow(attribute, META_RESPONSE_TIMEOUT_MILLIS, false, true)
-                .flatMap(Values::getIntegerCoerced)
-                .orElseGet(() ->
-                        Values.getMetaItemValueOrThrow(protocolConfiguration, META_RESPONSE_TIMEOUT_MILLIS, false, true)
-                                .flatMap(Values::getIntegerCoerced)
-                                .orElse(DEFAULT_RESPONSE_TIMEOUT_MILLIS)
-                );
-
-        final int sendRetries = Values.getMetaItemValueOrThrow(attribute, META_SEND_RETRIES, false, true)
-                .flatMap(Values::getIntegerCoerced)
-                .orElseGet(() ->
-                        Values.getMetaItemValueOrThrow(protocolConfiguration, META_SEND_RETRIES, false, true)
-                                .flatMap(Values::getIntegerCoerced)
-                                .orElse(DEFAULT_SEND_RETRIES)
-                );
-
-        final boolean serverAlwaysResponds = Values.getMetaItemValueOrThrow(
-                attribute,
-                META_SERVER_ALWAYS_RESPONDS,
-                false,
-                false
-        ).flatMap(Values::getBoolean).orElseGet(() ->
-                Values.getMetaItemValueOrThrow(protocolConfiguration, META_SERVER_ALWAYS_RESPONDS, false, false)
-                        .flatMap(Values::getBoolean)
-                        .orElse(DEFAULT_SERVER_ALWAYS_RESPONDS)
-        );
-
-        Consumer<Value> sendConsumer = null;
-        ScheduledFuture pollingTask = null;
-        AttributeInfo info = new AttributeInfo(attribute.getReferenceOrThrow(), sendRetries, responseTimeoutMillis);
-
-        if (!attribute.isReadOnly()) {
-            sendConsumer = Protocol.createDynamicAttributeWriteConsumer(attribute, str ->
-                clientAndQueue.send(
-                    str,
-                    serverAlwaysResponds ? responseStr -> {
-                        // Just drop the response; something in the future could be used to verify send was successful
-                    } : null,
-                    info));
-        }
-
-        if (pollingMillis != null && pollingMillis < MIN_POLLING_MILLIS) {
-            LOG.warning("Polling ms must be >= " + MIN_POLLING_MILLIS);
-            return;
-        }
-
-        final String writeValue = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_WRITE_VALUE, false, true)
-            .map(Object::toString).orElse(null);
-
-        if (pollingMillis != null && TextUtil.isNullOrEmpty(writeValue)) {
-            LOG.warning("Polling requires the META_ATTRIBUTE_WRITE_VALUE meta item to be set");
-            return;
-        }
-
-        if (pollingMillis != null) {
-            Consumer<String> responseConsumer = str -> {
-                LOG.fine("Polling response received updating attribute: " + attribute.getReferenceOrThrow());
-                updateLinkedAttribute(
-                    new AttributeState(
+        if (messageConsumer != null) {
+            synchronized (protocolMessageConsumers) {
+                protocolMessageConsumers.compute(protocolRef, (ref, consumers) -> {
+                    if (consumers == null) {
+                        consumers = new ArrayList<>();
+                    }
+                    consumers.add(new Pair<>(
                         attribute.getReferenceOrThrow(),
-                        str != null ? Values.create(str) : null));
-            };
-
-            Runnable pollingRunnable = () -> clientAndQueue.send(writeValue, responseConsumer, info);
-            pollingTask = schedulePollingRequest(clientAndQueue, attribute.getReferenceOrThrow(), pollingRunnable, pollingMillis);
+                        messageConsumer
+                    ));
+                    return consumers;
+                });
+            }
         }
-
-        attributeInfoMap.put(attribute.getReferenceOrThrow(), info);
-        info.pollingTask = pollingTask;
-        info.sendConsumer = sendConsumer;
     }
 
     @Override
     protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        AttributeInfo info = attributeInfoMap.remove(attribute.getReferenceOrThrow());
-
-        if (info != null && info.pollingTask != null) {
-            info.pollingTask.cancel(false);
+        AttributeRef attributeRef = attribute.getReferenceOrThrow();
+        synchronized (protocolMessageConsumers) {
+            protocolMessageConsumers.compute(protocolConfiguration.getReferenceOrThrow(), (ref, consumers) -> {
+                if (consumers != null) {
+                    consumers.removeIf((attrRefConsumer) -> attrRefConsumer.key.equals(attributeRef));
+                }
+                return consumers;
+            });
         }
     }
 
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
-        AttributeInfo info = attributeInfoMap.get(event.getAttributeRef());
-
-        if (info == null || info.sendConsumer == null) {
-            LOG.info("Request to write unlinked attribute or attribute that doesn't support writes so ignoring: " + event);
-            return;
-        }
-
-        AssetAttribute attribute = getLinkedAttribute(event.getAttributeRef());
-        AttributeExecuteStatus status = null;
-
-        if (attribute.isExecutable()) {
-            status = event.getValue()
-                .flatMap(Values::getString)
-                .flatMap(AttributeExecuteStatus::fromString)
-                .orElse(null);
-
-            if (status != null && status != AttributeExecuteStatus.REQUEST_START) {
-                LOG.fine("Unsupported execution status: " + status);
-                return;
-            }
-        }
-
-        Value value = status != null ? null : event.getValue().orElse(null);
-        info.sendConsumer.accept(value);
-
-        if (status != null) {
-            updateLinkedAttribute(new AttributeState(event.getAttributeRef(), AttributeExecuteStatus.COMPLETED.asValue()));
-        }
-    }
-
-    protected void onConnectionStatusChanged(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
-        updateStatus(protocolRef, connectionStatus);
-    }
-
-    protected ScheduledFuture schedulePollingRequest(ClientAndQueue clientAndQueue,
-                                                     AttributeRef attributeRef,
-                                                     Runnable pollingTask,
-                                                     int pollingMillis) {
-
-        LOG.fine("Scheduling polling request on client '" + clientAndQueue.client + "' to execute every " + pollingMillis + " ms for attribute: " + attributeRef);
-
-        return executorService.scheduleWithFixedDelay(pollingTask, 0, pollingMillis, TimeUnit.MILLISECONDS);
+    protected Supplier<ChannelHandler[]> getEncoderDecoderProvider(UdpIoClient<String> client, AssetAttribute protocolConfiguration) {
+        return getGenericStringEncodersAndDecoders(client, protocolConfiguration);
     }
 
     @Override
-    protected IoClient<String> createIoClient(String host, int port, Integer bindPort, Charset charset, boolean binaryMode, boolean hexMode) {
+    protected void onMessageReceived(AttributeRef protocolRef, String message) {
+        List<Pair<AttributeRef, Consumer<String>>> consumers;
 
-        LOG.info("Adding UDP client");
+        synchronized (protocolMessageConsumers) {
+            consumers = protocolMessageConsumers.get(protocolRef);
 
-        BiConsumer<ByteBuf, List<String>> decoder;
-        BiConsumer<String, ByteBuf> encoder;
+            if (consumers != null) {
+                consumers.forEach(c -> {
+                    if (c.value != null) {
+                        c.value.accept(message);
+                    }
+                });
+            }
+        }
+    }
 
-        if (hexMode) {
-            decoder = (buf, messages) -> {
-                byte[] bytes = new byte[buf.readableBytes()];
-                buf.readBytes(bytes);
-                String msg = Protocol.bytesToHexString(bytes);
-                messages.add(msg);
-            };
-            encoder = (message, buf) -> {
-                byte[] bytes = Protocol.bytesFromHexString(message);
-                buf.writeBytes(bytes);
-            };
-        } else if (binaryMode) {
-            decoder = (buf, messages) -> {
-                byte[] bytes = new byte[buf.readableBytes()];
-                buf.readBytes(bytes);
-                String msg = Protocol.bytesToBinaryString(bytes);
-                messages.add(msg);
-            };
-            encoder = (message, buf) -> {
-                byte[] bytes = Protocol.bytesFromBinaryString(message);
-                buf.writeBytes(bytes);
-            };
-        } else {
-            final Charset finalCharset = charset != null ? charset : CharsetUtil.UTF_8;
-            decoder = (buf, messages) -> {
-                String msg = buf.toString(finalCharset);
-                messages.add(msg);
-                buf.readerIndex(buf.readerIndex() + buf.readableBytes());
-            };
-            encoder = (message, buf) -> buf.writeBytes(message.getBytes(finalCharset));
+    @Override
+    protected String createWriteMessage(AssetAttribute protocolConfiguration, AssetAttribute attribute, AttributeEvent event, Value processedValue) {
+        if (attribute.isReadOnly()) {
+            LOG.fine("Attempt to write to an attribute that doesn't support writes: " + event.getAttributeRef());
+            return null;
         }
 
-        BiConsumer<ByteBuf, List<String>> finalDecoder = decoder;
-        BiConsumer<String, ByteBuf> finalEncoder = encoder;
-
-        return new AbstractUdpClient<String>(host, port, bindPort, executorService) {
-
-            @Override
-            protected void decode(ByteBuf buf, List<String> messages) {
-                finalDecoder.accept(buf, messages);
-            }
-
-            @Override
-            protected void encode(String message, ByteBuf buf) {
-                finalEncoder.accept(message, buf);
-            }
-        };
+        return processedValue != null ? processedValue.toString() : null;
     }
 }

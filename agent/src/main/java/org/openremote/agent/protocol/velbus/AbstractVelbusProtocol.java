@@ -33,8 +33,10 @@ import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
 import org.openremote.model.file.FileInfo;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
+import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 import org.w3c.dom.Document;
@@ -51,6 +53,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.agent.protocol.velbus.VelbusConfiguration.*;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
@@ -63,7 +66,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
     public static final String META_VELBUS_DEVICE_VALUE_LINK = PROTOCOL_BASE_NAME + ":deviceValueLink";
     public static final String META_VELBUS_TIME_INJECTION_INTERVAL_SECONDS = PROTOCOL_BASE_NAME + ":timeInjectionInterval";
     public static final int DEFAULT_TIME_INJECTION_INTERVAL_SECONDS = 3600 * 6; //
-    public static final Logger LOG = Logger.getLogger(AbstractVelbusProtocol.class.getName());
+    public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractVelbusProtocol.class);
     protected final Map<String, VelbusNetwork> networkMap = new HashMap<>();
     protected final Map<AttributeRef, Pair<VelbusNetwork, Consumer<ConnectionStatus>>> networkConfigurationMap = new HashMap<>();
     protected final Map<AttributeRef, Consumer<DevicePropertyValue>> attributePropertyValueConsumers = new HashMap<>();
@@ -111,9 +114,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
 
     @Override
     protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
-        List<MetaItemDescriptor> descriptors = new ArrayList<>();
-        descriptors.addAll(META_ITEM_DESCRIPTORS);
-        return descriptors;
+        return new ArrayList<>(META_ITEM_DESCRIPTORS);
     }
 
     @Override
@@ -125,11 +126,6 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
-        if (!protocolConfiguration.isEnabled()) {
-            LOG.info("Protocol configuration is disabled so ignoring: " + protocolConfiguration.getReferenceOrThrow());
-            return;
-        }
-
         // Look for existing network
         String networkIdentifier = getUniqueNetworkIdentifier(protocolConfiguration);
         VelbusNetwork velbusNetwork = null;
@@ -139,7 +135,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
             velbusNetwork = networkMap.get(networkIdentifier);
         } else {
             try {
-                IoClient<VelbusPacket> messageProcessor = createClient(protocolConfiguration);
+                IoClient<VelbusPacket> messageProcessor = createIoClient(protocolConfiguration);
                 int timeInjectionSeconds = getTimeInjectionIntervalSeconds(protocolConfiguration);
                 LOG.fine("Creating new VELBUS network instance for protocolConfiguration: " + protocolRef);
                 velbusNetwork = new VelbusNetwork(messageProcessor, executorService, timeInjectionSeconds);
@@ -239,7 +235,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
     }
 
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+    protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
         Pair<VelbusNetwork, Consumer<ConnectionStatus>> velbusNetworkConsumerPair = networkConfigurationMap.get(protocolConfiguration.getReferenceOrThrow());
 
         if (velbusNetworkConsumerPair == null) {
@@ -346,22 +342,10 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
         return devices.stream().map(AssetTreeNode::new).toArray(AssetTreeNode[]::new);
     }
 
-    ProtocolExecutorService getExecutorService() {
-        return executorService;
-    }
-
-    void updateAttribute(AttributeState attributeState) {
-        updateLinkedAttribute(attributeState);
-    }
-
-    AssetAttribute getAttribute(AttributeRef attributeRef) {
-        return getLinkedAttribute(attributeRef);
-    }
-
     /**
      * Should return an instance of {@link IoClient} for the supplied protocolConfiguration
      */
-    protected abstract IoClient<VelbusPacket> createClient(AssetAttribute protocolConfiguration) throws RuntimeException;
+    protected abstract IoClient<VelbusPacket> createIoClient(AssetAttribute protocolConfiguration) throws RuntimeException;
 
 
     /**
@@ -383,7 +367,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
                                 new LinkedAttributeDescriptor(
                                     propertyDescriptor.getName(),
                                     propertyDescriptor.getDisplayName(),
-                                    propertyDescriptor.getAttributeValueType(),
+                                    propertyDescriptor.getAttributeValueDescriptor(),
                                     propertyDescriptor.isReadOnly(),
                                     false,
                                     createLinkedAttributeMetaItems(

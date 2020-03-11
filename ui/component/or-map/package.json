@@ -17,7 +17,8 @@
     "@openremote/rest": "^1.1.0",
     "mapbox-gl": "1.2.1",
     "mapbox.js": "^3.2.0",
-    "lit-element": "^2.1.0"
+    "lit-element": "^2.1.0",
+    "@polymer/polymer": "^3.3.1"
   },
   "devDependencies": {
     "@types/mapbox-gl": "^0.54.2",

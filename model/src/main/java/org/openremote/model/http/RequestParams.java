@@ -19,14 +19,16 @@
  */
 package org.openremote.model.http;
 
+import javaemul.internal.annotations.GwtIncompatible;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import org.openremote.model.interop.Function;
+import org.openremote.model.util.TextUtil;
 
 import javax.ws.rs.HeaderParam;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.*;
+import java.net.URI;
 
 @JsType
 public class RequestParams<IN, OUT> {
@@ -34,6 +36,20 @@ public class RequestParams<IN, OUT> {
     @HeaderParam(HttpHeaders.AUTHORIZATION)
     @JsProperty(name = HttpHeaders.AUTHORIZATION)
     public String authorization;
+
+    @HeaderParam("X-Forwarded-Proto")
+    public String forwardedProtoHeader;
+
+    @HeaderParam("X-Forwarded-Host")
+    public String forwardedHostHeader;
+
+    @HeaderParam("X-Forwarded-Port")
+    public Integer forwardedPortHeader;
+
+    @JsIgnore
+    @Context
+    @GwtIncompatible
+    public UriInfo uriInfo;
 
     @JsProperty(name = "$entity")
     public String entity;
@@ -84,6 +100,19 @@ public class RequestParams<IN, OUT> {
         if (authorization == null || !authorization.startsWith("Bearer ") || authorization.split(" ").length != 2)
             return null;
         return authorization.split(" ")[1];
+    }
+
+    /**
+     * Handles reverse proxying and returns the request base URI
+     */
+    @JsIgnore
+    @GwtIncompatible
+    public UriBuilder getRequestBaseUri() {
+        URI uri = this.uriInfo.getRequestUri();
+        String scheme = TextUtil.isNullOrEmpty(this.forwardedProtoHeader) ? uri.getScheme() : this.forwardedProtoHeader;
+        int port = this.forwardedPortHeader == null ? uri.getPort() : this.forwardedPortHeader;
+        String host = TextUtil.isNullOrEmpty(this.forwardedHostHeader) ? uri.getHost() : this.forwardedHostHeader;
+        return this.uriInfo.getBaseUriBuilder().scheme(scheme).host(host).port(port);
     }
 
     public RequestParams<IN, OUT> setEntity(String entity) {

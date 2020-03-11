@@ -96,8 +96,8 @@ import static org.openremote.model.attribute.AttributeType.LOCATION;
  * "name": "Smart Building",
  * "type": "urn:openremote:asset:building",
  * "accessPublicRead": false,
- * "realm": "tenantA",
- * "realmDisplayName": "Tenant A",
+ * "realm": "building",
+ * "realmDisplayName": "Building",
  * "path": [
  * "0oI7Gf_kTh6WyRJFUTr8Lg"
  * ],
@@ -119,8 +119,8 @@ import static org.openremote.model.attribute.AttributeType.LOCATION;
  * "parentName": "Smart Building",
  * "parentType": "urn:openremote:asset:building",
  * "realm": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
- * "tenantRealm": "tenantA",
- * "tenantDisplayName": "Tenant A",
+ * "tenantRealm": "building",
+ * "tenantDisplayName": "Building",
  * "path": [
  * "B0x8ZOqZQHGjq_l0RxAJBA",
  * "0oI7Gf_kTh6WyRJFUTr8Lg"
@@ -143,8 +143,8 @@ import static org.openremote.model.attribute.AttributeType.LOCATION;
  * "parentName": "Apartment 1",
  * "parentType": "urn:openremote:asset:residence",
  * "realm": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
- * "tenantRealm": "tenantA",
- * "tenantDisplayName": "Tenant A",
+ * "tenantRealm": "building",
+ * "tenantDisplayName": "Building",
  * "path": [
  * "bzlRiJmSSMCl8HIUt9-lMg",
  * "B0x8ZOqZQHGjq_l0RxAJBA",
@@ -168,8 +168,8 @@ import static org.openremote.model.attribute.AttributeType.LOCATION;
  * "parentName": "Living Room",
  * "parentType": "urn:openremote:asset:room",
  * "realm": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
- * "tenantRealm": "tenantA",
- * "tenantDisplayName": "Tenant A",
+ * "tenantRealm": "building",
+ * "tenantDisplayName": "Building",
  * "path": [
  * "W7GV_lFeQVyHLlgHgE3dEQ",
  * "bzlRiJmSSMCl8HIUt9-lMg",

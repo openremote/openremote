@@ -1,6 +1,7 @@
 package org.openremote.agent.protocol.knx;
 
 import org.openremote.model.attribute.AttributeValueType;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -14,9 +15,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
 public class TypeMapper {
 
-    private static final Logger LOG = Logger.getLogger(TypeMapper.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, TypeMapper.class);
 
     /** map dpt to OpenRemote type */
     static private Map<String, AttributeValueType> dptToTypeMap;
@@ -76,13 +79,13 @@ public class TypeMapper {
         dptToTypeMap.put(DPTXlator2ByteUnsigned.DPT_BRIGHTNESS.getID(), AttributeValueType.NUMBER);
 
         // Datapoint Types "2-Octet Float Value", Main number 9
-        dptToTypeMap.put(DPTXlator2ByteFloat.DPT_TEMPERATURE.getID(), AttributeValueType.TEMPERATURE_CELCIUS);
+        dptToTypeMap.put(DPTXlator2ByteFloat.DPT_TEMPERATURE.getID(), AttributeValueType.TEMPERATURE);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_TEMPERATURE_DIFFERENCE.getID(), AttributeValueType.NUMBER);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_TEMPERATURE_GRADIENT.getID(), AttributeValueType.NUMBER);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_INTENSITY_OF_LIGHT.getID(), AttributeValueType.NUMBER);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_WIND_SPEED.getID(), AttributeValueType.NUMBER);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_AIR_PRESSURE.getID(), AttributeValueType.NUMBER);
-        dptToTypeMap.put(DPTXlator2ByteFloat.DPT_HUMIDITY.getID(), AttributeValueType.HUMIDITY_PERCENTAGE);
+        dptToTypeMap.put(DPTXlator2ByteFloat.DPT_HUMIDITY.getID(), AttributeValueType.HUMIDITY);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_AIRQUALITY.getID(), AttributeValueType.NUMBER);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_TIME_DIFFERENCE1.getID(), AttributeValueType.NUMBER);
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_TIME_DIFFERENCE2.getID(), AttributeValueType.NUMBER);
@@ -97,10 +100,10 @@ public class TypeMapper {
         dptToTypeMap.put(DPTXlator2ByteFloat.DPT_WIND_SPEED_KMH.getID(), AttributeValueType.NUMBER);
 
         // Datapoint Types "Time", Main number 10
-        dptToTypeMap.put(DPTXlatorTime.DPT_TIMEOFDAY.getID(), AttributeValueType.DATETIME);
+        dptToTypeMap.put(DPTXlatorTime.DPT_TIMEOFDAY.getID(), AttributeValueType.TIMESTAMP_ISO8601);
 
         // Datapoint Types "Date", Main number 11
-        dptToTypeMap.put(DPTXlatorDate.DPT_DATE.getID(), AttributeValueType.DATETIME);
+        dptToTypeMap.put(DPTXlatorDate.DPT_DATE.getID(), AttributeValueType.TIMESTAMP_ISO8601);
 
         // Datapoint Types "4-Octet Unsigned Value", Main number 12
         dptToTypeMap.put(DPTXlator4ByteUnsigned.DPT_VALUE_4_UCOUNT.getID(), AttributeValueType.NUMBER);
@@ -135,7 +138,7 @@ public class TypeMapper {
         dptToTypeMap.put(DPTXlatorSceneControl.DPT_SCENE_CONTROL.getID(), AttributeValueType.NUMBER);
 
         // Datapoint Types "DateTime", Main number 19
-        dptToTypeMap.put(DPTXlatorDateTime.DPT_DATE_TIME.getID(), AttributeValueType.DATETIME);
+        dptToTypeMap.put(DPTXlatorDateTime.DPT_DATE_TIME.getID(), AttributeValueType.TIMESTAMP_ISO8601);
 
         // Datapoint Types "RGB Color", Main number 232
         dptToTypeMap.put(DPTXlatorRGB.DPT_RGB.getID(), AttributeValueType.COLOR_RGB);
@@ -144,7 +147,7 @@ public class TypeMapper {
         typeToDptMap.put(AttributeValueType.BOOLEAN, DPTXlatorBoolean.DPT_SWITCH.getID());
         typeToDptMap.put(AttributeValueType.PERCENTAGE, DPTXlator8BitUnsigned.DPT_SCALING.getID());
         typeToDptMap.put(AttributeValueType.NUMBER, DPTXlator2ByteFloat.DPT_TEMPERATURE.getID());
-        typeToDptMap.put(AttributeValueType.DATETIME, DPTXlatorTime.DPT_TIMEOFDAY.getID());
+        typeToDptMap.put(AttributeValueType.TIMESTAMP_ISO8601, DPTXlatorTime.DPT_TIMEOFDAY.getID());
         typeToDptMap.put(AttributeValueType.STRING, DPTXlatorString.DPT_STRING_8859_1.getID());
         typeToDptMap.put(AttributeValueType.COLOR_RGB, DPTXlatorRGB.DPT_RGB.getID());
     }
