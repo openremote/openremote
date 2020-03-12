@@ -90,10 +90,10 @@ services:
       replicas: 1
       restart_policy:
         # Have a chance to look inside log before restarts to prevent hitting
-        # letsencrypt limit of nuber issued certificates per week, which is 5
+        # letsencrypt limit of number issued certificates per week, which is 5
         delay: 10s
         window: 30s
-      # Configure uninterupted updates with rollback
+      # Configure uninterrupted updates with rollback
       update_config:
         failure_action: rollback
         order: start-first
@@ -199,8 +199,6 @@ services:
       # Configure uninterrupted updates with rollback
       update_config:
         failure_action: rollback
-      update_config:
-        failure_action: rollback
         order: start-first
         delay: 10s
 
@@ -254,7 +252,7 @@ services:
 
     deploy:
       replicas: 1
-      # Configure uninterupted updates with rollback
+      # Configure uninterrupted updates with rollback
       update_config:
         failure_action: rollback
         order: start-first
