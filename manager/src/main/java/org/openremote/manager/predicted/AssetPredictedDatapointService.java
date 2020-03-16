@@ -28,10 +28,14 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
+import org.postgresql.util.PGInterval;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -48,6 +52,7 @@ public class AssetPredictedDatapointService implements ContainerService {
     private static final Logger LOG = Logger.getLogger(AssetPredictedDatapointService.class.getName());
 
     protected PersistenceService persistenceService;
+    protected AssetStorageService assetStorageService;
 
     @Override
     public int getPriority() {
@@ -57,6 +62,7 @@ public class AssetPredictedDatapointService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
         persistenceService = container.getService(PersistenceService.class);
+        assetStorageService = container.getService(AssetStorageService.class);
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
             new AssetPredictedDatapointResourceImpl(
@@ -104,8 +110,18 @@ public class AssetPredictedDatapointService implements ContainerService {
     }
 
     public ValueDatapoint[] getValueDatapoints(AttributeRef attributeRef,
+                                               DatapointInterval datapointInterval,
                                                long fromTimestamp,
                                                long toTimestamp) {
+
+        Asset asset = assetStorageService.find(attributeRef.getEntityId());
+        if (asset == null) {
+            throw new IllegalStateException("Asset not found: " + attributeRef.getEntityId());
+        }
+        ValueType attributeValueType = asset.getAttribute(attributeRef.getAttributeName())
+            .orElseThrow(() -> new IllegalStateException("Attribute not found: " + attributeRef.getAttributeName()))
+            .getTypeOrThrow()
+            .getValueType();
 
         LOG.fine("Getting predicted datapoints for: " + attributeRef);
 
@@ -115,25 +131,104 @@ public class AssetPredictedDatapointService implements ContainerService {
                 public ValueDatapoint[] execute(Connection connection) throws SQLException {
 
                     StringBuilder query = new StringBuilder();
+                    boolean downsample = (attributeValueType == ValueType.NUMBER || attributeValueType == ValueType.BOOLEAN);
 
-                    query.append("select distinct TIMESTAMP AS X, value AS Y from ASSET_PREDICTED_DATAPOINT " +
-                        "where " +
-                        "TIMESTAMP >= to_timestamp(?) " +
-                        "and " +
-                        "TIMESTAMP < to_timestamp(?) " +
-                        "and " +
-                        "ENTITY_ID = ? and ATTRIBUTE_NAME = ? "
-                    );
+                    String truncateX = null;
+                    String interval = null;
+
+                    switch (datapointInterval) {
+                        case NONE:
+                            downsample = false;
+                            break;
+                        case MINUTE:
+                            truncateX = "minute";
+                            interval = "1 minute";
+                            break;
+                        case HOUR:
+                            truncateX = "hour";
+                            interval = "1 hour";
+                            break;
+                        case DAY:
+                            truncateX = "day";
+                            interval = "1 day";
+                            break;
+                        case WEEK:
+                            truncateX = "day";
+                            interval = "7 day";
+                            break;
+                        case MONTH:
+                            truncateX = "day";
+                            interval = "1 month";
+                            break;
+                        case YEAR:
+                            truncateX = "month";
+                            interval = "1 year";
+                            break;
+                        default:
+                            throw new IllegalArgumentException("Can't handle interval: " + datapointInterval);
+                    }
+
+                    if (downsample) {
+                        // TODO: Change this to use something like this max min decimation algorithm https://knowledge.ni.com/KnowledgeArticleDetails?id=kA00Z0000019YLKSA2&l=en-GB)
+                        query.append("select TS as X, coalesce(AVG_VALUE, null) as Y " +
+                            " from ( " +
+                            "       select date_trunc(?, GS)::timestamp TS " +
+                            "       from generate_series(to_timestamp(?), to_timestamp(?), ?) GS " +
+                            "       ) TS " +
+                            "  left join ( " +
+                            "       select " +
+                            "           date_trunc(?, TIMESTAMP)::timestamp as TS, ");
+
+                        if (attributeValueType == ValueType.NUMBER) {
+                            query.append(" AVG(VALUE::text::numeric) as AVG_VALUE ");
+                        } else {
+                            query.append(" AVG(case when VALUE::text::boolean is true then 1 else 0 end) as AVG_VALUE ");
+                        }
+
+                        query.append(" from ASSET_PREDICTED_DATAPOINT " +
+                            "         where " +
+                            "           TIMESTAMP >= to_timestamp(?) " +
+                            "           and " +
+                            "           TIMESTAMP <= to_timestamp(?) " +
+                            "           and " +
+                            "           ENTITY_ID = ? and ATTRIBUTE_NAME = ? " +
+                            "         group by TS " +
+                            "  ) DP using (TS) " +
+                            " order by TS asc "
+                        );
+
+                    } else {
+                        query.append("select distinct TIMESTAMP AS X, value AS Y from ASSET_PREDICTED_DATAPOINT " +
+                            "where " +
+                            "TIMESTAMP >= to_timestamp(?) " +
+                            "and " +
+                            "TIMESTAMP < to_timestamp(?) " +
+                            "and " +
+                            "ENTITY_ID = ? and ATTRIBUTE_NAME = ? "
+                        );
+                    }
 
                     try (PreparedStatement st = connection.prepareStatement(query.toString())) {
 
                         long fromTimestampSeconds = fromTimestamp / 1000;
                         long toTimestampSeconds = toTimestamp / 1000;
 
-                        st.setLong(1, fromTimestampSeconds);
-                        st.setLong(2, toTimestampSeconds);
-                        st.setString(3, attributeRef.getEntityId());
-                        st.setString(4, attributeRef.getAttributeName());
+                        if (downsample) {
+                            st.setString(1, truncateX);
+                            st.setLong(2, fromTimestampSeconds);
+                            st.setLong(3, toTimestampSeconds);
+                            st.setObject(4, new PGInterval(interval));
+                            st.setString(5, truncateX);
+                            st.setLong(6, fromTimestampSeconds);
+                            st.setLong(7, toTimestampSeconds);
+                            st.setString(8, attributeRef.getEntityId());
+                            st.setString(9, attributeRef.getAttributeName());
+                        } else {
+                            st.setLong(1, fromTimestampSeconds);
+                            st.setLong(2, toTimestampSeconds);
+                            st.setString(3, attributeRef.getEntityId());
+                            st.setString(4, attributeRef.getAttributeName());
+                        }
 
                         try (ResultSet rs = st.executeQuery()) {
                             List<ValueDatapoint<?>> result = new ArrayList<>();

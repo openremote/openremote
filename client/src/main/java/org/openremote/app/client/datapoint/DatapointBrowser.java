@@ -54,20 +54,22 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
     final int height;
 
     DatapointInterval interval;
-    long timestamp;
+    long fromTimestamp;
+    long toTimestamp;
 
     Chart chart;
     FormValueListBox<DatapointInterval> intervalListBox;
     FormOutputText timeOutput;
     FormButton nextButton;
 
-    public DatapointBrowser(Environment environment, AttributeView.Style style, AttributeViewImpl parentView, AssetAttribute attribute, int width, int height, DatapointInterval interval, long timestamp) {
+    public DatapointBrowser(Environment environment, AttributeView.Style style, AttributeViewImpl parentView, AssetAttribute attribute, int width, int height, DatapointInterval interval, long fromTimestamp, long toTimestamp) {
         super(environment, style, parentView, attribute, environment.getMessages().historicalData());
         this.environment = environment;
         this.width = width;
         this.height = height;
         this.interval = interval;
-        this.timestamp = timestamp;
+        this.fromTimestamp = fromTimestamp;
+        this.toTimestamp = toTimestamp;
 
         setStyleName("layout vertical or-DatapointBrowser");
     }
@@ -90,8 +92,8 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
     }
 
     @Override
-    public void onAttributeChanged(long timestamp) {
-        refresh(timestamp);
+    public void onAttributeChanged(long fromTimestamp) {
+        refresh(fromTimestamp, toTimestamp);
     }
 
     @Override
@@ -99,19 +101,19 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
 
     }
 
-    public void refresh(long timestamp) {
+    public void refresh(long fromTimestamp, long toTimestamp) {
         // Keep timestamp so when chart is != null at some point, it has the latest refresh timestamp
-        this.timestamp = timestamp;
+        this.fromTimestamp = fromTimestamp;
 
         if (chart == null) {
             return;
         }
-        refresh(timestamp, intervalListBox.getValue());
+        refresh(fromTimestamp, toTimestamp, intervalListBox.getValue());
     }
 
-    public void refresh(long timestamp, DatapointInterval interval) {
-        // Keep timestamp so when chart is != null at some point, it has the latest refresh timestamp
-        this.timestamp = timestamp;
+    public void refresh(long fromTimestamp, long toTimestamp, DatapointInterval interval) {
+        // Keep fromTimestamp so when chart is != null at some point, it has the latest refresh fromTimestamp
+        this.fromTimestamp = fromTimestamp;
         this.interval = interval;
 
         if (chart == null) {
@@ -119,13 +121,13 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
         }
 
         timeOutput.setText(
-            DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(new Date(timestamp))
+            DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(new Date(fromTimestamp))
         );
 
         ValueType valueType = attribute.getType().map(AttributeValueDescriptor::getValueType).orElse(null);
 
         if (valueType == ValueType.NUMBER || valueType == ValueType.BOOLEAN) {
-            queryDatapoints(interval, timestamp, datapoints -> ChartUtil.update(
+            queryDatapoints(interval, fromTimestamp, toTimestamp,  datapoints -> ChartUtil.update(
                 chart,
                 ChartUtil.convertData(datapoints)
             ));
@@ -174,7 +176,7 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
                 }
             }
         );
-        intervalListBox.addValueChangeHandler(event -> refresh(timestamp));
+        intervalListBox.addValueChangeHandler(event -> refresh(fromTimestamp, toTimestamp));
         intervalListBox.setValue(interval);
         intervalListBox.setAcceptableValues(Arrays.asList(DatapointInterval.values()));
         intervalListBox.setEnabled(true);
@@ -191,19 +193,19 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
         FormButton previousButton = new FormButton();
         previousButton.setIcon("arrow-circle-left");
         previousButton.setText(environment.getMessages().previous());
-        previousButton.addClickHandler(event -> refresh(calculateTimestamp(true)));
+        previousButton.addClickHandler(event -> refresh(calculateTimestamp(true), fromTimestamp + toTimestamp));
         controlFormActions.add(previousButton);
 
         nextButton = new FormButton();
         nextButton.setIcon("arrow-circle-right");
         nextButton.setText(environment.getMessages().next());
-        nextButton.addClickHandler(event -> refresh(calculateTimestamp(false)));
+        nextButton.addClickHandler(event -> refresh(calculateTimestamp(false), fromTimestamp + toTimestamp));
         controlFormActions.add(nextButton);
 
         chart = ChartUtil.createLineChart(canvas.getContext2d());
 
         // TODO: Ugly, sometimes the chart is not ready (chart == undefined but !null in Java...) so we wait a bit
-        Browser.getWindow().setTimeout(() -> refresh(timestamp), 50);
+        Browser.getWindow().setTimeout(() -> refresh(fromTimestamp, toTimestamp), 50);
     }
 
     protected long calculateTimestamp(boolean subtract) {
@@ -214,15 +216,15 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
         long year = day * 365;
         switch (intervalListBox.getValue()) {
             case HOUR:
-                return subtract ? (timestamp - hour) : (timestamp + hour);
+                return subtract ? (fromTimestamp - hour) : (fromTimestamp + hour);
             case DAY:
-                return subtract ? (timestamp - day) : (timestamp + day);
+                return subtract ? (fromTimestamp - day) : (fromTimestamp + day);
             case WEEK:
-                return subtract ? (timestamp - week) : (timestamp + week);
+                return subtract ? (fromTimestamp - week) : (fromTimestamp + week);
             case MONTH:
-                return subtract ? (timestamp - month) : (timestamp + month);
+                return subtract ? (fromTimestamp - month) : (fromTimestamp + month);
             case YEAR:
-                return subtract ? (timestamp - year) : (timestamp + year);
+                return subtract ? (fromTimestamp - year) : (fromTimestamp + year);
             default:
                 throw new IllegalArgumentException("Unsupported time period: " + intervalListBox.getValue());
         }
@@ -240,6 +242,7 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
     }
 
     abstract protected void queryDatapoints(DatapointInterval interval,
-                                            long timestamp,
+                                            long fromTimestamp,
+                                            long toTimestamp,
                                             Consumer<ValueDatapoint[]> consumer);
 }
