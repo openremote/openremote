@@ -137,9 +137,6 @@ public class AssetPredictedDatapointService implements ContainerService {
                     String interval = null;
 
                     switch (datapointInterval) {
-                        case NONE:
-                            downsample = false;
-                            break;
                         case MINUTE:
                             truncateX = "minute";
                             interval = "1 minute";

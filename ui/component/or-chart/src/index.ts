@@ -27,7 +27,7 @@ import {MDCDialog} from '@material/dialog';
 import "@openremote/or-translate";
 import Chart, {ChartDataSets} from "chart.js";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
-import moment, {unitOfTime} from "moment";
+import moment from "moment";
 import {OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {MenuItem, OrMwcMenu, OrMwcMenuChangedEvent} from "@openremote/or-mwc-components/dist/or-mwc-menu";
@@ -348,7 +348,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     public usedColors: string[] = [];
 
     @property({type: String})
-    public interval?: DatapointInterval = DatapointInterval.HOUR;
+    public period: moment.unitOfTime.Base = "day";
 
     @property({type: Number})
     public timestamp?: Date = moment().set('minute', 0).toDate();
@@ -424,7 +424,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     shouldUpdate(_changedProperties: PropertyValues): boolean {
 
-        let reloadData = _changedProperties.has("interval") || _changedProperties.has("compareTimestamp") || _changedProperties.has("timestamp") || _changedProperties.has("assetAttributes");
+        let reloadData = _changedProperties.has("period") || _changedProperties.has("compareTimestamp") || _changedProperties.has("timestamp") || _changedProperties.has("assetAttributes");
 
         if (reloadData) {
             this._data = [];
@@ -448,10 +448,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                 <div id="controls">
                     <div class="interval-controls" style="margin-right: 6px;">
                         ${getContentWithMenuTemplate(
-                            html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t("timeframe")}: ${i18next.t(this.interval ? this.interval : "-")}"></or-input>`,
-                            this._getIntervalOptions(),
-                            this.interval,
-                            (value) => this.setPeriodOption(value))}
+            html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t("timeframe")}: ${i18next.t(this.period ? this.period : "-")}"></or-input>`,
+            this._getPeriodOptions(),
+            this.period,
+            (value) => this.setPeriodOption(value))}
 
                         ${this.periodCompare ? html `
                                 <or-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @click="${() => this.setPeriodCompare(false)}" icon="minus"></or-input>
@@ -548,28 +548,22 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     setPeriodOption(value:any) {
-        this.interval = value;
+        this.period = value;
         this.requestUpdate();
     }
  
     getInputType() {
-        switch(this.interval) {
-            case DatapointInterval.MINUTE:
-            case DatapointInterval.HOUR:
+        switch (this.period) {
+            case "hour":
                 return InputType.DATETIME;
-              break;
-            case DatapointInterval.DAY:
+            case "day":
                 return InputType.DATE;
-              break;
-            case DatapointInterval.WEEK:
+            case "week":
                 return InputType.WEEK;
-              break;
-            case DatapointInterval.MONTH:
+            case "month":
                 return InputType.MONTH;
-              break;
-            case DatapointInterval.YEAR:
+            case "year":
                 return InputType.MONTH;
-                break;
           }
     }
 
@@ -739,31 +733,27 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    protected _getIntervalOptions(){
+    protected _getPeriodOptions() {
         return [
             {
-                text: i18next.t(DatapointInterval.MINUTE),
-                value:  DatapointInterval.MINUTE
-            },
-            {
                 text: i18next.t(DatapointInterval.HOUR),
-                value:  DatapointInterval.HOUR
+                value: "hour"
             },
             {
                 text: i18next.t(DatapointInterval.DAY),
-                value:  DatapointInterval.DAY
+                value: "day"
             },
             {
                 text: i18next.t(DatapointInterval.WEEK),
-                value:  DatapointInterval.WEEK
+                value: "week"
             },
             {
                 text: i18next.t(DatapointInterval.MONTH),
-                value:  DatapointInterval.MONTH
+                value: "month"
             },
             {
                 text: i18next.t(DatapointInterval.YEAR),
-                value:  DatapointInterval.YEAR
+                value: "year"
             }
         ];
     }
@@ -860,23 +850,20 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         if(this.periodCompare) {
             const initialTimestamp = moment(this.timestamp);
-            switch (this.interval) {
-                case DatapointInterval.MINUTE:
+            switch (this.period) {
+                case "hour":
                     newMoment = moment(timestamp);
                     break;
-                case DatapointInterval.HOUR:
+                case "day":
                     newMoment = moment(timestamp).set('day', initialTimestamp.day());
                     break;
-                case DatapointInterval.DAY:
+                case "week":
                     newMoment = moment(timestamp).set('week', initialTimestamp.week());
                     break;
-                case DatapointInterval.WEEK:
+                case "month":
                     newMoment = moment(timestamp).set('month', initialTimestamp.month());
                     break;
-                case DatapointInterval.MONTH:
-                    newMoment = moment(timestamp).set('year', initialTimestamp.year());
-                    break;
-                case DatapointInterval.YEAR:
+                case "year":
                     newMoment = moment(timestamp).set('year', initialTimestamp.year());
                     break;
             }
@@ -892,22 +879,20 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         this._loading = true;
 
-        if (!this.interval || !timestamp) {
+        if (!this.period || !timestamp) {
             this._loading = false;
             return [];
         }
 
-        const period = this._getUnitOfTime();
-        const forwardTime = this._updateTimestamp(timestamp, true);
-        const startOfPeriod = moment(forwardTime).startOf(period).toDate().getTime();
-        const endOfPeriod = moment(timestamp).endOf(period).toDate().getTime();
+        const startOfPeriod = moment(timestamp).startOf(this.period).toDate().getTime();
+        const endOfPeriod = moment(timestamp).endOf(this.period).toDate().getTime();
 
         if (attribute.assetId && attribute.name) {
             const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
                 attribute.assetId,
                 attribute.name,
                 {
-                    interval: this.interval || DatapointInterval.HOUR,
+                    interval: this._getInterval(),
                     fromTimestamp: startOfPeriod,
                     toTimestamp: endOfPeriod
                 }
@@ -940,20 +925,19 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         this._loading = true;
 
-        if (!this.interval || !timestamp) {
+        if (!this.period || !timestamp) {
             this._loading = false;
             return [];
         }
-        const period = this._getUnitOfTime();
-        const startOfPeriod = moment(timestamp).startOf(period).toDate().getTime();
-        const endOfPeriod = moment(timestamp).endOf(period).toDate().getTime();
+        const startOfPeriod = moment(timestamp).startOf(this.period).toDate().getTime();
+        const endOfPeriod = moment(timestamp).endOf(this.period).toDate().getTime();
 
         if(attribute.assetId &&  attribute.name && endOfPeriod){
             const response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(
                 attribute.assetId,
                 attribute.name,
                 {
-                    interval: this.interval || DatapointInterval.HOUR,
+                    interval: this._getInterval(),
                     fromTimestamp: startOfPeriod,
                     toTimestamp: endOfPeriod
                 }
@@ -984,60 +968,33 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    protected _getUnitOfTime() {
-        let unit:unitOfTime.All = 'day';
-        switch (this.interval) {
-            case DatapointInterval.MINUTE:
-                unit = "hour";
+    protected _getInterval() {
+        let interval: DatapointInterval = DatapointInterval.HOUR;
+        switch (this.period) {
+            case "hour":
+                interval = DatapointInterval.MINUTE;
                 break;
-            case DatapointInterval.HOUR:
-                unit = "day";
+            case "day":
+                interval = DatapointInterval.HOUR;
                 break;
-            case DatapointInterval.DAY:
-                unit = 'week';
+            case "week":
+                interval = DatapointInterval.DAY;
                 break;
-            case DatapointInterval.WEEK:
-                unit = 'month';
+            case "month":
+                interval = DatapointInterval.WEEK;
                 break;
-            case DatapointInterval.MONTH:
-                unit = 'year';
-                break;
-            case DatapointInterval.YEAR:
-                unit = 'year';
+            case "year":
+                interval = DatapointInterval.MONTH;
                 break;
         }
-        return unit;
+        return interval;
     }
-   
 
     protected _updateTimestamp(timestamp: Date, forward?: boolean) {
-        if (!this.interval) { 
-            return;
-        }
-
         const newMoment = moment(timestamp);
 
         if (forward !== undefined) {
-            switch (this.interval) {
-                case DatapointInterval.MINUTE:
-                    newMoment.add(forward ? 1 : -1, "hour");
-                    break;
-                case DatapointInterval.HOUR:
-                    newMoment.add(forward ? 1 : -1, "day");
-                    break;
-                case DatapointInterval.DAY:
-                    newMoment.add(forward ? 1 : -1, "week");
-                    break;
-                case DatapointInterval.WEEK:
-                    newMoment.add(forward ? 1 : -1, "month");
-                    break;
-                case DatapointInterval.MONTH:
-                    newMoment.add(forward ? 1 : -1, "year");
-                    break;
-                case DatapointInterval.YEAR:
-                    newMoment.add(forward ? 7 : -7, "year");
-                    break;
-            }
+            newMoment.add(forward ? 1 : -1, this.period);
         }
 
         return newMoment.toDate();

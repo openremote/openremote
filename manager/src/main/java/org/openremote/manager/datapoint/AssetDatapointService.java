@@ -202,7 +202,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                                 interval = "7 day";
                                 break;
                             case MONTH:
-                                truncateX = "month";
+                                truncateX = "day";
                                 interval = "1 month";
                                 break;
                             case YEAR:
