@@ -615,6 +615,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 type: 'line',
                                 mode: 'vertical',
                                 scaleID: 'x-axis-0',
+                                value: moment(),
                                 borderColor: "#275582",
                                 borderWidth: 2
                             }
