@@ -21,7 +21,8 @@ import {
     Attribute,
     AttributeEvent,
     AttributeType,
-    MetaItemType
+    MetaItemType,
+    MetaItem
 } from "@openremote/model";
 import {style} from "./style";
 import i18next from "i18next";
@@ -98,8 +99,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         },
         panels: {
             "info": {
-                type: "property",
+                type: "attribute",
                 hideOnMobile: true,
+                include: ["userNotes", "brand"],
                 panelStyles: {
                 },
                 fieldStyles: {
@@ -344,21 +346,23 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         let content: TemplateResult | undefined;
 
-        if (panelConfig && panelConfig.type === "property") {
-            // Special handling for info panel which only shows properties
-            let properties = OrAssetViewer.getInfoProperties(panelConfig);
 
-            if (properties.length === 0) {
-                return;
-            }
+        // if (panelConfig && panelConfig.type === "property") {
+        //     // Special handling for info panel which only shows properties
+        //     let properties = OrAssetViewer.getInfoProperties(panelConfig);
 
-            content = html`
-                ${properties.map((prop) => {
-                let style = styles ? styles[prop!] : undefined;
-                return prop === "attributes" ? `` : OrAssetViewer.getField(prop, true, style, OrAssetViewer.getPropertyTemplate(prop, (asset as { [index: string]: any })[prop], viewerConfig, panelConfig, shadowRoot));
-            })}
-            `;
-        } else if (panelConfig && panelConfig.type === "history") {
+        //     if (properties.length === 0) {
+        //         return;
+        //     }
+
+        //     content = html`
+        //         ${properties.map((prop) => {
+        //         let style = styles ? styles[prop!] : undefined;
+        //         return prop === "attributes" ? `` : OrAssetViewer.getField(prop, true, style, OrAssetViewer.getPropertyTemplate(prop, (asset as { [index: string]: any })[prop], viewerConfig, panelConfig, shadowRoot));
+        //     })}
+        //     `;
+        // } else 
+        if (panelConfig && panelConfig.type === "history") {
             // Special handling for history panel which shows an attribute selector and a graph/data table of historical values
             const historyAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
             if (historyAttrs.length > 0) {
@@ -416,7 +420,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                           }
                         }
                         
-                        @media screen and (max-width: 1700px) {
+                        @media screen and (max-width: 1500px) {
                             #history-controls {
                                 position: unset;
                                 margin: 0 auto 10px auto;
@@ -463,6 +467,36 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 const lngLat = MapUtil.getLngLat(attribute);
                 const center = lngLat ? lngLat.toArray() : undefined;
                 const showOnMapMeta = Util.getFirstMetaItem(attribute, MetaItemType.SHOW_ON_DASHBOARD.urn!);
+                const attributeMetaChanged = async (value: string) => {
+                    if (shadowRoot) {
+
+                        if (attribute) {
+                           
+                            if(asset.id && asset.attributes && asset.attributes.location){
+
+                                const showOnMapMeta = Util.getFirstMetaItem(attribute, MetaItemType.SHOW_ON_DASHBOARD.urn!);
+                                if(showOnMapMeta) {
+                                    showOnMapMeta.value = value;
+                                } else {
+                                    const meta:MetaItem = {
+                                        name: MetaItemType.SHOW_ON_DASHBOARD.urn,
+                                        value: value
+                                    }
+
+                                    attribute.meta?.push(meta);
+                                }
+                                asset.attributes.location = {...attribute};
+                                const response = await manager.rest.api.AssetResource.update(asset.id, asset);
+
+                                if (response.status !== 200) {
+                                }
+                            }
+                    
+
+                        }
+                    }
+                };
+
 
                 content = html`
                     <style>
@@ -478,7 +512,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                          <or-map-marker-asset active .asset="${asset}"></or-map-marker-asset>
                     </or-map>
                     ${attribute.name === AttributeType.LOCATION.attributeName ? html`
-                        <or-input id="location-map-input" type="${InputType.SWITCH}" readonly dense .value="${showOnMapMeta ? showOnMapMeta.value : undefined}" label="${i18next.t("showOnMap")}"></or-input>
+                        <or-input id="location-map-input" type="${InputType.SWITCH}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeMetaChanged(evt.detail.value)}" dense .value="${showOnMapMeta ? showOnMapMeta.value : undefined}" label="${i18next.t("showOnMap")}"></or-input>
                     ` : ``}                    
                 `;
             }
@@ -494,51 +528,51 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         return content;
     }
 
-    public static getPropertyTemplate(property: string, value: any, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, shadowRoot: ShadowRoot | null) {
-        let type = InputType.TEXT;
-        let minLength: number | undefined;
-        let maxLength: number | undefined;
+    // public static getPropertyTemplate(property: string, value: any, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, shadowRoot: ShadowRoot | null) {
+    //     let type = InputType.TEXT;
+    //     let minLength: number | undefined;
+    //     let maxLength: number | undefined;
 
-        if (viewerConfig.propertyViewProvider) {
-            const result = viewerConfig.propertyViewProvider(property, value, viewerConfig, panelConfig);
-            if (result) {
-                return result;
-            }
-        }
+    //     if (viewerConfig.propertyViewProvider) {
+    //         const result = viewerConfig.propertyViewProvider(property, value, viewerConfig, panelConfig);
+    //         if (result) {
+    //             return result;
+    //         }
+    //     }
 
-        switch (property) {
-            case "path":
-                if (!value || !(Array.isArray(value))) {
-                    return;
-                }
+    //     switch (property) {
+    //         case "path":
+    //             if (!value || !(Array.isArray(value))) {
+    //                 return;
+    //             }
 
-                // Populate value when we get the response
-                OrAssetViewer.getAssetNames(value as string[]).then(
-                    (names) => {
-                        if (shadowRoot) {
-                            const pathField = shadowRoot.getElementById("property-path") as OrInput;
-                            if (pathField) {
-                                pathField.value = names.reverse().join(" > ");
-                            }
-                        }
-                    }
-                );
-                value = i18next.t("loading");
-                break;
-            case "createdOn":
-                type = InputType.DATETIME;
-                break;
-            case "accessPublicRead":
-                type = InputType.CHECKBOX;
-                break;
-            case "name":
-                minLength = 1;
-                maxLength = 1023;
-                break;
-        }
+    //             // Populate value when we get the response
+    //             OrAssetViewer.getAssetNames(value as string[]).then(
+    //                 (names) => {
+    //                     if (shadowRoot) {
+    //                         const pathField = shadowRoot.getElementById("property-path") as OrInput;
+    //                         if (pathField) {
+    //                             pathField.value = names.reverse().join(" > ");
+    //                         }
+    //                     }
+    //                 }
+    //             );
+    //             value = i18next.t("loading");
+    //             break;
+    //         case "createdOn":
+    //             type = InputType.DATETIME;
+    //             break;
+    //         case "accessPublicRead":
+    //             type = InputType.CHECKBOX;
+    //             break;
+    //         case "name":
+    //             minLength = 1;
+    //             maxLength = 1023;
+    //             break;
+    //     }
 
-        return html`<or-input id="property-${property}" type="${type}" .minLength="${minLength}" .maxLength="${maxLength}" dense .value="${value}" readonly label="${i18next.t(property)}"></or-input>`;
-    }
+    //     return html`<or-input id="property-${property}" type="${type}" .minLength="${minLength}" .maxLength="${maxLength}" dense .value="${value}" readonly label="${i18next.t(property)}"></or-input>`;
+    // }
 
     public static getAttributeTemplate(asset: Asset, attribute: AssetAttribute, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) {
         if (viewerConfig.attributeViewProvider) {

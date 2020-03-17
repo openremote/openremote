@@ -105,5 +105,14 @@
   "wait": "Espere",
   "history": "Historia",
   "attributes": "Atributos",
-  "info": "Informacion"
+  "info": "Informacion",
+  "KILOGRAM": "KG",
+  "EUR":"€",
+  "KILOWATT": "KILOWATT",
+  "KWH": "KWH",
+  "KILOWATT_PER_HOUR": "KILOWATT_PER_HOUR",
+  "MILLIMETER_PER_SQUARE_METER": "MILLIMETER_PER_SQUARE_METER",
+  "METERS_PER_HOUR": "METERS_PER_HOUR",
+  "DEGREES": "DEGREES",
+  "CELSIUS": "CELSIUS"
 }

@@ -137,6 +137,11 @@ const style = css`
 
 
     /* MDC TEXT FIELD AND SELECT DON'T USE THEME VARS */
+    .mdc-select #menu-anchor,
+    .mdc-text-field {
+        background-color: #fbfbfb!important;
+    }
+
     .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label {
         color: var(--mdc-theme-primary);
     }

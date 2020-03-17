@@ -1,6 +1,6 @@
 import {customElement, property, PropertyValues} from "lit-element";
 import {OrMapMarker} from "./or-map-marker";
-import {AttributeEvent, AttributeType, GeoJSONPoint, AssetType, AssetEvent, AssetEventCause, Asset} from "@openremote/model";
+import {AttributeEvent, AttributeType, GeoJSONPoint, AssetType, AssetEvent, AssetEventCause, Asset, MetaItemType} from "@openremote/model";
 import {subscribe} from "@openremote/core";
 import manager, {AssetModelUtil} from "@openremote/core";
 import {Util} from "@openremote/core";
@@ -85,6 +85,9 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
     protected onAssetChanged(asset?: Asset) {
         if (asset) {
             const attr = Util.getAssetAttribute(asset, AttributeType.LOCATION.attributeName!);
+            const showOnMapMeta = Util.getFirstMetaItem(attr, MetaItemType.SHOW_ON_DASHBOARD.urn!);
+            if(!showOnMapMeta || !showOnMapMeta.value) return
+
             this._updateLocation(attr ? attr.value as GeoJSONPoint : null);
             this.type = asset.type;
         } else {

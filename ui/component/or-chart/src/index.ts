@@ -25,13 +25,13 @@ import "@openremote/or-input";
 import "@openremote/or-panel";
 import {MDCDialog} from '@material/dialog';
 import "@openremote/or-translate";
-import Chart, {ChartDataSets} from "chart.js";
+import Chart, {ChartDataSets, ChartOptions} from "chart.js";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import moment, {unitOfTime} from "moment";
 import {OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {MenuItem, OrMwcMenu, OrMwcMenuChangedEvent} from "@openremote/or-mwc-components/dist/or-mwc-menu";
-
+import * as ChartAnnotation from "chartjs-plugin-annotation";
 export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
 
     public static readonly NAME = "or-chart-event";
@@ -611,7 +611,29 @@ export class OrChart extends translate(i18next)(LitElement) {
                 data: {
                     datasets: this._data
                 },
+                plugins: [
+                    ChartAnnotation
+                ],
                 options: {
+                    annotation: {
+                        annotations: [
+                            {
+                                type: 'line',
+                                mode: 'vertical',
+                                scaleID: 'x-axis-0',
+                                value: moment(),
+                                borderColor: getComputedStyle(document.documentElement).getPropertyValue('--or-app-color4'),
+                                borderWidth: 2,
+                                label: {
+                                    position: 'bottom',
+                                    yAdjust: 0,
+                                    backgroundColor:  getComputedStyle(document.documentElement).getPropertyValue('--or-app-color4'),
+                                    content:  moment().format("HH:mm"),
+                                    enabled: true
+                                }
+                            }
+                        ]
+                    },
                     showLines: true,
                     maintainAspectRatio: false,
                     // REMOVED AS DOESN'T SIZE CORRECTLY 
@@ -656,7 +678,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             }
                         }]
                     }
-                }
+                } as ChartOptions
             });
         } else {
             if (changedProperties.has("_data")) {
