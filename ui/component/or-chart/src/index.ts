@@ -570,11 +570,9 @@ export class OrChart extends translate(i18next)(LitElement) {
     removeDatasetHighlight(bgColor:string) {
         if(this._chart && this._chart.data && this._chart.data.datasets){
             this._chart.data.datasets.map((dataset, idx) => {
-                if (dataset.borderColor === bgColor) {
-                    return
-                }
-                if (dataset.borderColor && typeof dataset.borderColor === "string") {
+                if (dataset.borderColor && typeof dataset.borderColor === "string" && dataset.borderColor.length === 9) {
                     dataset.borderColor = dataset.borderColor.slice(0, -2);
+                    dataset.backgroundColor = dataset.borderColor;
                 }
             });
             this._chart.update();
@@ -589,6 +587,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     return
                 }
                 dataset.borderColor = dataset.borderColor + "36";
+                dataset.backgroundColor = dataset.borderColor;
             });
             this._chart.update();
         }
@@ -616,16 +615,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 type: 'line',
                                 mode: 'vertical',
                                 scaleID: 'x-axis-0',
-                                value: moment(),
-                                borderColor: getComputedStyle(document.documentElement).getPropertyValue('--or-app-color4'),
-                                borderWidth: 2,
-                                label: {
-                                    position: 'bottom',
-                                    yAdjust: 0,
-                                    backgroundColor:  getComputedStyle(document.documentElement).getPropertyValue('--or-app-color4'),
-                                    content:  moment().format("HH:mm"),
-                                    enabled: true
-                                }
+                                borderColor: "#275582",
+                                borderWidth: 2
                             }
                         ]
                     },
@@ -868,25 +859,25 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _timestampLabel(timestamp: Date | number | undefined) {
-        let newMoment = moment(timestamp);
+        let newMoment = moment.utc(timestamp).local();
 
         if(this.periodCompare) {
             const initialTimestamp = moment(this.timestamp);
             switch (this.period) {
                 case "hour":
-                    newMoment = moment(timestamp);
+                    newMoment = moment.utc(timestamp).local();
                     break;
                 case "day":
-                    newMoment = moment(timestamp).set('day', initialTimestamp.day());
+                    newMoment = moment.utc(timestamp).local().set('day', initialTimestamp.day());
                     break;
                 case "week":
-                    newMoment = moment(timestamp).set('week', initialTimestamp.week());
+                    newMoment = moment.utc(timestamp).local().set('week', initialTimestamp.week());
                     break;
                 case "month":
-                    newMoment = moment(timestamp).set('month', initialTimestamp.month());
+                    newMoment = moment.utc(timestamp).local().set('month', initialTimestamp.month());
                     break;
                 case "year":
-                    newMoment = moment(timestamp).set('year', initialTimestamp.year());
+                    newMoment = moment.utc(timestamp).local().set('year', initialTimestamp.year());
                     break;
             }
         }
@@ -929,7 +920,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                     if (datapoint['x']) {
                         datapoint['x'] = this._timestampLabel(datapoint['x'])
                     }
-                    if (datapoint['y']) {
+
+                    if (typeof datapoint['y'] !== 'undefined') {
                         datapoint['y'] = Math.round(datapoint['y'] * 100) / 100
                     } else {
                         delete datapoint['y']
@@ -951,8 +943,11 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._loading = false;
             return [];
         }
-        const startOfPeriod = moment(timestamp).startOf(this.period).toDate().getTime();
-        const endOfPeriod = moment(timestamp).endOf(this.period).toDate().getTime();
+    
+        const now = moment().toDate().valueOf();
+        const startOfPeriod = moment(timestamp).startOf(this.period).toDate().valueOf();
+        const endOfPeriod = moment(timestamp).endOf(this.period).toDate().valueOf();
+        const fromTimestamp = now < startOfPeriod ? startOfPeriod : now;
 
         if(attribute.assetId &&  attribute.name && endOfPeriod){
             const response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(
@@ -960,7 +955,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 attribute.name,
                 {
                     interval: this._getInterval(),
-                    fromTimestamp: startOfPeriod,
+                    fromTimestamp: fromTimestamp,
                     toTimestamp: endOfPeriod
                 }
             );
@@ -979,7 +974,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     if (datapoint['x']) {
                         datapoint['x'] = this._timestampLabel(datapoint['x'])
                     }
-                    if (datapoint['y']) {
+                    if (typeof datapoint['y'] !== 'undefined') {
                         datapoint['y'] = Math.round(datapoint['y'] * 100) / 100
                     } else {
                         delete datapoint['y']
@@ -1000,10 +995,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                 interval = DatapointInterval.HOUR;
                 break;
             case "week":
-                interval = DatapointInterval.DAY;
+                interval = DatapointInterval.HOUR;
                 break;
             case "month":
-                interval = DatapointInterval.WEEK;
+                interval = DatapointInterval.DAY;
                 break;
             case "year":
                 interval = DatapointInterval.MONTH;

@@ -25,7 +25,7 @@ import "@openremote/or-icon";
 import {router} from "../index";
 import "./or-attribute-field/src";
 import {orAttributeTemplateProvider} from "./or-attribute-field/src";
-import { i18next } from "@openremote/or-translate/src";
+import { i18next } from "@openremote/or-translate";
 
 orAttributeTemplateProvider.setTemplate((attribute) => {
     let template;
