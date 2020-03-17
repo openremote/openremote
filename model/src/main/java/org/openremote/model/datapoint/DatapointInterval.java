@@ -21,10 +21,11 @@ package org.openremote.model.datapoint;
 
 public enum DatapointInterval {
 
+    NONE,
+    MINUTE,
     HOUR,
     DAY,
     WEEK,
     MONTH,
     YEAR
-
 }

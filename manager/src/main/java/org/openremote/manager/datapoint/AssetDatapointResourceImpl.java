@@ -56,7 +56,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                                                  String assetId,
                                                  String attributeName,
                                                  DatapointInterval interval,
-                                                 long timestamp) {
+                                                 long fromTimestamp,
+                                                 long toTimestamp) {
         try {
 
             if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
@@ -81,7 +82,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             return assetDatapointService.getValueDatapoints(
                 attribute,
                 interval,
-                timestamp
+                fromTimestamp,
+                toTimestamp
             );
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);

@@ -23,7 +23,6 @@ import jsinterop.annotations.JsType;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
-import org.openremote.model.value.Value;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
@@ -48,9 +47,10 @@ public interface AssetDatapointResource {
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
     @SuppressWarnings("unusable-by-js")
     ValueDatapoint[] getDatapoints(@BeanParam RequestParams requestParams,
-                                          @PathParam("assetId") String assetId,
-                                          @PathParam("attributeName") String attributeName,
-                                          @QueryParam("interval") DatapointInterval datapointInterval,
-                                          @QueryParam("timestamp") long timestamp);
+                                   @PathParam("assetId") String assetId,
+                                   @PathParam("attributeName") String attributeName,
+                                   @QueryParam("interval") DatapointInterval datapointInterval,
+                                   @QueryParam("fromTimestamp") long fromTimestamp,
+                                   @QueryParam("toTimestamp") long toTimestamp);
 
 }
