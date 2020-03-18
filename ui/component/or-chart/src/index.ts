@@ -11,7 +11,7 @@ import {
 } from "lit-element";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
-import {Asset, AssetAttribute, Attribute, AttributeRef, DatapointInterval, MetaItemType} from "@openremote/model";
+import {Asset, AssetAttribute, AttributeRef, DatapointInterval, MetaItemType} from "@openremote/model";
 import manager, {
     AssetModelUtil,
     DefaultColor2,
@@ -25,13 +25,13 @@ import "@openremote/or-input";
 import "@openremote/or-panel";
 import {MDCDialog} from '@material/dialog';
 import "@openremote/or-translate";
-import Chart, {ChartDataSets} from "chart.js";
+import Chart, {ChartDataSets, ChartOptions} from "chart.js";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
-import moment, {unitOfTime} from "moment";
+import moment from "moment";
 import {OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {MenuItem, OrMwcMenu, OrMwcMenuChangedEvent} from "@openremote/or-mwc-components/dist/or-mwc-menu";
-
+import * as ChartAnnotation from "chartjs-plugin-annotation";
 export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
 
     public static readonly NAME = "or-chart-event";
@@ -348,7 +348,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     public usedColors: string[] = [];
 
     @property({type: String})
-    public interval?: DatapointInterval = DatapointInterval.DAY;
+    public period: moment.unitOfTime.Base = "day";
 
     @property({type: Number})
     public timestamp?: Date = moment().set('minute', 0).toDate();
@@ -424,7 +424,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     shouldUpdate(_changedProperties: PropertyValues): boolean {
 
-        let reloadData = _changedProperties.has("interval") || _changedProperties.has("compareTimestamp") || _changedProperties.has("timestamp") || _changedProperties.has("assetAttributes");
+        let reloadData = _changedProperties.has("period") || _changedProperties.has("compareTimestamp") || _changedProperties.has("timestamp") || _changedProperties.has("assetAttributes");
 
         if (reloadData) {
             this._data = [];
@@ -448,10 +448,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                 <div id="controls">
                     <div class="interval-controls" style="margin-right: 6px;">
                         ${getContentWithMenuTemplate(
-                            html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t("timeframe")}: ${i18next.t(this.interval ? this.interval : "-")}"></or-input>`,
-                            this._getIntervalOptions(),
-                            this.interval,
-                            (value) => this.setPeriodOption(value))}
+            html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t("timeframe")}: ${i18next.t(this.period ? this.period : "-")}"></or-input>`,
+            this._getPeriodOptions(),
+            this.period,
+            (value) => this.setPeriodOption(value))}
 
                         ${this.periodCompare ? html `
                                 <or-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @click="${() => this.setPeriodCompare(false)}" icon="minus"></or-input>
@@ -548,38 +548,31 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     setPeriodOption(value:any) {
-        this.interval = value;
+        this.period = value;
         this.requestUpdate();
     }
  
     getInputType() {
-        switch(this.interval) {
-            case DatapointInterval.HOUR:
+        switch (this.period) {
+            case "hour":
                 return InputType.DATETIME;
-              break;
-            case DatapointInterval.DAY:
+            case "day":
                 return InputType.DATE;
-              break;
-            case DatapointInterval.WEEK:
+            case "week":
                 return InputType.WEEK;
-              break;
-            case DatapointInterval.MONTH:
+            case "month":
                 return InputType.MONTH;
-              break;
-            case DatapointInterval.YEAR:
+            case "year":
                 return InputType.MONTH;
-                break;
           }
     }
 
     removeDatasetHighlight(bgColor:string) {
         if(this._chart && this._chart.data && this._chart.data.datasets){
             this._chart.data.datasets.map((dataset, idx) => {
-                if (dataset.borderColor === bgColor) {
-                    return
-                }
-                if (dataset.borderColor && typeof dataset.borderColor === "string") {
+                if (dataset.borderColor && typeof dataset.borderColor === "string" && dataset.borderColor.length === 9) {
                     dataset.borderColor = dataset.borderColor.slice(0, -2);
+                    dataset.backgroundColor = dataset.borderColor;
                 }
             });
             this._chart.update();
@@ -594,6 +587,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     return
                 }
                 dataset.borderColor = dataset.borderColor + "36";
+                dataset.backgroundColor = dataset.borderColor;
             });
             this._chart.update();
         }
@@ -611,7 +605,22 @@ export class OrChart extends translate(i18next)(LitElement) {
                 data: {
                     datasets: this._data
                 },
+                plugins: [
+                    ChartAnnotation
+                ],
                 options: {
+                    annotation: {
+                        annotations: [
+                            {
+                                type: 'line',
+                                mode: 'vertical',
+                                scaleID: 'x-axis-0',
+                                value: moment(),
+                                borderColor: "#275582",
+                                borderWidth: 2
+                            }
+                        ]
+                    },
                     showLines: true,
                     maintainAspectRatio: false,
                     // REMOVED AS DOESN'T SIZE CORRECTLY 
@@ -656,7 +665,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             }
                         }]
                     }
-                }
+                } as ChartOptions
             });
         } else {
             if (changedProperties.has("_data")) {
@@ -687,7 +696,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             if(this.activeAsset){
                 const attr = Util.getAssetAttribute(this.activeAsset, elm.value);
                 if(attr){
-                    const color = this.colors.filter(color => this.usedColors.indexOf( color ) < 0)[0]
+                    const color = this.colors.filter(color => this.usedColors.indexOf(color) < 0)[0];
                     const meta = {name: "color", value: color};
                     if(attr.meta){
                         attr.meta.push(meta);
@@ -738,27 +747,27 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    protected _getIntervalOptions(){
+    protected _getPeriodOptions() {
         return [
             {
                 text: i18next.t(DatapointInterval.HOUR),
-                value:  DatapointInterval.HOUR
+                value: "hour"
             },
             {
                 text: i18next.t(DatapointInterval.DAY),
-                value:  DatapointInterval.DAY
+                value: "day"
             },
             {
                 text: i18next.t(DatapointInterval.WEEK),
-                value:  DatapointInterval.WEEK
+                value: "week"
             },
             {
                 text: i18next.t(DatapointInterval.MONTH),
-                value:  DatapointInterval.MONTH
+                value: "month"
             },
             {
                 text: i18next.t(DatapointInterval.YEAR),
-                value:  DatapointInterval.YEAR
+                value: "year"
             }
         ];
     }
@@ -851,25 +860,25 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected _timestampLabel(timestamp: Date | number | undefined) {
-        let newMoment = moment(timestamp);
+        let newMoment = moment.utc(timestamp).local();
 
         if(this.periodCompare) {
             const initialTimestamp = moment(this.timestamp);
-            switch (this.interval) {
-                case DatapointInterval.HOUR:
-                    newMoment = moment(timestamp)
+            switch (this.period) {
+                case "hour":
+                    newMoment = moment.utc(timestamp).local();
                     break;
-                case DatapointInterval.DAY:
-                    newMoment = moment(timestamp).set('day', initialTimestamp.day())
+                case "day":
+                    newMoment = moment.utc(timestamp).local().set('day', initialTimestamp.day());
                     break;
-                case DatapointInterval.WEEK:
-                    newMoment = moment(timestamp).set('week', initialTimestamp.week())
+                case "week":
+                    newMoment = moment.utc(timestamp).local().set('week', initialTimestamp.week());
                     break;
-                case DatapointInterval.MONTH:
-                    newMoment = moment(timestamp).set('month', initialTimestamp.month())
+                case "month":
+                    newMoment = moment.utc(timestamp).local().set('month', initialTimestamp.month());
                     break;
-                case DatapointInterval.YEAR:
-                    newMoment = moment(timestamp).set('year', initialTimestamp.year())
+                case "year":
+                    newMoment = moment.utc(timestamp).local().set('year', initialTimestamp.year());
                     break;
             }
         }
@@ -884,21 +893,22 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         this._loading = true;
 
-        if (!this.interval || !timestamp) {
+        if (!this.period || !timestamp) {
             this._loading = false;
             return [];
         }
 
-        const period = this._getUnitOfTime();
-        const forwardTime = this._updateTimestamp(timestamp, true);
-        const startOfPeriod = moment(forwardTime).startOf(period).toDate().getTime();
-        if(attribute.assetId &&  attribute.name){
+        const startOfPeriod = moment(timestamp).startOf(this.period).toDate().getTime();
+        const endOfPeriod = moment(timestamp).endOf(this.period).toDate().getTime();
+
+        if (attribute.assetId && attribute.name) {
             const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
                 attribute.assetId,
                 attribute.name,
                 {
-                    interval: this.interval || DatapointInterval.DAY,
-                    timestamp: startOfPeriod
+                    interval: this._getInterval(),
+                    fromTimestamp: startOfPeriod,
+                    toTimestamp: endOfPeriod
                 }
             );
 
@@ -907,16 +917,17 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._loading = false;
 
             if (response.status === 200) {
-                data.map((datapoint:any) => {
-                    if(datapoint['x']) {
+                data.map((datapoint: any) => {
+                    if (datapoint['x']) {
                         datapoint['x'] = this._timestampLabel(datapoint['x'])
                     }
-                    if(datapoint['y']) {
-                        datapoint['y'] = Math.round(datapoint['y'] * 100)/100
+
+                    if (typeof datapoint['y'] !== 'undefined') {
+                        datapoint['y'] = Math.round(datapoint['y'] * 100) / 100
                     } else {
                         delete datapoint['y']
                     }
-                })
+                });
                 return data;
             }
         }
@@ -929,14 +940,14 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         this._loading = true;
 
-        if (!this.interval || !timestamp) {
+        if (!this.period || !timestamp) {
             this._loading = false;
             return [];
         }
-        const period = this._getUnitOfTime();
-        const now = moment().toDate().getTime();
-        const startOfPeriod = moment(timestamp).startOf(period).toDate().getTime();
-        const endOfPeriod = moment(timestamp).endOf(period).toDate().getTime();
+    
+        const now = moment().toDate().valueOf();
+        const startOfPeriod = moment(timestamp).startOf(this.period).toDate().valueOf();
+        const endOfPeriod = moment(timestamp).endOf(this.period).toDate().valueOf();
         const fromTimestamp = now < startOfPeriod ? startOfPeriod : now;
 
         if(attribute.assetId &&  attribute.name && endOfPeriod){
@@ -944,6 +955,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 attribute.assetId,
                 attribute.name,
                 {
+                    interval: this._getInterval(),
                     fromTimestamp: fromTimestamp,
                     toTimestamp: endOfPeriod
                 }
@@ -959,69 +971,48 @@ export class OrChart extends translate(i18next)(LitElement) {
                         return 0;
                     }
                 });
-                data.map((datapoint:any) => {
-                    if(datapoint['x']) {
+                data.map((datapoint: any) => {
+                    if (datapoint['x']) {
                         datapoint['x'] = this._timestampLabel(datapoint['x'])
                     }
-                    if(datapoint['y']) {
-                        datapoint['y'] = Math.round(datapoint['y'] * 100)/100
+                    if (typeof datapoint['y'] !== 'undefined') {
+                        datapoint['y'] = Math.round(datapoint['y'] * 100) / 100
                     } else {
                         delete datapoint['y']
                     }
-                })
+                });
                 return data;
             }
         }
     }
 
-    protected _getUnitOfTime() {
-        let unit:unitOfTime.All = 'day';
-        switch (this.interval) {
-            case DatapointInterval.HOUR:
-                unit = "hour";
+    protected _getInterval() {
+        let interval: DatapointInterval = DatapointInterval.HOUR;
+        switch (this.period) {
+            case "hour":
+                interval = DatapointInterval.MINUTE;
                 break;
-            case DatapointInterval.DAY:
-                unit = 'day';
+            case "day":
+                interval = DatapointInterval.HOUR;
                 break;
-            case DatapointInterval.WEEK:
-                unit = 'week';
+            case "week":
+                interval = DatapointInterval.HOUR;
                 break;
-            case DatapointInterval.MONTH:
-                unit = 'month';
+            case "month":
+                interval = DatapointInterval.DAY;
                 break;
-            case DatapointInterval.YEAR:
-                unit = 'year';
+            case "year":
+                interval = DatapointInterval.MONTH;
                 break;
         }
-        return unit;
+        return interval;
     }
-   
 
     protected _updateTimestamp(timestamp: Date, forward?: boolean) {
-        if (!this.interval) { 
-            return;
-        }
-
         const newMoment = moment(timestamp);
 
         if (forward !== undefined) {
-            switch (this.interval) {
-                case DatapointInterval.HOUR:
-                    newMoment.add(forward ? 1 : -1, "hour");
-                    break;
-                case DatapointInterval.DAY:
-                    newMoment.add(forward ? 1 : -1, "day");
-                    break;
-                case DatapointInterval.WEEK:
-                    newMoment.add(forward ? 1 : -1, "week");
-                    break;
-                case DatapointInterval.MONTH:
-                    newMoment.add(forward ? 1 : -1, "month");
-                    break;
-                case DatapointInterval.YEAR:
-                    newMoment.add(forward ? 1 : -1, "year");
-                    break;
-            }
+            newMoment.add(forward ? 1 : -1, this.period);
         }
 
         return newMoment.toDate();

@@ -22,6 +22,7 @@ package org.openremote.manager.rules.facade;
 import org.openremote.manager.predicted.AssetPredictedDatapointService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.rules.PredictedDatapoints;
 import org.openremote.model.rules.Ruleset;
@@ -42,8 +43,8 @@ public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
     }
 
     @Override
-    public ValueDatapoint[] getValueDataPoints(AttributeRef attributeRef, long fromTimestamp, long toTimestamp) {
-        return assetPredictedDatapointService.getValueDatapoints(attributeRef, fromTimestamp, toTimestamp);
+    public ValueDatapoint[] getValueDataPoints(AttributeRef attributeRef, DatapointInterval interval, long fromTimestamp, long toTimestamp) {
+        return assetPredictedDatapointService.getValueDatapoints(attributeRef, interval, fromTimestamp, toTimestamp);
     }
 
     @Override

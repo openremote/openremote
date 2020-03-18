@@ -10,7 +10,7 @@ import {
     TemplateResult,
     unsafeCSS
 } from "lit-element";
-import {Asset, AssetEvent, AssetEventCause, AttributeEvent, AttributeType, AttributeValueType} from "@openremote/model";
+import {Asset, AssetEvent, AssetEventCause, AttributeEvent, AttributeType, AttributeValueType, MetaItemType, AttributeDescriptor} from "@openremote/model";
 import manager, {
     AssetModelUtil,
     DefaultColor1,
@@ -25,6 +25,7 @@ import "@openremote/or-icon";
 import {router} from "../index";
 import "./or-attribute-field/src";
 import {orAttributeTemplateProvider} from "./or-attribute-field/src";
+import { i18next } from "@openremote/or-translate";
 
 orAttributeTemplateProvider.setTemplate((attribute) => {
     let template;
@@ -220,6 +221,9 @@ export class OrAssetSummaryCard extends subscribe(manager)(LitElement) {
         const icon = this.getIcon();
         const color = this.getColor();
         const styleStr = color ? "--internal-or-asset-summary-card-header-color: #" + color + ";" : "";
+
+
+
         return html`
             <div id="card-container" style="${styleStr}">
                 <div id="header">
@@ -229,7 +233,13 @@ export class OrAssetSummaryCard extends subscribe(manager)(LitElement) {
                 <div id="attribute-list">
                     <ul>
                         ${Util.getAssetAttributes(this.asset).filter((attr) => attr.name !== AttributeType.LOCATION.attributeName).map((attr) => {
-                            return html`<li><or-translate class="attribute-name" value="${attr.name}"></or-translate><span class="attribute-value"><or-attribute-field .attribute="${attr}"></or-attribute-field></span></li>`; 
+                            let attributeDescriptor: AttributeDescriptor | undefined = AssetModelUtil.getAttributeDescriptorFromAsset(attr.name!);
+                            let label = Util.getAttributeLabel(attr, attributeDescriptor);
+                            const unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
+                            
+                            if(unit) 
+                                label = label + " ("+i18next.t(unit)+")";
+                            return html`<li>${label}<span class="attribute-value"><or-attribute-field .attribute="${attr}"></or-attribute-field></span></li>`; 
                         })}
                     </ul>
                 </div>

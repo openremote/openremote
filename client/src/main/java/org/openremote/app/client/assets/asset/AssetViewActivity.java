@@ -393,25 +393,27 @@ public class AssetViewActivity
             675,
             200,
             DatapointInterval.HOUR,
-            attribute.getValueTimestamp().orElse(System.currentTimeMillis())
+            attribute.getValueTimestamp().orElse(System.currentTimeMillis()),
+            attribute.getValueTimestamp().orElse(System.currentTimeMillis()) + 1000 * 60 * 60 * 24//add a day
         ) {
             @Override
             protected void queryDatapoints(DatapointInterval interval,
-                                           long timestamp,
+                                           long fromTimestamp,
+                                           long toTimestamp,
                                            Consumer<ValueDatapoint[]> consumer) {
                 attribute.getName().ifPresent(attributeName ->
-                    queryDataPoints(attributeName, interval, timestamp, consumer)
+                    queryDataPoints(attributeName, interval, fromTimestamp, toTimestamp, consumer)
                 );
             }
         };
     }
 
-    protected void queryDataPoints(String attributeName, DatapointInterval interval, long timestamp, Consumer<ValueDatapoint[]> consumer) {
+    protected void queryDataPoints(String attributeName, DatapointInterval interval, long fromTimestamp, long toTimestamp, Consumer<ValueDatapoint[]> consumer) {
         if (!isNullOrEmpty(attributeName)) {
             environment.getApp().getRequests().sendAndReturn(
                 numberDatapointArrayMapper,
                 requestParams -> assetDatapointResource.getDatapoints(
-                    requestParams, this.asset.getId(), attributeName, interval, timestamp
+                    requestParams, this.asset.getId(), attributeName, interval, fromTimestamp, toTimestamp
                 ),
                 200,
                 consumer

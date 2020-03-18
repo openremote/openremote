@@ -140,6 +140,13 @@ const style = css`
         flex-direction: column;
     }
        
+    .button-icon {
+        align-self: center;
+        padding: 10px;
+        cursor: pointer;
+    }
+
+
     #msg {
         height: 100%;
         width: 100%;
@@ -230,7 +237,10 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     public interval?: DatapointInterval;
 
     @property({type: Number})
-    public timestamp?: Date;
+    public fromTimestamp?: Date;
+
+    @property({type: Number})
+    public toTimestamp?: Date;
 
     @property({type: Object})
     public config?: HistoryConfig;
@@ -267,13 +277,18 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
         let returnFalse = false;
 
-        if (!this.timestamp) {
-            this.timestamp = new Date();
+        if (!this.fromTimestamp) {
+            this.fromTimestamp = new Date();
+            returnFalse = true;
+        }
+
+        if (!this.toTimestamp) {
+            this.toTimestamp = moment(this.fromTimestamp).add(1, "day").toDate();
             returnFalse = true;
         }
 
         if (!this.interval) {
-            this.interval = DatapointInterval.DAY;
+            this.interval = DatapointInterval.HOUR;
             returnFalse = true;
         }
 
@@ -306,12 +321,12 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         return html`
             <div id="container">
                 <div id="controls">
-                    <or-input .type="${InputType.SELECT}" ?disabled="${disabled}" .label="${i18next.t("period")}" @or-input-changed="${(evt: OrInputChangedEvent) => this.interval = evt.detail.value}" .value="${this.interval}" .options="${this._getIntervalOptions()}"></or-input>
+                    <or-input .type="${InputType.SELECT}" ?disabled="${disabled}" .label="${i18next.t("Timeframe")}" @or-input-changed="${(evt: OrInputChangedEvent) => this.interval = evt.detail.value}" .value="${this.interval}" .options="${this._getIntervalOptions()}"></or-input>
                     <div id="ending-controls">
-                        <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._updateTimestamp(this.timestamp!, false)}"></or-input>
-                        <or-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.timestamp}" @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
-                        <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._updateTimestamp(this.timestamp!, true)}"></or-input>
-                        <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" icon="chevron-double-right" @click="${() => this._updateTimestamp(new Date())}"></or-input>
+                        <or-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.toTimestamp}" @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
+                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._updateTimestamp(this.toTimestamp!, false)}"></or-icon>
+                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._updateTimestamp(this.toTimestamp!, true)}"></or-icon>
+                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-double-right" @click="${() => this._updateTimestamp(new Date())}"></or-icon>
                     </div>
                 </div>
                 
@@ -320,7 +335,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         <or-translate value="invalidAttribute"></or-translate>
                     </div>
                 ` : isChart
-                    ? html`
+            ? html`
                         <div id="chart-container">
                             <canvas id="chart"></canvas>
                         </div>
@@ -661,7 +676,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             return;
         }
 
-        if (!this.interval || !this.timestamp) {
+        if (!this.interval || !this.fromTimestamp || !this.toTimestamp) {
             this._loading = false;
             return;
         }
@@ -670,8 +685,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             assetId,
             attributeName,
             {
-                interval: this.interval || DatapointInterval.DAY,
-                timestamp: this.timestamp.getTime()
+                interval: this.interval || DatapointInterval.HOUR,
+                fromTimestamp: this.fromTimestamp.getTime(),
+                toTimestamp: this.toTimestamp.getTime()
             }
         );
 
@@ -688,27 +704,36 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         }
 
         const newMoment = moment(timestamp);
-
-        if (forward !== undefined) {
-            switch (this.interval) {
-                case DatapointInterval.HOUR:
-                    newMoment.add(forward ? 1 : -1, "hour");
-                    break;
-                case DatapointInterval.DAY:
-                    newMoment.add(forward ? 1 : -1, "day");
-                    break;
-                case DatapointInterval.WEEK:
-                    newMoment.add(forward ? 1 : -1, "week");
-                    break;
-                case DatapointInterval.MONTH:
-                    newMoment.add(forward ? 1 : -1, "month");
-                    break;
-                case DatapointInterval.YEAR:
-                    newMoment.add(forward ? 1 : -1, "year");
-                    break;
-            }
+        const newToMoment = moment(timestamp);
+        const forwardAmount = forward !== undefined ? forward ? 1 : -1 : 0;
+        switch (this.interval) {
+            case DatapointInterval.MINUTE:
+                newMoment.add(forwardAmount, "hour");
+                newToMoment.add(1, "hour");
+                break;
+            case DatapointInterval.HOUR:
+                newMoment.add(forwardAmount, "day");
+                newToMoment.add(1, "day");
+                break;
+            case DatapointInterval.DAY:
+                newMoment.add(forwardAmount, "week");
+                newToMoment.add(1, "week");
+                break;
+            case DatapointInterval.WEEK:
+                newMoment.add(forwardAmount, "month");
+                newToMoment.add(1, "month");
+                break;
+            case DatapointInterval.MONTH:
+                newMoment.add(forwardAmount, "year");
+                newToMoment.add(1, "year");
+                break;
+            case DatapointInterval.YEAR:
+                newMoment.add(forwardAmount, "year");
+                newToMoment.add(7, "year");
+                break;
         }
 
-        this.timestamp = newMoment.toDate();
+        this.fromTimestamp = newMoment.toDate();
+        this.toTimestamp = newToMoment.toDate();
     }
 }

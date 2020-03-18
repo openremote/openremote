@@ -49,7 +49,7 @@ public abstract class Datapoint implements Serializable {
     protected String attributeName;
 
     @Id
-    @Column(name = "TIMESTAMP", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @Column(name = "TIMESTAMP", updatable = false, nullable = false, columnDefinition = "TIMESTAMP")
     protected Date timestamp;
 
     @Column(name = "VALUE", columnDefinition = "jsonb", nullable = false)

@@ -30,7 +30,7 @@ create table ASSET (
 );
 
 create table ASSET_DATAPOINT (
-  TIMESTAMP      timestamp with time zone   not null,
+  TIMESTAMP      timestamp                  not null,
   ENTITY_ID      varchar(36)                not null,
   ATTRIBUTE_NAME varchar(255)               not null,
   VALUE          jsonb                      not null,
@@ -122,7 +122,7 @@ create table SYSLOG_EVENT (
 );
 
 create table ASSET_PREDICTED_DATAPOINT (
-  TIMESTAMP      timestamp with time zone   not null,
+  TIMESTAMP      timestamp                  not null,
   ENTITY_ID      varchar(36)                not null,
   ATTRIBUTE_NAME varchar(255)               not null,
   VALUE          jsonb                      not null,

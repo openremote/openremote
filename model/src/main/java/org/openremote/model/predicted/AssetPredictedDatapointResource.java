@@ -21,6 +21,7 @@ package org.openremote.model.predicted;
 
 import jsinterop.annotations.JsType;
 import org.openremote.model.Constants;
+import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
@@ -49,6 +50,7 @@ public interface AssetPredictedDatapointResource {
     ValueDatapoint[] getPredictedDatapoints(@BeanParam RequestParams requestParams,
                                             @PathParam("assetId") String assetId,
                                             @PathParam("attributeName") String attributeName,
+                                            @QueryParam("interval") DatapointInterval datapointInterval,
                                             @QueryParam("fromTimestamp") long fromTimestamp,
                                             @QueryParam("toTimestamp") long toTimestamp);
 

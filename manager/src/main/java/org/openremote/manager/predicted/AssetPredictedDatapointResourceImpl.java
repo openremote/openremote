@@ -25,6 +25,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.predicted.AssetPredictedDatapointResource;
@@ -52,10 +53,11 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
 
     @Override
     public ValueDatapoint[] getPredictedDatapoints(@BeanParam RequestParams requestParams,
-                                          String assetId,
-                                          String attributeName,
-                                          long fromTimestamp,
-                                          long toTimestamp) {
+                                                   String assetId,
+                                                   String attributeName,
+                                                   DatapointInterval datapointInterval,
+                                                   long fromTimestamp,
+                                                   long toTimestamp) {
         try {
 
             if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
@@ -79,6 +81,7 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
 
             return assetPredictedDatapointService.getValueDatapoints(
                 attribute.getReferenceOrThrow(),
+                datapointInterval,
                 fromTimestamp,
                 toTimestamp
             );
