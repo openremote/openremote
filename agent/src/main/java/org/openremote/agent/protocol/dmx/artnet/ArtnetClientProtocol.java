@@ -282,18 +282,32 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<String> i
         Integer universeId = universeAttribute.getValueAsInteger().get();
         Integer lightId = lightIdAttribute.getValueAsInteger().get();
         ArtnetLight updatedLight = (ArtnetLight) artnetLightMemory.get(universeId).get(lightId);
-        Map<String, Integer> valuesToUpdate = new HashMap<String, Integer>();
-        for(String requiredKey : updatedLight.getRequiredValues()) {
-            valuesToUpdate.put(requiredKey, new JsonParser().parse(processedValue.toJson()).getAsJsonObject().get(requiredKey).getAsInt());
-        }
+        ArtnetLightState oldLightState = (ArtnetLightState) updatedLight.getLightState();
 
+
+        //UPDATE VALUES (RGBW FOR EXAMPLE)
+        if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Values")) {
+            Map<String, Integer> valuesToUpdate = new HashMap<String, Integer>();
+            for(String requiredKey : updatedLight.getRequiredValues()) {
+                valuesToUpdate.put(requiredKey, new JsonParser().parse(processedValue.toJson()).getAsJsonObject().get(requiredKey).getAsInt());
+                updateLightStateInMemory(lightId, new ArtnetLightState(lightId, valuesToUpdate, oldLightState.getDim(), oldLightState.isEnabled()));
+            }
+        }
+        //UPDATE DIM
+        else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Dim")) {
+            int dimValue = new JsonParser().parse(processedValue.toJson()).getAsInt();
+            updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), dimValue, oldLightState.isEnabled()));
+        }
+        //UPDATE ENABLED/DISABLED
+        else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Switch")) {
+            boolean enabled = new JsonParser().parse(processedValue.toJson()).getAsBoolean();
+            updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), oldLightState.getDim(), enabled));
+        }
 
         //updateLightStateInMemory(lightId, updatedLightState);
         Value value = Values.createObject().putAll(new HashMap<String, Value>() {{
             put("lights", Values.convert(artnetLightMemory.get(universeId), Container.JSON).get());
         }});
-        //TODO LOOK AT ENCODER/DECODER FOR CONVERTING MESSAGE TO BYTEBUF
-
         return value.toJson();
     }
 
