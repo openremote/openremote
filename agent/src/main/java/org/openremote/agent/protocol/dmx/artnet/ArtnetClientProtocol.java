@@ -1,24 +1,15 @@
 package org.openremote.agent.protocol.dmx.artnet;
 
 import com.google.gson.*;
-import com.google.gwt.json.client.JSONArray;
-import com.google.gwt.json.client.JSONObject;
-import com.google.gwt.json.client.JSONParser;
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandler;
-import io.netty.util.CharsetUtil;
+import io.netty.channel.*;
 import javassist.bytecode.AttributeInfo;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
-import org.openremote.agent.protocol.dmx.AbstractDMXClientProtocol;
-import org.openremote.agent.protocol.dmx.AbstractDMXLight;
-import org.openremote.agent.protocol.dmx.AbstractDMXLightState;
+import org.openremote.agent.protocol.dmx.AbstractArtnetClientProtocol;
+import org.openremote.agent.protocol.dmx.AbstractArtnetLight;
+import org.openremote.agent.protocol.dmx.AbstractArtnetLightState;
 import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
-import org.openremote.agent.protocol.io.IoClient;
-import org.openremote.agent.protocol.knx.EtsFileUriResolver;
-import org.openremote.agent.protocol.knx.KNXProtocol;
 import org.openremote.agent.protocol.udp.AbstractUdpClientProtocol;
-import org.openremote.agent.protocol.udp.UdpClientProtocol;
 import org.openremote.agent.protocol.udp.UdpIoClient;
 import org.openremote.container.Container;
 import org.openremote.container.util.CodecUtil;
@@ -31,36 +22,12 @@ import org.openremote.model.attribute.*;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
-import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.*;
-import org.openremote.model.value.impl.ArrayValueImpl;
-import org.openremote.model.value.impl.NumberValueImpl;
-import org.openremote.model.value.impl.StringValueImpl;
-import tuwien.auto.calimero.datapoint.DatapointMap;
-import tuwien.auto.calimero.datapoint.StateDP;
-import tuwien.auto.calimero.xml.KNXMLException;
-import tuwien.auto.calimero.xml.XmlInputFactory;
-import tuwien.auto.calimero.xml.XmlReader;
 
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.lang.reflect.Array;
-import java.nio.charset.Charset;
 import java.util.*;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import static org.openremote.container.util.Util.joinCollections;
 import static org.openremote.model.Constants.MASTER_REALM;
@@ -70,7 +37,7 @@ import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemInte
 import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemObject;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
-public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements ProtocolLinkedAttributeImport {
+public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<String> implements ProtocolLinkedAttributeImport {
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":artnet";
     public static final String PROTOCOL_DISPLAY_NAME = "Artnet Client";
     private static final String PROTOCOL_VERSION = "1.69";
@@ -80,7 +47,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
     private static int DEFAULT_SEND_RETRIES = 1;
     private static int MIN_POLLING_MILLIS = 1000;
 
-    public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = joinCollections(AbstractUdpClientProtocol.PROTOCOL_META_ITEM_DESCRIPTORS, AbstractIoClientProtocol.PROTOCOL_GENERIC_META_ITEM_DESCRIPTORS);
+    public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = joinCollections(AbstractArtnetClientProtocol.PROTOCOL_META_ITEM_DESCRIPTORS, AbstractIoClientProtocol.PROTOCOL_GENERIC_META_ITEM_DESCRIPTORS);
 
     public static final MetaItemDescriptor META_ARTNET_LIGHT_ID = metaItemInteger(
             "lightId",
@@ -110,7 +77,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
 
     protected final Map<AttributeRef, List<Pair<AttributeRef, Consumer<String>>>> protocolMessageConsumers = new HashMap<>();
 
-    private HashMap<Integer, List<AbstractDMXLight>> artnetLightMemory = new HashMap<Integer, List<AbstractDMXLight>>();
+    private HashMap<Integer, List<AbstractArtnetLight>> artnetLightMemory = new HashMap<Integer, List<AbstractArtnetLight>>();
 
     @Override
     public String getProtocolName() {
@@ -128,7 +95,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
     }
 
     @Override
-    public Map<Integer, List<AbstractDMXLight>> getLightMemory() { return artnetLightMemory; }
+    public Map<Integer, List<AbstractArtnetLight>> getLightMemory() { return artnetLightMemory; }
 
     @Override
     protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
@@ -155,6 +122,11 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
             protocolMessageConsumers.remove(protocolConfiguration.getReferenceOrThrow());
         }
         super.doUnlinkProtocolConfiguration(protocolConfiguration);
+    }
+
+    @Override
+    protected Supplier<ChannelHandler[]> getEncoderDecoderProvider(ArtnetIoClient<String> client, AssetAttribute protocolConfiguration) {
+        return getGenericStringEncodersAndDecoders(client, protocolConfiguration);
     }
 
     @Override
@@ -198,7 +170,7 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
             state.getReceivedValues().put(key, 0);
         ArtnetLight lightToCreate = new ArtnetLight(lightId, groupId, universe, amountOfLeds, requiredKeys, state, null);
         if(artnetLightMemory.get(universe) == null)
-            artnetLightMemory.put(universe, new ArrayList<AbstractDMXLight>());
+            artnetLightMemory.put(universe, new ArrayList<AbstractArtnetLight>());
         artnetLightMemory.get(universe).add(lightToCreate);
     }
 
@@ -224,11 +196,6 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
         //ASSUME REQUIRED VALUES IS IN CSV FORMAT
         if(artnetLightMemory.get(universe).stream().filter(light -> light.getLightId() == lightId).findFirst().get() != null)
             artnetLightMemory.get(universe).remove(artnetLightMemory.get(universe).stream().filter(light -> light.getLightId() == lightId).findFirst().get());
-    }
-
-    @Override
-    protected Supplier<ChannelHandler[]> getEncoderDecoderProvider(UdpIoClient<String> client, AssetAttribute protocolConfiguration) {
-        return getGenericStringEncodersAndDecoders(client, protocolConfiguration);
     }
 
     @Override
@@ -259,11 +226,12 @@ public class ArtnetClientProtocol extends AbstractDMXClientProtocol implements P
             put("lights", Values.convert(artnetLightMemory.get(universeId), Container.JSON).get());
         }});
         //TODO LOOK AT ENCODER/DECODER FOR CONVERTING MESSAGE TO BYTEBUF
+
         return value.toJson();
     }
 
     @Override
-    public void updateLightStateInMemory(Integer lightId, AbstractDMXLightState updatedLightState)
+    public void updateLightStateInMemory(Integer lightId, AbstractArtnetLightState updatedLightState)
     {
         for(int universe : artnetLightMemory.keySet())
             if(artnetLightMemory.get(universe).stream().filter(light -> light.getLightId() == lightId).findFirst().get() != null)

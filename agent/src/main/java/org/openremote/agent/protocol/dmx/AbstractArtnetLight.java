@@ -1,8 +1,6 @@
 package org.openremote.agent.protocol.dmx;
 
-import java.util.List;
-
-public abstract class AbstractDMXLight {
+public abstract class AbstractArtnetLight {
 
     private int lightId;
     private int groupId;
@@ -11,10 +9,10 @@ public abstract class AbstractDMXLight {
     private String[] requiredValues;
     private byte[] prefix;
 
-    private AbstractDMXLightState lightState;
+    private AbstractArtnetLightState lightState;
 
 
-    public AbstractDMXLight(int lightId, int groupId, int universe, int amountOfLeds, String[] requiredValues, AbstractDMXLightState lightState, byte[] prefix) {
+    public AbstractArtnetLight(int lightId, int groupId, int universe, int amountOfLeds, String[] requiredValues, AbstractArtnetLightState lightState, byte[] prefix) {
         this.lightId = lightId;
         this.groupId = groupId;
         this.universe = universe;
@@ -44,7 +42,7 @@ public abstract class AbstractDMXLight {
         return requiredValues;
     }
 
-    public void setLightState(AbstractDMXLightState lightState) {
+    public void setLightState(AbstractArtnetLightState lightState) {
         this.lightState = lightState;
     }
 
@@ -60,7 +58,7 @@ public abstract class AbstractDMXLight {
         return this.prefix;
     }
 
-    public AbstractDMXLightState getLightState() {
+    public AbstractArtnetLightState getLightState() {
         return this.lightState;
     }
 

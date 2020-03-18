@@ -2,11 +2,11 @@ package org.openremote.agent.protocol.dmx;
 
 import org.openremote.model.attribute.*;
 
-public abstract class AbstractDMXLightState {
+public abstract class AbstractArtnetLightState {
 
     private int lightId;
 
-    public AbstractDMXLightState(int lightId) {
+    public AbstractArtnetLightState(int lightId) {
         this.lightId = lightId;
     }
     public int getLightId() {

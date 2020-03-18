@@ -3,7 +3,7 @@ package org.openremote.agent.protocol.dmx.artnet;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.openremote.model.attribute.*;
-import org.openremote.agent.protocol.dmx.AbstractDMXLightState;
+import org.openremote.agent.protocol.dmx.AbstractArtnetLightState;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ArtnetLightState extends AbstractDMXLightState {
+public class ArtnetLightState extends AbstractArtnetLightState {
 
     private Map<String, Integer> receivedValues;
     private double dim;
