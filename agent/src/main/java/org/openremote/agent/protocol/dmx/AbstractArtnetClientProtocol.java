@@ -1,8 +1,7 @@
 package org.openremote.agent.protocol.dmx;
 
-import org.openremote.agent.protocol.dmx.artnet.ArtnetIoClient;
 import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
-import org.openremote.agent.protocol.udp.AbstractUdpClientProtocol;
+import org.openremote.agent.protocol.udp.UdpIoClient;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.syslog.SyslogCategory;
@@ -18,7 +17,7 @@ import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PR
 import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemInteger;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
-public abstract class AbstractArtnetClientProtocol<T> extends AbstractIoClientProtocol<T, ArtnetIoClient<T>> {
+public abstract class AbstractArtnetClientProtocol<T> extends AbstractIoClientProtocol<T, UdpIoClient<T>> {
 
     public abstract Map<Integer, List<AbstractArtnetLight>> getLightMemory();
 
@@ -45,7 +44,7 @@ public abstract class AbstractArtnetClientProtocol<T> extends AbstractIoClientPr
     );
 
     @Override
-    protected ArtnetIoClient<T> createIoClient(AssetAttribute protocolConfiguration) throws Exception {
+    protected UdpIoClient<T> createIoClient(AssetAttribute protocolConfiguration) throws Exception {
         String host = Values.getMetaItemValueOrThrow(
                 protocolConfiguration,
                 META_PROTOCOL_HOST,
@@ -75,7 +74,7 @@ public abstract class AbstractArtnetClientProtocol<T> extends AbstractIoClientPr
             throw new IllegalArgumentException("Bind port must be in the range 1-65536 if specified");
         }
 
-        return new ArtnetIoClient<>(host, port, bindPort, executorService);
+        return new UdpIoClient<>(host, port, bindPort, executorService);
     }
 
 }

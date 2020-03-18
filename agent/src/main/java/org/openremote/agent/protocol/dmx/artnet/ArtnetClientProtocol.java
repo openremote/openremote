@@ -1,14 +1,17 @@
 package org.openremote.agent.protocol.dmx.artnet;
 
 import com.google.gson.*;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import javassist.bytecode.AttributeInfo;
+import jdk.nashorn.internal.parser.JSONParser;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
 import org.openremote.agent.protocol.dmx.AbstractArtnetClientProtocol;
 import org.openremote.agent.protocol.dmx.AbstractArtnetLight;
 import org.openremote.agent.protocol.dmx.AbstractArtnetLightState;
 import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
+import org.openremote.agent.protocol.io.AbstractNettyIoClient;
 import org.openremote.agent.protocol.udp.AbstractUdpClientProtocol;
 import org.openremote.agent.protocol.udp.UdpIoClient;
 import org.openremote.container.Container;
@@ -25,6 +28,7 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.value.*;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
@@ -125,8 +129,59 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<String> i
     }
 
     @Override
-    protected Supplier<ChannelHandler[]> getEncoderDecoderProvider(ArtnetIoClient<String> client, AssetAttribute protocolConfiguration) {
-        return getGenericStringEncodersAndDecoders(client, protocolConfiguration);
+    protected Supplier<ChannelHandler[]> getEncoderDecoderProvider(UdpIoClient<String> client, AssetAttribute protocolConfiguration) {
+        Supplier<ChannelHandler[]> encoderDecoderProvider = () -> {
+            List<ChannelHandler> encodersDecoders = new ArrayList<>();
+            encodersDecoders.add(new AbstractNettyIoClient.MessageToByteEncoder<String>(String.class, client, new BiConsumer<String, ByteBuf>() {
+                @Override
+                public void accept(String message, ByteBuf buf) {
+                    //MESSAGE CONTAINS ALL THE LIGHTS THAT NEED TO BE UPDATED FROM ONE SINGLE UNIVERSE
+                    //Load states of all other lamps
+                    JsonParser parser = new JsonParser();
+                    JsonObject messageObject = parser.parse(message).getAsJsonObject();
+                    List<ArtnetLight> lights = new ArrayList<>();
+                    JsonArray array = messageObject.get("lights").getAsJsonArray();
+                    for(JsonElement jelem : array) {
+                        JsonObject jobject = jelem.getAsJsonObject();
+                        List<String> requiredValues = new ArrayList<String>();
+                        ArtnetLightState lightState = new ArtnetLightState(jobject.get("lightId").getAsInt(),
+                                new HashMap<String, Integer>(),
+                                0, true);
+                        for(JsonElement jel : jobject.get("requiredValues").getAsJsonArray()) {
+                            requiredValues.add(jel.getAsString());
+                            lightState.getReceivedValues().put(jel.getAsString(), jobject.get("lightState").getAsJsonObject().get("receivedValues").getAsJsonObject().get(jel.getAsString()).getAsInt());
+                        }
+                        lights.add(new ArtnetLight(jobject.get("lightId").getAsInt(),
+                                                    jobject.get("groupId").getAsInt(),
+                                                    jobject.get("universe").getAsInt(),
+                                                    jobject.get("amountOfLeds").getAsInt(),
+                                                    requiredValues.stream().toArray(String[]::new),
+                                                    lightState,
+                                                    null)); //SHOULD BE BYTE PREFIX LATER
+                    }
+                    //TODO SEND PROTOCOL PER GROUP. (PER UNIVERSE ALREADY WORKS AT THIS POINT)
+                    Map<Integer, List<ArtnetLight>> lightsPerUniverse = new HashMap<>();
+                    for(ArtnetLight light : lights) {
+                        if(lightsPerUniverse.get(light.getUniverse()) == null)
+                            lightsPerUniverse.put(light.getUniverse(), new ArrayList<>());
+                        lightsPerUniverse.get(light.getUniverse()).add(light);
+                    }
+                    for(List<ArtnetLight> lightLists : lightsPerUniverse.values())
+                        Collections.sort(lightLists, Comparator.comparingInt(ArtnetLight ::getLightId));
+                    for(Integer universeId : lightsPerUniverse.keySet()) {
+                        ArtnetPacket.writePrefix(buf, universeId);
+                        for(ArtnetLight lightToAddress : lightsPerUniverse.get(universeId)) {
+                            //ArtnetLightState lightState = (ArtnetLightState) artnetLightMemory.get(lightToAddress.getLightId()).getLightState();
+                            //ArtnetPacket.writeLight(buf, lightState.getValues(), lightToAddress.getAmountOfLeds());
+                        }
+                        ArtnetPacket.updateLength(buf);
+                        //TODO MULTIPLE UNIVERSES APPENDED MIGHT NOT WORK. IF IT DOES NOT, CALL FINALENCODER.ACCEPT
+                    }
+                }
+            }));
+            return encodersDecoders.toArray(new ChannelHandler[0]);
+        };
+        return encoderDecoderProvider;
     }
 
     @Override
@@ -171,7 +226,9 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<String> i
         ArtnetLight lightToCreate = new ArtnetLight(lightId, groupId, universe, amountOfLeds, requiredKeys, state, null);
         if(artnetLightMemory.get(universe) == null)
             artnetLightMemory.put(universe, new ArrayList<AbstractArtnetLight>());
-        artnetLightMemory.get(universe).add(lightToCreate);
+        if(!artnetLightMemory.get(universe).stream().anyMatch(light -> light.getLightId() == lightToCreate.getLightId()))
+            artnetLightMemory.get(universe).add(lightToCreate);
+        System.out.println(artnetLightMemory.size());
     }
 
     @Override
@@ -220,8 +277,18 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<String> i
         //TODO LATER, CHECK FOR GROUP
         Asset parentAsset = assetService.findAsset(getLinkedAttribute(attribute.getReference().get()).getAssetId().get());
         //THIS NOW RELIES ON ALWAYS HAVING THE FOLLOWING ATTRIBUTES IN THE SAME LEVEL
+        AssetAttribute lightIdAttribute = parentAsset.getAttribute("Id").get();
         AssetAttribute universeAttribute = parentAsset.getAttribute("Universe").get();
         Integer universeId = universeAttribute.getValueAsInteger().get();
+        Integer lightId = lightIdAttribute.getValueAsInteger().get();
+        ArtnetLight updatedLight = (ArtnetLight) artnetLightMemory.get(universeId).get(lightId);
+        Map<String, Integer> valuesToUpdate = new HashMap<String, Integer>();
+        for(String requiredKey : updatedLight.getRequiredValues()) {
+            valuesToUpdate.put(requiredKey, new JsonParser().parse(processedValue.toJson()).getAsJsonObject().get(requiredKey).getAsInt());
+        }
+
+
+        //updateLightStateInMemory(lightId, updatedLightState);
         Value value = Values.createObject().putAll(new HashMap<String, Value>() {{
             put("lights", Values.convert(artnetLightMemory.get(universeId), Container.JSON).get());
         }});
@@ -234,7 +301,7 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<String> i
     public void updateLightStateInMemory(Integer lightId, AbstractArtnetLightState updatedLightState)
     {
         for(int universe : artnetLightMemory.keySet())
-            if(artnetLightMemory.get(universe).stream().filter(light -> light.getLightId() == lightId).findFirst().get() != null)
+            if(artnetLightMemory.get(universe).stream().anyMatch(light -> light.getLightId() == lightId))
                 artnetLightMemory.get(universe).stream().filter(light -> light.getLightId() == lightId).findFirst().get().setLightState(updatedLightState);
     }
 
