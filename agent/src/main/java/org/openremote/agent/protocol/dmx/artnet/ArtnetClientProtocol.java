@@ -4,7 +4,6 @@ import com.google.gson.*;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import javassist.bytecode.AttributeInfo;
-import jdk.nashorn.internal.parser.JSONParser;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
 import org.openremote.agent.protocol.dmx.AbstractArtnetClientProtocol;
