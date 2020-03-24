@@ -19,41 +19,32 @@
  */
 package org.openremote.manager.rules.facade;
 
+import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.predicted.AssetPredictedDatapointService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.rules.HistoricDatapoints;
 import org.openremote.model.rules.PredictedDatapoints;
 import org.openremote.model.rules.Ruleset;
-import org.openremote.model.value.Value;
 
 import java.util.logging.Logger;
 
-public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
-
-    private static final Logger LOG = Logger.getLogger(PredictedFacade.class.getName());
+public class HistoricFacade<T extends Ruleset> extends HistoricDatapoints {
+    private static final Logger LOG = Logger.getLogger(HistoricFacade.class.getName());
 
     protected final RulesEngineId<T> rulesEngineId;
-    protected final AssetPredictedDatapointService assetPredictedDatapointService;
+    protected final AssetDatapointService assetDatapointService;
 
-    public PredictedFacade(RulesEngineId<T> rulesEngineId, AssetPredictedDatapointService assetPredictedDatapointService) {
+    public HistoricFacade(RulesEngineId<T> rulesEngineId, AssetDatapointService assetDatapointService) {
         this.rulesEngineId = rulesEngineId;
-        this.assetPredictedDatapointService = assetPredictedDatapointService;
+        this.assetDatapointService = assetDatapointService;
     }
 
     @Override
     public ValueDatapoint[] getValueDataPoints(AttributeRef attributeRef, DatapointInterval interval, long fromTimestamp, long toTimestamp) {
-        return assetPredictedDatapointService.getValueDatapoints(attributeRef, interval, fromTimestamp, toTimestamp);
-    }
-
-    @Override
-    public void updateValue(String assetId, String attributeName, Value value, long timestamp) {
-        assetPredictedDatapointService.updateValue(assetId, attributeName, value, timestamp);
-    }
-
-    @Override
-    public void updateValue(AttributeRef attributeRef, Value value, long timestamp) {
-        updateValue(attributeRef.getEntityId(), attributeRef.getAttributeName(), value, timestamp);
+        return assetDatapointService.getValueDatapoints(attributeRef, interval, fromTimestamp, toTimestamp);
     }
 }

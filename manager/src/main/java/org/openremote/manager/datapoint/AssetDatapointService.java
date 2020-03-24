@@ -32,7 +32,6 @@ import javax.persistence.TypedQuery;
 import java.sql.*;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -158,12 +157,27 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
 
             if (attributeRef != null) {
                 query
-                        .setParameter("assetId", attributeRef.getEntityId())
-                        .setParameter("attributeName", attributeRef.getAttributeName());
+                    .setParameter("assetId", attributeRef.getEntityId())
+                    .setParameter("attributeName", attributeRef.getAttributeName());
             }
 
             return query.getSingleResult();
         });
+    }
+
+    public ValueDatapoint[] getValueDatapoints(AttributeRef attributeRef,
+                                               DatapointInterval datapointInterval,
+                                               long fromTimestamp,
+                                               long toTimestamp) {
+
+        Asset asset = assetStorageService.find(attributeRef.getEntityId());
+        if (asset == null) {
+            throw new IllegalStateException("Asset not found: " + attributeRef.getEntityId());
+        }
+        AssetAttribute assetAttribute = asset.getAttribute(attributeRef.getAttributeName())
+            .orElseThrow(() -> new IllegalStateException("Attribute not found: " + attributeRef.getAttributeName()));
+
+        return getValueDatapoints(assetAttribute, datapointInterval, fromTimestamp, toTimestamp);
     }
 
     public ValueDatapoint[] getValueDatapoints(AssetAttribute attribute,
