@@ -488,13 +488,20 @@ export class OrChart extends translate(i18next)(LitElement) {
 
                     <div id="attribute-list">
                         ${this.assetAttributes.map((attr, index) => {
+
+                            const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attr.name!);
+                            let label = Util.getAttributeLabel(attr, attributeDescriptor);
+                            let unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
+                            if(unit) {
+                                 label = label + " ("+i18next.t(unit)+")";
+                            }
                             const bgColor = Util.getMetaValue('color', attr, undefined) ? Util.getMetaValue('color', attr, undefined) : "";
                             return html`
                                 <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(bgColor)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
                                     <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[index]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
                                     <div class="attribute-list-item-label">
                                         <span>${this.assets[index].name}</span>
-                                        <span style="font-size:14px; color:grey;">${Util.getAttributeLabel(attr, undefined)}</span>
+                                        <span style="font-size:14px; color:grey;">${label}</span>
                                     </div>
                                     <button class="button-clear" @click="${() => this._deleteAttribute(index)}"><or-icon icon="close-circle"></or-icon></button>
                                 </div>

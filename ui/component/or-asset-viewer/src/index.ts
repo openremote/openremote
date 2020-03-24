@@ -383,8 +383,17 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         }
                     }
                 };
-
-                const options = historyAttrs.map((attr) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
+               
+               
+                const options = historyAttrs.map((attr) => {
+                    const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attr.name!);
+                    let label = Util.getAttributeLabel(attr, attributeDescriptor);
+                    let unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
+                    if(unit) {
+                        label = label + " ("+i18next.t(unit)+")";
+                    } 
+                    return [attr.name, label]
+                });
                 const attrName: string = historyAttrs[0].name!;
                 onRenderComplete.addCallback(() => attributeChanged(attrName));
                 content = html`

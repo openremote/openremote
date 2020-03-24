@@ -1,0 +1,255 @@
+import {customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
+import "@openremote/or-chart";
+import "@openremote/or-translate";
+import {translate} from "@openremote/or-translate";
+import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
+import "@openremote/or-panel";
+import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
+import {
+    Asset,
+    AssetAttribute,
+    AssetEvent,
+    AssetType,
+    Attribute,
+    AttributeEvent,
+    AttributeType,
+    MetaItemType,
+    MetaItem
+} from "@openremote/model";
+import {style} from "./style";
+import i18next from "i18next";
+import {styleMap} from "lit-html/directives/style-map";
+import {classMap} from "lit-html/directives/class-map";
+
+export type PanelType = "chart";
+
+export interface DefaultAssets {
+    assetId?: string;
+    attributes?: string[];
+}
+
+export interface PanelConfig {
+    type?: PanelType;
+    hide?: boolean;
+    hideOnMobile?: boolean;
+    defaults?: DefaultAssets[];
+    include?: string[];
+    exclude?: string[];
+    readonly?: string[];
+    panelStyles?: { [style: string]: string };
+    fieldStyles?: { [field: string]: { [style: string]: string } };
+}
+
+export interface DataViewerConfig {
+    panels: {[name: string]: PanelConfig};
+    viewerStyles?: { [style: string]: string };
+    propertyViewProvider?: (property: string, value: any, viewerConfig: DataViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
+    attributeViewProvider?: (attribute: Attribute, viewerConfig: DataViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
+    panelViewProvider?: (attributes: AssetAttribute[], panelName: string, viewerConfig: DataViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
+    chartConfig?: OrChartConfig;
+}
+
+
+class EventHandler {
+    _callbacks: Function[];
+
+    constructor() {
+        this._callbacks = [];
+    }
+
+    startCallbacks() {
+        return new Promise((resolve, reject) => {
+            if (this._callbacks && this._callbacks.length > 0) {
+                this._callbacks.forEach(cb => cb());
+            }
+            resolve();
+        })
+
+    }
+
+    addCallback(callback: Function) {
+        this._callbacks.push(callback);
+    }
+}
+const onRenderComplete = new EventHandler();
+
+@customElement("or-data-viewer")
+export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitElement)) {
+
+    public static DEFAULT_PANEL_TYPE: PanelType = "chart";
+
+    public static DEFAULT_CONFIG: DataViewerConfig = {
+        viewerStyles: {
+
+        },
+        panels: {
+            "chart": {
+                type: "chart",
+                hideOnMobile: true,
+                panelStyles: {
+                    gridColumn: "1 / -1",
+                    gridRowStart: "1"
+                }
+            }
+        }
+    };
+
+    static get styles() {
+        return [
+            style
+        ];
+    }
+
+    @property({type: Array, attribute: false})
+    protected _assets?: Asset[];
+
+    @property()
+    protected _loading: boolean = false;
+
+    config?: DataViewerConfig;
+
+
+    constructor() {
+        super();
+        window.addEventListener('resize', () => OrDataViewer.generateGrid(this.shadowRoot));
+        
+        this.addEventListener(OrChartEvent.NAME,() => OrDataViewer.generateGrid(this.shadowRoot));
+    }
+
+    firstUpdated() {
+        this.loadAssets();
+    }
+
+    protected render() {
+
+        if (this._loading) {
+            return html`
+                <div class="msg"><or-translate value="loading"></or-translate></div>
+            `;
+        }
+
+        if (!this.config) {
+            return html``;
+        }
+
+        return html`
+            <div id="wrapper">
+                <div id="container" style="${this.config.viewerStyles ? styleMap(this.config.viewerStyles) : ""}">
+                    ${Object.entries(this.config.panels).map(([name, panelConfig]) => this.getPanel(name,  panelConfig))}
+                </div>
+            </div>
+        `;
+    }
+
+    protected updated(_changedProperties: PropertyValues) {
+        super.updated(_changedProperties);
+
+        this.onCompleted().then(() => {
+            onRenderComplete.startCallbacks().then(() => {
+                OrDataViewer.generateGrid(this.shadowRoot);
+            });
+        });
+
+    }
+
+    async onCompleted() {
+        await this.updateComplete;
+    }
+
+    public static generateGrid(shadowRoot: ShadowRoot | null) {
+        if (shadowRoot) {
+            const grid = shadowRoot.querySelector('#container');
+            if (grid) {
+                const rowHeight = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-auto-rows'));
+                const rowGap = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-row-gap'));
+                const items = shadowRoot.querySelectorAll('.panel');
+                if (items) {
+                    items.forEach((item) => {
+                        const content = item.querySelector('.panel-content-wrapper');
+                        if (content) {
+                            const rowSpan = Math.ceil((content.getBoundingClientRect().height + rowGap) / (rowHeight + rowGap));
+                            (item as HTMLElement).style.gridRowEnd = "span " + rowSpan;
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    public getPanel(name: string, panelConfig: PanelConfig) {
+        const content = this.getPanelContent(name, panelConfig);
+
+        if (!content) {
+            return;
+        }
+
+
+        return html`
+            <div class=${classMap({"panel": true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
+                <div class="panel-content-wrapper">
+                    <div class="panel-title">
+                        <or-translate value="${name}"></or-translate>
+                    </div>
+                    <div class="panel-content">
+                        ${content}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    public getPanelContent(panelName: string,  panelConfig: PanelConfig): TemplateResult | undefined {
+        if (panelConfig.hide || !this.config) {
+            return;
+        }
+
+        const defaults = panelConfig && panelConfig.defaults ? panelConfig.defaults : undefined;
+        let assetList: Asset[] = [];;
+        let assetAttributes: Attribute[] = [];
+        if(defaults && this._assets){ 
+                const assetIds = defaults.map(obj => obj.assetId);
+                const attributeName = defaults.map(obj => obj.attributes);
+
+                this._assets.map(asset => {
+                    const index = assetIds.indexOf(asset.id);
+                    if(index >= 0) {
+                        assetList.push(asset);
+                        let attrs:Attribute[] = Util.getAssetAttributes(asset);
+                        if(attrs) {
+                            attrs = attrs.filter(attr => {
+                                const name = attributeName[index];
+                                return attr.name && name && name.includes(attr.name);
+                            });
+                        }
+                        assetAttributes = assetAttributes.concat(attrs)
+                    }
+                });
+        }
+        let content: TemplateResult | undefined;
+
+        if (panelConfig && panelConfig.type === "chart") {
+            content = html`
+                <or-chart id="chart" .config="${this.config.chartConfig}" .assets="${assetList ? assetList : []}" .assetAttributes="${assetAttributes}">></or-chart>
+            `;
+
+        }
+
+        return content;
+       
+    }
+
+    protected async loadAssets() {
+        const query = {
+            select: {
+                excludeAttributeMeta: true,
+                excludeAttributeTimestamp: true,
+                excludeAttributeValue: true,
+                excludeParentInfo: true,
+                excludeRealm: true,
+                excludePath: true
+            }
+        };
+        const response = await manager.rest.api.AssetResource.queryAssets(query);
+        this._assets = response.data;
+    }
+}
