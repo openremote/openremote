@@ -471,7 +471,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                                         value: value
                                     }
 
-                                    attribute.meta?.push(meta);
+                                    if(attribute.meta){
+                                        attribute.meta.push(meta);
+                                    }
                                 }
                                 asset.attributes.location = {...attribute};
                                 const response = await manager.rest.api.AssetResource.update(asset.id, asset);
