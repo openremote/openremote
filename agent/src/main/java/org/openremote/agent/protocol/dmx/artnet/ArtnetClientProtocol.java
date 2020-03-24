@@ -170,11 +170,10 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<String> i
                     for(Integer universeId : lightsPerUniverse.keySet()) {
                         ArtnetPacket.writePrefix(buf, universeId);
                         for(ArtnetLight lightToAddress : lightsPerUniverse.get(universeId)) {
-                            //ArtnetLightState lightState = (ArtnetLightState) artnetLightMemory.get(lightToAddress.getLightId()).getLightState();
-                            //ArtnetPacket.writeLight(buf, lightState.getValues(), lightToAddress.getAmountOfLeds());
+                            ArtnetLightState lightState = (ArtnetLightState) artnetLightMemory.get(universeId).get(lightToAddress.getLightId()).getLightState();
+                            ArtnetPacket.writeLight(buf, lightState.getValues(), lightToAddress.getAmountOfLeds());
                         }
                         ArtnetPacket.updateLength(buf);
-                        //TODO MULTIPLE UNIVERSES APPENDED MIGHT NOT WORK. IF IT DOES NOT, CALL FINALENCODER.ACCEPT
                     }
                 }
             }));
