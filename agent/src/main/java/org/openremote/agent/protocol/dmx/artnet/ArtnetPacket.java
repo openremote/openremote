@@ -5,11 +5,32 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang.ArrayUtils;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
 public class ArtnetPacket {
 
-    protected static byte[] prefix = { 65, 114, 116, 45, 78, 101, 116, 0, 0, 80, 0, 14 };
+    private byte[] prefix = { 65, 114, 116, 45, 78, 101, 116, 0, 0, 80, 0, 14 };
 
-    public static void writePrefix(ByteBuf buf, int universe)
+    private int universe;
+    private List<ArtnetLight> lights;
+
+    public ArtnetPacket(int universe, List<ArtnetLight> lights) {
+        this.universe = universe;
+        Collections.sort(lights, Comparator.comparingInt(ArtnetLight ::getLightId));
+        this.lights = lights;
+    }
+
+    public void toByteBuf(ByteBuf buf) {
+        writePrefix(buf, this.universe);
+        for(ArtnetLight light : lights)
+            writeLight(buf, light.getLightState().getValues(), light.getAmountOfLeds());
+        updateLength(buf);
+    }
+
+
+    private void writePrefix(ByteBuf buf, int universe)
     {
         buf.writeBytes(prefix);
         buf.writeByte(0); // Sequence
@@ -21,7 +42,7 @@ public class ArtnetPacket {
     }
 
     // Required as we do not know how many light ids we will need to send
-    public static void updateLength(ByteBuf buf)
+    private void updateLength(ByteBuf buf)
     {
         int len_idx = prefix.length + 4;
         int len = buf.writerIndex() - len_idx - 2;
@@ -29,11 +50,10 @@ public class ArtnetPacket {
         buf.setByte(len_idx+1, len & 0xff);
     }
 
-    public static void writeLight(ByteBuf buf, Byte[] light, int repeat)
+    private void writeLight(ByteBuf buf, Byte[] light, int repeat)
     {
-        byte[] vals = ArrayUtils.toPrimitive(light);
-        for(int i = 0; i < repeat; i++) {
-            buf.writeBytes(vals);
-        }
+        byte[] values = ArrayUtils.toPrimitive(light);
+        for(int i = 0; i < repeat; i++)
+            buf.writeBytes(values);
     }
 }

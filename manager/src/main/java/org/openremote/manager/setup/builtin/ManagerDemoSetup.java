@@ -314,7 +314,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         artNetArea = assetStorageService.merge(artNetArea);
 
         //SETUP LIGHT-ASSETS UNDER AREA
-        for(int i = 0; i <= 2; i++) {
+        for(int i = 0; i <= 1; i++) {
             Asset artNetLight = new Asset();
             artNetLight.setParent(artNetArea);
             artNetLight.setName("ArtNet Light " + i);
