@@ -563,7 +563,7 @@ public class SimulatorProtocol extends AbstractProtocol {
                 }
                 long nextRunRelative = nextRun - now;
 
-                LOG.info("Next update for asset " + attributeRef.getEntityId() + "for attribute " + attributeRef.getAttributeName() + " in " + nextRunRelative + " second(s)");
+                LOG.info("Next update for asset " + attributeRef.getEntityId() + " for attribute " + attributeRef.getAttributeName() + " in " + nextRunRelative + " second(s)");
                 return executorService.schedule(() -> {
                     LOG.info("Updating asset " + attributeRef.getEntityId() + "for attribute " + attributeRef.getAttributeName() + " with value " + nextDatapoint.value.toString());
                     updateLinkedAttribute(new AttributeState(attributeRef, nextDatapoint.value));
