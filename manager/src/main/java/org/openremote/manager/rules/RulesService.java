@@ -256,7 +256,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 AssetRuleset.class,
                 new RulesetQuery()
                     .setEnabledOnly(true)
-                    .setFullyPopulate(true)));
+                    .setFullyPopulate(true)))
+            .count();//Needed in order to execute the stream. TODO: can this be done differently?
 
         LOG.info("Loading all assets with fact attributes to initialize state of rules engines");
         Stream<Pair<Asset, Stream<AssetAttribute>>> stateAttributes = findRuleStateAttributes();
@@ -644,9 +645,16 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             .collect(Collectors.groupingBy(assetAndRules -> assetAndRules.key.getRealm()))
             .entrySet()
             .stream()
-            .filter(es -> Arrays
-                .stream(tenants)
-                .anyMatch(at -> es.getKey().equals(at.getRealm())))
+            .filter(es -> {
+                try {
+                   return Arrays
+                        .stream(tenants)
+                        .anyMatch(at -> es.getKey().equals(at.getRealm()));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            })
             .flatMap(es -> {
                 List<Pair<Asset, List<AssetRuleset>>> tenantAssetAndRules = es.getValue();
 
