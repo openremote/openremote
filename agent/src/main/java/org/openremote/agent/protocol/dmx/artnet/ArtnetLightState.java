@@ -1,7 +1,8 @@
 package org.openremote.agent.protocol.dmx.artnet;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.openremote.model.attribute.*;
 import org.openremote.agent.protocol.dmx.AbstractArtnetLightState;
 import org.openremote.model.value.Value;
@@ -63,10 +64,15 @@ public class ArtnetLightState extends AbstractArtnetLightState {
         if(attr.getType().get().getValueType() == ValueType.OBJECT)
             if(attr.getName().get().equalsIgnoreCase("Values")) {
                 Value brouh = event.getAttributeState().getValue().orElse(null);
-                JsonObject jobject = new JsonParser().parse(brouh.toJson()).getAsJsonObject();
-                new HashMap<String, Integer>(this.receivedValues).keySet().forEach(keyIndicator -> {
-                    this.receivedValues.put(keyIndicator, jobject.get(keyIndicator).getAsInt());
-                });
+                ObjectMapper mapper = new ObjectMapper();
+                try {
+                    JsonNode node = mapper.readTree(brouh.toJson());
+                    new HashMap<String, Integer>(this.receivedValues).keySet().forEach(keyIndicator -> {
+                        this.receivedValues.put(keyIndicator, node.get(keyIndicator).asInt());
+                    });
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
             }
         //SWITCH ATTRIBUTE
         if(attr.getType().get().getValueType() == ValueType.BOOLEAN)

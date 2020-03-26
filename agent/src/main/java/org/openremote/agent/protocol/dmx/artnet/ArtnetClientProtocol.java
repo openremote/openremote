@@ -1,6 +1,11 @@
 package org.openremote.agent.protocol.dmx.artnet;
 
-import com.google.gson.*;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import javassist.bytecode.AttributeInfo;
@@ -26,6 +31,7 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.*;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -215,28 +221,46 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
         Integer lightId = parentAsset.getAttribute("Id").get().getValueAsInteger().get();
         ArtnetLight updatedLight = (ArtnetLight) artnetLightMemory.get(universeId).stream().filter(light -> light.getLightId() == lightId).findAny().get();
         ArtnetLightState oldLightState = (ArtnetLightState) updatedLight.getLightState();
+        ObjectMapper mapper = new ObjectMapper();
         //UPDATE LIGHT VALUES (R,G,B FOR EXAMPLE)
         if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Values")) {
             Map<String, Integer> valuesToUpdate = new LinkedHashMap<String, Integer>();
             for(String requiredKey : updatedLight.getRequiredValues()) {
-                valuesToUpdate.put(requiredKey, new JsonParser().parse(processedValue.toJson()).getAsJsonObject().get(requiredKey).getAsInt());
-                updateLightStateInMemory(lightId, new ArtnetLightState(lightId, valuesToUpdate, oldLightState.getDim(), oldLightState.isEnabled()));
+                try {
+                    JsonNode node = mapper.readTree(processedValue.toJson());
+                    int requiredKeyValue = node.get(requiredKey).asInt();
+                    valuesToUpdate.put(requiredKey, requiredKeyValue);
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
             }
+            updateLightStateInMemory(lightId, new ArtnetLightState(lightId, valuesToUpdate, oldLightState.getDim(), oldLightState.isEnabled()));
         }
         //UPDATE DIM
         else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Dim")) {
-            int dimValue = new JsonParser().parse(processedValue.toJson()).getAsInt();
-            updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), dimValue, oldLightState.isEnabled()));
+            try {
+                JsonNode node = mapper.readTree(processedValue.toJson());
+                int dimValue = node.asInt();
+                updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), dimValue, oldLightState.isEnabled()));
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
         }
         //UPDATE ENABLED/DISABLED
         else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Switch")) {
-            boolean enabled = new JsonParser().parse(processedValue.toJson()).getAsBoolean();
-            updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), oldLightState.getDim(), enabled));
+            try{
+                JsonNode node = mapper.readTree(processedValue.toJson());
+                boolean enabled = node.asBoolean();
+                updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), oldLightState.getDim(), enabled));
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
         }
         //SEND ALL LIGHTS TO UPDATE TO THE ENCODER
         List<ArtnetLight> lightsToSend = new ArrayList<ArtnetLight>();
         for(AbstractArtnetLight abstractLight : artnetLightMemory.get(universeId))
             lightsToSend.add((ArtnetLight)abstractLight);
+        updateLinkedAttribute(event.getAttributeState());
         return new ArtnetPacket(universeId, lightsToSend);
     }
 
@@ -260,27 +284,28 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
         else
             jsonString = fileInfo.getContents();//Read from .xml file
 
-        JsonObject jobj = new JsonParser().parse(jsonString).getAsJsonObject();//Contents of the file as JSON object
-
-        byte[] prefix = jobj.get("protocolPrefix").toString().getBytes();
-        JsonArray jLights = jobj.getAsJsonArray("lights");
-
-        MetaItem agentLink = AgentLink.asAgentLinkMetaItem(protocolConfiguration.getReferenceOrThrow());
-        //WARNING: This code overwrites the JSON config file ||| TODO: Compare the imported file with the current config file, If certain lights already exist: THEY SHOULDN'T BE ALTERED
-        //protocolConfiguration.getMetaItem("urn:openremote:protocol:artnet:areaConfiguration").orElse(null).setValue(Values.convert(jsonString, Container.JSON).get());
-
-        List<AssetTreeNode> output = new ArrayList<AssetTreeNode>();
-
-        for (JsonElement jel : jLights) {
-
-            int id = jel.getAsJsonObject().get("lightId").getAsInt();
-            int groupId = jel.getAsJsonObject().get("groupId").getAsInt();
-            String requiredValues = jel.getAsJsonObject().get("requiredValues").getAsString();
-
-            output.add(createLightAsset(id, groupId, requiredValues, protocolConfiguration, agentLink));
-        }
-
-        return output.toArray(new AssetTreeNode[output.size()]);
+        ObjectMapper mapper = new ObjectMapper();
+            try {
+                JsonNode node = mapper.readTree(jsonString);
+                byte[] prefix = node.get("protocolPrefix").asText().getBytes();
+                JsonNode lightArray = node.get("lights");
+                if(lightArray.isArray()) {
+                    List<AssetTreeNode> output = new ArrayList<AssetTreeNode>();
+                    for(JsonNode individualLightNode : lightArray) {
+                        MetaItem agentLink = AgentLink.asAgentLinkMetaItem(protocolConfiguration.getReferenceOrThrow());
+                        //WARNING: This code overwrites the JSON config file ||| TODO: Compare the imported file with the current config file, If certain lights already exist: THEY SHOULDN'T BE ALTERED
+                        //protocolConfiguration.getMetaItem("urn:openremote:protocol:artnet:areaConfiguration").orElse(null).setValue(Values.convert(jsonString, Container.JSON).get());
+                        int id = individualLightNode.get("lightId").asInt();
+                        int groupId = individualLightNode.get("groupId").asInt();
+                        String requiredValues = individualLightNode.get("requiredValues").asText();
+                        output.add(createLightAsset(id, groupId, requiredValues, protocolConfiguration, agentLink));
+                    }
+                    return output.toArray(new AssetTreeNode[output.size()]);
+                }
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+            return null;
     }
 
     protected AssetTreeNode createLightAsset(int id, int groupId, String requiredValues, AssetAttribute parent, MetaItem agentLink)
