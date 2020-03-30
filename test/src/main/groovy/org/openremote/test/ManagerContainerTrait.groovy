@@ -32,7 +32,7 @@ trait ManagerContainerTrait extends ContainerTrait {
     static Iterable<ContainerService> defaultServices(Iterable<ContainerService> additionalServices) {
         [
                 *stream(ServiceLoader.load(ContainerService.class).spliterator(), false)
-                        .sorted(Comparator.comparingInt({it.getPriority()}))
+                        .sorted(Comparator.comparingInt{it.getPriority()})
                         .collect(Collectors.toList()),
                 *additionalServices
         ] as Iterable<ContainerService>

@@ -25,18 +25,18 @@ import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.Arrays;
 
-public class TriggeredEventSubscription {
+public class TriggeredEventSubscription<T extends SharedEvent> {
 
-    protected SharedEvent[] events;
+    protected T[] events;
     protected String subscriptionId;
 
     @JsonCreator
-    public TriggeredEventSubscription(@JsonProperty("events") SharedEvent[] events, @JsonProperty("subscriptionId") String subscriptionId) {
+    public TriggeredEventSubscription(@JsonProperty("events") T[] events, @JsonProperty("subscriptionId") String subscriptionId) {
         this.events = events;
         this.subscriptionId = subscriptionId;
     }
 
-    public SharedEvent[] getEvents() {
+    public T[] getEvents() {
         return events;
     }
 

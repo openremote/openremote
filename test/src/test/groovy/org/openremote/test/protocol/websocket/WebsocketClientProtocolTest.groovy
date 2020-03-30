@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2019, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -124,7 +124,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
             assert container.isRunning()
         }
 
-        when: "the web target builder is configured to use the mock server"
+        when: "the web target builder is configured to use the mock HTTP server (to test subscriptions)"
         if (!websocketClientProtocol.client.configuration.isRegistered(mockServer)) {
             websocketClientProtocol.client.register(mockServer, Integer.MAX_VALUE)
         }
@@ -157,7 +157,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                                 new WebsocketSubscription().body(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX + Container.JSON.writeValueAsString(
                                     new EventSubscription(
                                         AttributeEvent.class,
-                                        new AssetEvent.AssetIdFilter<AttributeEvent>(managerDemoSetup.apartment1LivingroomId),
+                                        new AssetFilter<AttributeEvent>().setAssetIds(managerDemoSetup.apartment1LivingroomId),
                                         "1",
                                         null))),
                                 new WebsocketHttpSubscription()

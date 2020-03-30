@@ -186,7 +186,7 @@ public class AssetViewActivity
         if (subscribe) {
             environment.getEventService().subscribe(
                 AttributeEvent.class,
-                new AssetEvent.AssetIdFilter<>(asset.getId())
+                new AssetFilter<AttributeEvent>().setAssetIds(asset.getId())
             );
         } else {
             environment.getEventService().unsubscribe(

@@ -680,7 +680,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     ids: [assetId],
                     select: {
                         excludeParentInfo: true,
-                        excludeRealm: true,
                         excludePath: true,
                         excludeAttributeMeta: true,
                         attributes: [

@@ -101,10 +101,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 15, delay: 1)
         def serverPort = findEphemeralPort()
         def services = Lists.newArrayList(defaultServices())
-        services.removeIf {it instanceof PushNotificationHandler}
-        services.removeIf {it instanceof EmailNotificationHandler}
-        services.add(mockPushNotificationHandler)
-        services.add(mockEmailNotificationHandler)
+        services.replaceAll{it instanceof PushNotificationHandler ? mockPushNotificationHandler : it}
+        services.replaceAll{it instanceof EmailNotificationHandler ? mockEmailNotificationHandler : it}
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), services)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)

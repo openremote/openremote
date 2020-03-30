@@ -33,6 +33,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.agent.AgentService;
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.rules.RulesService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Constants;
@@ -131,6 +132,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected PersistenceService persistenceService;
     protected RulesService rulesService;
     protected AgentService agentService;
+    protected GatewayService gatewayService;
     protected AssetStorageService assetStorageService;
     protected AssetDatapointService assetDatapointService;
     protected AssetAttributeLinkingService assetAttributeLinkingService;
@@ -153,6 +155,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         persistenceService = container.getService(PersistenceService.class);
         rulesService = container.getService(RulesService.class);
         agentService = container.getService(AgentService.class);
+        gatewayService = container.getService(GatewayService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         assetDatapointService = container.getService(AssetDatapointService.class);
         assetAttributeLinkingService = container.getService(AssetAttributeLinkingService.class);
@@ -165,7 +168,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             }
 
             // Only Asset ID filters allowed
-            if (subscription.getFilter() != null && !(subscription.getFilter() instanceof  AssetEvent.AssetIdFilter)) {
+            if (subscription.getFilter() != null && !(subscription.getFilter() instanceof AssetFilter)) {
                 return false;
             }
 
@@ -175,7 +178,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             }
 
             if (subscription.getFilter() != null) {
-                AssetEvent.AssetIdFilter filter = (AssetEvent.AssetIdFilter) subscription.getFilter();
+                AssetFilter filter = (AssetFilter) subscription.getFilter();
 
                 // Superuser can get events for any asset
                 if (auth.isSuperUser())
@@ -210,6 +213,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             return false;
         });
 
+        processors.add(gatewayService);
         processors.add(agentService);
         processors.add(rulesService);
         processors.add(assetDatapointService);
@@ -281,6 +285,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     Asset asset = assetStorageService.find(em, event.getEntityId(), true);
                     if (asset == null)
                         throw new AssetProcessingException(ASSET_NOT_FOUND);
+
 
                     AssetAttribute oldAttribute = asset.getAttribute(event.getAttributeName()).orElse(null);
                     if (oldAttribute == null)
@@ -359,7 +364,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                         }
                     }
 
-                    //Check if attribute is well known and the value is valid
+                    // Check if attribute is well known and the value is valid
                     AssetModelUtil.getAttributeDescriptor(oldAttribute.name).ifPresent(wellKnownAttribute -> {
                         // Check if the value is valid
                         wellKnownAttribute.getValueDescriptor()
@@ -551,7 +556,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 attribute.getNameOrThrow(),
                 attribute.getValue().orElse(null),
                 timerService.getCurrentTimeMillis()
-            )
+            ).setParentId(asset.getParentId()).setRealm(asset.getRealm())
         );
     }
 

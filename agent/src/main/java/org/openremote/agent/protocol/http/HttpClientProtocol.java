@@ -402,7 +402,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null);
 
     /**
-     * Ping frequency in seconds (integer default: {@value #DEFAULT_PING_MILLIS})
+     * Ping frequency in milliseconds (integer default: {@value #DEFAULT_PING_MILLIS})
      */
     public static final MetaItemDescriptor META_PROTOCOL_PING_MILLIS = metaItemInteger(
             PROTOCOL_NAME + ":pingMillis",

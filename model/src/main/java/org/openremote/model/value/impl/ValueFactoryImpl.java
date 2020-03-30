@@ -53,7 +53,7 @@ public class ValueFactoryImpl implements ValueFactory {
 
     @Override
     public <T extends Value> Optional<T> parse(String jsonString) throws ValueException {
-        if (jsonString.isEmpty() || NULL_LITERAL.equals(jsonString)) {
+        if (jsonString == null || jsonString.isEmpty() || NULL_LITERAL.equals(jsonString)) {
             return Optional.empty();
         }
         // TODO: Remove this

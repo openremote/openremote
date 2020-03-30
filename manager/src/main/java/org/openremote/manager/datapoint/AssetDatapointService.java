@@ -314,7 +314,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                         .attributeMeta(
                                 new MetaPredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS),
                                 new MetaPredicate(MetaItemType.STORE_DATA_POINTS))
-                        .select(AssetQuery.Select.selectExcludePathAndParentAndRealm()));
+                        .select(AssetQuery.Select.selectExcludePathAndParentInfo()));
 
         List<AssetAttribute> attributes = assets.stream()
                 .map(asset -> asset

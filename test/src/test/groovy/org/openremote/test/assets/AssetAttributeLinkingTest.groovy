@@ -33,6 +33,7 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
 
         then: "the container should be running and initialised"
         conditions.eventually {
+            container.isRunning()
             assert noEventProcessedIn(assetProcessingService, 500)
         }
 

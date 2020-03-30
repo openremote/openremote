@@ -19,14 +19,11 @@
  */
 package org.openremote.model.event.shared;
 
-public abstract class SharedEventWithAssetId extends SharedEvent {
+public interface AssetInfo {
 
-    public SharedEventWithAssetId() {
-    }
+    String getEntityId();
 
-    public SharedEventWithAssetId(long timestamp) {
-        super(timestamp);
-    }
+    String getRealm();
 
-    public abstract String getEntityId();
+    String getParentId();
 }

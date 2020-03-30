@@ -47,6 +47,12 @@ public class Values {
         return instance().create(bool);
     }
 
+    public static ArrayValue createArray(Value...values) {
+        ArrayValue arrayValue = createArray();
+        arrayValue.addAll(values);
+        return arrayValue;
+    }
+
     public static ArrayValue createArray() {
         return instance().createArray();
     }

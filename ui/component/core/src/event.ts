@@ -224,7 +224,7 @@ abstract class EventProviderImpl implements EventProvider {
 
         if (assetIds && assetIds.length > 0) {
             subscription.filter = {
-                filterType: "asset-id",
+                filterType: "asset",
                 assetIds: ids
             };
         }
@@ -269,7 +269,7 @@ abstract class EventProviderImpl implements EventProvider {
         let subscription: EventSubscription<AttributeEvent> = {
             eventType: "attribute",
             filter: {
-                filterType: "asset-id",
+                filterType: "asset",
                 assetIds: assetIds
             }
         };

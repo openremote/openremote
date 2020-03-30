@@ -29,7 +29,7 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.concurrent.ManagerExecutorService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
-import org.openremote.model.asset.AssetEvent
+import org.openremote.model.asset.AssetFilter
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.event.TriggeredEventSubscription
@@ -107,7 +107,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         client.sendMessage(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX + Container.JSON.writeValueAsString(
             new EventSubscription(
                 AttributeEvent.class,
-                new AssetEvent.AssetIdFilter<AttributeEvent>(managerDemoSetup.apartment1LivingroomId),
+                new AssetFilter<AttributeEvent>().setAssetIds(managerDemoSetup.apartment1LivingroomId),
                 "1",
                 null)))
 

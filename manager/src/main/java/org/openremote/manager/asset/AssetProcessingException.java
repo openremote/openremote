@@ -117,7 +117,12 @@ public class AssetProcessingException extends RuntimeException {
         /**
          * The event value is not the excepted value for the attribute
          */
-        INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE
+        INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE,
+
+        /**
+         * The event is for a gateway descendant asset but the gateway is not connected
+         */
+        GATEWAY_DISCONNECTED
     }
 
     final protected Reason reason;

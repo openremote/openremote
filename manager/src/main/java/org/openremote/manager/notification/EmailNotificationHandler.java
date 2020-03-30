@@ -191,7 +191,7 @@ public class EmailNotificationHandler implements NotificationHandler {
                         // Find descendant assets with email attribute
                         List<Asset> assets = assetStorageService.findAll(
                             new AssetQuery()
-                                .select(AssetQuery.Select.selectExcludePathAndParentAndRealm()
+                                .select(AssetQuery.Select.selectExcludePathAndParentInfo()
                                     .attributes(AttributeType.EMAIL.getAttributeName()))
                                 .paths(new PathPredicate(targetId))
                                 .attributes(new AttributePredicate(

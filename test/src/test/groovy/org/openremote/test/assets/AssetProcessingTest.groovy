@@ -1,7 +1,10 @@
 package org.openremote.test.assets
 
 import org.openremote.agent.protocol.AbstractProtocol
+import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.*
+import org.openremote.manager.datapoint.AssetDatapointService
+import org.openremote.manager.rules.RulesService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
@@ -10,6 +13,7 @@ import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ProtocolConfiguration
 import org.openremote.model.attribute.*
+import org.openremote.model.datapoint.Datapoint
 import org.openremote.model.value.Value
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
@@ -155,10 +159,10 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         then: "register mock asset processors"
         assetProcessingService.processors.add(0, firstProcessor)
-        assetProcessingService.processors.add(2, afterAgentServiceProcessor)
-        assetProcessingService.processors.add(4, afterRulesServiceProcessor)
-        assetProcessingService.processors.add(6, afterDatapointServiceProcessor)
-        assetProcessingService.processors.add(8, afterAttributeLinkingServiceProcessor)
+        assetProcessingService.processors.add(assetProcessingService.processors.findIndexOf {it instanceof AgentService}+1, afterAgentServiceProcessor)
+        assetProcessingService.processors.add(assetProcessingService.processors.findIndexOf {it instanceof RulesService}+1, afterRulesServiceProcessor)
+        assetProcessingService.processors.add(assetProcessingService.processors.findIndexOf {it instanceof AssetDatapointService}+1, afterDatapointServiceProcessor)
+        assetProcessingService.processors.add(assetProcessingService.processors.findIndexOf {it instanceof AssetAttributeLinkingService}+1, afterAttributeLinkingServiceProcessor)
 
         when: "a mock agent that uses the mock protocol is created"
         def mockAgent = new Asset()

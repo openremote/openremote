@@ -144,7 +144,7 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
                                 String bodyStr = (String)requestContext.getEntity()
                                 ObjectValue body = Values.<ObjectValue>parse(bodyStr).orElse(null)
 
-                                if (body.get("parameter").isPresent() && body.get("parameter").orElse(null).toString() == "a_parameter") {
+                                if (body != null && body.get("parameter").isPresent() && body.get("parameter").orElse(null).toString() == "a_parameter") {
                                     requestContext.abortWith(Response.ok().build())
                                     commandCount++
                                     return
@@ -170,7 +170,7 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
 
     def "Check Controller connection"() {
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, initialDelay: 1)
+        def conditions = new PollingConditions(timeout: 20, initialDelay: 1)
 
         when: "the container starts"
         def serverPort = findEphemeralPort()

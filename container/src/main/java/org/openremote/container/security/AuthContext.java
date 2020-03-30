@@ -32,6 +32,8 @@ public interface AuthContext {
 
     String getUserId();
 
+    String getClientId();
+
     /**
      * @return <code>true</code> if the user is authenticated in the "master" realm and has the realm role "admin".
      */

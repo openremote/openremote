@@ -658,8 +658,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         const response = await manager.rest.api.AssetResource.queryAssets({
             select: {
                 excludePath: true,
-                excludeParentInfo: true,
-                excludeRealm: true
+                excludeParentInfo: true
             },
             ids: ids
         });

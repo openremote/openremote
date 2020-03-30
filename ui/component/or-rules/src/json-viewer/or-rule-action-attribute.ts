@@ -207,7 +207,6 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                 excludeAttributeTimestamp: true,
                 excludeAttributeValue: true,
                 excludeParentInfo: true,
-                excludeRealm: true,
                 excludePath: true
             },
             orderBy: {
