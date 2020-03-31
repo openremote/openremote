@@ -37,9 +37,7 @@ import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
@@ -553,27 +551,27 @@ public class SimulatorProtocol extends AbstractProtocol {
 
     protected ScheduledFuture scheduleReplay(AttributeRef attributeRef, ReplaySimulatorElement replaySimulatorElement) {
         LOG.fine("Scheduling value update");
-        return withLockReturning(getProtocolName() + "::scheduleReplay", () -> {
-            try {
-                long now = LocalDateTime.now().get(ChronoField.SECOND_OF_DAY);
-                ReplaySimulatorElement.ReplaySimulatorDatapoint nextDatapoint = replaySimulatorElement.getNextDatapoint(now);
-                long nextRun = nextDatapoint.timestamp;
-                if (nextRun <= now) { //now is after so nextRun is next day
-                    nextRun += 86400;//day in seconds
-                }
-                long nextRunRelative = nextRun - now;
+        try {
+            long now = LocalDateTime.now().get(ChronoField.SECOND_OF_DAY);
+            ReplaySimulatorElement.ReplaySimulatorDatapoint nextDatapoint = replaySimulatorElement.getNextDatapoint(now);
+            long nextRun = nextDatapoint.timestamp;
+            if (nextRun <= now) { //now is after so nextRun is next day
+                nextRun += 86400;//day in seconds
+            }
+            long nextRunRelative = nextRun - now;
 
-                LOG.info("Next update for asset " + attributeRef.getEntityId() + " for attribute " + attributeRef.getAttributeName() + " in " + nextRunRelative + " second(s)");
-                return executorService.schedule(() -> {
+            LOG.info("Next update for asset " + attributeRef.getEntityId() + " for attribute " + attributeRef.getAttributeName() + " in " + nextRunRelative + " second(s)");
+            return executorService.schedule(() -> {
+                withLock(getProtocolName() + "::firingNextUpdate", () -> {
                     LOG.info("Updating asset " + attributeRef.getEntityId() + "for attribute " + attributeRef.getAttributeName() + " with value " + nextDatapoint.value.toString());
                     updateLinkedAttribute(new AttributeState(attributeRef, nextDatapoint.value));
                     replayMap.put(attributeRef, scheduleReplay(attributeRef, replaySimulatorElement));
-                }, nextRunRelative, TimeUnit.SECONDS);
-            } catch (JsonProcessingException e) {
-                LOG.log(Level.SEVERE, "Exception thrown when scheduling value update: %s", e);
-                return null;
-            }
-        });
+                });
+            }, nextRunRelative, TimeUnit.SECONDS);
+        } catch (JsonProcessingException e) {
+            LOG.log(Level.SEVERE, "Exception thrown when scheduling value update: %s", e);
+            return null;
+        }
     }
 
     public static Optional<String> getElementType(AssetAttribute attribute) {
