@@ -161,6 +161,7 @@ export const style = css`
       
         /* Wide layout: when the viewport width is bigger than 780px, layout
         changes to a wide layout. */
+       
 
         @media (min-width: 780px) {
             #desktop-menu-btn {
@@ -192,10 +193,20 @@ export const style = css`
             #desktop-left .menu-item {
                 display: inline-block;
             }
-          
+            
+            #desktop-left .menu-item or-icon{
+                display: none;
+            }
+
             #desktop-left .menu-item[selected] {                
                 border-bottom: 4px solid var(--internal-or-header-selected-color);
                 line-height: calc(var(--internal-or-header-height) - 4px);
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            #desktop-left .menu-item or-icon{
+                display: inline-block;
             }
         }
 `;
