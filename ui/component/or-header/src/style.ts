@@ -88,12 +88,21 @@ export const style = css`
             position: relative;
         }
           
-        #menu-btn {
+        .menu-btn {
             background: none;
             border: none;
             cursor: pointer;
             padding: 0 6px;
-            margin: 10px 10px 10px auto;
+            height: 100%;
+            margin: 0 10px 0 auto;
+        }
+        
+        #menu-btn-mobile {
+            margin-left: auto;
+        }
+
+        #desktop-menu-btn {
+                display: none;
         }
         
         #desktop-right {
@@ -113,48 +122,50 @@ export const style = css`
             border-top: 2px solid var(--internal-or-header-drawer-separator-color);
         }
          
-        ::slotted(*) {
+        .menu-item {
             opacity: 0.7;
             cursor: pointer;
-            text-decoration: none !important;                       
+            text-decoration: none !important;         
+            color: inherit;       
+            padding: 0 20px;
+            font-size: 14px;       
         }
 
-        ::slotted(*), ::slotted(*:link), ::slotted(*:visited) {
-            color: inherit;
-        }
         
-        ::slotted(*[selected]), ::slotted(*:hover), #desktop-right ::slotted(*) {
+        
+        .menu-item[selected] {
             opacity: 1;
         }
                 
-        #desktop-left ::slotted(*), #desktop-right ::slotted(*) {
-            padding: 0 20px;
-            font-size: 14px;
-        }
-        
-        #desktop-left ::slotted(*) {
+  
+        #desktop-left .menu-item  {
             display: none;
             line-height: calc(var(--internal-or-header-height) - 4px);
         }
         
-        #desktop-right ::slotted(*) {
+        #desktop-right .menu-item  {
             line-height: var(--internal-or-header-height);
         }
         
-        #drawer ::slotted(*) {
+        #drawer .menu-item  {
             display: block;
             line-height: var(--internal-or-header-drawer-item-size);
             margin: 10px 0;
         }
         
-        #desktop-left ::slotted(*[selected]) {
+        #desktop-left .menu-item[selected] {
             display: inline-block;
             line-height: var(--internal-or-header-height);
         }
         
+      
         /* Wide layout: when the viewport width is bigger than 780px, layout
         changes to a wide layout. */
+
         @media (min-width: 780px) {
+            #desktop-menu-btn {
+                display: block;
+            }
 
             #logo {
                 margin: var(--internal-or-header-logo-margin);
@@ -166,7 +177,7 @@ export const style = css`
                 display: none;
             }
 
-            #menu-btn {
+            #menu-btn-mobile {
                 display: none;
             }
 
@@ -178,11 +189,11 @@ export const style = css`
                 display: block;
             }
             
-            #desktop-left ::slotted(*) {
+            #desktop-left .menu-item {
                 display: inline-block;
             }
-
-            #desktop-left ::slotted(*[selected]) {                
+          
+            #desktop-left .menu-item[selected] {                
                 border-bottom: 4px solid var(--internal-or-header-selected-color);
                 line-height: calc(var(--internal-or-header-height) - 4px);
             }

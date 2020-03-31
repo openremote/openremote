@@ -392,6 +392,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             if(assetTreeElement){
                 assetTreeElement.addEventListener(OrAssetTreeSelectionChangedEvent.NAME, (evt) => this._onTreeSelectionChanged(evt));
             }
+            
             this._dialog = new MDCDialog(this._dialogElem);
 
             this.assetAttributes.map((attr, index) => {

@@ -53,8 +53,8 @@ export class OrRealmPicker extends LitElement {
         ${getContentWithMenuTemplate(
             html`
                 <div class="or-realm-picker-container">
-                    <or-icon icon="home"></or-icon>
                     <span style="margin-left: 10px;">${manager.displayRealm}</span>
+                    <or-icon icon="chevron-down"></or-icon>
                 </div>
             `,
             this.getMenuItems(),

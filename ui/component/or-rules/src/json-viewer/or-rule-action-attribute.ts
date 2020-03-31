@@ -139,10 +139,10 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
             <or-input id="matchSelect" .label="${i18next.t("asset")}" .type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" ?readonly="${this.readonly}" .options="${idOptions}" .value="${idValue}"></or-input>
             ${attributes.length > 0 ? html`
                 <or-input id="attributeSelect" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" ?readonly="${this.readonly}" .options="${attributes}" .value="${this.action.attributeName}"></or-input>
+                ${inputTemplate ? inputTemplate(this.action.value) : ``}
             ` : html`
                 <or-translate value="No attributes with write permission"></or-translate>
             `}
-            ${inputTemplate ? inputTemplate(this.action.value) : ``}
         `;
     }
 
@@ -204,7 +204,6 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                 }
             ],
             select: {
-                excludeAttributeMeta: true,
                 excludeAttributeTimestamp: true,
                 excludeAttributeValue: true,
                 excludeParentInfo: true,

@@ -234,7 +234,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     public attributeRef?: AttributeRef;
 
     @property({type: String})
-    public period: moment.unitOfTime.Base = "hour";
+    public period: moment.unitOfTime.Base = "day";
 
     @property({type: Number})
     public fromTimestamp?: Date;
