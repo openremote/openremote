@@ -221,7 +221,6 @@ export const getAssetTypes = async () => {
     const response = await manager.rest.api.AssetResource.queryAssets({
         select: {
             excludeAttributes: true,
-            excludeRealm: true,
             excludeParentInfo: true,
             excludePath: true,
             excludeAttributeMeta: true,
