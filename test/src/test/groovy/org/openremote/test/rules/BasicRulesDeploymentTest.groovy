@@ -27,6 +27,7 @@ import static org.openremote.model.rules.Ruleset.Lang.GROOVY
 
 class BasicRulesDeploymentTest extends Specification implements ManagerContainerTrait {
 
+    @SuppressWarnings("GroovyAccessibility")
     def "Check basic rules engine deployment"() {
 
         given: "expected conditions"
@@ -146,12 +147,16 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the apartment rules engine should be removed"
         conditions.eventually {
-            assert rulesService.assetEngines.size() == 1
+            assert rulesService.assetEngines.size() == 2
             def apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
             def apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
+            def peopleCounter3Engine = rulesService.assetEngines.get(managerDemoSetup.peopleCounter3AssetId)
             assert apartment2Engine == null
             assert apartment3Engine != null
             assert apartment3Engine.isRunning()
+            assert peopleCounter3Engine != null
+            assert peopleCounter3Engine.isRunning()
+
         }
 
         when: "a broken rule definition is added to the global rules engine"
@@ -204,13 +209,16 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         and: "other rule engines should be unaffected"
         conditions.eventually {
             assert rulesService.tenantEngines.size() == 2
-            assert rulesService.assetEngines.size() == 0
+            assert rulesService.assetEngines.size() == 1
             def masterEngine = rulesService.tenantEngines.get(keycloakDemoSetup.masterTenant.realm)
-            def tenantCity = rulesService.tenantEngines.get(keycloakDemoSetup.tenantCity.realm)
+            def cityEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantCity.realm)
+            def peopleCounter3Engine = rulesService.assetEngines.get(managerDemoSetup.peopleCounter3AssetId)
             assert masterEngine != null
             assert masterEngine.isRunning()
-            assert tenantCity != null
-            assert tenantCity.isRunning()
+            assert cityEngine != null
+            assert cityEngine.isRunning()
+            assert peopleCounter3Engine != null
+            assert peopleCounter3Engine.isRunning()
         }
 
         when: "the disabled tenant is re-enabled"
@@ -222,7 +230,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             tenantBuildingEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantBuilding.realm)
             apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
             assert rulesService.tenantEngines.size() == 3
-            assert rulesService.assetEngines.size() == 1
+            assert rulesService.assetEngines.size() == 2
             assert tenantBuildingEngine != null
             assert tenantBuildingEngine.isRunning()
             assert tenantBuildingEngine.deployments.size() == 2

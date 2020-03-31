@@ -15,10 +15,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import java.util.logging.Logger
-
 class AssetAttributeLinkingTest extends Specification implements ManagerContainerTrait {
-    Logger LOG = Logger.getLogger(AssetAttributeLinkingTest.class.getName())
 
     def "Check processing of asset attributes that are linked to other attributes"() {
 
@@ -71,7 +68,7 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
 
         def attributeLinkProp = Values.convert(new AttributeLink(
             new AttributeRef(asset2.id, "item2Prop1"), null, [
-            new JsonPathFilter("\$[1].prop1", true)
+            new JsonPathFilter("\$[1].prop1", true, false)
         ] as ValueFilter[]), Container.JSON).orElse(null)
 
         asset1.getAttribute("button").get().addMeta(new MetaItem(MetaItemType.ATTRIBUTE_LINK, attributeLinkOnOff))

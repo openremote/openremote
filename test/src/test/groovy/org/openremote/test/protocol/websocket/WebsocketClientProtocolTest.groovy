@@ -19,9 +19,7 @@
  */
 package org.openremote.test.protocol.websocket
 
-
 import org.openremote.agent.protocol.Protocol
-import org.openremote.agent.protocol.ProtocolExecutorService
 import org.openremote.agent.protocol.http.OAuthPasswordGrant
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.agent.protocol.websocket.WebsocketClientProtocol
@@ -103,6 +101,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         }
     }
 
+    @SuppressWarnings("GroovyAccessibility")
     def "Check websocket client protocol configuration and linked attribute deployment"() {
 
         given: "expected conditions"
@@ -111,7 +110,6 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         when: "the container starts"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
-        def protocolExecutorService = container.getService(ProtocolExecutorService.class)
         def websocketClientProtocol = container.getService(WebsocketClientProtocol.class)
         def simulatorProtocol = container.getService(SimulatorProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -204,7 +202,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false)
+                                new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false, false)
                             ] as ValueFilter[]
                         , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_PREDICATE,
@@ -213,7 +211,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"targetTemperature\")].attributeState.value", true)
+                                new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"targetTemperature\")].attributeState.value", true, false)
                             ] as ValueFilter[]
                         , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_SUBSCRIPTIONS,
@@ -232,7 +230,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false)
+                                new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false, false)
                             ] as ValueFilter[]
                         , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_PREDICATE,
@@ -241,7 +239,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         Values.convert(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"co2Level\")].attributeState.value", true),
+                                new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"co2Level\")].attributeState.value", true, false),
                             ] as ValueFilter[]
                         , Container.JSON).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_SUBSCRIPTIONS,

@@ -99,6 +99,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String smartCityServiceAgentId;
     public String area1Id;
     public String microphone1Id;
+    public String peopleCounter3AssetId;
 
     public ManagerDemoSetup(Container container, boolean importDemoScenes) {
         super(container);
@@ -856,6 +857,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
         peopleCounter3Asset = assetStorageService.merge(peopleCounter3Asset);
+        peopleCounter3AssetId = peopleCounter3Asset.getId();
 
         AssetRuleset peopleCounter3Rules = new AssetRuleset(
             peopleCounter3Asset.getId(), "PeopleCounter 3 Rules", GROOVY, IOUtils.toString(getClass().getResource("/demo/rules/DemoSmartCityCamera.groovy"), StandardCharsets.UTF_8)
