@@ -211,7 +211,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                     AssetEvent.class,
                     new AssetFilter<AssetEvent>().setRealm(connection.getLocalRealm()),
                     triggeredEventSubscription ->
-                        Arrays.stream(triggeredEventSubscription.getEvents())
+                        triggeredEventSubscription.getEvents()
                             .forEach(event ->
                                 sendCentralManagerMessage(connection.getLocalRealm(), messageFromSharedEvent(event)))));
 
@@ -222,7 +222,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                     AttributeEvent.class,
                     new AssetFilter<AttributeEvent>().setRealm(connection.getLocalRealm()),
                     triggeredEventSubscription ->
-                        Arrays.stream(triggeredEventSubscription.getEvents())
+                        triggeredEventSubscription.getEvents()
                             .forEach(event ->
                                 sendCentralManagerMessage(connection.getLocalRealm(), messageFromSharedEvent(event)))));
 

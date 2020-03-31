@@ -123,17 +123,17 @@ public class EventServiceImpl implements EventService {
             return;
         if (data.startsWith(UnauthorizedEventSubscription.MESSAGE_PREFIX)) {
             data = data.substring(UnauthorizedEventSubscription.MESSAGE_PREFIX.length());
-            UnauthorizedEventSubscription failure = unauthorizedEventSubscriptionMapper.read(data);
+            UnauthorizedEventSubscription<?> failure = unauthorizedEventSubscriptionMapper.read(data);
             eventBus.dispatch(new SubscriptionFailureEvent(failure.getSubscription().getEventType()));
         } else if (data.startsWith(SharedEvent.MESSAGE_PREFIX)) {
             data = data.substring(SharedEvent.MESSAGE_PREFIX.length());
             if (data.startsWith("{")) {
-                TriggeredEventSubscription triggered = triggeredEventSubscriptionMapper.read(data);
+                TriggeredEventSubscription<?> triggered = triggeredEventSubscriptionMapper.read(data);
                 if (triggered.getEvents() == null) {
                     SharedEvent event = sharedEventMapper.read(data);
                     eventBus.dispatch(event);
                 } else {
-                    Arrays.stream(triggered.getEvents()).forEach(eventBus::dispatch);
+                    triggered.getEvents().forEach(eventBus::dispatch);
                 }
             } else if (data.startsWith("[")) {
                 // Handle array of events

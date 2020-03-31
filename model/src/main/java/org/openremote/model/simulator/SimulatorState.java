@@ -71,7 +71,6 @@ public class SimulatorState extends SharedEvent {
 
     // This map can be populated to complete the simulator state with user-friendly names for each simulated AttributeRef
     protected Map<String, String> assetIdAndName = new HashMap<>();
-
     protected AttributeRef protocolConfigurationRef;
     protected SimulatorElement[] elements = new SimulatorElement[0];
 

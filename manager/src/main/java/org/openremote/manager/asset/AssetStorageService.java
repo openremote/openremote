@@ -1910,19 +1910,19 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         List<String> names = attributeNames == null ? Collections.emptyList() : Arrays.asList(attributeNames);
 
         // Client may want to read a subset or all attributes of the asset
-        AttributeEvent[] events = asset.getAttributesStream()
+        List<AttributeEvent> events = asset.getAttributesStream()
             .filter(attribute -> names.isEmpty() || attribute.getName().filter(names::contains).isPresent())
             .map(AssetAttribute::getStateEvent)
             .filter(Optional::isPresent)
             .map(Optional::get)
-            .toArray(AttributeEvent[]::new);
+            .collect(Collectors.toList());
         TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription(events, subscriptionId);
         clientEventService.sendToSession(sessionKey, triggeredEventSubscription);
     }
 
     protected void replyWithAssetEvent(String sessionKey, String subscriptionId, Asset asset) {
         AssetEvent event = new AssetEvent(AssetEvent.Cause.READ, asset, null);
-        TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription(new AssetEvent[]{event}, subscriptionId);
+        TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription(Collections.singletonList(event), subscriptionId);
         clientEventService.sendToSession(sessionKey, triggeredEventSubscription);
     }
 

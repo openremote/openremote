@@ -24,19 +24,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class TriggeredEventSubscription<T extends SharedEvent> {
 
-    protected T[] events;
+    protected List<T> events;
     protected String subscriptionId;
 
     @JsonCreator
-    public TriggeredEventSubscription(@JsonProperty("events") T[] events, @JsonProperty("subscriptionId") String subscriptionId) {
+    public TriggeredEventSubscription(@JsonProperty("events") List<T> events, @JsonProperty("subscriptionId") String subscriptionId) {
         this.events = events;
         this.subscriptionId = subscriptionId;
     }
 
-    public T[] getEvents() {
+    public List<T> getEvents() {
         return events;
     }
 
@@ -47,7 +48,7 @@ public class TriggeredEventSubscription<T extends SharedEvent> {
     @Override
     public String toString() {
         return "TriggeredEventSubscription{" +
-                "events=" + Arrays.toString(events) +
+                "events=" + Arrays.toString(events.toArray()) +
                 ", subscriptionId='" + subscriptionId + '\'' +
                 '}';
     }

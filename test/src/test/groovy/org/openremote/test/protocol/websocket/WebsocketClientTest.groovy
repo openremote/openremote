@@ -128,7 +128,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             assert lastMessage.indexOf(SharedEvent.MESSAGE_PREFIX) == 0
             def triggeredEvent = Container.JSON.readValue(lastMessage.substring(SharedEvent.MESSAGE_PREFIX.length()), TriggeredEventSubscription.class)
             assert triggeredEvent.subscriptionId == "1"
-            assert triggeredEvent.events.length == 1
+            assert triggeredEvent.events.size() == 1
             assert ((AttributeEvent)triggeredEvent.events[0]).entityId == managerDemoSetup.apartment1LivingroomId
             assert ((AttributeEvent)triggeredEvent.events[0]).attributeName == "targetTemperature"
             assert ((AttributeEvent)triggeredEvent.events[0]).value.flatMap{Values.getNumber(it)}.orElse(0) == 5
