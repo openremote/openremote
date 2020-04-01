@@ -263,6 +263,9 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
 
     @Override
     public AssetTreeNode[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException {
+        //todo sync inmemory
+        //todo sync assettree
+
         String jsonString;
         if(fileInfo.isBinary())//Read any file that isn't an XML file
         {
@@ -296,6 +299,12 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
             }
             return null;
     }
+
+    private List<ArtnetLight> parseArtnetLightsFromImport(JsonNode jsonNode) {
+        JsonNode lightsNode = jsonNode.get("lights");
+        return null;
+    }
+
 
     protected AssetTreeNode createLightAsset(int id, int groupId, String requiredValues, AssetAttribute parent, MetaItem agentLink)
     {
