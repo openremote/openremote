@@ -5,7 +5,6 @@ org.openremote.agent.protocol.knx.KNXProtocol
 org.openremote.agent.protocol.velbus.VelbusTcpProtocol
 org.openremote.agent.protocol.velbus.VelbusSerialProtocol
 org.openremote.agent.protocol.http.HttpClientProtocol
-org.openremote.agent.protocol.controller.ControllerProtocol
 org.openremote.agent.protocol.udp.UdpClientProtocol
 org.openremote.agent.protocol.websocket.WebsocketClientProtocol
 org.openremote.agent.protocol.dmx.artnet.ArtnetClientProtocol

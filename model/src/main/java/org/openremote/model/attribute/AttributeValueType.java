@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
@@ -158,7 +159,9 @@ public enum AttributeValueType implements AttributeValueDescriptor {
 
     ASSET_STATUS("heart-pulse", ValueType.STRING),
 
-    CALENDAR_EVENT("calendar", ValueType.OBJECT);
+    CALENDAR_EVENT("calendar", ValueType.OBJECT),
+
+    CONNECTION_STATUS("lan-connect", ValueType.STRING, new MetaItemDescriptorImpl(ALLOWED_VALUES, Values.createArray(Arrays.stream(ConnectionStatus.values()).map(connectionStatus -> Values.create(connectionStatus.name())).toArray(Value[]::new))));
 
     public enum AttributeValueTypeFailureReason implements ValidationFailure.Reason {
         ATTRIBUTE_TYPE_VALUE_DOES_NOT_MATCH

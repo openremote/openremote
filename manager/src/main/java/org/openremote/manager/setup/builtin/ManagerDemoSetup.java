@@ -103,8 +103,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String realmBuildingTenant;
     public String realmCityTenant;
     public String smartCityServiceAgentId;
-
-
+    public String area1Id;
+    public String microphone1Id;
+    public String peopleCounter3AssetId;
 
     public ManagerDemoSetup(Container container, boolean importDemoScenes) {
         super(container);
@@ -870,6 +871,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new AssetAttribute(AttributeType.GEO_COUNTRY, Values.create("Netherlands"))
             );
         assetArea1 = assetStorageService.merge(assetArea1);
+        area1Id = assetArea1.getId();
 
         Asset peopleCounter1Asset = createDemoPeopleCounterAsset("PeopleCounter 1", assetArea1, new GeoJSONPoint(5.477126, 51.439137), () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(smartCityServiceAgentId, "citySimulator").toArrayValue()),
@@ -877,11 +879,12 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         });
         peopleCounter1Asset = assetStorageService.merge(peopleCounter1Asset);
 
-        Asset microPhone1Asset = createDemoMicrophoneAsset("Microphone 1", assetArea1, new GeoJSONPoint(5.478092, 51.438655), () -> new MetaItem[]{
+        Asset microphone1Asset = createDemoMicrophoneAsset("Microphone 1", assetArea1, new GeoJSONPoint(5.478092, 51.438655), () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(smartCityServiceAgentId, "citySimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
-        microPhone1Asset = assetStorageService.merge(microPhone1Asset);
+        microphone1Asset = assetStorageService.merge(microphone1Asset);
+        microphone1Id = microphone1Asset.getId();
 
         Asset enviroment1Asset = createDemoEnvironmentAsset("Environment 1", assetArea1, new GeoJSONPoint(5.478907, 51.438943),() -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(smartCityServiceAgentId, "citySimulator").toArrayValue()),
@@ -935,6 +938,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
         peopleCounter3Asset = assetStorageService.merge(peopleCounter3Asset);
+        peopleCounter3AssetId = peopleCounter3Asset.getId();
 
         AssetRuleset peopleCounter3Rules = new AssetRuleset(
             peopleCounter3Asset.getId(), "PeopleCounter 3 Rules", GROOVY, IOUtils.toString(getClass().getResource("/demo/rules/DemoSmartCityCamera.groovy"), StandardCharsets.UTF_8)

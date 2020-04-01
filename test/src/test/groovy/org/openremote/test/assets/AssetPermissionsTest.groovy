@@ -157,24 +157,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "the asset should be updated"
         testAsset.parentId == managerDemoSetup.groundFloorId
 
-        when: "an asset is moved to a foreign realm and made a root asset"
-        testAsset.setRealm(keycloakDemoSetup.tenantBuilding.realm)
+        when: "an asset is made a root asset"
         testAsset.setParentId(null)
         assetResource.update(null, testAsset.id, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the asset should be updated"
-        testAsset.realm == keycloakDemoSetup.tenantBuilding.realm
         testAsset.parentId == null
-
-        when: "an asset is updated with a new parent in a foreign realm"
-        testAsset.setParentId(managerDemoSetup.smartBuildingId)
-        assetResource.update(null, testAsset.id, testAsset)
-        testAsset = assetResource.get(null, testAsset.getId())
-
-        then: "the asset should be updated"
-        testAsset.realm == keycloakDemoSetup.tenantBuilding.realm
-        testAsset.parentId == managerDemoSetup.smartBuildingId
 
         when: "an asset is deleted in the authenticated realm"
         assetResource.delete(null, [managerDemoSetup.thingId])

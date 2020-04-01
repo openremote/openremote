@@ -68,8 +68,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         def conditions = new PollingConditions(timeout: 20, delay: 1)
         def serverPort = findEphemeralPort()
         def services = Lists.newArrayList(defaultServices())
-        services.removeIf { it instanceof PushNotificationHandler }
-        services.add(mockPushNotificationHandler)
+        services.replaceAll{it instanceof PushNotificationHandler ? mockPushNotificationHandler : it}
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), services)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)

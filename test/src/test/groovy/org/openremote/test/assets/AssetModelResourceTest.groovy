@@ -21,7 +21,9 @@ package org.openremote.test.assets
 
 import org.openremote.container.Container
 import org.openremote.model.asset.AssetModelResource
+import org.openremote.model.asset.AssetType
 import org.openremote.model.attribute.AttributeType
+import org.openremote.model.attribute.AttributeValueType
 import org.openremote.model.attribute.MetaItemType
 import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
@@ -71,31 +73,30 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
         def assetDescriptors = assetModelResource.getAssetDescriptors(null)
 
         then: "the default asset types should be present"
-        assetDescriptors.size() == 15
-        assetDescriptors[0].name == BUILDING.name
-        assetDescriptors[0].attributeDescriptors.length == 5
-        assetDescriptors[0].attributeDescriptors.find {it.attributeName == AttributeType.SURFACE_AREA.attributeName}.valueDescriptor.valueType == ValueType.NUMBER
-        assetDescriptors[1].name == CITY.name
-        assetDescriptors[2].name == AREA.name
-        assetDescriptors[3].name == FLOOR.name
-        assetDescriptors[4].name == RESIDENCE.name
-        assetDescriptors[5].name == ROOM.name
-        assetDescriptors[6].name == AGENT.name
-        assetDescriptors[7].name == CONSOLE.name
-        assetDescriptors[8].name == MICROPHONE.name
-        assetDescriptors[9].name == SOUND_EVENT.name
-        assetDescriptors[10].name == ENVIRONMENT_SENSOR.name
-        assetDescriptors[11].name == LIGHT.name
-        assetDescriptors[12].name == LIGHT_CONTROLLER.name
-        assetDescriptors[13].name == PEOPLE_COUNTER.name
-        assetDescriptors[14].name == THING.name
+        assetDescriptors.size() == AssetType.values().length
+        assetDescriptors.any{it.name == BUILDING.name && it.attributeDescriptors.length == 5 && it.attributeDescriptors.find {it.attributeName == AttributeType.SURFACE_AREA.attributeName}.valueDescriptor.valueType == ValueType.NUMBER}
+        assetDescriptors.any{it.name == CITY.name}
+        assetDescriptors.any{it.name == AREA.name}
+        assetDescriptors.any{it.name == FLOOR.name}
+        assetDescriptors.any{it.name == RESIDENCE.name}
+        assetDescriptors.any{it.name == ROOM.name}
+        assetDescriptors.any{it.name == AGENT.name}
+        assetDescriptors.any{it.name == CONSOLE.name}
+        assetDescriptors.any{it.name == MICROPHONE.name}
+        assetDescriptors.any{it.name == SOUND_EVENT.name}
+        assetDescriptors.any{it.name == ENVIRONMENT_SENSOR.name}
+        assetDescriptors.any{it.name == LIGHT.name}
+        assetDescriptors.any{it.name == LIGHT_CONTROLLER.name}
+        assetDescriptors.any{it.name == PEOPLE_COUNTER.name}
+        assetDescriptors.any{it.name == THING.name}
+        assetDescriptors.any{it.name == THING.name}
 
         when: "a request for Attribute types is made"
 
         def attributeTypeDescriptors = assetModelResource.getAttributeDescriptors(null)
 
         then: "the default types should be present"
-        attributeTypeDescriptors.size() == 13
+        attributeTypeDescriptors.size() == AttributeType.values().length
         attributeTypeDescriptors.any {it.attributeName == "consoleName"}
         attributeTypeDescriptors.any {it.attributeName == "consoleVersion"}
         attributeTypeDescriptors.any {it.attributeName == "consolePlatform"}
@@ -111,14 +112,12 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
         attributeTypeDescriptors.any {it.attributeName == "assetTags"}
 
         when: "a request for Attribute value types is made"
-
         def attributeValueTypeDescriptors = assetModelResource.getAttributeValueDescriptors(null)
 
         then: "the default value types should be present"
-        attributeValueTypeDescriptors.size() == 36
+        attributeValueTypeDescriptors.size() == AttributeValueType.values().length
 
         when: "a request for Attribute value types is made"
-
         def metaItemDescriptors = assetModelResource.getMetaItemDescriptors(null)
 
         then: "the default MetaItem types should be present"

@@ -365,7 +365,7 @@ public class AssetEditActivity
         // Is it agent or attribute link?
         if ((valueHolder instanceof MetaItem) && AgentLink.isAgentLink((MetaItem) valueHolder)) {
             query = new AssetQuery()
-                .select(AssetQuery.Select.selectExcludePathAndParentAndRealm())
+                .select(AssetQuery.Select.selectExcludePathAndParentInfo())
                 // Limit to agents
                 .types(AssetType.AGENT);
 

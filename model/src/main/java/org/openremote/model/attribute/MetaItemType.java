@@ -426,7 +426,20 @@ public enum MetaItemType implements MetaItemDescriptor {
         null,
         null,
         Values.create(true),
-        true);
+        true),
+
+    /**
+     * Marks the attribute as secret and indicates that clients should display this in a concealed manner (e.g. password
+     * input with optional show)
+     */
+    SECRET(
+        ASSET_META_NAMESPACE + ":readOnly",
+        new Access(true, false, true),
+    ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true),;
 
     final protected String urn;
     final protected Access access;

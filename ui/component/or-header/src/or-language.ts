@@ -21,7 +21,7 @@ interface languageOptions {
     [key: string]: string;
 }
 
-const languageOptions: languageOptions = {
+export const languageOptions: languageOptions = {
     "en": "english",
     "nl": "dutch",
     "fr": "french",
@@ -38,7 +38,7 @@ function getLanguageMenu(): MenuItem[] {
         };
     });
 }
-
+// TODO remove because deprecated?
 @customElement("or-language")
 export class OrLanguage extends LitElement {
 

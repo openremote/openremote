@@ -79,17 +79,7 @@ class MyApp extends connect(store)(LitElement) {
         }
 
         return html`
-            <or-header logo="${logoImage}" logoMobile="${logoMobileImage}">
-                <a slot="desktop-left" ?selected="${this.page === "map"}" @click="${() => router.navigate("map")}"><or-icon icon="map"></or-icon><or-translate value="map"></or-translate></a>
-                <a slot="desktop-left" ?selected="${this.page === "assets"}" @click="${() => router.navigate("assets")}"><or-icon icon="sitemap"></or-icon><or-translate value="asset_plural"></or-translate></a>
-                <a slot="desktop-left" ?selected="${this.page === "rules"}" @click="${() => router.navigate("rules")}"><or-icon icon="cogs"></or-icon><or-translate value="rule_plural"></or-translate></a>
-                ${(manager.isSuperUser() ? html`<a slot="desktop-right"><or-realm-picker></or-realm-picker></a>` : ``)}
-                <a slot="desktop-right"><or-language></or-language></a>
-                <a slot="desktop-right" @click="${() => this.logout()}"><or-translate value="logout"></or-translate></a>
-                <a slot="mobile-top" ?selected="${this.page === "map"}" @click="${() => router.navigate("map")}"><or-icon icon="map"></or-icon><or-translate value="map"></or-translate></a>
-                <a slot="mobile-top" ?selected="${this.page === "assets"}" @click="${() => router.navigate("assets")}"><or-icon icon="sitemap"></or-icon><or-translate value="asset_plural"></or-translate></a>
-                <a slot="mobile-top" @click="${() => this.logout()}"><or-icon icon="logout"></or-icon><or-translate value="logout"></or-translate></a>
-            </or-header>
+            <or-header logo="${logoImage}" logoMobile="${logoMobileImage}"></or-header>
             
             <!-- Main content -->
             <main role="main" class="main-content d-none">

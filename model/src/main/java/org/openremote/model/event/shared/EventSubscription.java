@@ -45,12 +45,14 @@ public class EventSubscription<E extends SharedEvent> {
     protected String eventType;
     protected EventFilter<E> filter;
     protected String subscriptionId;
+    @JsonIgnore
+    protected boolean subscribed;
 
     /**
      * Optional only set when an internal subscription is made
      */
     @JsonIgnore
-    protected Consumer<TriggeredEventSubscription> internalConsumer;
+    protected Consumer<TriggeredEventSubscription<E>> internalConsumer;
 
     protected EventSubscription() {
     }
@@ -72,13 +74,13 @@ public class EventSubscription<E extends SharedEvent> {
         this.filter = filter;
     }
 
-    public EventSubscription(Class<E> eventClass, EventFilter<E> filter, Consumer<TriggeredEventSubscription> internalConsumer) {
+    public EventSubscription(Class<E> eventClass, EventFilter<E> filter, Consumer<TriggeredEventSubscription<E>> internalConsumer) {
         this.eventType = Event.getEventType(eventClass);
         this.filter = filter;
         this.internalConsumer = internalConsumer;
     }
 
-    public EventSubscription(Class<E> eventClass, EventFilter<E> filter, String subscriptionId, Consumer<TriggeredEventSubscription> internalConsumer) {
+    public EventSubscription(Class<E> eventClass, EventFilter<E> filter, String subscriptionId, Consumer<TriggeredEventSubscription<E>> internalConsumer) {
         this.eventType = Event.getEventType(eventClass);
         this.filter = filter;
         this.subscriptionId = subscriptionId;
@@ -105,12 +107,24 @@ public class EventSubscription<E extends SharedEvent> {
         return Event.getEventType(eventClass).equals(getEventType());
     }
 
-    public Consumer<TriggeredEventSubscription> getInternalConsumer() {
+    public Consumer<TriggeredEventSubscription<E>> getInternalConsumer() {
         return internalConsumer;
+    }
+
+    public void setInternalConsumer(Consumer<TriggeredEventSubscription<E>> internalConsumer) {
+        this.internalConsumer = internalConsumer;
     }
 
     public String getSubscriptionId() {
         return subscriptionId;
+    }
+
+    public void setSubscribed(boolean subscribed) {
+        this.subscribed = subscribed;
+    }
+
+    public boolean isSubscribed() {
+        return subscribed;
     }
 
     @Override

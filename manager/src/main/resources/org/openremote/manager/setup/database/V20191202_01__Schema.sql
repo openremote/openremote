@@ -129,6 +129,18 @@ create table ASSET_PREDICTED_DATAPOINT (
   primary key (TIMESTAMP, ENTITY_ID, ATTRIBUTE_NAME)
 );
 
+create table GATEWAY_CONNECTION (
+    LOCAL_REALM        varchar(255)             not null,
+    REALM              varchar(255)             not null,
+    HOST               varchar(255)             not null,
+    PORT               int8                     null,
+    CLIENT_ID          varchar(36)              not null,
+    CLIENT_SECRET      varchar(36)              not null,
+    SECURED            boolean                  null,
+    DISABLED           boolean                  not null default false,
+    primary key (LOCAL_REALM)
+);
+
 /*
   ############################# FUNCTIONS #############################
  */

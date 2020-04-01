@@ -52,4 +52,8 @@ public class OAuthRefreshTokenGrant extends OAuthClientCredentialsGrant {
     public String getRefreshToken() {
         return valueMap.getFirst(VALUE_KEY_REFRESH_TOKEN);
     }
+
+    public OAuthRefreshTokenGrant setBasicAuthHeader(boolean basicAuthHeader) {
+        return (OAuthRefreshTokenGrant)super.setBasicAuthHeader(basicAuthHeader);
+    }
 }

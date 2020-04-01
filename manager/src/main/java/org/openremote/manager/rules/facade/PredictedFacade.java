@@ -32,7 +32,7 @@ import java.util.logging.Logger;
 
 public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
 
-    private static final Logger LOG = Logger.getLogger(AssetsFacade.class.getName());
+    private static final Logger LOG = Logger.getLogger(PredictedFacade.class.getName());
 
     protected final RulesEngineId<T> rulesEngineId;
     protected final AssetPredictedDatapointService assetPredictedDatapointService;
