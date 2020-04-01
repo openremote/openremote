@@ -19,7 +19,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public abstract class AbstractArtnetClientProtocol<T> extends AbstractIoClientProtocol<T, UdpIoClient<T>> {
 
-    public abstract Map<Integer, List<AbstractArtnetLight>> getLightMemory();
+    public abstract List<AbstractArtnetLight> getLightMemory();
 
     public abstract void updateLightStateInMemory(Integer lightId, AbstractArtnetLightState updatedLightState);
 

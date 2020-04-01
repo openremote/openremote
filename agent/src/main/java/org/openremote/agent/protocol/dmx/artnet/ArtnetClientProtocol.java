@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static org.openremote.container.util.Util.joinCollections;
 import static org.openremote.model.Constants.MASTER_REALM;
@@ -69,7 +70,8 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
 
     protected final Map<AttributeRef, List<Pair<AttributeRef, Consumer<ArtnetPacket>>>> protocolMessageConsumers = new HashMap<>();
 
-    private HashMap<Integer, List<AbstractArtnetLight>> artnetLightMemory = new HashMap<Integer, List<AbstractArtnetLight>>();
+    private List<AbstractArtnetLight> artnetLightMemory = new ArrayList<>();
+    //private HashMap<Integer, List<AbstractArtnetLight>> artnetLightMemory = new HashMap<Integer, List<AbstractArtnetLight>>();
 
     @Override
     public String getProtocolName() {
@@ -87,7 +89,7 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
     }
 
     @Override
-    public Map<Integer, List<AbstractArtnetLight>> getLightMemory() { return artnetLightMemory; }
+    public List<AbstractArtnetLight> getLightMemory() { return artnetLightMemory; }
 
     @Override
     protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
@@ -161,9 +163,8 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
         for(String key : requiredKeys)
             state.getReceivedValues().put(key, 0);
         ArtnetLight lightToCreate = new ArtnetLight(lightId, groupId, universe, amountOfLeds, requiredKeys, state, null);
-        artnetLightMemory.computeIfAbsent(universe, k -> new ArrayList<AbstractArtnetLight>());
-        if(artnetLightMemory.get(universe).stream().noneMatch(light -> light.getLightId() == lightToCreate.getLightId()))
-            artnetLightMemory.get(universe).add(lightToCreate);
+        if(artnetLightMemory.stream().noneMatch(light -> light.getLightId() == lightToCreate.getLightId()))
+            artnetLightMemory.add(lightToCreate);
     }
 
     @Override
@@ -173,8 +174,8 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
         //THIS NOW RELIES ON ALWAYS HAVING THE FOLLOWING ATTRIBUTES IN THE SAME LEVEL
         Integer lightId = parentAsset.getAttribute("Id").get().getValueAsInteger().get();
         Integer universe = parentAsset.getAttribute("Universe").get().getValueAsInteger().get();
-        if(artnetLightMemory.get(universe).stream().anyMatch(light -> light.getLightId() == lightId))
-            artnetLightMemory.get(universe).remove(artnetLightMemory.get(universe).stream().filter(light -> light.getLightId() == lightId).findFirst().get());
+        if(artnetLightMemory.stream().anyMatch(light -> light.getLightId() == lightId))
+            artnetLightMemory.remove(artnetLightMemory.stream().filter(light -> light.getLightId() == lightId).findFirst().get());
         synchronized (protocolMessageConsumers) {
             protocolMessageConsumers.compute(protocolConfiguration.getReferenceOrThrow(), (ref, consumers) -> {
                 if (consumers != null) {
@@ -208,7 +209,7 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
         //THIS NOW RELIES ON ALWAYS HAVING THE FOLLOWING ATTRIBUTES IN THE SAME LEVEL
         Integer universeId = parentAsset.getAttribute("Universe").get().getValueAsInteger().get();
         Integer lightId = parentAsset.getAttribute("Id").get().getValueAsInteger().get();
-        ArtnetLight updatedLight = (ArtnetLight) artnetLightMemory.get(universeId).stream().filter(light -> light.getLightId() == lightId).findAny().get();
+        ArtnetLight updatedLight = (ArtnetLight) artnetLightMemory.stream().filter(light -> light.getLightId() == lightId).findFirst().get();
         ArtnetLightState oldLightState = (ArtnetLightState) updatedLight.getLightState();
         ObjectMapper mapper = new ObjectMapper();
         //UPDATE LIGHT VALUES (R,G,B FOR EXAMPLE)
@@ -247,7 +248,7 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
         }
         //SEND ALL LIGHTS TO UPDATE TO THE ENCODER
         List<ArtnetLight> lightsToSend = new ArrayList<ArtnetLight>();
-        for(AbstractArtnetLight abstractLight : artnetLightMemory.get(universeId))
+        for(AbstractArtnetLight abstractLight : artnetLightMemory.stream().filter(light -> light.getUniverse() == universeId).collect(Collectors.toList()))
             lightsToSend.add((ArtnetLight)abstractLight);
         updateLinkedAttribute(event.getAttributeState());
         return new ArtnetPacket(universeId, lightsToSend);
@@ -256,9 +257,8 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
     @Override
     public void updateLightStateInMemory(Integer lightId, AbstractArtnetLightState updatedLightState)
     {
-        for(int universe : artnetLightMemory.keySet())
-            if(artnetLightMemory.get(universe).stream().anyMatch(light -> light.getLightId() == lightId))
-                artnetLightMemory.get(universe).stream().filter(light -> light.getLightId() == lightId).findFirst().get().setLightState(updatedLightState);
+        if(artnetLightMemory.stream().anyMatch(light -> light.getLightId() == lightId))
+            artnetLightMemory.stream().filter(light -> light.getLightId() == lightId).findFirst().get().setLightState(updatedLightState);
     }
 
     @Override
