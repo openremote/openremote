@@ -220,7 +220,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                         select: {
                             attributes: [this.attributeRef.attributeName!],
                             excludePath: true,
-                            excludeRealm: true,
                             excludeParentInfo: true
                         }
                     }).then((response) => {

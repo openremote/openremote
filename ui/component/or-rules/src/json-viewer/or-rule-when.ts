@@ -110,6 +110,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
 
     public config?: RulesConfig;
 
+    @property({type: Object, attribute: false})
     public assetDescriptors?: AssetDescriptor[];
 
     protected ruleGroupTemplate(group: LogicGroup<RuleCondition>, parentGroup?: LogicGroup<RuleCondition>): TemplateResult | undefined {

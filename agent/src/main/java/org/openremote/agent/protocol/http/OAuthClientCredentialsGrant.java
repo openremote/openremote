@@ -42,4 +42,8 @@ public class OAuthClientCredentialsGrant extends OAuthGrant {
                                           String scope) {
         super(tokenEndpointUri, grantType, clientId, clientSecret, scope);
     }
+
+    public OAuthClientCredentialsGrant setBasicAuthHeader(boolean basicAuthHeader) {
+        return (OAuthClientCredentialsGrant)super.setBasicAuthHeader(basicAuthHeader);
+    }
 }

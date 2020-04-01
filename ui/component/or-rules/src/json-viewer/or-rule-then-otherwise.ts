@@ -34,6 +34,7 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
         addNotification = config.controls.allowedActionTypes.indexOf(ActionType.NOTIFICATION) >= 0;
     }
 
+
     const menu: MenuItem[] = [];
 
     if (addAssetTypes && assetDescriptors) {
@@ -188,6 +189,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
     public config?: RulesConfig;
 
+    @property({type: Object, attribute: false})
     public assetDescriptors?: AssetDescriptor[];
 
     protected get thenAllowAdd() {
@@ -305,7 +307,6 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
     }
 
     protected render() {
-
         return html`
             <div>
                 <or-panel .heading="${i18next.t("then")}...">

@@ -26,13 +26,11 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
+import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.predicted.AssetPredictedDatapointService;
-import org.openremote.manager.rules.facade.AssetsFacade;
-import org.openremote.manager.rules.facade.NotificationsFacade;
-import org.openremote.manager.rules.facade.PredictedFacade;
-import org.openremote.manager.rules.facade.UsersFacade;
+import org.openremote.manager.rules.facade.*;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeType;
@@ -116,6 +114,7 @@ public class RulesEngine<T extends Ruleset> {
     final protected Users usersFacade;
     final protected Notifications notificationFacade;
     final protected PredictedDatapoints predictedFacade;
+    final protected HistoricDatapoints historicFacade;
     final protected AssetLocationPredicateProcessor assetLocationPredicatesConsumer;
 
     final protected Map<Long, RulesetDeployment> deployments = new LinkedHashMap<>();
@@ -143,6 +142,7 @@ public class RulesEngine<T extends Ruleset> {
                        AssetProcessingService assetProcessingService,
                        NotificationService notificationService,
                        ClientEventService clientEventService,
+                       AssetDatapointService assetDatapointService,
                        AssetPredictedDatapointService assetPredictedDatapointService,
                        RulesEngineId<T> id,
                        AssetLocationPredicateProcessor assetLocationPredicatesConsumer) {
@@ -155,6 +155,7 @@ public class RulesEngine<T extends Ruleset> {
         this.assetsFacade = assetsFacade;
         this.usersFacade = new UsersFacade<>(id, assetStorageService, notificationService, identityService);
         this.notificationFacade = new NotificationsFacade<>(id, notificationService);
+        this.historicFacade = new HistoricFacade<>(id, assetDatapointService);
         this.predictedFacade = new PredictedFacade<>(id, assetPredictedDatapointService);
         this.assetLocationPredicatesConsumer = assetLocationPredicatesConsumer;
 
@@ -239,7 +240,7 @@ public class RulesEngine<T extends Ruleset> {
             removeRuleset(deployment.ruleset);
         }
 
-        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade, predictedFacade);
+        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade, historicFacade, predictedFacade);
         boolean compiled;
 
         if (TextUtil.isNullOrEmpty(ruleset.getRules())) {

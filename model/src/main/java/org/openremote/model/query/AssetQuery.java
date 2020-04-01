@@ -42,9 +42,8 @@ public class AssetQuery {
         public boolean excludeAttributeTimestamp;
         public boolean excludeAttributeType;
         public boolean excludeParentInfo;
-        public boolean excludeRealm;
 
-        public static Select selectExcludePathAndParentAndRealm() {
+        public static Select selectExcludePathAndParentInfo() {
             return new Select()
                 .excludeAttributes(false)
                 .excludeAttributeMeta(false)
@@ -52,8 +51,7 @@ public class AssetQuery {
                 .excludeAttributeTimestamp(false)
                 .excludeAttributeValue(false)
                 .excludePath(true)
-                .excludeParentInfo(true)
-                .excludeRealm(true);
+                .excludeParentInfo(true);
         }
 
         public static Select selectExcludePathAndAttributes() {
@@ -70,8 +68,7 @@ public class AssetQuery {
                 .excludeAttributeValue(true)
                 .excludeAttributeTimestamp(true)
                 .excludePath(true)
-                .excludeParentInfo(true)
-                .excludeRealm(true);
+                .excludeParentInfo(true);
         }
 
         public Select attributes(String... attributeNames) {
@@ -128,22 +125,16 @@ public class AssetQuery {
             return this;
         }
 
-        public Select excludeRealm(boolean exclude) {
-            this.excludeRealm = exclude;
-            return this;
-        }
-
         @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
-                ", excludeAttributes=" + excludeAttributes +
+                "excludeAttributes=" + excludeAttributes +
                 ", excludeAttributeMeta=" + excludeAttributeMeta +
                 ", excludeAttributeValue=" + excludeAttributeValue +
                 ", excludeAttributeTimestamp=" + excludeAttributeTimestamp +
                 ", excludeAttributeType=" + excludeAttributeType +
                 ", excludePath=" + excludePath +
                 ", excludeParentInfo=" + excludeParentInfo +
-                ", excludeRealm=" + excludeRealm +
                 ", attributeNames=" + Arrays.toString(attributes) +
                 '}';
         }
@@ -437,6 +428,7 @@ public class AssetQuery {
             ", attribute=" + (attributes != null ? attributes.toString() : "null" ) +
             ", attributeMeta=" + Arrays.toString(attributeMeta) +
             ", orderBy=" + orderBy +
+            ", recursive=" + recursive +
             '}';
     }
 }

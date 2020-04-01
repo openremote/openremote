@@ -22,6 +22,7 @@ import static org.openremote.model.attribute.AttributeEvent.Source.SENSOR
 
 class ResidenceAutoVentilationTest extends Specification implements ManagerContainerTrait {
 
+    @SuppressWarnings("GroovyAccessibility")
     def "Auto ventilation with CO2 detection"() {
 
         given: "the container environment is started"

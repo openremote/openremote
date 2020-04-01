@@ -119,6 +119,7 @@ public abstract class AbstractProtocol implements Protocol {
     protected TimerService timerService;
     protected ProtocolExecutorService executorService;
     protected ProtocolAssetService assetService;
+    protected ProtocolPredictedAssetService predictedAssetService;
 
     @Override
     public int getPriority() {
@@ -131,6 +132,7 @@ public abstract class AbstractProtocol implements Protocol {
         timerService = container.getService(TimerService.class);
         executorService = container.getService(ProtocolExecutorService.class);
         assetService = container.getService(ProtocolAssetService.class);
+        predictedAssetService = container.getService(ProtocolPredictedAssetService.class);
     }
 
     @Override

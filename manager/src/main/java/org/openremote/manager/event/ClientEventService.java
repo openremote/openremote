@@ -29,6 +29,7 @@ import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.socket.WebsocketConstants;
 import org.openremote.manager.concurrent.ManagerExecutorService;
+import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Constants;
 import org.openremote.model.event.shared.*;
@@ -39,6 +40,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
 
 import static org.apache.camel.builder.PredicateBuilder.or;
+import static org.openremote.manager.gateway.GatewayService.isGatewayClientId;
 
 /**
  * Receives and publishes messages, handles the client/server event bus.
@@ -105,6 +107,7 @@ public class ClientEventService implements ContainerService {
     protected MessageBrokerService messageBrokerService;
     protected ManagerIdentityService identityService;
     protected EventSubscriptions eventSubscriptions;
+    protected GatewayService gatewayService;
     protected boolean stopped;
 
     @Override
@@ -117,6 +120,7 @@ public class ClientEventService implements ContainerService {
         timerService = container.getService(TimerService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         identityService = container.getService(ManagerIdentityService.class);
+        gatewayService = container.getService(GatewayService.class);
 
         eventSubscriptions = new EventSubscriptions(
             container.getService(TimerService.class),
@@ -136,68 +140,83 @@ public class ClientEventService implements ContainerService {
                 from("websocket://" + WEBSOCKET_EVENTS)
                     .routeId("FromClientWebsocketEvents")
                     .choice()
-                    .when(header(WebsocketConstants.SESSION_OPEN))
-                    .process(exchange -> {
-                        String sessionKey = getSessionKey(exchange);
-                        sendToSession(sessionKey, "CONNECTED");
-                    })
-                    .stop()
+                        .when(header(WebsocketConstants.SESSION_OPEN))
+                            .process(exchange -> {
+                                String sessionKey = getSessionKey(exchange);
+                                sendToSession(sessionKey, "CONNECTED");
+                            })
+                            .choice()
+                            .when(exchange -> isGatewayClientId(getClientId(exchange)))
+                                .to(GatewayService.GATEWAY_EVENT_TOPIC)
+                            .endChoice()
+                            .stop()
                     .when(or(
                         header(WebsocketConstants.SESSION_CLOSE),
                         header(WebsocketConstants.SESSION_CLOSE_ERROR)
                     ))
-                    .process(exchange -> {
-                        String sessionKey = getSessionKey(exchange);
-                        eventSubscriptions.cancelAll(sessionKey);
-                    })
-                    .stop()
-                    .end()
-                    .choice()
+                        .process(exchange -> {
+                            String sessionKey = getSessionKey(exchange);
+                            eventSubscriptions.cancelAll(sessionKey);
+                        })
+                        .choice()
+                        .when(exchange -> isGatewayClientId(getClientId(exchange)))
+                            .to(GatewayService.GATEWAY_EVENT_TOPIC)
+                        .endChoice()
+                        .stop()
                     .when(bodyAs(String.class).startsWith(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX))
-                    .convertBodyTo(EventSubscription.class)
-                    .process(exchange -> {
-                        String sessionKey = getSessionKey(exchange);
-                        EventSubscription subscription = exchange.getIn().getBody(EventSubscription.class);
-                        AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-                        if (eventSubscriptionAuthorizers.stream()
-                            .anyMatch(authorizer -> authorizer.apply(authContext, subscription))) {
-                            boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId());
-                            eventSubscriptions.createOrUpdate(sessionKey, restrictedUser, subscription);
-                            sendToSession(sessionKey, subscription);
-                        } else {
-                            LOG.warning("Unauthorized subscription from '"
-                                + authContext.getUsername() + "' in realm '" + authContext.getAuthenticatedRealm()
-                                + "': " + subscription
-                            );
-                            sendToSession(sessionKey, new UnauthorizedEventSubscription(subscription));
-                        }
-                    })
+                        .convertBodyTo(EventSubscription.class)
+                        .process(exchange -> {
+                            String sessionKey = getSessionKey(exchange);
+                            EventSubscription subscription = exchange.getIn().getBody(EventSubscription.class);
+                            AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+                            if (eventSubscriptionAuthorizers.stream()
+                                .anyMatch(authorizer -> authorizer.apply(authContext, subscription))) {
+                                boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId());
+                                eventSubscriptions.createOrUpdate(sessionKey, restrictedUser, subscription);
+                                subscription.setSubscribed(true);
+                                sendToSession(sessionKey, subscription);
+                            } else {
+                                LOG.warning("Unauthorized subscription from '"
+                                    + authContext.getUsername() + "' in realm '" + authContext.getAuthenticatedRealm()
+                                    + "': " + subscription
+                                );
+                                sendToSession(sessionKey, new UnauthorizedEventSubscription(subscription));
+                            }
+                        })
+                        .stop()
                     .when(bodyAs(String.class).startsWith(CancelEventSubscription.MESSAGE_PREFIX))
-                    .convertBodyTo(CancelEventSubscription.class)
-                    .process(exchange -> {
-                        String sessionKey = getSessionKey(exchange);
-                        eventSubscriptions.cancel(sessionKey, exchange.getIn().getBody(CancelEventSubscription.class));
-                    })
+                        .convertBodyTo(CancelEventSubscription.class)
+                        .process(exchange -> {
+                            String sessionKey = getSessionKey(exchange);
+                            eventSubscriptions.cancel(sessionKey, exchange.getIn().getBody(CancelEventSubscription.class));
+                        })
+                        .stop()
                     .when(bodyAs(String.class).startsWith(RenewEventSubscriptions.MESSAGE_PREFIX))
-                    .convertBodyTo(RenewEventSubscriptions.class)
-                    .process(exchange -> {
-                        String sessionKey = getSessionKey(exchange);
-                        AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-                        boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId());
-                        eventSubscriptions.update(sessionKey, restrictedUser,exchange.getIn().getBody(RenewEventSubscriptions.class).getSubscriptionIds());
-                    })
+                        .convertBodyTo(RenewEventSubscriptions.class)
+                        .process(exchange -> {
+                            String sessionKey = getSessionKey(exchange);
+                            AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+                            boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId());
+                            eventSubscriptions.update(sessionKey, restrictedUser,exchange.getIn().getBody(RenewEventSubscriptions.class).getSubscriptionIds());
+                        })
+                        .stop()
                     .when(bodyAs(String.class).startsWith(SharedEvent.MESSAGE_PREFIX))
-                    .convertBodyTo(SharedEvent.class)
-                    .process(exchange -> {
-                        SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
-                        // If there is no timestamp in event, set to system time
-                        if (event.getTimestamp() <= 0) {
-                            event.setTimestamp(timerService.getCurrentTimeMillis());
-                        }
-                    })
-                    .to(ClientEventService.CLIENT_EVENT_TOPIC)
+                        .convertBodyTo(SharedEvent.class)
+                        .process(exchange -> {
+                            SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
+                            // If there is no timestamp in event, set to system time
+                            if (event.getTimestamp() <= 0) {
+                                event.setTimestamp(timerService.getCurrentTimeMillis());
+                            }
+                        })
+                        .choice()
+                            .when(exchange -> isGatewayClientId(getClientId(exchange)))
+                                .to(GatewayService.GATEWAY_EVENT_TOPIC)
+                            .otherwise()
+                                .to(ClientEventService.CLIENT_EVENT_TOPIC)
+                        .endChoice()
                     .otherwise()
-                    .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
+                        .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
                     .end();
 
                 from(ClientEventService.CLIENT_EVENT_QUEUE)
@@ -273,4 +292,8 @@ public class ClientEventService implements ContainerService {
             '}';
     }
 
+    public static String getClientId(Exchange exchange) {
+        AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+        return authContext.getClientId();
+    }
 }

@@ -19,8 +19,11 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.event.shared.EventFilter;
-import org.openremote.model.event.shared.SharedEventWithAssetId;
+import org.openremote.model.event.shared.AssetInfo;
+import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.Arrays;
 
@@ -30,42 +33,7 @@ import java.util.Arrays;
  * the {@link org.openremote.model.attribute.AttributeEvent}. When the cause is {@link Cause#READ} then the asset's
  * {@link org.openremote.model.attribute.Attribute}s will be included in the asset otherwise they are not.
  */
-public class AssetEvent extends SharedEventWithAssetId {
-
-    public static class AssetIdFilter<T extends SharedEventWithAssetId> extends EventFilter<T> {
-
-        public static final String FILTER_TYPE = "asset-id";
-
-        protected String[] assetIds = new String[0];
-
-        protected AssetIdFilter() {
-        }
-
-        public AssetIdFilter(String... assetIds) {
-            this.assetIds = assetIds;
-        }
-
-        public String[] getAssetIds() {
-            return assetIds;
-        }
-
-        @Override
-        public String getFilterType() {
-            return FILTER_TYPE;
-        }
-
-        @Override
-        public boolean apply(SharedEventWithAssetId event) {
-            return Arrays.asList(assetIds).contains(event.getEntityId());
-        }
-
-        @Override
-        public String toString() {
-            return getClass().getSimpleName() + "{" +
-                "assetIds='" + Arrays.toString(assetIds) + '\'' +
-                '}';
-        }
-    }
+public class AssetEvent extends SharedEvent implements AssetInfo {
 
     public enum Cause {
         CREATE,
@@ -78,8 +46,8 @@ public class AssetEvent extends SharedEventWithAssetId {
     protected Asset asset;
     protected String[] updatedProperties;
 
-
-    public AssetEvent(Cause cause, Asset asset, String[] updatedProperties) {
+    @JsonCreator
+    public AssetEvent(@JsonProperty("cause") Cause cause, @JsonProperty("asset") Asset asset, @JsonProperty("updatedProperties") String[] updatedProperties) {
         this.cause = cause;
         this.asset = asset;
         this.updatedProperties = updatedProperties;
@@ -87,6 +55,16 @@ public class AssetEvent extends SharedEventWithAssetId {
 
     public String getEntityId() {
         return asset.id;
+    }
+
+    @Override
+    public String getRealm() {
+        return asset.realm;
+    }
+
+    @Override
+    public String getParentId() {
+        return asset.parentId;
     }
 
     public Cause getCause() {

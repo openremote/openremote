@@ -399,7 +399,6 @@ export class OrInput extends LitElement {
                         }
     
                         this._selectedIndex = -1;
-    
                         return html`
                             <div id="component" class="mdc-select ${classMap(classesList)}" @MDCList:action="${(e: MDCListActionEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
                                 <ul class="mdc-list">

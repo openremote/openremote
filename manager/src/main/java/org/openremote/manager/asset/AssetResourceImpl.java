@@ -251,7 +251,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 asset,
                 storageAsset,
                 isRestrictedUser ? storageAsset.getName() : null, // TODO We could allow restricted users to update names?
-                isRestrictedUser ? storageAsset.getRealm() : null, // Restricted users can not change realm
+                storageAsset.getRealm(), // The realm can never change
                 isRestrictedUser ? storageAsset.getParentId() : null, // Restricted users can not change realm
                 storageAsset.getType(), // The type can never change
                 isRestrictedUser ? storageAsset.isAccessPublicRead() : null, // Restricted user can not change access public flag
@@ -527,7 +527,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(FORBIDDEN);
             }
 
-            if (!assetStorageService.delete(assetIds)) {
+            if (!assetStorageService.delete(assetIds, false)) {
                 throw new WebApplicationException(BAD_REQUEST);
             }
         } catch (IllegalStateException ex) {

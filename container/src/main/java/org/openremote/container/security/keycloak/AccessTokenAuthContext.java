@@ -51,6 +51,11 @@ public class AccessTokenAuthContext implements AuthContext {
     }
 
     @Override
+    public String getClientId() {
+        return accessToken.getIssuedFor();
+    }
+
+    @Override
     public boolean hasRealmRole(String role) {
         return accessToken.getRealmAccess().isUserInRole(role);
     }

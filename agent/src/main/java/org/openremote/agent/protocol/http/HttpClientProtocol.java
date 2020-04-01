@@ -164,7 +164,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         public String method;
         public MultivaluedMap<String, String> headers;
         public MultivaluedMap<String, String> queryParameters;
-        protected String path;
+        public String path;
         protected List<Integer> failureCodes;
         protected String contentType;
         protected WebTarget client;
@@ -402,7 +402,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             null);
 
     /**
-     * Ping frequency in seconds (integer default: {@value #DEFAULT_PING_MILLIS})
+     * Ping frequency in milliseconds (integer default: {@value #DEFAULT_PING_MILLIS})
      */
     public static final MetaItemDescriptor META_PROTOCOL_PING_MILLIS = metaItemInteger(
             PROTOCOL_NAME + ":pingMillis",
@@ -1137,7 +1137,7 @@ public class HttpClientProtocol extends AbstractProtocol {
     }
 
     protected void executePollingRequest(HttpClientRequest clientRequest, String body, Consumer<Response> responseConsumer) {
-        Response originalResponse, lastResponse;
+        Response originalResponse = null, lastResponse = null;
         List<String> entities = new ArrayList<>();
 
         try {
@@ -1154,6 +1154,12 @@ public class HttpClientProtocol extends AbstractProtocol {
             responseConsumer.accept(originalResponse);
         } catch (Exception e) {
             LOG.log(Level.WARNING, getProtocolDisplayName() + " exception thrown whilst doing polling request [" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: " + clientRequest.requestTarget.getUriBuilder().build().toString());
+            if (originalResponse != null) {
+                originalResponse.close();
+            }
+            if (lastResponse != null) {
+                lastResponse.close();
+            }
         }
     }
 

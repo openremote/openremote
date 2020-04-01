@@ -19,13 +19,11 @@
  */
 package org.openremote.agent.protocol.http;
 
+import org.jboss.resteasy.util.BasicAuthHelper;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.client.*;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -43,7 +41,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 public class OAuthFilter implements ClientRequestFilter {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, OAuthFilter.class);
-    public static final String AUTH_TYPE = "Bearer";
+    public static final String BEARER_AUTH = "Bearer";
     protected OAuthServerResponse authServerResponse;
     protected WebTarget authTarget;
     protected OAuthGrant oAuthGrant;
@@ -59,7 +57,7 @@ public class OAuthFilter implements ClientRequestFilter {
         String accessToken = getAccessToken();
 
         if (!TextUtil.isNullOrEmpty(accessToken)) {
-            return AUTH_TYPE + " " + accessToken;
+            return BEARER_AUTH + " " + accessToken;
         }
 
         return null;
@@ -121,9 +119,13 @@ public class OAuthFilter implements ClientRequestFilter {
     }
 
     protected Response requestToken() {
-        return authTarget
-            .request(MediaType.APPLICATION_JSON_TYPE)
-            .post(Entity.entity(new Form(oAuthGrant.valueMap), MediaType.APPLICATION_FORM_URLENCODED_TYPE));
+        Invocation.Builder builder = authTarget
+            .request(MediaType.APPLICATION_JSON_TYPE);
+
+        if (oAuthGrant.isBasicAuthHeader()) {
+            builder.header(HttpHeaders.AUTHORIZATION, BasicAuthHelper.createHeader(oAuthGrant.getClientId(), oAuthGrant.getClientSecret()));
+        }
+        return builder.post(Entity.entity(new Form(oAuthGrant.valueMap), MediaType.APPLICATION_FORM_URLENCODED_TYPE));
     }
 
     @Override

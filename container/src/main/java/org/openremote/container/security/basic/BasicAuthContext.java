@@ -60,6 +60,11 @@ public class BasicAuthContext implements AuthContext, Principal {
     }
 
     @Override
+    public String getClientId() {
+        return null;
+    }
+
+    @Override
     public boolean hasRealmRole(String role) {
         return true;
     }

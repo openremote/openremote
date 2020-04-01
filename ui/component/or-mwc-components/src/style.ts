@@ -14,7 +14,7 @@ export const orInputStyle = css`
         --mdc-theme-on-primary: var(--internal-or-input-text-color);
         --mdc-theme-secondary: var(--internal-or-input-color);
     }
-       
+
     .or-input--rounded {
         border-radius: 50% !important;
     }

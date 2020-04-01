@@ -78,7 +78,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "an agent filtering query is executed"
         def assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .select(Select.selectExcludePathAndParentAndRealm())
+                        .select(Select.selectExcludePathAndParentInfo())
                         .types(AssetType.AGENT)
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
         )
@@ -88,10 +88,10 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[0].id == managerDemoSetup.agentId
         assets[0].name == "Demo Agent"
         assets[0].type == AssetType.AGENT.getType()
-        assets[0].parentId == null
+        assets[0].parentId == managerDemoSetup.lobbyId
         assets[0].parentName == null
         assets[0].parentType == null
-        assets[0].realm == null
+        assets[0].realm == managerDemoSetup.masterRealm
         assets[0].path == null
 
         when: "a user filtering query is executed that returns only IDs, names and attribute names and label meta"
@@ -178,10 +178,10 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[1].name == "Apartment 1"
         assets[1].type == AssetType.RESIDENCE.getType()
         assets[1].createdOn != null
-        assets[1].parentId == null
+        assets[1].parentId == managerDemoSetup.smartBuildingId
         assets[1].parentName == null
         assets[1].parentType == null
-        assets[1].realm == null
+        assets[1].realm == managerDemoSetup.realmBuildingTenant
         assets[1].path == null
         assets[1].getAttributesList().size() == 7
         assets[1].getAttribute("ventilationAuto").isPresent()
@@ -671,7 +671,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed to select an asset with multiple attribute predicates 'ANDED'"
         asset = assetStorageService.find(
-                new AssetQuery().select(Select.selectExcludePathAndParentAndRealm()).attributes(
+                new AssetQuery().select(Select.selectExcludePathAndParentInfo()).attributes(
                         new AttributePredicate(
                                 new StringPredicate("windowOpen"), new BooleanPredicate(false)
                         ),
@@ -690,7 +690,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed to select an asset with multiple attribute predicates 'ANDED' where one predicate is false"
         asset = assetStorageService.find(
-            new AssetQuery().select(Select.selectExcludePathAndParentAndRealm()).attributes(
+            new AssetQuery().select(Select.selectExcludePathAndParentInfo()).attributes(
                 new AttributePredicate(
                     new StringPredicate("windowOpen"), new BooleanPredicate(false)
                 ),
@@ -705,7 +705,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed to select an asset with multiple logic groups"
         asset = assetStorageService.find(
-            new AssetQuery().select(Select.selectExcludePathAndParentAndRealm()).attributes(
+            new AssetQuery().select(Select.selectExcludePathAndParentInfo()).attributes(
                 new LogicGroup<AttributePredicate>(LogicGroup.Operator.AND, [
                     new AttributePredicate(
                         new StringPredicate("windowOpen"), new BooleanPredicate(false)
@@ -732,7 +732,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed to select an asset with multiple logic groups where one of the groups is false"
         asset = assetStorageService.find(
-            new AssetQuery().select(Select.selectExcludePathAndParentAndRealm()).attributes(
+            new AssetQuery().select(Select.selectExcludePathAndParentInfo()).attributes(
                 new LogicGroup<AttributePredicate>(LogicGroup.Operator.AND, [
                     new AttributePredicate(
                         new StringPredicate("windowOpen"), new BooleanPredicate(false)
@@ -887,7 +887,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a calendar event filtering query is executed for the correct date and time of the event"
         def assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new Select().excludePath(true).excludeRealm(true).excludeAttributeMeta(true)) // Need attributes to do calendar filtering
+                .select(new Select().excludePath(true).excludeAttributeMeta(true)) // Need attributes to do calendar filtering
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                 .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517155200000)))) // 30/01/2018 @ 6:00pm (UTC)
                 .orderBy(new OrderBy(NAME))

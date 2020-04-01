@@ -40,7 +40,6 @@ export const subscribeAssets: ActionCreator<ThunkResult> = () => async (dispatch
         const result = await manager.rest.api.AssetResource.queryAssets({
             select: {
                 excludeAttributes: true,
-                excludeRealm: true,
                 excludeParentInfo: true,
                 excludePath: true
             }

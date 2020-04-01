@@ -23,12 +23,17 @@ import com.devskiller.friendly_id.Url62;
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.NameBasedGenerator;
 import com.fasterxml.uuid.impl.RandomBasedGenerator;
+import org.apache.james.mime4j.util.CharsetUtil;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
 import org.openremote.model.IdentifiableEntity;
 
 import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.nio.charset.Charset;
+import java.util.UUID;
 
 /**
  * Generate a globally unique identifier value.
@@ -38,8 +43,9 @@ import java.io.Serializable;
  */
 public class UniqueIdentifierGenerator implements IdentifierGenerator {
 
+    static final protected String macAddress = generateMacAddressString();
     static final protected RandomBasedGenerator randomGenerator = Generators.randomBasedGenerator();
-    static final protected NameBasedGenerator nameGenerator = Generators.nameBasedGenerator();
+    static final protected NameBasedGenerator nameGenerator = Generators.nameBasedGenerator(UUID.nameUUIDFromBytes(macAddress.getBytes(CharsetUtil.UTF_8)));
 
     @Override
     public Serializable generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
@@ -59,7 +65,8 @@ public class UniqueIdentifierGenerator implements IdentifierGenerator {
     }
 
     /**
-     * Generates the same UUID value encoded as Base62, 22 characters long, if the name is the same.
+     * Generates the same UUID for the current system value encoded as Base62, 22 characters long, if the name is the same.
+     * The UUID is namespaced with the MAC address of the host to provide a level of variability for multiple deployments.
      */
     public static String generateId(String name) {
         return Url62.encode(nameGenerator.generate(name));
@@ -70,5 +77,25 @@ public class UniqueIdentifierGenerator implements IdentifierGenerator {
      */
     public static String generateId(byte[] bytes) {
         return Url62.encode(nameGenerator.generate(bytes));
+    }
+
+    public static String getMacAddress() {
+        return macAddress;
+    }
+
+    protected static String generateMacAddressString() {
+        try {
+            final InetAddress ip = InetAddress.getLocalHost();
+            final NetworkInterface network = NetworkInterface.getByInetAddress(ip);
+
+            byte[] macAddress = network.getHardwareAddress();
+            StringBuilder sb = new StringBuilder();
+            for (byte address : macAddress) {
+                sb.append(String.format("%02X", (address & 0xFF)));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "000000000000";
+        }
     }
 }

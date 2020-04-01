@@ -25,6 +25,7 @@ import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.openremote.container.Container;
 import org.openremote.container.security.AuthForm;
+import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.security.TenantEmailConfig;
@@ -37,11 +38,6 @@ import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.model.Constants.*;
 
 public abstract class AbstractKeycloakSetup implements Setup {
-
-    // We use this client ID to access Keycloak because by default it allows obtaining
-    // an access token from authentication directly, which gives us full access to import/delete
-    // demo data as needed.
-    public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
 
     public static final String SETUP_ADMIN_PASSWORD = "SETUP_ADMIN_PASSWORD";
     public static final String SETUP_ADMIN_PASSWORD_DEFAULT = "secret";
@@ -93,7 +89,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
         // Use direct access grant feature of Keycloak Admin CLI to get superuser access token
         String keycloakAdminPassword = container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT);
         this.accessToken = keycloakProvider.getKeycloak().getAccessToken(
-            MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, keycloakAdminPassword)
+            MASTER_REALM, new AuthForm(KeycloakIdentityProvider.ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, keycloakAdminPassword)
         ).getToken();
 
         masterRealmResource = keycloakProvider.getRealms(accessToken).realm(MASTER_REALM);

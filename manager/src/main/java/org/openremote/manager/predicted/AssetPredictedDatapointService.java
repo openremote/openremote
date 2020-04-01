@@ -21,6 +21,7 @@ package org.openremote.manager.predicted;
 
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
+import org.openremote.agent.protocol.ProtocolPredictedAssetService;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -47,7 +48,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-public class AssetPredictedDatapointService implements ContainerService {
+public class AssetPredictedDatapointService implements ContainerService, ProtocolPredictedAssetService {
 
     private static final Logger LOG = Logger.getLogger(AssetPredictedDatapointService.class.getName());
 

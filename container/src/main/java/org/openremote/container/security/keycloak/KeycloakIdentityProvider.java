@@ -66,6 +66,12 @@ import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 
 public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
+    // We use this client ID to access Keycloak because by default it allows obtaining
+    // an access token from authentication directly, which gives us full access to import/delete
+    // demo data as needed.
+    public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
+
+
 // TODO: Below is here ready for Resteasy 4.x but their maven packages are a mess at the moment
 //    protected static class EngineBuilder extends ClientHttpEngineBuilder43 {
 //

@@ -151,5 +151,5 @@ public interface ProtocolAssetService extends ContainerService {
     /**
      * Apply the specified set of {@link ValueFilter}s to the specified {@link Value}
      */
-    Value applyValueFilters(Value value, ValueFilter... filters);
+    Value applyValueFilters(Value value, ValueFilter<?>... filters);
 }
