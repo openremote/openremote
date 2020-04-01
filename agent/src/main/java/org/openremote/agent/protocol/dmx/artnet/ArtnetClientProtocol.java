@@ -302,7 +302,17 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
 
     private List<ArtnetLight> parseArtnetLightsFromImport(JsonNode jsonNode) {
         JsonNode lightsNode = jsonNode.get("lights");
-        return null;
+        List<ArtnetLight> parsedLights = new ArrayList<>();
+        for(JsonNode lightNode : lightsNode) {
+            int lightId = lightNode.get("lightId").asInt();
+            int groupId = lightNode.get("groupId").asInt();
+            int universe = lightNode.get("universe").asInt();
+            int amountOfLeds = lightNode.get("amountOfLeds").asInt();
+            String[] requiredValues = lightNode.get("requiredValues").asText().split(",");
+            ArtnetLight light = new ArtnetLight(lightId, groupId, universe, amountOfLeds, requiredValues);
+            parsedLights.add(light);
+        }
+        return parsedLights;
     }
 
 
