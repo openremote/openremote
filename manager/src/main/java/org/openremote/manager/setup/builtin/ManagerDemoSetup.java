@@ -268,11 +268,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         //Art-Net Setup
         //SETUP MAIN ARTNET-ASSET UNDER MASTER ASSET
-        Asset artNetArea = new Asset();
-        artNetArea.setRealm(masterTenant.getRealm());
-        artNetArea.setName("ArtNet Area 1");
-        artNetArea.setType(AGENT);
-        artNetArea.addAttributes(
+        Asset artNetAgent = new Asset();
+        artNetAgent.setRealm(masterTenant.getRealm());
+        artNetAgent.setName("ArtNet Agent");
+        artNetAgent.setType(AGENT);
+        artNetAgent.addAttributes(
                 initProtocolConfiguration(new AssetAttribute(agentProtocolConfigName), ArtnetClientProtocol.PROTOCOL_NAME)
                         .addMeta(
                                 new MetaItem(
@@ -282,41 +282,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                 new MetaItem(
                                         ArtnetClientProtocol.META_PROTOCOL_PORT,
                                         Values.create(6454)
-                                ),
-                                new MetaItem(
-                                        ArtnetClientProtocol.META_ARTNET_CONFIGURATION,
-                                        Values.createObject().putAll(new HashMap<String, Value>() {{
-                                            put("protocolPrefix", Values.create("test"));
-                                            put("lights", Values.createArray()
-                                            .add(Values.createObject().putAll(new HashMap<String, Value>() {{
-                                                put("lightId", Values.create(0));
-                                                put("groupId", Values.create(0));
-                                                put("universe", Values.create(0));
-                                                put("amountOfLeds", Values.create(3));
-                                                put("requiredValues", Values.create("g,r,b,w"));
-                                            }}))
-                                            .add(
-                                            Values.createObject().putAll(new HashMap<String, Value>() {{
-                                                put("lightId", Values.create(2));
-                                                put("groupId", Values.create(0));
-                                                put("universe", Values.create(0));
-                                                put("amountOfLeds", Values.create(3));
-                                                put("requiredValues", Values.create("g,r,b,w"));
-                                            }})).add(
-                                            Values.createObject().putAll(new HashMap<String, Value>() {{
-                                                put("lightId", Values.create(1));
-                                                put("groupId", Values.create(0));
-                                                put("universe", Values.create(1));
-                                                put("amountOfLeds", Values.create(3));
-                                                put("requiredValues", Values.create("g,r,b,w"));
-                                            }})));
-                                        }}))));
-        artNetArea = assetStorageService.merge(artNetArea);
+                                )));
+        artNetAgent = assetStorageService.merge(artNetAgent);
 
         //SETUP LIGHT-ASSETS UNDER AREA
         for(int i = 0; i <= 1; i++) {
             Asset artNetLight = new Asset();
-            artNetLight.setParent(artNetArea);
+            artNetLight.setParent(artNetAgent);
             artNetLight.setName("ArtNet Light " + i);
             artNetLight.setType(THING);
             List<AssetAttribute> artNetLightAttributes = Arrays.asList(
@@ -326,13 +298,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new AssetAttribute("AmountOfLeds", NUMBER, Values.create(3)).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
                     new AssetAttribute("RequiredValues", STRING, Values.create("g,r,b,w")).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
                     new AssetAttribute("Values", OBJECT, Values.parseOrNull(ARTNET_DEFAULT_LIGHT_STATE)).addMeta(
-                            new MetaItem(AGENT_LINK, new AttributeRef(artNetArea.getId(), agentProtocolConfigName).toArrayValue())
+                            new MetaItem(AGENT_LINK, new AttributeRef(artNetAgent.getId(), agentProtocolConfigName).toArrayValue())
                     ),
                     new AssetAttribute("Switch", BOOLEAN, Values.create(true)).addMeta(
-                            new MetaItem(AGENT_LINK, new AttributeRef(artNetArea.getId(), agentProtocolConfigName).toArrayValue())
+                            new MetaItem(AGENT_LINK, new AttributeRef(artNetAgent.getId(), agentProtocolConfigName).toArrayValue())
                     ),
                     new AssetAttribute("Dim", NUMBER, Values.create(100)).addMeta(
-                            new MetaItem(AGENT_LINK, new AttributeRef(artNetArea.getId(), agentProtocolConfigName).toArrayValue())
+                            new MetaItem(AGENT_LINK, new AttributeRef(artNetAgent.getId(), agentProtocolConfigName).toArrayValue())
                     )
             );
             artNetLight.setAttributes(artNetLightAttributes);

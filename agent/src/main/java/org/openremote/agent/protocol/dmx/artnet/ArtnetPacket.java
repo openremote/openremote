@@ -11,7 +11,11 @@ import java.util.List;
 
 public class ArtnetPacket {
 
-    private byte[] prefix = { 65, 114, 116, 45, 78, 101, 116, 0, 0, 80, 0, 14 };
+    private byte[] PREFIX = { 65, 114, 116, 45, 78, 101, 116, 0, 0, 80, 0, 14 };
+    private byte SEQUENCE = 0;
+    private byte PHYSICAL = 0;
+    private byte DUMMY_LENGTH_HI = 0;
+    private byte DUMMY_LENGTH_LO = 0;
 
     private int universe;
     private List<ArtnetLight> lights;
@@ -32,19 +36,19 @@ public class ArtnetPacket {
 
     private void writePrefix(ByteBuf buf, int universe)
     {
-        buf.writeBytes(prefix);
-        buf.writeByte(0); // Sequence
-        buf.writeByte(0); // Physical
+        buf.writeBytes(PREFIX);
+        buf.writeByte(SEQUENCE);
+        buf.writeByte(PHYSICAL);
         buf.writeByte((universe >> 8) & 0xff);
         buf.writeByte(universe & 0xff);
-        buf.writeByte(0); // dummy length hi
-        buf.writeByte(0); // dummy length lo
+        buf.writeByte(DUMMY_LENGTH_HI);
+        buf.writeByte(DUMMY_LENGTH_LO);
     }
 
     // Required as we do not know how many light ids we will need to send
     private void updateLength(ByteBuf buf)
     {
-        int len_idx = prefix.length + 4;
+        int len_idx = PREFIX.length + 4;
         int len = buf.writerIndex() - len_idx - 2;
         buf.setByte(len_idx, (len >> 8) & 0xff);
         buf.setByte(len_idx+1, len & 0xff);

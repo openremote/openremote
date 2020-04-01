@@ -1,24 +1,17 @@
 package org.openremote.agent.protocol.dmx.artnet;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
-import javassist.bytecode.AttributeInfo;
-import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
 import org.openremote.agent.protocol.dmx.AbstractArtnetClientProtocol;
 import org.openremote.agent.protocol.dmx.AbstractArtnetLight;
 import org.openremote.agent.protocol.dmx.AbstractArtnetLightState;
 import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
 import org.openremote.agent.protocol.io.AbstractNettyIoClient;
-import org.openremote.agent.protocol.udp.AbstractUdpClientProtocol;
 import org.openremote.agent.protocol.udp.UdpIoClient;
-import org.openremote.container.Container;
 import org.openremote.container.util.CodecUtil;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
@@ -27,16 +20,12 @@ import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.*;
 import org.openremote.model.file.FileInfo;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.*;
-
-import java.io.IOException;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.logging.Logger;
 
 import static org.openremote.container.util.Util.joinCollections;
 import static org.openremote.model.Constants.MASTER_REALM;
@@ -48,7 +37,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPacket> implements ProtocolLinkedAttributeImport {
 
-    private static final String PROTOCOL_VERSION = "1.69";
+    private static final String PROTOCOL_VERSION = "1.70";
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":artnet";
     public static final String PROTOCOL_DISPLAY_NAME = "Artnet Client";
@@ -80,7 +69,6 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
 
     protected final Map<AttributeRef, List<Pair<AttributeRef, Consumer<ArtnetPacket>>>> protocolMessageConsumers = new HashMap<>();
 
-    //MEMORY STORAGE OF ALL THE LIGHTS WITH THEIR CORRESPONDING STATES
     private HashMap<Integer, List<AbstractArtnetLight>> artnetLightMemory = new HashMap<Integer, List<AbstractArtnetLight>>();
 
     @Override
@@ -181,6 +169,12 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
     @Override
     protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         AttributeRef attributeRef = attribute.getReferenceOrThrow();
+        Asset parentAsset = assetService.findAsset(getLinkedAttribute(attribute.getReference().get()).getAssetId().get());
+        //THIS NOW RELIES ON ALWAYS HAVING THE FOLLOWING ATTRIBUTES IN THE SAME LEVEL
+        Integer lightId = parentAsset.getAttribute("Id").get().getValueAsInteger().get();
+        Integer universe = parentAsset.getAttribute("Universe").get().getValueAsInteger().get();
+        if(artnetLightMemory.get(universe).stream().anyMatch(light -> light.getLightId() == lightId))
+            artnetLightMemory.get(universe).remove(artnetLightMemory.get(universe).stream().filter(light -> light.getLightId() == lightId).findFirst().get());
         synchronized (protocolMessageConsumers) {
             protocolMessageConsumers.compute(protocolConfiguration.getReferenceOrThrow(), (ref, consumers) -> {
                 if (consumers != null) {
@@ -189,12 +183,7 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
                 return consumers;
             });
         }
-        Asset parentAsset = assetService.findAsset(getLinkedAttribute(attribute.getReference().get()).getAssetId().get());
-        //THIS NOW RELIES ON ALWAYS HAVING THE FOLLOWING ATTRIBUTES IN THE SAME LEVEL
-        Integer lightId = parentAsset.getAttribute("Id").get().getValueAsInteger().get();
-        Integer universe = parentAsset.getAttribute("Universe").get().getValueAsInteger().get();
-        if(artnetLightMemory.get(universe).stream().anyMatch(light -> light.getLightId() == lightId))
-            artnetLightMemory.get(universe).remove(artnetLightMemory.get(universe).stream().filter(light -> light.getLightId() == lightId).findFirst().get());
+
     }
 
     @Override
