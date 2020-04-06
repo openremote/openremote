@@ -238,10 +238,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 </div>
                 <div id="container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
                     ${html`${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
-            const panelTemplate = OrAssetViewer.getPanel(name, this.asset!, this._attributes!, this._viewerConfig!, panelConfig, this.shadowRoot);
-            return panelTemplate || ``;
-        })}`
-            }
+                        const panelTemplate = OrAssetViewer.getPanel(name, this.asset!, this._attributes!, this._viewerConfig!, panelConfig, this.shadowRoot);
+                        return panelTemplate || ``;
+                    })}`}
                 </div>
             </div>
         `;
