@@ -41,15 +41,11 @@ services:
     extends:
       file: deploy.yml
       service: keycloak
-    build:
-      context: ../keycloak
-      dockerfile: dev.Dockerfile
-    image: openremote/keycloak_dev:${DATE_TAG:-latest}
     # Access directly if needed on localhost
     ports:
       - "8081:8080"
     volumes:
-      - ../ui/keycloak/themes/openremote:/opt/jboss/keycloak/themes/openremote
+      - ../ui/keycloak/themes:/opt/jboss/keycloak/themes
     depends_on:
       postgresql:
         condition: service_healthy
