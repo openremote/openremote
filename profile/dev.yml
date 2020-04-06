@@ -32,6 +32,8 @@ services:
       # Need to map GWT manager client into container when in dev mode
       - ../client:/opt/app/client
     environment:
+      IDENTITY_NETWORK_WEBSERVER_PORT: 8080
+      IDENTITY_NETWORK_SECURE: 'false'
       # Always wipe and enable dev optimizations
       DEV_MODE: 'true'
       # This switch can wipe all your Manager and Keycloak data, this is the factory reset!
@@ -45,7 +47,7 @@ services:
     ports:
       - "8081:8080"
     volumes:
-      - ../ui/keycloak/themes:/opt/jboss/keycloak/themes
+      - ../ui/keycloak/themes:/deployment/keycloak/themes
     depends_on:
       postgresql:
         condition: service_healthy
