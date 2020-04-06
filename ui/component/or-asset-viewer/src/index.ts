@@ -29,7 +29,7 @@ import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
 
-export type PanelType = "property" | "location" | "attribute" | "history" | "chart";
+export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group";
 
 export interface PanelConfig {
     type?: PanelType;
@@ -651,6 +651,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 config.historyConfig = assetConfig.historyConfig || this.config.historyConfig;
             }
         }
+        config.panels.group = {
+            type: "group",
+            hideOnMobile: true,
+            panelStyles: {gridColumn: "2 / -1"}
+        };
         return config;
     }
 
