@@ -518,6 +518,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     ` : ``}                    
                 `;
             }
+        } else if (panelConfig && panelConfig.type === "group") {
+
+            content = html`
+                test
+            `;
         } else {
             content = html`
                 ${attrs.sort((attr1, attr2) => attr1.name! < attr2.name! ? -1 : attr1.name! > attr2.name! ? 1 : 0).map((attr) => {
