@@ -10,6 +10,7 @@ import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 import "@openremote/or-map";
 import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import "@openremote/or-panel";
+import "@openremote/or-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
 import {Type as MapType, Util as MapUtil} from "@openremote/or-map";
@@ -522,6 +523,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
             content = html`
                 test
+                <or-table></or-table> 
             `;
         } else {
             content = html`
