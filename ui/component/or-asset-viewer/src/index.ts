@@ -98,6 +98,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         },
         panels: {
+            "underlying assets": {
+                type: "group",
+                panelStyles: {gridColumn: "2 / -1"}
+            },
             "info": {
                 type: "attribute",
                 hideOnMobile: true,
@@ -650,11 +654,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 config.historyConfig = assetConfig.historyConfig || this.config.historyConfig;
             }
         }
-        config.panels.group = {
-            type: "group",
-            hideOnMobile: true,
-            panelStyles: {gridColumn: "2 / -1"}
-        };
         return config;
     }
 
