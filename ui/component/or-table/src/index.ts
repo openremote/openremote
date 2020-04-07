@@ -1,7 +1,6 @@
 import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult, unsafeCSS, query} from "lit-element";
 import {classMap} from "lit-html/directives/class-map";
 import {ifDefined} from "lit-html/directives/if-defined";
-import {MDCComponent} from "@material/base";
 import {MDCDataTable } from "@material/data-table";
 
 import {DefaultColor1, DefaultColor4, DefaultColor8} from "@openremote/core";
@@ -141,24 +140,8 @@ export class OrTable extends LitElement {
     //
     // @property({type: String})
     // public label?: string;
-
-    /* TEXT INPUT STYLES END */
-
-    protected _mdcComponent?: MDCComponent<any>;
-    protected _mdcField?: MDCComponent<any>;
-    protected _selectedIndex = -1;
-
-    disconnectedCallback(): void {
-        super.disconnectedCallback();
-        if (this._mdcComponent) {
-            this._mdcComponent.destroy();
-            this._mdcComponent = undefined;
-        }
-        if (this._mdcField) {
-            this._mdcField.destroy();
-            this._mdcField = undefined;
-        }
-    }
+    //
+    // /* TEXT INPUT STYLES END */
 
     protected render() {
 

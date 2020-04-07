@@ -329,6 +329,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     public static getPanelContent(panelName: string, asset: Asset, attributes: AssetAttribute[], viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, shadowRoot: ShadowRoot | null): TemplateResult | undefined {
+        console.log(panelConfig);
         if (panelConfig.hide || attributes.length === 0) {
             return;
         }
@@ -336,7 +337,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         if (viewerConfig.panelViewProvider) {
             const template = viewerConfig.panelViewProvider(attributes, panelName, viewerConfig, panelConfig);
             if (template) {
-                return template;
+                return template; 
             }
         }
 
@@ -365,7 +366,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         //         return prop === "attributes" ? `` : OrAssetViewer.getField(prop, true, style, OrAssetViewer.getPropertyTemplate(prop, (asset as { [index: string]: any })[prop], viewerConfig, panelConfig, shadowRoot));
         //     })}
         //     `;
-        // } else 
+        // } else
         if (panelConfig && panelConfig.type === "history") {
             // Special handling for history panel which shows an attribute selector and a graph/data table of historical values
             const historyAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
@@ -387,15 +388,15 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         }
                     }
                 };
-               
-               
+
+
                 const options = historyAttrs.map((attr) => {
                     const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attr.name!);
                     let label = Util.getAttributeLabel(attr, attributeDescriptor);
                     let unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
                     if(unit) {
                         label = label + " ("+i18next.t(unit)+")";
-                    } 
+                    }
                     return [attr.name, label]
                 });
                 const attrName: string = historyAttrs[0].name!;
@@ -472,7 +473,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     if (shadowRoot) {
 
                         if (attribute) {
-                           
+
                             if(asset.id && asset.attributes && asset.attributes.location){
 
                                 const showOnMapMeta = Util.getFirstMetaItem(attribute, MetaItemType.SHOW_ON_DASHBOARD.urn!);
@@ -494,7 +495,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                                 if (response.status !== 200) {
                                 }
                             }
-                    
+
 
                         }
                     }
@@ -521,6 +522,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
         } else if (panelConfig && panelConfig.type === "group") {
 
+            console.log(panelConfig);
             content = html`
                 test
                 <or-table></or-table> 
