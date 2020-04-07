@@ -201,7 +201,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
             new AbstractRenderer<AssetDescriptor>() {
                 @Override
                 public String render(AssetDescriptor assetType) {
-                    return assetType != null ? environment.getMessages().assetTypeLabel(assetType.getName()) : "";
+                    return assetType == null ? "" : environment.getMessages().assetTypeLabel(assetType.getName()).equals("") ? assetType.getName()  : environment.getMessages().assetTypeLabel(assetType.getName());
                 }
             }
         );
@@ -449,7 +449,9 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         if (assetType == null) {
             headline.setSub(type);
         } else {
-            headline.setSub(managerMessages.assetTypeLabel(assetType.getName()));
+            headline.setSub(
+                managerMessages.assetTypeLabel(assetType.getName()).equals("") ? assetType.getName() : managerMessages.assetTypeLabel(assetType.getName())
+            );
         }
     }
 
