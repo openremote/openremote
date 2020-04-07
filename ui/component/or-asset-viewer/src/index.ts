@@ -337,7 +337,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         if (viewerConfig.panelViewProvider) {
             const template = viewerConfig.panelViewProvider(attributes, panelName, viewerConfig, panelConfig);
             if (template) {
-                return template; 
+                return template;
             }
         }
 
