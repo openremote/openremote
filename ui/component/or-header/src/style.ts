@@ -115,13 +115,11 @@ export const style = css`
         }
 
         #mobile-bottom {
+            border-top: 1px solid var(--internal-or-header-drawer-separator-color);
             margin-top: 20px;
+            padding-top: 10px;
         }
-                        
-        #mobile-bottom.has-children {
-            border-top: 2px solid var(--internal-or-header-drawer-separator-color);
-        }
-         
+      
         .menu-item {
             opacity: 0.7;
             cursor: pointer;
@@ -133,6 +131,7 @@ export const style = css`
 
         
         
+        .menu-item:hover,
         .menu-item[selected] {
             opacity: 1;
         }
@@ -157,7 +156,11 @@ export const style = css`
             display: inline-block;
             line-height: var(--internal-or-header-height);
         }
-        
+
+        or-mwc-menu {
+            margin-right: 10px;
+            display: block;
+        }
       
         /* Wide layout: when the viewport width is bigger than 780px, layout
         changes to a wide layout. */
@@ -168,15 +171,7 @@ export const style = css`
                 display: block;
             }
 
-            #logo {
-                margin: var(--internal-or-header-logo-margin);
-                height: var(--internal-or-header-logo-height);
-                display: block;
-            }
-
-            #logo-mobile {
-                display: none;
-            }
+          
 
             #menu-btn-mobile {
                 display: none;
@@ -205,6 +200,16 @@ export const style = css`
         }
         
         @media (min-width: 1024px) {
+            #logo {
+                margin: var(--internal-or-header-logo-margin);
+                height: var(--internal-or-header-logo-height);
+                display: block;
+            }
+
+            #logo-mobile {
+                display: none;
+            }
+
             #desktop-left .menu-item or-icon{
                 display: inline-block;
             }

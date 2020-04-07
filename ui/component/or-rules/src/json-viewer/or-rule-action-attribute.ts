@@ -47,8 +47,10 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
 
     public readonly?: boolean;
 
+    @property({type: Object})
     public config?: RulesConfig;
 
+    @property({type: Object})
     public assetDescriptors?: AssetDescriptor[];
 
     @property({type: Array, attribute: false})

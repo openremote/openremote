@@ -106,5 +106,7 @@
   "wait": "Espere",
   "history": "Historia",
   "attributes": "Atributos",
-  "info": "Informacion"
+  "info": "Informacion",
+  "logs":"Logs",
+  "choose_lang":"Choose language"
 }
