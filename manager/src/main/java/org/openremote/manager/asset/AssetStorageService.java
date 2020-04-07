@@ -36,6 +36,7 @@ import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.rules.AssetQueryPredicate;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
@@ -424,9 +425,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public Asset merge(Asset asset, boolean overrideVersion, boolean skipGatewayCheck, String userName) {
         return persistenceService.doReturningTransaction(em -> {
 
+            Asset existing = null;
+
             if (asset.getId() != null) {
 
-                Asset existing = em.find(Asset.class, asset.getId());
+                existing = em.find(Asset.class, asset.getId());
 
                 // Verify type has not been changed
                 if (existing != null && !existing.getType().equals(asset.getType())) {
@@ -449,9 +452,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             if (asset.getParentId() != null) {
                 // If this is a not a root asset...
                 Asset parent = find(em, asset.getParentId(), true);
+
                 // .. the parent must exist
                 if (parent == null)
                     throw new IllegalStateException("Parent not found: " + asset.getParentId());
+
                 // ... the parent can not be a child of the asset
                 if (parent.pathContains(asset.getId()))
                     throw new IllegalStateException("Invalid parent");
@@ -462,6 +467,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 } else if (asset.getRealm() == null) {
                     // ... and if we don't have a realm identifier, use the parent's
                     asset.setRealm(parent.getRealm());
+                }
+
+                // if parent is of type group then this child asset must have the correct type
+                if (parent.getWellKnownType() == AssetType.GROUP) {
+                    String childAssetType = parent.getAttribute("childAssetType")
+                        .flatMap(AbstractValueHolder::getValueAsString)
+                        .orElseThrow(() -> new IllegalStateException("Parent group asset doesn't have a valid child asset type attribute"));
+                    if (!childAssetType.equals(asset.getType())) {
+                        throw new IllegalStateException("Asset type does not match parent group's child asset type attribute");
+                    }
                 }
             }
 
@@ -481,6 +496,24 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
             if (invalid > 0) {
                 throw new IllegalStateException("Storing asset failed, invalid attributes: " + invalid);
+            }
+
+            // Validate group child asset type attribute
+            if (asset.getWellKnownType() == AssetType.GROUP) {
+                String childAssetType = asset.getAttribute("childAssetType")
+                    .flatMap(AssetAttribute::getValueAsString)
+                    .map(childAssetTypeString -> TextUtil.isNullOrEmpty(childAssetTypeString) ? null : childAssetTypeString)
+                    .orElseThrow(() -> new IllegalStateException("Asset type group childAssetType attribute must be a valid string"));
+
+                String existingChildAssetType = existing != null ? existing
+                    .getAttribute("childAssetType")
+                    .flatMap(AssetAttribute::getValueAsString)
+                    .orElseThrow(() ->
+                        new IllegalStateException("Asset type group childAssetType attribute must be a valid string")) : childAssetType;
+
+                if (!childAssetType.equals(existingChildAssetType)) {
+                    throw new IllegalStateException("Asset type group childAssetType attribute cannot be changed");
+                }
             }
 
             // Update all empty attribute timestamps with server-time (a caller which doesn't have a
