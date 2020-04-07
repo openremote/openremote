@@ -521,9 +521,16 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
         } else if (panelConfig && panelConfig.type === "group") {
 
-            console.log(panelConfig);
             content = html`
-                <or-table></or-table> 
+                <or-table 
+                    headers='["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"]'
+                    rows='[
+                        ["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"],
+                        ["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"],
+                        ["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"],
+                        ["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"],
+                        ["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"]]'
+                ></or-table> 
             `;
         } else {
             content = html`
