@@ -329,7 +329,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     public static getPanelContent(panelName: string, asset: Asset, attributes: AssetAttribute[], viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, shadowRoot: ShadowRoot | null): TemplateResult | undefined {
-        console.log(panelConfig);
         if (panelConfig.hide || attributes.length === 0) {
             return;
         }
@@ -524,7 +523,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
             console.log(panelConfig);
             content = html`
-                test
                 <or-table></or-table> 
             `;
         } else {
