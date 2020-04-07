@@ -15,6 +15,10 @@
   "dependencies": {
     "@openremote/core": "^1.1.0",
     "@openremote/rest": "^1.1.0",
+    "@openremote/model": "^1.1.0",
+    "@openremote/or-input" :"^1.1.0",
+    "@openremote/or-icon" :"^1.1.0",
+    "@openremote/or-translate" :"^1.1.0",
     "mapbox-gl": "1.2.1",
     "mapbox.js": "^3.2.0",
     "lit-element": "^2.1.0",
