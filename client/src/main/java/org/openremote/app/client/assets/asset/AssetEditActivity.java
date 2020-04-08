@@ -19,6 +19,7 @@
  */
 package org.openremote.app.client.assets.asset;
 
+import com.google.gwt.typedarrays.client.JsUtils;
 import com.google.gwt.user.client.ui.IsWidget;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.assets.*;
@@ -31,6 +32,7 @@ import org.openremote.app.client.event.ShowFailureEvent;
 import org.openremote.app.client.event.ShowSuccessEvent;
 import org.openremote.app.client.interop.jackson.FileInfoMapper;
 import org.openremote.app.client.interop.value.ObjectValueMapper;
+import org.openremote.app.client.util.JsUtil;
 import org.openremote.app.client.widget.AttributeLinkEditor;
 import org.openremote.app.client.widget.AttributeRefEditor;
 import org.openremote.app.client.widget.FormButton;

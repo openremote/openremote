@@ -23,9 +23,11 @@ import org.openremote.container.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueFilter;
 
+import java.util.List;
 import java.util.function.Predicate;
 
 /**
@@ -136,6 +138,12 @@ public interface ProtocolAssetService extends ContainerService {
      * Get asset from the store by ID.
      */
     Asset findAsset(String assetId);
+
+    /**
+     * Get assets by an {@link org.openremote.model.query.AssetQuery}; can only access {@link Asset}s that are
+     * descendants of the specified {@link Asset}
+     */
+    List<Asset> findAssets(String assetId, AssetQuery assetQuery);
 
     /**
      * Protocols can send arbitrary attribute change events for regular processing.

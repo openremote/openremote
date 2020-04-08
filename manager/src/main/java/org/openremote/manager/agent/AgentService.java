@@ -52,6 +52,7 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.RefPredicate;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.Pair;
@@ -304,6 +305,26 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     public Asset findAsset(String assetId) {
         LOG.fine("Getting protocol-provided: " + assetId);
         return assetStorageService.find(assetId);
+    }
+
+    @Override
+    public List<Asset> findAssets(String assetId, AssetQuery assetQuery) {
+        if (TextUtil.isNullOrEmpty(assetId) || assetQuery == null) {
+            return Collections.emptyList();
+        }
+
+        // Ensure agent ID is injected into each path predicate
+        if (assetQuery.paths != null) {
+            for (PathPredicate pathPredicate : assetQuery.paths) {
+                int len = pathPredicate.path.length;
+                pathPredicate.path = Arrays.copyOf(pathPredicate.path, len+1);
+                pathPredicate.path[len] = assetId;
+            }
+        } else {
+            assetQuery.paths(new PathPredicate(assetId));
+        }
+
+        return assetStorageService.findAll(assetQuery);
     }
 
     @Override
