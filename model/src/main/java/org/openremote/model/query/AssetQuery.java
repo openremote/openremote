@@ -304,7 +304,7 @@ public class AssetQuery {
             this.names = null;
             return this;
         }
-        this.parents = Arrays.stream(assetTypes).map(id -> new ParentPredicate().type(id)).toArray(ParentPredicate[]::new);
+        this.parents = Arrays.stream(assetTypes).map(assetType -> new ParentPredicate().type(assetType)).toArray(ParentPredicate[]::new);
         return this;
     }
 
