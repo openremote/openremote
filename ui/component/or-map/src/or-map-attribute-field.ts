@@ -10,9 +10,9 @@ import manager, {subscribe} from "@openremote/core";
 import "@openremote/or-input";
 
 class ORAttributeTemplateProvider {
-    _template = null;
+    _template: Function | null = null;
 
-    getTemplate(object) {
+    getTemplate(object:AssetAttribute | undefined) {
         if(this._template){
             const template = this._template(object);
             if (template) {
@@ -21,14 +21,14 @@ class ORAttributeTemplateProvider {
         }
     }
 
-    setTemplate(callback) {
+    setTemplate(callback: Function) {
         this._template = callback;
     }
 }
 
 export let orAttributeTemplateProvider = new ORAttributeTemplateProvider();
 
-orAttributeTemplateProvider.setTemplate((attribute) => {
+orAttributeTemplateProvider.setTemplate((attribute: AssetAttribute) => {
     let template;
     switch (attribute.type) {
         default:

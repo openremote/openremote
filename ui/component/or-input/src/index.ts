@@ -14,6 +14,8 @@ import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/ico
 import moment from "moment";
 import {DefaultColor1, DefaultColor4, DefaultColor8} from "@openremote/core";
 
+import i18next from "i18next";
+
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("!!raw-loader!@material/button/dist/mdc.button.css");
 const buttonFabStyle = require("!!raw-loader!@material/fab/dist/mdc.fab.css");
@@ -120,6 +122,11 @@ const style = css`
 
     .mdc-text-field {
         flex: 1 1 0;
+    }
+
+    .mdc-list {
+        flex: 1 1 0;
+        overflow: auto;
     }
 
     #menu-anchor {
@@ -400,13 +407,13 @@ export class OrInput extends LitElement {
     
                         this._selectedIndex = -1;
                         return html`
-                            <div id="component" class="mdc-select ${classMap(classesList)}" @MDCList:action="${(e: MDCListActionEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
+                            <div id="component" class="mdc-list mdc-select ${classMap(classesList)}" @MDCList:action="${(e: MDCListActionEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
                                 <ul class="mdc-list">
                                     ${optsList ? optsList.map(([optValue, optDisplay], index) => {
                                         if (this.value === optValue) {
                                             this._selectedIndex = index;
                                         }
-                                        return html`<li class="mdc-list-item${this.value === optValue ? " mdc-list-item--selected" : ""}" role="option" data-value="${optValue}">${optDisplay}</li>`;
+                                        return html`<li class="mdc-list-item${this.value === optValue ? " mdc-list-item--selected" : ""}" role="option" data-value="${optValue}">${i18next.t(optDisplay)}</li>`;
                                     }) : ``}
                                 </ul>
                             </div>

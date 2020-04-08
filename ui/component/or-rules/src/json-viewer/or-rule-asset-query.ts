@@ -63,8 +63,10 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
     public readonly?: boolean;
 
+    @property({type: Object})
     public config?: RulesConfig;
 
+    @property({type: Object})
     public assetDescriptors?: AssetDescriptor[];
 
     @property({type: Array, attribute: false})
@@ -275,7 +277,6 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         ];
 
         idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
-
         return html`
             <div class="attribute-group">
             

@@ -2,7 +2,6 @@ import {css, customElement, html, LitElement, property, PropertyValues, unsafeCS
 import {updateMetadata} from "pwa-helpers/metadata";
 import "@openremote/or-header";
 import "@openremote/or-icon";
-import "@openremote/or-translate";
 import manager, {DefaultColor2, DefaultColor3, DefaultHeaderHeight} from "@openremote/core";
 import {router} from "../index";
 import {RootState, store} from "../store";

@@ -1,18 +1,32 @@
 import {css, customElement, html, LitElement, property, query} from "lit-element";
 import {connect} from "pwa-helpers/connect-mixin";
 import "@openremote/or-map";
+import "@openremote/or-map/dist/or-map-asset-card";
+import {ViewerConfig} from "@openremote/or-map/dist/or-map-asset-card";
+
+import {Util} from "@openremote/core";
 import {OrMap, OrMapClickedEvent, OrMapMarkerAsset, OrMapMarkerClickedEvent} from "@openremote/or-map";
 import {RootState, store} from "../../store";
 import {setCurrentAssetId, subscribeAssets, unsubscribeAssets} from "../../actions/map";
 import map from "../../reducers/map";
 import {createSelector} from "reselect";
-import {Asset} from "@openremote/model";
-import "../or-asset-summary-card";
+import {Asset, AttributeType, MetaItemType} from "@openremote/model";
 import {MapStyle} from "./style";
 import {router} from "../../index";
 store.addReducers({
     map
 });
+
+const mapCardConfig: ViewerConfig = {
+    default: {
+            exclude: ["userNotes"]
+    },
+    assetTypes: {
+        "urn:openremote:asset:iems:weather": {
+            exclude: ["location"]
+        }
+    }
+};
 
 @customElement("page-map")
 class PageMap extends connect(store)(LitElement)  {
@@ -52,11 +66,14 @@ class PageMap extends connect(store)(LitElement)  {
 
         return html`
             
-            ${this._currentAsset ? html `<or-asset-summary-card .asset="${this._currentAsset}"> </or-asset-summary-card>` : ``}
+            ${this._currentAsset ? html `<or-map-asset-card .config="${mapCardConfig}" .asset="${this._currentAsset}"></or-map-asset-card>` : ``}
             
             <or-map id="map" class="or-map">
                 ${
                     this._assets.map((asset) => {
+                        const attr = Util.getAssetAttribute(asset, AttributeType.LOCATION.attributeName!);
+                        const showOnMapMeta = Util.getFirstMetaItem(attr, MetaItemType.SHOW_ON_DASHBOARD.urn!);
+                        if(!showOnMapMeta || !showOnMapMeta.value) return html``;
                         return html`
                             <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}"></or-map-marker-asset>
                         `;
