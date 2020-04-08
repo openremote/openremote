@@ -441,19 +441,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         } else if (panelConfig && panelConfig.type === "chart") {
 
-            if (asset.type === "urn:openremote:asset:group") {
-                return;
-            }
-
             content = html`
                 <or-chart id="chart" .config="${viewerConfig.chartConfig}" activeAssetId="${asset.id}" .activeAsset="${asset}" ></or-chart>
             `;
 
         } else if (panelConfig && panelConfig.type === "location") {
-
-            if (asset.type === "urn:openremote:asset:group") {
-                return;
-            }
 
             const attribute = attrs.find((attr) => attr.name === AttributeType.LOCATION.attributeName);
             if (attribute) {
