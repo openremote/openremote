@@ -30,7 +30,7 @@ import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
 
-export type PanelType = "property" | "location" | "attribute" | "history" | "chart" |  "info" | "group";
+export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group";
 
 export interface PanelConfig {
     type?: PanelType;
@@ -104,7 +104,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 panelStyles: {}
             },
             "info": {
-                type: "info",
+                type: "attribute",
                 hideOnMobile: true,
                 include: ["userNotes", "manufacturer", "model"],
                 panelStyles: {
@@ -530,15 +530,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         ["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"]]'
                 ></or-table> 
             `;
-        } else if (panelConfig && panelConfig.type === "info") {
 
-            if (asset.type !== "urn:openremote:asset:group") {
-                return;
-            }
-
-            content = html`
-                info
-            `;
         } else if (panelConfig && panelConfig.type === "attribute") {
 
             if (asset.type !== "urn:openremote:asset:group") {
