@@ -23,6 +23,10 @@ see [Google graveyard](https://killedbygoogle.com/)
 
 ```docker service logs <service_name> [--follow]```
 
+Deploy on Kubernetes (works only on builtin Kubernetes in Docker Desktop)
+
+```docker stack deploy --orchestrator kubernetes --compose-file swarm/kube-docker-compose.yml demo```
+
 
 ### Swarm advantages:
 - no manual deployments

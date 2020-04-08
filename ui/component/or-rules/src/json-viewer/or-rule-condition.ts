@@ -1,4 +1,4 @@
-import {customElement, html, css, LitElement, property, TemplateResult, query} from "lit-element";
+import {customElement, html, css, LitElement, property, TemplateResult, query, PropertyValues} from "lit-element";
 import {AssetDescriptor, AssetQueryMatch, RuleCondition, AssetType} from "@openremote/model";
 import {
     ActionType,
@@ -115,8 +115,10 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
 
     public readonly: boolean = false;
 
+    @property({type: Object})
     public config?: RulesConfig;
 
+    @property({type: Object})
     public assetDescriptors?: AssetDescriptor[];
 
     @query("#asset-query")

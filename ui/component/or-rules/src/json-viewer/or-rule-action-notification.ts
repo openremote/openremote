@@ -32,6 +32,7 @@ export class OrRuleActionNotification extends LitElement {
 
     public readonly?: boolean;
 
+    @property({type: Object})
     public config?: RulesConfig;
 
 

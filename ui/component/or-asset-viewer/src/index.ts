@@ -101,7 +101,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             "info": {
                 type: "attribute",
                 hideOnMobile: true,
-                include: ["userNotes", "brand"],
+                include: ["userNotes", "manufacturer", "model"],
                 panelStyles: {
                 },
                 fieldStyles: {
@@ -304,11 +304,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     public static getPanel(name: string, asset: Asset, attributes: AssetAttribute[], viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, shadowRoot: ShadowRoot | null) {
         const content = OrAssetViewer.getPanelContent(name, asset, attributes, viewerConfig, panelConfig, shadowRoot);
-
         if (!content) {
             return;
         }
-
 
         return html`
             <div class=${classMap({"panel": true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
@@ -438,22 +436,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
 
         } else if (panelConfig && panelConfig.type === "chart") {
-            let storeDataPointAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
-            let defaultAttrs = storeDataPointAttrs.filter((attr) => (defaultAttributes && defaultAttributes.indexOf(attr.name!) >= 0));
-            let assetAttributes;
-
-            if(defaultAttrs.length > 0){
-                assetAttributes = defaultAttrs;
-            } else if(storeDataPointAttrs.length > 0) {
-                assetAttributes = storeDataPointAttrs;
-                assetAttributes.length = 1;
-            }
-            const assetList:Asset[] = [];
-            if(assetAttributes) {
-                assetAttributes.forEach(attr => assetList.push(asset));
-            }
             content = html`
-                <or-chart id="chart" .config="${viewerConfig.chartConfig}" .activeAsset="${asset}" .assets="${assetList ? assetList : [asset]}" .assetAttributes="${assetAttributes}"></or-chart>
+                <or-chart id="chart" .config="${viewerConfig.chartConfig}" activeAssetId="${asset.id}" .activeAsset="${asset}" ></or-chart>
             `;
 
         } else if (panelConfig && panelConfig.type === "location") {
@@ -516,11 +500,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 `;
             }
         } else {
+            if(attrs.length === 0) return undefined;
+
             content = html`
                 ${attrs.sort((attr1, attr2) => attr1.name! < attr2.name! ? -1 : attr1.name! > attr2.name! ? 1 : 0).map((attr) => {
-                let style = styles ? styles[attr.name!] : undefined;
-                return this.getField(attr.name!, false, style, OrAssetViewer.getAttributeTemplate(asset, attr, viewerConfig, panelConfig));
-            })}
+                    let style = styles ? styles[attr.name!] : undefined;
+                    return this.getField(attr.name!, false, style, OrAssetViewer.getAttributeTemplate(asset, attr, viewerConfig, panelConfig));
+                })}
             `;
         }
 
@@ -580,7 +566,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 return result;
             }
         }
-
         return html`
             <or-attribute-input dense .assetType="${asset!.type}" .attribute="${attribute}" .label="${i18next.t(attribute.name!)}"></or-attribute-input>
         `;
@@ -590,7 +575,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         if (!content) {
             return ``;
         }
-
         return html`
             <div id="field-${name}" style="${styles ? styleMap(styles) : ""}" class="field ${isProperty ? "field-property" : "field-attribute"}">
                 ${content}

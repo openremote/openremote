@@ -375,7 +375,9 @@ public class AssetViewImpl extends Composite implements AssetView {
         if (assetType == null) {
             headline.setSub(type);
         } else {
-            headline.setSub(managerMessages.assetTypeLabel(assetType.name()));
+            headline.setSub(
+                managerMessages.assetTypeLabel(assetType.getName()).equals("") ? assetType.getName() : managerMessages.assetTypeLabel(assetType.getName())
+            );
         }
     }
 

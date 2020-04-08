@@ -198,7 +198,6 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                 </span>
             `;
         }
-
         return html`
             ${groupsTemplate}
             ${itemsTemplate}
