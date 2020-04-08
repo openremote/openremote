@@ -30,7 +30,7 @@ import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
 
-export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group";
+export type PanelType = "property" | "location" | "attribute" | "history" | "chart" |  "info" | "group";
 
 export interface PanelConfig {
     type?: PanelType;
@@ -104,7 +104,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 panelStyles: {}
             },
             "info": {
-                type: "attribute",
+                type: "info",
                 hideOnMobile: true,
                 include: ["userNotes", "manufacturer", "model"],
                 panelStyles: {
@@ -440,11 +440,21 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
 
         } else if (panelConfig && panelConfig.type === "chart") {
+
+            if (asset.type === "urn:openremote:asset:group") {
+                return;
+            }
+
             content = html`
                 <or-chart id="chart" .config="${viewerConfig.chartConfig}" activeAssetId="${asset.id}" .activeAsset="${asset}" ></or-chart>
             `;
 
         } else if (panelConfig && panelConfig.type === "location") {
+
+            if (asset.type === "urn:openremote:asset:group") {
+                return;
+            }
+
             const attribute = attrs.find((attr) => attr.name === AttributeType.LOCATION.attributeName);
             if (attribute) {
                 // Special handling for location panel which shows an attribute selector and a map showing the location of the attribute
@@ -520,8 +530,24 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         ["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"]]'
                 ></or-table> 
             `;
+        } else if (panelConfig && panelConfig.type === "info") {
+
+            if (asset.type !== "urn:openremote:asset:group") {
+                return;
+            }
+
+            content = html`
+                info
+            `;
+        } else if (panelConfig && panelConfig.type === "attribute") {
+
+            if (asset.type !== "urn:openremote:asset:group") {
+                return;
+            }
         } else {
-            if(attrs.length === 0) return undefined;
+            if(attrs.length === 0) {
+                return undefined;
+            }
 
             content = html`
                 ${attrs.sort((attr1, attr2) => attr1.name! < attr2.name! ? -1 : attr1.name! > attr2.name! ? 1 : 0).map((attr) => {
