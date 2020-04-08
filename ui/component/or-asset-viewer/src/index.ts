@@ -505,6 +505,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
         } else if (panelConfig && panelConfig.type === "group") {
 
+            if (asset.type !== "urn:openremote:asset:group") {
+                return;
+            }
+
             content = html`
                 <or-table 
                     headers='["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"]'
