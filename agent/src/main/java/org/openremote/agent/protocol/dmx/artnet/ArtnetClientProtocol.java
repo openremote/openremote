@@ -354,6 +354,35 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
         return parsedLights;
     }
 
+    private void syncLightsToMemory(List<ArtnetLight> lights)
+    {
+        for (ArtnetLight light : lights)
+        {
+            AbstractArtnetLight memLight = artnetLightMemory.stream().filter(l -> l.getLightId() == light.getLightId()).findFirst().orElse(null);
+
+            //No existing light available, create a new one
+            if(memLight == null)
+                artnetLightMemory.add(light);
+            //Light is already present in Memory, update the values instead of creating a new one.
+            else
+            {
+                AbstractArtnetLight updatedLight = light;
+
+
+
+            }
+            //TODO: What if a light has been deleted?????
+            //Better idea: Wipe the memory, and copy over the import.
+        }
+    }
+
+    private void syncLightsToAssets(List<ArtnetLight> lights)
+    {
+        for (ArtnetLight light : lights)
+        {
+
+        }
+    }
 
     protected AssetTreeNode createLightAsset(int id, int groupId, String requiredValues, AssetAttribute parent, MetaItem agentLink)
     {
