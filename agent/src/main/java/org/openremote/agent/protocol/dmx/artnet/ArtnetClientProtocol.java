@@ -264,9 +264,6 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
 
     @Override
     public AssetTreeNode[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException {
-        //todo sync inmemory
-        //todo sync assettree
-
         String jsonString;
         if(fileInfo.isBinary())//Read any file that isn't an XML file
         {
@@ -276,67 +273,16 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
         }
         else
             jsonString = fileInfo.getContents();//Read from .xml file
-
         try{
             List<ArtnetLight> newLights = parseArtnetLightsFromImport(new ObjectMapper().readTree(jsonString));
-            Asset parentAsset = assetService.getAgent(protocolConfiguration);
-            for(AbstractArtnetLight abstractLight : new ArrayList<AbstractArtnetLight>(artnetLightMemory)) {
-                ArtnetLight light = (ArtnetLight) abstractLight;
-                ArtnetLightState state = new ArtnetLightState(light.getLightId(), new LinkedHashMap<String, Integer>(), 100, true);
-                for(String key : light.getRequiredValues())
-                    state.getReceivedValues().put(key, 0);
-                light.setLightState(state);
-                //A light is found with the current id in the import file which is present in-memory
-                if(newLights.stream().anyMatch(l -> l.getLightId() == light.getLightId())) {
-                    //Replace the in-memory light with the attributes/values from the import file
-                    ArtnetLight foundLight = (ArtnetLight) artnetLightMemory.stream().filter(l -> l.getLightId() == light.getLightId()).findFirst().get();
-                    artnetLightMemory.set(artnetLightMemory.indexOf(foundLight), light);
-                }
-                //No light is found with the current id in the import file which is present in-memory
-                else if(newLights.stream().noneMatch(l -> l.getLightId() == light.getLightId())) {
-                    //Remove the light from in-memory
-                    ArtnetLight foundLight = (ArtnetLight) artnetLightMemory.stream().filter(l -> l.getLightId() == light.getLightId()).findFirst().get();
-                    artnetLightMemory.remove(foundLight);
-                }
-            }
-            for(ArtnetLight light : newLights) {
-                ArtnetLightState state = new ArtnetLightState(light.getLightId(), new LinkedHashMap<String, Integer>(), 100, true);
-                for(String key : light.getRequiredValues())
-                    state.getReceivedValues().put(key, 0);
-                light.setLightState(state);
-                //The import file contains a light id which is not present in-memory yet
-                if(artnetLightMemory.stream().noneMatch(l -> l.getLightId() == light.getLightId())) {
-                    artnetLightMemory.add(light);
-                }
-            }
+            syncLightsToMemory(newLights);
+            return syncLightsToAssets(newLights, protocolConfiguration);
         } catch (JsonMappingException e) {
             e.printStackTrace();
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-
-        ObjectMapper mapper = new ObjectMapper();
-            try {
-                JsonNode node = mapper.readTree(jsonString);
-                byte[] prefix = node.get("protocolPrefix").asText().getBytes();
-                JsonNode lightArray = node.get("lights");
-                if(lightArray.isArray()) {
-                    List<AssetTreeNode> output = new ArrayList<AssetTreeNode>();
-                    for(JsonNode individualLightNode : lightArray) {
-                        MetaItem agentLink = AgentLink.asAgentLinkMetaItem(protocolConfiguration.getReferenceOrThrow());
-                        //WARNING: This code overwrites the JSON config file ||| TODO: Compare the imported file with the current config file, If certain lights already exist: THEY SHOULDN'T BE ALTERED
-                        //protocolConfiguration.getMetaItem("urn:openremote:protocol:artnet:areaConfiguration").orElse(null).setValue(Values.convert(jsonString, Container.JSON).get());
-                        int id = individualLightNode.get("lightId").asInt();
-                        int groupId = individualLightNode.get("groupId").asInt();
-                        String requiredValues = individualLightNode.get("requiredValues").asText();
-                        output.add(createLightAsset(id, groupId, requiredValues, protocolConfiguration, agentLink));
-                    }
-                    return output.toArray(new AssetTreeNode[output.size()]);
-                }
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
-            return null;
+        return null;
     }
 
     private List<ArtnetLight> parseArtnetLightsFromImport(JsonNode jsonNode) {
@@ -356,32 +302,49 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
 
     private void syncLightsToMemory(List<ArtnetLight> lights)
     {
-        for (ArtnetLight light : lights)
-        {
-            AbstractArtnetLight memLight = artnetLightMemory.stream().filter(l -> l.getLightId() == light.getLightId()).findFirst().orElse(null);
-
-            //No existing light available, create a new one
-            if(memLight == null)
-                artnetLightMemory.add(light);
-            //Light is already present in Memory, update the values instead of creating a new one.
-            else
-            {
-                AbstractArtnetLight updatedLight = light;
-
-
-
+        //UNCOMMENT FOR CHECKS IF IT IS PRESENT IN MEMORY AND DELETE/UPDATE ACCORDINGLY
+        /*
+        for(AbstractArtnetLight abstractLight : new ArrayList<AbstractArtnetLight>(artnetLightMemory)) {
+            ArtnetLight light = (ArtnetLight) abstractLight;
+            ArtnetLightState state = new ArtnetLightState(light.getLightId(), new LinkedHashMap<String, Integer>(), 100, true);
+            for(String key : light.getRequiredValues())
+                state.getReceivedValues().put(key, 0);
+            light.setLightState(state);
+            //A light is found with the current id in the import file which is present in-memory
+            if(lights.stream().anyMatch(l -> l.getLightId() == light.getLightId())) {
+                //Replace the in-memory light with the attributes/values from the import file
+                ArtnetLight foundLight = (ArtnetLight) artnetLightMemory.stream().filter(l -> l.getLightId() == light.getLightId()).findFirst().get();
+                artnetLightMemory.set(artnetLightMemory.indexOf(foundLight), light);
             }
-            //TODO: What if a light has been deleted?????
-            //Better idea: Wipe the memory, and copy over the import.
+            //No light is found with the current id in the import file which is present in-memory
+            else if(lights.stream().noneMatch(l -> l.getLightId() == light.getLightId())) {
+                //Remove the light from in-memory
+                ArtnetLight foundLight = (ArtnetLight) artnetLightMemory.stream().filter(l -> l.getLightId() == light.getLightId()).findFirst().get();
+                artnetLightMemory.remove(foundLight);
+            }
+        }
+         */
+        for(ArtnetLight light : lights) {
+            ArtnetLightState state = new ArtnetLightState(light.getLightId(), new LinkedHashMap<String, Integer>(), 100, true);
+            for(String key : light.getRequiredValues())
+                state.getReceivedValues().put(key, 0);
+            light.setLightState(state);
+            //The import file contains a light id which is not present in-memory yet
+            if(artnetLightMemory.stream().noneMatch(l -> l.getLightId() == light.getLightId())) {
+                artnetLightMemory.add(light);
+            }
         }
     }
 
-    private void syncLightsToAssets(List<ArtnetLight> lights)
+    private AssetTreeNode[] syncLightsToAssets(List<ArtnetLight> lights, AssetAttribute protocolConfiguration)
     {
-        for (ArtnetLight light : lights)
-        {
-
+        //TODO REMOVE/UPDATE BASED ON PRESENCE IN ASSETTREE
+        List<AssetTreeNode> output = new ArrayList<AssetTreeNode>();
+        for(ArtnetLight light : lights) {
+            MetaItem agentLink = AgentLink.asAgentLinkMetaItem(protocolConfiguration.getReferenceOrThrow());
+            output.add(createLightAsset(light.getLightId(), light.getGroupId(), String.join(",",light.getRequiredValues()), protocolConfiguration, agentLink));
         }
+        return output.toArray(new AssetTreeNode[output.size()]);
     }
 
     protected AssetTreeNode createLightAsset(int id, int groupId, String requiredValues, AssetAttribute parent, MetaItem agentLink)
