@@ -26,8 +26,16 @@ public abstract class AbstractArtnetLight {
         return this.lightId;
     }
 
+    public void setLightId(int lightId) {
+        this.lightId = lightId;
+    }
+
     public int getUniverse() {
         return this.universe;
+    }
+
+    public void setUniverse(int universe) {
+        this.universe = universe;
     }
 
     public int getGroupId() {
@@ -42,24 +50,33 @@ public abstract class AbstractArtnetLight {
         return requiredValues;
     }
 
-    public void setLightState(AbstractArtnetLightState lightState) {
-        this.lightState = lightState;
-    }
-
     public void setRequiredValues(String[] requiredValues) {
         this.requiredValues = requiredValues;
+    }
+
+    public AbstractArtnetLightState getLightState() {
+        return this.lightState;
+    }
+
+    public void setLightState(AbstractArtnetLightState lightState) {
+        this.lightState = lightState;
     }
 
     public int getAmountOfLeds() {
         return this.amountOfLeds;
     }
 
+    public void setAmountOfLeds(int amountOfLeds) {
+        this.amountOfLeds = amountOfLeds;
+    }
+
     public byte[] getPrefix() {
         return this.prefix;
     }
 
-    public AbstractArtnetLightState getLightState() {
-        return this.lightState;
+    public void setPrefix(byte[] prefix) {
+        this.prefix = prefix;
     }
+
 
 }

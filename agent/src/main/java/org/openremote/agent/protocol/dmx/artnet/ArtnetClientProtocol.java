@@ -279,8 +279,28 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
 
         try{
             List<ArtnetLight> newLights = parseArtnetLightsFromImport(new ObjectMapper().readTree(jsonString));
+            Asset parentAsset = assetService.getAgent(protocolConfiguration);
+            for(AbstractArtnetLight abstractLight : artnetLightMemory) {
+                ArtnetLight light = (ArtnetLight) abstractLight;
+                ArtnetLightState state = new ArtnetLightState(light.getLightId(), new LinkedHashMap<String, Integer>(), 100, true);
+                //A light is found with the current id in the import file which is present in-memory
+                if(newLights.stream().anyMatch(l -> l.getLightId() == light.getLightId())) {
+                    //Replace the in-memory light with the attributes/values from the import file
+                    ArtnetLight foundLight = (ArtnetLight) artnetLightMemory.stream().filter(l -> l.getLightId() == light.getLightId()).findFirst().get();
+                    artnetLightMemory.set(artnetLightMemory.indexOf(foundLight), light);
+                }
+                //No light is found with the current id in the import file which is present in-memory
+                else if(newLights.stream().noneMatch(l -> l.getLightId() == light.getLightId())) {
+                    //Remove the light from in-memory
+                    ArtnetLight foundLight = (ArtnetLight) artnetLightMemory.stream().filter(l -> l.getLightId() == light.getLightId()).findFirst().get();
+                    artnetLightMemory.remove(foundLight);
+                }
+            }
             for(ArtnetLight light : newLights) {
-                Asset parentAsset = assetService.getAgent(protocolConfiguration);
+                //The import file contains a light id which is not present in-memory yet
+                if(artnetLightMemory.stream().noneMatch(l -> l.getLightId() == light.getLightId())) {
+                    artnetLightMemory.add(light);
+                }
             }
         } catch (JsonMappingException e) {
             e.printStackTrace();
