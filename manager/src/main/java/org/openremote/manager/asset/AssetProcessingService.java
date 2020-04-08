@@ -307,7 +307,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                             } else {
                                 // Check realm, must be accessible
                                 if (!identityService.getIdentityProvider().isTenantActiveAndAccessible(authContext,
-                                                                                                       asset)) {
+                                                                                                       asset.getRealm())) {
                                     throw new AssetProcessingException(INSUFFICIENT_ACCESS);
                                 }
 

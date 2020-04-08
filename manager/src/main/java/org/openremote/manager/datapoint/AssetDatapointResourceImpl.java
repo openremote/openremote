@@ -70,7 +70,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
 
-            if (!isTenantActiveAndAccessible(asset)) {
+            if (!isTenantActiveAndAccessible(asset.getRealm())) {
                 LOG.fine("Forbidden access for user '" + getUsername() + "': " + asset);
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
