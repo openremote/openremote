@@ -283,6 +283,9 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
             for(AbstractArtnetLight abstractLight : artnetLightMemory) {
                 ArtnetLight light = (ArtnetLight) abstractLight;
                 ArtnetLightState state = new ArtnetLightState(light.getLightId(), new LinkedHashMap<String, Integer>(), 100, true);
+                for(String key : light.getRequiredValues())
+                    state.getReceivedValues().put(key, 0);
+                light.setLightState(state);
                 //A light is found with the current id in the import file which is present in-memory
                 if(newLights.stream().anyMatch(l -> l.getLightId() == light.getLightId())) {
                     //Replace the in-memory light with the attributes/values from the import file
