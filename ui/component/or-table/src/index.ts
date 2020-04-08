@@ -45,7 +45,12 @@ export class OrTable extends LitElement {
                 <table class="mdc-data-table__table" aria-label="Dessert calories">
                     <thead>
                         <tr class="mdc-data-table__header-row">
-                            ${this.headers.map(item => html`<th class="mdc-data-table__header-cell" role="columnheader" scope="col">${item}</th>`)}  
+                            ${this.headers.map(item => html`
+                                <th class="mdc-data-table__header-cell" role="columnheader" scope="col">
+                                    ${item}
+<!--                                    <or-icon icon="menu-swap" @click="${() => console.log('click')}"></or-icon>  -->
+                                </th>
+                            `)}  
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
