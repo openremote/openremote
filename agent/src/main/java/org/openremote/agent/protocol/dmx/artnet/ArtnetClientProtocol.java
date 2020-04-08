@@ -1,6 +1,7 @@
 package org.openremote.agent.protocol.dmx.artnet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
@@ -275,6 +276,17 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
         }
         else
             jsonString = fileInfo.getContents();//Read from .xml file
+
+        try{
+            List<ArtnetLight> newLights = parseArtnetLightsFromImport(new ObjectMapper().readTree(jsonString));
+            for(ArtnetLight light : newLights) {
+                Asset parentAsset = assetService.getAgent(protocolConfiguration);
+            }
+        } catch (JsonMappingException e) {
+            e.printStackTrace();
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
 
         ObjectMapper mapper = new ObjectMapper();
             try {

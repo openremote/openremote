@@ -270,7 +270,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         //Art-Net Setup
         //SETUP MAIN ARTNET-ASSET UNDER MASTER ASSET
         Asset artNetAgent = new Asset();
-        artNetAgent.setRealm(masterTenant.getRealm());
+        artNetAgent.setRealm(tenantBuilding.getRealm());
         artNetAgent.setName("ArtNet Agent");
         artNetAgent.setType(AGENT);
         artNetAgent.addAttributes(
@@ -278,7 +278,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         .addMeta(
                                 new MetaItem(
                                         ArtnetClientProtocol.META_PROTOCOL_HOST,
-                                        Values.create("192.168.70.200")
+                                        Values.create("127.0.0.1")
                                 ),
                                 new MetaItem(
                                         ArtnetClientProtocol.META_PROTOCOL_PORT,
