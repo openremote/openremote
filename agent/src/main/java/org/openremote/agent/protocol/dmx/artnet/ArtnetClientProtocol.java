@@ -280,7 +280,7 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
         try{
             List<ArtnetLight> newLights = parseArtnetLightsFromImport(new ObjectMapper().readTree(jsonString));
             Asset parentAsset = assetService.getAgent(protocolConfiguration);
-            for(AbstractArtnetLight abstractLight : artnetLightMemory) {
+            for(AbstractArtnetLight abstractLight : new ArrayList<AbstractArtnetLight>(artnetLightMemory)) {
                 ArtnetLight light = (ArtnetLight) abstractLight;
                 ArtnetLightState state = new ArtnetLightState(light.getLightId(), new LinkedHashMap<String, Integer>(), 100, true);
                 for(String key : light.getRequiredValues())
@@ -300,6 +300,10 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
                 }
             }
             for(ArtnetLight light : newLights) {
+                ArtnetLightState state = new ArtnetLightState(light.getLightId(), new LinkedHashMap<String, Integer>(), 100, true);
+                for(String key : light.getRequiredValues())
+                    state.getReceivedValues().put(key, 0);
+                light.setLightState(state);
                 //The import file contains a light id which is not present in-memory yet
                 if(artnetLightMemory.stream().noneMatch(l -> l.getLightId() == light.getLightId())) {
                     artnetLightMemory.add(light);
