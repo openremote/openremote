@@ -101,6 +101,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         panels: {
             "underlying assets": {
                 type: "group",
+                include: ["userNotes", "childAssetType"],
                 panelStyles: {}
             },
             "info": {
