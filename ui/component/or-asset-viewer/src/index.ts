@@ -514,7 +514,22 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 return;
             }
 
+            const doAdd = () => {
+                const modal = shadowRoot!.getElementById("add-modal");
+                if (modal && modal.shadowRoot) {
+                    const component = modal.shadowRoot.getElementById("mdc-dialog-add-asset");
+                    if (component) {
+                        const dialog = new MDCDialog(component);
+                        if (dialog) {
+                            dialog.open();
+                        }
+                    }
+                }
+            };
+
             content = html`
+                <or-icon icon="plus-minus" @click="${() => doAdd()}"></or-icon>
+                <or-add-modal id="add-modal"></or-add-modal>
                 <or-table 
                     headers='["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"]'
                     rows='[
