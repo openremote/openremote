@@ -1,9 +1,8 @@
 import {customElement, html, css, LitElement, property, query, unsafeCSS} from "lit-element";
 import "@openremote/or-icon";
 import i18next from "i18next";
-import manager from "@openremote/core";
 import { InputType } from "@openremote/or-input";
-import {MDCDialog} from '@material/dialog';
+import {MDCDialog} from "@material/dialog";
 const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
 
 // language=CSS
