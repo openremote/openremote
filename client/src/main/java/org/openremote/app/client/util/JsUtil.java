@@ -19,6 +19,10 @@
  */
 package org.openremote.app.client.util;
 
+import jsinterop.annotations.JsMethod;
+
+import java.util.List;
+
 public class JsUtil {
 
     public native static void log(Object o) /*-{
@@ -38,4 +42,12 @@ public class JsUtil {
         }
     }-*/;
 
+
+    @JsMethod(namespace = "JsUtil")
+    public static Object toJsArray(Object obj) {
+        if (obj instanceof List) {
+            return ((List)obj).toArray(new Object[0]);
+        }
+        return obj;
+    }
 }

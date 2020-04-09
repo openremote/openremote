@@ -78,7 +78,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     boolean isTenantActiveAndAccessible(AuthContext authContext, Tenant tenant);
 
-    boolean isTenantActiveAndAccessible(AuthContext authContext, Asset asset);
+    boolean isTenantActiveAndAccessible(AuthContext authContext, String realm);
 
     boolean tenantExists(String realm);
 

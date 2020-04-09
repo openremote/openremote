@@ -406,11 +406,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     /**
      * @return <code>true</code> if the user is the superuser (admin) or if the user is authenticated
-     * in the same realm as the assets' realm and the tenant is active.
+     * in the same tenant and the tenant is active.
      */
     @Override
-    public boolean isTenantActiveAndAccessible(AuthContext authContext, Asset asset) {
-        return isTenantActiveAndAccessible(authContext, getTenant(asset.getRealm()));
+    public boolean isTenantActiveAndAccessible(AuthContext authContext, String realm) {
+        return isTenantActiveAndAccessible(authContext, getTenant(realm));
     }
 
     @Override
