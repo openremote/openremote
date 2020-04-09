@@ -29,6 +29,8 @@ import {style} from "./style";
 import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
+import "./components/or-add-modal";
+import {MDCDialog} from "@material/dialog";
 
 export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group";
 
