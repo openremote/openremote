@@ -6,7 +6,7 @@
   "asset": "Asset",
   "asset_plural": "Assets",
   "attribute": "Attribuut",
-  "insights": "Insights",
+  "insights": "Inzicht",
   "scenes": "Scenes",
   "settings": "Instellingen",
   "selectLanguage": "Taal kiezen",
@@ -167,5 +167,8 @@
   "oncePerDay": "Max. 1x per dag",
   "oncePerWeek": "Max. 1x per week",
   "reset": "Reset",
-  "noLongerMatches": "Niet meer geldig"
+  "noLongerMatches": "Niet meer geldig",
+  "logs":"Logs",
+  "choose_lang":"Kies een taal",
+  "add_remove_attributes":"Attributen toevoegen/verwijderen"
 }

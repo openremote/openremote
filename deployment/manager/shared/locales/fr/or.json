@@ -106,5 +106,8 @@
   "wait": "Attendre",
   "history": "Historique",
   "attributes": "Attributs",
-  "info": "Info"
+  "info": "Info",
+  "logs":"Logs",
+  "choose_lang":"Choose language",
+  "add_remove_attributes":"Add/remove attributes"
 }

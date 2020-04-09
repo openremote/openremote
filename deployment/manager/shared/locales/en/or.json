@@ -167,5 +167,8 @@
   "oncePerDay": "Once per day",
   "oncePerWeek": "Once per week",
   "reset": "Reset",
-  "noLongerMatches": "No longer matches"
+  "noLongerMatches": "No longer matches",
+  "logs":"Logs",
+  "choose_lang":"Choose language",
+  "add_remove_attributes":"Add/remove attributes"
 }
