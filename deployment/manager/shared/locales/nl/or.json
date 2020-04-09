@@ -169,5 +169,6 @@
   "reset": "Reset",
   "noLongerMatches": "Niet meer geldig",
   "logs":"Logs",
-  "choose_lang":"Kies een taal"
+  "choose_lang":"Kies een taal",
+  "add_remove_attributes":"Attributen toevoegen/verwijderen"
 }
