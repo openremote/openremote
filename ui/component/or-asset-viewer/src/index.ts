@@ -310,6 +310,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     public static getPanel(name: string, asset: Asset, attributes: AssetAttribute[], viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, shadowRoot: ShadowRoot | null) {
+        if (name === "underlying assets") {
+
+            OrAssetViewer.getAssetChildren(asset.id!, asset.attributes!.childAssetType.value)
+                .then((children: Asset[]) => {
+                    console.log("children", children);
+                });
+        }
         const content = OrAssetViewer.getPanelContent(name, asset, attributes, viewerConfig, panelConfig, shadowRoot);
         if (!content) {
             return;
@@ -701,5 +708,18 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         return ids.map((id) => response.data.find((asset) => asset.id === id)!.name!);
+    }
+
+    public static async getAssetChildren(id: string, childAssetType: string): Promise<any[]> {
+        const response = await manager.rest.api.AssetResource.queryAssets({
+            ids: [id],
+            recursive: true
+        });
+
+        if (response.status !== 200 || !response.data) {
+            return [];
+        }
+
+        return response.data.filter((asset) => asset.type === childAssetType);
     }
 }
