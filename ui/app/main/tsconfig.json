@@ -18,6 +18,7 @@
     { "path": "../../component/or-attribute-input" },
     { "path": "../../component/or-chart" },
     { "path": "../../component/or-asset-viewer" },
-    { "path": "../../component/or-rules" }
+    { "path": "../../component/or-rules" },
+    { "path": "../../component/or-table" }
   ]
 }
