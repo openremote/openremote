@@ -1,4 +1,5 @@
 import {customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
+import {until} from "lit-html/directives/until";
 import "@openremote/or-icon";
 import "@openremote/or-input";
 import "@openremote/or-attribute-input";
@@ -310,13 +311,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     public static getPanel(name: string, asset: Asset, attributes: AssetAttribute[], viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, shadowRoot: ShadowRoot | null) {
-        if (name === "underlying assets") {
 
-            OrAssetViewer.getAssetChildren(asset.id!, asset.attributes!.childAssetType.value)
-                .then((children: Asset[]) => {
-                    console.log("children", children);
-                });
-        }
         const content = OrAssetViewer.getPanelContent(name, asset, attributes, viewerConfig, panelConfig, shadowRoot);
         if (!content) {
             return;
@@ -534,18 +529,30 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 }
             };
 
+            const renderTable = OrAssetViewer.getAssetChildren(asset.id!, asset.attributes!.childAssetType.value)
+                .then((assetChildren: Asset[]) => {
+                    if (assetChildren && assetChildren.length > 0) {
+                        const headers = Object.getOwnPropertyNames(assetChildren[0].attributes);
+
+                        // turn children into a format of data that or-table wants
+                        const rows = assetChildren.map((row: Asset) => {
+                            return headers.map((header: string) => {
+                                return row.attributes![header].value;
+                            });
+                        });
+
+                        return html`<or-table
+                            headers='${JSON.stringify(headers)}'
+                            rows='${JSON.stringify(rows)}'></or-table>`;
+                    } else {
+                        return html`<span>No data found</span>`;
+                    }
+                });
+
             content = html`
                 <or-icon icon="plus-minus" @click="${() => doAdd()}"></or-icon>
                 <or-add-modal id="add-modal"></or-add-modal>
-                <or-table 
-                    headers='["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"]'
-                    rows='[
-                        ["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"],
-                        ["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"],
-                        ["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"],
-                        ["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"],
-                        ["Name","Version","Temperature","Vault","Latest cleansing (mins ago)"]]'
-                ></or-table> 
+                ${until(renderTable, `<span>Loading...</span>`)}
             `;
 
         } else if (panelConfig && panelConfig.type === "attribute") {
