@@ -48,7 +48,6 @@ export class OrTable extends LitElement {
                             ${this.headers.map(item => html`
                                 <th class="mdc-data-table__header-cell" role="columnheader" scope="col">
                                     ${item}
-<!--                                    <or-icon icon="menu-swap" @click="${() => console.log('click')}"></or-icon>  -->
                                 </th>
                             `)}  
                         </tr>
