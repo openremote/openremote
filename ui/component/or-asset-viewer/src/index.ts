@@ -32,6 +32,7 @@ import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
 import "./components/or-attributes-modal";
 import {MDCDialog} from "@material/dialog";
+import {AttributesConfig} from "./components/or-attributes-modal";
 
 export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group";
 
