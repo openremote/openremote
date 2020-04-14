@@ -545,12 +545,14 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                             });
                         });
 
-                        return html`<or-table
-                            headers='${JSON.stringify(headers)}'
-                            rows='${JSON.stringify(rows)}'></or-table>`;
+                        return html`
+                            <or-table
+                                .headers='${columnHeaders}'
+                                .rows='${rows}'></or-table>
                             <or-attributes-modal 
                                 id="modal-attributes"
                                 .selectedAttributes="${selectedHeaders}"></or-attributes-modal>
+                        `;
                     } else {
                         return html`<span>No data found</span>`;
                     }
