@@ -13,7 +13,12 @@ import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import "@openremote/or-panel";
 import "@openremote/or-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
-import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
+import {
+    AssetTableConfig,
+    HistoryConfig,
+    OrAttributeHistory,
+    OrAttributeHistoryEvent
+} from "@openremote/or-attribute-history";
 import {Type as MapType, Util as MapUtil} from "@openremote/or-map";
 import {
     Asset,
@@ -163,8 +168,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         "path",
         "accessPublicRead"
     ];
-
-    private static selectedHeaders: AttributesConfig[] = [
+    public static selectedHeaders: AttributesConfig[] = [
         {name: "nO2", value: true},
         {name: "ozon", value: true},
         {name: "relHumidity", value: false},
@@ -201,7 +205,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         
         this.addEventListener(OrChartEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
-        this.addEventListener("UpdateSelectedAttributes", (event) => console.log("TRIGGERD", event));
+        this.addEventListener("UpdateSelectedAttributes", (event: any) => {
+            OrAssetViewer.selectedHeaders = event.detail;
+        });
     }
 
     shouldUpdate(changedProperties: PropertyValues): boolean {
@@ -543,13 +549,20 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             const renderTable = this.getAssetChildren(asset.id!, asset.attributes!.childAssetType.value)
                 .then((assetChildren: Asset[]) => {
                     if (assetChildren && assetChildren.length > 0) {
-                        const columnHeaders = Object.getOwnPropertyNames(assetChildren[0].attributes);
-                        const selectedHeaders: AttributesConfig[] = this.selectedHeaders || columnHeaders.map((header) => {
-                            return {
-                                name: header,
-                                value: true
-                            };
-                        });
+
+                        // if there's no valid setting for selectedHeaders, fetch it from the assets included in the group
+                        if (!this.selectedHeaders || this.selectedHeaders.length < 1) {
+                            this.selectedHeaders = Object.getOwnPropertyNames(assetChildren[0].attributes).map((header) => {
+                                return {
+                                    name: header,
+                                    value: true
+                                };
+                            });
+                        }
+
+                        // deduct the column headers that are indicated as false in selectedHeaders
+                        const columnHeaders = Object.getOwnPropertyNames(assetChildren[0].attributes)
+                            .filter((header: string) => !this.selectedHeaders.find((selected: AttributesConfig) => selected.name === header && !selected.value));
 
                         // turn children into a format of data that or-table wants
                         const rows = assetChildren.map((row: Asset) => {
@@ -564,7 +577,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                                 .rows='${rows}'></or-table>
                             <or-attributes-modal 
                                 id="modal-attributes"
-                                .selectedAttributes="${selectedHeaders}"></or-attributes-modal>
+                                .selectedAttributes="${this.selectedHeaders}"></or-attributes-modal>
                         `;
                     } else {
                         return html`<span>No data found</span>`;
