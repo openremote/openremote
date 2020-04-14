@@ -45,7 +45,7 @@ export class OrAttributesModal extends LitElement {
 
     protected render() {
         return html`
-               <div id="mdc-dialog-add-remove-attributes"
+            <div id="mdc-dialog-add-remove-attributes"
                 class="mdc-dialog"
                 role="alertdialog"
                 aria-modal="true"
@@ -61,11 +61,11 @@ export class OrAttributesModal extends LitElement {
                     </div>
                     <footer class="mdc-dialog__actions">
                         <or-input class="button" 
-                                slot="secondaryAction"
-                                .type="${InputType.BUTTON}" 
-                                label="${i18next.t("Cancel")}" 
-                                class="mdc-button mdc-dialog__button" 
-                                data-mdc-dialog-action="no"></or-input>
+                            slot="secondaryAction"
+                            .type="${InputType.BUTTON}" 
+                            label="${i18next.t("Cancel")}" 
+                            class="mdc-button mdc-dialog__button" 
+                            data-mdc-dialog-action="no"></or-input>
 
                         <or-input class="button" 
                             slot="primaryAction"
