@@ -24,6 +24,8 @@ const style = css`
 @customElement("or-attributes-modal")
 export class OrAttributesModal extends LitElement {
 
+    @property({type: Object})
+    public selectedAttributes: any;
 
     @query("#mdc-dialog-add-remove-attributes")
     protected _dialogElem!: HTMLElement;
