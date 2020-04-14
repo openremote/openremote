@@ -184,7 +184,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     protected _viewerConfig?: AssetViewerConfig;
     protected _attributes?: AssetAttribute[];
 
-
     constructor() {
         super();
         window.addEventListener('resize', () => OrAssetViewer.generateGrid(this.shadowRoot));
@@ -529,14 +528,19 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 }
             };
 
-            const renderTable = OrAssetViewer.getAssetChildren(asset.id!, asset.attributes!.childAssetType.value)
+            const renderTable = this.getAssetChildren(asset.id!, asset.attributes!.childAssetType.value)
                 .then((assetChildren: Asset[]) => {
                     if (assetChildren && assetChildren.length > 0) {
-                        const headers = Object.getOwnPropertyNames(assetChildren[0].attributes);
+                        const columnHeaders = Object.getOwnPropertyNames(assetChildren[0].attributes);
+                        const selectedHeaders = columnHeaders.map((header) => {
+                            return {
+                                header: true
+                            };
+                        });
 
                         // turn children into a format of data that or-table wants
                         const rows = assetChildren.map((row: Asset) => {
-                            return headers.map((header: string) => {
+                            return columnHeaders.map((header: string) => {
                                 return row.attributes![header].value;
                             });
                         });
