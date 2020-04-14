@@ -36,7 +36,7 @@ export class OrAttributesModal extends LitElement {
     protected _dialogElem!: HTMLElement;
 
     protected _dialog!: MDCDialog;
-    
+
     static get styles() {
         return [
             css`${unsafeCSS(dialogStyle)}`,
@@ -51,6 +51,7 @@ export class OrAttributesModal extends LitElement {
     private checkboxChanged = (attributeName: string, newValue: boolean) => {
         const index = this.selectedAttributes.findIndex((attr: AttributesConfig) => attr.name === attributeName);
         this.selectedAttributes[index] = {name: attributeName, value: newValue};
+    }
 
     private sendSelectedAttributes = () => {
         this.dispatchEvent(
