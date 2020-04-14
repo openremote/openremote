@@ -164,6 +164,16 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         "accessPublicRead"
     ];
 
+    private static selectedHeaders: AttributesConfig[] = [
+        {name: "nO2", value: true},
+        {name: "ozon", value: true},
+        {name: "relHumidity", value: false},
+        {name: "temperature", value: true},
+        {name: "particlesPM1", value: false},
+        {name: "particlesPM10", value: false},
+        {name: "particlesPM2_5", value: true}
+    ];
+
     static get styles() {
         return [
             style
@@ -534,7 +544,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 .then((assetChildren: Asset[]) => {
                     if (assetChildren && assetChildren.length > 0) {
                         const columnHeaders = Object.getOwnPropertyNames(assetChildren[0].attributes);
-                        const selectedHeaders: AttributesConfig[] = columnHeaders.map((header) => {
+                        const selectedHeaders: AttributesConfig[] = this.selectedHeaders || columnHeaders.map((header) => {
                             return {
                                 name: header,
                                 value: true
