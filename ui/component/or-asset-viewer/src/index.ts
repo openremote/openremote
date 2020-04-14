@@ -335,6 +335,12 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         return html`
+            <style>
+               .panel {
+                    position: relative;
+               }
+            </style>
+            
             <div class=${classMap({"panel": true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
