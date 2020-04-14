@@ -534,7 +534,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         const columnHeaders = Object.getOwnPropertyNames(assetChildren[0].attributes);
                         const selectedHeaders = columnHeaders.map((header) => {
                             return {
-                                header: true
+                                name: header,
+                                value: true
                             };
                         });
 
