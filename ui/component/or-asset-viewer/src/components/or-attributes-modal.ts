@@ -1,9 +1,14 @@
 import {customElement, html, css, LitElement, property, query, unsafeCSS} from "lit-element";
 import "@openremote/or-icon";
 import i18next from "i18next";
-import { InputType } from "@openremote/or-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {MDCDialog} from "@material/dialog";
 const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
+
+export interface AttributesConfig {
+    name: string;
+    value: boolean;
+}
 
 // language=CSS
 const style = css`
@@ -24,8 +29,8 @@ const style = css`
 @customElement("or-attributes-modal")
 export class OrAttributesModal extends LitElement {
 
-    @property({type: Object})
-    public selectedAttributes: any;
+    @property()
+    public selectedAttributes!: AttributesConfig[];
 
     @query("#mdc-dialog-add-remove-attributes")
     protected _dialogElem!: HTMLElement;
@@ -43,6 +48,11 @@ export class OrAttributesModal extends LitElement {
         this._dialog = new MDCDialog(this._dialogElem);
     }
 
+    private checkboxChanged = (attributeName: string, newValue: boolean) => {
+        const index = this.selectedAttributes.findIndex((attr: AttributesConfig) => attr.name === attributeName);
+        this.selectedAttributes[index] = {name: attributeName, value: newValue};
+    }
+
     protected render() {
         return html`
             <div id="mdc-dialog-add-remove-attributes"
@@ -55,8 +65,11 @@ export class OrAttributesModal extends LitElement {
                     <div class="mdc-dialog__surface">
                     <h2 class="mdc-dialog__title" id="my-dialog-title">${i18next.t("add_remove_attributes")}</h2>
                     <div class="dialog-container mdc-dialog__content" id="language-dialog-content" style="display:grid">
-                    ${this.selectedAttributes.map((attribute: any) => {
-                        return html`<div style="grid-column: 1 / -1;"><or-input .type="${InputType.CHECKBOX}" .label="${attribute.name}" .value="${attribute.value}"></or-input></div>`
+                    ${this.selectedAttributes.map((attribute: AttributesConfig) => {
+                        return html`<div style="grid-column: 1 / -1;">
+                            <or-input .type="${InputType.CHECKBOX}" .label="${attribute.name}" .value="${attribute.value}"
+                                @or-input-changed="${(evt: OrInputChangedEvent) => this.checkboxChanged(attribute.name, evt.detail.value)}"></or-input>
+                        </div>`;
                     })}
                     </div>
                     <footer class="mdc-dialog__actions">
