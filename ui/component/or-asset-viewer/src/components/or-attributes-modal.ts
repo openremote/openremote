@@ -21,14 +21,11 @@ const style = css`
 
 `;
 
-@customElement("or-add-modal")
-export class OrAddModal extends LitElement {
+@customElement("or-attributes-modal")
+export class OrAttributesModal extends LitElement {
 
 
-    @property({type: Boolean})
-    isVisible?: boolean = false;
-
-    @query("#mdc-dialog-add-asset")
+    @query("#mdc-dialog-add-remove-attributes")
     protected _dialogElem!: HTMLElement;
 
     protected _dialog!: MDCDialog;
@@ -46,7 +43,7 @@ export class OrAddModal extends LitElement {
 
     protected render() {
         return html`
-               <div id="mdc-dialog-add-asset"
+               <div id="mdc-dialog-add-remove-attributes"
                 class="mdc-dialog"
                 role="alertdialog"
                 aria-modal="true"

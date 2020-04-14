@@ -30,7 +30,7 @@ import {style} from "./style";
 import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
-import "./components/or-add-modal";
+import "./components/or-attributes-modal";
 import {MDCDialog} from "@material/dialog";
 
 export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group";
@@ -516,10 +516,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 return;
             }
 
-            const doAdd = () => {
-                const modal = shadowRoot!.getElementById("add-modal");
+            const openModal = () => {
+                const modal = shadowRoot!.getElementById("modal-attributes");
                 if (modal && modal.shadowRoot) {
-                    const component = modal.shadowRoot.getElementById("mdc-dialog-add-asset");
+                    const component = modal.shadowRoot.getElementById("mdc-dialog-add-remove-attributes");
                     if (component) {
                         const dialog = new MDCDialog(component);
                         if (dialog) {
@@ -544,14 +544,16 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         return html`<or-table
                             headers='${JSON.stringify(headers)}'
                             rows='${JSON.stringify(rows)}'></or-table>`;
+                            <or-attributes-modal 
+                                id="modal-attributes"
+                                .selectedAttributes="${selectedHeaders}"></or-attributes-modal>
                     } else {
                         return html`<span>No data found</span>`;
                     }
                 });
 
             content = html`
-                <or-icon icon="plus-minus" @click="${() => doAdd()}"></or-icon>
-                <or-add-modal id="add-modal"></or-add-modal>
+                <or-icon icon="plus-minus" @click="${() => openModal()}"></or-icon>
                 ${until(renderTable, `<span>Loading...</span>`)}
             `;
 
