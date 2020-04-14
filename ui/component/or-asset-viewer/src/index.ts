@@ -187,10 +187,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     constructor() {
         super();
-        window.addEventListener('resize', () => OrAssetViewer.generateGrid(this.shadowRoot));
+        window.addEventListener("resize", () => OrAssetViewer.generateGrid(this.shadowRoot));
         
-        this.addEventListener(OrChartEvent.NAME,() => OrAssetViewer.generateGrid(this.shadowRoot));
-        this.addEventListener(OrAttributeHistoryEvent.NAME,() => OrAssetViewer.generateGrid(this.shadowRoot));
+        this.addEventListener(OrChartEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
+        this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
     }
 
     shouldUpdate(changedProperties: PropertyValues): boolean {
