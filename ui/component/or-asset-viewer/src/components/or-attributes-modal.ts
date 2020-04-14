@@ -54,8 +54,10 @@ export class OrAttributesModal extends LitElement {
                 <div class="mdc-dialog__container">
                     <div class="mdc-dialog__surface">
                     <h2 class="mdc-dialog__title" id="my-dialog-title">${i18next.t("add_remove_attributes")}</h2>
-                    <div class="dialog-container mdc-dialog__content" id="language-dialog-content">
-                        test
+                    <div class="dialog-container mdc-dialog__content" id="language-dialog-content" style="display:grid">
+                    ${this.selectedAttributes.map((attribute: any) => {
+                        return html`<div style="grid-column: 1 / -1;"><or-input .type="${InputType.CHECKBOX}" .label="${attribute.name}" .value="${attribute.value}"></or-input></div>`
+                    })}
                     </div>
                     <footer class="mdc-dialog__actions">
                         <or-input class="button" 
