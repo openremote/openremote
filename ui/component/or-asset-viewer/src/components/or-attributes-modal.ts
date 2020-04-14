@@ -51,6 +51,15 @@ export class OrAttributesModal extends LitElement {
     private checkboxChanged = (attributeName: string, newValue: boolean) => {
         const index = this.selectedAttributes.findIndex((attr: AttributesConfig) => attr.name === attributeName);
         this.selectedAttributes[index] = {name: attributeName, value: newValue};
+
+    private sendSelectedAttributes = () => {
+        this.dispatchEvent(
+            new CustomEvent("UpdateSelectedAttributes", {
+                bubbles: true,
+                composed: true,
+                detail: this.selectedAttributes
+            })
+        );
     }
 
     protected render() {
@@ -85,6 +94,7 @@ export class OrAttributesModal extends LitElement {
                             .type="${InputType.BUTTON}" 
                             label="${i18next.t("ok")}" 
                             class="mdc-button mdc-dialog__button" 
+                            @click="${() => this.sendSelectedAttributes()}"
                             data-mdc-dialog-action="yes"></or-input>
 
                     </footer>
