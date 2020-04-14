@@ -191,6 +191,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         
         this.addEventListener(OrChartEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
+        this.addEventListener("UpdateSelectedAttributes", (event) => console.log("TRIGGERD", event));
     }
 
     shouldUpdate(changedProperties: PropertyValues): boolean {
