@@ -108,12 +108,12 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         },
         panels: {
-            "underlying assets": {
+            group: {
                 type: "group",
                 include: ["userNotes", "childAssetType"],
                 panelStyles: {}
             },
-            "info": {
+            info: {
                 type: "attribute",
                 hideOnMobile: true,
                 include: ["userNotes", "manufacturer", "model"],
@@ -130,7 +130,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     }
                 }
             },
-            "location": {
+            location: {
                 type: "location",
                 include: ["location"],
                 panelStyles: {
@@ -140,17 +140,17 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     }
                 }
             },
-            "attributes": {
+            attributes: {
                 type: "attribute",
                 panelStyles: {
                 }
             },
-            "history": {
+            history: {
                 type: "history",
                 panelStyles: {
                 }
             },
-            "chart": {
+            chart: {
                 type: "chart",
                 hideOnMobile: true,
                 panelStyles: {
