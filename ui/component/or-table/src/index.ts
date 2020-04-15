@@ -38,7 +38,8 @@ export class OrTable extends LitElement {
     @property({type: Array})
     public rows!: [string[]];
 
-    protected render() {
+    @property({type: Array})
+    public columnFilter?: string[];
 
         return html`
             <style>
