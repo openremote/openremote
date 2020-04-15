@@ -771,10 +771,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                 if(attr){
                     this.setAttrColor(attr);
                     this.assetAttributes = [...this.assetAttributes, attr];
+
+                    this.assets = [...this.assets, this.activeAsset];
+                    this.saveSettings();
                 }
-                this.assets = [...this.assets, this.activeAsset];
             }
-            this.saveSettings();
         }
     }
     
