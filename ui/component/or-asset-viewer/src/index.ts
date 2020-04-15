@@ -185,7 +185,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         {name: "particlesPM10", value: false},
         {name: "particlesPM2_5", value: true}
     ];
-    private static columnFilter: string[] = ["a", "b", "c"];
 
     static get styles() {
         return [
@@ -563,7 +562,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             let headers = ["a", "b", "c"];
             let rows = [["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"],
                 ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"]];
-            let columnFilter = ["a"];
+            let columnFilter = viewerConfig.groupConfig!.columnFilters || ["a"];
 
             const renderTable = this.getAssetChildren(asset.id!, asset.attributes!.childAssetType.value)
                 .then((assetChildren: Asset[]) => {
