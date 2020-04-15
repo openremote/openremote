@@ -177,6 +177,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         {name: "particlesPM10", value: false},
         {name: "particlesPM2_5", value: true}
     ];
+    private static columnFilter: string[] = ["a", "b", "c"];
 
     static get styles() {
         return [
@@ -514,7 +515,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     }
                 };
 
-
                 content = html`
                     <style>
                         or-map {
@@ -552,38 +552,29 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 }
             };
 
+            let headers = ["a", "b", "c"];
+            let rows = [["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"],
+                ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"]];
+
             const renderTable = this.getAssetChildren(asset.id!, asset.attributes!.childAssetType.value)
                 .then((assetChildren: Asset[]) => {
                     if (assetChildren && assetChildren.length > 0) {
 
-                        // if there's no valid setting for selectedHeaders, fetch it from the assets included in the group
-                        if (!this.selectedHeaders || this.selectedHeaders.length < 1) {
-                            this.selectedHeaders = Object.getOwnPropertyNames(assetChildren[0].attributes).map((header) => {
-                                return {
-                                    name: header,
-                                    value: true
-                                };
-                            });
-                        }
-
-                        // deduct the column headers that are indicated as false in selectedHeaders
-                        const columnHeaders = Object.getOwnPropertyNames(assetChildren[0].attributes)
-                            .filter((header: string) => !this.selectedHeaders.find((selected: AttributesConfig) => selected.name === header && !selected.value));
+                        // deduct the column headers from the first asset
+                        headers = Object.getOwnPropertyNames(assetChildren[0].attributes);
 
                         // turn children into a format of data that or-table wants
-                        const rows = assetChildren.map((row: Asset) => {
-                            return columnHeaders.map((header: string) => {
+                        rows = assetChildren.map((row: Asset) => {
+                            return headers.map((header: string) => {
                                 return row.attributes![header].value;
                             });
                         });
 
                         return html`
                             <or-table
-                                .headers='${columnHeaders}'
-                                .rows='${rows}'></or-table>
-                            <or-attributes-modal 
-                                id="modal-attributes"
-                                .selectedAttributes="${this.selectedHeaders}"></or-attributes-modal>
+                                .headers='${headers}'
+                                .rows='${rows}'
+                                .columnFilter='${this.columnFilter}'></or-table>
                         `;
                     } else {
                         return html`<span>No data found</span>`;
@@ -599,7 +590,12 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     }
                 </style>
                 <or-icon id="asset-group-add-remove-columns" icon="plus-minus" @click="${() => openModal()}"></or-icon>
+                <button @click="${() => this.columnFilter = ["a"]}">hit</button>
+                <pre>${this.columnFilter}</pre>
                 ${until(renderTable, `<span>Loading...</span>`)}
+                <or-attributes-modal 
+                    id="modal-attributes"
+                    .selectedAttributes="${this.selectedHeaders}"></or-attributes-modal>
             `;
 
         } else if (panelConfig && panelConfig.type === "attribute") {
