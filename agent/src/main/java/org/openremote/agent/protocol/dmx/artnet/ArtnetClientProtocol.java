@@ -25,7 +25,6 @@ import org.openremote.model.file.FileInfo;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.*;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -380,7 +379,7 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
                         }
                     }else{
                         //TODO CORRECT ERROR HANDLING
-                        throw new NotImplementedException();
+                        //throw new Exception();
                     }
                 }
             }
@@ -398,7 +397,7 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
                             }
                         }else{
                             //TODO CORRECT ERROR HANDLING
-                            throw new NotImplementedException();
+                            //throw new Exception();
                         }
                     }
                 }
@@ -430,7 +429,7 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
             }
         }else {
             //TODO CORRECT ERROR HANDLING
-            throw new NotImplementedException();
+            //throw new Exception();
         }
         return new AssetTreeNode[0];
     }
