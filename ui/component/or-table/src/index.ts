@@ -53,6 +53,12 @@ export class OrTable extends LitElement {
                     max-height: 500px;
                     overflow: auto;
                 }
+                
+                th {
+                    position: sticky;
+                    top: 0;
+                    background-color: var(--internal-or-asset-viewer-panel-color);
+                }
             </style>
             
             <div class="mdc-data-table">
