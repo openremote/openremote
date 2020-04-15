@@ -390,27 +390,27 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
             else if(lights.stream().noneMatch(l -> l.getLightId() == asset.getAttribute("Id").get().getValueAsInteger().get()))
                 assetService.deleteAsset(asset.getId());//Asset's Id hasn't been found, so remove the asset from the manager.
         }
+
+        //New data is fetched based on the changes.
         assetsUnderProtocol = assetService.findAssets(protocolConfiguration.getAssetId().get(), new AssetQuery());
-        for(AssetTreeNode node : output)
-            assetsUnderProtocol.add(node.asset);
-        for(ArtnetLight light : lights) {
+
+        for(ArtnetLight light : lights)
+        {
             boolean lightAssetExistsAlready = false;
-            for(Asset asset : assetsUnderProtocol) {
+            for(Asset asset : assetsUnderProtocol)
+            {
                 //TODO CHANGE ASSET TYPE THING TO LIGHT
-                if(asset.getWellKnownType() == AssetType.THING) {
-                    if(asset.hasAttribute("Id")) {
-                        if(asset.getAttribute("Id").get().getValueAsInteger().get() == light.getLightId()) {
-                            lightAssetExistsAlready = true;
-                        }
-                    }else{
-                        //TODO CORRECT ERROR HANDLING
-                        throw new Exception();
-                    }
-                }
+                if((asset.getWellKnownType() != AssetType.THING))
+                    continue;
+
+                if(!asset.hasAttribute("Id"))
+                    continue;
+
+                if(asset.getAttribute("Id").get().getValueAsInteger().get() == light.getLightId())
+                    lightAssetExistsAlready = true;
             }
-            if(!lightAssetExistsAlready) {
+            if(!lightAssetExistsAlready)
                 output.add(formLightAsset(light, parentAgent));
-            }
         }
         return output.toArray(new AssetTreeNode[output.size()]);
     }
