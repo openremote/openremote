@@ -289,7 +289,10 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
             e.printStackTrace();
         } catch (JsonProcessingException e) {
             e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
         return null;
     }
 
@@ -341,7 +344,7 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
         }
     }
 
-    private AssetTreeNode[] syncLightsToAssets(List<ArtnetLight> lights, AssetAttribute protocolConfiguration)
+    private AssetTreeNode[] syncLightsToAssets(List<ArtnetLight> lights, AssetAttribute protocolConfiguration) throws Exception
     {
         List<AssetTreeNode> output = new ArrayList<AssetTreeNode>();
         List<Asset> assetsUnderProtocol = assetService.findAssets(protocolConfiguration.getAssetId().get(), new AssetQuery());
@@ -379,7 +382,7 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
                         }
                     }else{
                         //TODO CORRECT ERROR HANDLING
-                        //throw new Exception();
+                        throw new Exception();
                     }
                 }
             }
@@ -397,7 +400,7 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
                             }
                         }else{
                             //TODO CORRECT ERROR HANDLING
-                            //throw new Exception();
+                            throw new Exception();
                         }
                     }
                 }
@@ -429,7 +432,7 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
             }
         }else {
             //TODO CORRECT ERROR HANDLING
-            //throw new Exception();
+            throw new Exception();
         }
         return new AssetTreeNode[0];
     }
