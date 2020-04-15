@@ -413,7 +413,7 @@ export class OrInput extends LitElement {
                                         if (this.value === optValue) {
                                             this._selectedIndex = index;
                                         }
-                                        return html`<li class="mdc-list-item${this.value === optValue ? " mdc-list-item--selected" : ""}" role="option" data-value="${optValue}">${i18next.t(optDisplay)}</li>`;
+                                        return html`<li class="mdc-list-item${this.value === optValue ? " mdc-list-item--selected" : ""}" role="option" data-value="${optValue}"><or-translate value="${optDisplay}"></or-translate></li>`;
                                     }) : ``}
                                 </ul>
                             </div>

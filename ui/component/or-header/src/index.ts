@@ -87,7 +87,7 @@ const secondaryItems: menuOption[] = [
 function getHeaderMenu(items: menuOption[]): MenuItem[] {
     return items.map(option => {
         return {
-            text: i18next.t(option.text),
+            text: option.text,
             value: option.value ? option.value : "",
             icon: option.icon,
             href: option.href

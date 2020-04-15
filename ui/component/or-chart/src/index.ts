@@ -11,7 +11,7 @@ import {
 } from "lit-element";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
-import {Asset, AssetAttribute, AttributeRef, DatapointInterval, MetaItemType} from "@openremote/model";
+import {Asset, AssetAttribute, AttributeRef, DatapointInterval, MetaItemType, Attribute} from "@openremote/model";
 import manager, {
     AssetModelUtil,
     DefaultColor2,
@@ -355,9 +355,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Array})
     public colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
 
-    @property({type: Array})
-    public usedColors: string[] = [];
-
     @property({type: String})
     public period: moment.unitOfTime.Base = "day";
 
@@ -406,13 +403,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             
             this._dialog = new MDCDialog(this._dialogElem);
 
-            this.assetAttributes.map((attr, index) => {
-                const meta = {name: "color", value: this.colors[index]};
-                if(attr.meta){
-                    attr.meta.push(meta);
-                }
-                this.usedColors = [...this.usedColors, this.colors[index]];
-            });
+            this.getSettings();
         }
     }
 
@@ -435,15 +426,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     shouldUpdate(_changedProperties: PropertyValues): boolean {
-
-        let reloadData = _changedProperties.has("period") || _changedProperties.has("compareTimestamp") || _changedProperties.has("timestamp") || _changedProperties.has("assetAttributes");
-
-        if (reloadData) {
-            this._data = [];
-            this._loadData();
-        }
-
-        return super.shouldUpdate(_changedProperties);
+   return super.shouldUpdate(_changedProperties);
     }
    
     render() {
@@ -499,7 +482,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     ` : html``}
 
                     <div id="attribute-list">
-                        ${this.assetAttributes.map((attr, index) => {
+                        ${this.assetAttributes && this.assetAttributes.map((attr, index) => {
 
                             const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attr.name!);
                             let label = Util.getAttributeLabel(attr, attributeDescriptor);
@@ -569,6 +552,8 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     setPeriodOption(value:any) {
         this.period = value;
+
+        this.saveSettings();
         this.requestUpdate();
     }
  
@@ -617,9 +602,22 @@ export class OrChart extends translate(i18next)(LitElement) {
         super.updated(changedProperties);
         if (changedProperties.has("activeAsset") && this.activeAsset && changedProperties.get("activeAsset") !== this.activeAsset) {
             this.getSettings();
-        } else {
-            this.saveSettings();
         }
+
+        if(changedProperties.has("assetAttributes") ) {
+            this.assetAttributes.forEach((attr, index) => {
+                if(this.getAttrColor(attr)) return;
+                this.setAttrColor(attr)
+            });
+        }
+
+        let reloadData = changedProperties.has("period") || changedProperties.has("compareTimestamp") || changedProperties.has("timestamp") || changedProperties.has("assetAttributes");
+
+        if (reloadData) {
+            this._data = [];
+            this._loadData();
+        }
+
         if (!this._data) {
             return;
         }
@@ -704,55 +702,47 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     getSettings() {
-        if(!this.activeAssetId) return
         const configStr = window.localStorage.getItem('OrChartConfig')
         if(!configStr) return
 
-        const assetId = this.activeAssetId;
+        const viewSelector = this.activeAssetId ? this.activeAssetId : window.location.hash;
         const config = JSON.parse(configStr);
-        const view = config.views[assetId]
+        const view = config.views[viewSelector]
         
         if(!view) return
         const query = {
             ids: view.assetIds
         }
+
         manager.rest.api.AssetResource.queryAssets(query).then((response) => {
             const assets = response.data;
-            console.log(view.attributes);
             this.assets = view.assetIds.map((assetId: string)  => assets.find(x => x.id === assetId));
             this.assetAttributes = view.attributes.map((attr: string, index: number)  => Util.getAssetAttribute(this.assets[index], attr));
-            this.timestamp = this._updateTimestamp(view.timestamp)
-            this.compareTimestamp = this._updateTimestamp(view.compareTimestamp);
             this.period = view.period;
         });
 
     }
 
     saveSettings() {
-        if(!this.activeAssetId) return
-
-        const assetId = this.activeAssetId;
+        const viewSelector = this.activeAssetId ? this.activeAssetId : window.location.hash;
         const assets: Asset[] = this.assets.filter(asset => 'id' in asset && typeof asset.id === "string");
         const assetIds = assets.map(asset => asset.id);
-        console.log(this.assetAttributes)
         const attributes = this.assetAttributes.map(attr => attr.name);
         const configStr = window.localStorage.getItem('OrChartConfig')
         let config:OrChartConfig;
-
         if(configStr) {
             config = JSON.parse(configStr);
         } else {
             config = {
                 views: {
-                    [assetId]: {}
+                    [viewSelector]: {}
                 }
             }
-        }
-        config.views[assetId] = {
+        }   
+
+        config.views[viewSelector] = {
             assetIds: assetIds,
-            attributes:attributes,
-            timestamp: this.timestamp,
-            compareTimestamp: this.compareTimestamp,
+            attributes: attributes,
             period: this.period
         };
         window.localStorage.setItem('OrChartConfig', JSON.stringify(config))
@@ -774,20 +764,28 @@ export class OrChart extends translate(i18next)(LitElement) {
             if(this.activeAsset){
                 const attr = Util.getAssetAttribute(this.activeAsset, elm.value);
                 if(attr){
-                    const color = this.colors.filter(color => this.usedColors.indexOf(color) < 0)[0];
-                    const meta = {name: "color", value: color};
-                    if(attr.meta){
-                        attr.meta.push(meta);
-                    }
-                    this.usedColors = [...this.usedColors, color];
-                    this.assets = [...this.assets, this.activeAsset];
+                    this.setAttrColor(attr);
                     this.assetAttributes = [...this.assetAttributes, attr];
                 }
+                this.assets = [...this.assets, this.activeAsset];
             }
+            this.saveSettings();
         }
     }
-
     
+    setAttrColor(attr: Attribute) {
+        const usedColors = this.assetAttributes.map(attr => this.getAttrColor(attr));
+        const color = this.colors.filter(color => usedColors.indexOf(color) < 0)[0];
+        const meta = {name: "color", value: color};
+        if(attr.meta){
+            attr.meta.push(meta);
+        }
+    }
+    
+    getAttrColor(attr: Attribute) {
+        return  Util.getMetaValue('color', attr, undefined);
+    }
+
     async onCompleted() {
         await this.updateComplete;
     }
@@ -802,7 +800,8 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _deleteAttribute (index:number) {
         this.assets = [...this.assets.slice(0, index).concat(this.assets.slice(index + 1, this.assets.length))];
         this.assetAttributes = [...this.assetAttributes.slice(0, index).concat(this.assetAttributes.slice(index + 1, this.assetAttributes.length))];
-        this.usedColors = [...this.usedColors.slice(0, index).concat(this.usedColors.slice(index + 1, this.usedColors.length))];
+
+        this.saveSettings();
     }
 
     protected _getAttributeOptions() {
@@ -859,18 +858,26 @@ export class OrChart extends translate(i18next)(LitElement) {
         if(!this.assetAttributes || !this.assets || this.assets.length === 0) {
             return;
         }
-        console.log(this.assetAttributes, this.assets);
-        let data = this.assetAttributes.map(async (attribute, index) => {
-            const valuepoints = await this._loadAttributeData(attribute, this.timestamp);
-            const bgColor = Util.getMetaValue('color', attribute, undefined);
+
+        const datasetBases = this.assetAttributes.map(attribute => {
+            const bgColor = this.getAttrColor(attribute);
             const dataset: ChartDataSets = {
-                data: valuepoints,
-                label: this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined),
                 borderColor: bgColor,
                 pointRadius: 2,
                 backgroundColor: bgColor,
                 fill: false
             };
+            return dataset;
+        });
+
+        let data = this.assetAttributes.map(async (attribute, index) => {
+            const valuepoints = await this._loadAttributeData(attribute, this.timestamp);
+            const dataset = {...datasetBases[index],
+                data: valuepoints
+            };
+            if(this.assets[index]) 
+                dataset['label'] = this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined);
+                    
             return dataset;
         });
 
@@ -881,16 +888,13 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         let predictedData = this.assetAttributes.map(async (attribute, index) => {
             const valuepoints = await this._loadPredictedAttributeData(attribute, this.timestamp);
-            const bgColor = Util.getMetaValue('color', attribute, undefined);
-            const dataset: ChartDataSets = {
+            const dataset = {...datasetBases[index],
                 data: valuepoints,
-                label: this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("predicted"),
-                borderColor: bgColor,
-                borderDash: [2, 4],
-                pointRadius: 2,
-                backgroundColor: bgColor,
-                fill: false
+                borderDash: [2, 4]
             };
+
+            if(this.assets[index]) 
+                dataset['label'] = this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("predicted");
             return dataset;
         });
         
@@ -899,31 +903,25 @@ export class OrChart extends translate(i18next)(LitElement) {
         if(this.periodCompare) {
             const cData = this.assetAttributes.map(async (attribute, index) => {
                 const valuepoints = await this._loadAttributeData(attribute, this.compareTimestamp);
-                const bgColor = Util.getMetaValue('color', attribute, undefined);
-                const dataset: ChartDataSets = {
+                const dataset = {...datasetBases[index],
                     data: valuepoints,
-                    label: this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("compare"),
-                    borderColor: Util.getMetaValue('color', attribute, undefined),
-                    borderDash: [10, 10],
-                    pointRadius: 2,
-                    backgroundColor: bgColor,
-                    fill: false
+                    borderDash: [10, 10]
                 };
+
+                if(this.assets[index]) 
+                    dataset['label'] = this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("compare");
+
                 return dataset;
             });
             
             let cPredictedData = this.assetAttributes.map(async (attribute, index) => {
                 const valuepoints = await this._loadPredictedAttributeData(attribute, this.compareTimestamp);
-                const bgColor = Util.getMetaValue('color', attribute, undefined);
-                const dataset: ChartDataSets = {
+                const dataset = {...datasetBases[index],
                     data: valuepoints,
-                    label: this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("compare")+" "+i18next.t("predicted"),
-                    borderColor: bgColor,
-                    borderDash: [2, 4],
-                    pointRadius: 2,
-                    backgroundColor: bgColor,
-                    fill: false
+                    borderDash: [2, 4]
                 };
+                if(this.assets[index]) 
+                    dataset['label'] = this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("compare")+" "+i18next.t("predicted")
                 return dataset;
             });
 

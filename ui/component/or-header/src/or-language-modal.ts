@@ -34,7 +34,9 @@ export const languageOptions: languageOptions = {
 };
 
 const getLanguageOptions = () => {
-    return Object.entries(languageOptions);
+    return Object.entries(languageOptions).map(([key, value]) => {
+        return [key, i18next.t(value)]
+    });
 }
 
 @customElement("or-language-modal")
@@ -60,7 +62,6 @@ export class OrLanguageModal extends LitElement {
         ];
     }
 
-
     firstUpdated() {
         this.language = manager.language ? manager.language : "en";
         this._dialog = new MDCDialog(this._dialogElem);
@@ -76,7 +77,7 @@ export class OrLanguageModal extends LitElement {
                 aria-describedby="my-dialog-content">
                 <div class="mdc-dialog__container">
                     <div class="mdc-dialog__surface">
-                    <h2 class="mdc-dialog__title" id="my-dialog-title">${i18next.t("choose_lang")}</h2>
+                    <h2 class="mdc-dialog__title" id="my-dialog-title"><or-translate value="choose_lang"></or-translate></h2>
                     <div class="dialog-container mdc-dialog__content" id="language-dialog-content">
                         <or-input id="language-picker"
                                     .label="${i18next.t("language")}" 
@@ -111,6 +112,8 @@ export class OrLanguageModal extends LitElement {
         if(this.shadowRoot && this.shadowRoot.getElementById('language-picker')){
             const elm = this.shadowRoot.getElementById('language-picker') as HTMLInputElement;
             manager.language = elm.value;
+            this.language = manager.language;
+            this.requestUpdate();
         }
     }
 }
