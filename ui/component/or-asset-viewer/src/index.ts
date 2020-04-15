@@ -563,6 +563,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             let headers = ["a", "b", "c"];
             let rows = [["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"],
                 ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"]];
+            let columnFilter = ["a"];
 
             const renderTable = this.getAssetChildren(asset.id!, asset.attributes!.childAssetType.value)
                 .then((assetChildren: Asset[]) => {
@@ -582,7 +583,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                             <or-table
                                 .headers='${headers}'
                                 .rows='${rows}'
-                                .columnFilter='${this.columnFilter}'></or-table>
+                                .columnFilter='${columnFilter}'></or-table>
                         `;
                     } else {
                         return html`<span>No data found</span>`;
@@ -598,8 +599,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     }
                 </style>
                 <or-icon id="asset-group-add-remove-columns" icon="plus-minus" @click="${() => openModal()}"></or-icon>
-                <button @click="${() => this.columnFilter = ["a"]}">hit</button>
-                <pre>${this.columnFilter}</pre>
+                <button @click="${() => columnFilter = ["a", "b"]}">hit</button>
+                <pre>${columnFilter}</pre>
                 ${until(renderTable, `<span>Loading...</span>`)}
                 <or-attributes-modal 
                     id="modal-attributes"
