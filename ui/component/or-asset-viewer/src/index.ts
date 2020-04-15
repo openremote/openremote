@@ -438,12 +438,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         } else if (panelConfig && panelConfig.type === "chart") {
 
             let storeDataPointAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
-            let defaultAttrs = storeDataPointAttrs.filter((attr) => (defaultAttributes && defaultAttributes.indexOf(attr.name!) >= 0));
+          
             let assetAttributes;
-
-            if(defaultAttrs.length > 0){
-                assetAttributes = defaultAttrs;
-            } else if(storeDataPointAttrs.length > 0) {
+            // let defaultAttrs = storeDataPointAttrs.filter((attr) => (defaultAttributes && defaultAttributes.indexOf(attr.name!) >= 0));
+            // if(defaultAttrs.length > 0){
+            //     assetAttributes = defaultAttrs;
+            // } else 
+            if(storeDataPointAttrs.length > 0) {
                 assetAttributes = storeDataPointAttrs;
                 assetAttributes.length = 1;
             }

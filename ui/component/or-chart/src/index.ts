@@ -402,8 +402,9 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
             
             this._dialog = new MDCDialog(this._dialogElem);
-
-            this.getSettings();
+            if(!this.activeAssetId) {
+                this.getSettings();
+            }
         }
     }
 
@@ -600,8 +601,9 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     updated(changedProperties: PropertyValues) {
         super.updated(changedProperties);
-        if (changedProperties.has("activeAsset") && this.activeAsset && changedProperties.get("activeAsset") !== this.activeAsset) {
+        if (!this._loading && changedProperties.has("activeAsset") && this.activeAsset && changedProperties.get("activeAsset") !== this.activeAsset) {
             this.getSettings();
+            return;
         }
 
         if(changedProperties.has("assetAttributes") ) {
@@ -613,7 +615,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         let reloadData = changedProperties.has("period") || changedProperties.has("compareTimestamp") || changedProperties.has("timestamp") || changedProperties.has("assetAttributes");
 
-        if (reloadData) {
+        if (reloadData && !this._loading) {
             this._data = [];
             this._loadData();
         }
@@ -702,6 +704,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     getSettings() {
+        this._loading = true;
         const configStr = window.localStorage.getItem('OrChartConfig')
         if(!configStr) return
 
@@ -713,12 +716,14 @@ export class OrChart extends translate(i18next)(LitElement) {
         const query = {
             ids: view.assetIds
         }
+        if(view.assetIds === this.assets.map(asset => asset.id)) return
 
         manager.rest.api.AssetResource.queryAssets(query).then((response) => {
             const assets = response.data;
             this.assets = view.assetIds.map((assetId: string)  => assets.find(x => x.id === assetId));
             this.assetAttributes = view.attributes.map((attr: string, index: number)  => Util.getAssetAttribute(this.assets[index], attr));
             this.period = view.period;
+            this._loading = false;
         });
 
     }
