@@ -40,10 +40,10 @@ public class ReplaySimulatorElement extends SimulatorElement {
         super(attributeRef, AttributeValueType.ARRAY);
     }
 
-    public ReplaySimulatorDatapoint getNextDatapoint(long millis) throws JsonProcessingException {
+    public ReplaySimulatorDatapoint getNextDatapoint(long seconds) throws JsonProcessingException {
         ReplaySimulatorDatapoint[] datapoints = new ObjectMapper().registerModule(new ModelModule()).readValue(elementValue.toJson(), ReplaySimulatorDatapoint[].class);
         return Arrays.stream(datapoints)
-            .filter(replaySimulatorDatapoint -> replaySimulatorDatapoint.timestamp > millis)
+            .filter(replaySimulatorDatapoint -> replaySimulatorDatapoint.timestamp > seconds)
             .findFirst()
             .orElse(datapoints[0]);
     }

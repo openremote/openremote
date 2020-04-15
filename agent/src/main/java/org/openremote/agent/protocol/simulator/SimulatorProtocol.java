@@ -556,14 +556,14 @@ public class SimulatorProtocol extends AbstractProtocol {
             ReplaySimulatorElement.ReplaySimulatorDatapoint nextDatapoint = replaySimulatorElement.getNextDatapoint(now);
             long nextRun = nextDatapoint.timestamp;
             if (nextRun <= now) { //now is after so nextRun is next day
-                nextRun += 86400;//day in seconds
+                nextRun += 86400; //day in seconds
             }
             long nextRunRelative = nextRun - now;
 
             LOG.info("Next update for asset " + attributeRef.getEntityId() + " for attribute " + attributeRef.getAttributeName() + " in " + nextRunRelative + " second(s)");
             return executorService.schedule(() -> {
                 withLock(getProtocolName() + "::firingNextUpdate", () -> {
-                    LOG.info("Updating asset " + attributeRef.getEntityId() + "for attribute " + attributeRef.getAttributeName() + " with value " + nextDatapoint.value.toString());
+                    LOG.info("Updating asset " + attributeRef.getEntityId() + " for attribute " + attributeRef.getAttributeName() + " with value " + nextDatapoint.value.toString());
                     updateLinkedAttribute(new AttributeState(attributeRef, nextDatapoint.value));
                     replayMap.put(attributeRef, scheduleReplay(attributeRef, replaySimulatorElement));
                 });

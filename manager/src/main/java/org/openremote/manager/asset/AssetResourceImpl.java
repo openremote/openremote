@@ -246,6 +246,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(FORBIDDEN);
             }
 
+            if (!storageAsset.getRealm().equals(asset.getRealm())) {
+                LOG.fine("Cannot change asset's realm: " + storageAsset);
+                throw new WebApplicationException(FORBIDDEN);
+            }
+
             boolean isRestrictedUser = isRestrictedUser();
 
             // The asset that will ultimately be stored (override/ignore some values for restricted users)
@@ -254,7 +259,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 storageAsset,
                 isRestrictedUser ? storageAsset.getName() : null, // TODO We could allow restricted users to update names?
                 storageAsset.getRealm(), // The realm can never change
-                isRestrictedUser ? storageAsset.getParentId() : null, // Restricted users can not change realm
+                isRestrictedUser ? storageAsset.getParentId() : null, // Restricted users can not change parent
                 storageAsset.getType(), // The type can never change
                 isRestrictedUser ? storageAsset.isAccessPublicRead() : null, // Restricted user can not change access public flag
                 isRestrictedUser ? storageAsset.getAttributes() : null // Restricted users need manual attribute merging (see below)
