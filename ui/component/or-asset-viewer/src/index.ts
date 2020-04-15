@@ -591,7 +591,14 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 });
 
             content = html`
-                <or-icon icon="plus-minus" @click="${() => openModal()}"></or-icon>
+                <style>
+                    #asset-group-add-remove-columns {
+                        position: absolute;
+                        top: var(--internal-or-asset-viewer-panel-padding);
+                        right: var(--internal-or-asset-viewer-panel-padding);
+                    }
+                </style>
+                <or-icon id="asset-group-add-remove-columns" icon="plus-minus" @click="${() => openModal()}"></or-icon>
                 ${until(renderTable, `<span>Loading...</span>`)}
             `;
 

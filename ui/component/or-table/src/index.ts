@@ -41,6 +41,19 @@ export class OrTable extends LitElement {
     protected render() {
 
         return html`
+            <style>
+                :host {
+                    width: 100%;
+                }
+                
+                .mdc-data-table {
+                    width: 100%;
+                    max-width: 100%;
+                    max-height: 500px;
+                    overflow: auto;
+                }
+            </style>
+            
             <div class="mdc-data-table">
                 <table class="mdc-data-table__table" aria-label="Dessert calories">
                     <thead>
