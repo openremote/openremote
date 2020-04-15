@@ -62,6 +62,7 @@ export interface AssetViewerConfig {
     mapType?: MapType;
     historyConfig?: HistoryConfig;
     chartConfig?: OrChartConfig;
+    groupConfig?: OrGroupConfig;
 }
 
 export interface ViewerConfig {
@@ -72,6 +73,10 @@ export interface ViewerConfig {
     panelViewProvider?: (attributes: AssetAttribute[], panelName: string, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     mapType?: MapType;
     historyConfig?: HistoryConfig;
+}
+
+export interface OrGroupConfig {
+    columnFilters?: string[];
 }
 
 class EventHandler {
@@ -158,6 +163,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     gridRowStart: "1"
                 }
             }
+        },
+        groupConfig: {
+            columnFilters: ["a", "b", "c"]
         }
     };
 
