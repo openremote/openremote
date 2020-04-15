@@ -34,9 +34,7 @@ export const languageOptions: languageOptions = {
 };
 
 const getLanguageOptions = () => {
-    return Object.entries(languageOptions).map(([key, value]) => {
-        return [key, i18next.t(value)]
-    });
+    return Object.entries(languageOptions);
 }
 
 @customElement("or-language-modal")

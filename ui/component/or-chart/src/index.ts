@@ -603,7 +603,6 @@ export class OrChart extends translate(i18next)(LitElement) {
         super.updated(changedProperties);
         if (!this._loading && changedProperties.has("activeAsset") && this.activeAsset && changedProperties.get("activeAsset") !== this.activeAsset) {
             this.getSettings();
-            return;
         }
 
         if(changedProperties.has("assetAttributes") ) {
@@ -614,8 +613,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         let reloadData = changedProperties.has("period") || changedProperties.has("compareTimestamp") || changedProperties.has("timestamp") || changedProperties.has("assetAttributes");
-
-        if (reloadData && !this._loading) {
+        if (reloadData) {
             this._data = [];
             this._loadData();
         }
@@ -704,7 +702,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     getSettings() {
-        this._loading = true;
         const configStr = window.localStorage.getItem('OrChartConfig')
         if(!configStr) return
 
@@ -716,7 +713,8 @@ export class OrChart extends translate(i18next)(LitElement) {
         const query = {
             ids: view.assetIds
         }
-        if(view.assetIds === this.assets.map(asset => asset.id)) return
+        if(view.assetIds === this.assets.map(asset => asset.id)) return 
+        this._loading = true;
 
         manager.rest.api.AssetResource.queryAssets(query).then((response) => {
             const assets = response.data;
