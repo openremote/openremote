@@ -41,6 +41,7 @@ export class OrTable extends LitElement {
     @property({type: Array})
     public columnFilter?: string[];
 
+    protected render() {
         return html`
             <style>
                 :host {
