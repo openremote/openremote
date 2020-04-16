@@ -33,7 +33,7 @@ export class OrTable extends LitElement {
     }
 
     @property({type: Array})
-    public headers!: string[];
+    public headers?: string[];
 
     @property({type: Array})
     public rows!: string[][];
@@ -42,6 +42,17 @@ export class OrTable extends LitElement {
     public columnFilter?: string[];
 
     protected render() {
+
+        const headerTemplate = (!this.headers) ? html`` : html`
+            <thead>
+                <tr class="mdc-data-table__header-row">
+                    ${this.headers.map(item => html`
+                        <th class="mdc-data-table__header-cell" role="columnheader" scope="col">
+                            ${item}
+                        </th>
+                    `)}
+                </tr>
+            </thead>`;
         return html`
             <style>
                 :host {
@@ -64,15 +75,7 @@ export class OrTable extends LitElement {
             
             <div class="mdc-data-table">
                 <table class="mdc-data-table__table" aria-label="Dessert calories">
-                    <thead>
-                        <tr class="mdc-data-table__header-row">
-                            ${this.headers.map(item => html`
-                                <th class="mdc-data-table__header-cell" role="columnheader" scope="col">
-                                    ${item}
-                                </th>
-                            `)}  
-                        </tr>
-                    </thead>
+                    ${headerTemplate}
                     <tbody class="mdc-data-table__content">
                         ${this.rows.map(item => html`
                             <tr class="mdc-data-table__row">
