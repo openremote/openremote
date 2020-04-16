@@ -624,7 +624,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 attributeTable.hidden = false;
                 attributeTable.headers = [...selectedAttributes].sort();
                 attributeTable.rows = childAssets.map((asset) => {
-                    return attributeTable.headers.map((attributeName) => {
+                    return attributeTable.headers!.map((attributeName) => {
                         return asset.attributes![attributeName] ? asset.attributes![attributeName].value! as string : "";
                     });
                 });
