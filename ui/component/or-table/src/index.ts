@@ -36,7 +36,7 @@ export class OrTable extends LitElement {
     public headers!: string[];
 
     @property({type: Array})
-    public rows!: [string[]];
+    public rows!: string[][];
 
     @property({type: Array})
     public columnFilter?: string[];

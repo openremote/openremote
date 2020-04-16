@@ -1,24 +1,19 @@
 import {customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
-import {until} from "lit-html/directives/until";
 import "@openremote/or-icon";
 import "@openremote/or-input";
 import "@openremote/or-attribute-input";
 import "@openremote/or-attribute-history";
 import "@openremote/or-chart";
-import "@openremote/or-translate";
-import {translate} from "@openremote/or-translate";
-import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
-import "@openremote/or-map";
-import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
-import "@openremote/or-panel";
 import "@openremote/or-table";
+import "@openremote/or-map";
+import "@openremote/or-panel";
+import "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {OrTranslate, translate} from "@openremote/or-translate";
+import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
+import {OrTable} from "@openremote/or-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
-import {
-    AssetTableConfig,
-    HistoryConfig,
-    OrAttributeHistory,
-    OrAttributeHistoryEvent
-} from "@openremote/or-attribute-history";
+import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
 import {Type as MapType, Util as MapUtil} from "@openremote/or-map";
 import {
     Asset,
@@ -28,16 +23,14 @@ import {
     Attribute,
     AttributeEvent,
     AttributeType,
-    MetaItemType,
-    MetaItem
+    MetaItem,
+    MetaItemType
 } from "@openremote/model";
 import {style} from "./style";
 import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
-import "./components/or-attributes-modal";
-import {MDCDialog} from "@material/dialog";
-import {AttributesConfig} from "./components/or-attributes-modal";
+import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 
 export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group";
 
@@ -53,6 +46,13 @@ export interface PanelConfig {
     fieldStyles?: { [field: string]: { [style: string]: string } };
 }
 
+export interface GroupPanelConfig extends PanelConfig {
+    childAssetTypes?: { [assetType: string]: {
+        availableAttributes?: string[];
+        selectedAttributes?: string[];
+    }}
+}
+
 export interface AssetViewerConfig {
     panels: {[name: string]: PanelConfig};
     viewerStyles?: { [style: string]: string };
@@ -62,7 +62,6 @@ export interface AssetViewerConfig {
     mapType?: MapType;
     historyConfig?: HistoryConfig;
     chartConfig?: OrChartConfig;
-    groupConfig?: OrGroupConfig;
 }
 
 export interface ViewerConfig {
@@ -73,10 +72,6 @@ export interface ViewerConfig {
     panelViewProvider?: (attributes: AssetAttribute[], panelName: string, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     mapType?: MapType;
     historyConfig?: HistoryConfig;
-}
-
-export interface OrGroupConfig {
-    columnFilters?: string[];
 }
 
 class EventHandler {
@@ -117,7 +112,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 type: "group",
                 include: ["userNotes", "childAssetType"],
                 panelStyles: {}
-            },
+            } as GroupPanelConfig,
             info: {
                 type: "attribute",
                 hideOnMobile: true,
@@ -163,9 +158,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     gridRowStart: "1"
                 }
             }
-        },
-        groupConfig: {
-            columnFilters: ["a", "b", "c"]
         }
     };
 
@@ -175,15 +167,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         "type",
         "path",
         "accessPublicRead"
-    ];
-    public static selectedHeaders: AttributesConfig[] = [
-        {name: "nO2", value: true},
-        {name: "ozon", value: true},
-        {name: "relHumidity", value: false},
-        {name: "temperature", value: true},
-        {name: "particlesPM1", value: false},
-        {name: "particlesPM10", value: false},
-        {name: "particlesPM2_5", value: true}
     ];
 
     static get styles() {
@@ -213,9 +196,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         
         this.addEventListener(OrChartEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
-        this.addEventListener("UpdateSelectedAttributes", (event: any) => {
-            OrAssetViewer.selectedHeaders = event.detail;
-        });
     }
 
     shouldUpdate(changedProperties: PropertyValues): boolean {
@@ -478,7 +458,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         } else if (panelConfig && panelConfig.type === "chart") {
 
             content = html`
-                <or-chart id="chart" .config="${viewerConfig.chartConfig}" activeAssetId="${asset.id}" .activeAsset="${asset}" ></or-chart>
+                <or-chart id="chart" .config="${viewerConfig.chartConfig}" activeAssetId="${asset.id}" .activeAsset="${asset}"></or-chart>
             `;
 
         } else if (panelConfig && panelConfig.type === "location") {
@@ -546,49 +526,117 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 return;
             }
 
-            const openModal = () => {
-                const modal = shadowRoot!.getElementById("modal-attributes");
-                if (modal && modal.shadowRoot) {
-                    const component = modal.shadowRoot.getElementById("mdc-dialog-add-remove-attributes");
-                    if (component) {
-                        const dialog = new MDCDialog(component);
-                        if (dialog) {
-                            dialog.open();
-                        }
+            // Get child asset type attribute value
+            const childAssetTypeAttribute = Util.getAssetAttribute(asset, "childAssetType");
+            const groupConfig = panelConfig as GroupPanelConfig;
+
+            if (!childAssetTypeAttribute || typeof childAssetTypeAttribute.value !== "string") {
+                return;
+            }
+            let childAssetType = childAssetTypeAttribute.value as string;
+            let childAssets: Asset[] = [];
+
+            // Determine available and selected attributes for the child asset type
+            let availableAttributes: string[] = [];
+            let selectedAttributes: string[] = [];
+            let newlySelectedAttributes: string[] = []; // Updated when the dialog is open
+
+            if (groupConfig.childAssetTypes && groupConfig.childAssetTypes[childAssetType]) {
+                availableAttributes = groupConfig.childAssetTypes[childAssetType].availableAttributes ? groupConfig.childAssetTypes[childAssetType].availableAttributes! : [];
+                selectedAttributes = groupConfig.childAssetTypes[childAssetType].selectedAttributes ? groupConfig.childAssetTypes[childAssetType].selectedAttributes! : [];
+            }
+
+            // Get available and selected attributes from asset descriptor if not defined in config
+            if (availableAttributes.length === 0) {
+                const descriptor = AssetModelUtil.getAssetDescriptor(childAssetType);
+                if (descriptor && descriptor.attributeDescriptors) {
+                    availableAttributes = descriptor.attributeDescriptors.map((descriptor) => descriptor.attributeName!);
+                }
+            }
+            if ((!selectedAttributes || selectedAttributes.length === 0) && availableAttributes) {
+                selectedAttributes = [...availableAttributes];
+            }
+
+            const attributePickerModalActions: DialogAction[] = [
+                {
+                    actionName: "ok",
+                    default: true,
+                    content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("ok")}"></or-input>`,
+                    action: () => {
+                        selectedAttributes.length = 0;
+                        selectedAttributes.push(...newlySelectedAttributes);
+                        updateTable();
                     }
+                },
+                {
+                    actionName: "cancel",
+                    content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
+                    action: () => {
+                        // Nothing to do here
+                    }
+                },
+            ];
+
+            const attributePickerModalOpen = () => {
+                const dialog: OrMwcDialog = shadowRoot!.getElementById(panelName + "-attribute-modal") as OrMwcDialog;
+
+                if (dialog) {
+                    newlySelectedAttributes.length = 0;
+                    newlySelectedAttributes.push(...selectedAttributes);
+                    // Update content which will cause a re-render
+                    dialog.dialogContent = html`
+                        <div style="display:grid">
+                            ${availableAttributes.sort().map((attribute) => 
+                                html`<div style="grid-column: 1 / -1;">
+                                        <or-input .type="${InputType.CHECKBOX}" .label="${i18next.t(attribute)}" .value="${!!newlySelectedAttributes.find((selected) => selected === attribute)}"
+                                            @or-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s == attribute), 1)}"></or-input>
+                                    </div>`)}
+                        </div>
+                    `;
+                    dialog.open();
                 }
             };
 
-            let headers = ["a", "b", "c"];
-            let rows = [["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"],
-                ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"]];
-            let columnFilter = viewerConfig.groupConfig!.columnFilters || ["a"];
+            // let headers = ["a", "b", "c"];
+            // let rows = [["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"],
+            //     ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"]];
+            // let columnFilter = viewerConfig.groupConfig!.columnFilters || ["a"];
 
-            const renderTable = this.getAssetChildren(asset.id!, asset.attributes!.childAssetType.value)
-                .then((assetChildren: Asset[]) => {
-                    if (assetChildren && assetChildren.length > 0) {
+            // Function to update the table and message when assets or config changes
+            let updateTable = () => {
 
-                        // deduct the column headers from the first asset
-                        headers = Object.getOwnPropertyNames(assetChildren[0].attributes);
+                const loadingMsg: OrTranslate = shadowRoot!.getElementById(panelName + "-attribute-table-msg") as OrTranslate;
+                const attributeTable: OrTable = shadowRoot!.getElementById(panelName + "-attribute-table") as OrTable;
 
-                        // turn children into a format of data that or-table wants
-                        rows = assetChildren.map((row: Asset) => {
-                            return headers.map((header: string) => {
-                                return row.attributes![header].value;
-                            });
-                        });
+                if (!loadingMsg || !attributeTable) {
+                    return;
+                }
 
-                        return html`
-                            <or-table
-                                .headers='${headers}'
-                                .rows='${rows}'
-                                .columnFilter='${columnFilter}'></or-table>
-                        `;
-                    } else {
-                        return html`<span>No data found</span>`;
-                    }
+                if (selectedAttributes.length === 0 || !childAssets || childAssets.length === 0) {
+                    loadingMsg.value = "noData";
+                    loadingMsg.hidden = false;
+                    attributeTable.hidden = true;
+                    return;
+                }
+
+                // Update table properties which will cause a re-render
+                loadingMsg.hidden = true;
+                attributeTable.hidden = false;
+                attributeTable.headers = [...selectedAttributes].sort();
+                attributeTable.rows = childAssets.map((asset) => {
+                    return attributeTable.headers.map((attributeName) => {
+                        return asset.attributes![attributeName] ? asset.attributes![attributeName].value! as string : "";
+                    });
                 });
+            };
 
+            // Load child assets async then update the table
+            this.getAssetChildren(asset.id!, asset.attributes!.childAssetType.value).then((assetChildren) => {
+                childAssets = assetChildren;
+                updateTable();
+            });
+
+            // Define the DOM content for this panel
             content = html`
                 <style>
                     #asset-group-add-remove-columns {
@@ -597,17 +645,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         right: var(--internal-or-asset-viewer-panel-padding);
                     }
                 </style>
-                <or-icon id="asset-group-add-remove-columns" icon="plus-minus" @click="${() => openModal()}"></or-icon>
-                <button @click="${() => columnFilter = ["a", "b"]}">hit</button>
-                <pre>${columnFilter}</pre>
-                ${until(renderTable, `<span>Loading...</span>`)}
-                <or-attributes-modal 
-                    id="modal-attributes"
-                    .selectedAttributes="${this.selectedHeaders}"></or-attributes-modal>
+                <or-icon id="asset-group-add-remove-columns" icon="plus-minus" @click="${() => attributePickerModalOpen()}"></or-icon>
+                <or-table hidden .id="${panelName}-attribute-table"></or-table>
+                <span><or-translate id="${panelName}-attribute-table-msg" value="loading"></or-translate></span>
+                <or-mwc-dialog id="${panelName}-attribute-modal" dialogTitle="addRemoveAttributes" .dialogActions="${attributePickerModalActions}"></or-mwc-dialog>
             `;
 
         } else if (panelConfig && panelConfig.type === "attribute") {
-
             if (asset.type !== "urn:openremote:asset:group") {
                 return;
             }
@@ -752,26 +796,17 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         return config;
     }
 
-    public static async getAssetNames(ids: string[]): Promise<string[]> {
+    public static async getAssetChildren(id: string, childAssetType: string): Promise<Asset[]> {
         const response = await manager.rest.api.AssetResource.queryAssets({
             select: {
                 excludePath: true,
                 excludeParentInfo: true
             },
-            ids: ids
-        });
-
-        if (response.status !== 200 || !response.data || response.data.length !== ids.length) {
-            return ids;
-        }
-
-        return ids.map((id) => response.data.find((asset) => asset.id === id)!.name!);
-    }
-
-    public static async getAssetChildren(id: string, childAssetType: string): Promise<any[]> {
-        const response = await manager.rest.api.AssetResource.queryAssets({
-            ids: [id],
-            recursive: true
+            parents: [
+                {
+                    id: id
+                }
+            ]
         });
 
         if (response.status !== 200 || !response.data) {
