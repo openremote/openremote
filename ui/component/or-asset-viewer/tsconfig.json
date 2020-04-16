@@ -19,6 +19,7 @@
     { "path": "../or-icon" },
     { "path": "../or-map" },
     { "path": "../or-attribute-input" },
-    { "path": "../or-attribute-history" }
+    { "path": "../or-attribute-history" },
+    { "path": "../or-mwc-components" }
   ]
 }
