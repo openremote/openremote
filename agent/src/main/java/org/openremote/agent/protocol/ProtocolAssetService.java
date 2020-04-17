@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol;
 
 import org.openremote.container.ContainerService;
+import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent;
@@ -28,6 +29,7 @@ import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueFilter;
 
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
@@ -160,4 +162,21 @@ public interface ProtocolAssetService extends ContainerService {
      * Apply the specified set of {@link ValueFilter}s to the specified {@link Value}
      */
     Value applyValueFilters(Value value, ValueFilter<?>... filters);
+
+    /**
+     * Subscribe to changes of {@link Asset}s that are descendants of the specified
+     * {@link org.openremote.model.asset.agent.Agent}.
+     * <p>
+     * When an agent is unlinked from a protocol then all subscriptions will be automatically removed also; it is safe
+     * to call this method multiple times for the same agentId and assetChangeConsumer and only a single subscription
+     * would actually be created.
+     */
+    void subscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset>> assetChangeConsumer);
+
+    /**
+     * Unsubscribe from asset changes for the specified agent.
+     * <p>
+     * When an agent is unlinked from a protocol then all subscriptions will be automatically removed also.
+     */
+    void unsubscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset>> assetChangeConsumer);
 }
