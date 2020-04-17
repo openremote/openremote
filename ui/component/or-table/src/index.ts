@@ -10,10 +10,34 @@ const dataTableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-
 // language=CSS
 const style = css`
 
+    :host {
+        width: 100%;
+    }
+    
     :host([hidden]) {
         display: none;
     }
 
+    .mdc-data-table {
+        width: 100%;
+        max-width: 100%;
+        max-height: 500px;
+        overflow: auto;
+    }
+    .mdc-data-table.has-sticky-first-column tr th:first-of-type,
+    .mdc-data-table.has-sticky-first-column tr td:first-of-type {
+        z-index: 1;
+        position: sticky;
+        left: 0;
+        background-color: var(--internal-or-asset-viewer-panel-color);
+    }
+
+    th {
+        position: sticky;
+        top: 0;
+        background-color: var(--internal-or-asset-viewer-panel-color);
+    }
+    
     .mdc-data-table__header-cell {
         font-weight: 700;
         color: #aaa;
@@ -54,25 +78,6 @@ export class OrTable extends LitElement {
                 </tr>
             </thead>`;
         return html`
-            <style>
-                :host {
-                    width: 100%;
-                }
-                
-                .mdc-data-table {
-                    width: 100%;
-                    max-width: 100%;
-                    max-height: 500px;
-                    overflow: auto;
-                }
-                
-                th {
-                    position: sticky;
-                    top: 0;
-                    background-color: var(--internal-or-asset-viewer-panel-color);
-                }
-            </style>
-            
             <div class="mdc-data-table">
                 <table class="mdc-data-table__table" aria-label="Dessert calories">
                     ${headerTemplate}

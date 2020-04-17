@@ -104,6 +104,8 @@
   "matched": "Passend",
   "unmatched": "Nicht passend",
   "wait": "Warte",
+  "group": "Gruppe",
+  "groupAssetName": "Asset Name",
   "history": "Historie",
   "attributes": "Attribute",
   "info": "Info",

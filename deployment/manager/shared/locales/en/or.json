@@ -140,6 +140,7 @@
   "unmatched": "Unmatched",
   "wait": "Wait",
   "group": "Underlying assets",
+  "groupAssetName": "Asset name",
   "history": "History",
   "attributes": "Attributes",
   "info": "Info",
