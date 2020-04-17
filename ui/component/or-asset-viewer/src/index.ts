@@ -650,7 +650,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     }
                 </style>
                 <or-icon id="asset-group-add-remove-columns" icon="plus-minus" @click="${() => attributePickerModalOpen()}"></or-icon>
-                <or-table hidden .id="${panelName}-attribute-table"></or-table>
+                <or-table hidden .id="${panelName}-attribute-table" .options="{stickyFirstColumn:true}"></or-table>
                 <span><or-translate id="${panelName}-attribute-table-msg" value="loading"></or-translate></span>
                 <or-mwc-dialog id="${panelName}-attribute-modal" dialogTitle="addRemoveAttributes" .dialogActions="${attributePickerModalActions}"></or-mwc-dialog>
             `;
