@@ -7,6 +7,11 @@ import {DefaultColor1, DefaultColor4, DefaultColor8} from "@openremote/core";
 
 const dataTableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-table.css");
 
+interface TableOptions {
+    columnFilter?: string[];
+    stickyFirstColumn?: boolean;
+}
+
 // language=CSS
 const style = css`
 
@@ -71,7 +76,10 @@ export class OrTable extends LitElement {
     public rows!: string[][];
 
     @property({type: Array})
-    public columnFilter?: string[];
+    public options?: TableOptions = {
+        columnFilter: [],
+        stickyFirstColumn: true
+    };
 
     protected render() {
 
@@ -86,7 +94,7 @@ export class OrTable extends LitElement {
                 </tr>
             </thead>`;
         return html`
-            <div class="mdc-data-table">
+            <div class="mdc-data-table ${classMap({"has-sticky-first-column": !!this.options!.stickyFirstColumn})}">
                 <table class="mdc-data-table__table" aria-label="Dessert calories">
                     ${headerTemplate}
                     <tbody class="mdc-data-table__content">
