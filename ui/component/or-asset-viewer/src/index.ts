@@ -626,6 +626,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 attributeTable.headers = headers.map((header) => i18next.t(header));
                 attributeTable.headers.unshift(i18next.t("groupAssetName"));
                 attributeTable.rows = childAssets.map((asset) => {
+                    // todo: it's only processing including selected headers here...
+                    // move this to the columnFilter option of the table
                     const arr = headers.map((attributeName) => {
                         return asset.attributes![attributeName] ? asset.attributes![attributeName].value! as string : "";
                     });
