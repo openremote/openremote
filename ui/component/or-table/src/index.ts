@@ -38,12 +38,20 @@ const style = css`
         background-color: var(--internal-or-asset-viewer-panel-color);
     }
     
+    th, td {
+        cursor: default;
+    }
+    
+    th:not(:first-of-type), td:not(:first-of-type) {
+        max-width: 100px;
+        text-overflow: ellipsis;
+    }
+
     .mdc-data-table__header-cell {
         font-weight: 700;
         color: #aaa;
         font-size: 12px;
     }
-
 `;
 
 @customElement("or-table")
@@ -71,7 +79,7 @@ export class OrTable extends LitElement {
             <thead>
                 <tr class="mdc-data-table__header-row">
                     ${this.headers.map(item => html`
-                        <th class="mdc-data-table__header-cell" role="columnheader" scope="col">
+                        <th class="mdc-data-table__header-cell" role="columnheader" scope="col" title="${item}">
                             ${item}
                         </th>
                     `)}
@@ -84,7 +92,7 @@ export class OrTable extends LitElement {
                     <tbody class="mdc-data-table__content">
                         ${this.rows.map(item => html`
                             <tr class="mdc-data-table__row">
-                                ${item.map(cell => html`<td class="mdc-data-table__cell">${cell}</td>`)}  
+                                ${item.map(cell => html`<td class="mdc-data-table__cell" title="${cell}">${cell}</td>`)}  
                             </tr>
                         `)}
                     </tbody>
