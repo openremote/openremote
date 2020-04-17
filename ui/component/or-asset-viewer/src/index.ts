@@ -647,7 +647,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 <style>
                     #asset-group-add-remove-columns {
                         position: absolute;
-                        top: var(--internal-or-asset-viewer-panel-padding);
+                        top: 20px;
                         right: var(--internal-or-asset-viewer-panel-padding);
                     }
                 </style>
