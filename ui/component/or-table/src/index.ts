@@ -29,6 +29,8 @@ const style = css`
         max-height: 500px;
         overflow: auto;
     }
+
+    /* first column should be sticky*/
     .mdc-data-table.has-sticky-first-column tr th:first-of-type,
     .mdc-data-table.has-sticky-first-column tr td:first-of-type {
         z-index: 1;
@@ -36,13 +38,16 @@ const style = css`
         left: 0;
         background-color: var(--internal-or-asset-viewer-panel-color);
     }
-
+    .mdc-data-table.has-sticky-first-column tr th:first-of-type {
+        z-index: 2;
+    }
+    
     th {
         position: sticky;
         top: 0;
         background-color: var(--internal-or-asset-viewer-panel-color);
     }
-    
+
     th, td {
         cursor: default;
     }
