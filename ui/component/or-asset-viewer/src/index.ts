@@ -622,9 +622,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 // Update table properties which will cause a re-render
                 loadingMsg.hidden = true;
                 attributeTable.hidden = false;
-                attributeTable.headers = [...selectedAttributes].sort();
+                attributeTable.headers = [...selectedAttributes].sort().map((header) => i18next.t(header));
                 attributeTable.rows = childAssets.map((asset) => {
-                    return attributeTable.headers!.map((attributeName) => {
+                    return [...selectedAttributes].sort().map((attributeName) => {
                         return asset.attributes![attributeName] ? asset.attributes![attributeName].value! as string : "";
                     });
                 });
