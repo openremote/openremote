@@ -15,19 +15,13 @@ interface TableOptions {
 // language=CSS
 const style = css`
 
-    :host {
-        width: 100%;
-    }
-    
     :host([hidden]) {
         display: none;
     }
 
     .mdc-data-table {
         width: 100%;
-        max-width: 100%;
         max-height: 500px;
-        overflow: auto;
     }
 
     /* first column should be sticky*/
