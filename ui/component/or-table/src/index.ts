@@ -113,7 +113,9 @@ export class OrTable extends LitElement {
                     <tbody class="mdc-data-table__content">
                         ${this.rows.map(item => html`
                             <tr class="mdc-data-table__row">
-                                ${item.map(cell => html`<td class="mdc-data-table__cell" title="${cell}">${cell}</td>`)}  
+                                ${item.map((cell: string|number) => {
+                                    return html`<td class="mdc-data-table__cell ${classMap({"mdc-data-table__cell--numeric": typeof cell === "number"})}" title="${cell}">${cell}</td>`;
+                                })}  
                             </tr>
                         `)}
                     </tbody>
