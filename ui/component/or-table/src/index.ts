@@ -35,7 +35,17 @@ const style = css`
     .mdc-data-table.has-sticky-first-column tr th:first-of-type {
         z-index: 2;
     }
-    
+
+    thead th {
+        box-shadow: 0 1px 0 0 rgb(229, 229, 229);
+    }
+    .mdc-data-table.has-sticky-first-column tr td:first-of-type {
+        box-shadow: 1px 0 0 0 rgb(229, 229, 229);
+    }
+    thead th:first-of-type {
+        box-shadow: 1px 1px 0 0 rgb(229, 229, 229);
+    }
+
     th {
         position: sticky;
         top: 0;
