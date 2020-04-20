@@ -15,6 +15,10 @@ interface TableOptions {
 // language=CSS
 const style = css`
 
+    :host {
+        width: 100%;
+    }
+    
     :host([hidden]) {
         display: none;
     }
