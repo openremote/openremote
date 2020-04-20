@@ -109,7 +109,6 @@
   "history": "Historie",
   "attributes": "Attribute",
   "info": "Info",
-  "logs":"Logs",
-  "chooseLanguage":"Choose language",
-  "addRemoveAttributes":"Add/remove attributes"
+  "logs":"Protokolle",
+  "choose_lang":"Sprache wählen"
 }

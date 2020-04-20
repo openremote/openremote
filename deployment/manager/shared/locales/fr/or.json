@@ -107,7 +107,6 @@
   "history": "Historique",
   "attributes": "Attributs",
   "info": "Info",
-  "logs":"Logs",
-  "chooseLanguage":"Choose language",
-  "addRemoveAttributes":"Add/remove attributes"
+  "logs":"Journaux",
+  "choose_lang":"Choisissez la langue"
 }
