@@ -126,31 +126,35 @@ export class OrMap extends LitElement {
         this.addEventListener(OrMapMarkerChangedEvent.NAME, this._onMarkerChangedEvent);
     }
 
+    protected firstUpdated(_changedProperties: PropertyValues): void {
+        super.firstUpdated(_changedProperties);
+        manager.addListener(this.onManagerEvent);
+        if (manager.ready) {
+            this.loadMap();
+        }
+    }
+
+    protected onManagerEvent = (event: OREvent) => {
+        switch (event) {
+            case OREvent.READY:
+                if (!manager.ready) {
+                    this.loadMap();
+                }
+                break;
+            case OREvent.DISPLAY_REALM_CHANGED:
+                break;
+        }
+    }
+
     public get markers(): OrMapMarker[] {
         return this._markers;
     }
 
+
     public disconnectedCallback() {
         super.disconnectedCallback();
         this._observer!.disconnect();
-    }
-
-    protected firstUpdated(_changedProperties: PropertyValues): void {
-        super.firstUpdated(_changedProperties);
-
-        if (!manager.ready) {
-            // Defer until openremote is initialised
-            this._initCallback = (initEvent: OREvent) => {
-                if (initEvent === OREvent.READY) {
-                    this.loadMap();
-
-                    manager.removeListener(this._initCallback!);
-                }
-            };
-            manager.addListener(this._initCallback);
-        } else {
-            this.loadMap();
-        }
+        manager.removeListener(this.onManagerEvent);
     }
 
     public loadMap() {

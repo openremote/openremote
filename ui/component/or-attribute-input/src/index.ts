@@ -134,7 +134,7 @@ export function getAttributeValueTemplate(
                     value = JSON.stringify(value, null, 2);
                 }
 
-                return value;
+                return Util.getAttributeValue(attribute, attributeDescriptor);
             };
 
             const setValue = (value: any) => {

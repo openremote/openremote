@@ -29,21 +29,10 @@ import {mapAssetCardStyle} from "./style";
 
 orAttributeTemplateProvider.setTemplate((attribute:Attribute) => {
     let template;
-    const value = attribute.value ? attribute.value : "-";
+    const value = Util.getAttributeValue(attribute, undefined)
     switch (attribute.type) {
-
-        case AttributeValueType.BOOLEAN.name:
-            template = html`<or-translate value="${value}"></or-translate>`;
-            break;
         case AttributeValueType.SWITCH_TOGGLE.name:
             template = html`<or-translate value="${value ? "On" : "Off"}"></or-translate>`;
-            break;
-        case AttributeValueType.NUMBER.name:
-        case AttributeValueType.SOUND.name:
-            template = attribute.value ? new Intl.NumberFormat().format(value) : "-";
-            break;
-        case AttributeValueType.STRING.name:
-            template = html`<or-translate value="${value}"></or-translate>`;
             break;
         case AttributeValueType.OBJECT.name:
         case AttributeValueType.ARRAY.name:
@@ -61,7 +50,7 @@ orAttributeTemplateProvider.setTemplate((attribute:Attribute) => {
             }
             break;
         default:
-            template = value;
+            template = value ? value : "-";
             break;
     }
     return template;
