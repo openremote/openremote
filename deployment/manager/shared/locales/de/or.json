@@ -110,7 +110,7 @@
   "attributes": "Attribute",
   "info": "Info",
   "logs": "Protokolle",
-  "chooseLanguage": "Choose language",
+  "chooseLanguage": "Sprache wählen",
   "attributeValueType": {
     "PERCENTAGE": "%.2f",
     "NUMBER": "%.0f",
