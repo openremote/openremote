@@ -110,7 +110,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         panels: {
             group: {
                 type: "group",
-                include: ["userNotes", "childAssetType"],
                 panelStyles: {}
             } as GroupPanelConfig,
             info: {
