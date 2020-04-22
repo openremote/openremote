@@ -171,6 +171,11 @@
   "reset": "Reset",
   "noLongerMatches": "No longer matches",
   "logs":"Logs",
-  "chooseLang":"Choose language",
-  "addRemoveAttributes":"Add/remove attributes"
+  "chooseLanguage":"Choose language",
+  "addRemoveAttributes":"Add/remove attributes",
+  "attributeValueType": {
+    "PERCENTAGE": "%.2f",
+    "NUMBER": "%.0f",
+    "TEMPERATURE": "%.1f"
+  }
 }

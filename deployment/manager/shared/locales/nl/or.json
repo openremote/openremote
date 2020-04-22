@@ -172,5 +172,10 @@
   "noLongerMatches": "Niet meer geldig",
   "logs":"Logs",
   "chooseLanguage":"Kies een taal",
-  "addRemoveAttributes":"Attributen toevoegen/verwijderen"
+  "addRemoveAttributes":"Attributen toevoegen/verwijderen",
+  "attributeValueType": {
+    "PERCENTAGE": "%.2f",
+    "NUMBER": "%.0f",
+    "TEMPERATURE": "%.1f"
+  }
 }
