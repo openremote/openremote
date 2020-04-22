@@ -214,8 +214,8 @@ export class OrMwcMenu extends LitElement {
                         ${leftTemplate}
                         ${!text ? html`` : html`
                             <span class="mdc-list-item__text">
-                                <span class="${this.twoLine ? "mdc-list-item__primary-text" : ""}">${item.text}</span>
-                                ${this.twoLine ? html`<span class="mdc-list-item__secondary-text">${item.secondaryText || ""}</span>` : ``}
+                                <span class="${this.twoLine ? "mdc-list-item__primary-text" : ""}"><or-translate value="${item.text}"></or-translate></span>
+                                ${this.twoLine ? html`<span class="mdc-list-item__secondary-text"><or-translate value="${item.secondaryText}"></or-translate></span>` : ``}
                             </span>
                         `}
                         ${rightTemplate}

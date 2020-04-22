@@ -169,5 +169,10 @@
   "reset": "Reset",
   "noLongerMatches": "Niet meer geldig",
   "logs":"Logs",
-  "choose_lang":"Kies een taal"
+  "choose_lang":"Kies een taal",
+  "attributeValueType": {
+    "PERCENTAGE": "%.2f",
+    "NUMBER": "%.0f",
+    "TEMPERATURE": "%.1f"
+  }
 }
