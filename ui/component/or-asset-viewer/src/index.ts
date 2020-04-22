@@ -661,11 +661,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 <span><or-translate id="${panelName}-attribute-table-msg" value="loading"></or-translate></span>
                 <or-mwc-dialog id="${panelName}-attribute-modal" dialogTitle="addRemoveAttributes" .dialogActions="${attributePickerModalActions}"></or-mwc-dialog>
             `;
-
-        } else if (panelConfig && panelConfig.type === "attribute") {
-            if (asset.type !== "urn:openremote:asset:group") {
-                return;
-            }
         } else {
             if(attrs.length === 0) {
                 return undefined;
