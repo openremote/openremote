@@ -105,6 +105,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
     protected final Map<AttributeRef, Pair<AssetAttribute, ConnectionStatus>> protocolConfigurations = new HashMap<>();
+    protected final Map<String, List<Consumer<PersistenceEvent<Asset>>>> childAssetSubscriptions = new HashMap<>();
     protected final Map<String, Protocol> protocols = new HashMap<>();
     protected final Map<AttributeRef, List<AttributeRef>> linkedAttributes = new HashMap<>();
     protected LocalAgentConnector localAgentConnector;
@@ -187,6 +188,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         for (Asset agent : agents) {
             linkProtocolConfigurations(agent.getAttributesStream()
                 .filter(ProtocolConfiguration::isProtocolConfiguration)
+                .collect(Collectors.toList())
             );
         }
     }
@@ -351,7 +353,9 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                     return;
                 }
                 linkProtocolConfigurations(
-                    agent.getAttributesStream().filter(ProtocolConfiguration::isProtocolConfiguration)
+                    agent.getAttributesStream()
+                        .filter(ProtocolConfiguration::isProtocolConfiguration)
+                        .collect(Collectors.toList())
                 );
                 break;
             case UPDATE:
@@ -391,6 +395,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                         .stream()
                         .noneMatch(oldProtocolAttribute::equals)
                     )
+                    .collect(Collectors.toList())
                 );
 
                 // Link protocols that are in newConfigs but not in oldConfigs
@@ -400,6 +405,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                         .stream()
                         .noneMatch(newProtocolAttribute::equals)
                     )
+                    .collect(Collectors.toList())
                 );
 
                 break;
@@ -411,6 +417,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 // Unlink any attributes that have an agent link to this agent
                 unlinkProtocolConfigurations(agent.getAttributesStream()
                     .filter(ProtocolConfiguration::isProtocolConfiguration)
+                    .collect(Collectors.toList())
                 );
                 break;
         }
@@ -420,7 +427,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
      * Looks for new, modified and obsolete AGENT_LINK attributes and links / unlinks them
      * with the protocol
      */
-    protected void processAssetChange(Asset asset, PersistenceEvent persistenceEvent) {
+    protected void processAssetChange(Asset asset, PersistenceEvent<Asset> persistenceEvent) {
         LOG.finest("Processing asset persistence event: " + persistenceEvent.getCause());
 
         switch (persistenceEvent.getCause()) {
@@ -524,9 +531,21 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 break;
             }
         }
+
+        String parentAgentId = getAgentAncestorId(asset);
+        if (parentAgentId != null) {
+            notifyChildAssetChange(parentAgentId, persistenceEvent);
+        }
     }
 
-    protected void linkProtocolConfigurations(Stream<AssetAttribute> configurations) {
+    protected String getAgentAncestorId(Asset asset) {
+        return Arrays.stream(asset.getPath())
+            .filter(assetId -> getAgents().containsKey(assetId))
+            .findFirst()
+            .orElse(null);
+    }
+
+    protected void linkProtocolConfigurations(List<AssetAttribute> configurations) {
         withLock(getClass().getSimpleName() + "::linkProtocolConfigurations", () -> configurations.forEach(configuration -> {
             AttributeRef protocolAttributeRef = configuration.getReferenceOrThrow();
             Protocol protocol = getProtocol(configuration);
@@ -587,7 +606,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         }));
     }
 
-    protected void unlinkProtocolConfigurations(Stream<AssetAttribute> configurations) {
+    protected void unlinkProtocolConfigurations(List<AssetAttribute> configurations) {
         withLock(getClass().getSimpleName() + "::unlinkProtocolConfigurations", () -> configurations.forEach(configuration -> {
             AttributeRef protocolAttributeRef = configuration.getReferenceOrThrow();
 
@@ -625,6 +644,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             // Set status to disconnected
             publishProtocolConnectionStatus(protocolAttributeRef, DISCONNECTED);
             protocolConfigurations.remove(protocolAttributeRef);
+
+            // Check if there are any remaining configs for the agent
+            String agentId = configurations.get(0).getReferenceOrThrow().getEntityId();
+            if (protocolConfigurations.keySet().stream().noneMatch(protocolConfigRef -> protocolConfigRef.getEntityId().equals(agentId))) {
+                childAssetSubscriptions.remove(agentId);
+            }
         }));
     }
 
@@ -919,6 +944,44 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         }
 
         return value;
+    }
+
+    @Override
+    public void subscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset>> assetChangeConsumer) {
+        if (protocolConfigurations.keySet().stream().noneMatch(attributeRef -> attributeRef.getEntityId().equals(agentId))) {
+            LOG.info("Attempt to subscribe to child asset changes with an invalid agent ID: " +agentId);
+            return;
+        }
+
+        withLock(getClass().getSimpleName() + "::subscribeChildAssetChange", () -> {
+            List<Consumer<PersistenceEvent<Asset>>> consumerList = childAssetSubscriptions
+                .computeIfAbsent(agentId, (id) -> new ArrayList<>());
+            if (!consumerList.contains(assetChangeConsumer)) {
+                consumerList.add(assetChangeConsumer);
+            }
+        });
+    }
+
+    @Override
+    public void unsubscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset>> assetChangeConsumer) {
+        withLock(getClass().getSimpleName() + "::unsubscribeChildAssetChange", () ->
+            childAssetSubscriptions.computeIfPresent(agentId, (id, consumerList) -> {
+                consumerList.remove(assetChangeConsumer);
+                return consumerList.isEmpty() ? null : consumerList;
+            }));
+    }
+
+    protected void notifyChildAssetChange(String agentId, PersistenceEvent<Asset> assetPersistenceEvent) {
+        withLock(getClass().getSimpleName() + "::notifyChildAssetChange", () ->
+            childAssetSubscriptions.computeIfPresent(agentId, (id, consumerList) -> {
+                LOG.fine("Notifying child asset change consumers of change to agent child asset: Agent ID=" + id + ", Asset ID=" + assetPersistenceEvent.getEntity().getId());
+                try {
+                    consumerList.forEach(consumer -> consumer.accept(assetPersistenceEvent));
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "Child asset change consumer threw an exception: Agent ID=" + id + ", Asset ID=" + assetPersistenceEvent.getEntity().getId(), e);
+                }
+                return consumerList;
+            }));
     }
 
     protected Value applySubstringFilter(StringValue value, SubStringValueFilter filter) {

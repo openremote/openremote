@@ -29,27 +29,17 @@ import {mapAssetCardStyle} from "./style";
 
 orAttributeTemplateProvider.setTemplate((attribute:Attribute) => {
     let template;
+    const value = Util.getAttributeValue(attribute, undefined)
     switch (attribute.type) {
-
-        case AttributeValueType.BOOLEAN.name:
-            template = html`<or-translate value="${attribute.value}"></or-translate>`;
-            break;
         case AttributeValueType.SWITCH_TOGGLE.name:
-            template = html`<or-translate value="${attribute.value ? "On" : "Off"}"></or-translate>`;
-            break;
-        case AttributeValueType.NUMBER.name:
-        case AttributeValueType.SOUND.name:
-            template = attribute.value ? new Intl.NumberFormat().format(attribute.value) : "-";
-            break;
-        case AttributeValueType.STRING.name:
-            template = html`<or-translate value="${attribute.value}"></or-translate>`;
+            template = html`<or-translate value="${value ? "On" : "Off"}"></or-translate>`;
             break;
         case AttributeValueType.OBJECT.name:
         case AttributeValueType.ARRAY.name:
             if(attribute.name === "status") {
-                template = html`<or-translate value="${attribute.value.result}"></or-translate>`;
+                template = html`<or-translate value="${value.result}"></or-translate>`;
             }
-            else if(attribute.value && attribute.value.content.time) {
+            else if(value && value.content.time) {
                 template = new Intl.DateTimeFormat('default', {
                     year: 'numeric',
                     month: 'numeric',
@@ -60,7 +50,7 @@ orAttributeTemplateProvider.setTemplate((attribute:Attribute) => {
             }
             break;
         default:
-            template = attribute.value ? attribute.value : "-";
+            template = value ? value : "-";
             break;
     }
     return template;

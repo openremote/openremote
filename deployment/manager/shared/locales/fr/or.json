@@ -107,6 +107,11 @@
   "history": "Historique",
   "attributes": "Attributs",
   "info": "Info",
-  "logs":"Logs",
-  "choose_lang":"Choose language"
+  "logs":"Journaux",
+  "choose_lang":"Choisissez la langue",
+  "attributeValueType": {
+    "PERCENTAGE": "%.2f",
+    "NUMBER": "%.0f",
+    "TEMPERATURE": "%.1f"
+  }
 }

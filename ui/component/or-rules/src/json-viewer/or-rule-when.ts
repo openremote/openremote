@@ -106,6 +106,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
     @property({type: Object})
     public rule?: JsonRule;
 
+    @property({type: Boolean})
     public readonly?: boolean;
 
     public config?: RulesConfig;
@@ -176,7 +177,9 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                         <div class="rule-group-item">
                             <div class="rule-condition">
                                 <or-rule-condition .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .ruleCondition="${condition}" .readonly="${this.readonly}" ></or-rule-condition>
-                                <button class="button-clear ${showRemoveCondition ? "" : "hidden"}" @click="${() => this.removeItem(condition, group, false)}"><or-icon icon="close-circle"></or-icon></input>
+                                ${showRemoveGroup ? html`
+                                    <button class="button-clear ${showRemoveCondition ? "" : "hidden"}" @click="${() => this.removeItem(condition, group, false)}"><or-icon icon="close-circle"></or-icon></input>
+                                ` : ``}
                             </div>
                         </div>
                     `;
