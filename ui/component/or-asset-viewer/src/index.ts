@@ -110,6 +110,12 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         panels: {
             group: {
                 type: "group",
+                // childAssetTypes: {
+                //     "urn:openremote:asset:enviroment": {
+                //         availableAttributes: ["nO2"],
+                //         selectedAttributes: ["nO2"]
+                //     }
+                // },
                 panelStyles: {}
             } as GroupPanelConfig,
             info: {
