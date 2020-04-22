@@ -60,7 +60,6 @@ export class OrLanguageModal extends LitElement {
         ];
     }
 
-
     firstUpdated() {
         this.language = manager.language ? manager.language : "en";
         this._dialog = new MDCDialog(this._dialogElem);
@@ -111,6 +110,8 @@ export class OrLanguageModal extends LitElement {
         if(this.shadowRoot && this.shadowRoot.getElementById('language-picker')){
             const elm = this.shadowRoot.getElementById('language-picker') as HTMLInputElement;
             manager.language = elm.value;
+            this.language = manager.language;
+            this.requestUpdate();
         }
     }
 }

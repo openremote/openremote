@@ -107,7 +107,12 @@
   "history": "Historique",
   "attributes": "Attributs",
   "info": "Info",
-  "logs":"Logs",
-  "chooseLanguage":"Choose language",
-  "addRemoveAttributes":"Add/remove attributes"
+  "logs": "Journaux",
+  "chooseLanguage": "Choisissez la langue",
+  "addRemoveAttributes": "Add/remove attributes",
+  "attributeValueType": {
+    "PERCENTAGE": "%.2f",
+    "NUMBER": "%.0f",
+    "TEMPERATURE": "%.1f"
+  }
 }

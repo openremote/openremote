@@ -462,8 +462,23 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         } else if (panelConfig && panelConfig.type === "chart") {
 
+            let storeDataPointAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
+          
+            let assetAttributes;
+            // let defaultAttrs = storeDataPointAttrs.filter((attr) => (defaultAttributes && defaultAttributes.indexOf(attr.name!) >= 0));
+            // if(defaultAttrs.length > 0){
+            //     assetAttributes = defaultAttrs;
+            // } else 
+            if(storeDataPointAttrs.length > 0) {
+                assetAttributes = storeDataPointAttrs;
+                assetAttributes.length = 1;
+            }
+            const assetList:Asset[] = [];
+            if(assetAttributes) {
+                assetAttributes.forEach(attr => assetList.push(asset));
+            }
             content = html`
-                <or-chart id="chart" .config="${viewerConfig.chartConfig}" activeAssetId="${asset.id}" .activeAsset="${asset}"></or-chart>
+                <or-chart id="chart" .config="${viewerConfig.chartConfig}" .activeAsset="${asset}"  activeAssetId="${asset.id}" .assets="${assetList ? assetList : [asset]}" .assetAttributes="${assetAttributes}"></or-chart>
             `;
 
         } else if (panelConfig && panelConfig.type === "location") {

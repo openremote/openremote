@@ -116,10 +116,6 @@ export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitEleme
         this.addEventListener(OrChartEvent.NAME,() => OrDataViewer.generateGrid(this.shadowRoot));
     }
 
-    firstUpdated() {
-        this.loadAssets();
-    }
-
     protected render() {
 
         if (this._loading) {
@@ -203,53 +199,16 @@ export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitEleme
             return;
         }
 
-        const defaults = panelConfig && panelConfig.defaults ? panelConfig.defaults : undefined;
-        let assetList: Asset[] = [];;
-        let assetAttributes: Attribute[] = [];
-        if(defaults && this._assets){ 
-                const assetIds = defaults.map(obj => obj.assetId);
-                const attributeName = defaults.map(obj => obj.attributes);
-
-                this._assets.map(asset => {
-                    const index = assetIds.indexOf(asset.id);
-                    if(index >= 0) {
-                        assetList.push(asset);
-                        let attrs:Attribute[] = Util.getAssetAttributes(asset);
-                        if(attrs) {
-                            attrs = attrs.filter(attr => {
-                                const name = attributeName[index];
-                                return attr.name && name && name.includes(attr.name);
-                            });
-                        }
-                        assetAttributes = assetAttributes.concat(attrs)
-                    }
-                });
-        }
         let content: TemplateResult | undefined;
 
         if (panelConfig && panelConfig.type === "chart") {
             content = html`
-                <or-chart id="chart" .config="${this.config.chartConfig}" .assets="${assetList ? assetList : []}" .assetAttributes="${assetAttributes}">></or-chart>
+                <or-chart id="chart" .config="${this.config.chartConfig}"></or-chart>
             `;
 
         }
 
         return content;
        
-    }
-
-    protected async loadAssets() {
-        const query = {
-            select: {
-                excludeAttributeMeta: true,
-                excludeAttributeTimestamp: true,
-                excludeAttributeValue: true,
-                excludeParentInfo: true,
-                excludeRealm: true,
-                excludePath: true
-            }
-        };
-        const response = await manager.rest.api.AssetResource.queryAssets(query);
-        this._assets = response.data;
     }
 }

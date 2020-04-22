@@ -5,6 +5,7 @@ import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next from "i18next";
 import i18nextXhr from "i18next-xhr-backend";
+import sprintf from 'i18next-sprintf-postprocessor';
 import moment from "moment";
 import {
     AssetDescriptor,
@@ -664,7 +665,7 @@ export class Manager implements EventProviderFactory {
         }
 
         try {
-            await i18next.use(i18nextXhr).init(initOptions);
+            await i18next.use(sprintf).use(i18nextXhr).init(initOptions);
         } catch (e) {
             console.error(e);
             return false;

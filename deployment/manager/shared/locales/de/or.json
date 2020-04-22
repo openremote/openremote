@@ -109,7 +109,11 @@
   "history": "Historie",
   "attributes": "Attribute",
   "info": "Info",
-  "logs":"Logs",
-  "chooseLanguage":"Choose language",
-  "addRemoveAttributes":"Add/remove attributes"
+  "logs": "Protokolle",
+  "chooseLanguage": "Choose language",
+  "attributeValueType": {
+    "PERCENTAGE": "%.2f",
+    "NUMBER": "%.0f",
+    "TEMPERATURE": "%.1f"
+  }
 }

@@ -169,8 +169,12 @@
   "oncePerDay": "Max. 1x per dag",
   "oncePerWeek": "Max. 1x per week",
   "reset": "Reset",
-  "noLongerMatches": "Niet meer geldig",
-  "logs":"Logs",
-  "chooseLanguage":"Kies een taal",
-  "addRemoveAttributes":"Attributen toevoegen/verwijderen"
+  "logs": "Logs",
+  "chooseLanguage": "Kies een taal",
+  "addRemoveAttributes": "Attributen toevoegen/verwijderen",
+  "attributeValueType": {
+    "PERCENTAGE": "%.2f",
+    "NUMBER": "%.0f",
+    "TEMPERATURE": "%.1f"
+  }
 }

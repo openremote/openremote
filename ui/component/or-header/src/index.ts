@@ -58,13 +58,13 @@ const secondaryItems: menuOption[] = [
     {
         icon: "web",
         value: "language",
-        text: "Language"
+        text: "selectLanguage"
     },
     {
         icon: "file-document-box-search-outline",
         value: "logs",
         href: "#!logs",
-        text: "Logs"
+        text: "logs"
     },
     // {
     //     icon: "account-cog",
@@ -80,14 +80,14 @@ const secondaryItems: menuOption[] = [
     {
         icon: "logout",
         value: "logout",
-        text: "Log out"
+        text: "logout"
     }
 ];
 
 function getHeaderMenu(items: menuOption[]): MenuItem[] {
     return items.map(option => {
         return {
-            text: i18next.t(option.text),
+            text: option.text,
             value: option.value ? option.value : "",
             icon: option.icon,
             href: option.href
@@ -114,7 +114,7 @@ class OrHeader extends LitElement {
     private secondaryItems: menuOption[] = secondaryItems;
 
     @property({ type: String })
-    private activeMenu: string | undefined = window.location.hash;
+    private activeMenu: string | undefined = window.location.hash ? window.location.hash : "#!map";
 
     @query("slot[name=mobile-bottom]")
     protected _mobileBottomSlot?: HTMLSlotElement;
@@ -157,9 +157,9 @@ class OrHeader extends LitElement {
                             getHeaderMenu(this.secondaryItems),
                             this.activeMenu,
                             (values: string | string[]) => this.setActiveMenu(values as string))}
-                            <span id="menu-btn-mobile" >
+                            <div id="menu-btn-mobile" >
                                 <button id="menu-btn" class="menu-btn" title="Menu" @click="${this._menuButtonClicked}">${this._drawerOpened ? html`<or-icon icon="close"></or-icon>` : html`<or-icon icon="menu"></or-icon>`}</button>
-                            </span>
+                            </div>
                 </div>
             </div>
             <or-language-modal id="language-modal"></or-language-modal>
