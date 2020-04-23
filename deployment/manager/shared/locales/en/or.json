@@ -139,6 +139,8 @@
   "matched": "Matched",
   "unmatched": "Unmatched",
   "wait": "Wait",
+  "group": "Underlying assets",
+  "groupAssetName": "Asset name",
   "history": "History",
   "attributes": "Attributes",
   "info": "Info",
@@ -169,7 +171,8 @@
   "reset": "Reset",
   "noLongerMatches": "No longer matches",
   "logs":"Logs",
-  "choose_lang":"Choose language",
+  "chooseLang": "Choose language",
+  "addRemoveAttributes": "Add/remove attributes",
   "attributeValueType": {
     "PERCENTAGE": "%.2f",
     "NUMBER": "%.0f",

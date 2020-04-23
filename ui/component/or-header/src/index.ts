@@ -1,6 +1,6 @@
 import {style} from "./style";
 import {customElement, html, LitElement, property, query} from "lit-element";
-import {MDCDialog} from '@material/dialog';
+import {MDCDialog} from "@material/dialog";
 import i18next from "i18next";
 import manager from "@openremote/core";
 import {MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
@@ -217,15 +217,15 @@ class OrHeader extends LitElement {
     setActiveMenu(value: string) {
         switch (value) {
             case "logout":
-                    manager.logout()
+                    manager.logout();
                 break;
             case "language":
-                    const modal = this.shadowRoot!.getElementById("language-modal")
-                    if(modal && modal.shadowRoot) {
+                    const modal = this.shadowRoot!.getElementById("language-modal");
+                    if (modal && modal.shadowRoot) {
                         const component = modal.shadowRoot.getElementById("mdc-dialog-language");
-                        if(component){
+                        if (component) {
                             const dialog = new MDCDialog(component);
-                            if(dialog){
+                            if (dialog) {
                                 dialog.open();
                             }
                         }

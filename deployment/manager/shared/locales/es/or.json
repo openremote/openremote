@@ -108,7 +108,7 @@
   "attributes": "Atributos",
   "info": "Informacion",
   "logs":"Registros",
-  "choose_lang":"Elige lengua",
+  "chooseLanguage": "Elige lengua",
   "attributeValueType": {
     "PERCENTAGE": "%.2f",
     "NUMBER": "%.0f",

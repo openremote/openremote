@@ -107,8 +107,9 @@
   "history": "Historique",
   "attributes": "Attributs",
   "info": "Info",
-  "logs":"Journaux",
-  "choose_lang":"Choisissez la langue",
+  "logs": "Journaux",
+  "chooseLanguage": "Choisissez la langue",
+  "addRemoveAttributes": "Add/remove attributes",
   "attributeValueType": {
     "PERCENTAGE": "%.2f",
     "NUMBER": "%.0f",
