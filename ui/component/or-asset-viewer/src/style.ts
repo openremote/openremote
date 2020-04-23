@@ -113,6 +113,7 @@ export const style = css`
         border: 1px solid #e5e5e5;
         border-radius: 5px;
         max-width: 100%;
+        position: relative;
     }
     
     .panel-content-wrapper {
