@@ -24,5 +24,8 @@ docker-build:
   script:
     - docker build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+    - docker run "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" /bin/sh -c "./gradlew --console plain clean installDist"
+#  after_script:
+#    - docker run -v 
   except:
     - master
