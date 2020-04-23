@@ -301,13 +301,29 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             if (grid) {
                 const rowHeight = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-auto-rows'));
                 const rowGap = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-row-gap'));
-                const items = shadowRoot.querySelectorAll('.panel');
-                if (items) {
-                    items.forEach((item) => {
-                        const content = item.querySelector('.panel-content-wrapper');
+                const panels = shadowRoot.querySelectorAll('.panel');
+                if (panels) {
+                    panels.forEach((panel: Element) => {
+
+                        if (panel.parentElement && panel.parentElement.classList.contains("panel-group")) {
+                            const panelWrapper = panel.parentElement;
+                            const wrappedPanels = panelWrapper.querySelectorAll('.panel');
+                            let highestRowSpan = 0;
+                            wrappedPanels.forEach((wrappedPanel: Element) => {
+                                const panelContent = panel.querySelector('.panel-content-wrapper');
+                                if (panelContent) {
+                                    const rowSpan = Math.ceil((panelContent.getBoundingClientRect().height + rowGap) / (rowHeight + rowGap));
+                                    (wrappedPanel as HTMLElement).style.gridRowEnd = "span " + rowSpan;
+                                    if (rowSpan > highestRowSpan) { highestRowSpan = rowSpan; }
+                                }
+                            });
+                            (panelWrapper as HTMLElement).style.gridRowEnd = "span " + highestRowSpan;
+                        }
+
+                        const content = panel.querySelector('.panel-content-wrapper');
                         if (content) {
                             const rowSpan = Math.ceil((content.getBoundingClientRect().height + rowGap) / (rowHeight + rowGap));
-                            (item as HTMLElement).style.gridRowEnd = "span " + rowSpan;
+                            (panel as HTMLElement).style.gridRowEnd = "span " + rowSpan;
                         }
                     });
                 }
