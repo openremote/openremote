@@ -332,7 +332,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             return;
         }
 
-        return html`
+
+        let panelHtml: TemplateResult | undefined;
+        panelHtml = html`
             <div class=${classMap({"panel": true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
@@ -344,6 +346,26 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 </div>
             </div>
         `;
+
+        if (panelConfig.type === "attributeDetail") {
+            return html`
+                <style>
+                    .panel-group {
+                        display: grid; 
+                        grid-gap: 10px;
+                        grid-template-columns: repeat(auto-fill, minmax(calc(50% - 5px),1fr));
+                        grid-auto-rows: 5px;
+                    }
+                </style>
+                
+                <div class="panel-group">
+                    ${panelHtml}
+                    ${panelHtml}
+                </div>
+            `;
+        }
+
+        return panelHtml;
     }
 
     public static getPanelContent(panelName: string, asset: Asset, attributes: AssetAttribute[], viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, shadowRoot: ShadowRoot | null): TemplateResult | undefined {
