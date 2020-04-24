@@ -67,7 +67,7 @@ const style = css`
             grid-template-columns: 1fr 1fr;
         }
     }
-    @media only screen and (max-width: 767px) {
+    @media only screen and (max-width: 779px) {
         #container {
             grid-template-columns: 1fr;
         }
