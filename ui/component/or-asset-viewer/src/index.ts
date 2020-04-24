@@ -32,7 +32,7 @@ import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
 import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 
-export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group" | "attributeDetail";
+export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group";
 
 export interface PanelConfig {
     type?: PanelType;
@@ -108,11 +108,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         },
         panels: {
-            attributeDetail: {
-                type: "attributeDetail",
-                panelStyles: {
-                }
-            },
             group: {
                 type: "group",
                 // childAssetTypes: {
