@@ -60,6 +60,16 @@ const style = css`
         -o-animation: fadein 0.3s; /* Opera < 12.1 */
         animation: fadein 0.3s;
     }
+    @media only screen and (max-width: 1023px) {
+        #container {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    @media only screen and (max-width: 767px) {
+        #container {
+            grid-template-columns: 1fr;
+        }
+    }
     
     .row {
         grid-column-start: 1;
