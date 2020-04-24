@@ -1,4 +1,4 @@
-# @openremote/or-asset-detail  \<or-asset-detail\>
+# @openremote/or-attribute-card  \<or-attribute-card\>
 [![NPM Version][npm-image]][npm-url]
 [![Linux Build][travis-image]][travis-url]
 [![Test Coverage][coveralls-image]][coveralls-url]

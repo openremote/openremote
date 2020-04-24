@@ -1,4 +1,5 @@
 import {css, customElement, html, LitElement, property, PropertyValues} from "lit-element";
+import {OrTranslate, translate} from "@openremote/or-translate";
 import {classMap} from "lit-html/directives/class-map";
 
 import i18next from "i18next";
@@ -41,7 +42,7 @@ const style = css`
     }
 `;
 
-@customElement("or-asset-detail")
+@customElement("or-attribute-card")
 export class OrAssetDetail extends LitElement {
 
     static get styles() {
@@ -50,7 +51,27 @@ export class OrAssetDetail extends LitElement {
         ];
     }
 
+    @property({type: String})
+    public assetId?: string;
+
     protected render() {
+
+
+        if (!this.assetId) {
+            return html`
+                <div class="panel">
+                    <div class="panel-content-wrapper">
+                        <div class="panel-title">
+                            <or-translate value="attributeDetail"></or-translate>
+                        </div>
+                        <div class="panel-content">
+                            <p>no attribute found</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         return html`
             <div class="panel">
                 <div class="panel-content-wrapper">

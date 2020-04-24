@@ -5,7 +5,7 @@ import "@openremote/or-data-viewer";
 import {DataViewerConfig} from "@openremote/or-data-viewer";
 import {DefaultBoxShadow, DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5} from "@openremote/core";
 
-import "@openremote/or-asset-detail";
+import "@openremote/or-attribute-card";
 
 // language=CSS
 const style = css`
@@ -110,10 +110,10 @@ class PageInsights extends connect(store)(LitElement)  {
         return html`
             <div id="wrapper">
                 <div id="container">
-                    <or-asset-detail></or-asset-detail>
-                    <or-asset-detail></or-asset-detail>
-                    <or-asset-detail></or-asset-detail>
-                    <or-asset-detail></or-asset-detail>
+                    <or-attribute-card .assetId="${this._assetId}"></or-attribute-card>
+                    <or-attribute-card .assetId="${this._assetId}"></or-attribute-card>
+                    <or-attribute-card .assetId="${this._assetId}"></or-attribute-card>
+                    <or-attribute-card .assetId="${this._assetId}"></or-attribute-card>
                     <!--<div class="row">-->
                     <!--    <or-data-viewer .config="${viewerConfig}"></or-data-viewer>-->
                     <!--</div>-->

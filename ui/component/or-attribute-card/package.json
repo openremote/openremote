@@ -1,5 +1,5 @@
 {
-  "name": "@openremote/or-asset-detail",
+  "name": "@openremote/or-attribute-card",
   "version": "1.0.0",
   "description": "OpenRemote asset detail",
   "main": "dist/umd/index.bundle.js",
