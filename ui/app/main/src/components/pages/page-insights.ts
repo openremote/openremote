@@ -47,7 +47,12 @@ const style = css`
         display: grid;
         padding: 20px 20px;
         grid-gap: 10px;
-        grid-template-columns: repeat(auto-fill, minmax(calc(50% - 5px),1fr));
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        
+        width: 100%;
+        max-width: 1400px;
+        margin-left: auto;
+        margin-right: auto;
 
         -webkit-animation: fadein 0.3s; /* Safari, Chrome and Opera > 12.1 */
         -moz-animation: fadein 0.3s; /* Firefox < 16 */
