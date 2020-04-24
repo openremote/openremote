@@ -5,6 +5,8 @@ import "@openremote/or-data-viewer";
 import {DataViewerConfig} from "@openremote/or-data-viewer";
 import {DefaultBoxShadow, DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5} from "@openremote/core";
 
+import "@openremote/or-asset-detail";
+
 // language=CSS
 const style = css`
 
@@ -75,32 +77,6 @@ const style = css`
         grid-column-start: 1;
         grid-column-end: -1;
     }
-    
-    .panel {
-        background-color: var(--internal-or-asset-viewer-panel-color);     
-        border: 1px solid #e5e5e5;
-        border-radius: 5px;
-        max-width: 100%;
-        position: relative;
-    }
-    
-    .panel-content-wrapper {
-        padding: var(--internal-or-asset-viewer-panel-padding);
-    }
-    
-    .panel-content {
-        display: flex;
-        flex-wrap: wrap;
-    }
-        
-    .panel-title {
-        text-transform: uppercase;
-        font-weight: bolder;
-        line-height: 1em;
-        color: var(--internal-or-asset-viewer-title-text-color);
-        margin-bottom: 25px;
-        flex: 0 0 auto;
-    }
 `;
 
 const viewerConfig: DataViewerConfig = {
@@ -134,49 +110,13 @@ class PageInsights extends connect(store)(LitElement)  {
         return html`
             <div id="wrapper">
                 <div id="container">
-                    <div class="panel" id="attributeDetail-panel">
-                        <div class="panel-content-wrapper">
-                            <div class="panel-title">
-                                <or-translate value="attributeDetail"></or-translate>
-                            </div>
-                            <div class="panel-content">
-                                <p>hello</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="panel" id="attributeDetail-panel">
-                        <div class="panel-content-wrapper">
-                            <div class="panel-title">
-                                <or-translate value="attributeDetail"></or-translate>
-                            </div>
-                            <div class="panel-content">
-                                <p>person</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="panel" id="attributeDetail-panel">
-                        <div class="panel-content-wrapper">
-                            <div class="panel-title">
-                                <or-translate value="attributeDetail"></or-translate>
-                            </div>
-                            <div class="panel-content">
-                                <p>welcome</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="panel" id="attributeDetail-panel">
-                        <div class="panel-content-wrapper">
-                            <div class="panel-title">
-                                <or-translate value="attributeDetail"></or-translate>
-                            </div>
-                            <div class="panel-content">
-                                <p>to this place</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-<!--                        <or-data-viewer .config="${viewerConfig}"></or-data-viewer>-->
-                    </div>
+                    <or-asset-detail></or-asset-detail>
+                    <or-asset-detail></or-asset-detail>
+                    <or-asset-detail></or-asset-detail>
+                    <or-asset-detail></or-asset-detail>
+                    <!--<div class="row">-->
+                    <!--    <or-data-viewer .config="${viewerConfig}"></or-data-viewer>-->
+                    <!--</div>-->
                 </div>
             </div>
         `;
