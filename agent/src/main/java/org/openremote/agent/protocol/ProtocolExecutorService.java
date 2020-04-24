@@ -34,15 +34,15 @@ public interface ProtocolExecutorService extends ScheduledExecutorService, Conta
     /**
      * @see java.util.concurrent.ScheduledExecutorService#schedule
      */
-    ScheduledFuture schedule(Runnable runnable, long delayMillis);
+    ScheduledFuture<?> schedule(Runnable runnable, long delayMillis);
 
     /**
      * @see java.util.concurrent.ScheduledExecutorService#scheduleAtFixedRate)
      */
-    ScheduledFuture scheduleAtFixedRate(Runnable runnable, long initialDelayMillis, long periodMillis);
+    ScheduledFuture<?> scheduleAtFixedRate(Runnable runnable, long initialDelayMillis, long periodMillis);
 
     /**
      * @see java.util.concurrent.ScheduledExecutorService#scheduleWithFixedDelay
      */
-    ScheduledFuture scheduleWithFixedDelay(Runnable runnable, long initialDelayMillis, long periodMillis);
+    ScheduledFuture<?> scheduleWithFixedDelay(Runnable runnable, long initialDelayMillis, long periodMillis);
 }
