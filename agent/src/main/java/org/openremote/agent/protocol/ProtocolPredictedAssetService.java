@@ -17,16 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.event.shared;
+package org.openremote.agent.protocol;
 
-public abstract class SharedEventWithAssetId extends SharedEvent {
+import org.openremote.container.ContainerService;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.value.Value;
 
-    public SharedEventWithAssetId() {
-    }
+public interface ProtocolPredictedAssetService extends ContainerService {
 
-    public SharedEventWithAssetId(long timestamp) {
-        super(timestamp);
-    }
+    void updateValue(AttributeRef attributeRef, Value value, long timestamp);
 
-    public abstract String getEntityId();
+    void updateValue(String assetId, String attributeName, Value value, long timestamp);
 }

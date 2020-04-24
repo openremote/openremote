@@ -48,7 +48,7 @@ public abstract class IdentityService implements ContainerService {
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return ContainerService.DEFAULT_PRIORITY - 20;
     }
 
     @Override

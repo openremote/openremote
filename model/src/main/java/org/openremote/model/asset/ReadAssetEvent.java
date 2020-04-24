@@ -19,20 +19,16 @@
  */
 package org.openremote.model.asset;
 
-import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.SharedEvent;
 
-import java.util.Arrays;
-
 /**
- * A client sends this event to the server to refresh its attribute state, expecting
- * the server to answer "soon" with {@link AttributeEvent}s. If the server
+ * A client sends this event to the server to refresh its asset state, expecting
+ * the server to answer "soon" with an {@link AssetEvent}, the client must have an
+ * {@link org.openremote.model.event.shared.EventSubscription}&lt;{@link AssetEvent}&gt;
+ * in place in order to receive the response. If the server
  * decides that the client doesn't have the right permissions, or if anything
  * else is not in order (e.g. the asset doesn't exist), the server might not react
  * at all.
- * <p>
- * If no attribute names and only an asset identifier are provided, all attributes
- * of the asset, accessible by the client, will be read/returned.
  */
 public class ReadAssetEvent extends SharedEvent {
 

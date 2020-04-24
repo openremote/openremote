@@ -66,6 +66,7 @@ public interface Constants {
 
     String UNITS_TEMPERATURE_CELCIUS = "CELCIUS";
     String UNITS_TIME_MINUTES = "MINUTES";
+    String UNITS_TIME_SECONDS = "SECONDS";
     String UNITS_SPEED_KNOTS = "KNOTS";
     String UNITS_SPEED_KPH = "SPEED_KPH";
     String UNITS_SPEED_MPS = "SPEED_MPS";

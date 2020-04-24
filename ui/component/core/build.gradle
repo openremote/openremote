@@ -1,6 +1,6 @@
 buildDir = "dist"
 
-task generate(type: Exec){
+task generate(type: Exec) {
     commandLine npmCommand("npm"), "run-script", "generate"
 }
 

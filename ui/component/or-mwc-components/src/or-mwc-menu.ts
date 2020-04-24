@@ -24,6 +24,7 @@ export interface MenuItem {
     text?: string;
     secondaryText?: string;
     value: string;
+    href?: string;
     styleMap?: {[style: string]: string};
 }
 
@@ -91,7 +92,13 @@ const style = css`
     
     .mdc-list-item__graphic {
         margin-right: 16px;
-    }    
+    }   
+
+    a {
+        text-decoration: none;
+        color: rgba(0, 0, 0, 0.87);
+    }
+     
 `;
 
 @customElement("or-mwc-menu")
@@ -182,6 +189,7 @@ export class OrMwcMenu extends LitElement {
 
                 const isSelected = this.isValueSelected((item as MenuItem).value);
                 let icon = item.icon;
+                const href = item.href;
                 const text = item.text !== undefined ? item.text : item.value;
                 let leftTemplate: TemplateResult | string = ``;
                 let rightTemplate: TemplateResult | string = ``;
@@ -201,19 +209,30 @@ export class OrMwcMenu extends LitElement {
                         <or-icon icon="${item.trailingIcon}"></or-icon>
                     </span>`;
                 }
-
-                return html`
+                const listItem = html`
                     <li @click="${(e: MouseEvent) => {this._itemClicked(e, item)}}" style="${item.styleMap ? styleMap(item.styleMap) : ""}" class="mdc-list-item ${isSelected ? "mdc-menu-item--selected" : ""}" role="menuitem" aria-checked="${isSelected}">
                         ${leftTemplate}
                         ${!text ? html`` : html`
                             <span class="mdc-list-item__text">
-                                <span class="${this.twoLine ? "mdc-list-item__primary-text" : ""}">${item.text}</span>
-                                ${this.twoLine ? html`<span class="mdc-list-item__secondary-text">${item.secondaryText || ""}</span>` : ``}
+                                <span class="${this.twoLine ? "mdc-list-item__primary-text" : ""}"><or-translate value="${item.text}"></or-translate></span>
+                                ${this.twoLine ? html`<span class="mdc-list-item__secondary-text"><or-translate value="${item.secondaryText}"></or-translate></span>` : ``}
                             </span>
                         `}
                         ${rightTemplate}
                     </li>
                 `;
+                
+                if(href) {
+                    return html`
+                        <a href="${href}" data-navigo>
+                            ${listItem}
+                        </a>
+                    `;
+                } else {
+                    return listItem;
+                }
+
+
             })}
         `;
     }

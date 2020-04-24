@@ -25,3 +25,5 @@ org.openremote.container.message.MessageBrokerSetupService
 org.openremote.manager.notification.PushNotificationHandler
 org.openremote.manager.notification.EmailNotificationHandler
 org.openremote.manager.predicted.AssetPredictedDatapointService
+org.openremote.manager.gateway.GatewayService
+org.openremote.manager.gateway.GatewayClientService

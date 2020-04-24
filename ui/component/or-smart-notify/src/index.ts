@@ -54,7 +54,6 @@ class OrSmartNotify extends LitElement {
                     excludePath: true,
                     excludeAttributes: false,
                     excludeParentInfo: false,
-                    excludeRealm: false,
                     excludeAttributeMeta: false,
                     excludeAttributeType: false,
                     excludeAttributeValue: false,

@@ -23,7 +23,6 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.security.Tenant;
-import org.openremote.model.asset.Asset;
 
 public class ManagerWebResource extends WebResource {
 
@@ -47,8 +46,8 @@ public class ManagerWebResource extends WebResource {
         return identityService.getIdentityProvider().getTenant(getRequestRealm());
     }
 
-    public boolean isTenantActiveAndAccessible(Asset asset) {
-        return identityService.getIdentityProvider().isTenantActiveAndAccessible(this, asset);
+    public boolean isTenantActiveAndAccessible(String realm) {
+        return identityService.getIdentityProvider().isTenantActiveAndAccessible(this, realm);
     }
 
     public boolean isTenantActiveAndAccessible(Tenant tenant) {

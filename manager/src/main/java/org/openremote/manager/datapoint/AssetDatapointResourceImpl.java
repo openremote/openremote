@@ -56,7 +56,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                                                  String assetId,
                                                  String attributeName,
                                                  DatapointInterval interval,
-                                                 long timestamp) {
+                                                 long fromTimestamp,
+                                                 long toTimestamp) {
         try {
 
             if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
@@ -69,7 +70,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
 
-            if (!isTenantActiveAndAccessible(asset)) {
+            if (!isTenantActiveAndAccessible(asset.getRealm())) {
                 LOG.fine("Forbidden access for user '" + getUsername() + "': " + asset);
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
@@ -81,7 +82,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             return assetDatapointService.getValueDatapoints(
                 attribute,
                 interval,
-                timestamp
+                fromTimestamp,
+                toTimestamp
             );
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);

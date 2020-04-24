@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.logging.Logger;
 
+import static org.openremote.manager.agent.AgentService.AGENT_SERVICE_PRIORITY;
+
 /**
  * Executes setup tasks for a clean installation when the application starts.
  * <p>
@@ -51,7 +53,7 @@ public class SetupService implements ContainerService {
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return AGENT_SERVICE_PRIORITY - 1; // Start before agent service to ensure agents etc. are available
     }
 
     @Override

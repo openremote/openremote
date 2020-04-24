@@ -21,10 +21,12 @@ package org.openremote.model.asset;
 
 import org.openremote.model.attribute.AttributeDescriptor;
 import org.openremote.model.attribute.AttributeDescriptorImpl;
+import org.openremote.model.attribute.MetaItemDescriptorImpl;
 import org.openremote.model.value.Values;
 
 import java.util.Optional;
 
+import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
 import static org.openremote.model.Constants.ASSET_NAMESPACE;
 import static org.openremote.model.attribute.AttributeType.*;
 import static org.openremote.model.attribute.AttributeValueType.*;
@@ -259,6 +261,30 @@ public enum AssetType implements AssetDescriptor {
             RULE_STATE,
             STORE_DATA_POINTS
         )
+    ),
+
+    GATEWAY(ASSET_NAMESPACE + ":gateway", "router-wireless", null,
+        new AttributeDescriptorImpl("clientId", STRING, null,
+            LABEL.withInitialValue(Values.create("Client ID")),
+            DESCRIPTION.withInitialValue(Values.create("Client ID for gateway to authorise")),
+            READ_ONLY
+        ),
+        new AttributeDescriptorImpl("clientSecret", STRING, null,
+            LABEL.withInitialValue(Values.create("Client Secret")),
+            DESCRIPTION.withInitialValue(Values.create("Client secret for gateway to authorise")),
+            READ_ONLY,
+            SECRET
+        ),
+        new AttributeDescriptorImpl("status", CONNECTION_STATUS, null,
+            LABEL.withInitialValue(Values.create("Connection status")),
+            DESCRIPTION.withInitialValue(Values.create("Connection status of the gateway")),
+            READ_ONLY
+        ),
+        new AttributeDescriptorImpl("disabled", BOOLEAN, Values.create(false))
+    ),
+
+    GROUP(ASSET_NAMESPACE + ":group", "folder", "B3B3B3",
+        new AttributeDescriptorImpl("childAssetType", STRING, null, READ_ONLY)
     ),
 
     THING(ASSET_NAMESPACE + ":thing", "cube-outline", null);

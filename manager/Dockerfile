@@ -9,9 +9,11 @@ ENV JAVA_HOME /etc/alternatives/java
 
 # Add git commit label must be specified at build time using --build-arg GIT_COMMIT=dadadadadad
 ARG GIT_COMMIT=unknown
+
 LABEL git-commit=$GIT_COMMIT
 
-ENV JAVA_OPTS=${JAVA_OPTS:-Xmx1g}
+ENV JAVA_OPTS=${JAVA_OPTS}
+ENV JAVA_TOOL_OPTIONS=${JAVA_TOOL_OPTIONS}
 
 ENV APP_DOCROOT /deployment/manager/app
 ENV SHARED_DOCROOT /deployment/manager/shared

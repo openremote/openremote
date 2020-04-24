@@ -32,7 +32,6 @@ import javax.persistence.TypedQuery;
 import java.sql.*;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -158,17 +157,33 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
 
             if (attributeRef != null) {
                 query
-                        .setParameter("assetId", attributeRef.getEntityId())
-                        .setParameter("attributeName", attributeRef.getAttributeName());
+                    .setParameter("assetId", attributeRef.getEntityId())
+                    .setParameter("attributeName", attributeRef.getAttributeName());
             }
 
             return query.getSingleResult();
         });
     }
 
+    public ValueDatapoint[] getValueDatapoints(AttributeRef attributeRef,
+                                               DatapointInterval datapointInterval,
+                                               long fromTimestamp,
+                                               long toTimestamp) {
+
+        Asset asset = assetStorageService.find(attributeRef.getEntityId());
+        if (asset == null) {
+            throw new IllegalStateException("Asset not found: " + attributeRef.getEntityId());
+        }
+        AssetAttribute assetAttribute = asset.getAttribute(attributeRef.getAttributeName())
+            .orElseThrow(() -> new IllegalStateException("Attribute not found: " + attributeRef.getAttributeName()));
+
+        return getValueDatapoints(assetAttribute, datapointInterval, fromTimestamp, toTimestamp);
+    }
+
     public ValueDatapoint[] getValueDatapoints(AssetAttribute attribute,
                                                DatapointInterval datapointInterval,
-                                               long timestamp) {
+                                               long fromTimestamp,
+                                               long toTimestamp) {
 
         AttributeRef attributeRef = attribute.getReferenceOrThrow();
         ValueType attributeValueType = attribute.getTypeOrThrow().getValueType();
@@ -181,33 +196,31 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                     public ValueDatapoint[] execute(Connection connection) throws SQLException {
 
                         String truncateX;
-                        String step;
                         String interval;
 
                         switch (datapointInterval) {
-                            case HOUR:
+                            case MINUTE:
                                 truncateX = "minute";
-                                step = "1 minute";
+                                interval = "1 minute";
+                                break;
+                            case HOUR:
+                                truncateX = "hour";
                                 interval = "1 hour";
                                 break;
                             case DAY:
-                                truncateX = "hour";
-                                step = "1 hour";
+                                truncateX = "day";
                                 interval = "1 day";
                                 break;
                             case WEEK:
                                 truncateX = "day";
-                                step = "1 day";
                                 interval = "7 day";
                                 break;
                             case MONTH:
                                 truncateX = "day";
-                                step = "1 day";
                                 interval = "1 month";
                                 break;
                             case YEAR:
                                 truncateX = "month";
-                                step = "1 month";
                                 interval = "1 year";
                                 break;
                             default:
@@ -223,7 +236,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                             query.append("select TS as X, coalesce(AVG_VALUE, null) as Y " +
                                 " from ( " +
                                 "       select date_trunc(?, GS)::timestamp TS " +
-                                "       from generate_series(to_timestamp(?) - ?, to_timestamp(?), ?) GS " +
+                                "       from generate_series(to_timestamp(?), to_timestamp(?), ?) GS " +
                                 "       ) TS " +
                                 "  left join ( " +
                                 "       select " +
@@ -237,7 +250,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
 
                             query.append(" from ASSET_DATAPOINT " +
                                 "         where " +
-                                "           TIMESTAMP >= to_timestamp(?) - ? " +
+                                "           TIMESTAMP >= to_timestamp(?) " +
                                 "           and " +
                                 "           TIMESTAMP <= to_timestamp(?) " +
                                 "           and " +
@@ -249,7 +262,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                         } else {
                             query.append("select distinct TIMESTAMP AS X, value AS Y from ASSET_DATAPOINT " +
                                 "where " +
-                                "TIMESTAMP >= to_timestamp(?) - ? " +
+                                "TIMESTAMP >= to_timestamp(?)" +
                                 "and " +
                                 "TIMESTAMP <= to_timestamp(?) " +
                                 "and " +
@@ -259,25 +272,23 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
 
                         try (PreparedStatement st = connection.prepareStatement(query.toString())) {
 
-                            long timestampSeconds = timestamp / 1000;
+                            long fromTimestampSeconds = fromTimestamp / 1000;
+                            long toTimestampSeconds = toTimestamp / 1000;
                             if (downsample) {
                                 st.setString(1, truncateX);
-                                st.setLong(2, timestampSeconds);
-                                st.setObject(3, new PGInterval(interval));
-                                st.setLong(4, timestampSeconds);
-                                st.setObject(5, new PGInterval(step));
-                                st.setString(6, truncateX);
-                                st.setLong(7, timestampSeconds);
-                                st.setObject(8, new PGInterval(interval));
-                                st.setLong(9, timestampSeconds);
-                                st.setString(10, attributeRef.getEntityId());
-                                st.setString(11, attributeRef.getAttributeName());
+                                st.setLong(2, fromTimestampSeconds);
+                                st.setLong(3, toTimestampSeconds);
+                                st.setObject(4, new PGInterval(interval));
+                                st.setString(5, truncateX);
+                                st.setLong(6, fromTimestampSeconds);
+                                st.setLong(7, toTimestampSeconds);
+                                st.setString(8, attributeRef.getEntityId());
+                                st.setString(9, attributeRef.getAttributeName());
                             } else {
-                                st.setLong(1, timestampSeconds);
-                                st.setObject(2, new PGInterval(interval));
-                                st.setLong(3, timestampSeconds);
-                                st.setString(4, attributeRef.getEntityId());
-                                st.setString(5, attributeRef.getAttributeName());
+                                st.setLong(1, fromTimestampSeconds);
+                                st.setLong(2, toTimestampSeconds);
+                                st.setString(3, attributeRef.getEntityId());
+                                st.setString(4, attributeRef.getAttributeName());
                             }
 
                             try (ResultSet rs = st.executeQuery()) {
@@ -303,7 +314,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                         .attributeMeta(
                                 new MetaPredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS),
                                 new MetaPredicate(MetaItemType.STORE_DATA_POINTS))
-                        .select(AssetQuery.Select.selectExcludePathAndParentAndRealm()));
+                        .select(AssetQuery.Select.selectExcludePathAndParentInfo()));
 
         List<AssetAttribute> attributes = assets.stream()
                 .map(asset -> asset

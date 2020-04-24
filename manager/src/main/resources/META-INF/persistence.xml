@@ -11,7 +11,6 @@
         <class>org.openremote.container.util</class>
 
         <class>org.openremote.model.asset.Asset</class>
-        <class>org.openremote.model.notification.DeviceNotificationToken</class>
         <class>org.openremote.model.notification.SentNotification</class>
         <class>org.openremote.manager.security.UserConfiguration</class>
         <class>org.openremote.model.datapoint.AssetDatapoint</class>
@@ -23,6 +22,7 @@
         <class>org.openremote.model.rules.TenantRuleset</class>
         <class>org.openremote.model.rules.AssetRuleset</class>
         <class>org.openremote.model.syslog.SyslogEvent</class>
+        <class>org.openremote.model.gateway.GatewayConnection</class>
 
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 

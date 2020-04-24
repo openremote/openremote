@@ -6,7 +6,8 @@
     "rootDir": "src"
   },
   "include": [
-    "./src"
+    "./src",
+    "./@types"
   ],
   "references": [
     { "path": "../model" },

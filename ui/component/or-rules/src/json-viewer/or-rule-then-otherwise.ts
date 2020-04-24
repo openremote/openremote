@@ -34,6 +34,7 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
         addNotification = config.controls.allowedActionTypes.indexOf(ActionType.NOTIFICATION) >= 0;
     }
 
+
     const menu: MenuItem[] = [];
 
     if (addAssetTypes && assetDescriptors) {
@@ -184,10 +185,12 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
     @property({type: Object, attribute: false})
     public rule!: JsonRule;
 
+    @property({type: Boolean})
     public readonly?: boolean;
 
     public config?: RulesConfig;
 
+    @property({type: Object, attribute: false})
     public assetDescriptors?: AssetDescriptor[];
 
     protected get thenAllowAdd() {
@@ -305,14 +308,14 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
     }
 
     protected render() {
-
+        const thenAllowAdd = !this.readonly && (this.thenAllowAdd || this.rule.then!.length > 1);
         return html`
             <div>
                 <or-panel .heading="${i18next.t("then")}...">
                     ${this.ruleRecurrenceTemplate(this.rule.recurrence)}
 
                     ${!this.rule.then ? `` : this.rule.then.map((action: RuleActionUnion) => this.ruleActionTemplate(this.rule.then!, action))}
-                    ${this.thenAllowAdd ? html`
+                    ${thenAllowAdd ? html`
                         <span class="add-button-wrapper">
                             ${getContentWithMenuTemplate(
                                 html`<or-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,

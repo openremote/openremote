@@ -82,8 +82,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = 100
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_BATCH_MILLIS = 200
         def services = Lists.newArrayList(defaultServices())
-        services.removeIf {it instanceof PushNotificationHandler}
-        services.add(mockPushNotificationHandler)
+        services.replaceAll{it instanceof PushNotificationHandler ? mockPushNotificationHandler : it}
         def container = startContainer(defaultConfig(serverPort), services)
         def assetStorageService = container.getService(AssetStorageService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -484,7 +483,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert geofences.size() == 0
 
         when: "a console is deleted"
-        assetStorageService.delete([testUser3Console2.id])
+        assetStorageService.delete([testUser3Console2.id],false)
 
         then: "the deleted console should be removed from ORConsoleGeofenceAssetAdapter"
         conditions.eventually {

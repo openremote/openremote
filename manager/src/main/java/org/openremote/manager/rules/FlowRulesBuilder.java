@@ -6,10 +6,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.rules.facade.NotificationsFacade;
 import org.openremote.manager.rules.flow.*;
-import org.openremote.model.rules.Assets;
-import org.openremote.model.rules.Notifications;
-import org.openremote.model.rules.PredictedDatapoints;
-import org.openremote.model.rules.Users;
+import org.openremote.model.rules.*;
 import org.openremote.model.rules.flow.*;
 
 import java.util.*;
@@ -22,6 +19,7 @@ public class FlowRulesBuilder {
     private Assets assetsFacade;
     private Users usersFacade;
     private Notifications notificationFacade;
+    private HistoricDatapoints historicDatapointsFacade;
     private PredictedDatapoints predictedDatapointsFacade;
 
     private TimerService timerService;
@@ -32,12 +30,14 @@ public class FlowRulesBuilder {
             Assets assetsFacade,
             Users usersFacade,
             Notifications notificationFacade,
+            HistoricDatapoints historicDatapointsFacade,
             PredictedDatapoints predictedDatapointsFacade) {
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
         this.assetsFacade = assetsFacade;
         this.usersFacade = usersFacade;
         this.notificationFacade = notificationFacade;
+        this.historicDatapointsFacade = historicDatapointsFacade;
         this.predictedDatapointsFacade = predictedDatapointsFacade;
     }
 
@@ -64,7 +64,7 @@ public class FlowRulesBuilder {
     }
 
     private Rule createRule(String name, NodeCollection collection, Node outputNode) throws Exception {
-        Object implementationResult = NodeModel.getImplementationFor(outputNode.getName()).execute(new NodeExecutionRequestInfo(collection, outputNode, null, null, assetsFacade, usersFacade, notificationFacade, predictedDatapointsFacade));
+        Object implementationResult = NodeModel.getImplementationFor(outputNode.getName()).execute(new NodeExecutionRequestInfo(collection, outputNode, null, null, assetsFacade, usersFacade, notificationFacade, historicDatapointsFacade, predictedDatapointsFacade));
 
         if (implementationResult == null)
             throw new NullPointerException(outputNode.getName() + " node returns null");

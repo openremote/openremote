@@ -30,7 +30,7 @@ create table ASSET (
 );
 
 create table ASSET_DATAPOINT (
-  TIMESTAMP      timestamp with time zone   not null,
+  TIMESTAMP      timestamp                  not null,
   ENTITY_ID      varchar(36)                not null,
   ATTRIBUTE_NAME varchar(255)               not null,
   VALUE          jsonb                      not null,
@@ -122,11 +122,23 @@ create table SYSLOG_EVENT (
 );
 
 create table ASSET_PREDICTED_DATAPOINT (
-  TIMESTAMP      timestamp with time zone   not null,
+  TIMESTAMP      timestamp                  not null,
   ENTITY_ID      varchar(36)                not null,
   ATTRIBUTE_NAME varchar(255)               not null,
   VALUE          jsonb                      not null,
   primary key (TIMESTAMP, ENTITY_ID, ATTRIBUTE_NAME)
+);
+
+create table GATEWAY_CONNECTION (
+    LOCAL_REALM        varchar(255)             not null,
+    REALM              varchar(255)             not null,
+    HOST               varchar(255)             not null,
+    PORT               int8                     null,
+    CLIENT_ID          varchar(36)              not null,
+    CLIENT_SECRET      varchar(36)              not null,
+    SECURED            boolean                  null,
+    DISABLED           boolean                  not null default false,
+    primary key (LOCAL_REALM)
 );
 
 /*

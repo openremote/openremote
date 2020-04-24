@@ -1,6 +1,6 @@
 import {customElement, property, PropertyValues} from "lit-element";
 import {OrMapMarker} from "./or-map-marker";
-import {AttributeEvent, AttributeType, GeoJSONPoint, AssetType, AssetEvent, AssetEventCause, Asset} from "@openremote/model";
+import {AttributeEvent, AttributeType, GeoJSONPoint, AssetType, AssetEvent, AssetEventCause, Asset, MetaItemType} from "@openremote/model";
 import {subscribe} from "@openremote/core";
 import manager, {AssetModelUtil} from "@openremote/core";
 import {Util} from "@openremote/core";

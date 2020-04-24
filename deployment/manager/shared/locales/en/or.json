@@ -6,6 +6,7 @@
   "asset": "Asset",
   "asset_plural": "Assets",
   "attribute": "Attribute",
+  "insights": "Insights",
   "scenes": "Scenes",
   "settings": "Settings",
   "selectLanguage": "Select Language",
@@ -138,6 +139,8 @@
   "matched": "Matched",
   "unmatched": "Unmatched",
   "wait": "Wait",
+  "group": "Underlying assets",
+  "groupAssetName": "Asset name",
   "history": "History",
   "attributes": "Attributes",
   "info": "Info",
@@ -166,5 +169,13 @@
   "oncePerDay": "Once per day",
   "oncePerWeek": "Once per week",
   "reset": "Reset",
-  "noLongerMatches": "No longer matches"
+  "noLongerMatches": "No longer matches",
+  "logs":"Logs",
+  "chooseLang": "Choose language",
+  "addRemoveAttributes": "Add/remove attributes",
+  "attributeValueType": {
+    "PERCENTAGE": "%.2f",
+    "NUMBER": "%.0f",
+    "TEMPERATURE": "%.1f"
+  }
 }

@@ -53,6 +53,7 @@ import static org.openremote.container.Container.JSON;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.attribute.MetaItemType.ACCESS_RESTRICTED_READ;
 import static org.openremote.model.query.AssetQuery.Access;
+import static org.openremote.model.query.AssetQuery.Select.selectExcludeAll;
 import static org.openremote.model.query.AssetQuery.Select.selectExcludePathAndAttributes;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
@@ -216,7 +217,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (asset == null)
                 throw new WebApplicationException(NOT_FOUND);
 
-            if (!isTenantActiveAndAccessible(asset)) {
+            if (!isTenantActiveAndAccessible(asset.getRealm())) {
                 LOG.fine("Forbidden access for user '" + getUsername() + "': " + asset);
                 throw new WebApplicationException(FORBIDDEN);
             }
@@ -235,12 +236,18 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     public void update(RequestParams requestParams, String assetId, Asset asset) {
         try {
             Asset storageAsset = assetStorageService.find(assetId, true);
+
             if (storageAsset == null)
                 throw new WebApplicationException(NOT_FOUND);
 
-            // Current and new realm of asset must be accessible
-            if (!isTenantActiveAndAccessible(storageAsset) || !isTenantActiveAndAccessible(asset)) {
-                LOG.fine("Current or new tenant not accessible by user '" + getUsername() + "', can't update: " + storageAsset);
+            // Realm of asset must be accessible
+            if (!isTenantActiveAndAccessible(storageAsset.getRealm())) {
+                LOG.fine("Tenant not accessible by user '" + getUsername() + "', can't update: " + storageAsset);
+                throw new WebApplicationException(FORBIDDEN);
+            }
+
+            if (!storageAsset.getRealm().equals(asset.getRealm())) {
+                LOG.fine("Cannot change asset's realm: " + storageAsset);
                 throw new WebApplicationException(FORBIDDEN);
             }
 
@@ -251,8 +258,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 asset,
                 storageAsset,
                 isRestrictedUser ? storageAsset.getName() : null, // TODO We could allow restricted users to update names?
-                isRestrictedUser ? storageAsset.getRealm() : null, // Restricted users can not change realm
-                isRestrictedUser ? storageAsset.getParentId() : null, // Restricted users can not change realm
+                storageAsset.getRealm(), // The realm can never change
+                isRestrictedUser ? storageAsset.getParentId() : null, // Restricted users can not change parent
                 storageAsset.getType(), // The type can never change
                 isRestrictedUser ? storageAsset.isAccessPublicRead() : null, // Restricted user can not change access public flag
                 isRestrictedUser ? storageAsset.getAttributes() : null // Restricted users need manual attribute merging (see below)
@@ -445,9 +452,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             // If there was no realm provided (create was called by regular user in manager UI), use the auth realm
             if (asset.getRealm() == null || asset.getRealm().length() == 0) {
                 asset.setRealm(getAuthenticatedTenant().getRealm());
-            }
-
-            if (!isTenantActiveAndAccessible(asset)) {
+            } else if (!isTenantActiveAndAccessible(asset.getRealm())) {
                 LOG.fine("Forbidden access for user '" + getUsername() + "', can't create: " + asset);
                 throw new WebApplicationException(FORBIDDEN);
             }
@@ -516,18 +521,19 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (isRestrictedUser()) {
                 throw new WebApplicationException(FORBIDDEN);
             }
-            List<Asset> assets = assetStorageService.findAll(new AssetQuery().ids(assetIds.toArray(new String[0])).select(selectExcludePathAndAttributes()));
+
+            List<Asset> assets = assetStorageService.findAll(new AssetQuery().ids(assetIds.toArray(new String[0])).select(selectExcludeAll()));
             if (assets == null || assets.size() != assetIds.size()) {
                 LOG.fine("Request to delete one or more invalid assets");
-                return;
+                throw new WebApplicationException(BAD_REQUEST);
             }
 
-            if (assets.stream().anyMatch(asset -> !isTenantActiveAndAccessible(asset))) {
+            if (assets.stream().map(Asset::getRealm).distinct().anyMatch(asset -> !isTenantActiveAndAccessible(asset))) {
                 LOG.fine("Forbidden access for user '" + getUsername() + "', can't delete requested assets");
                 throw new WebApplicationException(FORBIDDEN);
             }
 
-            if (!assetStorageService.delete(assetIds)) {
+            if (!assetStorageService.delete(assetIds, false)) {
                 throw new WebApplicationException(BAD_REQUEST);
             }
         } catch (IllegalStateException ex) {
@@ -551,23 +557,21 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     query.access(Access.PROTECTED);
             }
 
-            Tenant tenant = query.tenant != null
-                ? !isNullOrEmpty(query.tenant.realm)
-                ? identityService.getIdentityProvider().getTenant(query.tenant.realm)
-                : getAuthenticatedTenant()
-                : getAuthenticatedTenant();
+            String realm = query.tenant != null && !isNullOrEmpty(query.tenant.realm)
+                ? query.tenant.realm
+                : getAuthenticatedRealm();
 
-            if (tenant == null) {
+            if (TextUtil.isNullOrEmpty(realm)) {
                 throw new WebApplicationException(NOT_FOUND);
             }
 
-            if (!isTenantActiveAndAccessible(tenant)) {
+            if (!isTenantActiveAndAccessible(realm)) {
                 return EMPTY_ASSETS;
             }
 
             // This replicates behaviour of old getRoot and getChildren methods
             if (!isSuperUser()) {
-                query.tenant(new TenantPredicate(tenant.getRealm()));
+                query.tenant(new TenantPredicate(realm));
             }
 
             List<Asset> result = assetStorageService.findAll(query);

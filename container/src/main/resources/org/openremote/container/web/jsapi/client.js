@@ -225,7 +225,10 @@ openremote.REST.log = function (string) {
 };
 
 openremote.REST._addToArray = function (array, name, value) {
-    if (value instanceof Array) {
+    // JsInterop method to convert lists to JS Arrays
+    value = JsUtil.toJsArray(value);
+
+    if (Array.isArray(value)) {
         for (var i = 0; i < value.length; i++) {
             array.push([name, value[i]]);
         }

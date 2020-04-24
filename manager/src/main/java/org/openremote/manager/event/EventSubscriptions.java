@@ -199,8 +199,7 @@ public class EventSubscriptions {
                 if (sessionSubscription.subscription.getFilter() == null
                     || sessionSubscription.subscription.getFilter().apply(event)) {
                     LOG.fine("Creating message for subscribed session '" + sessionKey + "': " + event);
-                    SharedEvent[] events = (SharedEvent[])Array.newInstance(event.getClass(), 1);
-                    events[0] = event;
+                    List<SharedEvent> events = Collections.singletonList(event);
                     TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription(events, sessionSubscription.subscriptionId);
 
                     if (sessionSubscription.subscription.getInternalConsumer() == null) {

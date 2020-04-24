@@ -48,6 +48,7 @@ export function getAttributeValueTemplate(
         let max: number | undefined;
         let ro: boolean | undefined;
         let label: string | undefined;
+        let unit: string | undefined;
         let options: any | undefined;
 
         if (valueDescriptor) {
@@ -119,8 +120,11 @@ export function getAttributeValueTemplate(
             max = Util.getMetaValue(MetaItemType.RANGE_MAX, attribute, attributeDescriptor) as number;
             label = labelOverride !== undefined ? labelOverride : Util.getAttributeLabel(attribute, attributeDescriptor);
             ro = readonly === undefined ? Util.getMetaValue(MetaItemType.READ_ONLY, attribute, attributeDescriptor) : readonly;
+            unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attribute, attributeDescriptor);
             options = Util.getMetaValue(MetaItemType.ALLOWED_VALUES, attribute, attributeDescriptor);
-
+            if(unit) {
+                label = label + " ("+i18next.t(unit)+")";
+            }
             if (inputType === InputType.TEXT && options && Array.isArray(options) && options.length > 0) {
                 inputType = InputType.SELECT;
             }
@@ -130,7 +134,7 @@ export function getAttributeValueTemplate(
                     value = JSON.stringify(value, null, 2);
                 }
 
-                return value;
+                return Util.getAttributeValue(attribute, attributeDescriptor);
             };
 
             const setValue = (value: any) => {
@@ -164,6 +168,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             or-input {
                 width: 100%;
             }
+
         `;
     }
 
@@ -215,7 +220,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                         select: {
                             attributes: [this.attributeRef.attributeName!],
                             excludePath: true,
-                            excludeRealm: true,
                             excludeParentInfo: true
                         }
                     }).then((response) => {

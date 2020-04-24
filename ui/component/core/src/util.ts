@@ -13,7 +13,8 @@ import {
     AssetAttribute,
     AttributeDescriptor,
     MetaItemType,
-    MetaItemDescriptor
+    MetaItemDescriptor,
+    AttributeValueType
 } from "@openremote/model";
 import {AssetModelUtil} from "./index";
 import i18next from "i18next";
@@ -230,6 +231,7 @@ export function getAssetAttributes(asset: Asset, exclude?: string[]): AssetAttri
     return [];
 }
 
+
 export function getFirstMetaItem(attribute: Attribute | undefined, name: string): MetaItem | undefined {
     if (!attribute || !attribute.meta) {
         return;
@@ -246,7 +248,7 @@ export function getMetaValue(metaItemUrn: string | MetaItemDescriptor, attribute
     const urn = typeof metaItemUrn === "string" ? metaItemUrn : (metaItemUrn as MetaItemDescriptor).urn;
 
     if (attribute && attribute.meta) {
-        const metaItem = attribute.meta.find((mi) => mi.name === urn);
+        const metaItem = attribute.meta.find((mi) => mi.name === urn);  
         return metaItem ? metaItem.value : undefined;
     }
 
@@ -264,6 +266,19 @@ export function getAttributeLabel(attribute: Attribute | undefined, descriptor: 
     const labelMetaValue = getMetaValue(MetaItemType.LABEL, attribute, descriptor);
     const name = attribute ? attribute.name : descriptor!.attributeName;
     return i18next.t([name, fallback || labelMetaValue || name]);
+}
+
+export function getAttributeValue(attribute: Attribute, descriptor: AttributeDescriptor | undefined, fallbackFormat?: string): any {
+    if (!attribute && !descriptor) {
+        return fallbackFormat || "";
+    }
+    const format = getMetaValue(MetaItemType.FORMAT, attribute , undefined);
+    const valueType = attribute.type;
+    if(attribute.value) {
+        return i18next.t([format || "attributeValueType."+valueType, fallbackFormat || "%s"], { postProcess: 'sprintf', sprintf: [attribute.value] });
+    } else {
+        return attribute.value;
+    }
 }
 
 /**

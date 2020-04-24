@@ -6,6 +6,7 @@
   "asset": "Asset",
   "asset_plural": "Assets",
   "attribute": "Attribuut",
+  "insights": "Inzicht",
   "scenes": "Scenes",
   "settings": "Instellingen",
   "selectLanguage": "Taal kiezen",
@@ -138,6 +139,8 @@
   "matched": "Dezelfde",
   "unmatched": "Niet dezelfde",
   "wait": "Wacht",
+  "group": "Onderliggende assets",
+  "groupAssetName": "Asset naam",
   "history": "Geschiedenis",
   "attributes": "Attributen",
   "info": "Info",
@@ -166,5 +169,12 @@
   "oncePerDay": "Max. 1x per dag",
   "oncePerWeek": "Max. 1x per week",
   "reset": "Reset",
-  "noLongerMatches": "Niet meer geldig"
+  "logs": "Logs",
+  "chooseLanguage": "Kies een taal",
+  "addRemoveAttributes": "Attributen toevoegen/verwijderen",
+  "attributeValueType": {
+    "PERCENTAGE": "%.2f",
+    "NUMBER": "%.0f",
+    "TEMPERATURE": "%.1f"
+  }
 }

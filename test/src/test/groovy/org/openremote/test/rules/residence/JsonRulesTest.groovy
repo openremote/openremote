@@ -92,19 +92,19 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         and: "the geofence notifier debounce is set to a small value for testing"
+        def originalDebounceMillis = ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = 100
 
         and: "the rule firing delay time is set to a small value for testing"
+        def originalExpirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
         TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 100
 
         and: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 15, delay: 1)
         def serverPort = findEphemeralPort()
         def services = Lists.newArrayList(defaultServices())
-        services.removeIf {it instanceof PushNotificationHandler}
-        services.removeIf {it instanceof EmailNotificationHandler}
-        services.add(mockPushNotificationHandler)
-        services.add(mockEmailNotificationHandler)
+        services.replaceAll{it instanceof PushNotificationHandler ? mockPushNotificationHandler : it}
+        services.replaceAll{it instanceof EmailNotificationHandler ? mockEmailNotificationHandler : it}
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), services)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -144,43 +144,43 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "a user authenticates"
         def accessToken = authenticate(
-                container,
-                keycloakDemoSetup.tenantBuilding.realm,
-                KEYCLOAK_CLIENT_ID,
-                "testuser3",
-                "testuser3"
+            container,
+            keycloakDemoSetup.tenantBuilding.realm,
+            KEYCLOAK_CLIENT_ID,
+            "testuser3",
+            "testuser3"
         ).token
 
         and: "a console is registered by that user"
         def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(ConsoleResource.class)
         def consoleRegistration = new ConsoleRegistration(null,
-                "Test Console",
-                "1.0",
-                "Android 7.0",
-                new HashMap<String, ConsoleProvider>() {
-                    {
-                        put("geofence", new ConsoleProvider(
-                                ORConsoleGeofenceAssetAdapter.NAME,
-                                true,
-                                false,
-                                false,
-                                false,
-                                false,
-                                null
-                        ))
-                        put("push", new ConsoleProvider(
-                                "fcm",
-                                true,
-                                true,
-                                true,
-                                true,
-                                false,
-                                (ObjectValue) parse("{token: \"23123213ad2313b0897efd\"}").orElse(null)
-                        ))
-                    }
-                },
-                "",
-                ["manager"] as String[])
+            "Test Console",
+            "1.0",
+            "Android 7.0",
+            new HashMap<String, ConsoleProvider>() {
+                {
+                    put("geofence", new ConsoleProvider(
+                        ORConsoleGeofenceAssetAdapter.NAME,
+                        true,
+                        false,
+                        false,
+                        false,
+                        false,
+                        null
+                    ))
+                    put("push", new ConsoleProvider(
+                        "fcm",
+                        true,
+                        true,
+                        true,
+                        true,
+                        false,
+                        (ObjectValue) parse("{token: \"23123213ad2313b0897efd\"}").orElse(null)
+                    ))
+                }
+            },
+            "",
+            ["manager"] as String[])
         consoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)
 
         then: "the console should have been registered and a geofence refresh notification should have been sent"
@@ -467,6 +467,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         cleanup: "stop the container"
         RulesEngine.PAUSE_SCHEDULER = originalPause
         RulesEngine.UNPAUSE_SCHEDULER = originalUnpause
+        ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = originalDebounceMillis
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = originalExpirationMillis
         stopContainer(container)
     }
 }

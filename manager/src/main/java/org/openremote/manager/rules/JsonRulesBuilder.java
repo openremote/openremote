@@ -479,19 +479,25 @@ public class JsonRulesBuilder extends RulesBuilder {
     final protected Assets assetsFacade;
     final protected Users usersFacade;
     final protected Notifications notificationsFacade;
+    final protected HistoricDatapoints historicDatapointsFacade;
     final protected PredictedDatapoints predictedDatapointsFacade;
     final protected ManagerExecutorService executorService;
     final protected BiConsumer<Runnable, Long> scheduledActionConsumer;
     final protected Map<String, RuleState> ruleStateMap = new HashMap<>();
     final protected JsonRule[] jsonRules;
 
-    public JsonRulesBuilder(Ruleset ruleset, TimerService timerService, AssetStorageService assetStorageService, ManagerExecutorService executorService, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, PredictedDatapoints predictedDatapoints, BiConsumer<Runnable, Long> scheduledActionConsumer) throws Exception {
+    public JsonRulesBuilder(Ruleset ruleset, TimerService timerService,
+                            AssetStorageService assetStorageService, ManagerExecutorService executorService,
+                            Assets assetsFacade, Users usersFacade, Notifications notificationsFacade,
+                            HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
+                            BiConsumer<Runnable, Long> scheduledActionConsumer) throws Exception {
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
         this.executorService = executorService;
         this.assetsFacade = assetsFacade;
         this.usersFacade = usersFacade;
         this.notificationsFacade = notificationsFacade;
+        this.historicDatapointsFacade= historicDatapoints;
         this.predictedDatapointsFacade = predictedDatapoints;
         this.scheduledActionConsumer = scheduledActionConsumer;
 

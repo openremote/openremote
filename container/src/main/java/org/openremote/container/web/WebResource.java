@@ -114,6 +114,11 @@ public class WebResource implements AuthContext {
     }
 
     @Override
+    public String getClientId() {
+        return isAuthenticated() ? getAuthContext().getClientId() : null;
+    }
+
+    @Override
     public boolean hasRealmRole(String role) {
         return isAuthenticated() && getAuthContext().hasRealmRole(role);
     }

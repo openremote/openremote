@@ -5,6 +5,7 @@
   "rule_plural": "Regeln",
   "asset": "Asset",
   "asset_plural": "Assets",
+  "insights": "Insights",
   "attribute": "Attribut",
   "scenes": "Szenen",
   "settings": "Einstellungen",
@@ -103,7 +104,16 @@
   "matched": "Passend",
   "unmatched": "Nicht passend",
   "wait": "Warte",
+  "group": "Gruppe",
+  "groupAssetName": "Asset Name",
   "history": "Historie",
   "attributes": "Attribute",
-  "info": "Info"
+  "info": "Info",
+  "logs": "Protokolle",
+  "chooseLanguage": "Sprache wählen",
+  "attributeValueType": {
+    "PERCENTAGE": "%.2f",
+    "NUMBER": "%.0f",
+    "TEMPERATURE": "%.1f"
+  }
 }
