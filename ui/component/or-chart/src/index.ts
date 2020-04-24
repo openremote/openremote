@@ -504,7 +504,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             `
                         })}
                     </div>
-                    <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="Add attribute" icon="plus" @click="${() => this._openDialog()}"></or-input>
+                    <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-input>
 
                 </div>
             </div>
@@ -516,7 +516,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 aria-describedby="my-dialog-content">
                 <div class="mdc-dialog__container">
                     <div class="mdc-dialog__surface">
-                    <h2 class="mdc-dialog__title" id="my-dialog-title">Add attribute</h2>
+                    <h2 class="mdc-dialog__title" id="my-dialog-title">${i18next.t("addAttribute")}</h2>
                     <div class="dialog-container mdc-dialog__content" id="my-dialog-content">
                         <or-asset-tree id="chart-asset-tree" .selectedIds="${this.activeAsset ? [this.activeAsset.id] : null}]"></or-asset-tree>
                             ${this.activeAsset && this.activeAsset.attributes ? html`
@@ -531,14 +531,14 @@ export class OrChart extends translate(i18next)(LitElement) {
                         <or-input class="button" 
                                 slot="secondaryAction"
                                 .type="${InputType.BUTTON}" 
-                                label="${i18next.t("Cancel")}" 
+                                label="${i18next.t("cancel")}" 
                                 class="mdc-button mdc-dialog__button" 
                                 data-mdc-dialog-action="no"></or-input>
 
                         <or-input class="button" 
                             slot="primaryAction"
                             .type="${InputType.BUTTON}" 
-                            label="${i18next.t("Add")}" 
+                            label="${i18next.t("add")}" 
                             class="mdc-button mdc-dialog__button" 
                             data-mdc-dialog-action="yes"
                             @click="${this.addAttribute}"></or-input>

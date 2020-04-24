@@ -58,7 +58,7 @@ const secondaryItems: menuOption[] = [
     {
         icon: "web",
         value: "language",
-        text: "selectLanguage"
+        text: "language"
     },
     {
         icon: "file-document-box-search-outline",
