@@ -367,6 +367,7 @@ public abstract class AbstractWebsocketClientProtocol<T> extends AbstractIoClien
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                 LOG.warning("WebsocketHttpSubscription returned an un-successful response code: " + response.getStatus());
             }
+            response.close();
         } else {
             websocketClient.sendMessage(subscription.body);
         }

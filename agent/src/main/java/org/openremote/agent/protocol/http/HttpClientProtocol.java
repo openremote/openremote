@@ -1147,6 +1147,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                 entities.add(lastResponse.readEntity(String.class));
                 while ((lastResponse = executePagingRequest(clientRequest, lastResponse)) != null) {
                     entities.add(lastResponse.readEntity(String.class));
+                    lastResponse.close();
                 }
                 originalResponse = PagingResponse.fromResponse(originalResponse).entity(entities).build();
             }
@@ -1154,6 +1155,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             responseConsumer.accept(originalResponse);
         } catch (Exception e) {
             LOG.log(Level.WARNING, getProtocolDisplayName() + " exception thrown whilst doing polling request [" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: " + clientRequest.requestTarget.getUriBuilder().build().toString());
+        } finally {
             if (originalResponse != null) {
                 originalResponse.close();
             }
