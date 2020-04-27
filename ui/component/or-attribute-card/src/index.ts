@@ -128,7 +128,6 @@ export class OrAttributeCard extends LitElement {
         return response.data[0];
     }
 
-    // todo: get rid of this <any>
     private async getDatapointsByAttribute(id: string): Promise<ValueDatapoint<any>[]> {
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
             id,
