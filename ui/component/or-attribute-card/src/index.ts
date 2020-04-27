@@ -1,10 +1,11 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, unsafeCSS} from "lit-element";
 
 import i18next from "i18next";
-import {Asset, DatapointInterval, ValueDatapoint} from "@openremote/model";
-import {manager, DefaultColor4} from "@openremote/core";
+import {Asset, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
+import {manager, DefaultColor4, Util} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
 import {OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
+import {getMetaValue} from "@openremote/core/dist/util";
 
 // language=CSS
 const style = css`
@@ -55,11 +56,8 @@ export class OrAttributeCard extends LitElement {
     @property()
     public attributeName: string = "";
 
-    @property()
-    private cardTitle: string = "";
-
-    @property()
-    private assetName: string = "";
+    private asset: Asset = {};
+    private mainValue?: string;
 
     @property()
     private data: ValueDatapoint<any>[] = [];
@@ -156,10 +154,11 @@ export class OrAttributeCard extends LitElement {
             <div class="panel" id="attribute-card">
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
-                        ${this.assetName} - ${i18next.t(this.attributeName)}
+                        ${this.asset.name} - ${i18next.t(this.attributeName)}
                     </div>
                     <div class="panel-content">
                         <canvas id="chart"></canvas>
+                        <span>total: ${this.mainValue}</span>
                     </div>
                 </div>
             </div>
@@ -194,17 +193,19 @@ export class OrAttributeCard extends LitElement {
             return [];
         }
 
-        return this.sanitizeDataPoints(response.data);
+        return response.data;
     }
 
     protected getData = () => {
         this.getAssetById(this.assetId)
-            .then((data) => {
-                this.assetName = data.name || "";
+            .then((data: Asset) => {
+                this.asset = data;
                 return this.getDatapointsByAttribute(data.id!);
             })
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
+                this.data = this.sanitizeDataPoints(this.data);
+                this.mainValue = this.getFormattedTotalValue(this.data);
             });
     }
 
@@ -216,6 +217,16 @@ export class OrAttributeCard extends LitElement {
         }
 
         return data;
+    }
+
+    protected getFormattedTotalValue(data: ValueDatapoint<any>[]): string {
+
+        const total = data.reduce(( acc: number, val: ValueDatapoint<any> ) => {
+            return val.y ? acc + Math.round(val.y) : acc;
+        }, 0);
+
+        const format = getMetaValue(MetaItemType.FORMAT, this.asset.attributes![this.attributeName], undefined);
+        return i18next.t(format, { postProcess: 'sprintf', sprintf: [total] }).trim();
     }
 
 }
