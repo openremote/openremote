@@ -78,17 +78,10 @@ export class OrAttributeCard extends LitElement {
             .then((data) => {
                 console.log(data);
                 this.assetName = data.name || "";
-                // return data;
                 return this.getDatapointsByAttribute(data.id!);
             })
-            .then((datapoints: any) => {
-                console.log("datapoints", datapoints);
-                // if (data.id) {
-                //     this.getDatapointsByAttribute(data.id)
-                //         .then((datapoints: any) => { // todo: fix this any
-                //             // this._data = datapoints;
-                //         });
-                // }
+            .then((datapoints: ValueDatapoint<any>[]) => {
+                this.data = datapoints || [];
             });
     };
 
@@ -117,7 +110,7 @@ export class OrAttributeCard extends LitElement {
                         ${this.assetName} - ${i18next.t(this.attributeName)}
                     </div>
                     <div class="panel-content">
-                        <p>person</p>
+                        <pre>${JSON.stringify(this.data, undefined, 2)}</pre>
                     </div>
                 </div>
             </div>
