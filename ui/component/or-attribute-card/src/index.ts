@@ -48,10 +48,10 @@ const style = css`
 export class OrAttributeCard extends LitElement {
 
     @property()
-    public assetId?: string;
+    public assetId: string = "";
 
     @property()
-    public attributeName?: string;
+    public attributeName: string = "";
 
     @property()
     private cardTitle: string = "";
@@ -63,14 +63,11 @@ export class OrAttributeCard extends LitElement {
     }
 
     private getData = () => {
-        if (this.assetId) {
-            this.getAssetById(this.assetId)
-                .then((data) => {
-                        this.cardTitle = data.name || "";
-                        console.log("set", this.cardTitle);
-                    }
-                );
-        }
+        this.getAssetById(this.assetId)
+            .then((data) => {
+                    this.cardTitle = [data.name, i18next.t(this.attributeName)].join(" - ") || "";
+                }
+            );
     };
 
     protected render() {
@@ -78,19 +75,19 @@ export class OrAttributeCard extends LitElement {
 
         this.getData();
 
-        if (!this.assetId || !this.attributeName) {
-            // return html`
-            //     <div class="panel">
-            //         <div class="panel-content-wrapper">
-            //             <div class="panel-title">
-            //                 ${this.asdf}
-            //             </div>
-            //             <div class="panel-content">
-            //                 <p>no attribute found</p>
-            //             </div>
-            //         </div>
-            //     </div>
-            // `;
+        if (this.assetId === "" || this.attributeName === "") {
+            return html`
+                <div class="panel">
+                    <div class="panel-content-wrapper">
+                        <div class="panel-title">
+                            <or-translate value="error"></or-translate>
+                        </div>
+                        <div class="panel-content">
+                            <or-translate value="attributeNotFound"></or-translate>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
         return html`

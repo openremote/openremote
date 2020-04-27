@@ -176,5 +176,6 @@
     "PERCENTAGE": "%.2f",
     "NUMBER": "%.0f",
     "TEMPERATURE": "%.1f"
-  }
+  },
+  "attributeNotFound": "Attribuut niet gevonden in asset"
 }
