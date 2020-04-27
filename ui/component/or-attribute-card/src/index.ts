@@ -54,13 +54,13 @@ export class OrAttributeCard extends LitElement {
     public attributeName: string = "";
 
     @property()
-    protected _data?: ValueDatapoint<any>[] = [];
-
-    @property()
     private cardTitle: string = "";
 
     @property()
     private assetName: string = "";
+
+    @property()
+    private data: ValueDatapoint<any>[] = [];
 
     static get styles() {
         return [
@@ -68,12 +68,12 @@ export class OrAttributeCard extends LitElement {
         ];
     }
 
-    private getData = () => {
     connectedCallback() {
         super.connectedCallback();
         this.getData();
     }
 
+    private getData = () => {
         this.getAssetById(this.assetId)
             .then((data) => {
                 console.log(data);
