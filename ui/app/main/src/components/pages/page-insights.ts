@@ -79,7 +79,6 @@ const style = css`
     }
 `;
 
-
 @customElement("page-insights")
 class PageInsights extends connect(store)(LitElement)  {
 
@@ -89,7 +88,7 @@ class PageInsights extends connect(store)(LitElement)  {
 
     protected render(): TemplateResult | void {
 
-        const assetId: string = "2U48805AfxblLl1P5dCifA";
+        const assetId: string = "4m4dWZUAV4IepHKc8Wwv85";
         const attributeName: string = "light1PowerConsumption";
         const attributeName2: string = "light1Dimmer";
 
