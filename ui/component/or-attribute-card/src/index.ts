@@ -56,6 +56,9 @@ export class OrAttributeCard extends LitElement {
     @property()
     private cardTitle: string = "";
 
+    @property()
+    private assetName: string = "";
+
     static get styles() {
         return [
             style
@@ -65,7 +68,7 @@ export class OrAttributeCard extends LitElement {
     private getData = () => {
         this.getAssetById(this.assetId)
             .then((data) => {
-                    this.cardTitle = [data.name, i18next.t(this.attributeName)].join(" - ") || "";
+                    this.assetName = data.name || "";
                 }
             );
     };
@@ -94,13 +97,7 @@ export class OrAttributeCard extends LitElement {
             <div class="panel" id="attribute-card">
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
-                        this.cardTitle: ${this.cardTitle} 
-                    </div>
-                    <div class="panel-title">
-                        ${this.assetId} 
-                    </div>
-                    <div class="panel-title">
-                        ${this.attributeName} 
+                        ${this.assetName} - ${i18next.t(this.attributeName)}
                     </div>
                     <div class="panel-content">
                         <p>person</p>
