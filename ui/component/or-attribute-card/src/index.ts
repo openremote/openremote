@@ -54,7 +54,7 @@ export class OrAttributeCard extends LitElement {
     public attributeName: string = "";
 
     @property()
-    protected _data?: ValueDatapoint<any>[] = [{x: 1587333600000, y: 0}, {x: 1587337200000, y: 8.99}, {x: 1587340800000, y: 0}, {x: 1587344400000, y: 0}, {x: 1587348000000, y: 0}, {x: 1587351600000, y: 0}, {x: 1587355200000, y: 9.11}, {x: 1587358800000, y: 0}, {x: 1587362400000, y: 0}, {x: 1587366000000, y: 10.22}, {x: 1587369600000, y: 11.385}, {x: 1587373200000, y: 12.16875}, {x: 1587376800000, y: 0}, {x: 1587380400000, y: 0}, {x: 1587384000000, y: 0}, {x: 1587387600000, y: 0}, {x: 1587391200000, y: 0}, {x: 1587394800000, y: 0}, {x: 1587398400000, y: 0}, {x: 1587402000000, y: 0}, {x: 1587405600000, y: 0}, {x: 1587409200000, y: 0}, {x: 1587412800000, y: 0}, {x: 1587416400000, y: 0}];
+    protected _data?: ValueDatapoint<any>[] = [];
 
     @property()
     private cardTitle: string = "";
@@ -71,15 +71,20 @@ export class OrAttributeCard extends LitElement {
     private getData = () => {
         this.getAssetById(this.assetId)
             .then((data) => {
-                    this.assetName = data.name || "";
-                    if (data.id) {
-                        this.getDatapointsByAttribute(data.id)
-                            .then((datapoints: any) => { // todo: fix this any
-                                // this._data = datapoints;
-                            });
-                    }
-                }
-            );
+                console.log(data);
+                this.assetName = data.name || "";
+                // return data;
+                return this.getDatapointsByAttribute(data.id!);
+            })
+            .then((datapoints: any) => {
+                console.log("datapoints", datapoints);
+                // if (data.id) {
+                //     this.getDatapointsByAttribute(data.id)
+                //         .then((datapoints: any) => { // todo: fix this any
+                //             // this._data = datapoints;
+                //         });
+                // }
+            });
     };
 
     protected render() {
