@@ -3,7 +3,7 @@ import {OrTranslate, translate} from "@openremote/or-translate";
 import {classMap} from "lit-html/directives/class-map";
 
 import i18next from "i18next";
-import {Asset, AssetAttribute} from "@openremote/model";
+import {Asset, AssetAttribute, DatapointInterval, ValueDatapoint} from "@openremote/model";
 import manager from "@openremote/core";
 
 // language=CSS
