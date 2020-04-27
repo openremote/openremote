@@ -76,7 +76,6 @@ export class OrAttributeCard extends LitElement {
     private getData = () => {
         this.getAssetById(this.assetId)
             .then((data) => {
-                console.log(data);
                 this.assetName = data.name || "";
                 return this.getDatapointsByAttribute(data.id!);
             })
@@ -86,7 +85,6 @@ export class OrAttributeCard extends LitElement {
     };
 
     protected render() {
-        console.log("vars ready", this.assetId, this.attributeName);
 
         if (this.assetId === "" || this.attributeName === "") {
             return html`
@@ -141,9 +139,6 @@ export class OrAttributeCard extends LitElement {
                 toTimestamp: 1588283999999
             }
         );
-        // vars 2U48805AfxblLl1P5dCifA light1PowerConsumption 1585692000000 1588283999999 DAY string
-        // 1585692000000 1588283999999 DAY
-        console.log("data", response);
 
         if (response.status !== 200 || !response.data) {
             return [];
