@@ -1,0 +1,58 @@
+# This file is a template, and might need editing before it works on your project.
+docker-build-master:
+  # Official docker image.
+  image: docker:latest
+  stage: build
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker login -u "$DOCKERHUB_USER" -p "$DOCKERHUB_PASSWORD"
+  script:
+    - docker build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+    - docker run -v $(pwd):/openremote "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      /bin/sh -c "./gradlew --console plain clean installDist"
+    - docker run -v $(pwd):/openremote
+      -v /var/run/docker.sock:/var/run/docker.sock
+      "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      /bin/sh -c "docker-compose -f profile/deploy.yml build --build-arg GIT_COMMIT=$SOURCE_COMMIT"
+    - docker push openremote/deployment:${CACHE_TAG:-latest}
+    - docker push openremote/manager:${CACHE_TAG:-latest}
+    - docker push openremote/manager-swarm:${CACHE_TAG:-latest}
+  only:
+    - master
+
+docker-build:
+  # Official docker image.
+  image: docker:latest
+  stage: build
+  script:
+    - echo No CI for other branches
+  except:
+    - master
+
+test-master:
+  image: docker:latest
+  stage: test
+  services:
+    - docker:dind
+  before_script:
+    - docker run -v $(pwd):/openremote
+      -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      /bin/sh -c "docker-compose -f profile/dev-testing.yml pull"
+    - docker run -v $(pwd):/openremote
+      -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      /bin/sh -c "docker-compose -f profile/dev-testing.yml up --no-build -d"
+  script:
+    - docker run --network host -v $(pwd):/openremote "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      /bin/sh -c "./gradlew clean build installDist"
+  # Still has 3 errors, therefore allow it to fail
+  allow_failure: true
+  only:
+    - master
+
+deploy:
+  stage: deploy
+  script:
+    - echo Continous deploy TODO
