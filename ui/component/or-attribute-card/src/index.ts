@@ -1,14 +1,8 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, unsafeCSS} from "lit-element";
-import {OrTranslate, translate} from "@openremote/or-translate";
-import {classMap} from "lit-html/directives/class-map";
 
 import i18next from "i18next";
-import {Asset, AssetAttribute, DatapointInterval, ValueDatapoint, ValueType} from "@openremote/model";
-import {manager,
-    DefaultColor2,
-    DefaultColor3,
-    DefaultColor4,
-    DefaultColor5} from "@openremote/core";
+import {Asset, DatapointInterval, ValueDatapoint} from "@openremote/model";
+import {manager, DefaultColor4} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
 import {OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
 
