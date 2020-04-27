@@ -100,6 +100,7 @@ export class OrAttributeCard extends LitElement {
                 datasets: [
                     {
                         data: this.data,
+                        spanGaps: true,
                         backgroundColor: "transparent",
                         borderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color"),
                         pointBorderColor: "transparent",
@@ -107,7 +108,7 @@ export class OrAttributeCard extends LitElement {
                 ]
             },
             options: {
-                onResize: () => this.dispatchEvent(new OrAttributeHistoryEvent('resize')),
+                onResize: () => this.dispatchEvent(new OrAttributeHistoryEvent("resize")),
                 legend: {
                     display: false
                 },
@@ -124,35 +125,11 @@ export class OrAttributeCard extends LitElement {
                 },
                 scales: {
                     yAxes: [{
-                        ticks: {
-                            beginAtZero: true
-                        },
-                        gridLines: {
-                            color: "#cccccc"
-                        }
+                        display: false
                     }],
                     xAxes: [{
                         type: "time",
-                        time: {
-                            displayFormats: {
-                                millisecond: 'HH:mm:ss.SSS',
-                                second: 'HH:mm:ss',
-                                minute: "HH:mm",
-                                hour: "HH:mm",
-                                week: "w"
-                            }
-                        },
-                        ticks: {
-                            autoSkip: true,
-                            maxTicksLimit: 30,
-                            fontColor: "#000",
-                            fontFamily: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
-                            fontSize: 9,
-                            fontStyle: "normal"
-                        },
-                        gridLines: {
-                            color: "#cccccc"
-                        }
+                        display: false,
                     }]
                 }
             }
@@ -195,18 +172,7 @@ export class OrAttributeCard extends LitElement {
         `;
     }
 
-    private getData = () => {
-        this.getAssetById(this.assetId)
-            .then((data) => {
-                this.assetName = data.name || "";
-                return this.getDatapointsByAttribute(data.id!);
-            })
-            .then((datapoints: ValueDatapoint<any>[]) => {
-                this.data = datapoints || [];
-            });
-    }
-
-    private async getAssetById(id: string): Promise<Asset> {
+    protected async getAssetById(id: string): Promise<Asset> {
         const response = await manager.rest.api.AssetResource.queryAssets({
             ids: [id],
             recursive: false
@@ -219,7 +185,7 @@ export class OrAttributeCard extends LitElement {
         return response.data[0];
     }
 
-    private async getDatapointsByAttribute(id: string): Promise<ValueDatapoint<any>[]> {
+    protected async getDatapointsByAttribute(id: string): Promise<ValueDatapoint<any>[]> {
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
             id,
             this.attributeName,
@@ -234,7 +200,28 @@ export class OrAttributeCard extends LitElement {
             return [];
         }
 
-        return response.data;
+        return this.sanitizeDataPoints(response.data);
+    }
+
+    protected getData = () => {
+        this.getAssetById(this.assetId)
+            .then((data) => {
+                this.assetName = data.name || "";
+                return this.getDatapointsByAttribute(data.id!);
+            })
+            .then((datapoints: ValueDatapoint<any>[]) => {
+                this.data = datapoints || [];
+            });
+    }
+
+    protected sanitizeDataPoints(data: ValueDatapoint<any>[]): ValueDatapoint<any>[] {
+
+        // if there's no measurement for the first data point in time, assume 0
+        if (data[0] && !data[0].y) {
+            data[0].y = 0;
+        }
+
+        return data;
     }
 
 }
