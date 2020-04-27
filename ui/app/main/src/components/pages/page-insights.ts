@@ -79,22 +79,6 @@ const style = css`
     }
 `;
 
-const viewerConfig: DataViewerConfig = {
-    panels: {
-        "chart": {
-            type: "chart",
-            hideOnMobile: true,
-            panelStyles: {
-                gridColumn: "1 / -1",
-                gridRowStart: "1"
-            },
-            defaults: [{
-                assetId:"5442Ite2XVp3Ky9X2y647a",
-                attributes: ["UVIndex"]
-            }]
-        }
-    }
-};
 
 @customElement("page-insights")
 class PageInsights extends connect(store)(LitElement)  {
@@ -103,19 +87,20 @@ class PageInsights extends connect(store)(LitElement)  {
         return style;
     }
 
-    @property()
-    protected _assetId;
-
     protected render(): TemplateResult | void {
+
+        const assetId: string = "2U48805AfxblLl1P5dCifA";
+        const attributeName: string = "location";
+
         return html`
             <div id="wrapper">
                 <div id="container">
-                    <or-attribute-card .assetId="${this._assetId}"></or-attribute-card>
-                    <or-attribute-card .assetId="${this._assetId}"></or-attribute-card>
-                    <or-attribute-card .assetId="${this._assetId}"></or-attribute-card>
-                    <or-attribute-card .assetId="${this._assetId}"></or-attribute-card>
+                    <or-attribute-card .assetId="${assetId}" .attributeName="${attributeName}"></or-attribute-card>
+                    <or-attribute-card .assetId="${assetId}" .attributeName="${attributeName}"></or-attribute-card>
+                    <or-attribute-card .assetId="${assetId}" .attributeName="${attributeName}"></or-attribute-card>
+                    <or-attribute-card .assetId="${assetId}" .attributeName="${attributeName}"></or-attribute-card>
                     <!--<div class="row">-->
-                    <!--    <or-data-viewer .config="${viewerConfig}"></or-data-viewer>-->
+                    <!--    <p>temp text</p>-->
                     <!--</div>-->
                 </div>
             </div>
