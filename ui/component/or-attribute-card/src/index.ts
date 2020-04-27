@@ -47,12 +47,6 @@ const style = css`
 @customElement("or-attribute-card")
 export class OrAttributeCard extends LitElement {
 
-    static get styles() {
-        return [
-            style
-        ];
-    }
-
     @property()
     public assetId?: string;
 
@@ -62,14 +56,20 @@ export class OrAttributeCard extends LitElement {
     @property()
     private cardTitle: string = "";
 
+    static get styles() {
+        return [
+            style
+        ];
+    }
+
     private getData = () => {
         if (this.assetId) {
             this.getAssetById(this.assetId)
                 .then((data) => {
-                    this.cardTitle = data.name || "";
-                    console.log("set", this.cardTitle);
-                }
-            );
+                        this.cardTitle = data.name || "";
+                        console.log("set", this.cardTitle);
+                    }
+                );
         }
     };
 
@@ -119,9 +119,9 @@ export class OrAttributeCard extends LitElement {
             recursive: false
         });
 
-        // if (response.status !== 200 || !response.data) {
-        //     return;
-        // }
+        if (response.status !== 200 || !response.data) {
+            return {};
+        }
 
         return response.data[0];
     }
