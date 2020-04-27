@@ -69,6 +69,11 @@ export class OrAttributeCard extends LitElement {
     }
 
     private getData = () => {
+    connectedCallback() {
+        super.connectedCallback();
+        this.getData();
+    }
+
         this.getAssetById(this.assetId)
             .then((data) => {
                 console.log(data);
@@ -89,8 +94,6 @@ export class OrAttributeCard extends LitElement {
 
     protected render() {
         console.log("vars ready", this.assetId, this.attributeName);
-
-        this.getData();
 
         if (this.assetId === "" || this.attributeName === "") {
             return html`
