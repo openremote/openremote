@@ -2,7 +2,7 @@ import {css, customElement, html, LitElement, property, PropertyValues, query, u
 
 import i18next from "i18next";
 import {Asset, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
-import {manager, DefaultColor4, Util} from "@openremote/core";
+import {manager, DefaultColor4, DefaultColor5} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
 import {getContentWithMenuTemplate} from "@openremote/or-chart";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
@@ -49,8 +49,42 @@ const style = css`
         flex: 0 0 auto;
     }
     
+    .top-row {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .center-row {
+        display: flex;
+        align-items: baseline;
+    }
+    
+    .bottom-row {
+        display: flex;
+        width: 100%;
+    }
+    
+    .now {
+        color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+    }
+    
+    .main-number {
+        font-size: 24px;
+    }
+    
+    .main-number-unit {
+        color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+    }
+    
     .chart-wrapper {
         height: 100px;
+    }
+    
+    .delta {
+        flex: 0 0 50px;
+        color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
+        font-weight: bold;
     }
     
 `;
@@ -78,7 +112,11 @@ export class OrAttributeCard extends LitElement {
     private now?: Date = new Date();
 
     private asset: Asset = {};
-    private formattedMainValue?: string;
+    private formattedMainValue: {value: number|undefined, unit: string, formattedValue: string} = {
+        value: undefined,
+        unit: "",
+        formattedValue: ""
+    };
 
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
@@ -188,8 +226,8 @@ export class OrAttributeCard extends LitElement {
                         ${this.asset.name} - ${i18next.t(this.attributeName)}
                     </div>
                     <div class="panel-content">
-                        <div class="top-row" style="width:100%;display:flex;justify-content:space-between;">
-                            <span>${Intl.DateTimeFormat(manager.language).format(this.now)}</span>
+                        <div class="top-row">
+                            <span class="now">${Intl.DateTimeFormat(manager.language).format(this.now)}</span>
                             ${getContentWithMenuTemplate(
                                 html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-input>`,
                                 this._getPeriodOptions(),
@@ -197,13 +235,14 @@ export class OrAttributeCard extends LitElement {
                                 (value) => this._setPeriodOption(value))}
                         </div>
                         <div class="center-row">
-                            <span>${this.formattedMainValue}</span>
+                            <span class="main-number">${this.formattedMainValue!.value}</span>
+                            <span class="main-number-unit">${this.formattedMainValue!.unit}</span>
                         </div>
-                        <div class="bottom-row" style="width:100%;display:flex;">
+                        <div class="bottom-row">
                             <div class="chart-wrapper" style="flex: 1;">
                                 <canvas id="chart"></canvas>
                             </div>
-                            <span style="flex: 0 0 50px;">${this.delta}</span>
+                            <span class="delta">${this.delta}</span>
                         </div>
                     </div>
                 </div>
@@ -297,9 +336,14 @@ export class OrAttributeCard extends LitElement {
         return Math.max.apply(Math, data.map((e: ValueDatapoint<any>) => e.y || false ));
     }
 
-    protected getFormattedValue(value: number): string {
+    protected getFormattedValue(value: number): {value: number, unit: string, formattedValue: string} {
         const format = getMetaValue(MetaItemType.FORMAT, this.asset.attributes![this.attributeName], undefined);
-        return i18next.t(format, { postProcess: "sprintf", sprintf: [value] }).trim();
+        const unit = format.split(" ").pop();
+        return {
+            value: value,
+            unit: unit,
+            formattedValue: i18next.t(format, { postProcess: "sprintf", sprintf: [value] }).trim()
+        };
     }
 
     protected getFormattedDelta(currentPeriodVal: number, lastPeriodVal: number): string {
