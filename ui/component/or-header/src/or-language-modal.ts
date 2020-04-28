@@ -75,7 +75,7 @@ export class OrLanguageModal extends LitElement {
                 aria-describedby="my-dialog-content">
                 <div class="mdc-dialog__container">
                     <div class="mdc-dialog__surface">
-                    <h2 class="mdc-dialog__title" id="my-dialog-title">${i18next.t("chooseLanguage")}</h2>
+                    <h2 class="mdc-dialog__title" id="my-dialog-title"><or-translate value="selectLanguage"></or-translate></h2>
                     <div class="dialog-container mdc-dialog__content" id="language-dialog-content">
                         <or-input id="language-picker"
                                     .label="${i18next.t("language")}" 
@@ -86,7 +86,7 @@ export class OrLanguageModal extends LitElement {
                         <or-input class="button" 
                                 slot="secondaryAction"
                                 .type="${InputType.BUTTON}" 
-                                label="${i18next.t("Cancel")}" 
+                                label="${i18next.t("cancel")}" 
                                 class="mdc-button mdc-dialog__button" 
                                 data-mdc-dialog-action="no"></or-input>
 

@@ -27,6 +27,14 @@ router.on({
         store.dispatch(setActiveAsset(params.id));
         store.dispatch(updatePage("assets", params.id));
     },
+    "insights": (params, query) => {
+        store.dispatch(setActiveAsset(null));
+        store.dispatch(updatePage("insights"));
+    },
+    "insights/:id": (params, query) => {
+        store.dispatch(setActiveAsset(params.id));
+        store.dispatch(updatePage("insights", params.id));
+    },
     "rules": (params, query) => {
         store.dispatch(updatePage("rules"));
     },

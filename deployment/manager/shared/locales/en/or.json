@@ -9,7 +9,8 @@
   "insights": "Insights",
   "scenes": "Scenes",
   "settings": "Settings",
-  "selectLanguage": "Select Language",
+  "language": "Language",
+  "selectLanguage": "Select language",
   "logout": "Log out",
   "login": "Log in",
   "monday": "Monday",
@@ -95,6 +96,9 @@
   "year": "Year",
   "period": "Period",
   "ending": "Ending",
+  "timeframe": "Timeframe",
+  "addAttribute": "Add attribute",
+  "add": "Add",
   "EQUALS_COMPARATOR": "Equals",
   "GREATER_THAN": "Greater than",
   "LESS_THAN": "Less than",
@@ -176,7 +180,13 @@
   "attributeValueType": {
     "PERCENTAGE": "%.2f",
     "NUMBER": "%.0f",
-    "TEMPERATURE": "%.1f"
-  },
-  "attributeNotFound": "Attribute not found in asset"
+    "TEMPERATURE": "%.1f",
+    "POWER": "%.1f",
+    "CURRENCY": "%.1f",
+    "SPEED": "%.1f",
+    "CHARGE": "%.1f",
+    "ENERGY": "%.1f",
+    "CO2": "%.1f",
+    "HUMIDITY": "%.1f"
+  }
 }

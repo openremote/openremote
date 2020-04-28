@@ -158,8 +158,12 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                         break;
                 }
             }
-            
-            typeTemplate = html`
+            if(this.readonly) {
+                typeTemplate = html`
+                    <or-input readonly type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>
+                `;
+            } else {
+                typeTemplate = html`
                 <div id="type" style="color: #${buttonColor}">
                     ${getContentWithMenuTemplate(
                         html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
@@ -168,6 +172,8 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                         (values: string[] | string) => this.type = values as ConditionType)}
                 </div>
             `;
+            }
+           
         }
         
         if (type) {

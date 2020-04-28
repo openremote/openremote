@@ -9,6 +9,7 @@
   "insights": "Inzicht",
   "scenes": "Scenes",
   "settings": "Instellingen",
+  "language": "Taal",
   "selectLanguage": "Taal kiezen",
   "logout": "Uitloggen",
   "login": "Log in",
@@ -91,10 +92,13 @@
   "hour": "Uur",
   "day": "Dag",
   "week": "Week",
-  "month": "Month",
-  "year": "Year",
-  "period": "Period",
-  "ending": "Ending",
+  "month": "Maand",
+  "year": "Jaar",
+  "period": "Periode",
+  "ending": "Einde",
+  "timeframe": "Tijdvak",
+  "addAttribute": "Attribuut toevoegen",
+  "add": "toevoegen",
   "EQUALS_COMPARATOR": "Gelijk aan",
   "GREATER_THAN": "Groter dan",
   "LESS_THAN": "Kleiner dan",
@@ -170,12 +174,17 @@
   "oncePerWeek": "Max. 1x per week",
   "reset": "Reset",
   "logs": "Logs",
-  "chooseLanguage": "Kies een taal",
   "addRemoveAttributes": "Attributen toevoegen/verwijderen",
   "attributeValueType": {
     "PERCENTAGE": "%.2f",
     "NUMBER": "%.0f",
-    "TEMPERATURE": "%.1f"
-  },
-  "attributeNotFound": "Attribuut niet gevonden in asset"
+    "TEMPERATURE": "%.1f",
+    "POWER": "%.1f",
+    "CURRENCY": "%.1f",
+    "SPEED": "%.1f",
+    "CHARGE": "%.1f",
+    "ENERGY": "%.1f",
+    "CO2": "%.1f",
+    "HUMIDITY": "%.1f"
+  }
 }

@@ -1147,6 +1147,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                 entities.add(lastResponse.readEntity(String.class));
                 while ((lastResponse = executePagingRequest(clientRequest, lastResponse)) != null) {
                     entities.add(lastResponse.readEntity(String.class));
+                    lastResponse.close();
                 }
                 originalResponse = PagingResponse.fromResponse(originalResponse).entity(entities).build();
             }
@@ -1181,6 +1182,9 @@ public class HttpClientProtocol extends AbstractProtocol {
             response = clientRequest.invoke(valueStr);
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Exception thrown whilst doing attribute write request", e);
+            if (response != null) {
+                response.close();
+            }
         }
 
         responseConsumer.accept(response);
@@ -1205,6 +1209,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                 value = responseBody != null ? Values.create(responseBody) : null;
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Error occurred whilst trying to read response body", e);
+                response.close();
                 if (request.updateConnectionStatus) {
                     updateConnectionStatus(request, protocolConfigurationRef, 500);
                 }

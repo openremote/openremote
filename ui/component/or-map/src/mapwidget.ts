@@ -112,6 +112,17 @@ export class MapWidget {
         return this;
     }
 
+    public async loadViewSettings() {
+        const settingsResponse = await manager.rest.api.MapResource.getSettingsJs();
+        const settings = settingsResponse.data as any;
+
+        // Load options for current realm or fallback to default if exist
+        const realmName = manager.displayRealm || "default";
+        this._viewSettings = settings.options ? settings.options[realmName] ? settings.options[realmName] : settings.options.default : null;
+        return settings
+
+    }
+
     public async load(): Promise<void> {
         if (this._loaded) {
             return;
@@ -124,11 +135,8 @@ export class MapWidget {
             style.id = "mapboxJsStyle";
             style.textContent = mapboxJsStyles;
             this._styleParent.appendChild(style);
-            const settingsResponse = await manager.rest.api.MapResource.getSettingsJs();
-            const settings = settingsResponse.data as any;
+            const settings = await this.loadViewSettings();
 
-            // Load options for current realm or fallback to default if exist
-            this._viewSettings = settings.options ? settings.options[manager.getRealm() || "default"] ? settings.options[manager.getRealm() || "default"] : settings.options.default : null;
             let options: OptionsJS | undefined;
             if (this._viewSettings) {
                 options = {};
