@@ -1,7 +1,7 @@
 {
   "name": "@openremote/or-attribute-card",
   "version": "1.0.0",
-  "description": "OpenRemote asset detail",
+  "description": "OpenRemote attribute card",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,7 +13,8 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "lit-element": "^2.2.1"
+    "lit-element": "^2.2.1",
+    "moment": "^2.24.0"
   },
   "devDependencies": {
     "tslint": ">=5.11.0",

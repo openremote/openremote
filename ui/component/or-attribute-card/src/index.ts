@@ -4,8 +4,10 @@ import i18next from "i18next";
 import {Asset, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
 import {manager, DefaultColor4, Util} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
+import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
 import {getMetaValue} from "@openremote/core/dist/util";
+import moment from "moment";
 
 // language=CSS
 const style = css`
@@ -56,11 +58,14 @@ export class OrAttributeCard extends LitElement {
     @property()
     public attributeName: string = "";
 
-    private asset: Asset = {};
-    private mainValue?: string;
-
     @property()
     private data: ValueDatapoint<any>[] = [];
+
+    private period: moment.unitOfTime.Base = "month";
+    private fromTimestamp?: Date = new Date();
+
+    private asset: Asset = {};
+    private mainValue?: string;
 
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
@@ -159,6 +164,7 @@ export class OrAttributeCard extends LitElement {
                     <div class="panel-content">
                         <canvas id="chart"></canvas>
                         <span>total: ${this.mainValue}</span>
+                        <or-input .type="${InputType.SELECT}" .label="${i18next.t("Timeframe")}" @or-input-changed="${(evt: OrInputChangedEvent) => this.period = evt.detail.value}" .value="${this.period}" .options="${this._getPeriodOptions().map(item => item.value)}"></or-input>
                     </div>
                 </div>
             </div>
@@ -179,13 +185,17 @@ export class OrAttributeCard extends LitElement {
     }
 
     protected async getDatapointsByAttribute(id: string): Promise<ValueDatapoint<any>[]> {
+
+        const startOfPeriod = moment(this.fromTimestamp).startOf(this.period).toDate().getTime();
+        const endOfPeriod = moment(this.fromTimestamp).endOf(this.period).toDate().getTime();
+
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
             id,
             this.attributeName,
             {
-                interval: DatapointInterval.DAY,
-                fromTimestamp: 1585692000000,
-                toTimestamp: 1588283999999
+                interval: this._getInterval(),
+                fromTimestamp: startOfPeriod,
+                toTimestamp: endOfPeriod
             }
         );
 
@@ -227,6 +237,53 @@ export class OrAttributeCard extends LitElement {
 
         const format = getMetaValue(MetaItemType.FORMAT, this.asset.attributes![this.attributeName], undefined);
         return i18next.t(format, { postProcess: 'sprintf', sprintf: [total] }).trim();
+    }
+
+    protected _getPeriodOptions() {
+        return [
+            {
+                text: i18next.t(DatapointInterval.HOUR),
+                value: "hour"
+            },
+            {
+                text: i18next.t(DatapointInterval.DAY),
+                value: "day"
+            },
+            {
+                text: i18next.t(DatapointInterval.WEEK),
+                value: "week"
+            },
+            {
+                text: i18next.t(DatapointInterval.MONTH),
+                value: "month"
+            },
+            {
+                text: i18next.t(DatapointInterval.YEAR),
+                value: "year"
+            }
+        ];
+    }
+
+    protected _getInterval() {
+        let interval: DatapointInterval = DatapointInterval.HOUR;
+        switch (this.period) {
+            case "hour":
+                interval = DatapointInterval.MINUTE;
+                break;
+            case "day":
+                interval = DatapointInterval.HOUR;
+                break;
+            case "week":
+                interval = DatapointInterval.HOUR;
+                break;
+            case "month":
+                interval = DatapointInterval.DAY;
+                break;
+            case "year":
+                interval = DatapointInterval.MONTH;
+                break;
+        }
+        return interval;
     }
 
 }
