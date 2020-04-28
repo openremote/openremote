@@ -90,13 +90,11 @@ class PageInsights extends connect(store)(LitElement)  {
 
         const assetId: string = "4m4dWZUAV4IepHKc8Wwv85";
         const attributeName: string = "light1PowerConsumption";
-        const attributeName2: string = "light1Dimmer";
 
         return html`
             <div id="wrapper">
                 <div id="container">
                     <or-attribute-card .assetId="${assetId}" .attributeName="${attributeName}"></or-attribute-card>
-                    <or-attribute-card .assetId="${assetId}" .attributeName="${attributeName2}"></or-attribute-card>
                     <!--<div class="row">-->
                     <!--    <p>temp text</p>-->
                     <!--</div>-->
