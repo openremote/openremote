@@ -4,6 +4,7 @@ import i18next from "i18next";
 import {Asset, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
 import {manager, DefaultColor4, Util} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
+import {getContentWithMenuTemplate} from "@openremote/or-chart";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
 import {getMetaValue} from "@openremote/core/dist/util";
@@ -164,7 +165,11 @@ export class OrAttributeCard extends LitElement {
                     <div class="panel-content">
                         <canvas id="chart"></canvas>
                         <span>total: ${this.mainValue}</span>
-                        <or-input .type="${InputType.SELECT}" .label="${i18next.t("Timeframe")}" @or-input-changed="${(evt: OrInputChangedEvent) => this.period = evt.detail.value}" .value="${this.period}" .options="${this._getPeriodOptions().map(item => item.value)}"></or-input>
+                        ${getContentWithMenuTemplate(
+                            html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-input>`,
+                            this._getPeriodOptions(),
+                            this.period,
+                            (value) => this._setPeriodOption(value))}
                     </div>
                 </div>
             </div>
@@ -284,6 +289,13 @@ export class OrAttributeCard extends LitElement {
                 break;
         }
         return interval;
+    }
+
+    protected _setPeriodOption(value: moment.unitOfTime.Base) {
+        this.period = value;
+
+        this.getData();
+        this.requestUpdate();
     }
 
 }
