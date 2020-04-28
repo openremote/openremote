@@ -62,6 +62,9 @@ export class OrAttributeCard extends LitElement {
     @property()
     private data: ValueDatapoint<any>[] = [];
 
+    @property()
+    private mainValueLastPeriod?: number;
+
     private period: moment.unitOfTime.Base = "month";
     private fromTimestamp?: Date = new Date();
 
@@ -189,10 +192,7 @@ export class OrAttributeCard extends LitElement {
         return response.data[0];
     }
 
-    protected async getDatapointsByAttribute(id: string): Promise<ValueDatapoint<any>[]> {
-
-        const startOfPeriod = moment(this.fromTimestamp).startOf(this.period).toDate().getTime();
-        const endOfPeriod = moment(this.fromTimestamp).endOf(this.period).toDate().getTime();
+    protected async getDatapointsByAttribute(id: string, startOfPeriod: number, endOfPeriod: number): Promise<ValueDatapoint<any>[]> {
 
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
             id,
@@ -215,12 +215,28 @@ export class OrAttributeCard extends LitElement {
         this.getAssetById(this.assetId)
             .then((data: Asset) => {
                 this.asset = data;
-                return this.getDatapointsByAttribute(data.id!);
+
+                const thisMoment = moment(this.fromTimestamp);
+                const currentPeriod = {
+                    start: thisMoment.startOf(this.period).toDate().getTime(),
+                    end: thisMoment.endOf(this.period).toDate().getTime()
+                };
+                const lastPeriod = {
+                    start: thisMoment.clone().subtract(1, this.period).startOf(this.period).toDate().getTime(),
+                    end: thisMoment.clone().subtract(1, this.period).endOf(this.period).toDate().getTime()
+                };
+
+                this.getDatapointsByAttribute(data.id!, lastPeriod.start, lastPeriod.end)
+                    .then((lastPeriodDatapoints: ValueDatapoint<any>[]) => {
+                        const datapoints = lastPeriodDatapoints || [];
+                        this.mainValueLastPeriod = this.getHighestValue(this.sanitizeDataPoints(datapoints));
+                    });
+
+                return this.getDatapointsByAttribute(data.id!, currentPeriod.start, currentPeriod.end);
             })
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
-                this.data = this.sanitizeDataPoints(this.data);
-                this.mainValue = this.getFormattedTotalValue(this.data);
+                this.mainValue = this.getHighestValue(this.sanitizeDataPoints(this.data));
             });
     }
 
