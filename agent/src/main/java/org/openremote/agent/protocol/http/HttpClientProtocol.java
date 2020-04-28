@@ -1155,7 +1155,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             responseConsumer.accept(originalResponse);
         } catch (Exception e) {
             LOG.log(Level.WARNING, getProtocolDisplayName() + " exception thrown whilst doing polling request [" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: " + clientRequest.requestTarget.getUriBuilder().build().toString());
-        } finally {
             if (originalResponse != null) {
                 originalResponse.close();
             }
@@ -1210,6 +1209,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                 value = responseBody != null ? Values.create(responseBody) : null;
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Error occurred whilst trying to read response body", e);
+                response.close();
                 if (request.updateConnectionStatus) {
                     updateConnectionStatus(request, protocolConfigurationRef, 500);
                 }
