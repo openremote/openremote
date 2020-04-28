@@ -48,6 +48,11 @@ const style = css`
         margin-bottom: 25px;
         flex: 0 0 auto;
     }
+    
+    .chart-wrapper {
+        height: 100px;
+    }
+    
 `;
 
 @customElement("or-attribute-card")
@@ -68,11 +73,11 @@ export class OrAttributeCard extends LitElement {
     private mainValueLastPeriod?: number;
 
     private period: moment.unitOfTime.Base = "month";
-    private fromTimestamp?: Date = new Date();
+    private now?: Date = new Date();
 
     private asset: Asset = {};
     private formattedMainValue?: string;
-    private delta?: number;
+    private delta: string = "";
 
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
@@ -112,20 +117,23 @@ export class OrAttributeCard extends LitElement {
                 ]
             },
             options: {
-                onResize: () => this.dispatchEvent(new OrAttributeHistoryEvent("resize")),
+                // onResize: () => this.dispatchEvent(new OrAttributeHistoryEvent("resize")),
+                responsive: true,
+                maintainAspectRatio: false,
                 legend: {
                     display: false
                 },
                 tooltips: {
-                    displayColors: false,
-                    callbacks: {
-                        label: (tooltipItem, data) => {
-                            return tooltipItem.yLabel; // Removes the colon before the label
-                        },
-                        footer: () => {
-                            return " "; // Hack the broken vertical alignment of body with footerFontSize: 0
-                        }
-                    } as ChartTooltipCallback
+                    enabled: false,
+                    // displayColors: false,
+                    // callbacks: {
+                    //     label: (tooltipItem, data) => {
+                    //         return tooltipItem.yLabel; // Removes the colon before the label
+                    //     },
+                    //     footer: () => {
+                    //         return " "; // Hack the broken vertical alignment of body with footerFontSize: 0
+                    //     }
+                    // } as ChartTooltipCallback
                 },
                 scales: {
                     yAxes: [{
@@ -146,7 +154,8 @@ export class OrAttributeCard extends LitElement {
 
         if (changedProperties.has("mainValue") || changedProperties.has("mainValueLastPeriod")) {
             if (this.mainValueLastPeriod && this.mainValue) {
-                this.delta = (this.mainValueLastPeriod! - this.mainValue!);
+                console.log(Math.round(((this.mainValueLastPeriod! / this.mainValue!) * 100)));
+                this.delta = Math.round(((this.mainValueLastPeriod! / this.mainValue!) * 100)).toString() + "%";
             }
         }
         if (changedProperties.has("mainValue")) {
@@ -179,14 +188,23 @@ export class OrAttributeCard extends LitElement {
                         ${this.asset.name} - ${i18next.t(this.attributeName)}
                     </div>
                     <div class="panel-content">
-                        <canvas id="chart"></canvas>
-                        <span>total: ${this.formattedMainValue}</span>
-                        <span>delta: ${this.delta}</span>
-                        ${getContentWithMenuTemplate(
-                            html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-input>`,
-                            this._getPeriodOptions(),
-                            this.period,
-                            (value) => this._setPeriodOption(value))}
+                        <div class="top-row" style="width:100%;display:flex;justify-content:space-between;">
+                            <span>${Intl.DateTimeFormat(manager.language).format(this.now)}</span>
+                            ${getContentWithMenuTemplate(
+                                html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-input>`,
+                                this._getPeriodOptions(),
+                                this.period,
+                                (value) => this._setPeriodOption(value))}
+                        </div>
+                        <div class="center-row">
+                            <span>${this.formattedMainValue}</span>
+                        </div>
+                        <div class="bottom-row" style="width:100%;display:flex;">
+                            <div class="chart-wrapper" style="flex: 1;">
+                                <canvas id="chart"></canvas>
+                            </div>
+                            <span style="flex: 0 0 50px;">${this.delta}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -230,7 +248,7 @@ export class OrAttributeCard extends LitElement {
             .then((data: Asset) => {
                 this.asset = data;
 
-                const thisMoment = moment(this.fromTimestamp);
+                const thisMoment = moment(this.now);
                 const currentPeriod = {
                     start: thisMoment.startOf(this.period).toDate().getTime(),
                     end: thisMoment.endOf(this.period).toDate().getTime()
