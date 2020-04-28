@@ -243,33 +243,38 @@ export class OrAttributeCard extends LitElement {
         return response.data;
     }
 
-    protected getData = () => {
-        this.getAssetById(this.assetId)
-            .then((data: Asset) => {
-                this.asset = data;
+    protected async getData() {
+        const thisMoment = moment(this.now);
 
-                const thisMoment = moment(this.now);
-                const currentPeriod = {
-                    start: thisMoment.startOf(this.period).toDate().getTime(),
-                    end: thisMoment.endOf(this.period).toDate().getTime()
-                };
-                const lastPeriod = {
-                    start: thisMoment.clone().subtract(1, this.period).startOf(this.period).toDate().getTime(),
-                    end: thisMoment.clone().subtract(1, this.period).endOf(this.period).toDate().getTime()
-                };
+        this.asset = await this.getAssetById(this.assetId);
 
-                this.getDatapointsByAttribute(data.id!, lastPeriod.start, lastPeriod.end)
-                    .then((lastPeriodDatapoints: ValueDatapoint<any>[]) => {
-                        const datapoints = lastPeriodDatapoints || [];
-                        this.mainValueLastPeriod = this.getHighestValue(this.sanitizeDataPoints(datapoints));
-                    });
+        const currentPeriod = {
+            start: thisMoment.startOf(this.period).toDate().getTime(),
+            end: thisMoment.endOf(this.period).toDate().getTime()
+        };
+        const lastPeriod = {
+            start: thisMoment.clone().subtract(1, this.period).startOf(this.period).toDate().getTime(),
+            end: thisMoment.clone().subtract(1, this.period).endOf(this.period).toDate().getTime()
+        };
 
-                return this.getDatapointsByAttribute(data.id!, currentPeriod.start, currentPeriod.end);
-            })
+        const p1 = this.getDatapointsByAttribute(this.asset.id!, currentPeriod.start, currentPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
                 this.mainValue = this.getHighestValue(this.sanitizeDataPoints(this.data));
+                return this.mainValue;
             });
+
+        const p2 = this.getDatapointsByAttribute(this.asset.id!, lastPeriod.start, lastPeriod.end)
+            .then((datapoints: ValueDatapoint<any>[]) => {
+                this.mainValueLastPeriod = this.getHighestValue(this.sanitizeDataPoints(datapoints));
+                return this.mainValueLastPeriod;
+            });
+
+        Promise.all([p1, p2])
+            .then((returnvalues) => {
+                this.delta = this.getFormattedDelta(returnvalues[0], returnvalues[1]);
+            });
+
     }
 
     protected sanitizeDataPoints(data: ValueDatapoint<any>[]): ValueDatapoint<any>[] {
