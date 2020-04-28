@@ -1183,6 +1183,9 @@ public class HttpClientProtocol extends AbstractProtocol {
             response = clientRequest.invoke(valueStr);
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Exception thrown whilst doing attribute write request", e);
+            if (response != null) {
+                response.close();
+            }
         }
 
         responseConsumer.accept(response);
