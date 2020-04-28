@@ -138,9 +138,19 @@ export class OrAttributeCard extends LitElement {
                 }
             }
         });
+
         if (changedProperties.has("data")) {
             this._chart.data.datasets![0].data = this.data;
             this._chart.update();
+        }
+
+        if (changedProperties.has("mainValue") || changedProperties.has("mainValueLastPeriod")) {
+            if (this.mainValueLastPeriod && this.mainValue) {
+                this.delta = (this.mainValueLastPeriod! - this.mainValue!);
+            }
+        }
+        if (changedProperties.has("mainValue")) {
+            this.formattedMainValue = this.getFormattedValue(this.mainValue!);
         }
 
     }
