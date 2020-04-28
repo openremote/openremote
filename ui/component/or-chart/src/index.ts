@@ -462,6 +462,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             <span class="line-label solid"></span>
                         `: ``}
                         <or-input id="ending-date" 
+                            .checkAssetWrite="${false}"
                             .type="${endDateInputType}" 
                             ?disabled="${disabled}" 
                             .value="${this.timestamp}" 
@@ -473,6 +474,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         <div class="period-controls">
                         <span class="line-label dashed"></span>
                             <or-input id="ending-date" 
+                                .checkAssetWrite="${false}"
                                 .type="${endDateInputType}" 
                                 ?disabled="${disabled}" 
                                 .value="${this.compareTimestamp}" 

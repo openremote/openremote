@@ -112,6 +112,13 @@
   "attributeValueType": {
     "PERCENTAGE": "%.2f",
     "NUMBER": "%.0f",
-    "TEMPERATURE": "%.1f"
+    "TEMPERATURE": "%.1f",
+    "POWER": "%.1f",
+    "CURRENCY": "%.1f",
+    "SPEED": "%.1f",
+    "CHARGE": "%.1f",
+    "ENERGY": "%.1f",
+    "CO2": "%.1f",
+    "HUMIDITY": "%.1f"
   }
 }

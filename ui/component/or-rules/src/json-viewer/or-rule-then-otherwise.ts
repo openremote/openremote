@@ -233,7 +233,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         `;
     }
 
-    protected ruleActionTemplate(actions: RuleActionUnion[], action: RuleActionUnion) {
+    protected ruleActionTemplate(actions: RuleActionUnion[], action: RuleActionUnion, readonly?: boolean) {
 
         const showTypeSelect = !this.config || !this.config.controls || this.config.controls.hideActionTypeOptions !== true;
         const type = this.getActionType(action);
@@ -269,15 +269,21 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 }
             }
 
-            typeTemplate = html`
-                <div id="type" style="color: #${buttonColor}">
-                    ${getContentWithMenuTemplate(
-                        html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
-                        getActionTypesMenu(this.config, this.assetDescriptors),
-                        action.action,
-                        (values: string[] | string) => this.setActionType(actions, action, values as string))}
-                </div>
-            `;
+            if(readonly) {
+                typeTemplate = html`
+                  <or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>
+                `;
+            } else {
+                typeTemplate = html`
+                    <div id="type" style="color: #${buttonColor}">
+                        ${getContentWithMenuTemplate(
+                            html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
+                            getActionTypesMenu(this.config, this.assetDescriptors),
+                            action.action,
+                            (values: string[] | string) => this.setActionType(actions, action, values as string))}
+                    </div>
+                `;
+            }
         }
 
         if (type) {
@@ -314,7 +320,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 <or-panel .heading="${i18next.t("then")}...">
                     ${this.ruleRecurrenceTemplate(this.rule.recurrence)}
 
-                    ${!this.rule.then ? `` : this.rule.then.map((action: RuleActionUnion) => this.ruleActionTemplate(this.rule.then!, action))}
+                    ${!this.rule.then ? `` : this.rule.then.map((action: RuleActionUnion) => this.ruleActionTemplate(this.rule.then!, action, this.readonly))}
                     ${thenAllowAdd ? html`
                         <span class="add-button-wrapper">
                             ${getContentWithMenuTemplate(
