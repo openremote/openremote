@@ -71,13 +71,14 @@ export class OrAttributeCard extends LitElement {
     private mainValue?: number;
     @property()
     private mainValueLastPeriod?: number;
+    @property()
+    private delta: string = "";
 
     private period: moment.unitOfTime.Base = "month";
     private now?: Date = new Date();
 
     private asset: Asset = {};
     private formattedMainValue?: string;
-    private delta: string = "";
 
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
@@ -154,8 +155,7 @@ export class OrAttributeCard extends LitElement {
 
         if (changedProperties.has("mainValue") || changedProperties.has("mainValueLastPeriod")) {
             if (this.mainValueLastPeriod && this.mainValue) {
-                console.log(Math.round(((this.mainValueLastPeriod! / this.mainValue!) * 100)));
-                this.delta = Math.round(((this.mainValueLastPeriod! / this.mainValue!) * 100)).toString() + "%";
+                this.delta = this.getFormattedDelta(this.mainValue, this.mainValueLastPeriod);
             }
         }
         if (changedProperties.has("mainValue")) {
@@ -300,6 +300,15 @@ export class OrAttributeCard extends LitElement {
     protected getFormattedValue(value: number): string {
         const format = getMetaValue(MetaItemType.FORMAT, this.asset.attributes![this.attributeName], undefined);
         return i18next.t(format, { postProcess: "sprintf", sprintf: [value] }).trim();
+    }
+
+    protected getFormattedDelta(currentPeriodVal: number, lastPeriodVal: number): string {
+        if (currentPeriodVal && lastPeriodVal) {
+            const math = Math.round(lastPeriodVal - currentPeriodVal);
+            return math.toString();
+        } else {
+            return "0";
+        }
     }
 
     protected _getPeriodOptions() {
