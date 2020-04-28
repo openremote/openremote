@@ -236,12 +236,10 @@ export class OrAttributeCard extends LitElement {
 
     protected getFormattedTotalValue(data: ValueDatapoint<any>[]): string {
 
-        const total = data.reduce(( acc: number, val: ValueDatapoint<any> ) => {
-            return val.y ? acc + Math.round(val.y) : acc;
-        }, 0);
+        const max = Math.max.apply(Math, data.map((e: ValueDatapoint<any>) => e.y || false ));
 
         const format = getMetaValue(MetaItemType.FORMAT, this.asset.attributes![this.attributeName], undefined);
-        return i18next.t(format, { postProcess: 'sprintf', sprintf: [total] }).trim();
+        return i18next.t(format, { postProcess: 'sprintf', sprintf: [max] }).trim();
     }
 
     protected _getPeriodOptions() {
@@ -291,7 +289,7 @@ export class OrAttributeCard extends LitElement {
         return interval;
     }
 
-    protected _setPeriodOption(value: moment.unitOfTime.Base) {
+    protected _setPeriodOption(value: any) {
         this.period = value;
 
         this.getData();
