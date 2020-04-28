@@ -63,13 +63,16 @@ export class OrAttributeCard extends LitElement {
     private data: ValueDatapoint<any>[] = [];
 
     @property()
+    private mainValue?: number;
+    @property()
     private mainValueLastPeriod?: number;
 
     private period: moment.unitOfTime.Base = "month";
     private fromTimestamp?: Date = new Date();
 
     private asset: Asset = {};
-    private mainValue?: string;
+    private formattedMainValue?: string;
+    private delta?: number;
 
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
@@ -167,7 +170,8 @@ export class OrAttributeCard extends LitElement {
                     </div>
                     <div class="panel-content">
                         <canvas id="chart"></canvas>
-                        <span>total: ${this.mainValue}</span>
+                        <span>total: ${this.formattedMainValue}</span>
+                        <span>delta: ${this.delta}</span>
                         ${getContentWithMenuTemplate(
                             html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-input>`,
                             this._getPeriodOptions(),
