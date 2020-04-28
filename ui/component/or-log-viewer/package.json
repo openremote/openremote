@@ -13,7 +13,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "parse-link-header": "^1.0.1",
-    "@material/data-table": "^4.0.0",
+    "@material/data-table": "^5.1.0",
     "@openremote/core": "^1.1.0",
     "lit-element": "^2.2.1",
     "moment": "^2.24.0"
