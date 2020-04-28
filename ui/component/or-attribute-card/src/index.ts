@@ -234,12 +234,19 @@ export class OrAttributeCard extends LitElement {
         return data;
     }
 
-    protected getFormattedTotalValue(data: ValueDatapoint<any>[]): string {
+    protected getTotalValue(data: ValueDatapoint<any>[]): number {
+        return data.reduce(( acc: number, val: ValueDatapoint<any> ) => {
+            return val.y ? acc + Math.round(val.y) : acc;
+        }, 0);
+    }
 
-        const max = Math.max.apply(Math, data.map((e: ValueDatapoint<any>) => e.y || false ));
+    protected getHighestValue(data: ValueDatapoint<any>[]): number {
+        return Math.max.apply(Math, data.map((e: ValueDatapoint<any>) => e.y || false ));
+    }
 
+    protected getFormattedValue(value: number): string {
         const format = getMetaValue(MetaItemType.FORMAT, this.asset.attributes![this.attributeName], undefined);
-        return i18next.t(format, { postProcess: 'sprintf', sprintf: [max] }).trim();
+        return i18next.t(format, { postProcess: "sprintf", sprintf: [value] }).trim();
     }
 
     protected _getPeriodOptions() {
