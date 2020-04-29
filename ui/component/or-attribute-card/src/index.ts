@@ -1,5 +1,5 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, unsafeCSS} from "lit-element";
-
+import {classMap} from "lit-html/directives/class-map";
 import i18next from "i18next";
 import {Asset, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
 import {manager, DefaultColor4, DefaultColor5} from "@openremote/core";
@@ -87,8 +87,13 @@ const style = css`
     
     .delta {
         flex: 0 0 50px;
-        color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
         font-weight: bold;
+    }
+    .delta.delta-min {
+        color: red;
+    }
+    .delta.delta-plus {     
+       color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
     }
     
 `;
@@ -246,7 +251,7 @@ export class OrAttributeCard extends LitElement {
                             <div class="chart-wrapper" style="flex: 1;">
                                 <canvas id="chart"></canvas>
                             </div>
-                            <span class="delta">${this.delta.val}${this.delta.unit}</span>
+                            <span class=${classMap({"delta": true, "delta-min": this.delta.val! < 0, "delta-plus": this.delta.val! > 0})}>${this.delta.val}${this.delta.unit}</span>
                         </div>
                     </div>
                 </div>
