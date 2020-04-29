@@ -78,11 +78,6 @@ const style = css`
         grid-column-end: -1;
     }
     
-    or-asset-tree {
-        align-items: stretch;
-        z-index: 1;
-    }
-    
     .hideMobile {
         display: none;
     }
@@ -93,12 +88,6 @@ const style = css`
     }
     
     @media only screen and (min-width: 768px){
-        or-asset-tree {
-            width: 300px;
-            min-width: 300px;
-            box-shadow: ${unsafeCSS(DefaultBoxShadow)} 
-        }
-        
         .hideMobile {
             display: flex;
         }
@@ -107,10 +96,8 @@ const style = css`
         or-asset-viewer.hideMobile {
             display: initial;
         }
-     
-      
-        
     }
+    
 `;
 
 const viewerConfig: DataViewerConfig = {
