@@ -53,16 +53,20 @@ const style = css`
         width: 100%;
         display: flex;
         justify-content: space-between;
+        align-items: baseline;
     }
     
     .center-row {
         display: flex;
         align-items: baseline;
+        width: 100%;
+        justify-content: center;
     }
     
     .bottom-row {
         display: flex;
         width: 100%;
+        align-items: center;
     }
     
     .now {
