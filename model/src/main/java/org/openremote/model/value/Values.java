@@ -337,6 +337,8 @@ public class Values {
         return Optional.empty();
     }
 
+    @JsIgnore
+    @GwtIncompatible
     public static <T> Optional<T> convertFromValue(Value value, Class<T> clazz, ObjectMapper objectMapper) {
         if (value == null || objectMapper == null) {
             return Optional.empty();
