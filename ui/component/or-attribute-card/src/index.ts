@@ -359,8 +359,8 @@ export class OrAttributeCard extends LitElement {
         if (currentPeriodVal && lastPeriodVal) {
             if (lastPeriodVal === 0 && currentPeriodVal === 0) {
                 return {val: 0, unit: "%"};
-            } else if (lastPeriodVal === 0 && currentPeriodVal !== 0) { // would be dividing something by zero
-                return {};
+            } else if (lastPeriodVal === 0 && currentPeriodVal !== 0) {
+                return {val: 100, unit: "%"};
             } else {
                 const math = Math.round((currentPeriodVal - lastPeriodVal) / lastPeriodVal * 100);
                 return {val: math, unit: "%"};
