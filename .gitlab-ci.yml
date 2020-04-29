@@ -23,15 +23,6 @@ docker-build-master:
   only:
     - master
 
-docker-build:
-  # Official docker image.
-  image: docker:latest
-  stage: build
-  script:
-    - echo No CI for other branches
-  except:
-    - master
-
 test-master:
   image: docker:latest
   stage: test
@@ -56,3 +47,5 @@ deploy:
   stage: deploy
   script:
     - echo Continous deploy TODO
+  only:
+    - master

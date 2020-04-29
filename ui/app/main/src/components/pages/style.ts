@@ -2,7 +2,7 @@ import {css, CSSResult} from "lit-element";
 
 // language=CSS
 export const MapStyle: CSSResult = css`
-    or-asset-summary-card {
+   or-map-asset-card {
         height: 166px;
         position: absolute;
         bottom: 0px;
@@ -19,7 +19,7 @@ export const MapStyle: CSSResult = css`
     }
 
     @media only screen and (min-width: 415px){
-        or-asset-summary-card {
+        or-map-asset-card {
             position: absolute;
             top: 20px;
             right: 20px;

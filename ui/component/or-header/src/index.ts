@@ -94,7 +94,17 @@ function getHeaderMenu(items: menuOption[]): MenuItem[] {
         };
     });
 }
+export class OrHeaderMenuChangedEvent extends CustomEvent<boolean> {
 
+    public static readonly NAME = "or-header-menu-changed";
+
+    constructor() {
+        super(OrHeaderMenuChangedEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
 @customElement("or-header")
 class OrHeader extends LitElement {
 
@@ -127,6 +137,20 @@ class OrHeader extends LitElement {
         return [
             style
         ];
+    }
+
+    constructor() {
+        super();
+
+        this.addEventListener(OrHeaderMenuChangedEvent.NAME, this._hashChanged);
+        window.addEventListener("hashchange", () => {
+            this.dispatchEvent(new OrHeaderMenuChangedEvent());
+        }, false);
+    }   
+    
+    _hashChanged(e: Event) {
+        const menu = window.location.hash.split('/')[0];
+        this.activeMenu = menu;
     }
 
     protected render() {

@@ -19,14 +19,6 @@ router.on({
         store.dispatch(setActiveAsset(params.id));
         store.dispatch(updatePage("map"));
     },
-    "assets": (params, query) => {
-        store.dispatch(setActiveAsset(null));
-        store.dispatch(updatePage("assets"));
-    },
-    "assets/:id": (params, query) => {
-        store.dispatch(setActiveAsset(params.id));
-        store.dispatch(updatePage("assets", params.id));
-    },
     "insights": (params, query) => {
         store.dispatch(setActiveAsset(null));
         store.dispatch(updatePage("insights"));
@@ -35,12 +27,23 @@ router.on({
         store.dispatch(setActiveAsset(params.id));
         store.dispatch(updatePage("insights", params.id));
     },
+    "assets": (params, query) => {
+        store.dispatch(setActiveAsset(null));
+        store.dispatch(updatePage("assets"));
+    },
+    "assets/:id": (params, query) => {
+        store.dispatch(setActiveAsset(params.id));
+        store.dispatch(updatePage("assets", params.id));
+    },
     "rules": (params, query) => {
         store.dispatch(updatePage("rules"));
     },
     "rules/:id": (params, query) => {
         store.dispatch(updateRule(params.id));
         store.dispatch(updatePage("rules"));
+    },
+    "logs": (params, query) => {
+        store.dispatch(updatePage("logs"));
     },
     "*": (params, query) => {
         store.dispatch(updatePage("map"));
