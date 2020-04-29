@@ -42,9 +42,6 @@ router.on({
         store.dispatch(updateRule(params.id));
         store.dispatch(updatePage("rules"));
     },
-    "insights": (params, query) => {
-        store.dispatch(updatePage("insights"));
-    },
     "*": (params, query) => {
         store.dispatch(updatePage("map"));
     }
