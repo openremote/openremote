@@ -357,8 +357,14 @@ export class OrAttributeCard extends LitElement {
 
     protected getFormattedDelta(currentPeriodVal: number, lastPeriodVal: number): {val?: number, unit?: string} {
         if (currentPeriodVal && lastPeriodVal) {
-            const math = Math.round((lastPeriodVal - currentPeriodVal) / currentPeriodVal * 100);
-            return {val: math, unit: "%"};
+            if (lastPeriodVal === 0 && currentPeriodVal === 0) {
+                return {val: 0, unit: "%"};
+            } else if (lastPeriodVal === 0 && currentPeriodVal !== 0) { // would be dividing something by zero
+                return {};
+            } else {
+                const math = Math.round((currentPeriodVal - lastPeriodVal) / lastPeriodVal * 100);
+                return {val: math, unit: "%"};
+            }
         } else {
             return {};
         }
