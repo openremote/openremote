@@ -110,7 +110,7 @@ export class OrAttributeCard extends LitElement {
     @property()
     private mainValueLastPeriod?: number;
     @property()
-    private delta: string = "";
+    private delta: {val?: number, unit?: string} = {};
 
     private period: moment.unitOfTime.Base = "month";
     private now?: Date = new Date();
@@ -246,7 +246,7 @@ export class OrAttributeCard extends LitElement {
                             <div class="chart-wrapper" style="flex: 1;">
                                 <canvas id="chart"></canvas>
                             </div>
-                            <span class="delta">${this.delta}</span>
+                            <span class="delta">${this.delta.val}${this.delta.unit}</span>
                         </div>
                     </div>
                 </div>
@@ -350,12 +350,12 @@ export class OrAttributeCard extends LitElement {
         };
     }
 
-    protected getFormattedDelta(currentPeriodVal: number, lastPeriodVal: number): string {
+    protected getFormattedDelta(currentPeriodVal: number, lastPeriodVal: number): {val?: number, unit?: string} {
         if (currentPeriodVal && lastPeriodVal) {
-            const math = Math.round(lastPeriodVal - currentPeriodVal);
-            return math.toString();
+            const math = Math.round((lastPeriodVal - currentPeriodVal) / currentPeriodVal * 100);
+            return {val: math, unit: "%"};
         } else {
-            return "0";
+            return {};
         }
     }
 
