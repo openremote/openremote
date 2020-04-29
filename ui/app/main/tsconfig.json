@@ -16,6 +16,7 @@
     { "path": "../../component/or-map" },
     { "path": "../../component/or-attribute-card" },
     { "path": "../../component/or-asset-tree" },
+    { "path": "../../component/or-data-viewer" },
     { "path": "../../component/or-attribute-input" },
     { "path": "../../component/or-chart" },
     { "path": "../../component/or-asset-viewer" },
