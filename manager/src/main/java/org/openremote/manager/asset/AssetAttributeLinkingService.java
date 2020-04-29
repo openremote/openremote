@@ -174,7 +174,7 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
             if (value != null && attributeValueType.isPresent()) {
                 if (attributeValueType.get() != value.getType()) {
                     LOG.fine("Trying to convert value: " + value.getType() + " -> " + attributeValueType.get());
-                    Optional<Value> convertedValue = Values.convert(value, attributeValueType.get());
+                    Optional<Value> convertedValue = Values.convertToValue(value, attributeValueType.get());
                     if (!convertedValue.isPresent()) {
                         LOG.warning("Failed to convert value: " + value.getType() + " -> " + attributeValueType.get());
                         LOG.warning("Cannot send linked attribute update");

@@ -908,7 +908,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                     LOG.fine("Value filter type unknown: " + filter.getValueType().getName());
                     value = null;
                 } else {
-                    Optional<Value> val = Values.convert(value, filterValueType);
+                    Optional<Value> val = Values.convertToValue(value, filterValueType);
                     if (!val.isPresent()) {
                         LOG.fine("Value filter type '" + filter.getValueType().getName()
                             + "' is not compatible with actual value type '" + value.getType().getModelType().getName()

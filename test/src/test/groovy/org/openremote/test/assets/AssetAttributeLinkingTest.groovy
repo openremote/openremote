@@ -58,15 +58,15 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
         converterOnOff.put("PRESSED", "@TOGGLE")
         converterOnOff.put("RELEASED", "@IGNORE")
         converterOnOff.put("LONG_PRESSED", "@IGNORE")
-        def attributeLinkOnOff = Values.convert(new AttributeLink(new AttributeRef(asset2.id, "lightOnOff"), converterOnOff, null), Container.JSON).orElse(null)
+        def attributeLinkOnOff = Values.convertToValue(new AttributeLink(new AttributeRef(asset2.id, "lightOnOff"), converterOnOff, null), Container.JSON).orElse(null)
 
         def converterCounter = Values.createObject()
         converterCounter.put("PRESSED", "@INCREMENT")
         converterCounter.put("RELEASED", "@DECREMENT")
         converterCounter.put("LONG_PRESSED", "@IGNORE")
-        def attributeLinkCounter = Values.convert(new AttributeLink(new AttributeRef(asset2.id, "counter"), converterCounter, null), Container.JSON).orElse(null)
+        def attributeLinkCounter = Values.convertToValue(new AttributeLink(new AttributeRef(asset2.id, "counter"), converterCounter, null), Container.JSON).orElse(null)
 
-        def attributeLinkProp = Values.convert(new AttributeLink(
+        def attributeLinkProp = Values.convertToValue(new AttributeLink(
             new AttributeRef(asset2.id, "item2Prop1"), null, [
             new JsonPathFilter("\$[1].prop1", true, false)
         ] as ValueFilter[]), Container.JSON).orElse(null)
