@@ -93,10 +93,10 @@ const style = css`
 export class OrAttributeCard extends LitElement {
 
     @property()
-    public assetId: string = "";
+    public assetId!: string;
 
     @property()
-    public attributeName: string = "";
+    public attributeName!: string;
 
     @property()
     private data: ValueDatapoint<any>[] = [];
@@ -285,8 +285,6 @@ export class OrAttributeCard extends LitElement {
     protected async getData() {
         const thisMoment = moment(this.now);
 
-        this.asset = await this.getAssetById(this.assetId);
-
         const currentPeriod = {
             start: thisMoment.startOf(this.period).toDate().getTime(),
             end: thisMoment.endOf(this.period).toDate().getTime()
@@ -296,14 +294,14 @@ export class OrAttributeCard extends LitElement {
             end: thisMoment.clone().subtract(1, this.period).endOf(this.period).toDate().getTime()
         };
 
-        const p1 = this.getDatapointsByAttribute(this.asset.id!, currentPeriod.start, currentPeriod.end)
+        const p1 = this.getDatapointsByAttribute(this.assetId, currentPeriod.start, currentPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
                 this.mainValue = this.getHighestValue(this.sanitizeDataPoints(this.data));
                 return this.mainValue;
             });
 
-        const p2 = this.getDatapointsByAttribute(this.asset.id!, lastPeriod.start, lastPeriod.end)
+        const p2 = this.getDatapointsByAttribute(this.assetId, lastPeriod.start, lastPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.mainValueLastPeriod = this.getHighestValue(this.sanitizeDataPoints(datapoints));
                 return this.mainValueLastPeriod;

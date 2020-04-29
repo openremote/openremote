@@ -110,8 +110,8 @@ const viewerConfig: DataViewerConfig = {
             gridRowStart: "1"
         },
         defaults: [{
-            assetId:"5442Ite2XVp3Ky9X2y647a",
-            attributes: ["UVIndex"]
+            assetId:"4m4dWZUAV4IepHKc8Wwv85",
+            attributes: ["light1PowerConsumption"]
         }]
     }
    }
@@ -125,7 +125,7 @@ class PageInsights extends connect(store)(LitElement)  {
     }
 
     @property()
-    protected _assetId;
+    private _assetId: string = "";
 
     protected render(): TemplateResult | void {
 
@@ -137,7 +137,7 @@ class PageInsights extends connect(store)(LitElement)  {
                     <div class="row">
                         <or-data-viewer .config="${viewerConfig}"></or-data-viewer>
                     </div>
-                    <or-attribute-card .assetId="${this._assetId}" .attributeName="${attributeName}"></or-attribute-card>
+                    <or-attribute-card .assetId="${viewerConfig.panels["chart"].defaults[0].assetId}" .attributeName="${viewerConfig.panels["chart"].defaults[0].attributes[0]}"></or-attribute-card>
                 </div>
             </div>
         `;
