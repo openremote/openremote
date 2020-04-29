@@ -23,14 +23,6 @@ docker-build-master:
   only:
     - master
 
-docker-build-no-master:
-  stage: build
-  script:
-    - echo No CI for other branches
-    - exit 1
-  except:
-    - master
-
 test-master:
   image: docker:latest
   stage: test
