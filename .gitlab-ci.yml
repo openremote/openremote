@@ -23,12 +23,12 @@ docker-build-master:
   only:
     - master
 
-docker-build:
-  # Official docker image.
-  image: docker:latest
+docker-build-no-master:
   stage: build
   script:
     - echo No CI for other branches
+    - exit 1
+  allow_faliure: true
   except:
     - master
 
@@ -56,3 +56,5 @@ deploy:
   stage: deploy
   script:
     - echo Continous deploy TODO
+  only:
+    - master
