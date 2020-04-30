@@ -58,6 +58,8 @@ dependencies {
         exclude group: "logkit"
         exclude group: "commons-logging"
     }
+
+    compile "io.moquette:moquette-broker:$moquetteVersion"
 }
 
 jar {
