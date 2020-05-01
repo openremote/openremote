@@ -539,14 +539,15 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected String getAgentAncestorId(Asset asset) {
-        //TODO: check whether getParentId can be null at this point
-        if (asset.getParentId() != null) {
-            return Arrays.stream(asset.getPath())
-                    .filter(assetId -> getAgents().containsKey(assetId))
-                    .findFirst()
-                    .orElse(null);
+        if (asset.getPath() == null) {
+            // Fully load
+            asset = assetStorageService.find(asset.getId());
         }
-        return null;
+
+        return Arrays.stream(asset.getPath())
+                .filter(assetId -> getAgents().containsKey(assetId))
+                .findFirst()
+                .orElse(null);
     }
 
     protected void linkProtocolConfigurations(List<AssetAttribute> configurations) {
