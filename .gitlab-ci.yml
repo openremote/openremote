@@ -1,7 +1,10 @@
-# This file is a template, and might need editing before it works on your project.
+default:
+  interruptible: true
+  image: docker:latest
+  timeout: 1h 30m
+
 docker-build-master:
   # Official docker image.
-  image: docker:latest
   stage: build
   services:
     - docker:dind
@@ -24,7 +27,6 @@ docker-build-master:
     - master
 
 test-master:
-  image: docker:latest
   stage: test
   services:
     - docker:dind
