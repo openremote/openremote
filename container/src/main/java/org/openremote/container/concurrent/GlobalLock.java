@@ -115,7 +115,7 @@ public class GlobalLock {
                 }
             } else {
                 throw new IllegalStateException(
-                    "Could not acquire lock owned by " + lock.owner() + " after waiting " + getLockTimeoutMillis() + "ms: " + info
+                    "Could not acquire lock owned by " + lock.owner() + " after waiting " + getLockTimeoutMillis() + "ms: " + Thread.currentThread().getName() + " executing " + info
                 );
             }
         } catch (InterruptedException ex) {
