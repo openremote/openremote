@@ -1,13 +1,25 @@
 default:
   interruptible: true
   image: docker:latest
-  timeout: 1h 30m
-
-docker-build-master:
-  # Official docker image.
-  stage: build
   services:
     - docker:dind
+  timeout: 1h 30m
+
+lint-Dockerfile:
+  stage: build
+  script:
+    - docker pull hadolint/hadolint
+    - docker run --rm -i hadolint/hadolint < Dockerfile
+  allow_failure: true
+
+lint-swarm-Dockerfile:
+  stage: build
+  script:
+    - docker pull hadolint/hadolint
+    - docker run --rm -i hadolint/hadolint < ./manager/swarm.Dockerfile
+
+build-master:
+  stage: build
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker login -u "$DOCKERHUB_USER" -p "$DOCKERHUB_PASSWORD"
@@ -27,9 +39,6 @@ docker-build-master:
     - master
 
 test-master:
-  stage: test
-  services:
-    - docker:dind
   before_script:
     - docker run -v $(pwd):/openremote
       -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
@@ -45,7 +54,7 @@ test-master:
   only:
     - master
 
-deploy:
+deploy-master:
   stage: deploy
   script:
     - echo Continous deploy TODO
