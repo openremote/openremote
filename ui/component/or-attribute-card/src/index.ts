@@ -205,6 +205,18 @@ export class OrAttributeCard extends LitElement {
 
     }
 
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        this._cleanup();
+    }
+
+    protected _cleanup() {
+        if (this._chart) {
+            this._chart.destroy();
+            this._chart = undefined;
+        }
+    }
+
     protected render() {
 
         if (this.assetId === "" || this.attributeName === "") {
