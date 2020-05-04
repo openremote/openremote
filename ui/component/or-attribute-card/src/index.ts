@@ -151,54 +151,47 @@ export class OrAttributeCard extends LitElement {
             return;
         }
 
-        this._chart = new Chart(this._chartElem, {
-            type: "line",
-            data: {
-                datasets: [
-                    {
-                        data: this.data,
-                        lineTension: 0,
-                        spanGaps: true,
-                        backgroundColor: "transparent",
-                        borderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color"),
-                        pointBorderColor: "transparent",
-                    }
-                ]
-            },
-            options: {
-                // onResize: () => this.dispatchEvent(new OrAttributeHistoryEvent("resize")),
-                responsive: true,
-                maintainAspectRatio: false,
-                legend: {
-                    display: false
+        if (!this._chart) {
+            this._chart = new Chart(this._chartElem, {
+                type: "line",
+                data: {
+                    datasets: [
+                        {
+                            data: this.data,
+                            lineTension: 0,
+                            spanGaps: true,
+                            backgroundColor: "transparent",
+                            borderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color"),
+                            pointBorderColor: "transparent",
+                        }
+                    ]
                 },
-                tooltips: {
-                    enabled: false,
-                    // displayColors: false,
-                    // callbacks: {
-                    //     label: (tooltipItem, data) => {
-                    //         return tooltipItem.yLabel; // Removes the colon before the label
-                    //     },
-                    //     footer: () => {
-                    //         return " "; // Hack the broken vertical alignment of body with footerFontSize: 0
-                    //     }
-                    // } as ChartTooltipCallback
-                },
-                scales: {
-                    yAxes: [{
+                options: {
+                    // onResize: () => this.dispatchEvent(new OrAttributeHistoryEvent("resize")),
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: {
                         display: false
-                    }],
-                    xAxes: [{
-                        type: "time",
-                        display: false,
-                    }]
+                    },
+                    tooltips: {
+                        enabled: false,
+                    },
+                    scales: {
+                        yAxes: [{
+                            display: false
+                        }],
+                        xAxes: [{
+                            type: "time",
+                            display: false,
+                        }]
+                    }
                 }
+            });
+        } else {
+            if (changedProperties.has("data")) {
+                this._chart.data.datasets![0].data = this.data;
+                this._chart.update();
             }
-        });
-
-        if (changedProperties.has("data")) {
-            this._chart.data.datasets![0].data = this.data;
-            this._chart.update();
         }
 
         if (changedProperties.has("mainValue") || changedProperties.has("mainValueLastPeriod")) {
