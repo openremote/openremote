@@ -66,7 +66,6 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
     protected String host;
     protected int port;
     protected Server mqttBroker;
-    protected AssetInterceptHandler assetInterceptHandler;
 
     @Override
     public int getPriority() {
@@ -99,16 +98,17 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         Properties properties = new Properties();
         properties.setProperty(BrokerConstants.HOST_PROPERTY_NAME, host);
         properties.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(port));
-        assetInterceptHandler = new AssetInterceptHandler(assetStorageService, assetProcessingService, identityService, identityProvider);
-        mqttBroker.startServer(properties);
-        mqttBroker.addInterceptHandler(assetInterceptHandler);
-
+        properties.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, String.valueOf(false));
+        List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new AssetInterceptHandler(assetStorageService, assetProcessingService, identityService, identityProvider));
+        mqttBroker.startServer(new MemoryConfig(properties), interceptHandlers, null, new KeycloakAuthenticator(identityProvider), null);
         LOG.fine("Started MQTT broker");
     }
 
     @Override
     public void stop(Container container) throws Exception {
         mqttBroker.stopServer();
+
+        LOG.fine("Stopped MQTT broker");
     }
 
     @Override
@@ -116,40 +116,39 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
 
         if (active) {
             from(PERSISTENCE_TOPIC)
-                .routeId("MqttBrokerServiceAssetChanges")
-                .filter(isPersistenceEventForEntityType(Asset.class))
-                .process(exchange -> {
-                    @SuppressWarnings("unchecked")
-                    PersistenceEvent<Asset> persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
-                    Asset eventAsset = persistenceEvent.getEntity();
+                    .routeId("MqttBrokerServiceAssetChanges")
+                    .filter(isPersistenceEventForEntityType(Asset.class))
+                    .process(exchange -> {
+                        @SuppressWarnings("unchecked")
+                        PersistenceEvent<Asset> persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
+                        Asset eventAsset = persistenceEvent.getEntity();
 
-                    if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
-                        eventAsset = assetStorageService.find(eventAsset.getId(), true);
-                    }
+                        if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
+                            eventAsset = assetStorageService.find(eventAsset.getId(), true);
+                        }
 
 
-                });
+                    });
         }
     }
 
     @Override
     public boolean processAssetUpdate(EntityManager em, Asset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
-
-
-        MqttPublishMessage publishMessage =  MqttMessageBuilders.publish()
-            .qos(MqttQoS.AT_MOST_ONCE)
-            .topicName(asset.getId())
-            .retained(true)
-            .build();
+        MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
+                .qos(MqttQoS.AT_MOST_ONCE)
+                .topicName(asset.getId())
+                .retained(true)
+                .build();
 
         mqttBroker.listConnectedClients().forEach(clientDescriptor -> {
+
         });
         return false;
     }
 
     protected void acceptConnection(String clientId) {
-        MqttConnAckMessage ackMessage =  MqttMessageBuilders.connAck()
-            .returnCode(MqttConnectReturnCode.CONNECTION_REFUSED_BAD_USER_NAME_OR_PASSWORD)
-            .build();
+        MqttConnAckMessage ackMessage = MqttMessageBuilders.connAck()
+                .returnCode(MqttConnectReturnCode.CONNECTION_REFUSED_BAD_USER_NAME_OR_PASSWORD)
+                .build();
     }
 }
