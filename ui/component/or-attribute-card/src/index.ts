@@ -116,6 +116,8 @@ export class OrAttributeCard extends LitElement {
     private mainValueLastPeriod?: number;
     @property()
     private delta: {val?: number, unit?: string} = {};
+    @property()
+    private deltaPlus: string = "";
 
     private period: moment.unitOfTime.Base = "month";
     private now?: Date = new Date();
@@ -197,6 +199,7 @@ export class OrAttributeCard extends LitElement {
         if (changedProperties.has("mainValue") || changedProperties.has("mainValueLastPeriod")) {
             if (this.mainValueLastPeriod && this.mainValue) {
                 this.delta = this.getFormattedDelta(this.mainValue, this.mainValueLastPeriod);
+                this.deltaPlus = (this.delta.val! > 0) ? "+" : "";
             }
         }
         if (changedProperties.has("mainValue")) {
@@ -257,7 +260,7 @@ export class OrAttributeCard extends LitElement {
                             <div class="chart-wrapper" style="flex: 1;">
                                 <canvas id="chart"></canvas>
                             </div>
-                            <span class=${classMap({"delta": true, "delta-min": this.delta.val! < 0, "delta-plus": this.delta.val! > 0})}>${this.delta.val}${this.delta.unit}</span>
+                            <span class=${classMap({"delta": true, "delta-min": this.delta.val! < 0, "delta-plus": this.delta.val! > 0})}>${this.deltaPlus}${this.delta.val}${this.delta.unit}</span>
                         </div>
                     </div>
                 </div>
