@@ -157,6 +157,7 @@ export class OrAttributeCard extends LitElement {
                 datasets: [
                     {
                         data: this.data,
+                        lineTension: 0,
                         spanGaps: true,
                         backgroundColor: "transparent",
                         borderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color"),
