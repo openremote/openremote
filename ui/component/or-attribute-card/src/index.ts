@@ -308,13 +308,13 @@ export class OrAttributeCard extends LitElement {
         const p1 = this.getDatapointsByAttribute(this.assetId, currentPeriod.start, currentPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
-                this.mainValue = this.getHighestValue(this.sanitizeDataPoints(this.data));
+                this.mainValue = this.getHighestValue(this.sanitiseDataPoints(this.data));
                 return this.mainValue;
             });
 
         const p2 = this.getDatapointsByAttribute(this.assetId, lastPeriod.start, lastPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
-                this.mainValueLastPeriod = this.getHighestValue(this.sanitizeDataPoints(datapoints));
+                this.mainValueLastPeriod = this.getHighestValue(this.sanitiseDataPoints(datapoints));
                 return this.mainValueLastPeriod;
             });
 
@@ -325,7 +325,7 @@ export class OrAttributeCard extends LitElement {
 
     }
 
-    protected sanitizeDataPoints(data: ValueDatapoint<any>[]): ValueDatapoint<any>[] {
+    protected sanitiseDataPoints(data: ValueDatapoint<any>[]): ValueDatapoint<any>[] {
 
         // if there's no measurement for the first data point in time, assume 0
         if (data[0] && !data[0].y) {
