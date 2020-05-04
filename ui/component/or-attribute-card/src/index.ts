@@ -333,6 +333,11 @@ export class OrAttributeCard extends LitElement {
             data[0].y = 0;
         }
 
+        // if there's no measurement for the last data point, use the highest available
+        if (data[(data.length - 1)] && !data[(data.length - 1)].y) {
+            data[(data.length - 1)].y = this.getHighestValue(data);
+        }
+
         return data;
     }
 
