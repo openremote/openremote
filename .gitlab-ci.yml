@@ -11,12 +11,16 @@ lint-Dockerfile:
     - docker pull hadolint/hadolint
     - docker run --rm -i hadolint/hadolint < Dockerfile
   allow_failure: true
+  only:
+    - master
 
 lint-swarm-Dockerfile:
   stage: build
   script:
     - docker pull hadolint/hadolint
     - docker run --rm -i hadolint/hadolint < ./manager/swarm.Dockerfile
+  only:
+    - master
 
 build-master:
   stage: build
