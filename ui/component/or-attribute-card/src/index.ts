@@ -3,10 +3,9 @@ import {classMap} from "lit-html/directives/class-map";
 import i18next from "i18next";
 import {Asset, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
 import {manager, DefaultColor4, DefaultColor5} from "@openremote/core";
-import Chart, {ChartTooltipCallback} from "chart.js";
+import Chart from "chart.js";
 import {getContentWithMenuTemplate} from "@openremote/or-chart";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
-import {OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
+import {InputType} from "@openremote/or-input";
 import {getMetaValue} from "@openremote/core/dist/util";
 import moment from "moment";
 

@@ -9,6 +9,8 @@
     "./src"
   ],
   "references": [
-    { "path": "../core" }
+    { "path": "../core" },
+    { "path": "../or-chart" },
+    { "path": "../or-input" }
   ]
 }
