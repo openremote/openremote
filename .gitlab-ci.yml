@@ -30,9 +30,9 @@ build-master:
   script:
     - docker build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-    - docker run -v $(pwd):/openremote "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+    - docker run -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "./gradlew --console plain clean installDist"
-    - docker run -v $(pwd):/openremote
+    - docker run -v $(pwd):/or
       -v /var/run/docker.sock:/var/run/docker.sock
       "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "docker-compose -f profile/deploy.yml build --build-arg GIT_COMMIT=$SOURCE_COMMIT"
@@ -44,14 +44,14 @@ build-master:
 
 test-master:
   before_script:
-    - docker run -v $(pwd):/openremote
+    - docker run -v $(pwd):/or
       -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "docker-compose -f profile/dev-testing.yml pull"
-    - docker run -v $(pwd):/openremote
+    - docker run -v $(pwd):/or
       -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "docker-compose -f profile/dev-testing.yml up --no-build -d"
   script:
-    - docker run --network host -v $(pwd):/openremote "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+    - docker run --network host -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "./gradlew clean build installDist"
   # Still has 3 errors, therefore allow it to fail
   allow_failure: true
