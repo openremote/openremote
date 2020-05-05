@@ -15,7 +15,8 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.gwt.core.shared.GwtIncompatible;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
@@ -23,7 +24,6 @@ import jsinterop.base.Any;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaItemDescriptor;
-import org.openremote.model.rules.flow.Option;
 import org.openremote.model.value.impl.ValueFactoryImpl;
 
 import java.util.List;
@@ -323,13 +323,14 @@ public class Values {
     @SuppressWarnings("unchecked")
     @JsIgnore
     @GwtIncompatible
-    public static <T extends Value> Optional<T> convertToValue(Object object, ObjectMapper objectMapper) {
-        if (object == null || objectMapper == null) {
+    public static <T extends Value> Optional<T> convertToValue(Object object, ObjectWriter writer) {
+        if (object == null || writer == null) {
             return Optional.empty();
         }
 
         try {
-            Value v = parse(objectMapper.writeValueAsString(object)).orElse(null);
+            Value v;
+            v = parse(writer.writeValueAsString(object)).orElse(null);
             return Optional.ofNullable((T)v);
         } catch (Exception ignored) {
         }
@@ -339,14 +340,14 @@ public class Values {
 
     @JsIgnore
     @GwtIncompatible
-    public static <T> Optional<T> convertFromValue(Value value, Class<T> clazz, ObjectMapper objectMapper) {
-        if (value == null || objectMapper == null) {
+    public static <T> Optional<T> convertFromValue(Value value, Class<T> clazz, ObjectReader reader) {
+        if (value == null || reader == null) {
             return Optional.empty();
         }
 
         try {
             String str = value.toJson();
-            return Optional.of(objectMapper.readValue(str, clazz));
+            return Optional.of(reader.forType(clazz).readValue(str));
         } catch (Exception ignored) {
         }
 
