@@ -246,8 +246,12 @@ export class OrAttributeCard extends LitElement {
                         <div class="top-row">
                             <span class="now">${Intl.DateTimeFormat(manager.language).format(this.now)}</span>
                             ${getContentWithMenuTemplate(
-                                html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-input>`,
-                                this._getPeriodOptions(),
+                                html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-input>`, 
+                                [{value: "hour", text: ""}, {value: "day", text: ""}, {value: "week", text: ""}, {value: "month", text: ""}, {value: "year", text: ""}]
+                                    .map((option) => {
+                                        option.text = i18next.t(option.value);
+                                        return option;
+                                    }),
                                 this.period,
                                 (value) => this._setPeriodOption(value))}
                         </div>
@@ -381,31 +385,6 @@ export class OrAttributeCard extends LitElement {
         } else {
             return {};
         }
-    }
-
-    protected _getPeriodOptions() {
-        return [
-            {
-                text: i18next.t(DatapointInterval.HOUR),
-                value: "hour"
-            },
-            {
-                text: i18next.t(DatapointInterval.DAY),
-                value: "day"
-            },
-            {
-                text: i18next.t(DatapointInterval.WEEK),
-                value: "week"
-            },
-            {
-                text: i18next.t(DatapointInterval.MONTH),
-                value: "month"
-            },
-            {
-                text: i18next.t(DatapointInterval.YEAR),
-                value: "year"
-            }
-        ];
     }
 
     protected _getInterval() {
