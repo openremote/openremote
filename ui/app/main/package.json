@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@openremote/core": "^1.1.0",
-    "@openremote/or-attribute-card": "^1.0.0",
+    "@openremote/or-attribute-card": "^1.1.0",
     "@openremote/or-asset-tree": "^1.1.0",
     "@openremote/or-asset-viewer": "^1.1.0",
     "@openremote/or-header": "^1.1.0",
