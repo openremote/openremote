@@ -85,9 +85,9 @@ public class AssetInterceptHandler implements InterceptHandler {
 
     @Override
     public void onSubscribe(InterceptSubscribeMessage interceptSubscribeMessage) {
-        Set<String> attributeIds = connectionAssets.get(interceptSubscribeMessage.getClientID());
-        if (attributeIds != null) {
-            attributeIds.add(interceptSubscribeMessage.getTopicFilter());
+        Set<String> assetIds = connectionAssets.get(interceptSubscribeMessage.getClientID());
+        if (assetIds != null) {
+            assetIds.add(interceptSubscribeMessage.getTopicFilter());
         } else {
             throw new IllegalStateException("Connection with clientId " + interceptSubscribeMessage.getClientID() + " not found.");
         }
@@ -100,6 +100,7 @@ public class AssetInterceptHandler implements InterceptHandler {
 
     @Override
     public void onMessageAcknowledged(InterceptAcknowledgedMessage interceptAcknowledgedMessage) {
+
     }
 
     public Map<String, Set<String>> getConnectionAssets() {

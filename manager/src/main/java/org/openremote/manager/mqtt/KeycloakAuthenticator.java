@@ -31,7 +31,6 @@ import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import javax.ws.rs.NotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class KeycloakAuthenticator implements IAuthenticator {
@@ -47,31 +46,26 @@ public class KeycloakAuthenticator implements IAuthenticator {
     }
 
     @Override
-    public boolean checkValid(String clientId, String username, byte[] password) {
-        RealmResource realmResource = identityProvider.getRealms(getClientRequestInfo()).realm(username);
+    public boolean checkValid(String realm, String clientId, byte[] password) {
+        int indexSplit = realm.indexOf(MQTT_CLIENT_ID_SEPARATOR);
+        if (indexSplit > 0) {
+            realm = realm.substring(0, indexSplit);
+        }
+
+        RealmResource realmResource = identityProvider.getRealms(getClientRequestInfo()).realm(realm);
         if (realmResource == null) {
             LOG.info("Realm not found");
             return false;
         }
-        int indexSplit = clientId.indexOf(MQTT_CLIENT_ID_SEPARATOR);
-        if (indexSplit > -1) {
-            clientId = clientId.substring(0, indexSplit);
-        }
 
         try {
-            ClientRepresentation clientRepresentation = realmResource.clients().get(clientId).toRepresentation();
-
-            if (clientRepresentation == null) {
-                LOG.info("Client not found");
-                return false;
-            }
-
+            ClientResource clientResource = realmResource.clients().get(clientId);
             String suppliedClientSecret = new String(password, StandardCharsets.UTF_8);
-            String clientSecret = clientRepresentation.getSecret();
+            String clientSecret = clientResource.getSecret().getValue();
 
             return suppliedClientSecret.equals(clientSecret);
         } catch (NotFoundException ex) {
-            LOG.log(Level.INFO, "Client not found");
+            LOG.info("Client not found");
         }
         return false;
     }
