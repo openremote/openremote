@@ -30,7 +30,7 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
-import org.openremote.container.security.AuthForm;
+import org.openremote.container.security.PasswordAuthForm;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ClientRequestInfo;
@@ -38,7 +38,6 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.apps.ConsoleAppService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.UserQuery;
@@ -503,7 +502,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             if (token == null || !token.getIssuedFor().equals(ADMIN_CLI_CLIENT_ID)) {
                 return getKeycloak().getAccessToken(
-                    MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, keycloakAdminPassword)
+                    MASTER_REALM, new PasswordAuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, keycloakAdminPassword)
                 ).getToken();
             }
             return clientRequestInfo.getAccessToken();

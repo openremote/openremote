@@ -23,7 +23,6 @@ import io.moquette.BrokerConstants;
 import io.moquette.broker.Server;
 import io.moquette.broker.config.MemoryConfig;
 import io.moquette.interception.InterceptHandler;
-import io.moquette.interception.messages.*;
 import io.netty.handler.codec.mqtt.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
@@ -34,11 +33,11 @@ import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.AssetUpdateProcessor;
+import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.AttributeEvent;
 
 import javax.persistence.EntityManager;
@@ -54,6 +53,7 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
 
     private static final Logger LOG = Logger.getLogger(MqttBrokerService.class.getName());
 
+    public static final String MQTT_KEYCLOAK_CLIENT_ID = "mqtt";
     public static final String MQTTSERVER_LISTEN_HOST = "MQTTSERVER_LISTEN_HOST";
     public static final String MQTTSERVER_LISTEN_PORT = "MQTTSERVER_LISTEN_PORT";
 
@@ -61,6 +61,8 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
+    protected ClientEventService clientEventService;
+    protected MqttConnector mqttConnector;
 
     protected boolean active;
     protected String host;
@@ -77,9 +79,12 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         host = getString(container.getConfig(), MQTTSERVER_LISTEN_HOST, BrokerConstants.HOST);
         port = getInteger(container.getConfig(), MQTTSERVER_LISTEN_PORT, BrokerConstants.PORT);
 
+        mqttConnector = new MqttConnector();
+
         assetStorageService = container.getService(AssetStorageService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
         identityService = container.getService(ManagerIdentityService.class);
+        clientEventService = container.getService(ClientEventService.class);
 
         if (!identityService.isKeycloakEnabled()) {
             LOG.warning("MQTT connections are not supported when not using Keycloak identity provider");
@@ -99,8 +104,8 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         properties.setProperty(BrokerConstants.HOST_PROPERTY_NAME, host);
         properties.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(port));
         properties.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, String.valueOf(false));
-        List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new AssetInterceptHandler(assetStorageService, assetProcessingService, identityService, identityProvider));
-        mqttBroker.startServer(new MemoryConfig(properties), interceptHandlers, null, new KeycloakAuthenticator(identityProvider), null);
+        List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new AssetInterceptHandler(assetStorageService, assetProcessingService, identityService, identityProvider, clientEventService, mqttConnector));
+        mqttBroker.startServer(new MemoryConfig(properties), interceptHandlers, null, new KeycloakAuthenticator(identityProvider), new KeycloakAuthorizatorPolicy(identityProvider, assetStorageService, mqttConnector));
         LOG.fine("Started MQTT broker");
     }
 
@@ -136,12 +141,13 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
     public boolean processAssetUpdate(EntityManager em, Asset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
         MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
                 .qos(MqttQoS.AT_MOST_ONCE)
+
                 .topicName(asset.getId())
                 .retained(true)
                 .build();
 
+//        mqttBroker.internalPublish();
         mqttBroker.listConnectedClients().forEach(clientDescriptor -> {
-
         });
         return false;
     }

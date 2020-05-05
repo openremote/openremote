@@ -21,34 +21,47 @@ package org.openremote.manager.mqtt;
 
 import io.moquette.interception.InterceptHandler;
 import io.moquette.interception.messages.*;
+import org.openremote.container.security.ClientCredentialsAuthFrom;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.asset.AssetFilter;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.event.shared.EventSubscription;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.LinkedHashSet;
+import java.util.logging.Logger;
+
+import static org.openremote.manager.mqtt.KeycloakAuthenticator.MQTT_CLIENT_ID_SEPARATOR;
 
 public class AssetInterceptHandler implements InterceptHandler {
+
+    private static final Logger LOG = Logger.getLogger(KeycloakAuthorizatorPolicy.class.getName());
+
 
     protected final ManagerIdentityService identityService;
     protected final ManagerKeycloakIdentityProvider identityProvider;
     protected final AssetStorageService assetStorageService;
     protected final AssetProcessingService assetProcessingService;
-
-    protected final Map<String, Set<String>> connectionAssets;
+    protected final ClientEventService clientEventService;
+    protected final MqttConnector mqttConnector;
 
     AssetInterceptHandler(AssetStorageService assetStorageService,
                           AssetProcessingService assetProcessingService,
                           ManagerIdentityService managerIdentityService,
-                          ManagerKeycloakIdentityProvider managerKeycloakIdentityProvider) {
+                          ManagerKeycloakIdentityProvider managerKeycloakIdentityProvider,
+                          ClientEventService clientEventService, MqttConnector mqttConnector) {
+
         this.assetStorageService = assetStorageService;
         this.assetProcessingService = assetProcessingService;
         this.identityService = managerIdentityService;
         this.identityProvider = managerKeycloakIdentityProvider;
-        connectionAssets = new HashMap<>();
+        this.clientEventService = clientEventService;
+        this.mqttConnector = mqttConnector;
     }
 
     @Override
@@ -63,13 +76,14 @@ public class AssetInterceptHandler implements InterceptHandler {
 
     @Override
     public void onConnect(InterceptConnectMessage interceptConnectMessage) {
-        connectionAssets.put(interceptConnectMessage.getClientID(), new HashSet<>());
-
+        MqttConnector.MqttConnection connection = mqttConnector.createConnection(interceptConnectMessage.getClientID(), interceptConnectMessage.getUsername(), interceptConnectMessage.getPassword());
+        String suppliedClientSecret = new String(interceptConnectMessage.getPassword(), StandardCharsets.UTF_8);
+        connection.accessToken = identityProvider.getKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthFrom(MqttBrokerService.MQTT_KEYCLOAK_CLIENT_ID, suppliedClientSecret)).getToken();
     }
 
     @Override
     public void onDisconnect(InterceptDisconnectMessage interceptDisconnectMessage) {
-        connectionAssets.remove(interceptDisconnectMessage.getClientID());
+        mqttConnector.removeConnection(interceptDisconnectMessage.getClientID());
     }
 
     @Override
@@ -80,30 +94,35 @@ public class AssetInterceptHandler implements InterceptHandler {
     @Override
     public void onPublish(InterceptPublishMessage message) {
         System.out.println("moquette mqtt broker message intercepted, topic: " + message.getTopicName()
-            + ", content: " + new String(message.getPayload().array()));
+                + ", content: " + new String(message.getPayload().array()));
     }
 
     @Override
     public void onSubscribe(InterceptSubscribeMessage interceptSubscribeMessage) {
-        Set<String> assetIds = connectionAssets.get(interceptSubscribeMessage.getClientID());
-        if (assetIds != null) {
-            assetIds.add(interceptSubscribeMessage.getTopicFilter());
-        } else {
-            throw new IllegalStateException("Connection with clientId " + interceptSubscribeMessage.getClientID() + " not found.");
-        }
+        MqttConnector.MqttConnection connection = mqttConnector.getConnection(interceptSubscribeMessage.getClientID());
+//        if (connection != null) {
+//            clientEventService.getEventSubscriptions().createOrUpdate(
+//                    connection.clientId,
+//                    false,
+//                    new EventSubscription<>(
+//                            AttributeEvent.class,
+//                            new AssetFilter<AttributeEvent>().setRealm(connection.realm),
+//                            triggeredEventSubscription ->
+//                                    triggeredEventSubscription.getEvents()
+//                                            .forEach(event ->
+//                                                    sendCentralManagerMessage(connection.getLocalRealm(), messageFromSharedEvent(event)))));
+//            );
+//        } else {
+//            throw new IllegalStateException("Connection with clientId " + interceptSubscribeMessage.getClientID() + " not found.");
+//        }
     }
 
     @Override
     public void onUnsubscribe(InterceptUnsubscribeMessage interceptUnsubscribeMessage) {
-        connectionAssets.remove(interceptUnsubscribeMessage.getClientID());
     }
 
     @Override
     public void onMessageAcknowledged(InterceptAcknowledgedMessage interceptAcknowledgedMessage) {
 
-    }
-
-    public Map<String, Set<String>> getConnectionAssets() {
-        return connectionAssets;
     }
 }

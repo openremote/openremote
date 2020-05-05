@@ -23,6 +23,8 @@ import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.idm.PublishedRealmRepresentation;
 import org.openremote.container.security.AuthForm;
+import org.openremote.container.security.PasswordAuthForm;
+import org.openremote.container.security.ClientCredentialsAuthFrom;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -42,7 +44,13 @@ public interface KeycloakResource {
     @Path("realms/{realm}/protocol/openid-connect/token")
     @Consumes(APPLICATION_FORM_URLENCODED)
     @Produces(APPLICATION_JSON)
-    AccessTokenResponse getAccessToken(@PathParam("realm") String realm, @BeanParam AuthForm authForm);
+    AccessTokenResponse getAccessToken(@PathParam("realm") String realm, @BeanParam PasswordAuthForm authForm);
+
+    @POST
+    @Path("realms/{realm}/protocol/openid-connect/token")
+    @Consumes(APPLICATION_FORM_URLENCODED)
+    @Produces(APPLICATION_JSON)
+    AccessTokenResponse getAccessToken(@PathParam("realm") String realm, @BeanParam ClientCredentialsAuthFrom authForm);
 
     @GET
     @Path("realms/{realm}")
