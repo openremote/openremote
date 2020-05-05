@@ -273,7 +273,7 @@ export class OrAttributeCard extends LitElement {
             recursive: false
         });
 
-        if (response.status !== 200 || !response.data) {
+        if (response.status !== 200 || !response.data || !response.data.length) {
             return {};
         }
 
