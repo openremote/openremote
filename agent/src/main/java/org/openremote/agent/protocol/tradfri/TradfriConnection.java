@@ -1,10 +1,10 @@
 package org.openremote.agent.protocol.tradfri;
 
-import nl.stijngroenen.tradfri.device.Device;
-import nl.stijngroenen.tradfri.device.Gateway;
-import nl.stijngroenen.tradfri.device.Light;
-import nl.stijngroenen.tradfri.device.Plug;
-import nl.stijngroenen.tradfri.util.Credentials;
+import org.openremote.agent.protocol.tradfri.device.Device;
+import org.openremote.agent.protocol.tradfri.device.Gateway;
+import org.openremote.agent.protocol.tradfri.device.Light;
+import org.openremote.agent.protocol.tradfri.device.Plug;
+import org.openremote.agent.protocol.tradfri.util.Credentials;
 
 import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.model.asset.agent.ConnectionStatus;
