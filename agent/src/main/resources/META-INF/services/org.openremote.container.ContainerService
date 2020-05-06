@@ -10,3 +10,4 @@ org.openremote.agent.protocol.udp.UdpClientProtocol
 org.openremote.agent.protocol.tcp.TcpClientProtocol
 org.openremote.agent.protocol.serial.SerialClientProtocol
 org.openremote.agent.protocol.websocket.WebsocketClientProtocol
+org.openremote.agent.protocol.tradfri.TradfriProtocol
