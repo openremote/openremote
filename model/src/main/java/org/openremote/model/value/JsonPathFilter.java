@@ -41,6 +41,13 @@ public class JsonPathFilter extends ValueFilter<Value> {
 
     @JsonCreator
     public JsonPathFilter(@JsonProperty("path") String path,
+                          @JsonProperty("returnFirst") boolean returnFirst) {
+        this.path = path;
+        this.returnFirst = returnFirst;
+    }
+
+    @JsonCreator
+    public JsonPathFilter(@JsonProperty("path") String path,
                           @JsonProperty("returnFirst") boolean returnFirst,
                           @JsonProperty("returnLast") boolean returnLast) {
         this.path = path;
