@@ -78,7 +78,7 @@ public class AggregatedApiClient extends EmitterExtension {
     }
 
     private FieldAndGetter getOutputs(TsBeanModel client) {
-        String getterName = client.getName().getSimpleName().replace("Client", "");
+        String getterName = client.getName().getSimpleName().substring(0, client.getName().getSimpleName().length()-6);
         String fieldName = "_" + Character.toLowerCase(getterName.charAt(0)) + getterName.substring(1);
         return new FieldAndGetter(fieldName, getterName);
     }

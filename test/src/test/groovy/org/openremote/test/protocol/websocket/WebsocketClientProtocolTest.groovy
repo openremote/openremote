@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2019, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,9 +19,7 @@
  */
 package org.openremote.test.protocol.websocket
 
-
 import org.openremote.agent.protocol.Protocol
-import org.openremote.agent.protocol.ProtocolExecutorService
 import org.openremote.agent.protocol.http.OAuthPasswordGrant
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.agent.protocol.websocket.WebsocketClientProtocol
@@ -103,6 +101,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         }
     }
 
+    @SuppressWarnings("GroovyAccessibility")
     def "Check websocket client protocol configuration and linked attribute deployment"() {
 
         given: "expected conditions"
@@ -111,7 +110,6 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         when: "the container starts"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
-        def protocolExecutorService = container.getService(ProtocolExecutorService.class)
         def websocketClientProtocol = container.getService(WebsocketClientProtocol.class)
         def simulatorProtocol = container.getService(SimulatorProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -124,7 +122,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
             assert container.isRunning()
         }
 
-        when: "the web target builder is configured to use the mock server"
+        when: "the web target builder is configured to use the mock HTTP server (to test subscriptions)"
         if (!websocketClientProtocol.client.configuration.isRegistered(mockServer)) {
             websocketClientProtocol.client.register(mockServer, Integer.MAX_VALUE)
         }
@@ -157,7 +155,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                                 new WebsocketSubscription().body(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX + Container.JSON.writeValueAsString(
                                     new EventSubscription(
                                         AttributeEvent.class,
-                                        new AssetEvent.AssetIdFilter<AttributeEvent>(managerDemoSetup.apartment1LivingroomId),
+                                        new AssetFilter<AttributeEvent>().setAssetIds(managerDemoSetup.apartment1LivingroomId),
                                         "1",
                                         null))),
                                 new WebsocketHttpSubscription()
@@ -201,57 +199,57 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                             "targetTemperature",
                             Values.create(0.12345))).replace("0.12345", Protocol.DYNAMIC_VALUE_PLACEHOLDER) + "\'")),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_FILTERS,
-                        Values.convert(
+                        Values.convertToValue(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false)
+                                new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false, false)
                             ] as ValueFilter[]
-                        , Container.JSON).orElse(null)),
+                            , Container.JSON.writer()).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_PREDICATE,
                         new StringPredicate(AssetQuery.Match.CONTAINS, true, "targetTemperature").toModelValue()),
                     new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
-                        Values.convert(
+                        Values.convertToValue(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"targetTemperature\")].attributeState.value", true)
+                                new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"targetTemperature\")].attributeState.value", true, false)
                             ] as ValueFilter[]
-                        , Container.JSON).orElse(null)),
+                            , Container.JSON.writer()).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_SUBSCRIPTIONS,
-                        Values.convert(
+                        Values.convertToValue(
                             [
                                 new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(
                                     new ReadAssetAttributesEvent(managerDemoSetup.apartment1LivingroomId, "targetTemperature")
                                 ))
-                            ], Container.JSON).orElse(null))
+                            ], Container.JSON.writer()).orElse(null))
                 ),
             new AssetAttribute("readCo2Level", AttributeValueType.NUMBER)
                 .addMeta(
                     new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
                         new MetaItem(MetaItemType.READ_ONLY),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_FILTERS,
-                        Values.convert(
+                        Values.convertToValue(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false)
+                                new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false, false)
                             ] as ValueFilter[]
-                        , Container.JSON).orElse(null)),
+                            , Container.JSON.writer()).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_PREDICATE,
                         new StringPredicate(AssetQuery.Match.CONTAINS, "co2Level").toModelValue()),
                     new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
-                        Values.convert(
+                        Values.convertToValue(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"co2Level\")].attributeState.value", true),
+                                new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"co2Level\")].attributeState.value", true, false),
                             ] as ValueFilter[]
-                        , Container.JSON).orElse(null)),
+                            , Container.JSON.writer()).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_SUBSCRIPTIONS,
-                        Values.convert(
+                        Values.convertToValue(
                             [
                                 new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(
                                     new ReadAssetAttributesEvent(managerDemoSetup.apartment1LivingroomId, "co2Level")
                                 ))
                             ]
-                            , Container.JSON).orElse(null))
+                            , Container.JSON.writer()).orElse(null))
                 )
         )
 

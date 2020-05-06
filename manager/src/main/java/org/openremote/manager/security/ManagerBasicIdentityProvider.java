@@ -154,8 +154,8 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public boolean isTenantActiveAndAccessible(AuthContext authContext, Asset asset) {
-        return Objects.equals(asset.getRealm(), Constants.MASTER_REALM);
+    public boolean isTenantActiveAndAccessible(AuthContext authContext, String realm) {
+        return Objects.equals(realm, Constants.MASTER_REALM);
     }
 
     @Override

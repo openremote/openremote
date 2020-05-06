@@ -1,5 +1,5 @@
 import {css, unsafeCSS} from "lit-element";
-import { DefaultColor1, DefaultColor4, DefaultBoxShadow} from "@openremote/core";
+import { DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, DefaultHeaderHeight, DefaultBoxShadow} from "@openremote/core";
 
 export const markerColorVar = "--internal-or-map-marker-color";
 export const markerActiveColorVar = "--internal-or-map-marker-active-color";
@@ -138,3 +138,103 @@ export const style = css`
         }
     }
 `;
+
+export const mapAssetCardStyle = css`
+            :host {
+                --internal-or-asset-summary-card-header-color: var(--or-asset-summary-card-header-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
+                --internal-or-asset-summary-card-header-text-color: var(--or-asset-summary-card-header-text-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+                --internal-or-asset-summary-card-header-height: var(--or-asset-summary-card-header-height, calc(${unsafeCSS(DefaultHeaderHeight)} - 10px));
+                --internal-or-asset-summary-card-background-color: var(--or-asset-summary-card-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+                --internal-or-asset-summary-card-background-text-color: var(--or-asset-summary-card-background-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
+                --internal-or-asset-summary-card-separator-color: var(--or-asset-summary-card-separator-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
+                
+                display: block;
+            }
+
+            #card-container {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                background-color: var(--internal-or-asset-summary-card-background-color);
+                -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                -moz-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);  
+            }
+            
+            #header {
+                height: var(--internal-or-asset-summary-card-header-height);
+                background-color: var(--internal-or-asset-summary-card-header-color);
+                line-height: var(--internal-or-asset-summary-card-header-height);
+                border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};
+                text-align: center;
+                color: var(--internal-or-asset-summary-card-header-text-color);
+                --or-icon-fill: var(--internal-or-asset-summary-card-header-text-color);
+                --or-icon-width: 20px;
+                --or-icon-height: 20px;
+                z-index: 99999;
+            }
+
+            #header > or-icon {
+                margin-right: 5px;
+            }
+            
+            #title {
+                font-weight: 500;
+            }
+            
+            #attribute-list {
+                flex: 1;                
+                color: var(--internal-or-asset-summary-card-background-text-color);
+                padding: 10px 20px;
+                overflow: auto;
+                font-size: 14px;
+            }
+            
+            ul {
+                list-style-type: none;
+                margin: 0;
+                padding: 0;
+            }
+            
+            li {
+                display: flex;
+                line-height: 30px;
+            }
+            
+            .attribute-name {
+                flex: 1;            
+            }
+            
+            .attribute-value {
+                overflow: hidden;
+                padding-left: 20px;
+                text-align: right;
+            }
+            
+            #footer {
+                justify-content: end;
+                display: flex;
+                height: var(--internal-or-asset-summary-card-header-height);
+                border-top: 1px solid var(--internal-or-asset-summary-card-separator-color);
+                text-align: right;
+            }
+            
+            #footer > a {
+                line-height: var(--internal-or-asset-summary-card-header-height);
+                font-weight: 500;
+                font-size: 14px;
+                margin-left: auto;
+                margin-right: 20px;
+                text-decoration: none;
+                color: var(--internal-or-asset-summary-card-background-text-color);
+            }
+
+            @media only screen and (min-width: 415px){
+                #card-container {
+                    height: 400px; /* fallback for IE */
+                    height: max-content;
+                    max-height: calc(100vh - 150px);
+                    min-height: 134px;
+                }
+            }
+`

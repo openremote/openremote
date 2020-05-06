@@ -20,7 +20,6 @@
 package org.openremote.model.attribute;
 
 import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
 import static org.openremote.model.Constants.ASSET_META_NAMESPACE;

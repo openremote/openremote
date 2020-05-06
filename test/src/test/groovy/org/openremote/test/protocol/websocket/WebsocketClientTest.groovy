@@ -29,7 +29,7 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.concurrent.ManagerExecutorService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
-import org.openremote.model.asset.AssetEvent
+import org.openremote.model.asset.AssetFilter
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.event.TriggeredEventSubscription
@@ -107,7 +107,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         client.sendMessage(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX + Container.JSON.writeValueAsString(
             new EventSubscription(
                 AttributeEvent.class,
-                new AssetEvent.AssetIdFilter<AttributeEvent>(managerDemoSetup.apartment1LivingroomId),
+                new AssetFilter<AttributeEvent>().setAssetIds(managerDemoSetup.apartment1LivingroomId),
                 "1",
                 null)))
 
@@ -128,7 +128,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             assert lastMessage.indexOf(SharedEvent.MESSAGE_PREFIX) == 0
             def triggeredEvent = Container.JSON.readValue(lastMessage.substring(SharedEvent.MESSAGE_PREFIX.length()), TriggeredEventSubscription.class)
             assert triggeredEvent.subscriptionId == "1"
-            assert triggeredEvent.events.length == 1
+            assert triggeredEvent.events.size() == 1
             assert ((AttributeEvent)triggeredEvent.events[0]).entityId == managerDemoSetup.apartment1LivingroomId
             assert ((AttributeEvent)triggeredEvent.events[0]).attributeName == "targetTemperature"
             assert ((AttributeEvent)triggeredEvent.events[0]).value.flatMap{Values.getNumber(it)}.orElse(0) == 5

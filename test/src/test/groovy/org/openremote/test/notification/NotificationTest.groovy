@@ -5,6 +5,7 @@ import com.google.firebase.messaging.Message
 import org.openremote.container.web.WebService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.asset.console.ConsoleResourceImpl
+import org.openremote.manager.gateway.GatewayClientService
 import org.openremote.manager.notification.EmailNotificationHandler
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
@@ -69,8 +70,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         and: "the container environment is started with the mock handler"
         def serverPort = findEphemeralPort()
         def services = Lists.newArrayList(defaultServices())
-        services.removeIf {it instanceof PushNotificationHandler}
-        services.add(mockPushNotificationHandler)
+        services.replaceAll{it instanceof PushNotificationHandler ? mockPushNotificationHandler : it}
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), services)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
@@ -562,8 +562,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         and: "the container environment is started with the mock handler"
         def serverPort = findEphemeralPort()
         def services = Lists.newArrayList(defaultServices())
-        services.removeIf {it instanceof EmailNotificationHandler}
-        services.add(mockEmailNotificationHandler)
+        services.replaceAll{it instanceof EmailNotificationHandler ? mockEmailNotificationHandler : it}
         def conditions = new PollingConditions(timeout: 10)
         def container = startContainer(defaultConfig(serverPort), services)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)

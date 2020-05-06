@@ -19,11 +19,13 @@
  */
 package org.openremote.model.query;
 
+import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.query.filter.*;
 
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 /**
  * Encapsulate asset query restriction, projection, and ordering of results.
@@ -42,36 +44,33 @@ public class AssetQuery {
         public boolean excludeAttributeTimestamp;
         public boolean excludeAttributeType;
         public boolean excludeParentInfo;
-        public boolean excludeRealm;
 
-        public static Select selectExcludePathAndParentAndRealm() {
+        public static Select selectExcludePathAndParentInfo() {
             return new Select()
-                .excludeAttributes(false)
-                .excludeAttributeMeta(false)
-                .excludeAttributeType(false)
-                .excludeAttributeTimestamp(false)
-                .excludeAttributeValue(false)
-                .excludePath(true)
-                .excludeParentInfo(true)
-                .excludeRealm(true);
+                    .excludeAttributes(false)
+                    .excludeAttributeMeta(false)
+                    .excludeAttributeType(false)
+                    .excludeAttributeTimestamp(false)
+                    .excludeAttributeValue(false)
+                    .excludePath(true)
+                    .excludeParentInfo(true);
         }
 
         public static Select selectExcludePathAndAttributes() {
             return new Select()
-                .excludePath(true)
-                .excludeAttributes(true);
+                    .excludePath(true)
+                    .excludeAttributes(true);
         }
 
         public static Select selectExcludeAll() {
             return new Select()
-                .excludeAttributes(true)
-                .excludeAttributeMeta(true)
-                .excludeAttributeType(true)
-                .excludeAttributeValue(true)
-                .excludeAttributeTimestamp(true)
-                .excludePath(true)
-                .excludeParentInfo(true)
-                .excludeRealm(true);
+                    .excludeAttributes(true)
+                    .excludeAttributeMeta(true)
+                    .excludeAttributeType(true)
+                    .excludeAttributeValue(true)
+                    .excludeAttributeTimestamp(true)
+                    .excludePath(true)
+                    .excludeParentInfo(true);
         }
 
         public Select attributes(String... attributeNames) {
@@ -128,24 +127,18 @@ public class AssetQuery {
             return this;
         }
 
-        public Select excludeRealm(boolean exclude) {
-            this.excludeRealm = exclude;
-            return this;
-        }
-
         @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
-                ", excludeAttributes=" + excludeAttributes +
-                ", excludeAttributeMeta=" + excludeAttributeMeta +
-                ", excludeAttributeValue=" + excludeAttributeValue +
-                ", excludeAttributeTimestamp=" + excludeAttributeTimestamp +
-                ", excludeAttributeType=" + excludeAttributeType +
-                ", excludePath=" + excludePath +
-                ", excludeParentInfo=" + excludeParentInfo +
-                ", excludeRealm=" + excludeRealm +
-                ", attributeNames=" + Arrays.toString(attributes) +
-                '}';
+                    "excludeAttributes=" + excludeAttributes +
+                    ", excludeAttributeMeta=" + excludeAttributeMeta +
+                    ", excludeAttributeValue=" + excludeAttributeValue +
+                    ", excludeAttributeTimestamp=" + excludeAttributeTimestamp +
+                    ", excludeAttributeType=" + excludeAttributeType +
+                    ", excludePath=" + excludePath +
+                    ", excludeParentInfo=" + excludeParentInfo +
+                    ", attributeNames=" + Arrays.toString(attributes) +
+                    '}';
         }
     }
 
@@ -187,9 +180,9 @@ public class AssetQuery {
         @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
-                "property=" + property +
-                ", descending=" + descending +
-                '}';
+                    "property=" + property +
+                    ", descending=" + descending +
+                    '}';
         }
     }
 
@@ -313,7 +306,7 @@ public class AssetQuery {
             this.names = null;
             return this;
         }
-        this.parents = Arrays.stream(assetTypes).map(id -> new ParentPredicate().type(id)).toArray(ParentPredicate[]::new);
+        this.parents = Arrays.stream(assetTypes).map(assetType -> new ParentPredicate().type(assetType)).toArray(ParentPredicate[]::new);
         return this;
     }
 
@@ -352,7 +345,7 @@ public class AssetQuery {
         return this;
     }
 
-    public AssetQuery types(AssetType... types) {
+    public AssetQuery types(AssetDescriptor... types) {
         if (types == null || types.length == 0) {
             this.types = null;
             return this;
@@ -375,6 +368,12 @@ public class AssetQuery {
     public AssetQuery attributes(LogicGroup<AttributePredicate> attributePredicateGroup) {
         this.attributes = attributePredicateGroup;
         return this;
+    }
+
+    public AssetQuery attributeNames(String... attributeNames) {
+        LogicGroup<AttributePredicate> predicateLogicGroup = new LogicGroup<>(Arrays.stream(attributeNames).map(AttributePredicate::new).collect(Collectors.toList()));
+        predicateLogicGroup.operator = LogicGroup.Operator.OR;
+        return attributes(predicateLogicGroup);
     }
 
     public AssetQuery attributeName(String attributeName) {
@@ -426,17 +425,18 @@ public class AssetQuery {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "select=" + select +
-            ", id='" + ids + '\'' +
-            ", name=" + names +
-            ", parent=" + parents +
-            ", path=" + paths +
-            ", tenant=" + tenant +
-            ", userId='" + userIds + '\'' +
-            ", type=" + types +
-            ", attribute=" + (attributes != null ? attributes.toString() : "null" ) +
-            ", attributeMeta=" + Arrays.toString(attributeMeta) +
-            ", orderBy=" + orderBy +
-            '}';
+                "select=" + select +
+                ", id='" + ids + '\'' +
+                ", name=" + names +
+                ", parent=" + parents +
+                ", path=" + paths +
+                ", tenant=" + tenant +
+                ", userId='" + userIds + '\'' +
+                ", type=" + types +
+                ", attribute=" + (attributes != null ? attributes.toString() : "null") +
+                ", attributeMeta=" + Arrays.toString(attributeMeta) +
+                ", orderBy=" + orderBy +
+                ", recursive=" + recursive +
+                '}';
     }
 }

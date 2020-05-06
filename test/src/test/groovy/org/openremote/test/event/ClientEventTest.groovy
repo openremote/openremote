@@ -24,7 +24,7 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
-import org.openremote.model.asset.AssetEvent
+import org.openremote.model.asset.AssetFilter
 import org.openremote.model.attribute.MetaItemType
 import org.openremote.model.asset.agent.AgentStatusEvent
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -133,7 +133,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
         }
 
         when: "a subscription is made to the attribute event"
-        clientEventService.subscribe(AttributeEvent.class, new AssetEvent.AssetIdFilter(managerDemoSetup.thingId))
+        clientEventService.subscribe(AttributeEvent.class, new AssetFilter().setAssetIds(managerDemoSetup.thingId))
 
         and: "an assets location is changed"
         def asset = assetStorageService.find(managerDemoSetup.thingId, true)
@@ -187,7 +187,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
         collectedSharedEvents.clear()
 
         and: "a new attribute event subscription is added"
-        clientEventService.subscribe(AttributeEvent.class, new AssetEvent.AssetIdFilter(managerDemoSetup.thingId))
+        clientEventService.subscribe(AttributeEvent.class, new AssetFilter().setAssetIds(managerDemoSetup.thingId))
 
         and: "an internal attribute event subscription is made"
         List<AttributeEvent> internalReceivedEvents = []
@@ -196,7 +196,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
                 false,
                 new EventSubscription<>(
                         AttributeEvent.class,
-                        new AssetEvent.AssetIdFilter(managerDemoSetup.thingId),
+                        new AssetFilter().setAssetIds(managerDemoSetup.thingId),
                         { triggeredEventSubscription ->
                             internalReceivedEvents.add(triggeredEventSubscription.events[0] as AttributeEvent)
                         }

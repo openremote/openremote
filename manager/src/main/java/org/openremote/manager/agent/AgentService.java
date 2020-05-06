@@ -39,6 +39,7 @@ import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.AssetUpdateProcessor;
 import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.asset.Asset;
@@ -51,6 +52,7 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.RefPredicate;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.Pair;
@@ -73,6 +75,7 @@ import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.container.persistence.PersistenceEvent.*;
 import static org.openremote.manager.asset.AssetProcessingService.ASSET_QUEUE;
+import static org.openremote.manager.gateway.GatewayService.GATEWAY_SERVICE_PRIORITY;
 import static org.openremote.model.AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttributes;
@@ -80,6 +83,7 @@ import static org.openremote.model.asset.AssetType.AGENT;
 import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
 import static org.openremote.model.asset.agent.ConnectionStatus.*;
 import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
+import static org.openremote.model.attribute.AttributeEvent.Source.GATEWAY;
 import static org.openremote.model.attribute.AttributeEvent.Source.SENSOR;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 import static org.openremote.model.util.TextUtil.isValidURN;
@@ -92,13 +96,16 @@ import static org.openremote.model.util.TextUtil.isValidURN;
 public class AgentService extends RouteBuilder implements ContainerService, AssetUpdateProcessor, ProtocolAssetService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
+    public static final int AGENT_SERVICE_PRIORITY = GATEWAY_SERVICE_PRIORITY + 1; // Start after the gateway service
     protected TimerService timerService;
     protected ManagerIdentityService identityService;
     protected AssetProcessingService assetProcessingService;
     protected AssetStorageService assetStorageService;
     protected MessageBrokerService messageBrokerService;
     protected ClientEventService clientEventService;
+    protected GatewayService gatewayService;
     protected final Map<AttributeRef, Pair<AssetAttribute, ConnectionStatus>> protocolConfigurations = new HashMap<>();
+    protected final Map<String, List<Consumer<PersistenceEvent<Asset>>>> childAssetSubscriptions = new HashMap<>();
     protected final Map<String, Protocol> protocols = new HashMap<>();
     protected final Map<AttributeRef, List<AttributeRef>> linkedAttributes = new HashMap<>();
     protected LocalAgentConnector localAgentConnector;
@@ -111,7 +118,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
      */
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return AGENT_SERVICE_PRIORITY;
     }
 
     @Override
@@ -122,6 +129,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         assetStorageService = container.getService(AssetStorageService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
+        gatewayService = container.getService(GatewayService.class);
         localAgentConnector = new LocalAgentConnector(this);
 
         clientEventService.addSubscriptionAuthorizer((auth, subscription) ->
@@ -180,6 +188,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         for (Asset agent : agents) {
             linkProtocolConfigurations(agent.getAttributesStream()
                 .filter(ProtocolConfiguration::isProtocolConfiguration)
+                .collect(Collectors.toList())
             );
         }
     }
@@ -282,7 +291,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
         LOG.fine("Merging (and overriding existing older version of) with protocol-provided: " + asset);
         if (options != null && options.getAssignToUserName() != null) {
-            return assetStorageService.merge(updatedAsset, true, options.getAssignToUserName());
+            return assetStorageService.merge(updatedAsset, true, false, options.getAssignToUserName());
         } else {
             return assetStorageService.merge(updatedAsset, true);
         }
@@ -291,13 +300,33 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     @Override
     public boolean deleteAsset(String assetId) {
         LOG.fine("Deleting protocol-provided: " + assetId);
-        return assetStorageService.delete(Collections.singletonList(assetId));
+        return assetStorageService.delete(Collections.singletonList(assetId), false);
     }
 
     @Override
     public Asset findAsset(String assetId) {
         LOG.fine("Getting protocol-provided: " + assetId);
         return assetStorageService.find(assetId);
+    }
+
+    @Override
+    public List<Asset> findAssets(String assetId, AssetQuery assetQuery) {
+        if (TextUtil.isNullOrEmpty(assetId) || assetQuery == null) {
+            return Collections.emptyList();
+        }
+
+        // Ensure agent ID is injected into each path predicate
+        if (assetQuery.paths != null) {
+            for (PathPredicate pathPredicate : assetQuery.paths) {
+                int len = pathPredicate.path.length;
+                pathPredicate.path = Arrays.copyOf(pathPredicate.path, len+1);
+                pathPredicate.path[len] = assetId;
+            }
+        } else {
+            assetQuery.paths(new PathPredicate(assetId));
+        }
+
+        return assetStorageService.findAll(assetQuery);
     }
 
     @Override
@@ -314,18 +343,26 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
      * Looks for new, modified and obsolete protocol configurations and links / unlinks any associated attributes
      */
     protected void processAgentChange(Asset agent, PersistenceEvent persistenceEvent) {
+
         LOG.finest("Processing agent persistence event: " + persistenceEvent.getCause());
 
         switch (persistenceEvent.getCause()) {
             case CREATE:
-                addReplaceAgent(agent);
+                if (!addReplaceAgent(agent)) {
+                    LOG.finest("Agent is a gateway asset so ignoring");
+                    return;
+                }
                 linkProtocolConfigurations(
-                    agent.getAttributesStream().filter(ProtocolConfiguration::isProtocolConfiguration)
+                    agent.getAttributesStream()
+                        .filter(ProtocolConfiguration::isProtocolConfiguration)
+                        .collect(Collectors.toList())
                 );
-
                 break;
             case UPDATE:
-                addReplaceAgent(agent);
+                if (!addReplaceAgent(agent)) {
+                    LOG.finest("Agent is a gateway asset so ignoring");
+                    return;
+                }
                 // Check if any protocol config attributes have been added/removed or modified
                 int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
                 if (attributesIndex < 0) {
@@ -358,6 +395,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                         .stream()
                         .noneMatch(oldProtocolAttribute::equals)
                     )
+                    .collect(Collectors.toList())
                 );
 
                 // Link protocols that are in newConfigs but not in oldConfigs
@@ -367,14 +405,19 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                         .stream()
                         .noneMatch(newProtocolAttribute::equals)
                     )
+                    .collect(Collectors.toList())
                 );
 
                 break;
             case DELETE:
-                removeAgent(agent);
+                if (!removeAgent(agent)) {
+                    LOG.finest("Agent is a gateway asset so ignoring");
+                    return;
+                }
                 // Unlink any attributes that have an agent link to this agent
                 unlinkProtocolConfigurations(agent.getAttributesStream()
                     .filter(ProtocolConfiguration::isProtocolConfiguration)
+                    .collect(Collectors.toList())
                 );
                 break;
         }
@@ -384,11 +427,18 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
      * Looks for new, modified and obsolete AGENT_LINK attributes and links / unlinks them
      * with the protocol
      */
-    protected void processAssetChange(Asset asset, PersistenceEvent persistenceEvent) {
+    protected void processAssetChange(Asset asset, PersistenceEvent<Asset> persistenceEvent) {
         LOG.finest("Processing asset persistence event: " + persistenceEvent.getCause());
 
         switch (persistenceEvent.getCause()) {
             case CREATE:
+
+                // Check if asset parent is a gateway or a gateway descendant, if so ignore it
+                // Need to look at parent as this asset may not have been acknowledged by the gateway service yet
+                if (gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId()) != null) {
+                    LOG.finest("This is a gateway descendant asset so ignoring: " + asset.getId());
+                    return;
+                }
 
                 // Asset insert persistence events can be fired before the agent insert persistence event
                 // so need to check that all protocol configs exist - any that don't we will exclude here
@@ -408,6 +458,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
                 break;
             case UPDATE:
+
+                if (gatewayService.getLocallyRegisteredGatewayId(asset.getId(), null) != null) {
+                    LOG.finest("This is a gateway descendant asset so ignoring: " + asset.getId());
+                    return;
+                }
+
                 List<String> propertyNames = Arrays.asList(persistenceEvent.getPropertyNames());
 
                 // Check if attributes of the asset have been modified
@@ -416,6 +472,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                     return;
                 }
 
+
                 // Attributes have possibly changed so need to compare old and new state to determine any changes to
                 // AGENT_LINK attributes
                 List<AssetAttribute> oldAgentLinkedAttributes =
@@ -423,15 +480,24 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                         (ObjectValue) persistenceEvent.getPreviousState()[attributesIndex],
                         asset.getId()
                     )
-                        .filter(AgentLink::hasAgentLink)
+                        .filter(assetAttribute ->
+                            // Exclude attributes without agent link or with agent link to not recognised agents (could be gateway agents)
+                            assetAttribute.getMetaItem(MetaItemType.AGENT_LINK)
+                                .flatMap(agentLinkMetaItem -> AttributeRef.fromValue(agentLinkMetaItem.getValue().orElse(null)))
+                                .map(agentLinkRef -> getAgents().containsKey(agentLinkRef.getEntityId()))
+                                .orElse(false))
                         .collect(Collectors.toList());
 
                 List<AssetAttribute> newAgentLinkedAttributes =
                     attributesFromJson(
                         (ObjectValue) persistenceEvent.getCurrentState()[attributesIndex],
-                        asset.getId()
-                    )
-                        .filter(AgentLink::hasAgentLink)
+                        asset.getId())
+                        .filter(assetAttribute ->
+                            // Exclude attributes without agent link or with agent link to not recognised agents (could be gateway agents)
+                            assetAttribute.getMetaItem(MetaItemType.AGENT_LINK)
+                                .flatMap(agentLinkMetaItem -> AttributeRef.fromValue(agentLinkMetaItem.getValue().orElse(null)))
+                                .map(agentLinkRef -> getAgents().containsKey(agentLinkRef.getEntityId()))
+                                .orElse(false))
                         .collect(Collectors.toList());
 
                 // Unlink thing attributes that are in old but not in new
@@ -450,6 +516,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 break;
             case DELETE: {
 
+                if (gatewayService.getLocallyRegisteredGatewayId(asset.getId(), null) != null) {
+                    LOG.finest("This is a gateway descendant asset so ignoring: " + asset.getId());
+                    return;
+                }
+
                 // Unlink any AGENT_LINK attributes from the referenced protocol
                 Map<AssetAttribute, List<AssetAttribute>> groupedAgentLinkAndProtocolAttributes =
                     getGroupedAgentLinkAttributes(asset.getAttributesStream(), attribute -> true);
@@ -460,9 +531,26 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 break;
             }
         }
+
+        String parentAgentId = getAgentAncestorId(asset);
+        if (parentAgentId != null) {
+            notifyChildAssetChange(parentAgentId, persistenceEvent);
+        }
     }
 
-    protected void linkProtocolConfigurations(Stream<AssetAttribute> configurations) {
+    protected String getAgentAncestorId(Asset asset) {
+        if (asset.getPath() == null) {
+            // Fully load
+            asset = assetStorageService.find(asset.getId());
+        }
+
+        return Arrays.stream(asset.getPath())
+                .filter(assetId -> getAgents().containsKey(assetId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    protected void linkProtocolConfigurations(List<AssetAttribute> configurations) {
         withLock(getClass().getSimpleName() + "::linkProtocolConfigurations", () -> configurations.forEach(configuration -> {
             AttributeRef protocolAttributeRef = configuration.getReferenceOrThrow();
             Protocol protocol = getProtocol(configuration);
@@ -523,7 +611,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         }));
     }
 
-    protected void unlinkProtocolConfigurations(Stream<AssetAttribute> configurations) {
+    protected void unlinkProtocolConfigurations(List<AssetAttribute> configurations) {
         withLock(getClass().getSimpleName() + "::unlinkProtocolConfigurations", () -> configurations.forEach(configuration -> {
             AttributeRef protocolAttributeRef = configuration.getReferenceOrThrow();
 
@@ -561,6 +649,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             // Set status to disconnected
             publishProtocolConnectionStatus(protocolAttributeRef, DISCONNECTED);
             protocolConfigurations.remove(protocolAttributeRef);
+
+            // Check if there are any remaining configs for the agent
+            String agentId = configurations.get(0).getReferenceOrThrow().getEntityId();
+            if (protocolConfigurations.keySet().stream().noneMatch(protocolConfigRef -> protocolConfigRef.getEntityId().equals(agentId))) {
+                childAssetSubscriptions.remove(agentId);
+            }
         }));
     }
 
@@ -672,7 +766,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                                       Asset asset,
                                       AssetAttribute attribute,
                                       Source source) throws AssetProcessingException {
-        if (source == SENSOR) {
+
+        if (source == SENSOR || source == GATEWAY) {
             return false;
         }
 
@@ -716,7 +811,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                                                                                       Consumer<AssetAttribute> notFoundConsumer) {
         Map<AssetAttribute, List<AssetAttribute>> result = new HashMap<>();
         attributes
-            .filter(AgentLink::hasAgentLink)
+            .filter(assetAttribute ->
+                // Exclude attributes without agent link or with agent link to not recognised agents (could be gateway agents)
+                assetAttribute.getMetaItem(MetaItemType.AGENT_LINK)
+                    .flatMap(agentLinkMetaItem -> AttributeRef.fromValue(agentLinkMetaItem.getValue().orElse(null)))
+                    .map(agentLinkRef -> getAgents().containsKey(agentLinkRef.getEntityId()))
+                    .orElse(false))
             .filter(filter)
             .map(attribute -> new Pair<>(attribute, getAgentLink(attribute)))
             .filter(pair -> pair.value.isPresent())
@@ -755,14 +855,19 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         return !Agent.hasUrl(agent) ? Optional.of(localAgentConnector) : Optional.empty();
     }
 
-    protected void addReplaceAgent(Asset agent) {
+    protected boolean addReplaceAgent(Asset agent) {
         // Fully load agent asset
         final Asset loadedAgent = assetStorageService.find(agent.getId(), true);
+        if (gatewayService.getLocallyRegisteredGatewayId(agent.getId(), agent.getParentId()) != null) {
+            return false;
+        }
         withLock(getClass().getSimpleName() + "::addReplaceAgent", () -> getAgents().put(loadedAgent.getId(), loadedAgent));
+        return true;
     }
 
-    protected void removeAgent(Asset agent) {
-        withLock(getClass().getSimpleName() + "::removeAgent", () -> getAgents().remove(agent.getId()));
+    @SuppressWarnings("ConstantConditions")
+    protected boolean removeAgent(Asset agent) {
+        return withLockReturning(getClass().getSimpleName() + "::removeAgent", () -> getAgents().remove(agent.getId()) != null);
     }
 
     public Map<String, Asset> getAgents() {
@@ -771,6 +876,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 agentMap = assetStorageService.findAll(new AssetQuery()
                     .types(AssetType.AGENT))
                     .stream()
+                    .filter(asset -> gatewayService.getLocallyRegisteredGatewayId(asset.getId(), null) == null)
                     .collect(Collectors.toMap(Asset::getId, agent -> agent));
             }
             return agentMap;
@@ -780,7 +886,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     /**
      * Apply the specified set of {@link ValueFilter}s to the specified {@link Value}
      */
-    public Value applyValueFilters(Value value, ValueFilter... filters) {
+    public Value applyValueFilters(Value value, ValueFilter<?>... filters) {
 
         if (filters == null) {
             return value;
@@ -788,7 +894,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
         LOG.fine("Applying value filters to value...");
 
-        for (ValueFilter filter : filters) {
+        for (ValueFilter<?> filter : filters) {
             boolean filterOk = filter.getValueType() == Value.class || filter.getValueType() == value.getType().getModelType();
 
             if (!filterOk) {
@@ -803,7 +909,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                     LOG.fine("Value filter type unknown: " + filter.getValueType().getName());
                     value = null;
                 } else {
-                    Optional<Value> val = Values.convert(value, filterValueType);
+                    Optional<Value> val = Values.convertToValue(value, filterValueType);
                     if (!val.isPresent()) {
                         LOG.fine("Value filter type '" + filter.getValueType().getName()
                             + "' is not compatible with actual value type '" + value.getType().getModelType().getName()
@@ -843,6 +949,44 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         }
 
         return value;
+    }
+
+    @Override
+    public void subscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset>> assetChangeConsumer) {
+        if (protocolConfigurations.keySet().stream().noneMatch(attributeRef -> attributeRef.getEntityId().equals(agentId))) {
+            LOG.info("Attempt to subscribe to child asset changes with an invalid agent ID: " +agentId);
+            return;
+        }
+
+        withLock(getClass().getSimpleName() + "::subscribeChildAssetChange", () -> {
+            List<Consumer<PersistenceEvent<Asset>>> consumerList = childAssetSubscriptions
+                .computeIfAbsent(agentId, (id) -> new ArrayList<>());
+            if (!consumerList.contains(assetChangeConsumer)) {
+                consumerList.add(assetChangeConsumer);
+            }
+        });
+    }
+
+    @Override
+    public void unsubscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset>> assetChangeConsumer) {
+        withLock(getClass().getSimpleName() + "::unsubscribeChildAssetChange", () ->
+            childAssetSubscriptions.computeIfPresent(agentId, (id, consumerList) -> {
+                consumerList.remove(assetChangeConsumer);
+                return consumerList.isEmpty() ? null : consumerList;
+            }));
+    }
+
+    protected void notifyChildAssetChange(String agentId, PersistenceEvent<Asset> assetPersistenceEvent) {
+        withLock(getClass().getSimpleName() + "::notifyChildAssetChange", () ->
+            childAssetSubscriptions.computeIfPresent(agentId, (id, consumerList) -> {
+                LOG.fine("Notifying child asset change consumers of change to agent child asset: Agent ID=" + id + ", Asset ID=" + assetPersistenceEvent.getEntity().getId());
+                try {
+                    consumerList.forEach(consumer -> consumer.accept(assetPersistenceEvent));
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "Child asset change consumer threw an exception: Agent ID=" + id + ", Asset ID=" + assetPersistenceEvent.getEntity().getId(), e);
+                }
+                return consumerList;
+            }));
     }
 
     protected Value applySubstringFilter(StringValue value, SubStringValueFilter filter) {

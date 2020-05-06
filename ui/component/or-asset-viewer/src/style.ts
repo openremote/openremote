@@ -45,6 +45,15 @@ export const style = css`
         -o-animation: fadein 0.3s; /* Opera < 12.1 */
         animation: fadein 0.3s;
     }
+    
+    @media only screen and (max-width: 767px) {
+        #wrapper {
+            position: absolute;
+            left: 0;
+            right: 0;
+        }
+    }
+    
 
     @keyframes fadein {
         from { opacity: 0; }
@@ -104,6 +113,7 @@ export const style = css`
         border: 1px solid #e5e5e5;
         border-radius: 5px;
         max-width: 100%;
+        position: relative;
     }
     
     .panel-content-wrapper {
@@ -128,7 +138,7 @@ export const style = css`
         font-weight: bolder;
         line-height: 1em;
         color: var(--internal-or-asset-viewer-title-text-color);
-        margin-bottom: 12px;
+        margin-bottom: 25px;
         flex: 0 0 auto;
     }
    

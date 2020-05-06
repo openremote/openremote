@@ -14,7 +14,6 @@ export async function getApartment1Asset(): Promise<Asset | undefined> {
             value: "urn:openremote:asset:residence"
         }],
         select: {
-            excludeRealm: true,
             excludePath: true,
             excludeAttributes: true,
             excludeParentInfo: true

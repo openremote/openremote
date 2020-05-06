@@ -2,13 +2,14 @@ import {css, customElement, html, LitElement, property, PropertyValues, unsafeCS
 import {updateMetadata} from "pwa-helpers/metadata";
 import "@openremote/or-header";
 import "@openremote/or-icon";
-import "@openremote/or-translate";
 import manager, {DefaultColor2, DefaultColor3, DefaultHeaderHeight} from "@openremote/core";
 import {router} from "../index";
 import {RootState, store} from "../store";
 import "../components/pages/page-map";
 import "../components/pages/page-assets";
 import "../components/pages/page-rules";
+import "../components/pages/page-insights";
+import "../components/pages/page-logs";
 import i18next from "i18next";
 import {connect} from "pwa-helpers/connect-mixin";
 
@@ -79,23 +80,15 @@ class MyApp extends connect(store)(LitElement) {
         }
 
         return html`
-            <or-header logo="${logoImage}" logoMobile="${logoMobileImage}">
-                <a slot="desktop-left" ?selected="${this.page === "map"}" @click="${() => router.navigate("map")}"><or-icon icon="map"></or-icon><or-translate value="map"></or-translate></a>
-                <a slot="desktop-left" ?selected="${this.page === "assets"}" @click="${() => router.navigate("assets")}"><or-icon icon="sitemap"></or-icon><or-translate value="asset_plural"></or-translate></a>
-                <a slot="desktop-left" ?selected="${this.page === "rules"}" @click="${() => router.navigate("rules")}"><or-icon icon="cogs"></or-icon><or-translate value="rule_plural"></or-translate></a>
-                ${(manager.isSuperUser() ? html`<a slot="desktop-right"><or-realm-picker></or-realm-picker></a>` : ``)}
-                <a slot="desktop-right"><or-language></or-language></a>
-                <a slot="desktop-right" @click="${() => this.logout()}"><or-translate value="logout"></or-translate></a>
-                <a slot="mobile-top" ?selected="${this.page === "map"}" @click="${() => router.navigate("map")}"><or-icon icon="map"></or-icon><or-translate value="map"></or-translate></a>
-                <a slot="mobile-top" ?selected="${this.page === "assets"}" @click="${() => router.navigate("assets")}"><or-icon icon="sitemap"></or-icon><or-translate value="asset_plural"></or-translate></a>
-                <a slot="mobile-top" @click="${() => this.logout()}"><or-icon icon="logout"></or-icon><or-translate value="logout"></or-translate></a>
-            </or-header>
+            <or-header logo="${logoImage}" logoMobile="${logoMobileImage}"></or-header>
             
             <!-- Main content -->
             <main role="main" class="main-content d-none">
                 ${this.page === "map" ? html`<page-map class="page"></page-map>` : ``}
                 ${this.page === "assets" ? html`<page-assets class="page"></page-assets>` : ``}
                 ${this.page === "rules" ? html`<page-rules class="page"></page-rules>` : ``}
+                ${this.page === "insights" ? html`<page-insights class="page"></page-insights>` : ``}
+                ${this.page === "logs" ? html`<page-logs class="page"></page-logs>` : ``}
             </main>
         `;
     }

@@ -88,6 +88,7 @@ import static org.openremote.model.util.TextUtil.*;
  * <p>
  */
 @SuppressWarnings("JavaDoc")
+// TODO: Fix or remove this protocol - it does constant polling with no delay for each sensor - should be using long poll mechanism; also futures are not cancelled and NPEs appear etc...nasty
 public class ControllerProtocol extends AbstractProtocol {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ControllerProtocol.class);
@@ -622,7 +623,7 @@ public class ControllerProtocol extends AbstractProtocol {
 
         this.updateStatus(protocolRef, status);
 
-        if (status.equals(ConnectionStatus.CONNECTED) && previousStatus.equals(ConnectionStatus.DISCONNECTED)) {
+        if (status.equals(ConnectionStatus.CONNECTED) && (previousStatus == null || previousStatus.equals(ConnectionStatus.DISCONNECTED))) {
             //Relaunch polling
             if (this.pollingSensorList.isEmpty()) {
                 LOG.info("### no polling to restart for " + protocolRef.getAttributeName() + "...");

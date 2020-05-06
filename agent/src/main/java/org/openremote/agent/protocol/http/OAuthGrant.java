@@ -48,6 +48,8 @@ public abstract class OAuthGrant {
     @JsonIgnore
     protected MultivaluedMap<String, String> valueMap = new MultivaluedHashMap<>(6);
     protected String tokenEndpointUri;
+    @JsonProperty
+    protected boolean basicAuthHeader;
 
     protected OAuthGrant(String tokenEndpointUri, String grantType, String clientId, String clientSecret, String scope) {
         requireNonNullAndNonEmpty(tokenEndpointUri);
@@ -91,6 +93,15 @@ public abstract class OAuthGrant {
     @JsonProperty(VALUE_KEY_SCOPE)
     public String getScope() {
         return valueMap.getFirst(VALUE_KEY_SCOPE);
+    }
+
+    public boolean isBasicAuthHeader() {
+        return basicAuthHeader;
+    }
+
+    public OAuthGrant setBasicAuthHeader(boolean basicAuthHeader) {
+        this.basicAuthHeader = basicAuthHeader;
+        return this;
     }
 
     public ObjectValue toObjectValue() {

@@ -34,6 +34,7 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
         addNotification = config.controls.allowedActionTypes.indexOf(ActionType.NOTIFICATION) >= 0;
     }
 
+
     const menu: MenuItem[] = [];
 
     if (addAssetTypes && assetDescriptors) {
@@ -184,17 +185,19 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
     @property({type: Object, attribute: false})
     public rule!: JsonRule;
 
+    @property({type: Boolean})
     public readonly?: boolean;
 
     public config?: RulesConfig;
 
+    @property({type: Object, attribute: false})
     public assetDescriptors?: AssetDescriptor[];
 
     protected get thenAllowAdd() {
         return !this.config || !this.config.controls || this.config.controls.hideThenAddAction !== true;
     }
 
-    protected ruleRecurrenceTemplate(reset: RuleRecurrence | undefined) {
+    protected ruleRecurrenceTemplate(reset: RuleRecurrence | undefined, readonly?: boolean) {
         let recurrenceTemplate: TemplateResult | string = ``;
         const buttonColor = "inherit";
         let value = RecurrenceOption.ONCE;
@@ -212,7 +215,11 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 value = RecurrenceOption.ONCE_PER_WEEK;
             }
         }
-
+        if(readonly) {
+            recurrenceTemplate = html`
+             <or-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-input>
+            `;
+        } else {
         recurrenceTemplate = html`
                 <div style="color: #${buttonColor}; margin-right: 6px;">
                     ${getContentWithMenuTemplate(
@@ -222,7 +229,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                         (value) => this.setRecurrenceOption(value as RecurrenceOption))}
                 </div>
             `;
-
+        }
         return html`
             <div class="rule-recurrence">
                 ${recurrenceTemplate}
@@ -230,7 +237,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         `;
     }
 
-    protected ruleActionTemplate(actions: RuleActionUnion[], action: RuleActionUnion) {
+    protected ruleActionTemplate(actions: RuleActionUnion[], action: RuleActionUnion, readonly?: boolean) {
 
         const showTypeSelect = !this.config || !this.config.controls || this.config.controls.hideActionTypeOptions !== true;
         const type = this.getActionType(action);
@@ -266,15 +273,21 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 }
             }
 
-            typeTemplate = html`
-                <div id="type" style="color: #${buttonColor}">
-                    ${getContentWithMenuTemplate(
-                        html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
-                        getActionTypesMenu(this.config, this.assetDescriptors),
-                        action.action,
-                        (values: string[] | string) => this.setActionType(actions, action, values as string))}
-                </div>
-            `;
+            if(readonly) {
+                typeTemplate = html`
+                  <or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>
+                `;
+            } else {
+                typeTemplate = html`
+                    <div id="type" style="color: #${buttonColor}">
+                        ${getContentWithMenuTemplate(
+                            html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
+                            getActionTypesMenu(this.config, this.assetDescriptors),
+                            action.action,
+                            (values: string[] | string) => this.setActionType(actions, action, values as string))}
+                    </div>
+                `;
+            }
         }
 
         if (type) {
@@ -305,14 +318,14 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
     }
 
     protected render() {
-
+        const thenAllowAdd = !this.readonly && (this.thenAllowAdd || this.rule.then!.length > 1);
         return html`
             <div>
                 <or-panel .heading="${i18next.t("then")}...">
-                    ${this.ruleRecurrenceTemplate(this.rule.recurrence)}
+                    ${this.ruleRecurrenceTemplate(this.rule.recurrence, this.readonly)}
 
-                    ${!this.rule.then ? `` : this.rule.then.map((action: RuleActionUnion) => this.ruleActionTemplate(this.rule.then!, action))}
-                    ${this.thenAllowAdd ? html`
+                    ${!this.rule.then ? `` : this.rule.then.map((action: RuleActionUnion) => this.ruleActionTemplate(this.rule.then!, action, this.readonly))}
+                    ${thenAllowAdd ? html`
                         <span class="add-button-wrapper">
                             ${getContentWithMenuTemplate(
                                 html`<or-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,

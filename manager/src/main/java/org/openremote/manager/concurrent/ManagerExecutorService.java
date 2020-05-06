@@ -64,17 +64,17 @@ public class ManagerExecutorService implements ProtocolExecutorService {
     }
 
     @Override
-    public ScheduledFuture schedule(Runnable runnable, long delayMillis) {
+    public ScheduledFuture<?> schedule(Runnable runnable, long delayMillis) {
         return scheduledTasksExecutor.schedule(runnable, delayMillis, TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public ScheduledFuture scheduleAtFixedRate(Runnable runnable, long initialDelayMillis, long periodMillis) {
+    public ScheduledFuture<?> scheduleAtFixedRate(Runnable runnable, long initialDelayMillis, long periodMillis) {
         return scheduledTasksExecutor.scheduleAtFixedRate(runnable, initialDelayMillis, periodMillis, TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public ScheduledFuture scheduleWithFixedDelay(Runnable runnable, long initialDelayMillis, long periodMillis) {
+    public ScheduledFuture<?> scheduleWithFixedDelay(Runnable runnable, long initialDelayMillis, long periodMillis) {
         return scheduledTasksExecutor.scheduleWithFixedDelay(runnable, initialDelayMillis, periodMillis, TimeUnit.MILLISECONDS);
     }
 

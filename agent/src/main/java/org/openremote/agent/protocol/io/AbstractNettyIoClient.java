@@ -175,8 +175,8 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
     }
 
     @Override
-    public void setEncoderDecoderProvider(Supplier<ChannelHandler[]> encodersProvider) throws UnsupportedOperationException {
-        this.encoderDecoderProvider = encodersProvider;
+    public void setEncoderDecoderProvider(Supplier<ChannelHandler[]> encoderDecoderProvider) throws UnsupportedOperationException {
+        this.encoderDecoderProvider = encoderDecoderProvider;
     }
 
     protected abstract Class<? extends Channel> getChannelClass();
@@ -190,19 +190,21 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
     }
 
     @Override
-    public synchronized void connect() {
-        if (permanentError) {
-            LOG.fine("Unable to connect as permanent error has been set");
-            return;
-        }
+    public void connect() {
+        synchronized (this) {
+            if (permanentError) {
+                LOG.fine("Unable to connect as permanent error has been set");
+                return;
+            }
 
-        if (connectionStatus != ConnectionStatus.DISCONNECTED && connectionStatus != ConnectionStatus.WAITING) {
-            LOG.finest("Must be disconnected before calling connect: " + getClientUri());
-            return;
-        }
+            if (connectionStatus == ConnectionStatus.CONNECTED || connectionStatus == ConnectionStatus.CONNECTING) {
+                LOG.finest("Must be disconnected before calling connect: " + getClientUri());
+                return;
+            }
 
-        LOG.fine("Connecting IO Client: " + getClientUri());
-        onConnectionStatusChanged(ConnectionStatus.CONNECTING);
+            LOG.fine("Connecting IO Client: " + getClientUri());
+            onConnectionStatusChanged(ConnectionStatus.CONNECTING);
+        }
 
         if (workerGroup == null) {
             // TODO: In Netty 5 you can pass in an executor service; can only pass in thread factory for now
@@ -259,14 +261,16 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
     }
 
     @Override
-    public synchronized void disconnect() {
-        if ((permanentError && connectionStatus == ConnectionStatus.ERROR) || connectionStatus == ConnectionStatus.DISCONNECTING || connectionStatus == ConnectionStatus.DISCONNECTED) {
-            LOG.finest("Already disconnecting or disconnected: " + getClientUri());
-            return;
-        }
+    public void disconnect() {
+        synchronized (this) {
+            if (connectionStatus == ConnectionStatus.ERROR || connectionStatus == ConnectionStatus.DISCONNECTING || connectionStatus == ConnectionStatus.DISCONNECTED) {
+                LOG.finest("Already disconnecting or disconnected: " + getClientUri());
+                return;
+            }
 
-        LOG.finest("Disconnecting IO client: " + getClientUri());
-        onConnectionStatusChanged(permanentError ? ConnectionStatus.ERROR : ConnectionStatus.DISCONNECTING);
+            LOG.finest("Disconnecting IO client: " + getClientUri());
+            onConnectionStatusChanged(permanentError ? ConnectionStatus.ERROR : ConnectionStatus.DISCONNECTING);
+        }
 
         try {
             if (reconnectTask != null) {
@@ -339,20 +343,26 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
     }
 
     @Override
-    public synchronized void addMessageConsumer(Consumer<T> messageConsumer) {
-        if (!messageConsumers.contains(messageConsumer)) {
-            messageConsumers.add(messageConsumer);
+    public void addMessageConsumer(Consumer<T> messageConsumer) {
+        synchronized (messageConsumers) {
+            if (!messageConsumers.contains(messageConsumer)) {
+                messageConsumers.add(messageConsumer);
+            }
         }
     }
 
     @Override
-    public synchronized void removeMessageConsumer(Consumer<T> messageConsumer) {
-        messageConsumers.remove(messageConsumer);
+    public void removeMessageConsumer(Consumer<T> messageConsumer) {
+        synchronized (messageConsumers) {
+            messageConsumers.remove(messageConsumer);
+        }
     }
 
     @Override
-    public synchronized void removeAllMessageConsumers() {
-        messageConsumers.clear();
+    public void removeAllMessageConsumers() {
+        synchronized (messageConsumers) {
+            messageConsumers.clear();
+        }
     }
 
     /**
@@ -407,38 +417,41 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
             try {
                 consumer.accept(message);
             } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Exception occurred in message handler: " + getClientUri(), e);
-                onConnectionStatusChanged(ConnectionStatus.ERROR);
+                LOG.log(Level.WARNING, "Exception occurred in message handler: " + getClientUri(), e);
             }
         });
     }
 
     protected void onDecodeException(ChannelHandlerContext ctx, Throwable cause) {
         LOG.log(Level.SEVERE, "Exception occurred on in-bound message: " + getClientUri(), cause);
-        onConnectionStatusChanged(ConnectionStatus.ERROR);
     }
 
     protected void onEncodeException(ChannelHandlerContext ctx, Throwable cause) {
         LOG.log(Level.SEVERE, "Exception occurred on out-bound message: " + getClientUri(), cause);
-        onConnectionStatusChanged(ConnectionStatus.ERROR);
     }
 
-    protected synchronized void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
+    protected void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
         this.connectionStatus = connectionStatus;
 
-        synchronized (connectionStatusConsumers) {
+        executorService.submit(() ->
             connectionStatusConsumers.forEach(
-                consumer -> consumer.accept(connectionStatus)
-            );
-        }
+                consumer -> {
+                    try {
+                        consumer.accept(connectionStatus);
+                    } catch (Exception e) {
+                        LOG.log(Level.WARNING, "Connection status change handler threw an exception: " + getClientUri(), e);
+                    }
+                }));
     }
 
-    protected synchronized void scheduleReconnect() {
-        if (reconnectTask != null) {
-            return;
-        }
+    protected void scheduleReconnect() {
+        synchronized (this) {
+            if (connectionStatus == ConnectionStatus.WAITING) {
+                return;
+            }
 
-        onConnectionStatusChanged(ConnectionStatus.WAITING);
+            onConnectionStatusChanged(ConnectionStatus.WAITING);
+        }
 
         if (reconnectDelayMilliseconds < MAX_RECONNECT_DELAY_MILLIS) {
             reconnectDelayMilliseconds *= RECONNECT_BACKOFF_MULTIPLIER;
@@ -448,7 +461,7 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
         LOG.finest("Scheduling reconnection in '" + reconnectDelayMilliseconds + "' milliseconds: " + getClientUri());
 
         reconnectTask = executorService.schedule(() -> {
-            synchronized (AbstractNettyIoClient.this) {
+            synchronized (this) {
                 reconnectTask = null;
 
                 // Attempt to reconnect if not disconnecting
@@ -459,13 +472,16 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
         }, reconnectDelayMilliseconds);
     }
 
-    protected synchronized void setPermanentError(String message) {
-        if (permanentError) {
-            return;
-        }
+    protected void setPermanentError(String message) {
 
-        LOG.info("An unrecoverable error has occurred with client '" + getClientUri() + "' is no longer usable: " + message);
-        this.permanentError = true;
+        synchronized (this) {
+            if (permanentError) {
+                return;
+            }
+
+            LOG.info("An unrecoverable error has occurred with client '" + getClientUri() + "' is no longer usable: " + message);
+            this.permanentError = true;
+        }
         disconnect();
     }
 

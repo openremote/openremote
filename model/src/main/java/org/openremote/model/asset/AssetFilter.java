@@ -1,0 +1,108 @@
+/*
+ * Copyright 2020, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.openremote.model.asset;
+
+import org.openremote.model.event.shared.AssetInfo;
+import org.openremote.model.event.shared.EventFilter;
+import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.util.TextUtil;
+
+import java.util.Arrays;
+
+public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<T> {
+
+    public static final String FILTER_TYPE = "asset";
+
+    protected String[] assetIds;
+    protected String realm;
+    protected String[] parentIds;
+
+    public AssetFilter() {
+    }
+
+    public AssetFilter(String... assetIds) {
+        this.assetIds = assetIds;
+    }
+
+    public String[] getAssetIds() {
+        return assetIds;
+    }
+
+    public AssetFilter<T> setAssetIds(String...assetIds) {
+        this.assetIds = assetIds;
+        return this;
+    }
+
+    public String getRealm() {
+        return realm;
+    }
+
+    public AssetFilter<T> setRealm(String realm) {
+        this.realm = realm;
+        return this;
+    }
+
+    public String[] getParentIds() {
+        return parentIds;
+    }
+
+    public AssetFilter<T> setParentIds(String...parentIds) {
+        this.parentIds = parentIds;
+        return this;
+    }
+
+    @Override
+    public String getFilterType() {
+        return FILTER_TYPE;
+    }
+
+    @Override
+    public boolean apply(T event) {
+
+        if (assetIds != null && assetIds.length > 0) {
+            if (!Arrays.asList(assetIds).contains(event.getEntityId())) {
+                return false;
+            }
+        }
+
+        if (parentIds != null && parentIds.length > 0) {
+            if (!Arrays.asList(parentIds).contains(event.getParentId())) {
+                return false;
+            }
+        }
+
+        if (!TextUtil.isNullOrEmpty(realm)) {
+            if (!realm.equals(event.getRealm())) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "assetIds='" + (assetIds != null ? Arrays.toString(assetIds) : "") + '\'' +
+            ", parentIds='" + (parentIds != null ? Arrays.toString(parentIds) : "") + '\'' +
+            ", realm='" + realm + '\'' +
+            '}';
+    }
+}

@@ -62,4 +62,8 @@ public class OAuthPasswordGrant extends OAuthClientCredentialsGrant {
     public String getPassword() {
         return valueMap.getFirst(VALUE_KEY_PASSWORD);
     }
+
+    public OAuthPasswordGrant setBasicAuthHeader(boolean basicAuthHeader) {
+        return (OAuthPasswordGrant)super.setBasicAuthHeader(basicAuthHeader);
+    }
 }

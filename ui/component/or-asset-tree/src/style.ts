@@ -188,6 +188,7 @@ export const style = css`
         align-items: center;
         text-align: center;
         margin: 0 auto;
+        font-size: 14px;        
     }    
     
      @media only screen and (min-width: 769px){

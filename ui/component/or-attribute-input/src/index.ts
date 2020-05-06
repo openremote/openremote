@@ -133,8 +133,7 @@ export function getAttributeValueTemplate(
                 if (inputType === InputType.JSON && value !== null && typeof(value) !== "string") {
                     value = JSON.stringify(value, null, 2);
                 }
-
-                return value;
+                return Util.getAttributeValue(attribute, attributeDescriptor) ? Util.getAttributeValue(attribute, attributeDescriptor) : value;
             };
 
             const setValue = (value: any) => {
@@ -220,7 +219,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                         select: {
                             attributes: [this.attributeRef.attributeName!],
                             excludePath: true,
-                            excludeRealm: true,
                             excludeParentInfo: true
                         }
                     }).then((response) => {

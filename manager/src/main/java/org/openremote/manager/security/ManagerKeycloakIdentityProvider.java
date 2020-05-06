@@ -32,7 +32,6 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.AuthForm;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-import org.openremote.container.security.keycloak.KeycloakResource;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.container.web.WebService;
@@ -361,7 +360,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public void updateTenant(ClientRequestInfo clientRequestInfo, String realm, Tenant tenant) {
         LOG.fine("Update tenant: " + tenant);
 
-        getRealms(new ClientRequestInfo(clientRequestInfo.getRemoteAddress(), getRealmAdminToken(realm, clientRequestInfo))).realm(realm).update(
+        getRealms(new ClientRequestInfo(clientRequestInfo.getRemoteAddress(), getAdminAccessToken(clientRequestInfo))).realm(realm).update(
             convert(Container.JSON, RealmRepresentation.class, tenant)
         );
         publishModification(PersistenceEvent.Cause.UPDATE, tenant);
@@ -377,7 +376,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         LOG.fine("Create tenant: " + tenant);
         RealmRepresentation realmRepresentation = convert(Container.JSON, RealmRepresentation.class, tenant);
         configureRealm(realmRepresentation, emailConfig);
-        clientRequestInfo = new ClientRequestInfo(clientRequestInfo.getRemoteAddress(), getRealmAdminToken(tenant.getRealm(), clientRequestInfo));
+        clientRequestInfo = new ClientRequestInfo(clientRequestInfo.getRemoteAddress(), getAdminAccessToken(clientRequestInfo));
         // TODO This is not atomic, write compensation actions
         getRealms(clientRequestInfo).create(realmRepresentation);
         createClientApplication(clientRequestInfo, realmRepresentation.getRealm());
@@ -390,7 +389,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         Tenant tenant = getTenant(realm);
         if (tenant != null) {
             LOG.fine("Delete tenant: " + realm);
-            getRealms(new ClientRequestInfo(clientRequestInfo.getRemoteAddress(), getRealmAdminToken(realm, clientRequestInfo))).realm(realm).remove();
+            getRealms(new ClientRequestInfo(clientRequestInfo.getRemoteAddress(), getAdminAccessToken(clientRequestInfo))).realm(realm).remove();
             publishModification(PersistenceEvent.Cause.DELETE, tenant);
         }
     }
@@ -407,11 +406,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     /**
      * @return <code>true</code> if the user is the superuser (admin) or if the user is authenticated
-     * in the same realm as the assets' realm and the tenant is active.
+     * in the same tenant and the tenant is active.
      */
     @Override
-    public boolean isTenantActiveAndAccessible(AuthContext authContext, Asset asset) {
-        return isTenantActiveAndAccessible(authContext, getTenant(asset.getRealm()));
+    public boolean isTenantActiveAndAccessible(AuthContext authContext, String realm) {
+        return isTenantActiveAndAccessible(authContext, getTenant(realm));
     }
 
     @Override
@@ -480,10 +479,14 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     public void createClientApplication(ClientRequestInfo clientRequestInfo, String realm) {
-        ClientsResource clientsResource = getRealms(clientRequestInfo).realm(realm).clients();
-        ClientRepresentation client = createClientApplication(
+        ClientRepresentation client = createDefaultClientRepresentation(
             realm, KEYCLOAK_CLIENT_ID, "OpenRemote", devMode
         );
+        createClientApplication(clientRequestInfo, realm, client);
+    }
+
+    public void createClientApplication(ClientRequestInfo clientRequestInfo, String realm, ClientRepresentation client) {
+        ClientsResource clientsResource = getRealms(clientRequestInfo).realm(realm).clients();
         clientsResource.create(client);
         client = clientsResource.findByClientId(client.getClientId()).get(0);
         ClientResource clientResource = clientsResource.get(client.getId());
@@ -494,11 +497,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
      * Keycloak only allows realm CRUD using the {realm}-realm client or the admin-cli client so we need to ensure we
      * have a token for one of these realms; if we are creating a realm then that means using the admin-cli
      */
-    protected String getRealmAdminToken(String realm, ClientRequestInfo clientRequestInfo) {
+    public String getAdminAccessToken(ClientRequestInfo clientRequestInfo) {
         try {
-            AccessToken token = TokenVerifier.create(clientRequestInfo.getAccessToken(), AccessToken.class).getToken();
+            AccessToken token = clientRequestInfo != null ? TokenVerifier.create(clientRequestInfo.getAccessToken(), AccessToken.class).getToken() : null;
 
-            if (!token.getIssuedFor().equals(ADMIN_CLI_CLIENT_ID)) {
+            if (token == null || !token.getIssuedFor().equals(ADMIN_CLI_CLIENT_ID)) {
                 return getKeycloak().getAccessToken(
                     MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, keycloakAdminPassword)
                 ).getToken();
@@ -510,7 +513,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         }
     }
 
-    protected ClientRepresentation createClientApplication(String realm, String clientId, String appName, boolean devMode) {
+    protected ClientRepresentation createDefaultClientRepresentation(String realm, String clientId, String appName, boolean devMode) {
         ClientRepresentation client = new ClientRepresentation();
 
         client.setClientId(clientId);

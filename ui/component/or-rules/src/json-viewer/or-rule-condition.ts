@@ -1,4 +1,4 @@
-import {customElement, html, css, LitElement, property, TemplateResult, query} from "lit-element";
+import {customElement, html, css, LitElement, property, TemplateResult, query, PropertyValues} from "lit-element";
 import {AssetDescriptor, AssetQueryMatch, RuleCondition, AssetType} from "@openremote/model";
 import {
     ActionType,
@@ -115,8 +115,10 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
 
     public readonly: boolean = false;
 
+    @property({type: Object})
     public config?: RulesConfig;
 
+    @property({type: Object})
     public assetDescriptors?: AssetDescriptor[];
 
     @query("#asset-query")
@@ -156,8 +158,12 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                         break;
                 }
             }
-            
-            typeTemplate = html`
+            if(this.readonly) {
+                typeTemplate = html`
+                    <or-input readonly type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>
+                `;
+            } else {
+                typeTemplate = html`
                 <div id="type" style="color: #${buttonColor}">
                     ${getContentWithMenuTemplate(
                         html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
@@ -166,6 +172,8 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                         (values: string[] | string) => this.type = values as ConditionType)}
                 </div>
             `;
+            }
+           
         }
         
         if (type) {

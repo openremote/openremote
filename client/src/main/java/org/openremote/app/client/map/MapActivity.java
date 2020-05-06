@@ -31,10 +31,7 @@ import org.openremote.app.client.assets.browser.TenantTreeNode;
 import org.openremote.app.client.interop.value.ObjectValueMapper;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetEvent;
-import org.openremote.model.asset.AssetResource;
+import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeValueDescriptor;
 import org.openremote.model.attribute.AttributeValueType;
@@ -181,7 +178,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
                     showAssetInfoItems();
                     environment.getEventService().subscribe(
                         AttributeEvent.class,
-                        new AssetEvent.AssetIdFilter<>(asset.getId())
+                        new AssetFilter<AttributeEvent>().setAssetIds(asset.getId())
                     );
                 }
             });

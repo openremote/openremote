@@ -12,7 +12,10 @@ import {MDCList, MDCListActionEvent} from '@material/list';
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
 import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
 import moment from "moment";
-import {DefaultColor1, DefaultColor4, DefaultColor8} from "@openremote/core";
+import manager, {DefaultColor1, DefaultColor4, DefaultColor8} from "@openremote/core";
+
+import i18next from "i18next";
+import { ClientRole } from "@openremote/model/src";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("!!raw-loader!@material/button/dist/mdc.button.css");
@@ -120,6 +123,11 @@ const style = css`
 
     .mdc-text-field {
         flex: 1 1 0;
+    }
+
+    .mdc-list {
+        flex: 1 1 0;
+        overflow: auto;
     }
 
     #menu-anchor {
@@ -271,6 +279,10 @@ export class OrInput extends LitElement {
     @property({type: Boolean})
     public autoSelect?: boolean;
 
+
+    @property({type: Boolean})
+    public checkAssetWrite: boolean = true;
+
     /* STYLING PROPERTIES BELOW */
 
     @property({type: String})
@@ -343,7 +355,8 @@ export class OrInput extends LitElement {
     }
 
     protected render() {
-
+        const readonly = this.readonly || this.checkAssetWrite ? !manager.hasRole(ClientRole.WRITE_ASSETS) : false;
+    
         if (this.type) {
 
             const showLabel = !this.fullWidth && this.label;
@@ -359,14 +372,14 @@ export class OrInput extends LitElement {
                 case InputType.SWITCH:
                     return html`
                         <span id="wrapper">
-                            <div id="component" class="mdc-switch ${this.disabled || this.readonly ? "mdc-switch--disabled" : ""} ${this.value ? "mdc-switch--checked" : ""}">
+                            <div id="component" class="mdc-switch ${this.disabled || readonly ? "mdc-switch--disabled" : ""} ${this.value ? "mdc-switch--checked" : ""}">
                                 <div class="mdc-switch__track"></div>
                                 <div class="mdc-switch__thumb-underlay">
                                     <div class="mdc-switch__thumb">
                                         <input type="checkbox" id="elem" class="mdc-switch__native-control" 
                                         ?checked="${this.value}"
                                         ?required="${this.required}"
-                                        ?disabled="${this.disabled || this.readonly}"
+                                        ?disabled="${this.disabled || readonly}"
                                         @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).checked)}"
                                         role="switch">
                                     </div>
@@ -399,15 +412,14 @@ export class OrInput extends LitElement {
                         }
     
                         this._selectedIndex = -1;
-    
                         return html`
-                            <div id="component" class="mdc-select ${classMap(classesList)}" @MDCList:action="${(e: MDCListActionEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
+                            <div id="component" class="mdc-list mdc-select ${classMap(classesList)}" @MDCList:action="${(e: MDCListActionEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
                                 <ul class="mdc-list">
                                     ${optsList ? optsList.map(([optValue, optDisplay], index) => {
                                         if (this.value === optValue) {
                                             this._selectedIndex = index;
                                         }
-                                        return html`<li class="mdc-list-item${this.value === optValue ? " mdc-list-item--selected" : ""}" role="option" data-value="${optValue}">${optDisplay}</li>`;
+                                        return html`<li class="mdc-list-item${this.value === optValue ? " mdc-list-item--selected" : ""}" role="option" data-value="${optValue}"><or-translate value="${optDisplay}"></or-translate></li>`;
                                     }) : ``}
                                 </ul>
                             </div>
@@ -415,7 +427,7 @@ export class OrInput extends LitElement {
                 case InputType.SELECT:
                     const classes = {
                         "mdc-select--outlined": outlined,
-                        "mdc-select--disabled": this.disabled,
+                        "mdc-select--disabled": this.disabled || readonly,
                         "mdc-select--required": this.required,
                         "mdc-select--dense": false, // this.dense,
                         "mdc-select--no-label": !this.label,
@@ -438,7 +450,9 @@ export class OrInput extends LitElement {
                     this._selectedIndex = -1;
 
                     return html`
-                        <div id="component" class="mdc-select ${classMap(classes)}" @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
+                        <div id="component" 
+                            class="mdc-select ${classMap(classes)}" 
+                            @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
                                 <div id="menu-anchor" class="mdc-select__anchor select-class">
                                     <or-icon class="mdc-select__dropdown-icon" icon="menu-down"></or-icon>
                                     <div id="elem" class="mdc-select__selected-text" role="button" aria-haspopup="listbox" aria-controls="component-helper-text" aria-describedby="component-helper-text" aria-labelledby="component-label component"></div>
@@ -466,7 +480,7 @@ export class OrInput extends LitElement {
                 case InputType.BUTTON_TOGGLE:
                     return html`
                         <button id="component" class="mdc-icon-button ${this.value ? "mdc-icon-button--on" : ""}"
-                            ?readonly="${this.readonly}"
+                            ?readonly="${readonly}"
                             ?disabled="${this.disabled}"
                             @MDCIconButtonToggle:change="${(evt: MDCIconButtonToggleEventDetail) => this.onValueChange(undefined, evt.isOn)}">
                             ${this.icon ? html`<or-icon class="mdc-icon-button__icon" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
@@ -491,7 +505,7 @@ export class OrInput extends LitElement {
                     };
                     return html`
                         <button id="component" class="${classMap(classes)}"
-                            ?readonly="${this.readonly}"
+                            ?readonly="${readonly}"
                             ?disabled="${this.disabled}"
                             @onmousedown="${() => {if (isMomentary) this.onValueChange(undefined, true)}}" @onmouseup="${() => isMomentary ? this.onValueChange(undefined, false) : this.onValueChange(undefined, true)}">
                             ${!isIconButton ? html`<div class="mdc-button__ripple"></div>` : ``}
@@ -508,7 +522,7 @@ export class OrInput extends LitElement {
                                 <input type="checkbox" 
                                     ?checked="${this.value}"
                                     ?required="${this.required}"
-                                    ?disabled="${this.disabled || this.readonly}"
+                                    ?disabled="${this.disabled || readonly}"
                                     @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).checked)}"
                                     class="mdc-checkbox__native-control" id="elem"/>
                                 <div class="mdc-checkbox__background">
@@ -598,7 +612,7 @@ export class OrInput extends LitElement {
                             ${this.type === InputType.TEXTAREA  || this.type === InputType.JSON ? html`
                                 <textarea id="elem" class="mdc-text-field__input"
                                     ?required="${this.required}"
-                                    ?readonly="${this.readonly}"
+                                    ?readonly="${readonly}"
                                     ?disabled="${this.disabled}"
                                     @change="${(e: Event) => this.onValueChange((e.target as HTMLTextAreaElement), (e.target as HTMLTextAreaElement).value)}"
                                     minlength="${ifDefined(this.minLength)}"
@@ -610,7 +624,7 @@ export class OrInput extends LitElement {
                                 ` :
                                 html`<input type="${this.type}" id="elem" class="mdc-text-field__input"
                                     ?required="${this.required}"
-                                    ?readonly="${this.readonly}"
+                                    ?readonly="${readonly}"
                                     ?disabled="${this.disabled}"
                                     @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}"
                                     .value="${val !== null && val !== undefined ? val : ""}"
@@ -629,7 +643,7 @@ export class OrInput extends LitElement {
                             ${hasHelper ? html`
                                 <div class="mdc-text-field-helper-line">
                                     <div class="mdc-text-field-helper-text ${classMap(helperClasses)}">${showValidationMessage ? this.validationMessage : this.helperText}</div>
-                                    ${this.charCounter && !this.readonly ? html`<div class="mdc-text-field-character-counter"></div>` : ``}
+                                    ${this.charCounter && !readonly ? html`<div class="mdc-text-field-character-counter"></div>` : ``}
                                 </div>
                         ` : ``}
                     `;

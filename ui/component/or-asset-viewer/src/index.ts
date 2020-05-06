@@ -4,12 +4,14 @@ import "@openremote/or-input";
 import "@openremote/or-attribute-input";
 import "@openremote/or-attribute-history";
 import "@openremote/or-chart";
-import "@openremote/or-translate";
-import {translate} from "@openremote/or-translate";
-import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
+import "@openremote/or-table";
 import "@openremote/or-map";
-import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import "@openremote/or-panel";
+import "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {OrTranslate, translate} from "@openremote/or-translate";
+import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
+import {OrTable} from "@openremote/or-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
 import {Type as MapType, Util as MapUtil} from "@openremote/or-map";
@@ -21,15 +23,16 @@ import {
     Attribute,
     AttributeEvent,
     AttributeType,
-    MetaItemType,
-    MetaItem
+    MetaItem,
+    MetaItemType
 } from "@openremote/model";
 import {style} from "./style";
 import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
+import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 
-export type PanelType = "property" | "location" | "attribute" | "history" | "chart";
+export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group";
 
 export interface PanelConfig {
     type?: PanelType;
@@ -41,6 +44,13 @@ export interface PanelConfig {
     readonly?: string[];
     panelStyles?: { [style: string]: string };
     fieldStyles?: { [field: string]: { [style: string]: string } };
+}
+
+export interface GroupPanelConfig extends PanelConfig {
+    childAssetTypes?: { [assetType: string]: {
+        availableAttributes?: string[];
+        selectedAttributes?: string[];
+    }}
 }
 
 export interface AssetViewerConfig {
@@ -98,10 +108,20 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         },
         panels: {
-            "info": {
+            group: {
+                type: "group",
+                // childAssetTypes: {
+                //     "urn:openremote:asset:enviroment": {
+                //         availableAttributes: ["nO2"],
+                //         selectedAttributes: ["nO2"]
+                //     }
+                // },
+                panelStyles: {}
+            } as GroupPanelConfig,
+            info: {
                 type: "attribute",
                 hideOnMobile: true,
-                include: ["userNotes", "brand"],
+                include: ["userNotes", "manufacturer", "model"],
                 panelStyles: {
                 },
                 fieldStyles: {
@@ -115,7 +135,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     }
                 }
             },
-            "location": {
+            location: {
                 type: "location",
                 include: ["location"],
                 panelStyles: {
@@ -125,17 +145,17 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     }
                 }
             },
-            "attributes": {
+            attributes: {
                 type: "attribute",
                 panelStyles: {
                 }
             },
-            "history": {
+            history: {
                 type: "history",
                 panelStyles: {
                 }
             },
-            "chart": {
+            chart: {
                 type: "chart",
                 hideOnMobile: true,
                 panelStyles: {
@@ -175,13 +195,12 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     protected _viewerConfig?: AssetViewerConfig;
     protected _attributes?: AssetAttribute[];
 
-
     constructor() {
         super();
-        window.addEventListener('resize', () => OrAssetViewer.generateGrid(this.shadowRoot));
+        window.addEventListener("resize", () => OrAssetViewer.generateGrid(this.shadowRoot));
         
-        this.addEventListener(OrChartEvent.NAME,() => OrAssetViewer.generateGrid(this.shadowRoot));
-        this.addEventListener(OrAttributeHistoryEvent.NAME,() => OrAssetViewer.generateGrid(this.shadowRoot));
+        this.addEventListener(OrChartEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
+        this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
     }
 
     shouldUpdate(changedProperties: PropertyValues): boolean {
@@ -238,10 +257,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 </div>
                 <div id="container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
                     ${html`${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
-            const panelTemplate = OrAssetViewer.getPanel(name, this.asset!, this._attributes!, this._viewerConfig!, panelConfig, this.shadowRoot);
-            return panelTemplate || ``;
-        })}`
-            }
+                        const panelTemplate = OrAssetViewer.getPanel(name, this.asset!, this._attributes!, this._viewerConfig!, panelConfig, this.shadowRoot);
+                        return panelTemplate || ``;
+                    })}`}
                 </div>
             </div>
         `;
@@ -303,14 +321,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     public static getPanel(name: string, asset: Asset, attributes: AssetAttribute[], viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, shadowRoot: ShadowRoot | null) {
-        const content = OrAssetViewer.getPanelContent(name, asset, attributes, viewerConfig, panelConfig, shadowRoot);
 
+        const content = OrAssetViewer.getPanelContent(name, asset, attributes, viewerConfig, panelConfig, shadowRoot);
         if (!content) {
             return;
         }
 
-
-        return html`
+        return html`           
             <div class=${classMap({"panel": true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
@@ -361,7 +378,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         //         return prop === "attributes" ? `` : OrAssetViewer.getField(prop, true, style, OrAssetViewer.getPropertyTemplate(prop, (asset as { [index: string]: any })[prop], viewerConfig, panelConfig, shadowRoot));
         //     })}
         //     `;
-        // } else 
+        // } else
         if (panelConfig && panelConfig.type === "history") {
             // Special handling for history panel which shows an attribute selector and a graph/data table of historical values
             const historyAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
@@ -384,7 +401,16 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     }
                 };
 
-                const options = historyAttrs.map((attr) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
+
+                const options = historyAttrs.map((attr) => {
+                    const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attr.name!);
+                    let label = Util.getAttributeLabel(attr, attributeDescriptor);
+                    let unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
+                    if(unit) {
+                        label = label + " ("+i18next.t(unit)+")";
+                    }
+                    return [attr.name, label]
+                });
                 const attrName: string = historyAttrs[0].name!;
                 onRenderComplete.addCallback(() => attributeChanged(attrName));
                 content = html`
@@ -421,7 +447,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         }
                     </style>
                     <div id="history-controls">
-                        <or-input id="history-attribute-picker" value="${historyAttrs[0].name}" .label="${i18next.t("attribute")}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${options}"></or-input>
+                        <or-input id="history-attribute-picker" .checkAssetWrite="${false}" value="${historyAttrs[0].name}" .label="${i18next.t("attribute")}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${options}"></or-input>
                     </div>        
                     <or-attribute-history id="attribute-history" .config="${viewerConfig.historyConfig}" .assetType="${asset.type}"></or-attribute-history>
 
@@ -429,13 +455,15 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
 
         } else if (panelConfig && panelConfig.type === "chart") {
-            let storeDataPointAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
-            let defaultAttrs = storeDataPointAttrs.filter((attr) => (defaultAttributes && defaultAttributes.indexOf(attr.name!) >= 0));
-            let assetAttributes;
 
-            if(defaultAttrs.length > 0){
-                assetAttributes = defaultAttrs;
-            } else if(storeDataPointAttrs.length > 0) {
+            let storeDataPointAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
+          
+            let assetAttributes;
+            // let defaultAttrs = storeDataPointAttrs.filter((attr) => (defaultAttributes && defaultAttributes.indexOf(attr.name!) >= 0));
+            // if(defaultAttrs.length > 0){
+            //     assetAttributes = defaultAttrs;
+            // } else 
+            if(storeDataPointAttrs.length > 0) {
                 assetAttributes = storeDataPointAttrs;
                 assetAttributes.length = 1;
             }
@@ -444,10 +472,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 assetAttributes.forEach(attr => assetList.push(asset));
             }
             content = html`
-                <or-chart id="chart" .config="${viewerConfig.chartConfig}" .activeAsset="${asset}" .assets="${assetList ? assetList : [asset]}" .assetAttributes="${assetAttributes}"></or-chart>
+                <or-chart id="chart" .config="${viewerConfig.chartConfig}" .activeAsset="${asset}"  activeAssetId="${asset.id}" .assets="${assetList ? assetList : [asset]}" .assetAttributes="${assetAttributes}"></or-chart>
             `;
 
         } else if (panelConfig && panelConfig.type === "location") {
+
             const attribute = attrs.find((attr) => attr.name === AttributeType.LOCATION.attributeName);
             if (attribute) {
                 // Special handling for location panel which shows an attribute selector and a map showing the location of the attribute
@@ -459,7 +488,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     if (shadowRoot) {
 
                         if (attribute) {
-                           
+
                             if(asset.id && asset.attributes && asset.attributes.location){
 
                                 const showOnMapMeta = Util.getFirstMetaItem(attribute, MetaItemType.SHOW_ON_DASHBOARD.urn!);
@@ -481,12 +510,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                                 if (response.status !== 200) {
                                 }
                             }
-                    
+
 
                         }
                     }
                 };
-
 
                 content = html`
                     <style>
@@ -506,12 +534,152 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     ` : ``}                    
                 `;
             }
+        } else if (panelConfig && panelConfig.type === "group") {
+
+            if (asset.type !== "urn:openremote:asset:group") {
+                return;
+            }
+
+            // Get child asset type attribute value
+            const childAssetTypeAttribute = Util.getAssetAttribute(asset, "childAssetType");
+            const groupConfig = panelConfig as GroupPanelConfig;
+
+            if (!childAssetTypeAttribute || typeof childAssetTypeAttribute.value !== "string") {
+                return;
+            }
+            let childAssetType = childAssetTypeAttribute.value as string;
+            let childAssets: Asset[] = [];
+
+            // Determine available and selected attributes for the child asset type
+            let availableAttributes: string[] = [];
+            let selectedAttributes: string[] = [];
+            let newlySelectedAttributes: string[] = []; // Updated when the dialog is open
+
+            if (groupConfig.childAssetTypes && groupConfig.childAssetTypes[childAssetType]) {
+                availableAttributes = groupConfig.childAssetTypes[childAssetType].availableAttributes ? groupConfig.childAssetTypes[childAssetType].availableAttributes! : [];
+                selectedAttributes = groupConfig.childAssetTypes[childAssetType].selectedAttributes ? groupConfig.childAssetTypes[childAssetType].selectedAttributes! : [];
+            }
+
+            // Get available and selected attributes from asset descriptor if not defined in config
+            if (availableAttributes.length === 0) {
+                const descriptor = AssetModelUtil.getAssetDescriptor(childAssetType);
+                if (descriptor && descriptor.attributeDescriptors) {
+                    availableAttributes = descriptor.attributeDescriptors.map((descriptor) => descriptor.attributeName!);
+                }
+            }
+            if ((!selectedAttributes || selectedAttributes.length === 0) && availableAttributes) {
+                selectedAttributes = [...availableAttributes];
+            }
+
+            const attributePickerModalActions: DialogAction[] = [
+                {
+                    actionName: "ok",
+                    default: true,
+                    content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("ok")}"></or-input>`,
+                    action: () => {
+                        selectedAttributes.length = 0;
+                        selectedAttributes.push(...newlySelectedAttributes);
+                        updateTable();
+                    }
+                },
+                {
+                    actionName: "cancel",
+                    content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
+                    action: () => {
+                        // Nothing to do here
+                    }
+                },
+            ];
+
+            const attributePickerModalOpen = () => {
+                const dialog: OrMwcDialog = shadowRoot!.getElementById(panelName + "-attribute-modal") as OrMwcDialog;
+
+                if (dialog) {
+                    newlySelectedAttributes.length = 0;
+                    newlySelectedAttributes.push(...selectedAttributes);
+                    // Update content which will cause a re-render
+                    dialog.dialogContent = html`
+                        <div style="display:grid">
+                            ${availableAttributes.sort().map((attribute) => 
+                                html`<div style="grid-column: 1 / -1;">
+                                        <or-input .type="${InputType.CHECKBOX}" .label="${i18next.t(attribute)}" .value="${!!newlySelectedAttributes.find((selected) => selected === attribute)}"
+                                            @or-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s == attribute), 1)}"></or-input>
+                                    </div>`)}
+                        </div>
+                    `;
+                    dialog.open();
+                }
+            };
+
+            // let headers = ["a", "b", "c"];
+            // let rows = [["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"],
+            //     ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"]];
+            // let columnFilter = viewerConfig.groupConfig!.columnFilters || ["a"];
+
+            // Function to update the table and message when assets or config changes
+            let updateTable = () => {
+
+                const loadingMsg: OrTranslate = shadowRoot!.getElementById(panelName + "-attribute-table-msg") as OrTranslate;
+                const attributeTable: OrTable = shadowRoot!.getElementById(panelName + "-attribute-table") as OrTable;
+
+                if (!loadingMsg || !attributeTable) {
+                    return;
+                }
+
+                if (selectedAttributes.length === 0 || !childAssets || childAssets.length === 0) {
+                    loadingMsg.value = "noData";
+                    loadingMsg.hidden = false;
+                    attributeTable.hidden = true;
+                    return;
+                }
+
+                // Update table properties which will cause a re-render
+                loadingMsg.hidden = true;
+                attributeTable.hidden = false;
+                const headers = [...selectedAttributes].sort();
+                attributeTable.headers = headers.map((header) => i18next.t(header));
+                attributeTable.headers.unshift(i18next.t("groupAssetName"));
+                attributeTable.rows = childAssets.map((asset) => {
+                    // todo: it's only processing including selected headers here...
+                    // move this to the columnFilter option of the table
+                    const arr = headers.map((attributeName) => {
+                        return asset.attributes![attributeName] ? asset.attributes![attributeName].value! as string : "";
+                    });
+                    arr.unshift(asset.name!);
+                    return arr;
+                });
+            };
+
+            // Load child assets async then update the table
+            this.getAssetChildren(asset.id!, asset.attributes!.childAssetType.value).then((assetChildren) => {
+                childAssets = assetChildren;
+                updateTable();
+            });
+
+            // Define the DOM content for this panel
+            content = html`
+                <style>
+                    #asset-group-add-remove-columns {
+                        position: absolute;
+                        top: 20px;
+                        right: var(--internal-or-asset-viewer-panel-padding);
+                    }
+                </style>
+                <or-icon id="asset-group-add-remove-columns" icon="plus-minus" @click="${() => attributePickerModalOpen()}"></or-icon>
+                <or-table hidden .id="${panelName}-attribute-table" .options="{stickyFirstColumn:true}"></or-table>
+                <span><or-translate id="${panelName}-attribute-table-msg" value="loading"></or-translate></span>
+                <or-mwc-dialog id="${panelName}-attribute-modal" dialogTitle="addRemoveAttributes" .dialogActions="${attributePickerModalActions}"></or-mwc-dialog>
+            `;
         } else {
+            if(attrs.length === 0) {
+                return undefined;
+            }
+
             content = html`
                 ${attrs.sort((attr1, attr2) => attr1.name! < attr2.name! ? -1 : attr1.name! > attr2.name! ? 1 : 0).map((attr) => {
-                let style = styles ? styles[attr.name!] : undefined;
-                return this.getField(attr.name!, false, style, OrAssetViewer.getAttributeTemplate(asset, attr, viewerConfig, panelConfig));
-            })}
+                    let style = styles ? styles[attr.name!] : undefined;
+                    return this.getField(attr.name!, false, style, OrAssetViewer.getAttributeTemplate(asset, attr, viewerConfig, panelConfig));
+                })}
             `;
         }
 
@@ -571,7 +739,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 return result;
             }
         }
-
         return html`
             <or-attribute-input dense .assetType="${asset!.type}" .attribute="${attribute}" .label="${i18next.t(attribute.name!)}"></or-attribute-input>
         `;
@@ -581,7 +748,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         if (!content) {
             return ``;
         }
-
         return html`
             <div id="field-${name}" style="${styles ? styleMap(styles) : ""}" class="field ${isProperty ? "field-property" : "field-attribute"}">
                 ${content}
@@ -645,20 +811,23 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         return config;
     }
 
-    public static async getAssetNames(ids: string[]): Promise<string[]> {
+    public static async getAssetChildren(id: string, childAssetType: string): Promise<Asset[]> {
         const response = await manager.rest.api.AssetResource.queryAssets({
             select: {
                 excludePath: true,
-                excludeParentInfo: true,
-                excludeRealm: true
+                excludeParentInfo: true
             },
-            ids: ids
+            parents: [
+                {
+                    id: id
+                }
+            ]
         });
 
-        if (response.status !== 200 || !response.data || response.data.length !== ids.length) {
-            return ids;
+        if (response.status !== 200 || !response.data) {
+            return [];
         }
 
-        return ids.map((id) => response.data.find((asset) => asset.id === id)!.name!);
+        return response.data.filter((asset) => asset.type === childAssetType);
     }
 }

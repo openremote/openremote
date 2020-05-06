@@ -49,6 +49,7 @@ import org.openremote.model.event.shared.*;
 import java.util.logging.Logger;
 
 import static org.openremote.model.event.shared.EventSubscription.SUBSCRIBED_MESSAGE_PREFIX;
+import static org.openremote.model.event.shared.EventSubscription.SUBSCRIBE_MESSAGE_PREFIX;
 
 public class EventTypeConverters implements TypeConverters {
 
@@ -79,7 +80,7 @@ public class EventTypeConverters implements TypeConverters {
 
     @Converter
     public String writeEventSubscription(EventSubscription eventSubscription, Exchange exchange) throws Exception {
-        return SUBSCRIBED_MESSAGE_PREFIX + Container.JSON.writeValueAsString(eventSubscription);
+        return (eventSubscription.isSubscribed() ? SUBSCRIBED_MESSAGE_PREFIX : SUBSCRIBE_MESSAGE_PREFIX) + Container.JSON.writeValueAsString(eventSubscription);
     }
 
     @Converter

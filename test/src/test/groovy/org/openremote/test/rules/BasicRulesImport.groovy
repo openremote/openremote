@@ -93,6 +93,7 @@ class BasicRulesImport {
         apartment3RulesetId = rulesetStorageService.merge(ruleset).id
     }
 
+    @SuppressWarnings("GroovyAccessibility")
     boolean assertEnginesReady(RulesService rulesService,
                                KeycloakDemoSetup keycloakDemoSetup,
                                ManagerDemoSetup managerDemoSetup) {
@@ -122,7 +123,7 @@ class BasicRulesImport {
         def tenantCityEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantCity.realm)
         assert tenantCityEngine == null
 
-        assert rulesService.assetEngines.size() == 2
+        assert rulesService.assetEngines.size() == 3
         apartment1Engine = rulesService.assetEngines.get(managerDemoSetup.apartment1Id)
         assert apartment1Engine == null
         apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
@@ -139,6 +140,13 @@ class BasicRulesImport {
         assert apartment3Engine.deployments.size() == 1
         assert apartment3Engine.deployments.values().iterator().next().name == "Some apartment 3 demo rules"
         assert apartment3Engine.deployments.values().iterator().next().status == DEPLOYED
+        def peopleCounter3Engine = rulesService.assetEngines.get(managerDemoSetup.peopleCounter3AssetId)
+        assert peopleCounter3Engine != null
+        peopleCounter3Engine.disableTemporaryFactExpiration = true
+        assert peopleCounter3Engine.isRunning()
+        assert peopleCounter3Engine.deployments.size() == 1
+        assert peopleCounter3Engine.deployments.values().iterator().next().name == "PeopleCounter 3 Rules"
+        assert peopleCounter3Engine.deployments.values().iterator().next().status == DEPLOYED
 
         return true
     }

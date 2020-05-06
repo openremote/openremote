@@ -1,4 +1,4 @@
-import {customElement, html, LitElement, property, TemplateResult, css} from "lit-element";
+import {customElement, html, LitElement, property, TemplateResult, css, PropertyValues} from "lit-element";
 import {
     getAssetDescriptors,
     getAssetTypeFromQuery,
@@ -87,8 +87,8 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
     protected _rule!: JsonRule;
     protected _unsupported = false;
     protected _assetDescriptors?: AssetDescriptor[];
-    protected _whenAssetDescriptors?: AssetDescriptor[];
-    protected _actionAssetDescriptors?: AssetDescriptor[];
+    _whenAssetDescriptors?: AssetDescriptor[];
+    _actionAssetDescriptors?: AssetDescriptor[];
 
     constructor() {
         super();
@@ -146,6 +146,13 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         }
     }
 
+    updated(changedPropreties:PropertyValues) {
+        if(changedPropreties.has('config')){
+            this.getAssetDescriptors(false);
+            this.getAssetDescriptors(true);
+        }
+    }
+
     protected render(): TemplateResult | void {
 
         if (!this._rule) {
@@ -153,35 +160,38 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         }
 
         const targetTypeMap = this.getTargetTypeMap();
-        const whenDescriptors = this.getAssetDescriptors(false);
-        const actionDescriptors = this.getAssetDescriptors(true);
-
         return html`
             <div class="section-container">                                    
-                <or-rule-when .rule="${this._rule}" .config="${this.config}" .assetDescriptors="${whenDescriptors}" ?readonly="${this.readonly}"></or-rule-when>
+                <or-rule-when .rule="${this._rule}" .config="${this.config}" .assetDescriptors="${this._whenAssetDescriptors}" ?readonly="${this.readonly}"></or-rule-when>
             </div>
         
             <div class="section-container">              
-                <or-rule-then-otherwise .rule="${this._rule}" .config="${this.config}" .targetTypeMap="${targetTypeMap}" .assetDescriptors="${actionDescriptors}" ?readonly="${this.readonly}"></or-rule-then-otherwise>
+                <or-rule-then-otherwise .rule="${this._rule}" .config="${this.config}" .targetTypeMap="${targetTypeMap}" .assetDescriptors="${this._actionAssetDescriptors}" ?readonly="${this.readonly}"></or-rule-then-otherwise>
             </div>
         `;
     }
 
     protected getAssetDescriptors(useActionConfig: boolean) {
-        if (useActionConfig) {
-            if (this._actionAssetDescriptors) {
+        getAssetDescriptors(this.config, useActionConfig).then(result => {
+            if (useActionConfig) {
+                if (this._actionAssetDescriptors) {
+                    return this._actionAssetDescriptors;
+                }
+                this._actionAssetDescriptors = [...result];
+                this.requestUpdate();
+
                 return this._actionAssetDescriptors;
             }
-            this._actionAssetDescriptors = getAssetDescriptors(this.config, useActionConfig);
-            return this._actionAssetDescriptors;
-        }
+    
+            if (this._whenAssetDescriptors) {
+                return this._whenAssetDescriptors;
+            }
+    
+            this._whenAssetDescriptors = [...result];
+            this.requestUpdate();
 
-        if (this._whenAssetDescriptors) {
             return this._whenAssetDescriptors;
-        }
-
-        this._whenAssetDescriptors = getAssetDescriptors(this.config, useActionConfig);
-        return this._whenAssetDescriptors;
+        })
     }
 
     protected getTargetTypeMap(): [string, string?][] {
