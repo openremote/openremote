@@ -2,7 +2,6 @@ package org.openremote.agent.protocol.tradfri.device.event;
 
 import org.openremote.agent.protocol.tradfri.device.Plug;
 import org.openremote.agent.protocol.tradfri.device.PlugProperties;
-import org.openremote.agent.protocol.tradfri.device.event.PlugEvent;
 
 /**
  * The class that represents a change event that occurred to an IKEA TRÅDFRI plug

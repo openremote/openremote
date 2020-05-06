@@ -2,14 +2,9 @@ package org.openremote.agent.protocol.tradfri.device;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.openremote.agent.protocol.tradfri.device.Device;
-import org.openremote.agent.protocol.tradfri.device.LightProperties;
-import org.openremote.agent.protocol.tradfri.device.Observer;
-import org.openremote.agent.protocol.tradfri.device.PlugProperties;
 import org.openremote.agent.protocol.tradfri.device.event.*;
 import org.openremote.agent.protocol.tradfri.payload.DeviceResponse;
 import org.openremote.agent.protocol.tradfri.util.CoapClient;
-import org.eclipse.californium.core.CoapResponse;
 
 import java.util.ArrayList;
 
@@ -23,7 +18,7 @@ public class DeviceObserver extends Observer {
     /**
      * The device to observe
      */
-    private org.openremote.agent.protocol.tradfri.device.Device device;
+    private Device device;
 
     /**
      * An object mapper used for mapping JSON responses from the IKEA TRÅDFRI gateway to Java classes

@@ -1,17 +1,9 @@
 package org.openremote.agent.protocol.tradfri.device;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.openremote.agent.protocol.tradfri.device.event.DeviceAddedEvent;
-import org.openremote.agent.protocol.tradfri.device.event.DeviceRemovedEvent;
-import org.openremote.agent.protocol.tradfri.device.event.EventHandler;
-import org.openremote.agent.protocol.tradfri.device.event.GatewayEvent;
-import org.openremote.agent.protocol.tradfri.util.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
-
-import java.util.ArrayList;
-import java.util.HashMap;
+import org.openremote.agent.protocol.tradfri.util.CoapClient;
 
 /**
  * The class that observes a device to automagically detect changes

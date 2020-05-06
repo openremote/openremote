@@ -2,9 +2,6 @@ package org.openremote.agent.protocol.tradfri.device;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.openremote.agent.protocol.tradfri.device.Device;
-import org.openremote.agent.protocol.tradfri.device.Gateway;
-import org.openremote.agent.protocol.tradfri.device.Observer;
 import org.openremote.agent.protocol.tradfri.device.event.DeviceAddedEvent;
 import org.openremote.agent.protocol.tradfri.device.event.DeviceRemovedEvent;
 import org.openremote.agent.protocol.tradfri.device.event.EventHandler;
@@ -30,7 +27,7 @@ public class GatewayObserver extends Observer {
     /**
      * A cache of the devices registered to the IKEA TRÅDFRI gateway
      */
-    private HashMap<Integer, org.openremote.agent.protocol.tradfri.device.Device> devices;
+    private HashMap<Integer, Device> devices;
 
     /**
      * An object mapper used for mapping JSON responses from the IKEA TRÅDFRI gateway to Java classes
@@ -56,9 +53,9 @@ public class GatewayObserver extends Observer {
      */
     @Override
     public boolean start(){
-        org.openremote.agent.protocol.tradfri.device.Device[] devices = gateway.getDevices();
+        Device[] devices = gateway.getDevices();
         this.devices = new HashMap<>();
-        for(org.openremote.agent.protocol.tradfri.device.Device device: devices){
+        for(Device device: devices){
             this.devices.put(device.getInstanceId(), device);
         }
         return super.start();
@@ -77,7 +74,7 @@ public class GatewayObserver extends Observer {
             ArrayList<EventHandler> called = new ArrayList<>();
             events.add(new GatewayEvent(gateway));
             ArrayList<Integer> added = new ArrayList<>();
-            HashMap<Integer, org.openremote.agent.protocol.tradfri.device.Device> removed = (HashMap<Integer, org.openremote.agent.protocol.tradfri.device.Device>) devices.clone();
+            HashMap<Integer, Device> removed = (HashMap<Integer, Device>) devices.clone();
             for (int deviceId : deviceIds) {
                 if (devices.containsKey(deviceId)) {
                     removed.remove(deviceId);
@@ -86,7 +83,7 @@ public class GatewayObserver extends Observer {
                 }
             }
             for (Integer addedDeviceId : added) {
-                org.openremote.agent.protocol.tradfri.device.Device device = gateway.getDevice(addedDeviceId);
+                Device device = gateway.getDevice(addedDeviceId);
                 devices.put(addedDeviceId, device);
                 events.add(new DeviceAddedEvent(gateway, device));
             }

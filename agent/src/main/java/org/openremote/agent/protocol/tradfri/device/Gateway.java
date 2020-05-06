@@ -1,10 +1,6 @@
 package org.openremote.agent.protocol.tradfri.device;
 
-import org.openremote.agent.protocol.tradfri.device.*;
-import org.openremote.agent.protocol.tradfri.device.Device;
-import org.openremote.agent.protocol.tradfri.device.Light;
-import org.openremote.agent.protocol.tradfri.device.Plug;
-import org.openremote.agent.protocol.tradfri.device.Remote;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.openremote.agent.protocol.tradfri.device.event.EventHandler;
 import org.openremote.agent.protocol.tradfri.payload.AuthenticateRequest;
 import org.openremote.agent.protocol.tradfri.payload.AuthenticateResponse;
@@ -12,7 +8,6 @@ import org.openremote.agent.protocol.tradfri.payload.DeviceResponse;
 import org.openremote.agent.protocol.tradfri.util.ApiEndpoint;
 import org.openremote.agent.protocol.tradfri.util.CoapClient;
 import org.openremote.agent.protocol.tradfri.util.Credentials;
-import org.apache.commons.lang3.RandomStringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -122,7 +117,7 @@ public class Gateway {
      * @return The device with the provided id
      * @since 1.0.0
      */
-    public org.openremote.agent.protocol.tradfri.device.Device getDevice(int id){
+    public Device getDevice(int id){
         DeviceResponse response = coapClient.get(ApiEndpoint.getUri(ApiEndpoint.DEVICES, String.valueOf(id)), DeviceResponse.class);
         if(response == null){
             return null;
@@ -135,7 +130,7 @@ public class Gateway {
         }else if(response.getDeviceInfo().getModelName().equals("TRADFRI motion sensor")){
             return new MotionSensor(response.getName(), response.getCreationDate(), response.getInstanceId(), response.getDeviceInfo(), coapClient);
         }else{
-            return new org.openremote.agent.protocol.tradfri.device.Device(response.getName(), response.getCreationDate(), response.getInstanceId(), response.getDeviceInfo(), coapClient);
+            return new Device(response.getName(), response.getCreationDate(), response.getInstanceId(), response.getDeviceInfo(), coapClient);
         }
     }
 
@@ -144,14 +139,14 @@ public class Gateway {
      * @return An array of the devices registered to the IKEA TRÅDFRI gateway
      * @since 1.0.0
      */
-    public org.openremote.agent.protocol.tradfri.device.Device[] getDevices(){
-        ArrayList<org.openremote.agent.protocol.tradfri.device.Device> deviceList = new ArrayList<>();
+    public Device[] getDevices(){
+        ArrayList<Device> deviceList = new ArrayList<>();
         int[] deviceIds = getDeviceIds();
         for(int deviceId: deviceIds){
-            org.openremote.agent.protocol.tradfri.device.Device device = getDevice(deviceId);
+            Device device = getDevice(deviceId);
             deviceList.add(device);
         }
-        org.openremote.agent.protocol.tradfri.device.Device[] devices = new Device[deviceList.size()];
+        Device[] devices = new Device[deviceList.size()];
         deviceList.toArray(devices);
         return devices;
     }

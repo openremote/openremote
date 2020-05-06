@@ -1,9 +1,5 @@
 package org.openremote.agent.protocol.tradfri.device;
 
-import org.openremote.agent.protocol.tradfri.device.Device;
-import org.openremote.agent.protocol.tradfri.device.DeviceInfo;
-import org.openremote.agent.protocol.tradfri.device.DeviceProperties;
-import org.openremote.agent.protocol.tradfri.device.PlugProperties;
 import org.openremote.agent.protocol.tradfri.payload.DeviceRequest;
 import org.openremote.agent.protocol.tradfri.util.ApiEndpoint;
 import org.openremote.agent.protocol.tradfri.util.CoapClient;

@@ -2,7 +2,6 @@ package org.openremote.agent.protocol.tradfri.device.event;
 
 import org.openremote.agent.protocol.tradfri.device.Light;
 import org.openremote.agent.protocol.tradfri.device.LightProperties;
-import org.openremote.agent.protocol.tradfri.device.event.LightEvent;
 
 /**
  * The class that represents a light changed event that occurred to an IKEA TRÅDFRI light

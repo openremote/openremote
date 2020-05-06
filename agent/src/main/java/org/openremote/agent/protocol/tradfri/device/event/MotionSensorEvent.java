@@ -1,7 +1,6 @@
 package org.openremote.agent.protocol.tradfri.device.event;
 
 import org.openremote.agent.protocol.tradfri.device.MotionSensor;
-import org.openremote.agent.protocol.tradfri.device.event.DeviceEvent;
 
 /**
  * The class that represents a motion sensor event that occurred to an IKEA TRÅDFRI motion sensor

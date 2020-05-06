@@ -1,7 +1,6 @@
 package org.openremote.agent.protocol.tradfri.device.event;
 
 import org.openremote.agent.protocol.tradfri.device.Device;
-import org.openremote.agent.protocol.tradfri.device.event.Event;
 
 /**
  * The class that represents a device event that occurred to an IKEA TRÅDFRI device

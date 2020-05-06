@@ -1,7 +1,5 @@
 package org.openremote.agent.protocol.tradfri.device.event;
 
-import org.openremote.agent.protocol.tradfri.device.event.Event;
-
 import java.lang.reflect.ParameterizedType;
 
 /**

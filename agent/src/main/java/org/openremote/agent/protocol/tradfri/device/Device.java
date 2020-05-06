@@ -1,8 +1,5 @@
 package org.openremote.agent.protocol.tradfri.device;
 
-import org.openremote.agent.protocol.tradfri.device.*;
-import org.openremote.agent.protocol.tradfri.device.Light;
-import org.openremote.agent.protocol.tradfri.device.Plug;
 import org.openremote.agent.protocol.tradfri.device.event.EventHandler;
 import org.openremote.agent.protocol.tradfri.util.ApiEndpoint;
 import org.openremote.agent.protocol.tradfri.util.CoapClient;
@@ -213,39 +210,39 @@ public class Device {
     }
 
     /**
-     * Check if the device is a {@link org.openremote.agent.protocol.tradfri.device.Light}
-     * @return True if the device is a {@link org.openremote.agent.protocol.tradfri.device.Light}, false if not
+     * Check if the device is a {@link Light}
+     * @return True if the device is a {@link Light}, false if not
      * @since 1.0.0
      */
     public boolean isLight(){
-        return this instanceof org.openremote.agent.protocol.tradfri.device.Light;
+        return this instanceof Light;
     }
 
     /**
-     * Convert the device to the {@link org.openremote.agent.protocol.tradfri.device.Light} class
-     * @return The device as {@link org.openremote.agent.protocol.tradfri.device.Light}
+     * Convert the device to the {@link Light} class
+     * @return The device as {@link Light}
      * @since 1.0.0
      */
-    public org.openremote.agent.protocol.tradfri.device.Light toLight(){
+    public Light toLight(){
         if(isLight()) return (Light) this;
         return null;
     }
 
     /**
-     * Check if the device is a {@link org.openremote.agent.protocol.tradfri.device.Plug}
-     * @return True if the device is a {@link org.openremote.agent.protocol.tradfri.device.Plug}, false if not
+     * Check if the device is a {@link Plug}
+     * @return True if the device is a {@link Plug}, false if not
      * @since 1.0.0
      */
     public boolean isPlug(){
-        return this instanceof org.openremote.agent.protocol.tradfri.device.Plug;
+        return this instanceof Plug;
     }
 
     /**
-     * Convert the device to the {@link org.openremote.agent.protocol.tradfri.device.Plug} class
-     * @return The device as {@link org.openremote.agent.protocol.tradfri.device.Plug}
+     * Convert the device to the {@link Plug} class
+     * @return The device as {@link Plug}
      * @since 1.0.0
      */
-    public org.openremote.agent.protocol.tradfri.device.Plug toPlug(){
+    public Plug toPlug(){
         if(isPlug()) return (Plug) this;
         return null;
     }

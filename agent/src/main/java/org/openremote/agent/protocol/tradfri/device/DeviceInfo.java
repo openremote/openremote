@@ -3,8 +3,6 @@ package org.openremote.agent.protocol.tradfri.device;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.agent.protocol.tradfri.device.DevicePowerSource;
-import org.openremote.agent.protocol.tradfri.device.DeviceProperties;
 import org.openremote.agent.protocol.tradfri.util.ApiCode;
 
 /**
