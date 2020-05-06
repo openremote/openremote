@@ -197,7 +197,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         return !this.config || !this.config.controls || this.config.controls.hideThenAddAction !== true;
     }
 
-    protected ruleRecurrenceTemplate(reset: RuleRecurrence | undefined) {
+    protected ruleRecurrenceTemplate(reset: RuleRecurrence | undefined, readonly?: boolean) {
         let recurrenceTemplate: TemplateResult | string = ``;
         const buttonColor = "inherit";
         let value = RecurrenceOption.ONCE;
@@ -215,7 +215,11 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 value = RecurrenceOption.ONCE_PER_WEEK;
             }
         }
-
+        if(readonly) {
+            recurrenceTemplate = html`
+             <or-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-input>
+            `;
+        } else {
         recurrenceTemplate = html`
                 <div style="color: #${buttonColor}; margin-right: 6px;">
                     ${getContentWithMenuTemplate(
@@ -225,7 +229,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                         (value) => this.setRecurrenceOption(value as RecurrenceOption))}
                 </div>
             `;
-
+        }
         return html`
             <div class="rule-recurrence">
                 ${recurrenceTemplate}
@@ -318,7 +322,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         return html`
             <div>
                 <or-panel .heading="${i18next.t("then")}...">
-                    ${this.ruleRecurrenceTemplate(this.rule.recurrence)}
+                    ${this.ruleRecurrenceTemplate(this.rule.recurrence, this.readonly)}
 
                     ${!this.rule.then ? `` : this.rule.then.map((action: RuleActionUnion) => this.ruleActionTemplate(this.rule.then!, action, this.readonly))}
                     ${thenAllowAdd ? html`

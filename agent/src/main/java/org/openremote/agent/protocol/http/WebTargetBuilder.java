@@ -184,6 +184,7 @@ public class WebTargetBuilder {
         RequestConfig requestConfig = RequestConfig.custom()
             .setCookieSpec(CookieSpecs.STANDARD)
             .setConnectionRequestTimeout(new Long(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS).intValue())
+            .setConnectTimeout(new Long(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS).intValue())
             .setSocketTimeout(new Long(overrideSocketTimeout).intValue())
             .build();
         HttpClient apacheClient = HttpClientBuilder.create()

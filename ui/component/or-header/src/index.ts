@@ -64,7 +64,8 @@ const secondaryItems: menuOption[] = [
         icon: "file-document-box-search-outline",
         value: "logs",
         href: "#!logs",
-        text: "logs"
+        text: "logs",
+        hideMobile: true
     },
     // {
     //     icon: "account-cog",

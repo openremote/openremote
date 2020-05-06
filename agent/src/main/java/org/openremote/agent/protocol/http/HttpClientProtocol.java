@@ -1155,6 +1155,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             responseConsumer.accept(originalResponse);
         } catch (Exception e) {
             LOG.log(Level.WARNING, getProtocolDisplayName() + " exception thrown whilst doing polling request [" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: " + clientRequest.requestTarget.getUriBuilder().build().toString());
+        } finally {
             if (originalResponse != null) {
                 originalResponse.close();
             }
@@ -1180,14 +1181,14 @@ public class HttpClientProtocol extends AbstractProtocol {
 
         try {
             response = clientRequest.invoke(valueStr);
+            responseConsumer.accept(response);
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Exception thrown whilst doing attribute write request", e);
+        } finally {
             if (response != null) {
                 response.close();
             }
         }
-
-        responseConsumer.accept(response);
     }
 
     protected void onPollingResponse(HttpClientRequest request,

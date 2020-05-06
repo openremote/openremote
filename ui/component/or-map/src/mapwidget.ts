@@ -113,7 +113,12 @@ export class MapWidget {
     }
 
     public async loadViewSettings() {
-        const settingsResponse = await manager.rest.api.MapResource.getSettingsJs();
+        let settingsResponse;
+        if (this._type === Type.RASTER) {
+            settingsResponse = await manager.rest.api.MapResource.getSettingsJs();
+        } else {
+            settingsResponse = await manager.rest.api.MapResource.getSettings();
+        }
         const settings = settingsResponse.data as any;
 
         // Load options for current realm or fallback to default if exist
@@ -183,11 +188,8 @@ export class MapWidget {
             this._styleParent.appendChild(style);
 
             const map: typeof import("mapbox-gl") = await import(/* webpackChunkName: "mapbox-gl" */ "mapbox-gl");
-            const settingsResponse = await manager.rest.api.MapResource.getSettings();
-            const settings = settingsResponse.data as any;
-
-            // Load options for current realm or fallback to default if exist
-            this._viewSettings = settings.options ? settings.options[manager.getRealm() || "default"] ? settings.options[manager.getRealm() || "default"] : settings.options.default : null;
+            const settings = await this.loadViewSettings();
+                
             const options: OptionsGL = {
                 attributionControl: true,
                 container: this._mapContainer,

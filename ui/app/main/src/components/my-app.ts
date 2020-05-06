@@ -9,6 +9,7 @@ import "../components/pages/page-map";
 import "../components/pages/page-assets";
 import "../components/pages/page-rules";
 import "../components/pages/page-insights";
+import "../components/pages/page-logs";
 import i18next from "i18next";
 import {connect} from "pwa-helpers/connect-mixin";
 
@@ -87,6 +88,7 @@ class MyApp extends connect(store)(LitElement) {
                 ${this.page === "assets" ? html`<page-assets class="page"></page-assets>` : ``}
                 ${this.page === "rules" ? html`<page-rules class="page"></page-rules>` : ``}
                 ${this.page === "insights" ? html`<page-insights class="page"></page-insights>` : ``}
+                ${this.page === "logs" ? html`<page-logs class="page"></page-logs>` : ``}
             </main>
         `;
     }
