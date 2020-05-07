@@ -21,18 +21,14 @@ package org.openremote.manager.setup;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.setup.builtin.BuiltinSetupTasks;
-import sun.plugin2.message.Message;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.logging.Logger;
-
-import static org.openremote.manager.agent.AgentService.AGENT_SERVICE_PRIORITY;
 
 /**
  * Executes setup tasks for a clean installation when the application starts.

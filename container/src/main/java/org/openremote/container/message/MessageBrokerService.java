@@ -56,6 +56,7 @@ public class MessageBrokerService implements ContainerService {
         return PRIORITY;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void init(Container container) throws Exception {
 
