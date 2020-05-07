@@ -43,6 +43,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -66,7 +67,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
         return withAgentConnector(agentId, agentConnector -> {
             LOG.finer("Asking connector '" + agentConnector.value.getClass().getSimpleName() + "' for protocol configurations");
             return agentConnector.value.getProtocolDescriptors(agentConnector.key);
-        });
+        }, () -> new ProtocolDescriptor[0]);
     }
 
     @Override
@@ -88,7 +89,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
         List<AgentStatusEvent> result = withAgentConnector(agentId, agentConnector -> {
             LOG.finer("Asking connector '" + agentConnector.value.getClass().getSimpleName() + "' for connection status");
             return agentConnector.value.getConnectionStatus(agentConnector.key);
-        });
+        }, Collections::emptyList);
 
         // Compress response (the request attribute enables the interceptor)
         request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
@@ -123,7 +124,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
 
     @Override
     public AttributeValidationResult validateProtocolConfiguration(RequestParams requestParams, String agentId, AssetAttribute protocolConfiguration) {
-        return withAgentConnector(agentId, agentConnector -> agentConnector.value.validateProtocolConfiguration(protocolConfiguration));
+        return withAgentConnector(agentId, agentConnector -> agentConnector.value.validateProtocolConfiguration(protocolConfiguration), () -> null);
     }
 
     @Override
@@ -144,7 +145,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
                     "Asking connector '" + agentConnector.value.getClass().getSimpleName()
                         + "' to do linked attribute discovery for protocol configuration: " + protocolConfigRef);
                 return agentConnector.value.getDiscoveredLinkedAttributes(protocolConfigRef);
-            }
+            }, () -> new AssetTreeNode[0]
         );
 
         persistAssets(assets, parentAsset, realm);
@@ -173,14 +174,14 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
                         + "' to do linked attribute discovery using uploaded file for protocol configuration: " + protocolConfigRef
                 );
                 return agentConnector.value.getDiscoveredLinkedAttributes(protocolConfigRef, fileInfo);
-            }
+            }, () -> new AssetTreeNode[0]
         );
 
         persistAssets(assets, parentAsset, realm);
         return assets;
     }
 
-    protected <T> T withAgentConnector(String agentId, Function<Pair<Asset, AgentConnector>, T> function) {
+    protected <T> T withAgentConnector(String agentId, Function<Pair<Asset, AgentConnector>, T> function, Supplier<T> failureFunction) {
         return Optional.ofNullable(agentService.getAgents().get(agentId))
             .filter(asset -> asset.getWellKnownType() == AssetType.AGENT)
             .map(agent -> new Pair<>(agent, agentService.getAgentConnector(agent).orElseThrow(() -> {
@@ -188,10 +189,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
                 return new IllegalStateException("Agent connector not found or returned invalid response");
             })))
             .map(function)
-            .orElseThrow(() -> {
-                LOG.warning("Failed to find agent with ID: " + agentId);
-                return new IllegalArgumentException("Agent not found");
-            });
+            .orElseGet(failureFunction);
     }
 
     // TODO: Allow user to select which assets/attributes are actually added to the DB

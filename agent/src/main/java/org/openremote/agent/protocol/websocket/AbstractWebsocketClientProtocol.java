@@ -364,10 +364,10 @@ public abstract class AbstractWebsocketClientProtocol<T> extends AbstractIoClien
                 invocation = target.request().build(httpSubscription.method.toString(), Entity.entity(httpSubscription.body, httpSubscription.contentType));
             }
             Response response = invocation.invoke();
+            response.close();
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                 LOG.warning("WebsocketHttpSubscription returned an un-successful response code: " + response.getStatus());
             }
-            response.close();
         } else {
             websocketClient.sendMessage(subscription.body);
         }

@@ -24,7 +24,6 @@ import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.socket.WebsocketConstants;
@@ -127,13 +126,13 @@ public class ClientEventService implements ContainerService {
             container.getService(ManagerExecutorService.class)
         );
 
-        MessageBrokerSetupService messageBrokerSetupService = container.getService(MessageBrokerSetupService.class);
-        messageBrokerSetupService.getContext().getTypeConverterRegistry().addTypeConverters(
+        MessageBrokerService messageBrokerService = container.getService(MessageBrokerService.class);
+        messageBrokerService.getContext().getTypeConverterRegistry().addTypeConverters(
             new EventTypeConverters()
         );
 
         // TODO: Remove prefix and just use event type then use a subscription wrapper to pass subscription ID around
-        messageBrokerSetupService.getContext().addRoutes(new RouteBuilder() {
+        messageBrokerService.getContext().addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
 

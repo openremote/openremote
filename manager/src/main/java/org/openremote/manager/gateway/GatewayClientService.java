@@ -27,7 +27,7 @@ import org.openremote.agent.protocol.io.AbstractNettyIoClient;
 import org.openremote.agent.protocol.websocket.WebsocketIoClient;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
@@ -91,7 +91,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             new GatewayClientResourceImpl(timerService, identityService, this)
         );
 
-        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }
 
     @Override
@@ -331,7 +331,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         return new ArrayList<>(connectionRealmMap.values());
     }
 
-    protected void setConnection(GatewayConnection connection) {
+    public void setConnection(GatewayConnection connection) {
         LOG.info("Updating/creating gateway connection: " + connection);
         persistenceService.doTransaction(em -> em.merge(connection));
     }

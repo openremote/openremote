@@ -31,7 +31,6 @@ import org.openremote.agent.protocol.ProtocolAssetService;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingException;
@@ -158,7 +157,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
     @Override
     public void start(Container container) throws Exception {
-        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
         // Load all protocol instances and fail hard and fast when a duplicate is found
         Collection<Protocol> discoveredProtocols = container.getServices(Protocol.class);
@@ -541,7 +540,19 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     protected String getAgentAncestorId(Asset asset) {
         if (asset.getPath() == null) {
             // Fully load
-            asset = assetStorageService.find(asset.getId());
+            Asset fullyLoaded = assetStorageService.find(asset.getId());
+            if (fullyLoaded != null) {
+                asset = fullyLoaded;
+            } else if (!TextUtil.isNullOrEmpty(asset.getParentId())) {
+                fullyLoaded = assetStorageService.find(asset.getParentId());
+                List<String> path = new ArrayList<>(Arrays.asList(fullyLoaded.getPath()));
+                path.add(0, asset.getId());
+                asset.setPath(path.toArray(new String[0]));
+            }
+        }
+
+        if (asset.getPath() == null) {
+            return null;
         }
 
         return Arrays.stream(asset.getPath())

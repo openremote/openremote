@@ -25,7 +25,6 @@ import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
@@ -251,7 +250,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 this)
         );
 
-        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }
 
     @Override

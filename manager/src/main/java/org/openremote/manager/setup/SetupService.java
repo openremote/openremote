@@ -21,8 +21,11 @@ package org.openremote.manager.setup;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.setup.builtin.BuiltinSetupTasks;
+import sun.plugin2.message.Message;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +56,7 @@ public class SetupService implements ContainerService {
 
     @Override
     public int getPriority() {
-        return AGENT_SERVICE_PRIORITY - 1; // Start before agent service to ensure agents etc. are available
+        return IdentityService.PRIORITY + 10; // Start just after identity service so we know what tasks to run
     }
 
     @Override

@@ -26,7 +26,6 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.concurrent.GlobalLock;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
@@ -109,7 +108,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractProtocol.class);
-    public static final int PRIORITY = ContainerService.DEFAULT_PRIORITY - 100;
+    public static final int PRIORITY = MessageBrokerService.PRIORITY + 10;
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected final Set<AttributeRef> dynamicAttributes = new HashSet<>();
     protected final Map<AttributeRef, LinkedProtocolInfo> linkedProtocolConfigurations = new HashMap<>();
@@ -132,13 +131,7 @@ public abstract class AbstractProtocol implements Protocol {
         executorService = container.getService(ProtocolExecutorService.class);
         assetService = container.getService(ProtocolAssetService.class);
         predictedAssetService = container.getService(ProtocolPredictedAssetService.class);
-    }
-
-    @Override
-    final public void start(Container container) throws Exception {
-        LOG.fine("Starting protocol: " + getProtocolName());
-        this.messageBrokerContext = container.getService(MessageBrokerSetupService.class).getContext();
-        this.producerTemplate = container.getService(MessageBrokerService.class).getProducerTemplate();
+        messageBrokerContext = container.getService(MessageBrokerService.class).getContext();
 
         withLock(getProtocolName() + "::start", () -> {
             try {
@@ -162,6 +155,12 @@ public abstract class AbstractProtocol implements Protocol {
                 throw new RuntimeException(ex);
             }
         });
+    }
+
+    @Override
+    final public void start(Container container) throws Exception {
+        LOG.fine("Starting protocol: " + getProtocolName());
+        this.producerTemplate = container.getService(MessageBrokerService.class).getProducerTemplate();
     }
 
     @Override

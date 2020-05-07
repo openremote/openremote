@@ -378,11 +378,15 @@ public class ControllerProtocol extends AbstractProtocol {
 
             try {
                 response = checkRequest.invoke(null);
+                responseConsumer.accept(response);
             } catch (ProcessingException e) {
                 LOG.log(Level.SEVERE, "### Initial status for " + attributeRef.getAttributeName() + " [" + deviceName + "," + sensorName + "] doesn't succeed", e);
+            } finally {
+                if (response != null) {
+                    response.close();
+                }
             }
 
-            responseConsumer.accept(response);
         });
     }
 
@@ -658,11 +662,14 @@ public class ControllerProtocol extends AbstractProtocol {
 
             try {
                 response = checkRequest.invoke(null);
+                responseConsumer.accept(response);
             } catch (ProcessingException e) {
                 LOG.log(Level.SEVERE, "### Check for " + this.controllersMap.get(protocolRef).getControllerConfigName() + " doesn't succeed", e);
+            } finally {
+                if (response != null) {
+                    response.close();
+                }
             }
-
-            responseConsumer.accept(response);
         });
     }
 
