@@ -265,10 +265,12 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
             this._loadData();
         }
 
-        if (this.live) {
-            this._subscribeEvents();
-        } else {
-            this._unsubscribeEvents();
+        if (_changedProperties.has("live")) {
+            if (this.live) {
+                this._subscribeEvents();
+            } else {
+                this._unsubscribeEvents();
+            }
         }
 
         return super.shouldUpdate(_changedProperties);

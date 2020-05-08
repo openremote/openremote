@@ -45,6 +45,9 @@ router.on({
     "logs": (params, query) => {
         store.dispatch(updatePage("logs"));
     },
+    "gateway": (params, query) => {
+        store.dispatch(updatePage("gateway"));
+    },
     "*": (params, query) => {
         store.dispatch(updatePage("map"));
     }
