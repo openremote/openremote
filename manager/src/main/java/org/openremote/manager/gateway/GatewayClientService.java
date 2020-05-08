@@ -42,10 +42,12 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.gateway.GatewayConnection;
-import org.openremote.model.gateway.GatewayDisconnectEvent;
+import org.openremote.model.gateway.GatewayConnectionStatusEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.syslog.SyslogEvent;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -92,6 +94,21 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         );
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
+
+        clientEventService.addSubscriptionAuthorizer((authContext, eventSubscription) -> {
+            if (!eventSubscription.isEventType(GatewayConnectionStatusEvent.class)) {
+                return false;
+            }
+
+            // If not a super user force a filter for the users realm
+            if (!authContext.isSuperUser()) {
+                @SuppressWarnings("unchecked")
+                EventSubscription<GatewayConnectionStatusEvent> subscription = (EventSubscription<GatewayConnectionStatusEvent>) eventSubscription;
+                subscription.setFilter(new TenantFilter<>(authContext.getAuthenticatedRealm()));
+            }
+
+            return true;
+        });
     }
 
     @Override
@@ -150,7 +167,9 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                     }
                 case CREATE:
                     connectionRealmMap.put(connection.getLocalRealm(), connection);
-                    clientRealmMap.put(connection.getLocalRealm(), createGatewayClient(connection));
+                    if (!connection.isDisabled()) {
+                        clientRealmMap.put(connection.getLocalRealm(), createGatewayClient(connection));
+                    }
                     break;
                 case DELETE:
                     connectionRealmMap.remove(connection.getLocalRealm());
@@ -242,6 +261,8 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         LOG.info("Destroying gateway IO client: " + connection);
         try {
             client.disconnect();
+            client.removeAllConnectionStatusConsumers();
+            client.removeAllMessageConsumers();
         } catch (Exception e) {
             LOG.log(Level.WARNING, "An exception occurred whilst trying to disconnect the gateway IO client", e);
         }
@@ -250,6 +271,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
     protected void onGatewayClientConnectionStatusChanged(GatewayConnection connection, ConnectionStatus connectionStatus) {
         LOG.info("Connection status change for gateway IO client '" + connectionStatus + "': " + connection);
+        clientEventService.publishEvent(new GatewayConnectionStatusEvent(timerService.getCurrentTimeMillis(), connection.getLocalRealm(), connectionStatus));
     }
 
     protected void onCentralManagerMessage(GatewayConnection connection, String message) {
@@ -358,5 +380,20 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         }
 
         return true;
+    }
+
+    protected ConnectionStatus getConnectionStatus(String realm) {
+        GatewayConnection connection = connectionRealmMap.get(realm);
+
+        if (connection == null) {
+            return null;
+        }
+
+        if (connection.isDisabled()) {
+            return ConnectionStatus.DISABLED;
+        }
+
+        WebsocketIoClient<String> client = clientRealmMap.get(realm);
+        return client != null ? client.getConnectionStatus() : null;
     }
 }
