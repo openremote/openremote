@@ -168,7 +168,7 @@ const style = css`
         color: red;
     }
     .delta.delta-plus {     
-       color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
+        color: #4D9D2A;
     }
     
 `;
