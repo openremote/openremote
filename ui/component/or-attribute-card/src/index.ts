@@ -122,7 +122,7 @@ const style = css`
         align-items: center;
     }
     
-    .now {
+    .period-label {
         color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
     }
     
@@ -196,6 +196,7 @@ export class OrAttributeCard extends LitElement {
 
     private period: moment.unitOfTime.Base = "month";
     private now?: Date = new Date();
+    private currentPeriod?: { start: number; end: number };
 
     private asset: Asset = {};
     private formattedMainValue: {value: number|undefined, unit: string, formattedValue: string} = {
@@ -354,8 +355,8 @@ export class OrAttributeCard extends LitElement {
                         </div>
                         <div class="bottom-row">
                             <div class="date-range-wrapper">
-                                <span class="now">${Intl.DateTimeFormat(manager.language).format(this.now)}</span>
-                                <span class="now">${Intl.DateTimeFormat(manager.language).format(this.now)}</span>
+                                <span class="period-label">${Intl.DateTimeFormat(manager.language).format(this.currentPeriod!.start)}</span>
+                                <span class="period-label">${Intl.DateTimeFormat(manager.language).format(this.currentPeriod!.end)}</span>
                             </div>
                             <div class="period-selector-wrapper">
                                 ${getContentWithMenuTemplate(
@@ -412,7 +413,7 @@ export class OrAttributeCard extends LitElement {
 
         this.asset = await this.getAssetById(this.assetId!);
 
-        const currentPeriod = {
+        this.currentPeriod = {
             start: thisMoment.startOf(this.period).toDate().getTime(),
             end: thisMoment.endOf(this.period).toDate().getTime()
         };
@@ -421,7 +422,7 @@ export class OrAttributeCard extends LitElement {
             end: thisMoment.clone().subtract(1, this.period).endOf(this.period).toDate().getTime()
         };
 
-        const p1 = this.getDatapointsByAttribute(this.assetId!, currentPeriod.start, currentPeriod.end)
+        const p1 = this.getDatapointsByAttribute(this.assetId!, this.currentPeriod.start, this.currentPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
                 this.mainValue = this.getHighestValue(this.sanitiseDataPoints(this.data));
