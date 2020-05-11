@@ -137,6 +137,7 @@ const style = css`
     
     .chart-wrapper {
         flex: 1;
+        height: 75%;
     }
     
     .delta-wrapper {
@@ -343,7 +344,7 @@ export class OrAttributeCard extends LitElement {
                             <span class="main-number-unit">${this.formattedMainValue!.unit}</span>
                         </div>
                         <div class="center-row">
-                            <div class="chart-wrapper" style="width: 80%;height: 50%;">
+                            <div class="chart-wrapper">
                                 <canvas id="chart"></canvas>
                             </div>
                             <div class="delta-wrapper">
