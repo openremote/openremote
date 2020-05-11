@@ -137,6 +137,7 @@ const style = css`
     
     .chart-wrapper {
         flex: 1;
+        width: 75%;
         height: 75%;
     }
     
