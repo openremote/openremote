@@ -137,12 +137,12 @@ const style = css`
     
     .chart-wrapper {
         flex: 1;
-        width: 75%;
+        width: 65%;
         height: 75%;
     }
     
     .delta-wrapper {
-        flex: 0 0 80px;
+        flex: 0 0 75px;
         text-align: right;
     }
     
@@ -153,7 +153,7 @@ const style = css`
     }
     
     .period-selector-wrapper {
-        flex: 0 0 80px;
+        flex: 0 0 75px;
     }
     .period-selector {
         position: absolute;
