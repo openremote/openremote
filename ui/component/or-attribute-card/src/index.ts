@@ -275,7 +275,7 @@ export class OrAttributeCard extends LitElement {
             <div class="panel" id="attribute-card">
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
-                        <span class="panel-title-text">${this.asset.name} - ${i18next.t(this.attributeName)} - ${i18next.t(this.attributeName)}</span>
+                        <span class="panel-title-text">${this.asset.name} - ${i18next.t(this.attributeName)}</span>
                         <or-icon icon="plus-minus"/>
                     </div>
                     <div class="panel-content">
