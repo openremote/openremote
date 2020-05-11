@@ -101,7 +101,7 @@ const style = css`
     .top-row {
         width: 100%;
         display: flex;
-        flex: 0 0 40%;
+        flex: 0 0 60px;
         align-items: center;
         justify-content: center;
     }
@@ -109,15 +109,14 @@ const style = css`
     .center-row {
         width: 100%;
         display: flex;
-        flex: 0 0 40%;
-        align-items: baseline;
-        justify-content: center;
+        flex: 1;
+        align-items: center;
     }
     
     .bottom-row {
         width: 100%;
         display: flex;
-        flex: 0 0 20%;
+        flex: 0 0 24px;
         align-items: center;
     }
     
@@ -135,6 +134,27 @@ const style = css`
     }
     
     .chart-wrapper {
+        flex: 1;
+    }
+    
+    .delta-wrapper {
+        flex: 0 0 80px;
+        text-align: right;
+    }
+    
+    .date-range-wrapper {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .period-selector-wrapper {
+        flex: 0 0 80px;
+    }
+    .period-selector {
+        position: absolute;
+        right: 15px;
+        bottom: 17px;
     }
     
     .delta {
@@ -321,22 +341,29 @@ export class OrAttributeCard extends LitElement {
                             <span class="main-number-unit">${this.formattedMainValue!.unit}</span>
                         </div>
                         <div class="center-row">
-                            <div class="chart-wrapper" style="height: 50%;">
+                            <div class="chart-wrapper" style="width: 80%;height: 50%;">
                                 <canvas id="chart"></canvas>
                             </div>
-                            <span class=${classMap({"delta": true, "delta-min": this.delta.val! < 0, "delta-plus": this.delta.val! > 0})}>${this.deltaPlus}${this.delta.val}${this.delta.unit}</span>
+                            <div class="delta-wrapper">
+                                <span class=${classMap({"delta": true, "delta-min": this.delta.val! < 0, "delta-plus": this.delta.val! > 0})}>${this.deltaPlus}${this.delta.val}${this.delta.unit}</span>
+                            </div>
                         </div>
                         <div class="bottom-row">
-                            <span class="now">${Intl.DateTimeFormat(manager.language).format(this.now)}</span>
-                            ${getContentWithMenuTemplate(
-                                html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-input>`,
-                                [{value: "hour", text: ""}, {value: "day", text: ""}, {value: "week", text: ""}, {value: "month", text: ""}, {value: "year", text: ""}]
-                                    .map((option) => {
-                                        option.text = i18next.t(option.value);
-                                        return option;
-                                    }),
-                                this.period,
-                                (value) => this._setPeriodOption(value))}
+                            <div class="date-range-wrapper">
+                                <span class="now">${Intl.DateTimeFormat(manager.language).format(this.now)}</span>
+                                <span class="now">${Intl.DateTimeFormat(manager.language).format(this.now)}</span>
+                            </div>
+                            <div class="period-selector-wrapper">
+                                ${getContentWithMenuTemplate(
+                                    html`<or-input class="period-selector" .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-input>`,
+                                    [{value: "hour", text: ""}, {value: "day", text: ""}, {value: "week", text: ""}, {value: "month", text: ""}, {value: "year", text: ""}]
+                                        .map((option) => {
+                                            option.text = i18next.t(option.value);
+                                            return option;
+                                        }),
+                                    this.period,
+                                    (value) => this._setPeriodOption(value))}
+                            </div>
                         </div>
                     </div>
                 </div>
