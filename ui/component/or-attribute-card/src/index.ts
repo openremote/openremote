@@ -55,29 +55,23 @@ const style = css`
         border-radius: 5px;
         max-width: 100%;
         position: relative;
-        height: 250px;
+        padding: var(--internal-or-asset-viewer-panel-padding);
     }
     .panel.panel-empty {
         display: flex;
     }
     .panel.panel-empty .panel-content-wrapper {
-        display: flex;
         align-items: center;
         width: 100%;
     }
     .panel.panel-empty .panel-content {
         align-items: center;
-        width: 100%;
-        flex-direction: column;
     }
     
     .panel-content-wrapper {
-        padding: var(--internal-or-asset-viewer-panel-padding);
-    }
-    
-    .panel-content {
+        height: 200px;
         display: flex;
-        flex-wrap: wrap;
+        flex-direction: column;
     }
         
     .panel-title {
@@ -87,7 +81,6 @@ const style = css`
         font-weight: bolder;
         line-height: 1em;
         color: var(--internal-or-asset-viewer-title-text-color);
-        margin-bottom: 25px;
         flex: 0 0 auto;
     }
     
@@ -98,23 +91,33 @@ const style = css`
         overflow: hidden;
     }
     
+    .panel-content {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        flex: 1;
+    }
+    
     .top-row {
         width: 100%;
         display: flex;
-        justify-content: space-between;
-        align-items: baseline;
+        flex: 0 0 40%;
+        align-items: center;
+        justify-content: center;
     }
     
     .center-row {
-        display: flex;
-        align-items: baseline;
         width: 100%;
+        display: flex;
+        flex: 0 0 40%;
+        align-items: baseline;
         justify-content: center;
     }
     
     .bottom-row {
-        display: flex;
         width: 100%;
+        display: flex;
+        flex: 0 0 20%;
         align-items: center;
     }
     
@@ -127,15 +130,14 @@ const style = css`
     }
     
     .main-number-unit {
+        font-size: 24px;
         color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
     }
     
     .chart-wrapper {
-        height: 100px;
     }
     
     .delta {
-        flex: 0 0 50px;
         font-weight: bold;
     }
     .delta.delta-min {
@@ -315,9 +317,19 @@ export class OrAttributeCard extends LitElement {
                     </div>
                     <div class="panel-content">
                         <div class="top-row">
+                            <span class="main-number">${this.formattedMainValue!.value}</span>
+                            <span class="main-number-unit">${this.formattedMainValue!.unit}</span>
+                        </div>
+                        <div class="center-row">
+                            <div class="chart-wrapper" style="height: 50%;">
+                                <canvas id="chart"></canvas>
+                            </div>
+                            <span class=${classMap({"delta": true, "delta-min": this.delta.val! < 0, "delta-plus": this.delta.val! > 0})}>${this.deltaPlus}${this.delta.val}${this.delta.unit}</span>
+                        </div>
+                        <div class="bottom-row">
                             <span class="now">${Intl.DateTimeFormat(manager.language).format(this.now)}</span>
                             ${getContentWithMenuTemplate(
-                                html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-input>`, 
+                                html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-input>`,
                                 [{value: "hour", text: ""}, {value: "day", text: ""}, {value: "week", text: ""}, {value: "month", text: ""}, {value: "year", text: ""}]
                                     .map((option) => {
                                         option.text = i18next.t(option.value);
@@ -325,16 +337,6 @@ export class OrAttributeCard extends LitElement {
                                     }),
                                 this.period,
                                 (value) => this._setPeriodOption(value))}
-                        </div>
-                        <div class="center-row">
-                            <span class="main-number">${this.formattedMainValue!.value}</span>
-                            <span class="main-number-unit">${this.formattedMainValue!.unit}</span>
-                        </div>
-                        <div class="bottom-row">
-                            <div class="chart-wrapper" style="flex: 1;">
-                                <canvas id="chart"></canvas>
-                            </div>
-                            <span class=${classMap({"delta": true, "delta-min": this.delta.val! < 0, "delta-plus": this.delta.val! > 0})}>${this.deltaPlus}${this.delta.val}${this.delta.unit}</span>
                         </div>
                     </div>
                 </div>
