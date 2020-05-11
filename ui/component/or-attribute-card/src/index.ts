@@ -30,6 +30,19 @@ const style = css`
         position: relative;
         height: 250px;
     }
+    .panel.panel-empty {
+        display: flex;
+    }
+    .panel.panel-empty .panel-content-wrapper {
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+    .panel.panel-empty .panel-content {
+        align-items: center;
+        width: 100%;
+        flex-direction: column;
+    }
     
     .panel-content-wrapper {
         padding: var(--internal-or-asset-viewer-panel-padding);
@@ -238,9 +251,9 @@ export class OrAttributeCard extends LitElement {
             return html`
                 <div class="panel panel-empty">
                     <div class="panel-content-wrapper">
-                        <div class="panel-title">
-                            <span class="panel-title-text">${this.asset.name}</span>
-                            <or-icon icon="plus-minus"/>
+                        <div class="panel-content">
+                            <or-icon icon="plus"></or-icon>
+                            <span>${i18next.t("addAttribute")}</span>
                         </div>
                     </div>
                 </div>
