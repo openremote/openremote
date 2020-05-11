@@ -40,12 +40,12 @@ public class MqttConnector {
         connectionMap = new HashMap<>();
     }
 
-    protected MqttConnection createConnection(String realm, String clientId, byte[] password) {
+    protected MqttConnection createConnection(String clientId, String username, byte[] password) {
         if (connectionMap.containsKey(clientId)) {
             LOG.info("Connection already present. Not adding connection");
             return null;
         }
-        MqttConnection connection = new MqttConnection(realm, clientId, password, new LinkedHashSet<>());
+        MqttConnection connection = new MqttConnection(clientId, username, password, new LinkedHashSet<>());
         connectionMap.put(clientId, connection);
         return connection;
     }

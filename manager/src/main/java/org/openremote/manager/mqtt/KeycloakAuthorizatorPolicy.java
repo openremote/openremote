@@ -8,9 +8,7 @@ import org.keycloak.exceptions.TokenNotActiveException;
 import org.keycloak.representations.AccessToken;
 import org.openremote.container.security.ClientCredentialsAuthFrom;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
-import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.event.shared.TenantFilter;
@@ -20,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.mqtt.KeycloakAuthenticator.MQTT_CLIENT_ID_SEPARATOR;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
 public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
@@ -40,34 +37,34 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
     }
 
     @Override
-    public boolean canWrite(Topic topic, String clientId, String realm) {
-        return verifyRights(topic, clientId, realm, ClientRole.WRITE_ASSETS);
+    public boolean canWrite(Topic topic, String username, String clientId) {
+        return verifyRights(topic, username, clientId, ClientRole.WRITE_ASSETS);
     }
 
     @Override
-    public boolean canRead(Topic topic, String clientId, String realm) {
-        return verifyRights(topic, clientId, realm, ClientRole.READ_ASSETS);
+    public boolean canRead(Topic topic, String username, String clientId) {
+        return verifyRights(topic, username, clientId, ClientRole.READ_ASSETS);
     }
 
-    private boolean verifyRights(Topic topic, String clientId, String realm, ClientRole ...roles) {
-        int indexSplit = realm.indexOf(MQTT_CLIENT_ID_SEPARATOR);
-        if (indexSplit > 0) {
-            realm = realm.substring(0, indexSplit);
-        }
-
+    private boolean verifyRights(Topic topic, String username, String clientId, ClientRole... roles) {
         MqttConnector.MqttConnection connection = mqttConnector.getConnection(clientId);
         if (connection == null) {
             LOG.info("No connection found for clientId: " + clientId);
             return false;
         }
 
-        if (topic.isEmpty() || topic.getTokens().size() > 2) {
-            LOG.info("Topic may not be empty and should have the following format: asset/{assetId}");
+        if (!connection.username.equals(username)) {
+            LOG.info("Username mismatch");
             return false;
         }
 
-        if (!topic.headToken().toString().equals("asset")) {
-            LOG.info("Topic should have the following format: asset/{assetId}");
+        if (topic.isEmpty() || topic.getTokens().size() > 2) {
+            LOG.info("Topic may not be empty and should have the following format: assets/{assetId}");
+            return false;
+        }
+
+        if (!topic.headToken().toString().equals("assets")) {
+            LOG.info("Topic should have the following format: assets/{assetId}");
             return false;
         }
 
@@ -78,20 +75,20 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             return false;
         }
 
-        if (!asset.getRealm().equals(realm)) {
-            LOG.info("Asset not in same realm");
+        if (!asset.getRealm().equals(connection.realm)) {
+            LOG.info("Asset not in same clientId");
             return false;
         }
         try {
-            AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID));
-            return identityProvider.canSubscribeWith(new AccessTokenAuthContext(realm, accessToken), new TenantFilter(realm), roles);
+            AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
+            return identityProvider.canSubscribeWith(new AccessTokenAuthContext(connection.realm, accessToken), new TenantFilter(connection.realm), roles);
         } catch (VerificationException e) {
             if (e instanceof TokenNotActiveException) {
                 String suppliedClientSecret = new String(connection.password, StandardCharsets.UTF_8);
-                connection.accessToken = identityProvider.getKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthFrom(MqttBrokerService.MQTT_KEYCLOAK_CLIENT_ID, suppliedClientSecret)).getToken();
+                connection.accessToken = identityProvider.getKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthFrom(connection.username, suppliedClientSecret)).getToken();
                 try {
-                    AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID));
-                    return identityProvider.canSubscribeWith(new AccessTokenAuthContext(realm, accessToken), new TenantFilter(realm), roles);
+                    AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
+                    return identityProvider.canSubscribeWith(new AccessTokenAuthContext(connection.realm, accessToken), new TenantFilter(connection.realm), roles);
                 } catch (VerificationException verificationException) {
                     LOG.log(Level.INFO, "Couldn't verify token", verificationException);
                     return false;

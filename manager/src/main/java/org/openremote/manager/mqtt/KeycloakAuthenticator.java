@@ -58,16 +58,16 @@ public class KeycloakAuthenticator implements IAuthenticator {
             return false;
         }
 
-        try {
-            ClientResource clientResource = realmResource.clients().get(clientId);
-            String suppliedClientSecret = new String(password, StandardCharsets.UTF_8);
-            String clientSecret = clientResource.getSecret().getValue();
-
-            return suppliedClientSecret.equals(clientSecret);
-        } catch (NotFoundException ex) {
+        List<ClientRepresentation> clientRepresentations = realmResource.clients().findByClientId(clientId);
+        if (clientRepresentations.isEmpty()) {
             LOG.info("Client not found");
+            return false;
         }
-        return false;
+
+        String suppliedClientSecret = new String(password, StandardCharsets.UTF_8);
+        String clientSecret = realmResource.clients().get(clientRepresentations.get(0).getId()).getSecret().getValue();
+
+        return suppliedClientSecret.equals(clientSecret);
     }
 
     private ClientRequestInfo getClientRequestInfo() {

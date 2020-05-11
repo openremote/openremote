@@ -29,10 +29,10 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.AssetUpdateProcessor;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
@@ -49,11 +49,11 @@ import static org.openremote.container.persistence.PersistenceEvent.isPersistenc
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 
-public class MqttBrokerService extends RouteBuilder implements ContainerService, AssetUpdateProcessor {
+public class MqttBrokerService extends RouteBuilder implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(MqttBrokerService.class.getName());
 
-    public static final String MQTT_KEYCLOAK_CLIENT_ID = "mqtt";
+    public static final String MQTT_KEYCLOAK_CLIENT_ID = UniqueIdentifierGenerator.generateId("mqtt");
     public static final String MQTTSERVER_LISTEN_HOST = "MQTTSERVER_LISTEN_HOST";
     public static final String MQTTSERVER_LISTEN_PORT = "MQTTSERVER_LISTEN_PORT";
 
@@ -104,7 +104,7 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         properties.setProperty(BrokerConstants.HOST_PROPERTY_NAME, host);
         properties.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(port));
         properties.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, String.valueOf(false));
-        List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new AssetInterceptHandler(assetStorageService, assetProcessingService, identityService, identityProvider, clientEventService, mqttConnector));
+        List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new AssetInterceptHandler(assetStorageService, assetProcessingService, identityService, identityProvider, clientEventService, mqttConnector, this::sendAssetUpdateMessage));
         mqttBroker.startServer(new MemoryConfig(properties), interceptHandlers, null, new KeycloakAuthenticator(identityProvider), new KeycloakAuthorizatorPolicy(identityProvider, assetStorageService, mqttConnector));
         LOG.fine("Started MQTT broker");
     }
@@ -137,24 +137,12 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         }
     }
 
-    @Override
-    public boolean processAssetUpdate(EntityManager em, Asset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+    public void sendAssetUpdateMessage(String clientId, Asset asset) {
         MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
                 .qos(MqttQoS.AT_MOST_ONCE)
-
-                .topicName(asset.getId())
-                .retained(true)
+                .topicName("asset/" + asset.getId())
                 .build();
 
-//        mqttBroker.internalPublish();
-        mqttBroker.listConnectedClients().forEach(clientDescriptor -> {
-        });
-        return false;
-    }
-
-    protected void acceptConnection(String clientId) {
-        MqttConnAckMessage ackMessage = MqttMessageBuilders.connAck()
-                .returnCode(MqttConnectReturnCode.CONNECTION_REFUSED_BAD_USER_NAME_OR_PASSWORD)
-                .build();
+        mqttBroker.internalPublish(publishMessage, clientId);
     }
 }
