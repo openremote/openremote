@@ -41,6 +41,8 @@ const style = css`
     }
         
     .panel-title {
+        display: flex;
+        align-items: center;
         text-transform: uppercase;
         font-weight: bolder;
         line-height: 1em;
@@ -49,16 +51,11 @@ const style = css`
         flex: 0 0 auto;
     }
     
-    .panel.panel-empty {
-        display: flex;
-        align-items: center;
-    }
-    .panel.panel-empty .panel-content-wrapper {
-        width: 100%;
-    }
-    .panel.panel-empty .panel-content {
-        text-align: center;
-        display: block;
+    .panel-title-text {
+        flex: 1;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
     }
     
     .top-row {
@@ -241,7 +238,8 @@ export class OrAttributeCard extends LitElement {
             return html`
                 <div class="panel panel-empty">
                     <div class="panel-content-wrapper">
-                        <div class="panel-content">
+                        <div class="panel-title">
+                            <span class="panel-title-text">${this.asset.name}</span>
                             <or-icon icon="plus-minus"/>
                         </div>
                     </div>
@@ -253,7 +251,8 @@ export class OrAttributeCard extends LitElement {
             <div class="panel" id="attribute-card">
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
-                        ${this.asset.name} - ${i18next.t(this.attributeName)}
+                        <span class="panel-title-text">${this.asset.name} - ${i18next.t(this.attributeName)} - ${i18next.t(this.attributeName)}</span>
+                        <or-icon icon="plus-minus"/>
                     </div>
                     <div class="panel-content">
                         <div class="top-row">
