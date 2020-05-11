@@ -49,7 +49,7 @@ const style = css`
         display: grid;
         padding: 20px 20px;
         grid-gap: 10px;
-        grid-template-columns: 1fr 1fr 1fr 1fr;
+        grid-template-columns: repeat(auto-fill, minmax(calc(25% - 10px),1fr));
         
         width: 100%;
         max-width: 1400px;
@@ -64,12 +64,12 @@ const style = css`
     }
     @media only screen and (max-width: 1023px) {
         #container {
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fill, minmax(calc(50% - 10px),1fr));
         }
     }
     @media only screen and (max-width: 779px) {
         #container {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(auto-fill, minmax(calc(100% - 10px),1fr));
         }
     }
     
@@ -110,7 +110,7 @@ const viewerConfig: DataViewerConfig = {
             gridRowStart: "1"
         },
         defaults: [{
-            assetId:"4m4dWZUAV4IepHKc8Wwv85",
+            assetId:"35Q8RvOhBU3boCB6IUW1Dj",
             attributes: ["light1PowerConsumption"]
         }]
     }
@@ -138,6 +138,9 @@ class PageInsights extends connect(store)(LitElement)  {
                         <or-data-viewer .config="${viewerConfig}"></or-data-viewer>
                     </div>
                     <or-attribute-card .assetId="${viewerConfig.panels["chart"].defaults[0].assetId}" .attributeName="${viewerConfig.panels["chart"].defaults[0].attributes[0]}"></or-attribute-card>
+                    <or-attribute-card .assetId="${viewerConfig.panels["chart"].defaults[0].assetId}" .attributeName=""></or-attribute-card>
+                    <or-attribute-card .assetId="${viewerConfig.panels["chart"].defaults[0].assetId}" .attributeName=""></or-attribute-card>
+                    <or-attribute-card .assetId="${viewerConfig.panels["chart"].defaults[0].assetId}" .attributeName=""></or-attribute-card>
                 </div>
             </div>
         `;
