@@ -19,9 +19,11 @@
  */
 package org.openremote.manager.gateway;
 
+import org.openremote.agent.protocol.websocket.WebsocketIoClient;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.gateway.GatewayClientResource;
 import org.openremote.model.http.RequestParams;
@@ -55,6 +57,15 @@ public class GatewayClientResourceImpl extends ManagerWebResource implements Gat
         } catch (Exception e) {
             throw new WebApplicationException(e, BAD_REQUEST);
         }
+    }
+
+    @Override
+    public ConnectionStatus getConnectionStatus(RequestParams requestParams, String realm) {
+        if (!realm.equals(getAuthenticatedRealm()) && !isSuperUser()) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+        return gatewayClientService.getConnectionStatus(realm);
     }
 
     @Override

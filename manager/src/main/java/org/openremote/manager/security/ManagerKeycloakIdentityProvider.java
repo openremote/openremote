@@ -230,6 +230,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     .entity(response.getEntity())
                     .build()
             );
+        } else {
+            response.close();
         }
     }
 
@@ -243,6 +245,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     .entity(response.getEntity())
                     .build()
             );
+        } else {
+            response.close();
         }
     }
 
@@ -571,13 +575,15 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         // Fire persistence event although we don't use database for Tenant CUD but call Keycloak API
         PersistenceEvent persistenceEvent = new PersistenceEvent<>(cause, tenant, new String[0], null);
 
-        messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-            PersistenceEvent.PERSISTENCE_TOPIC,
-            ExchangePattern.InOnly,
-            persistenceEvent,
-            PersistenceEvent.HEADER_ENTITY_TYPE,
-            persistenceEvent.getEntity().getClass()
-        );
+        if (messageBrokerService.getProducerTemplate() != null) {
+            messageBrokerService.getProducerTemplate().sendBodyAndHeader(
+                PersistenceEvent.PERSISTENCE_TOPIC,
+                ExchangePattern.InOnly,
+                persistenceEvent,
+                PersistenceEvent.HEADER_ENTITY_TYPE,
+                persistenceEvent.getEntity().getClass()
+            );
+        }
 
         clientEventService.publishEvent(
             new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), tenant.getRealm(), null)
@@ -596,6 +602,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     .build()
             );
         } else {
+            response.close();
+
             componentRepresentation = realmResource.components()
                 .query(componentRepresentation.getParentId(),
                     componentRepresentation.getProviderType(),
@@ -608,6 +616,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                         .entity(response.getEntity())
                         .build()
                 );
+            } else {
+                response.close();
             }
         }
         return componentRepresentation.getId();
@@ -625,6 +635,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     .build()
             );
         } else {
+            response.close();
+
             componentRepresentation = realmResource.components()
                 .query(componentRepresentation.getParentId(),
                     componentRepresentation.getProviderType(),

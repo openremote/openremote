@@ -190,5 +190,12 @@
     "ENERGY": "%.1f",
     "CO2": "%.1f",
     "HUMIDITY": "%.1f"
-  }
+  },
+  "gatewayConnection": "Manager interconnect",
+  "secured": "Secured",
+  "clientSecret": "Client secret",
+  "clientId": "Client ID",
+  "realm": "Realm",
+  "port": "Port",
+  "host": "Hostname"
 }

@@ -24,7 +24,7 @@ import org.keycloak.admin.client.resource.ClientsResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.container.web.socket.WebsocketConstants;
@@ -36,6 +36,7 @@ import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
@@ -53,6 +54,7 @@ import javax.ws.rs.core.Response;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -107,7 +109,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         } else {
             active = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
-            container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+            container.getService(MessageBrokerService.class).getContext().addRoutes(this);
         }
     }
 
@@ -124,6 +126,14 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             LOG.info("Directly registered gateways found = " + gateways.size());
 
             gateways.forEach(gateway -> {
+
+                // Check if client has been created
+                boolean hasClientId = gateway.getAttribute("clientId").map(a -> a.getValueAsString().isPresent()).orElse(false);
+                boolean hasClientSecret = gateway.getAttribute("clientSecret").map(a -> a.getValueAsString().isPresent()).orElse(false);
+
+                if (!hasClientId || !hasClientSecret) {
+                    createGatewayClient(gateway);
+                }
 
                 // Create connector
                 GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, gateway);
@@ -473,7 +483,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
     protected void createGatewayClient(Asset gateway) {
         String id = UUID.randomUUID().toString();
-        String secret = UUID.randomUUID().toString();
+        String secret = gateway.getAttribute("clientSecret").flatMap(ValueHolder::getValueAsString).map(UUID::fromString).orElseGet(UUID::randomUUID).toString();
         String clientId = GATEWAY_CLIENT_ID_PREFIX + gateway.getId();
         ClientRepresentation clientRepresentation = new ClientRepresentation();
         clientRepresentation.setId(id);
@@ -489,7 +499,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
         ClientsResource clientsResource = identityProvider.getRealms(getClientRequestInfo()).realm(gateway.getRealm()).clients();
         Response response = clientsResource.create(clientRepresentation);
-
+        response.close();
         if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
             LOG.warning("Failed to create Keycloak client for gateway '" + gateway.getId() + "' Response=" + response.getStatus());
         } else {

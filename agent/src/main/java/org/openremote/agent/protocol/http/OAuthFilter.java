@@ -29,6 +29,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.net.SocketException;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.logging.Logger;
@@ -53,7 +54,7 @@ public class OAuthFilter implements ClientRequestFilter {
         this.oAuthGrant = oAuthGrant;
     }
 
-    public String getAuthHeader() {
+    public String getAuthHeader() throws SocketException {
         String accessToken = getAccessToken();
 
         if (!TextUtil.isNullOrEmpty(accessToken)) {
@@ -63,7 +64,7 @@ public class OAuthFilter implements ClientRequestFilter {
         return null;
     }
 
-    public synchronized String getAccessToken() {
+    public synchronized String getAccessToken() throws SocketException {
         LocalDateTime expiryDateTime = authServerResponse == null ? null : authServerResponse.getExpiryDateTime();
         boolean updateRequired = expiryDateTime == null || expiryDateTime.minusSeconds(10).isBefore(LocalDateTime.now());
 
@@ -74,37 +75,44 @@ public class OAuthFilter implements ClientRequestFilter {
         return authServerResponse != null ? authServerResponse.accessToken : null;
     }
 
-    protected synchronized void updateToken() {
+    protected synchronized void updateToken() throws SocketException {
         LOG.fine("Updating OAuth token");
-        Response response;
+        Response response = null;
 
-        if (authServerResponse != null && authServerResponse.refreshToken != null) {
-            // Do a refresh
-            LOG.fine("Using Refresh grant");
-            response = requestTokenUsingRefresh();
-            if (response.getStatus() == 403) {
-                // Maybe the refresh token is not valid so do full auth
-                LOG.info("OAuth token refresh failed, trying a full authentication");
-                authServerResponse = null;
-                updateToken();
-                return;
+        try {
+            if (authServerResponse != null && authServerResponse.refreshToken != null) {
+                // Do a refresh
+                LOG.fine("Using Refresh grant");
+                response = requestTokenUsingRefresh();
+                if (response.getStatus() == 403) {
+                    // Maybe the refresh token is not valid so do full auth
+                    LOG.info("OAuth token refresh failed, trying a full authentication");
+                    authServerResponse = null;
+                    updateToken();
+                    return;
+                }
+            } else {
+                // Do full auth
+                LOG.fine("Doing full authentication");
+                response = requestToken();
             }
-        } else {
-            // Do full auth
-            LOG.fine("Doing full authentication");
-            response = requestToken();
-        }
 
-        if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-            authServerResponse = null;
-            LOG.warning("OAuth server response error: " + response.getStatus());
-        } else {
-            authServerResponse = response.readEntity(OAuthServerResponse.class);
-            LOG.finest("OAuth server successfully returned an access token");
+            if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+                authServerResponse = null;
+                LOG.warning("OAuth server response error: " + response.getStatus());
+                throw new RuntimeException("OAuth server response error: " + response.getStatus());
+            } else {
+                authServerResponse = response.readEntity(OAuthServerResponse.class);
+                LOG.finest("OAuth server successfully returned an access token");
+            }
+        } finally {
+            if (response != null) {
+                response.close();
+            }
         }
     }
 
-    protected Response requestTokenUsingRefresh() {
+    protected Response requestTokenUsingRefresh() throws SocketException {
         OAuthRefreshTokenGrant refreshGrant = new OAuthRefreshTokenGrant(
             oAuthGrant.getTokenEndpointUri(),
             oAuthGrant.getClientId(),
@@ -118,7 +126,7 @@ public class OAuthFilter implements ClientRequestFilter {
             .post(Entity.entity(new Form(refreshGrant.valueMap), MediaType.APPLICATION_FORM_URLENCODED_TYPE));
     }
 
-    protected Response requestToken() {
+    protected Response requestToken() throws SocketException {
         Invocation.Builder builder = authTarget
             .request(MediaType.APPLICATION_JSON_TYPE);
 

@@ -75,7 +75,7 @@ public class PersistenceService implements ContainerService {
     public static final int DATABASE_MAX_POOL_SIZE_DEFAULT = 20;
     public static final String DATABASE_CONNECTION_TIMEOUT_SECONDS = "DATABASE_CONNECTION_TIMEOUT_SECONDS";
     public static final int DATABASE_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 5;
-    public static final int PRIORITY = 100;
+    public static final int PRIORITY = Integer.MIN_VALUE + 10;
 
     protected MessageBrokerService messageBrokerService;
     protected Database database;

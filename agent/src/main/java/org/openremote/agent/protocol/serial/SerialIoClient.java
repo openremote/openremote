@@ -21,7 +21,6 @@ package org.openremote.agent.protocol.serial;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.oio.OioEventLoopGroup;
 import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.agent.protocol.io.AbstractNettyIoClient;
 import org.openremote.agent.protocol.io.IoClient;
@@ -69,6 +68,6 @@ public class SerialIoClient<T> extends AbstractNettyIoClient<T, NrJavaSerialAddr
     protected io.netty.channel.EventLoopGroup getWorkerGroup() {
         // Note that OioEventLoopGroup has to be used because NioEventLoopGroup is *NOT* compatible
         // with io.netty.channel.rxtx.RxtxChannel and causes IllegalStateException.
-        return new OioEventLoopGroup(1);
+        return new io.netty.channel.oio.OioEventLoopGroup(1);
     }
 }

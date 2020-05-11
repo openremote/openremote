@@ -2,23 +2,25 @@ import {style} from "./style";
 import {customElement, html, LitElement, property, query} from "lit-element";
 import {MDCDialog} from "@material/dialog";
 import i18next from "i18next";
-import manager from "@openremote/core";
+import manager, {Util} from "@openremote/core";
 import {MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import "@openremote/or-icon";
 import "./or-language";
 import "./or-language-modal";
 import "./or-realm-picker";
+import {Constants} from "@openremote/model";
 
-interface menuOption {
+interface MenuOption {
    icon: string;
    text: string;
    value?: string;
    href?: string;
    hideMobile?: boolean;
+   roles?: string[];
 }
 
-const mainItems: menuOption[] = [
+const mainItems: MenuOption[] = [
     {
         icon: "map",
         href: "#!map",
@@ -48,13 +50,13 @@ const mainItems: menuOption[] = [
     // }
 ];
 
-const secondaryItems: menuOption[] = [
-    // {
-    //     icon: "cloud",
-    //     value: "cloud",
-    //     text: "Cloud connection",
-    //     isSuperUser: true
-    // },
+const secondaryItems: MenuOption[] = [
+    {
+        icon: "cloud",
+        href: "#!gateway",
+        text: "gatewayConnection",
+        roles: ["write:admin", "read:admin"]
+    },
     {
         icon: "web",
         value: "language",
@@ -85,8 +87,8 @@ const secondaryItems: menuOption[] = [
     }
 ];
 
-function getHeaderMenu(items: menuOption[]): MenuItem[] {
-    return items.map(option => {
+function getHeaderMenu(items: MenuOption[]): MenuItem[] {
+    return items.filter(option => !option.roles || option.roles.some(r => manager.hasRole(r))).map(option => {
         return {
             text: option.text,
             value: option.value ? option.value : "",
@@ -95,6 +97,7 @@ function getHeaderMenu(items: menuOption[]): MenuItem[] {
         };
     });
 }
+
 export class OrHeaderMenuChangedEvent extends CustomEvent<boolean> {
 
     public static readonly NAME = "or-header-menu-changed";
@@ -119,10 +122,10 @@ class OrHeader extends LitElement {
     private logoMobile = "";
 
     @property({ type: Array })
-    private mainItems: menuOption[] = mainItems;
+    private mainItems: MenuOption[] = mainItems;
 
     @property({ type: Array })
-    private secondaryItems: menuOption[] = secondaryItems;
+    private secondaryItems: MenuOption[] = secondaryItems;
 
     @property({ type: String })
     private activeMenu: string | undefined = window.location.hash ? window.location.hash : "#!map";
@@ -164,7 +167,7 @@ class OrHeader extends LitElement {
                     
                     <nav id="toolbar-list">
                         <div id="desktop-left">
-                            ${this.mainItems.map(menuItem => {
+                            ${this.mainItems.filter(option => !option.roles || option.roles.some(r => manager.hasRole(r))).map(menuItem => {
                                 return html`
                                     <a class="menu-item" href="${menuItem.href}" ?selected="${this.activeMenu === menuItem.href}" data-navigo @click="${() => this.activeMenu = menuItem.href}"><or-icon icon="${menuItem.icon}"></or-icon><or-translate value="${menuItem.text}"></or-translate></a>
                                 `
@@ -192,8 +195,7 @@ class OrHeader extends LitElement {
                 <div>                    
                     <div id="mobile-top">
                         <nav id="drawer-list">
-                            ${this.mainItems.map(menuItem => {
-                                if (menuItem.hideMobile) return html``;
+                            ${this.mainItems.filter(option => !option.hideMobile && (!option.roles || option.roles.some(r => manager.hasRole(r)))).map(menuItem => {
                                 return html`
                                     <a class="menu-item" href="${menuItem.href}" ?selected="${this.activeMenu === menuItem.href}" data-navigo @click="${() => this.activeMenu = menuItem.href}"><or-icon icon="${menuItem.icon}"></or-icon><or-translate value="${menuItem.text}"></or-translate></a>
                                 `
@@ -202,8 +204,7 @@ class OrHeader extends LitElement {
                     </div>
                     
                     <div id="mobile-bottom">
-                            ${this.secondaryItems.map(menuItem => {
-                                if (menuItem.hideMobile) return html``;
+                            ${this.secondaryItems.filter(option => !option.hideMobile && (!option.roles || option.roles.some(r => manager.hasRole(r)))).map(menuItem => {
                                 if(menuItem.href) 
                                     return html`
                                         <a class="menu-item" href="${menuItem.href}" ?selected="${this.activeMenu === menuItem.href}" data-navigo @click="${() => this.activeMenu = menuItem.href}"><or-icon icon="${menuItem.icon}"></or-icon><or-translate value="${menuItem.text}"></or-translate></a>
@@ -216,9 +217,6 @@ class OrHeader extends LitElement {
                     </div>
                 </div>
             </div>
-
-       
-            
         `;
     }
 
