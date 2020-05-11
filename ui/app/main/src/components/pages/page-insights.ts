@@ -112,6 +112,15 @@ const viewerConfig: DataViewerConfig = {
         defaults: [{
             assetId:"35Q8RvOhBU3boCB6IUW1Dj",
             attributes: ["light1PowerConsumption"]
+        }, {
+            assetId:"",
+            attributes: [""]
+        }, {
+            assetId:"",
+            attributes: [""]
+        }, {
+            assetId:"",
+            attributes: [""]
         }]
     }
    }
@@ -137,10 +146,9 @@ class PageInsights extends connect(store)(LitElement)  {
                     <div class="row">
                         <or-data-viewer .config="${viewerConfig}"></or-data-viewer>
                     </div>
-                    <or-attribute-card .assetId="${viewerConfig.panels["chart"].defaults[0].assetId}" .attributeName="${viewerConfig.panels["chart"].defaults[0].attributes[0]}"></or-attribute-card>
-                    <or-attribute-card .assetId="${viewerConfig.panels["chart"].defaults[0].assetId}" .attributeName=""></or-attribute-card>
-                    <or-attribute-card .assetId="${viewerConfig.panels["chart"].defaults[0].assetId}" .attributeName=""></or-attribute-card>
-                    <or-attribute-card .assetId="${viewerConfig.panels["chart"].defaults[0].assetId}" .attributeName=""></or-attribute-card>
+                    ${html`${Object.entries(viewerConfig.panels["chart"].defaults).map(([index, panel]) => {
+                        return html`<or-attribute-card .assetId="${panel.assetId}" .attributeName="${panel.attributes[0]}"></or-attribute-card>`;
+                    })}`}
                 </div>
             </div>
         `;
