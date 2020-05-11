@@ -3,7 +3,7 @@ import {classMap} from "lit-html/directives/class-map";
 import i18next from "i18next";
 import {Asset, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
 import {manager, DefaultColor4, DefaultColor5} from "@openremote/core";
-import Chart from "chart.js";
+import Chart, {ChartTooltipCallback} from "chart.js";
 import {getContentWithMenuTemplate} from "@openremote/or-chart";
 import {InputType} from "@openremote/or-input";
 import {getMetaValue} from "@openremote/core/dist/util";
@@ -201,7 +201,18 @@ export class OrAttributeCard extends LitElement {
                         display: false
                     },
                     tooltips: {
-                        enabled: false,
+                        displayColors: false,
+                        callbacks: {
+                            title: (tooltipItems, data) => {
+                                return "";
+                            },
+                            label: (tooltipItem, data) => {
+                                return tooltipItem.yLabel; // Removes the colon before the label
+                            },
+                            footer: () => {
+                                return ""; // Hack the broken vertical alignment of body with footerFontSize: 0
+                            }
+                        } as ChartTooltipCallback
                     },
                     scales: {
                         yAxes: [{
