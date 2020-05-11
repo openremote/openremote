@@ -1,7 +1,7 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, unsafeCSS} from "lit-element";
 import {classMap} from "lit-html/directives/class-map";
 import i18next from "i18next";
-import {Asset, AssetAttribute, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
+import {Asset, AssetAttribute, Attribute, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
 import {manager, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
 import {getContentWithMenuTemplate} from "@openremote/or-chart";
@@ -213,6 +213,9 @@ export class OrAttributeCard extends LitElement {
     @property()
     public attributeName: string | undefined;
 
+    @property({type: Object})
+    private assetAttributes: AssetAttribute[] = [];
+
     @property()
     private data: ValueDatapoint<any>[] = [];
     @property()
@@ -226,6 +229,9 @@ export class OrAttributeCard extends LitElement {
     private delta: {val?: number, unit?: string} = {};
     @property()
     private deltaPlus: string = "";
+
+    @property({type: Array})
+    private colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
 
     private period: moment.unitOfTime.Base = "month";
     private now?: Date = new Date();
@@ -329,6 +335,13 @@ export class OrAttributeCard extends LitElement {
             this.formattedMainValue = this.getFormattedValue(this.mainValue!);
         }
 
+        if(changedProperties.has("assetAttributes") ) {
+            this.assetAttributes.forEach((attr, index) => {
+                if(this._getAttrColor(attr)) return;
+                this._setAttrColor(attr)
+            });
+        }
+
         this.onCompleted().then(() => {
             this.dispatchEvent(new OrAttributeCardEvent("rendered"));
         });
@@ -365,14 +378,13 @@ export class OrAttributeCard extends LitElement {
         }
 
         let attributes = [...Util.getAssetAttributes(this.asset)];
-        console.log(attributes);
-        // if(attributes && attributes.length > 0) {
-        //     attributes = attributes
-        //         .filter((attr: AssetAttribute) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
-        //         .filter((attr: AssetAttribute) => (this.assetAttributes && !this.assetAttributes.some(assetAttr => (assetAttr.name === attr.name) && (assetAttr.assetId === attr.assetId))));
-        //     const options = attributes.map((attr: AssetAttribute) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
-        //     return options
-        // }
+        if (attributes && attributes.length > 0) {
+            attributes = attributes
+                .filter((attr: AssetAttribute) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
+                .filter((attr: AssetAttribute) => (this.assetAttributes && !this.assetAttributes.some((assetAttr: AssetAttribute) => (assetAttr.name === attr.name) && (assetAttr.assetId === attr.assetId))));
+            const options = attributes.map((attr: AssetAttribute) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
+            return options;
+        }
     }
 
     private _addAttribute(e:Event) {
@@ -382,7 +394,7 @@ export class OrAttributeCard extends LitElement {
                 const attr = Util.getAssetAttribute(this.asset, elm.value);
                 if (attr) {
                     console.log(attr);
-                    // this.setAttrColor(attr);
+                    // this._setAttrColor(attr);
                     // this.assetAttributes = [...this.assetAttributes, attr];
                     //
                     // this.assets = [...this.assets, this.asset];
@@ -646,6 +658,19 @@ export class OrAttributeCard extends LitElement {
 
         this.getData();
         this.requestUpdate();
+    }
+
+    protected _setAttrColor(attr: Attribute) {
+        const usedColors = this.assetAttributes.map(attr => this._getAttrColor(attr));
+        const color = this.colors.filter(color => usedColors.indexOf(color) < 0)[0];
+        const meta = {name: "color", value: color};
+        if (attr.meta) {
+            attr.meta.push(meta);
+        }
+    }
+
+    protected _getAttrColor(attr: Attribute) {
+        return  Util.getMetaValue("color", attr, undefined);
     }
 
 }
