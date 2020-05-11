@@ -65,7 +65,9 @@ const style = css`
         width: 100%;
     }
     .panel.panel-empty .panel-content {
+        flex-direction: row;
         align-items: center;
+        justify-content: center;
     }
     
     .panel-content-wrapper {
