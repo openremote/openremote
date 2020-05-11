@@ -41,8 +41,6 @@ const style = css`
     
     :host {
         width: 100%;
-        
-        --internal-or-graph-line-color: #4D9D2A;       
     }
     
     :host([hidden]) {
@@ -210,7 +208,6 @@ export class OrAttributeCard extends LitElement {
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
     private _chart?: Chart;
-    private _style!: CSSStyleDeclaration;
 
     static get styles() {
         return [
@@ -220,7 +217,6 @@ export class OrAttributeCard extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        this._style = window.getComputedStyle(this);
 
         if (!this.assetId || !this.attributeName) { return false; }
 
