@@ -28,6 +28,7 @@ const style = css`
         border-radius: 5px;
         max-width: 100%;
         position: relative;
+        height: 250px;
     }
     
     .panel-content-wrapper {
@@ -46,6 +47,18 @@ const style = css`
         color: var(--internal-or-asset-viewer-title-text-color);
         margin-bottom: 25px;
         flex: 0 0 auto;
+    }
+    
+    .panel.panel-empty {
+        display: flex;
+        align-items: center;
+    }
+    .panel.panel-empty .panel-content-wrapper {
+        width: 100%;
+    }
+    .panel.panel-empty .panel-content {
+        text-align: center;
+        display: block;
     }
     
     .top-row {
@@ -101,10 +114,10 @@ const style = css`
 export class OrAttributeCard extends LitElement {
 
     @property()
-    public assetId!: string;
+    public assetId: string | undefined;
 
     @property()
-    public attributeName!: string;
+    public attributeName: string | undefined;
 
     @property()
     private data: ValueDatapoint<any>[] = [];
@@ -142,6 +155,9 @@ export class OrAttributeCard extends LitElement {
     connectedCallback() {
         super.connectedCallback();
         this._style = window.getComputedStyle(this);
+
+        if (!this.assetId || !this.attributeName) { return false; };
+
         this.getData();
     }
 
@@ -221,15 +237,12 @@ export class OrAttributeCard extends LitElement {
 
     protected render() {
 
-        if (this.assetId === "" || this.attributeName === "") {
+        if (!this.assetId || !this.attributeName) {
             return html`
-                <div class="panel">
+                <div class="panel panel-empty">
                     <div class="panel-content-wrapper">
-                        <div class="panel-title">
-                            <or-translate value="error"></or-translate>
-                        </div>
                         <div class="panel-content">
-                            <or-translate value="attributeNotFound"></or-translate>
+                            <or-icon icon="plus-minus"/>
                         </div>
                     </div>
                 </div>
@@ -288,7 +301,7 @@ export class OrAttributeCard extends LitElement {
 
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
             id,
-            this.attributeName,
+            this.attributeName!,
             {
                 interval: this._getInterval(),
                 fromTimestamp: startOfPeriod,
@@ -306,7 +319,7 @@ export class OrAttributeCard extends LitElement {
     protected async getData() {
         const thisMoment = moment(this.now);
 
-        this.asset = await this.getAssetById(this.assetId);
+        this.asset = await this.getAssetById(this.assetId!);
 
         const currentPeriod = {
             start: thisMoment.startOf(this.period).toDate().getTime(),
@@ -317,14 +330,14 @@ export class OrAttributeCard extends LitElement {
             end: thisMoment.clone().subtract(1, this.period).endOf(this.period).toDate().getTime()
         };
 
-        const p1 = this.getDatapointsByAttribute(this.assetId, currentPeriod.start, currentPeriod.end)
+        const p1 = this.getDatapointsByAttribute(this.assetId!, currentPeriod.start, currentPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
                 this.mainValue = this.getHighestValue(this.sanitiseDataPoints(this.data));
                 return this.mainValue;
             });
 
-        const p2 = this.getDatapointsByAttribute(this.assetId, lastPeriod.start, lastPeriod.end)
+        const p2 = this.getDatapointsByAttribute(this.assetId!, lastPeriod.start, lastPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.mainValueLastPeriod = this.getHighestValue(this.sanitiseDataPoints(datapoints));
                 return this.mainValueLastPeriod;
@@ -363,7 +376,7 @@ export class OrAttributeCard extends LitElement {
     }
 
     protected getFormattedValue(value: number): {value: number, unit: string, formattedValue: string} {
-        const format = getMetaValue(MetaItemType.FORMAT, this.asset.attributes![this.attributeName], undefined);
+        const format = getMetaValue(MetaItemType.FORMAT, this.asset.attributes![this.attributeName!], undefined);
         const unit = format.split(" ").pop();
         return {
             value: value,
