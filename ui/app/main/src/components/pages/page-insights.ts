@@ -76,6 +76,7 @@ const style = css`
     .row {
         grid-column-start: 1;
         grid-column-end: -1;
+        margin: calc(var(--internal-or-asset-viewer-panel-margin) * -1);
     }
     
     .hideMobile {
