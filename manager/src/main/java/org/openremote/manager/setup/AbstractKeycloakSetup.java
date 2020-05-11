@@ -97,11 +97,11 @@ public abstract class AbstractKeycloakSetup implements Setup {
         masterUsersResource = masterRealmResource.users();
     }
 
-    protected String getClientObjectId(ClientsResource clientsResource) {
-        return clientsResource.findByClientId(KEYCLOAK_CLIENT_ID)
+    protected String getClientObjectId(ClientsResource clientsResource, String clientId) {
+        return clientsResource.findByClientId(clientId)
             .stream()
             .map(ClientRepresentation::getId)
-            .findFirst().orElseThrow(() -> new RuntimeException("Client object ID not found: " + KEYCLOAK_CLIENT_ID));
+            .findFirst().orElseThrow(() -> new RuntimeException("Client object ID not found: " + clientId));
     }
 
 }

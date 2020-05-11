@@ -34,6 +34,8 @@ import org.openremote.model.Constants;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+
 /**
  * We have the following demo users:
  * <ul>
@@ -85,7 +87,7 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         tenantCity = keycloakProvider.getTenant(tenantCity.getRealm());
 
         // Users
-        String masterClientObjectId = getClientObjectId(masterClientsResource);
+        String masterClientObjectId = getClientObjectId(masterClientsResource, KEYCLOAK_CLIENT_ID);
         RolesResource masterRolesResource = masterClientsResource.get(masterClientObjectId).roles();
 
         UserRepresentation testuser1 = new UserRepresentation();
@@ -113,7 +115,7 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
 
         UsersResource tenantBuildingUsersResource = keycloakProvider.getRealms(accessToken).realm("building").users();
         ClientsResource tenantBuildingClientsResource = keycloakProvider.getRealms(accessToken).realm("building").clients();
-        String tenantBuildingClientObjectId = getClientObjectId(tenantBuildingClientsResource);
+        String tenantBuildingClientObjectId = getClientObjectId(tenantBuildingClientsResource, KEYCLOAK_CLIENT_ID);
         RolesResource tenantBuildingRolesResource = tenantBuildingClientsResource.get(tenantBuildingClientObjectId).roles();
 
         UserRepresentation testuser2 = new UserRepresentation();
@@ -187,7 +189,7 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
 
         UsersResource tenantCityUsersResource = keycloakProvider.getRealms(accessToken).realm("smartcity").users();
         ClientsResource tenantCityClientsResource = keycloakProvider.getRealms(accessToken).realm("smartcity").clients();
-        String tenantCityClientObjectId = getClientObjectId(tenantCityClientsResource);
+        String tenantCityClientObjectId = getClientObjectId(tenantCityClientsResource, KEYCLOAK_CLIENT_ID);
         RolesResource tenantCityRolesResource = tenantCityClientsResource.get(tenantCityClientObjectId).roles();
 
         UserRepresentation smartCityUser = new UserRepresentation();
