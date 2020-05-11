@@ -9,6 +9,33 @@ import {InputType} from "@openremote/or-input";
 import {getMetaValue} from "@openremote/core/dist/util";
 import moment from "moment";
 
+export class OrAttributeCardEvent extends CustomEvent<OrAttributeCardEventDetail> {
+
+    public static readonly NAME = "or-attribute-history-event";
+
+    constructor(value?: any, previousValue?: any) {
+        super(OrAttributeCardEvent.NAME, {
+            detail: {
+                value: value,
+                previousValue: previousValue
+            },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export interface OrAttributeCardEventDetail {
+    value?: any;
+    previousValue?: any;
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [OrAttributeCardEvent.NAME]: OrAttributeCardEvent;
+    }
+}
+
 // language=CSS
 const style = css`
     
@@ -194,7 +221,7 @@ export class OrAttributeCard extends LitElement {
                     ]
                 },
                 options: {
-                    // onResize: () => this.dispatchEvent(new OrAttributeHistoryEvent("resize")),
+                    onResize: () => this.dispatchEvent(new OrAttributeCardEvent("resize")),
                     responsive: true,
                     maintainAspectRatio: false,
                     legend: {
@@ -242,6 +269,14 @@ export class OrAttributeCard extends LitElement {
             this.formattedMainValue = this.getFormattedValue(this.mainValue!);
         }
 
+        this.onCompleted().then(() => {
+            this.dispatchEvent(new OrAttributeCardEvent("rendered"));
+        });
+
+    }
+
+    async onCompleted() {
+        await this.updateComplete;
     }
 
     disconnectedCallback(): void {
