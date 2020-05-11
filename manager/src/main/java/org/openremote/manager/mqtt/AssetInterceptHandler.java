@@ -27,21 +27,19 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventSubscription;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.function.BiConsumer;
 import java.util.logging.Logger;
-
-import static org.openremote.manager.mqtt.KeycloakAuthenticator.MQTT_CLIENT_ID_SEPARATOR;
 
 public class AssetInterceptHandler implements InterceptHandler {
 
     private static final Logger LOG = Logger.getLogger(KeycloakAuthorizatorPolicy.class.getName());
-
 
     protected final ManagerIdentityService identityService;
     protected final ManagerKeycloakIdentityProvider identityProvider;
@@ -49,12 +47,13 @@ public class AssetInterceptHandler implements InterceptHandler {
     protected final AssetProcessingService assetProcessingService;
     protected final ClientEventService clientEventService;
     protected final MqttConnector mqttConnector;
+    protected final BiConsumer<String, Asset> updateAssetConsumer;
 
     AssetInterceptHandler(AssetStorageService assetStorageService,
                           AssetProcessingService assetProcessingService,
                           ManagerIdentityService managerIdentityService,
                           ManagerKeycloakIdentityProvider managerKeycloakIdentityProvider,
-                          ClientEventService clientEventService, MqttConnector mqttConnector) {
+                          ClientEventService clientEventService, MqttConnector mqttConnector, BiConsumer<String, Asset> updateAssetConsumer) {
 
         this.assetStorageService = assetStorageService;
         this.assetProcessingService = assetProcessingService;
@@ -62,6 +61,7 @@ public class AssetInterceptHandler implements InterceptHandler {
         this.identityProvider = managerKeycloakIdentityProvider;
         this.clientEventService = clientEventService;
         this.mqttConnector = mqttConnector;
+        this.updateAssetConsumer = updateAssetConsumer;
     }
 
     @Override
@@ -78,7 +78,7 @@ public class AssetInterceptHandler implements InterceptHandler {
     public void onConnect(InterceptConnectMessage interceptConnectMessage) {
         MqttConnector.MqttConnection connection = mqttConnector.createConnection(interceptConnectMessage.getClientID(), interceptConnectMessage.getUsername(), interceptConnectMessage.getPassword());
         String suppliedClientSecret = new String(interceptConnectMessage.getPassword(), StandardCharsets.UTF_8);
-        connection.accessToken = identityProvider.getKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthFrom(MqttBrokerService.MQTT_KEYCLOAK_CLIENT_ID, suppliedClientSecret)).getToken();
+        connection.accessToken = identityProvider.getKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthFrom(connection.username, suppliedClientSecret)).getToken();
     }
 
     @Override
@@ -88,7 +88,8 @@ public class AssetInterceptHandler implements InterceptHandler {
 
     @Override
     public void onConnectionLost(InterceptConnectionLostMessage interceptConnectionLostMessage) {
-
+        LOG.info("Connection lost for client: " + interceptConnectionLostMessage.getClientID());
+        mqttConnector.removeConnection(interceptConnectionLostMessage.getClientID());
     }
 
     @Override
@@ -100,21 +101,27 @@ public class AssetInterceptHandler implements InterceptHandler {
     @Override
     public void onSubscribe(InterceptSubscribeMessage interceptSubscribeMessage) {
         MqttConnector.MqttConnection connection = mqttConnector.getConnection(interceptSubscribeMessage.getClientID());
-//        if (connection != null) {
-//            clientEventService.getEventSubscriptions().createOrUpdate(
-//                    connection.clientId,
-//                    false,
-//                    new EventSubscription<>(
-//                            AttributeEvent.class,
-//                            new AssetFilter<AttributeEvent>().setRealm(connection.realm),
-//                            triggeredEventSubscription ->
-//                                    triggeredEventSubscription.getEvents()
-//                                            .forEach(event ->
-//                                                    sendCentralManagerMessage(connection.getLocalRealm(), messageFromSharedEvent(event)))));
-//            );
-//        } else {
-//            throw new IllegalStateException("Connection with clientId " + interceptSubscribeMessage.getClientID() + " not found.");
-//        }
+        if (connection != null) {
+
+            String[] topicParts = interceptSubscribeMessage.getTopicFilter().split("/");
+            EventSubscription<AssetEvent> subscription = new EventSubscription<>(
+                    AssetEvent.class,
+                    new AssetFilter<AssetEvent>().setRealm(connection.realm).setAssetIds(topicParts[1]),
+                    triggeredEventSubscription ->
+                            triggeredEventSubscription.getEvents()
+                                    .forEach(event ->
+                                            updateAssetConsumer.accept(connection.clientId, event.getAsset())
+                                    )
+            );
+            clientEventService.getEventSubscriptions().createOrUpdate(
+                    connection.clientId,
+                    false,
+                    subscription
+            );
+            subscription.setSubscribed(true);
+        } else {
+            throw new IllegalStateException("Connection with clientId " + interceptSubscribeMessage.getClientID() + " not found.");
+        }
     }
 
     @Override
