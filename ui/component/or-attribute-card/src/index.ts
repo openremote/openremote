@@ -1,13 +1,14 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, unsafeCSS} from "lit-element";
 import {classMap} from "lit-html/directives/class-map";
 import i18next from "i18next";
-import {Asset, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
-import {manager, DefaultColor4, DefaultColor5} from "@openremote/core";
+import {Asset, AssetAttribute, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
+import {manager, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
 import {getContentWithMenuTemplate} from "@openremote/or-chart";
 import {InputType} from "@openremote/or-input";
 import {getMetaValue} from "@openremote/core/dist/util";
 import moment from "moment";
+import {MDCDialog} from "@material/dialog";
 
 export class OrAttributeCardEvent extends CustomEvent<OrAttributeCardEventDetail> {
 
@@ -35,6 +36,8 @@ declare global {
         [OrAttributeCardEvent.NAME]: OrAttributeCardEvent;
     }
 }
+
+const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
 
 // language=CSS
 const style = css`
@@ -142,6 +145,9 @@ const style = css`
     .delta-wrapper {
         flex: 0 0 75px;
         text-align: right;
+        
+        /*position: absolute;*/
+        /*right: var(--internal-or-asset-viewer-panel-padding);*/
     }
     
     .date-range-wrapper {
@@ -169,6 +175,33 @@ const style = css`
         color: #4D9D2A;
     }
     
+    .mdc-dialog .mdc-dialog__surface {
+        min-width: 600px;
+        height: calc(100vh - 50%);
+    }
+
+    .dialog-container {
+        display: flex;
+        flex-direction: row;
+        flex: 1 1 0;
+    }
+
+    .dialog-container > * {
+        flex: 1 1 0;
+    }
+    
+    .dialog-container > or-input{
+        background-color: var(--or-app-color2);
+        border-left: 3px solid var(--or-app-color4);
+    }
+        @media screen and (max-width: 769px) {
+        .mdc-dialog .mdc-dialog__surface {
+            min-width: auto;
+
+            max-width: calc(100vw - 32px);
+            max-height: calc(100% - 32px);
+        }
+    }
 `;
 
 @customElement("or-attribute-card")
@@ -211,6 +244,7 @@ export class OrAttributeCard extends LitElement {
 
     static get styles() {
         return [
+            css`${unsafeCSS(dialogStyle)}`,
             style
         ];
     }
@@ -310,6 +344,54 @@ export class OrAttributeCard extends LitElement {
         this._cleanup();
     }
 
+    protected _openDialog() {
+        const component = this.shadowRoot!.getElementById("mdc-dialog");
+        if (component) {
+            const dialog = new MDCDialog(component);
+            if (dialog) {
+                dialog.open();
+            }
+        }
+    }
+
+    protected _getAttributeOptions() {
+        if (!this.asset || !this.asset.attributes) {
+            return;
+        }
+
+        if (this.shadowRoot && this.shadowRoot.getElementById("chart-attribute-picker")) {
+            const elm = this.shadowRoot.getElementById("chart-attribute-picker") as HTMLInputElement;
+            elm.value = "";
+        }
+
+        let attributes = [...Util.getAssetAttributes(this.asset)];
+        console.log(attributes);
+        // if(attributes && attributes.length > 0) {
+        //     attributes = attributes
+        //         .filter((attr: AssetAttribute) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
+        //         .filter((attr: AssetAttribute) => (this.assetAttributes && !this.assetAttributes.some(assetAttr => (assetAttr.name === attr.name) && (assetAttr.assetId === attr.assetId))));
+        //     const options = attributes.map((attr: AssetAttribute) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
+        //     return options
+        // }
+    }
+
+    private _addAttribute(e:Event) {
+        if (this.shadowRoot && this.shadowRoot.getElementById("chart-attribute-picker")) {
+            const elm = this.shadowRoot.getElementById("chart-attribute-picker") as HTMLInputElement;
+            if (this.asset) {
+                const attr = Util.getAssetAttribute(this.asset, elm.value);
+                if (attr) {
+                    console.log(attr);
+                    // this.setAttrColor(attr);
+                    // this.assetAttributes = [...this.assetAttributes, attr];
+                    //
+                    // this.assets = [...this.assets, this.asset];
+                    // this.saveSettings();
+                }
+            }
+        }
+    }
+
     protected _cleanup() {
         if (this._chart) {
             this._chart.destroy();
@@ -319,16 +401,60 @@ export class OrAttributeCard extends LitElement {
 
     protected render() {
 
+        const dialogHTML = html`
+            <div id="mdc-dialog"
+                class="mdc-dialog"
+                role="alertdialog"
+                aria-modal="true"
+                aria-labelledby="my-dialog-title"
+                aria-describedby="my-dialog-content">
+                <div class="mdc-dialog__container">
+                    <div class="mdc-dialog__surface">
+                    <h2 class="mdc-dialog__title" id="my-dialog-title">${i18next.t("addAttribute")}</h2>
+                    <div class="dialog-container mdc-dialog__content" id="my-dialog-content">
+                        <or-asset-tree id="chart-asset-tree" .selectedIds="${this.asset ? [this.asset.id] : null}]"></or-asset-tree>
+                            ${this.asset && this.asset.attributes ? html`
+                                <or-input id="chart-attribute-picker" 
+                                        style="display:flex;"
+                                        .label="${i18next.t("attribute")}" 
+                                        .type="${InputType.LIST}"
+                                        .options="${this._getAttributeOptions()}"></or-input>
+                            ` : ``}
+                    </div>
+                    <footer class="mdc-dialog__actions">
+                        <or-input class="button" 
+                                slot="secondaryAction"
+                                .type="${InputType.BUTTON}" 
+                                label="${i18next.t("cancel")}" 
+                                class="mdc-button mdc-dialog__button" 
+                                data-mdc-dialog-action="no"></or-input>
+
+                        <or-input class="button" 
+                            slot="primaryAction"
+                            .type="${InputType.BUTTON}" 
+                            label="${i18next.t("add")}" 
+                            class="mdc-button mdc-dialog__button" 
+                            data-mdc-dialog-action="yes"
+                            @click="${this._addAttribute}"></or-input>
+
+                    </footer>
+                    </div>
+                </div>
+                <div class="mdc-dialog__scrim"></div>
+            </div>
+        `;
+
         if (!this.assetId || !this.attributeName) {
             return html`
                 <div class="panel panel-empty">
                     <div class="panel-content-wrapper">
-                        <div class="panel-content">
+                        <div class="panel-content" @click="${() => this._openDialog()}">
                             <or-icon icon="plus"></or-icon>
                             <span>${i18next.t("addAttribute")}</span>
                         </div>
                     </div>
                 </div>
+                ${dialogHTML}
             `;
         }
 
@@ -337,7 +463,7 @@ export class OrAttributeCard extends LitElement {
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
                         <span class="panel-title-text">${this.asset.name} - ${i18next.t(this.attributeName)}</span>
-                        <or-icon icon="plus-minus"/>
+                        <or-icon icon="plus-minus" @click="${() => this._openDialog()}" />
                     </div>
                     <div class="panel-content">
                         <div class="top-row">
@@ -372,6 +498,7 @@ export class OrAttributeCard extends LitElement {
                     </div>
                 </div>
             </div>
+            ${dialogHTML}
         `;
     }
 
