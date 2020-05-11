@@ -42,7 +42,7 @@ const style = css`
     :host {
         width: 100%;
         
-        --internal-or-attribute-history-graph-line-color: var(--or-attribute-history-graph-line-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
+        --internal-or-graph-line-color: #4D9D2A;       
     }
     
     :host([hidden]) {
@@ -184,6 +184,8 @@ export class OrAttributeCard extends LitElement {
 
     @property()
     private data: ValueDatapoint<any>[] = [];
+    @property()
+    private graphColour: "#4D9D2A" | "#FF0000" = "#4D9D2A";
 
     @property()
     private mainValue?: number;
@@ -220,7 +222,7 @@ export class OrAttributeCard extends LitElement {
         super.connectedCallback();
         this._style = window.getComputedStyle(this);
 
-        if (!this.assetId || !this.attributeName) { return false; };
+        if (!this.assetId || !this.attributeName) { return false; }
 
         this.getData();
     }
@@ -242,7 +244,7 @@ export class OrAttributeCard extends LitElement {
                             lineTension: 0.1,
                             spanGaps: true,
                             backgroundColor: "transparent",
-                            borderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color"),
+                            borderColor: this.graphColour,
                             pointBorderColor: "transparent",
                         }
                     ]
@@ -282,6 +284,7 @@ export class OrAttributeCard extends LitElement {
         } else {
             if (changedProperties.has("data")) {
                 this._chart.data.datasets![0].data = this.data;
+                this._chart.data.datasets![0].borderColor = this.graphColour;
                 this._chart.update();
             }
         }
@@ -438,6 +441,7 @@ export class OrAttributeCard extends LitElement {
         Promise.all([p1, p2])
             .then((returnvalues) => {
                 this.delta = this.getFormattedDelta(returnvalues[0], returnvalues[1]);
+                this.graphColour = (this.delta.val! < 0) ? "#FF0000" : "#4D9D2A";
             });
 
     }
