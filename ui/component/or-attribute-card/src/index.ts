@@ -203,9 +203,6 @@ export class OrAttributeCard extends LitElement {
     @property()
     private deltaPlus: string = "";
 
-    @property({type: Array})
-    private colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
-
     private period: moment.unitOfTime.Base = "month";
     private now?: Date = new Date();
     private currentPeriod?: { start: number; end: number };
