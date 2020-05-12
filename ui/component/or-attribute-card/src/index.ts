@@ -9,6 +9,7 @@ import {InputType} from "@openremote/or-input";
 import {getMetaValue} from "@openremote/core/dist/util";
 import moment from "moment";
 import {MDCDialog} from "@material/dialog";
+import {OrAssetTreeRequestSelectEvent} from "@openremote/or-asset-tree";
 
 const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
 
@@ -236,7 +237,6 @@ export class OrAttributeCard extends LitElement {
     updated(changedProperties: PropertyValues) {
 
         super.updated(changedProperties);
-        console.log(changedProperties);
 
         if (!this.data) {
             return;
@@ -328,12 +328,12 @@ export class OrAttributeCard extends LitElement {
     }
 
     protected _getAttributeOptions() {
-        if (!this.asset || !this.asset.attributes) {
+        if (!this.asset || !this.assetAttributes) {
             return;
         }
 
-        if (this.shadowRoot && this.shadowRoot.getElementById("chart-attribute-picker")) {
-            const elm = this.shadowRoot.getElementById("chart-attribute-picker") as HTMLInputElement;
+        if (this.shadowRoot && this.shadowRoot.getElementById("attribute-picker")) {
+            const elm = this.shadowRoot.getElementById("attribute-picker") as HTMLInputElement;
             elm.value = "";
         }
 
@@ -348,8 +348,8 @@ export class OrAttributeCard extends LitElement {
     }
 
     private _setAttribute(e:Event) {
-        if (this.shadowRoot && this.shadowRoot.getElementById("chart-attribute-picker")) {
-            const elm = this.shadowRoot.getElementById("chart-attribute-picker") as HTMLInputElement;
+        if (this.shadowRoot && this.shadowRoot.getElementById("attribute-picker")) {
+            const elm = this.shadowRoot.getElementById("attribute-picker") as HTMLInputElement;
             if (this.asset) {
                 const attr = Util.getAssetAttribute(this.asset, elm.value);
                 if (attr) {
@@ -383,9 +383,16 @@ export class OrAttributeCard extends LitElement {
                     <div class="mdc-dialog__surface">
                     <h2 class="mdc-dialog__title" id="my-dialog-title">${i18next.t("addAttribute")}</h2>
                     <div class="dialog-container mdc-dialog__content" id="my-dialog-content">
-                        <or-asset-tree id="chart-asset-tree" .selectedIds="${this.asset ? [this.asset.id] : null}]"></or-asset-tree>
+                        <or-asset-tree id="chart-asset-tree" 
+                        .selectedIds="${this.asset ? [this.asset.id] : null}]"
+                        @or-asset-tree-request-select="${(e: OrAssetTreeRequestSelectEvent) => {
+                            this.asset = e.detail.detail.node.asset!;
+                            this._getAttributeOptions();
+                            this.requestUpdate();
+                        }}"
+                        ></or-asset-tree>
                             ${this.asset && this.asset.attributes ? html`
-                                <or-input id="chart-attribute-picker" 
+                                <or-input id="attribute-picker" 
                                         style="display:flex;"
                                         .label="${i18next.t("attribute")}" 
                                         .type="${InputType.LIST}"
