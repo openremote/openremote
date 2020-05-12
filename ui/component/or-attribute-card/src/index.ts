@@ -337,10 +337,10 @@ export class OrAttributeCard extends LitElement {
             this.formattedMainValue = this.getFormattedValue(this.mainValue!);
         }
 
-        if(changedProperties.has("assetAttributes") ) {
+        if (changedProperties.has("assetAttributes") ) {
             this.assetAttributes.forEach((attr, index) => {
-                if(this._getAttrColor(attr)) return;
-                this._setAttrColor(attr)
+                if (this._getAttrColor(attr)) { return; }
+                this._setAttrColor(attr);
             });
         }
 
