@@ -4,7 +4,7 @@ import i18next from "i18next";
 import {Asset, AssetAttribute, Attribute, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
 import {manager, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
-import {getContentWithMenuTemplate} from "@openremote/or-chart";
+import {getContentWithMenuTemplate, OrChartConfig} from "@openremote/or-chart";
 import {InputType} from "@openremote/or-input";
 import {getMetaValue} from "@openremote/core/dist/util";
 import moment from "moment";
@@ -264,7 +264,9 @@ export class OrAttributeCard extends LitElement {
     }
 
     updated(changedProperties: PropertyValues) {
+
         super.updated(changedProperties);
+        console.log(changedProperties);
 
         if (!this.data) {
             return;
@@ -387,21 +389,45 @@ export class OrAttributeCard extends LitElement {
         }
     }
 
-    private _addAttribute(e:Event) {
+    private _setAttribute(e:Event) {
         if (this.shadowRoot && this.shadowRoot.getElementById("chart-attribute-picker")) {
             const elm = this.shadowRoot.getElementById("chart-attribute-picker") as HTMLInputElement;
             if (this.asset) {
                 const attr = Util.getAssetAttribute(this.asset, elm.value);
                 if (attr) {
-                    console.log(attr);
-                    // this._setAttrColor(attr);
-                    // this.assetAttributes = [...this.assetAttributes, attr];
-                    //
-                    // this.assets = [...this.assets, this.asset];
-                    // this.saveSettings();
+                    this.assetId = this.asset.id;
+                    this.attributeName = attr.name;
+
+                    this.getData();
+                    this.requestUpdate();
                 }
             }
         }
+    }
+
+    private _saveSettings() {
+        // const viewSelector = this.activeAssetId ? this.activeAssetId : window.location.hash;
+        // const assets: Asset[] = this.assets.filter(asset => 'id' in asset && typeof asset.id === "string");
+        // const assetIds = assets.map(asset => asset.id);
+        // const attributes = this.assetAttributes.map(attr => attr.name);
+        // const configStr = window.localStorage.getItem('OrChartConfig')
+        // let config:OrChartConfig;
+        // if(configStr) {
+        //     config = JSON.parse(configStr);
+        // } else {
+        //     config = {
+        //         views: {
+        //             [viewSelector]: {}
+        //         }
+        //     }
+        // }
+        //
+        // config.views[viewSelector] = {
+        //     assetIds: assetIds,
+        //     attributes: attributes,
+        //     period: this.period
+        // };
+        // window.localStorage.setItem('OrChartConfig', JSON.stringify(config))
     }
 
     protected _cleanup() {
@@ -447,7 +473,7 @@ export class OrAttributeCard extends LitElement {
                             label="${i18next.t("add")}" 
                             class="mdc-button mdc-dialog__button" 
                             data-mdc-dialog-action="yes"
-                            @click="${this._addAttribute}"></or-input>
+                            @click="${this._setAttribute}"></or-input>
 
                     </footer>
                     </div>
