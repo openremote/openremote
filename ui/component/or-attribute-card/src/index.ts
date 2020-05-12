@@ -337,13 +337,6 @@ export class OrAttributeCard extends LitElement {
             this.formattedMainValue = this.getFormattedValue(this.mainValue!);
         }
 
-        if (changedProperties.has("assetAttributes") ) {
-            this.assetAttributes.forEach((attr, index) => {
-                if (this._getAttrColor(attr)) { return; }
-                this._setAttrColor(attr);
-            });
-        }
-
         this.onCompleted().then(() => {
             this.dispatchEvent(new OrAttributeCardEvent("rendered"));
         });
@@ -684,19 +677,6 @@ export class OrAttributeCard extends LitElement {
 
         this.getData();
         this.requestUpdate();
-    }
-
-    protected _setAttrColor(attr: Attribute) {
-        const usedColors = this.assetAttributes.map(attr => this._getAttrColor(attr));
-        const color = this.colors.filter(color => usedColors.indexOf(color) < 0)[0];
-        const meta = {name: "color", value: color};
-        if (attr.meta) {
-            attr.meta.push(meta);
-        }
-    }
-
-    protected _getAttrColor(attr: Attribute) {
-        return  Util.getMetaValue("color", attr, undefined);
     }
 
 }
