@@ -10,33 +10,6 @@ import {getMetaValue} from "@openremote/core/dist/util";
 import moment from "moment";
 import {MDCDialog} from "@material/dialog";
 
-export class OrAttributeCardEvent extends CustomEvent<OrAttributeCardEventDetail> {
-
-    public static readonly NAME = "or-attribute-history-event";
-
-    constructor(value?: any, previousValue?: any) {
-        super(OrAttributeCardEvent.NAME, {
-            detail: {
-                value: value,
-                previousValue: previousValue
-            },
-            bubbles: true,
-            composed: true
-        });
-    }
-}
-
-export interface OrAttributeCardEventDetail {
-    value?: any;
-    previousValue?: any;
-}
-
-declare global {
-    export interface HTMLElementEventMap {
-        [OrAttributeCardEvent.NAME]: OrAttributeCardEvent;
-    }
-}
-
 const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
 
 // language=CSS
@@ -288,7 +261,6 @@ export class OrAttributeCard extends LitElement {
                     ]
                 },
                 options: {
-                    onResize: () => this.dispatchEvent(new OrAttributeCardEvent("resize")),
                     responsive: true,
                     maintainAspectRatio: false,
                     legend: {
@@ -336,10 +308,6 @@ export class OrAttributeCard extends LitElement {
         if (changedProperties.has("mainValue")) {
             this.formattedMainValue = this.getFormattedValue(this.mainValue!);
         }
-
-        this.onCompleted().then(() => {
-            this.dispatchEvent(new OrAttributeCardEvent("rendered"));
-        });
 
     }
 
@@ -396,31 +364,6 @@ export class OrAttributeCard extends LitElement {
                 }
             }
         }
-    }
-
-    private _saveSettings() {
-        // const viewSelector = this.activeAssetId ? this.activeAssetId : window.location.hash;
-        // const assets: Asset[] = this.assets.filter(asset => 'id' in asset && typeof asset.id === "string");
-        // const assetIds = assets.map(asset => asset.id);
-        // const attributes = this.assetAttributes.map(attr => attr.name);
-        // const configStr = window.localStorage.getItem('OrChartConfig')
-        // let config:OrChartConfig;
-        // if(configStr) {
-        //     config = JSON.parse(configStr);
-        // } else {
-        //     config = {
-        //         views: {
-        //             [viewSelector]: {}
-        //         }
-        //     }
-        // }
-        //
-        // config.views[viewSelector] = {
-        //     assetIds: assetIds,
-        //     attributes: attributes,
-        //     period: this.period
-        // };
-        // window.localStorage.setItem('OrChartConfig', JSON.stringify(config))
     }
 
     protected _cleanup() {
