@@ -347,7 +347,7 @@ export class OrAttributeCard extends LitElement {
         }
     }
 
-    private _setAttribute(e:Event) {
+    private _setAttribute(e: Event) {
         if (this.shadowRoot && this.shadowRoot.getElementById("attribute-picker")) {
             const elm = this.shadowRoot.getElementById("attribute-picker") as HTMLInputElement;
             if (this.asset) {
