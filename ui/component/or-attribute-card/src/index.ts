@@ -449,7 +449,8 @@ export class OrAttributeCard extends LitElement {
                                         style="display:flex;"
                                         .label="${i18next.t("attribute")}" 
                                         .type="${InputType.LIST}"
-                                        .options="${this._getAttributeOptions()}"></or-input>
+                                        .options="${this._getAttributeOptions()}"
+                                        .value="${this.attributeName}"></or-input>
                             ` : ``}
                     </div>
                     <footer class="mdc-dialog__actions">
