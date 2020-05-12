@@ -328,9 +328,9 @@ export class OrAttributeCard extends LitElement {
         }
 
         if (changedProperties.has("mainValue") || changedProperties.has("mainValueLastPeriod")) {
-            if (this.mainValueLastPeriod && this.mainValue) {
+            if (this.mainValueLastPeriod !== undefined && this.mainValue !== undefined) {
                 this.delta = this.getFormattedDelta(this.mainValue, this.mainValueLastPeriod);
-                this.deltaPlus = (this.delta.val! > 0) ? "+" : "";
+                this.deltaPlus = (this.delta.val && this.delta.val > 0) ? "+" : "";
             }
         }
         if (changedProperties.has("mainValue")) {
