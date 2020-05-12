@@ -1,5 +1,6 @@
 package org.openremote.manager.mqtt;
 
+import com.google.inject.internal.cglib.core.$AbstractClassGenerator;
 import io.moquette.broker.security.IAuthorizatorPolicy;
 import io.moquette.broker.subscriptions.Topic;
 import org.keycloak.adapters.rotation.AdapterTokenVerifier;
@@ -18,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.manager.mqtt.MqttBrokerService.ASSETS_TOPIC;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
 public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
@@ -58,13 +60,13 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             return false;
         }
 
-        if (topic.isEmpty() || topic.getTokens().size() > 2) {
-            LOG.info("Topic may not be empty and should have the following format: assets/{assetId}");
+        if (topic.isEmpty() || topic.getTokens().size() != 3) {
+            LOG.info("Topic may not be empty and should have the following format: assets/{assetId}/{attributeName}");
             return false;
         }
 
-        if (!topic.headToken().toString().equals("assets")) {
-            LOG.info("Topic should have the following format: assets/{assetId}");
+        if (!topic.headToken().toString().equals(ASSETS_TOPIC)) {
+            LOG.info("Topic should have the following format: assets/{assetId}/{attributeName}");
             return false;
         }
 
@@ -79,6 +81,13 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             LOG.info("Asset not in same clientId");
             return false;
         }
+
+        String attributeName = topic.getTokens().get(2).toString();
+        if(!asset.getAttribute(attributeName).isPresent()) {
+            LOG.info("Attribute not found: " + attributeName);
+            return false;
+        }
+
         try {
             AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
             return identityProvider.canSubscribeWith(new AccessTokenAuthContext(connection.realm, accessToken), new TenantFilter(connection.realm), roles);

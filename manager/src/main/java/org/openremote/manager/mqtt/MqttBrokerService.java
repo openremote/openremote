@@ -23,51 +23,62 @@ import io.moquette.BrokerConstants;
 import io.moquette.broker.Server;
 import io.moquette.broker.config.MemoryConfig;
 import io.moquette.interception.InterceptHandler;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.EmptyByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.mqtt.*;
-import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.message.MessageBrokerSetupService;
-import org.openremote.container.persistence.PersistenceEvent;
-import org.openremote.container.util.UniqueIdentifierGenerator;
-import org.openremote.manager.asset.AssetProcessingException;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.value.StringValue;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
-import javax.persistence.EntityManager;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.logging.Logger;
 
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 
-public class MqttBrokerService extends RouteBuilder implements ContainerService {
+public class MqttBrokerService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(MqttBrokerService.class.getName());
 
-    public static final String MQTT_KEYCLOAK_CLIENT_ID = UniqueIdentifierGenerator.generateId("mqtt");
-    public static final String MQTTSERVER_LISTEN_HOST = "MQTTSERVER_LISTEN_HOST";
-    public static final String MQTTSERVER_LISTEN_PORT = "MQTTSERVER_LISTEN_PORT";
+    public static final String MQTT_QUEUE = "seda://MqttQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
+
+    public static final String MQTT_CLIENT_ID_PREFIX = "mqtt-";
+    public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
+    public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
+
+    public static final String ASSETS_TOPIC = "assets";
+    public static final String TOPIC_SEPARATOR = "/";
 
     protected ManagerIdentityService identityService;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
-    protected ClientEventService clientEventService;
+    protected MessageBrokerService messageBrokerService;
+
     protected MqttConnector mqttConnector;
 
     protected boolean active;
     protected String host;
     protected int port;
     protected Server mqttBroker;
+
+    public static boolean isMqttClientId(String clientId) {
+        return clientId != null && clientId.startsWith(MQTT_CLIENT_ID_PREFIX);
+    }
+
+    public static String getMqttIdFromClientId(String clientId) {
+        return clientId.substring(MQTT_CLIENT_ID_PREFIX.length());
+    }
 
     @Override
     public int getPriority() {
@@ -76,15 +87,15 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService 
 
     @Override
     public void init(Container container) throws Exception {
-        host = getString(container.getConfig(), MQTTSERVER_LISTEN_HOST, BrokerConstants.HOST);
-        port = getInteger(container.getConfig(), MQTTSERVER_LISTEN_PORT, BrokerConstants.PORT);
+        host = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, BrokerConstants.HOST);
+        port = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, BrokerConstants.PORT);
 
         mqttConnector = new MqttConnector();
 
         assetStorageService = container.getService(AssetStorageService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
         identityService = container.getService(ManagerIdentityService.class);
-        clientEventService = container.getService(ClientEventService.class);
+        messageBrokerService = container.getService(MessageBrokerService.class);
 
         if (!identityService.isKeycloakEnabled()) {
             LOG.warning("MQTT connections are not supported when not using Keycloak identity provider");
@@ -92,7 +103,6 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService 
         } else {
             active = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
-            container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
         }
 
         mqttBroker = new Server();
@@ -104,7 +114,7 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService 
         properties.setProperty(BrokerConstants.HOST_PROPERTY_NAME, host);
         properties.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(port));
         properties.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, String.valueOf(false));
-        List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new AssetInterceptHandler(assetStorageService, assetProcessingService, identityService, identityProvider, clientEventService, mqttConnector, this::sendAssetUpdateMessage));
+        List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new AssetInterceptHandler(assetStorageService, assetProcessingService, identityService, identityProvider, messageBrokerService, mqttConnector, this::sendAssetAttributeUpdateMessage));
         mqttBroker.startServer(new MemoryConfig(properties), interceptHandlers, null, new KeycloakAuthenticator(identityProvider), new KeycloakAuthorizatorPolicy(identityProvider, assetStorageService, mqttConnector));
         LOG.fine("Started MQTT broker");
     }
@@ -112,35 +122,32 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService 
     @Override
     public void stop(Container container) throws Exception {
         mqttBroker.stopServer();
-
         LOG.fine("Stopped MQTT broker");
     }
 
-    @Override
-    public void configure() throws Exception {
-
-        if (active) {
-            from(PERSISTENCE_TOPIC)
-                    .routeId("MqttBrokerServiceAssetChanges")
-                    .filter(isPersistenceEventForEntityType(Asset.class))
-                    .process(exchange -> {
-                        @SuppressWarnings("unchecked")
-                        PersistenceEvent<Asset> persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
-                        Asset eventAsset = persistenceEvent.getEntity();
-
-                        if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
-                            eventAsset = assetStorageService.find(eventAsset.getId(), true);
-                        }
-
-
-                    });
+    public void sendAssetAttributeUpdateMessage(String clientId, AttributeRef attributeRef, Optional<Value> value) {
+        ByteBuf payload = null;
+        if (value.isPresent()) {
+            Optional<String> stringValue = Values.getString(value.get());
+            if (stringValue.isPresent()) {
+                payload = Unpooled.copiedBuffer(stringValue.get(), Charset.defaultCharset());
+            }
+            Optional<Double> doubleValue = Values.getNumber(value.get());
+            if (doubleValue.isPresent()) {
+                payload = Unpooled.copyDouble(doubleValue.get());
+            }
+            Optional<Boolean> boolValue = Values.getBoolean(value.get());
+            if (boolValue.isPresent()) {
+                payload = Unpooled.copyBoolean(boolValue.get());
+            }
         }
-    }
-
-    public void sendAssetUpdateMessage(String clientId, Asset asset) {
+        if (payload == null) {
+            payload = Unpooled.buffer();
+        }
         MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
                 .qos(MqttQoS.AT_MOST_ONCE)
-                .topicName("asset/" + asset.getId())
+                .topicName(ASSETS_TOPIC + TOPIC_SEPARATOR + attributeRef.getEntityId() + TOPIC_SEPARATOR + attributeRef.getAttributeName())
+                .payload(payload)
                 .build();
 
         mqttBroker.internalPublish(publishMessage, clientId);
