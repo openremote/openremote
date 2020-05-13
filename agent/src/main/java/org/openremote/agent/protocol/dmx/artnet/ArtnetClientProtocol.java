@@ -145,48 +145,72 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
         Consumer<ArtnetPacket> messageConsumer = artnetPacket -> {};
-        if (messageConsumer != null) {
-            synchronized (protocolMessageConsumers) {
-                protocolMessageConsumers.compute(protocolRef, (ref, consumers) -> {
-                    if (consumers == null) {
-                        consumers = new ArrayList<>();
-                    }
-                    consumers.add(new Pair<AttributeRef, Consumer<ArtnetPacket>>(
-                            attribute.getReferenceOrThrow(),
-                            messageConsumer
-                    ));
-                    return consumers;
-                });
-            }
+        synchronized (protocolMessageConsumers) {
+            protocolMessageConsumers.compute(protocolRef, (ref, consumers) -> {
+                if (consumers == null) {
+                    consumers = new ArrayList<>();
+                }
+                consumers.add(new Pair<AttributeRef, Consumer<ArtnetPacket>>(
+                        attribute.getReferenceOrThrow(),
+                        messageConsumer
+                ));
+                return consumers;
+            });
         }
-        if(getLinkedAttribute(attribute.getReference().get()) != null) {
-            Asset parentAsset = assetService.findAsset(getLinkedAttribute(attribute.getReference().get()).getAssetId().get());
-            //THIS NOW RELIES ON ALWAYS HAVING THE FOLLOWING ATTRIBUTES IN THE SAME LEVEL
-            Integer lightId = parentAsset.getAttribute("Id").get().getValueAsInteger().get();
-            Integer groupId = parentAsset.getAttribute("GroupId").get().getValueAsInteger().get();
-            Integer universe = parentAsset.getAttribute("Universe").get().getValueAsInteger().get();
-            Integer amountOfLeds = parentAsset.getAttribute("AmountOfLeds").get().getValueAsInteger().get();
-            String[] requiredKeys = parentAsset.getAttribute("RequiredValues").get().getValueAsString().get().split(",");
-            ArtnetLightState state = new ArtnetLightState(lightId, new LinkedHashMap<String, Integer>(), 100, true);
-            for(String key : requiredKeys)
-                state.getReceivedValues().put(key, 0);
-            ArtnetLight lightToCreate = new ArtnetLight(lightId, groupId, universe, amountOfLeds, requiredKeys, state, null);
-            if(artnetLightMemory.stream().noneMatch(light -> light.getLightId() == lightToCreate.getLightId()))
-                artnetLightMemory.add(lightToCreate);
+        if(getLinkedAttribute(attribute.getReference().orElse(null)) != null) {
+            AttributeRef parentAttributeRef = attribute.getReference().orElse(null);
+            if(parentAttributeRef != null) {
+                String parentAssetId = getLinkedAttribute(parentAttributeRef).getAssetId().orElse(null);
+                if(parentAssetId != null) {
+                    Asset parentAsset = assetService.findAsset(parentAssetId);
+                    if(parentAsset != null) {
+                        Attribute lightAttribute = parentAsset.getAttribute("Id").orElse(null);
+                        Attribute groupAttribute = parentAsset.getAttribute("GroupId").orElse(null);
+                        Attribute universeAttribute = parentAsset.getAttribute("Universe").orElse(null);
+                        Attribute amountOfLedsAttribute = parentAsset.getAttribute("AmountOfLeds").orElse(null);
+                        Attribute requiredValuesAttribute = parentAsset.getAttribute("RequiredValues").orElse(null);
+                        if(lightAttribute != null && groupAttribute != null && universeAttribute != null && amountOfLedsAttribute != null && requiredValuesAttribute != null) {
+                            int lightId = lightAttribute.getValueAsInteger().orElse(-1);
+                            int groupId = groupAttribute.getValueAsInteger().orElse(-1);
+                            int universe = universeAttribute.getValueAsInteger().orElse(-1);
+                            int amountOfLeds = amountOfLedsAttribute.getValueAsInteger().orElse(-1);
+                            String requiredKeysField = requiredValuesAttribute.getValueAsString().orElse(null);
+                            if(lightId != -1 && groupId != -1 && universe != -1 && amountOfLeds != -1 && requiredKeysField != null) {
+                                String[] requiredKeys = requiredKeysField.split(",");
+                                ArtnetLightState state = new ArtnetLightState(lightId, new LinkedHashMap<String, Integer>(), 100, true);
+                                for(String key : requiredKeys)
+                                    state.getReceivedValues().put(key, 0);
+                                ArtnetLight lightToCreate = new ArtnetLight(lightId, groupId, universe, amountOfLeds, requiredKeys, state, null);
+                                if(artnetLightMemory.stream().noneMatch(light -> light.getLightId() == lightToCreate.getLightId()))
+                                    artnetLightMemory.add(lightToCreate);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
     @Override
     protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-
-        if(getLinkedAttribute(attribute.getReference().get()) != null) {
-            Asset parentAsset = assetService.findAsset(getLinkedAttribute(attribute.getReference().get()).getAssetId().get());
-            Integer lightId = parentAsset.getAttribute("Id").get().getValueAsInteger().get();
-            Integer universe = parentAsset.getAttribute("Universe").get().getValueAsInteger().get();
-            if(artnetLightMemory.stream().anyMatch(light -> light.getLightId() == lightId))
-                artnetLightMemory.remove(artnetLightMemory.stream().filter(light -> light.getLightId() == lightId).findFirst().get());
+        AssetAttribute assetAttribute = getLinkedAttribute(attribute.getReference().orElse(null));
+        if(assetAttribute != null) {
+            String assetId = assetAttribute.getAssetId().orElse(null);
+            if(assetId != null) {
+                Asset parentAsset = assetService.findAsset(assetId);
+                Attribute lightAttribute = parentAsset.getAttribute("Id").orElse(null);
+                Attribute universeAttribute = parentAsset.getAttribute("Universe").orElse(null);
+                if(lightAttribute != null && universeAttribute != null) {
+                    int lightId = lightAttribute.getValueAsInteger().orElse(-1);
+                    int universe = universeAttribute.getValueAsInteger().orElse(-1);
+                    if(lightId != -1 && universe != -1) {
+                        if(artnetLightMemory.stream().anyMatch(light -> light.getLightId() == lightId)) {
+                            artnetLightMemory.stream().filter(light -> light.getLightId() == lightId).findFirst().ifPresent(artnetLight -> artnetLightMemory.remove(artnetLight));
+                        }
+                    }
+                }
+            }
         }
-        //THIS NOW RELIES ON ALWAYS HAVING THE FOLLOWING ATTRIBUTES IN THE SAME LEVEL
         synchronized (protocolMessageConsumers) {
             protocolMessageConsumers.compute(protocolConfiguration.getReferenceOrThrow(), (ref, consumers) -> {
                 if (consumers != null) {
@@ -216,53 +240,72 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
     @Override
     protected ArtnetPacket createWriteMessage(AssetAttribute protocolConfiguration, AssetAttribute attribute, AttributeEvent event, Value processedValue) {
         //Todo check for group later here
-        Asset parentAsset = assetService.findAsset(getLinkedAttribute(attribute.getReference().get()).getAssetId().get());
-        //THIS NOW RELIES ON ALWAYS HAVING THE FOLLOWING ATTRIBUTES IN THE SAME LEVEL
-        Integer universeId = parentAsset.getAttribute("Universe").get().getValueAsInteger().get();
-        Integer lightId = parentAsset.getAttribute("Id").get().getValueAsInteger().get();
-        ArtnetLight updatedLight = (ArtnetLight) artnetLightMemory.stream().filter(light -> light.getLightId() == lightId).findFirst().get();
-        ArtnetLightState oldLightState = (ArtnetLightState) updatedLight.getLightState();
-        ObjectMapper mapper = new ObjectMapper();
-        //UPDATE LIGHT VALUES (R,G,B FOR EXAMPLE)
-        if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Values")) {
-            Map<String, Integer> valuesToUpdate = new LinkedHashMap<String, Integer>();
-            for(String requiredKey : updatedLight.getRequiredValues()) {
-                try {
-                    JsonNode node = mapper.readTree(processedValue.toJson());
-                    int requiredKeyValue = node.get(requiredKey).asInt();
-                    valuesToUpdate.put(requiredKey, requiredKeyValue);
-                } catch (JsonProcessingException e) {
-                    e.printStackTrace();
+        AttributeRef attributeRef = attribute.getReference().orElse(null);
+        if(attributeRef != null) {
+            AssetAttribute linkedAttribute = getLinkedAttribute(attributeRef);
+            if(linkedAttribute != null) {
+                String parentAssetId = linkedAttribute.getAssetId().orElse(null);
+                if(parentAssetId != null) {
+                    Asset parentAsset = assetService.findAsset(parentAssetId);
+                    Attribute universeAttribute = parentAsset.getAttribute("Universe").orElse(null);
+                    Attribute lightAttribute = parentAsset.getAttribute("Id").orElse(null);
+                    if(universeAttribute != null && lightAttribute != null) {
+                        int universeId = universeAttribute.getValueAsInteger().orElse(-1);
+                        int lightId = lightAttribute.getValueAsInteger().orElse(-1);
+                        if(universeId != -1 && lightId != -1) {
+                            ArtnetLight updatedLight = (ArtnetLight) artnetLightMemory.stream().filter(light -> light.getLightId() == lightId).findFirst().orElse(null);
+                            if(updatedLight != null) {
+                                ArtnetLightState oldLightState = (ArtnetLightState) updatedLight.getLightState();
+                                ObjectMapper mapper = new ObjectMapper();
+                                //UPDATE LIGHT VALUES (R,G,B FOR EXAMPLE)
+                                if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Values")) {
+                                    Map<String, Integer> valuesToUpdate = new LinkedHashMap<String, Integer>();
+                                    for(String requiredKey : updatedLight.getRequiredValues()) {
+                                        try {
+                                            JsonNode node = mapper.readTree(processedValue.toJson());
+                                            JsonNode requiredKeyValue = node.get(requiredKey);
+                                            if(requiredKeyValue == null)
+                                                throw new NullPointerException("Could not find key: " + requiredKey.toString() + " in the json-file.");
+                                            valuesToUpdate.put(requiredKey, requiredKeyValue.asInt());
+                                        } catch (JsonProcessingException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                    updateLightStateInMemory(lightId, new ArtnetLightState(lightId, valuesToUpdate, oldLightState.getDim(), oldLightState.isEnabled()));
+                                }
+                                //UPDATE DIM
+                                else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Dim")) {
+                                    try {
+                                        JsonNode node = mapper.readTree(processedValue.toJson());
+                                        int dimValue = node.asInt();
+                                        updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), dimValue, oldLightState.isEnabled()));
+                                    } catch (JsonProcessingException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                //UPDATE ENABLED/DISABLED
+                                else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Switch")) {
+                                    try{
+                                        JsonNode node = mapper.readTree(processedValue.toJson());
+                                        boolean enabled = node.asBoolean();
+                                        updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), oldLightState.getDim(), enabled));
+                                    } catch (JsonProcessingException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                //SEND ALL LIGHTS TO UPDATE TO THE ENCODER
+                                List<ArtnetLight> lightsToSend = new ArrayList<ArtnetLight>();
+                                for(AbstractArtnetLight abstractLight : artnetLightMemory.stream().filter(light -> light.getUniverse() == universeId).collect(Collectors.toList()))
+                                    lightsToSend.add((ArtnetLight)abstractLight);
+                                updateLinkedAttribute(event.getAttributeState());
+                                return new ArtnetPacket(universeId, lightsToSend);
+                            }
+                        }
+                    }
                 }
             }
-            updateLightStateInMemory(lightId, new ArtnetLightState(lightId, valuesToUpdate, oldLightState.getDim(), oldLightState.isEnabled()));
         }
-        //UPDATE DIM
-        else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Dim")) {
-            try {
-                JsonNode node = mapper.readTree(processedValue.toJson());
-                int dimValue = node.asInt();
-                updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), dimValue, oldLightState.isEnabled()));
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
-        }
-        //UPDATE ENABLED/DISABLED
-        else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Switch")) {
-            try{
-                JsonNode node = mapper.readTree(processedValue.toJson());
-                boolean enabled = node.asBoolean();
-                updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), oldLightState.getDim(), enabled));
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
-        }
-        //SEND ALL LIGHTS TO UPDATE TO THE ENCODER
-        List<ArtnetLight> lightsToSend = new ArrayList<ArtnetLight>();
-        for(AbstractArtnetLight abstractLight : artnetLightMemory.stream().filter(light -> light.getUniverse() == universeId).collect(Collectors.toList()))
-            lightsToSend.add((ArtnetLight)abstractLight);
-        updateLinkedAttribute(event.getAttributeState());
-        return new ArtnetPacket(universeId, lightsToSend);
+        return null;
     }
 
     @Override
