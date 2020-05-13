@@ -119,7 +119,7 @@ export class OrMwcDialog extends LitElement {
                     <div class="mdc-dialog__surface">
                     <h2 class="mdc-dialog__title" id="dialog-title"><or-translate value="${this.dialogTitle}"></or-translate></h2>
                     <div class="dialog-container mdc-dialog__content" id="dialog-content">
-                        ${this.dialogContent ? this.dialogContent : html`<slot></slot>`}
+                        ${this.dialogContent ? this.dialogContent : html`<div></div>`}
                     </div>
                     <footer class="mdc-dialog__actions">
                         ${this.dialogActions ? this.dialogActions.map((action) => {
