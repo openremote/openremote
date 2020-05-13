@@ -40,9 +40,9 @@ const style = css`
         width: 100%;
     }
     .panel.panel-empty .panel-content {
-        flex-direction: row;
         align-items: center;
         justify-content: center;
+        flex-direction: column;
     }
     
     .panel-content-wrapper {
@@ -204,6 +204,8 @@ export class OrAttributeCard extends LitElement {
     private delta: {val?: number, unit?: string} = {};
     @property()
     private deltaPlus: string = "";
+
+    private error: boolean = false;
 
     private period: moment.unitOfTime.Base = "month";
     private now?: Date = new Date();
@@ -424,6 +426,20 @@ export class OrAttributeCard extends LitElement {
             </div>
         `;
 
+        if (this.error) {
+            return html`
+                <div class="panel panel-empty">
+                    <div class="panel-content-wrapper">
+                        <div class="panel-content">
+                            <span>${i18next.t("couldNotRetrieveAttribute")}</span>
+                            <or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-input>
+                        </div>
+                    </div>
+                </div>
+                ${dialogHTML}
+            `;
+        }
+
         if (!this.assetId || !this.attributeName) {
             return html`
                 <div class="panel panel-empty">
@@ -544,6 +560,11 @@ export class OrAttributeCard extends LitElement {
             .then((returnvalues) => {
                 this.delta = this.getFormattedDelta(returnvalues[0], returnvalues[1]);
                 this.graphColour = (this.delta.val! < 0) ? "#FF0000" : "#4D9D2A";
+                this.error = false;
+            })
+            .catch((err) => {
+                this.error = true;
+                this.requestUpdate();
             });
 
     }
