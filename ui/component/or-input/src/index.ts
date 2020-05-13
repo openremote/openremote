@@ -279,6 +279,10 @@ export class OrInput extends LitElement {
     @property({type: Boolean})
     public autoSelect?: boolean;
 
+
+    @property({type: Boolean})
+    public checkAssetWrite: boolean = true;
+
     /* STYLING PROPERTIES BELOW */
 
     @property({type: String})
@@ -351,7 +355,7 @@ export class OrInput extends LitElement {
     }
 
     protected render() {
-        const readonly = this.readonly || !manager.hasRole(ClientRole.WRITE_ASSETS)
+        const readonly = this.readonly || this.checkAssetWrite ? !manager.hasRole(ClientRole.WRITE_ASSETS) : false;
     
         if (this.type) {
 

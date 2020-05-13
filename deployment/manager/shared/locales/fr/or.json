@@ -3,8 +3,10 @@
   "map_plural": "Cartes",
   "rule": "Règle",
   "rule_plural": "Règles",
+  "rules": "Règles",
   "asset": "Ressource",
   "asset_plural": "Ressources",
+  "assets": "Ressources",
   "attribute": "Attribut",
   "insights": "Insights",
   "scenes": "Scènes",
@@ -107,11 +109,19 @@
   "history": "Historique",
   "attributes": "Attributs",
   "info": "Info",
-  "logs":"Journaux",
-  "choose_lang":"Choisissez la langue",
+  "logs": "Journaux",
+  "chooseLanguage": "Choisissez la langue",
+  "addRemoveAttributes": "Add/remove attributes",
   "attributeValueType": {
     "PERCENTAGE": "%.2f",
     "NUMBER": "%.0f",
-    "TEMPERATURE": "%.1f"
+    "TEMPERATURE": "%.1f",
+    "POWER": "%.1f",
+    "CURRENCY": "%.1f",
+    "SPEED": "%.1f",
+    "CHARGE": "%.1f",
+    "ENERGY": "%.1f",
+    "CO2": "%.1f",
+    "HUMIDITY": "%.1f"
   }
 }

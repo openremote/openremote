@@ -26,7 +26,6 @@ import org.openremote.agent.protocol.Protocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
@@ -115,7 +114,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         this.assetStorageService = container.getService(AssetStorageService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.messageBrokerService = container.getService(MessageBrokerService.class);
-        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
         container.getServices(NotificationHandler.class).forEach(notificationHandler ->
                 notificationHandlerMap.put(notificationHandler.getTypeName(), notificationHandler));

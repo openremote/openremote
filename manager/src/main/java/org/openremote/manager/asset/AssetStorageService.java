@@ -25,7 +25,6 @@ import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
@@ -62,6 +61,7 @@ import org.postgresql.util.PGobject;
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.TypedQuery;
+import javax.ws.rs.WebApplicationException;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
@@ -74,6 +74,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
@@ -249,7 +250,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 this)
         );
 
-        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }
 
     @Override
@@ -429,15 +430,26 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             if (asset.getId() != null) {
 
+                // At least some sanity check, we must hope that the client has set a unique ID
+                if (asset.getId().length() != 22) {
+                    String msg = "Asset ID must be 22 characters: asset=" + asset;
+                    LOG.info(msg);
+                    throw new IllegalStateException(msg);
+                }
+
                 existing = em.find(Asset.class, asset.getId());
 
                 // Verify type has not been changed
                 if (existing != null && !existing.getType().equals(asset.getType())) {
-                    throw new IllegalStateException("Asset type cannot be changed");
+                    String msg = "Asset type cannot be changed: asset=" + asset;
+                    LOG.info(msg);
+                    throw new IllegalStateException(msg);
                 }
 
                 if (existing != null && !existing.getRealm().equals(asset.getRealm())) {
-                    throw new IllegalStateException("Asset realm cannot be changed");
+                    String msg = "Asset realm cannot be changed: asset=" + asset;
+                    LOG.info(msg);
+                    throw new IllegalStateException(msg);
                 }
 
                 // If this is real merge and desired, copy the persistent version number over the detached
@@ -454,16 +466,24 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 Asset parent = find(em, asset.getParentId(), true);
 
                 // .. the parent must exist
-                if (parent == null)
-                    throw new IllegalStateException("Parent not found: " + asset.getParentId());
+                if (parent == null) {
+                    String msg = "Asset parent not found: asset=" + asset;
+                    LOG.info(msg);
+                    throw new IllegalStateException(msg);
+                }
 
                 // ... the parent can not be a child of the asset
-                if (parent.pathContains(asset.getId()))
-                    throw new IllegalStateException("Invalid parent");
+                if (parent.pathContains(asset.getId())) {
+                    String msg = "Asset parent cannot be a descendant of the asset: asset=" + asset;
+                    LOG.info(msg);
+                    throw new IllegalStateException(msg);
+                }
 
                 // .. the parent should be in the same realm
                 if (asset.getRealm() != null && !parent.getRealm().equals(asset.getRealm())) {
-                    throw new IllegalStateException("Parent not in same realm as asset: " + asset.getRealm());
+                    String msg = "Asset parent must be in the same realm: asset=" + asset;
+                    LOG.info(msg);
+                    throw new IllegalStateException(msg);
                 } else if (asset.getRealm() == null) {
                     // ... and if we don't have a realm identifier, use the parent's
                     asset.setRealm(parent.getRealm());
@@ -473,16 +493,24 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 if (parent.getWellKnownType() == AssetType.GROUP) {
                     String childAssetType = parent.getAttribute("childAssetType")
                         .flatMap(AbstractValueHolder::getValueAsString)
-                        .orElseThrow(() -> new IllegalStateException("Parent group asset doesn't have a valid child asset type attribute"));
+                        .orElseThrow(() -> {
+                            String msg = "Asset parent is of type GROUP but the childAssetType attribute is invalid: asset=" + asset;
+                            LOG.info(msg);
+                            return new IllegalStateException(msg);
+                        });
                     if (!childAssetType.equals(asset.getType())) {
-                        throw new IllegalStateException("Asset type does not match parent group's child asset type attribute");
+                        String msg = "Asset type does not match parent GROUP asset's childAssetType attribute: asset=" + asset;
+                        LOG.info(msg);
+                        throw new IllegalStateException(msg);
                     }
                 }
             }
 
             // Validate realm
             if (!identityService.getIdentityProvider().tenantExists(asset.getRealm())) {
-                throw new IllegalStateException("Realm not found/active: " + asset.getRealm());
+                String msg = "Asset realm not found or is inactive: asset=" + asset;
+                LOG.info(msg);
+                throw new IllegalStateException(msg);
             }
 
             // Validate attributes
@@ -495,7 +523,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             }
             if (invalid > 0) {
-                throw new IllegalStateException("Storing asset failed, invalid attributes: " + invalid);
+                String msg = "Asset has one or more invalid attributes: asset=" + asset;
+                LOG.info(msg);
+                throw new IllegalStateException(msg);
             }
 
             // Validate group child asset type attribute
@@ -503,16 +533,25 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 String childAssetType = asset.getAttribute("childAssetType")
                     .flatMap(AssetAttribute::getValueAsString)
                     .map(childAssetTypeString -> TextUtil.isNullOrEmpty(childAssetTypeString) ? null : childAssetTypeString)
-                    .orElseThrow(() -> new IllegalStateException("Asset type group childAssetType attribute must be a valid string"));
+                    .orElseThrow(() -> {
+                        String msg = "Asset of type GROUP childAssetType attribute must be a valid string: asset=" + asset;
+                        LOG.info(msg);
+                        return new IllegalStateException(msg);
+                    });
 
                 String existingChildAssetType = existing != null ? existing
                     .getAttribute("childAssetType")
                     .flatMap(AssetAttribute::getValueAsString)
-                    .orElseThrow(() ->
-                        new IllegalStateException("Asset type group childAssetType attribute must be a valid string")) : childAssetType;
+                    .orElseThrow(() -> {
+                        String msg = "Asset of type GROUP childAssetType attribute must be a valid string: asset=" + asset;
+                        LOG.info(msg);
+                        return new IllegalStateException(msg);
+                    }) : childAssetType;
 
                 if (!childAssetType.equals(existingChildAssetType)) {
-                    throw new IllegalStateException("Asset type group childAssetType attribute cannot be changed");
+                    String msg = "Asset of type GROUP so childAssetType attribute cannot be changed: asset=" + asset;
+                    LOG.info(msg);
+                    throw new IllegalStateException(msg);
                 }
             }
 
@@ -531,7 +570,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             if (!TextUtil.isNullOrEmpty(userName)) {
                 user = identityService.getIdentityProvider().getUser(asset.getRealm(), userName);
                 if (user == null) {
-                    throw new IllegalStateException("User not found: " + userName);
+                    String msg = "User not found: " + userName;
+                    LOG.info(msg);
+                    throw new IllegalStateException(msg);
                 }
             }
 
@@ -1949,13 +1990,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Collectors.toList());
-        TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription(events, subscriptionId);
+        TriggeredEventSubscription<?> triggeredEventSubscription = new TriggeredEventSubscription<>(events, subscriptionId);
         clientEventService.sendToSession(sessionKey, triggeredEventSubscription);
     }
 
     protected void replyWithAssetEvent(String sessionKey, String subscriptionId, Asset asset) {
         AssetEvent event = new AssetEvent(AssetEvent.Cause.READ, asset, null);
-        TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription(Collections.singletonList(event), subscriptionId);
+        TriggeredEventSubscription<?> triggeredEventSubscription = new TriggeredEventSubscription<>(Collections.singletonList(event), subscriptionId);
         clientEventService.sendToSession(sessionKey, triggeredEventSubscription);
     }
 

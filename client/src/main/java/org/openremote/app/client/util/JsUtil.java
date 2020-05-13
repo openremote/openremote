@@ -23,6 +23,7 @@ import jsinterop.annotations.JsMethod;
 
 import java.util.List;
 
+@SuppressWarnings("EqualityComparisonWithCoercionJS")
 public class JsUtil {
 
     public native static void log(Object o) /*-{
@@ -43,6 +44,7 @@ public class JsUtil {
     }-*/;
 
 
+    @SuppressWarnings("rawtypes")
     @JsMethod(namespace = "JsUtil")
     public static Object toJsArray(Object obj) {
         if (obj instanceof List) {

@@ -26,7 +26,6 @@ import org.openremote.agent.protocol.Protocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
@@ -219,7 +218,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         processors.add(assetDatapointService);
         processors.add(assetAttributeLinkingService);
 
-        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }
 
     @Override

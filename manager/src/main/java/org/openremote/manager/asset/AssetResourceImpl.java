@@ -461,11 +461,6 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Allow client to set identifier
             if (asset.getId() != null) {
-                // At least some sanity check, we must hope that the client has set a unique ID
-                if (asset.getId().length() != 22) {
-                    LOG.fine("Identifier value must be 22 characters, can't persist asset: " + asset);
-                    throw new WebApplicationException(BAD_REQUEST);
-                }
                 newAsset.setId(asset.getId());
             }
 

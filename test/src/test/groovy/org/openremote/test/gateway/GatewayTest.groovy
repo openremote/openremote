@@ -2,7 +2,6 @@ package org.openremote.test.gateway
 
 import com.google.common.collect.Lists
 import io.netty.channel.ChannelHandler
-import org.apache.camel.builder.AdviceWithRouteBuilder
 import org.apache.http.client.utils.URIBuilder
 import org.openremote.agent.protocol.http.HttpClientProtocol
 import org.openremote.agent.protocol.http.OAuthClientCredentialsGrant
@@ -10,13 +9,11 @@ import org.openremote.agent.protocol.io.AbstractNettyIoClient
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.agent.protocol.websocket.WebsocketIoClient
 import org.openremote.container.Container
-import org.openremote.container.message.MessageBrokerSetupService
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.container.web.ClientRequestInfo
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.concurrent.ManagerExecutorService
-import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.gateway.GatewayClientService
 import org.openremote.manager.gateway.GatewayConnector
 import org.openremote.manager.gateway.GatewayService
@@ -24,7 +21,6 @@ import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
-import org.openremote.model.Constants
 import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.*
@@ -544,7 +540,12 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert gatewayService.gatewayConnectorMap.get(gateway.getId()).disabled
             assert !gatewayService.gatewayConnectorMap.get(gateway.getId()).connected
-            assert gatewayClient.connectionStatus == ConnectionStatus.WAITING
+            assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTING
+        }
+
+        and: "the central manager should have sent a disconnect event to the client"
+        conditions.eventually {
+            assert clientReceivedMessages.last().contains("gateway-disconnect")
         }
         gatewayClient.disconnect()
 

@@ -12,6 +12,7 @@
   "dependencies": {
     "@material/menu": "^4.0.0",
     "@material/drawer": "^4.0.0",
+    "@material/dialog": "^4.0.0",
     "lit-element": "^2.2.1"
   },
   "devDependencies": {

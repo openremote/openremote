@@ -21,7 +21,7 @@ subprojects {
 // Default repositories for dependency resolution
 repositories {
     maven {
-        url = "http://download.osgeo.org/webdav/geotools/"
+        url = "https://repo.osgeo.org/repository/release/"
     }
     mavenCentral()
     jcenter()

@@ -3,8 +3,10 @@
   "map_plural": "Mapas",
   "rule": "Regla",
   "rule_plural": "Reglas",
+  "rules": "Reglas",
   "asset": "Activo",
   "asset_plural": "Activos",
+  "assets": "Activos",
   "attribute": "Atributo",
   "insights": "Insights",
   "scenes": "Escenas",
@@ -108,10 +110,17 @@
   "attributes": "Atributos",
   "info": "Informacion",
   "logs":"Registros",
-  "choose_lang":"Elige lengua",
+  "chooseLanguage": "Elige lengua",
   "attributeValueType": {
     "PERCENTAGE": "%.2f",
     "NUMBER": "%.0f",
-    "TEMPERATURE": "%.1f"
+    "TEMPERATURE": "%.1f",
+    "POWER": "%.1f",
+    "CURRENCY": "%.1f",
+    "SPEED": "%.1f",
+    "CHARGE": "%.1f",
+    "ENERGY": "%.1f",
+    "CO2": "%.1f",
+    "HUMIDITY": "%.1f"
   }
 }

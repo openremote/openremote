@@ -19,6 +19,7 @@
  */
 package org.openremote.agent.protocol.websocket;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.http.HttpHeaders;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -179,7 +180,7 @@ public abstract class AbstractWebsocketClientProtocol<T> extends AbstractIoClien
             .flatMap(objectValue -> getMultivaluedMap(objectValue, true))
             .orElse(null);
 
-        Optional<WebsocketSubscription[]> subscriptions = getSubscriptions(protocolConfiguration);
+        Optional<WebsocketSubscription<T>[]> subscriptions = getSubscriptions(protocolConfiguration);
 
         if (!oAuthGrant.isPresent() && usernameAndPassword.isPresent()) {
             String authValue = BasicAuthHelper.createHeader(usernameAndPassword.get().key.getString(), usernameAndPassword.get().value.getString());
@@ -215,8 +216,8 @@ public abstract class AbstractWebsocketClientProtocol<T> extends AbstractIoClien
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
         ProtocolIoClient<T, WebsocketIoClient<T>> protocolClient = protocolIoClientMap.get(protocolRef);
-        WebsocketIoClient client = protocolClient.client;
-        Optional<WebsocketSubscription[]> subscriptions = getSubscriptions(attribute);
+        WebsocketIoClient<T> client = protocolClient.client;
+        Optional<WebsocketSubscription<T>[]> subscriptions = getSubscriptions(attribute);
 
         subscriptions.ifPresent(websocketSubscriptions -> {
             MultivaluedMap<String, String> headers = clientHeaders.get(protocolRef);
@@ -289,7 +290,7 @@ public abstract class AbstractWebsocketClientProtocol<T> extends AbstractIoClien
         }
     }
 
-    protected void doSubscriptions(AttributeRef protocolRef, WebsocketIoClient websocketClient, MultivaluedMap<String, String> headers, WebsocketSubscription[] subscriptions) {
+    protected void doSubscriptions(AttributeRef protocolRef, WebsocketIoClient<T> websocketClient, MultivaluedMap<String, String> headers, WebsocketSubscription<T>[] subscriptions) {
         LOG.info("Executing subscriptions for websocket: " + websocketClient.getClientUri());
 
         // Inject OAuth header
@@ -307,7 +308,7 @@ public abstract class AbstractWebsocketClientProtocol<T> extends AbstractIoClien
         );
     }
 
-    protected void doSubscription(WebsocketIoClient<String> websocketClient, MultivaluedMap<String, String> headers, WebsocketSubscription subscription) {
+    protected void doSubscription(WebsocketIoClient<T> websocketClient, MultivaluedMap<String, String> headers, WebsocketSubscription<T> subscription) {
         if (subscription instanceof WebsocketHttpSubscription) {
             WebsocketHttpSubscription httpSubscription = (WebsocketHttpSubscription)subscription;
 
@@ -364,6 +365,7 @@ public abstract class AbstractWebsocketClientProtocol<T> extends AbstractIoClien
                 invocation = target.request().build(httpSubscription.method.toString(), Entity.entity(httpSubscription.body, httpSubscription.contentType));
             }
             Response response = invocation.invoke();
+            response.close();
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                 LOG.warning("WebsocketHttpSubscription returned an un-successful response code: " + response.getStatus());
             }
@@ -372,7 +374,7 @@ public abstract class AbstractWebsocketClientProtocol<T> extends AbstractIoClien
         }
     }
 
-    protected static Optional<WebsocketSubscription[]> getSubscriptions(Attribute attribute) {
+    protected static <T> Optional<WebsocketSubscription<T>[]> getSubscriptions(Attribute attribute) {
         return Values.getMetaItemValueOrThrow(
             attribute,
             META_SUBSCRIPTIONS,
@@ -381,7 +383,7 @@ public abstract class AbstractWebsocketClientProtocol<T> extends AbstractIoClien
             .flatMap(Values::getArray)
             .map(arrValue -> {
                 try {
-                    return Container.JSON.readValue(arrValue.toJson(), WebsocketSubscription[].class);
+                    return Container.JSON.readValue(arrValue.toJson(), new TypeReference<WebsocketSubscription<T>[]>() {});
                 } catch (IOException e) {
                     LOG.log(Level.WARNING, "Failed to deserialize WebsocketSubscription[]", e);
                     return null;
