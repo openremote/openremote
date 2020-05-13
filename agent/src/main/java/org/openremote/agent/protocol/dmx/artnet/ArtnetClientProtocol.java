@@ -229,8 +229,10 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
             for(String requiredKey : updatedLight.getRequiredValues()) {
                 try {
                     JsonNode node = mapper.readTree(processedValue.toJson());
-                    int requiredKeyValue = node.get(requiredKey).asInt();
-                    valuesToUpdate.put(requiredKey, requiredKeyValue);
+                    JsonNode requiredKeyValue = node.get(requiredKey);
+                    if(requiredKeyValue == null)
+                        throw new NullPointerException("Could not find key: " + requiredKey.toString() + " in the json-file.");
+                    valuesToUpdate.put(requiredKey, requiredKeyValue.asInt());
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
                 }
