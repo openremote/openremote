@@ -32,6 +32,8 @@ public class TradfriConnection {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, TradfriConnection.class);
 
+    private Gateway gateway;
+
     public TradfriConnection(String gatewayIp, String securityCode, ProtocolExecutorService executorService) {
         this.gatewayIp = gatewayIp;
         this.securityCode = securityCode;
@@ -50,8 +52,11 @@ public class TradfriConnection {
             Credentials credentials = gateway.connect(securityCode);
             String key = credentials.getKey();
             if (key != null) {
-                onConnectionStatusChanged(ConnectionStatus.CONNECTED);
-                return gateway;
+                if(gateway.enableObserve()){
+                    onConnectionStatusChanged(ConnectionStatus.CONNECTED);
+                    this.gateway = gateway;
+                    return gateway;
+                }
             }
             else {
                 onConnectionStatusChanged(ConnectionStatus.ERROR_AUTHENTICATION);
@@ -84,7 +89,9 @@ public class TradfriConnection {
         }
         LOG.finest("Disconnecting");
         onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
-        onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
+        if(gateway.disableObserve()){
+            onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
+        }
     }
 
     public synchronized void removeConnectionStatusConsumer(java.util.function.Consumer<ConnectionStatus> connectionStatusConsumer) {

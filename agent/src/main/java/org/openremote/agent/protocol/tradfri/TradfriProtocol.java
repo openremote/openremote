@@ -6,6 +6,7 @@ import org.openremote.agent.protocol.tradfri.device.Light;
 import org.openremote.agent.protocol.tradfri.device.Plug;
 
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.agent.protocol.tradfri.device.event.*;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
@@ -61,7 +62,7 @@ public class TradfriProtocol extends AbstractProtocol {
     );
 
     final protected Map<String, TradfriConnection> tradfriConnections = new HashMap<>();
-    final protected Map<String, Device> tradfriDevices = new HashMap<>();
+    final protected HashMap<String, Device> tradfriDevices = new HashMap<>();
     final protected Map<AttributeRef, Consumer<ConnectionStatus>> statusConsumerMap = new HashMap<>();
     final protected Map<AttributeRef, Pair<TradfriConnection, Device>> attributeMap = new HashMap<>();
 
@@ -147,24 +148,49 @@ public class TradfriProtocol extends AbstractProtocol {
             );
             tradfriConnection.addConnectionStatusConsumer(statusConsumer);
             Gateway gateway = tradfriConnection.connect();
-            for (Device dev : gateway.getDevices()) {
-                if (dev.isPlug()) {
-                    Plug plug = dev.toPlug();
-                    createPlugAsset(plug, agentLink, protocolConfiguration);
-                    tradfriDevices.put("plug: " + plug.getName(), plug);
-                }
-                else if (dev.isLight()) {
-                    Light light = dev.toLight();
-                    createLightAsset(light, agentLink, protocolConfiguration);
-                    tradfriDevices.put("light: " + light.getName(), light);
-                }
-                else {
-                    LOG.warning("This device type is currently not supported by the protocol");
-                }
+            if(gateway != null){
+                Device[] devices = gateway.getDevices();
+                addDevices(devices, agentLink, protocolConfiguration);
+                EventHandler<GatewayEvent> gatewayEventHandler = new EventHandler<GatewayEvent>() {
+                    @Override
+                    public void handle(GatewayEvent event) {
+                        Device[] newDevices = event.getGateway().getDevices();
+                        ArrayList<Device> added = new ArrayList<>();
+                        HashMap<String, Device> removed = (HashMap<String, Device>) tradfriDevices.clone();
+                        for (Device device : newDevices) {
+                            String name = UniqueIdentifierGenerator.generateId("tradfri_" + device.getInstanceId());
+                            if (tradfriDevices.containsKey(name)) {
+                                removed.remove(name);
+                            } else {
+                                added.add(device);
+                            }
+                        }
+                        addDevices(added.toArray(new Device[added.size()]), agentLink, protocolConfiguration);
+                        for (String removedDeviceId : removed.keySet()) {
+                            tradfriDevices.remove(removedDeviceId);
+                            assetService.deleteAsset(removedDeviceId);
+                        }
+                    }
+                };
+                gateway.addEventHandler(gatewayEventHandler);
             }
-
             synchronized (statusConsumerMap) {
                 statusConsumerMap.put(protocolRef, statusConsumer);
+            }
+        }
+    }
+
+    private void addDevices(Device[] devices, MetaItem agentLink, AssetAttribute protocolConfiguration){
+        for (Device device : devices) {
+            if (device.isPlug()) {
+                Plug plug = device.toPlug();
+                Asset plugAsset = createPlugAsset(plug, agentLink, protocolConfiguration);
+                tradfriDevices.put(plugAsset.getId(), plug);
+            }
+            else if (device.isLight()) {
+                Light light = device.toLight();
+                Asset lightAsset = createLightAsset(light, agentLink, protocolConfiguration);
+                tradfriDevices.put(lightAsset.getId(), light);
             }
         }
     }
@@ -254,7 +280,7 @@ public class TradfriProtocol extends AbstractProtocol {
         }
     }
 
-    protected void createLightAsset(Light light, MetaItem agentLink, AssetAttribute protocolConfiguration) {
+    protected Asset createLightAsset(Light light, MetaItem agentLink, AssetAttribute protocolConfiguration) {
         String name = UniqueIdentifierGenerator.generateId("tradfri_" + light.getInstanceId());
         Asset asset = new Asset(light.getName(), AssetType.LIGHT);
         asset.getAttribute("lightDimLevel").get().setMeta(
@@ -281,9 +307,10 @@ public class TradfriProtocol extends AbstractProtocol {
         asset.setId(name);
         asset.setParentId(protocolConfiguration.getAssetId().get());
         assetService.mergeAsset(asset);
+        return asset;
     }
 
-    protected void createPlugAsset(Plug plug, MetaItem agentLink, AssetAttribute protocolConfiguration) {
+    protected Asset createPlugAsset(Plug plug, MetaItem agentLink, AssetAttribute protocolConfiguration) {
         String name = UniqueIdentifierGenerator.generateId("tradfri_" + plug.getInstanceId());
         Asset asset = new Asset(plug.getName(), AssetType.THING);
         asset.setAttributes(
@@ -298,5 +325,6 @@ public class TradfriProtocol extends AbstractProtocol {
         asset.setId(name);
         asset.setParentId(protocolConfiguration.getAssetId().get());
         assetService.mergeAsset(asset);
+        return asset;
     }
 }
