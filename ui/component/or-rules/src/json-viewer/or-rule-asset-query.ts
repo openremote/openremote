@@ -32,7 +32,11 @@ import manager, {AssetModelUtil, Util} from "@openremote/core";
 import i18next from "i18next";
 import {buttonStyle} from "../style";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
+import "./or-rule-radial-modal";
 import {translate} from "@openremote/or-translate";
+
+import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {OrMap, OrMapClickedEvent} from '@openremote/or-map';
 
 // language=CSS
 const style = css`
@@ -54,6 +58,7 @@ const style = css`
         margin: 0 3px 6px;
     }
 `;
+
 
 @customElement("or-rule-asset-query")
 export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
@@ -183,7 +188,6 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const assetType = getAssetTypeFromQuery(this.query);
         // @ts-ignore
         const value = valuePredicate ? valuePredicate.value : undefined;
-
         switch (valuePredicate.predicateType) {
             case "string":
                 return getAttributeValueTemplate(assetType, { name: attributeName!, type: AttributeValueType.STRING }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("string"))(value);
@@ -205,7 +209,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             case "string-array":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "radial":
-                return html `<span>NOT IMPLEMENTED</span>`;
+                
+                return html`<or-rule-radial-modal .query="${this.query}" .assetDescriptor="${assetDescriptor}" .attributePredicate="${attributePredicate}"></or-rule-radial-modal>`;
             case "rect":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "object-value-key":
