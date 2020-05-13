@@ -240,55 +240,72 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
     @Override
     protected ArtnetPacket createWriteMessage(AssetAttribute protocolConfiguration, AssetAttribute attribute, AttributeEvent event, Value processedValue) {
         //Todo check for group later here
-        Asset parentAsset = assetService.findAsset(getLinkedAttribute(attribute.getReference().get()).getAssetId().get());
-        //THIS NOW RELIES ON ALWAYS HAVING THE FOLLOWING ATTRIBUTES IN THE SAME LEVEL
-        Integer universeId = parentAsset.getAttribute("Universe").get().getValueAsInteger().get();
-        Integer lightId = parentAsset.getAttribute("Id").get().getValueAsInteger().get();
-        ArtnetLight updatedLight = (ArtnetLight) artnetLightMemory.stream().filter(light -> light.getLightId() == lightId).findFirst().get();
-        ArtnetLightState oldLightState = (ArtnetLightState) updatedLight.getLightState();
-        ObjectMapper mapper = new ObjectMapper();
-        //UPDATE LIGHT VALUES (R,G,B FOR EXAMPLE)
-        if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Values")) {
-            Map<String, Integer> valuesToUpdate = new LinkedHashMap<String, Integer>();
-            for(String requiredKey : updatedLight.getRequiredValues()) {
-                try {
-                    JsonNode node = mapper.readTree(processedValue.toJson());
-                    JsonNode requiredKeyValue = node.get(requiredKey);
-                    if(requiredKeyValue == null)
-                        throw new NullPointerException("Could not find key: " + requiredKey.toString() + " in the json-file.");
-                    valuesToUpdate.put(requiredKey, requiredKeyValue.asInt());
-                } catch (JsonProcessingException e) {
-                    e.printStackTrace();
+        AttributeRef attributeRef = attribute.getReference().orElse(null);
+        if(attributeRef != null) {
+            AssetAttribute linkedAttribute = getLinkedAttribute(attributeRef);
+            if(linkedAttribute != null) {
+                String parentAssetId = linkedAttribute.getAssetId().orElse(null);
+                if(parentAssetId != null) {
+                    Asset parentAsset = assetService.findAsset(parentAssetId);
+                    Attribute universeAttribute = parentAsset.getAttribute("Universe").orElse(null);
+                    Attribute lightAttribute = parentAsset.getAttribute("Id").orElse(null);
+                    if(universeAttribute != null && lightAttribute != null) {
+                        int universeId = universeAttribute.getValueAsInteger().orElse(-1);
+                        int lightId = lightAttribute.getValueAsInteger().orElse(-1);
+                        if(universeId != -1 && lightId != -1) {
+                            ArtnetLight updatedLight = (ArtnetLight) artnetLightMemory.stream().filter(light -> light.getLightId() == lightId).findFirst().orElse(null);
+                            if(updatedLight != null) {
+                                ArtnetLightState oldLightState = (ArtnetLightState) updatedLight.getLightState();
+                                ObjectMapper mapper = new ObjectMapper();
+                                //UPDATE LIGHT VALUES (R,G,B FOR EXAMPLE)
+                                if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Values")) {
+                                    Map<String, Integer> valuesToUpdate = new LinkedHashMap<String, Integer>();
+                                    for(String requiredKey : updatedLight.getRequiredValues()) {
+                                        try {
+                                            JsonNode node = mapper.readTree(processedValue.toJson());
+                                            JsonNode requiredKeyValue = node.get(requiredKey);
+                                            if(requiredKeyValue == null)
+                                                throw new NullPointerException("Could not find key: " + requiredKey.toString() + " in the json-file.");
+                                            valuesToUpdate.put(requiredKey, requiredKeyValue.asInt());
+                                        } catch (JsonProcessingException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                    updateLightStateInMemory(lightId, new ArtnetLightState(lightId, valuesToUpdate, oldLightState.getDim(), oldLightState.isEnabled()));
+                                }
+                                //UPDATE DIM
+                                else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Dim")) {
+                                    try {
+                                        JsonNode node = mapper.readTree(processedValue.toJson());
+                                        int dimValue = node.asInt();
+                                        updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), dimValue, oldLightState.isEnabled()));
+                                    } catch (JsonProcessingException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                //UPDATE ENABLED/DISABLED
+                                else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Switch")) {
+                                    try{
+                                        JsonNode node = mapper.readTree(processedValue.toJson());
+                                        boolean enabled = node.asBoolean();
+                                        updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), oldLightState.getDim(), enabled));
+                                    } catch (JsonProcessingException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                //SEND ALL LIGHTS TO UPDATE TO THE ENCODER
+                                List<ArtnetLight> lightsToSend = new ArrayList<ArtnetLight>();
+                                for(AbstractArtnetLight abstractLight : artnetLightMemory.stream().filter(light -> light.getUniverse() == universeId).collect(Collectors.toList()))
+                                    lightsToSend.add((ArtnetLight)abstractLight);
+                                updateLinkedAttribute(event.getAttributeState());
+                                return new ArtnetPacket(universeId, lightsToSend);
+                            }
+                        }
+                    }
                 }
             }
-            updateLightStateInMemory(lightId, new ArtnetLightState(lightId, valuesToUpdate, oldLightState.getDim(), oldLightState.isEnabled()));
         }
-        //UPDATE DIM
-        else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Dim")) {
-            try {
-                JsonNode node = mapper.readTree(processedValue.toJson());
-                int dimValue = node.asInt();
-                updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), dimValue, oldLightState.isEnabled()));
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
-        }
-        //UPDATE ENABLED/DISABLED
-        else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Switch")) {
-            try{
-                JsonNode node = mapper.readTree(processedValue.toJson());
-                boolean enabled = node.asBoolean();
-                updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), oldLightState.getDim(), enabled));
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
-        }
-        //SEND ALL LIGHTS TO UPDATE TO THE ENCODER
-        List<ArtnetLight> lightsToSend = new ArrayList<ArtnetLight>();
-        for(AbstractArtnetLight abstractLight : artnetLightMemory.stream().filter(light -> light.getUniverse() == universeId).collect(Collectors.toList()))
-            lightsToSend.add((ArtnetLight)abstractLight);
-        updateLinkedAttribute(event.getAttributeState());
-        return new ArtnetPacket(universeId, lightsToSend);
+        return null;
     }
 
     @Override
