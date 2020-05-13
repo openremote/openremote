@@ -312,7 +312,7 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
     public void updateLightStateInMemory(Integer lightId, AbstractArtnetLightState updatedLightState)
     {
         if(artnetLightMemory.stream().anyMatch(light -> light.getLightId() == lightId))
-            artnetLightMemory.stream().filter(light -> light.getLightId() == lightId).findFirst().get().setLightState(updatedLightState);
+            artnetLightMemory.stream().filter(light -> light.getLightId() == lightId).findFirst().ifPresent(artnetLight -> Objects.requireNonNull(artnetLightMemory.stream().filter(light -> light.getLightId() == lightId).findFirst().orElse(null)).setLightState(updatedLightState));
     }
 
     @Override
@@ -363,14 +363,18 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
             //A light is found with the current id in the import file which is present in-memory
             if(lights.stream().anyMatch(l -> l.getLightId() == light.getLightId())) {
                 //Replace the in-memory light with the attributes/values from the import file
-                ArtnetLight foundLight = (ArtnetLight) artnetLightMemory.stream().filter(l -> l.getLightId() == light.getLightId()).findFirst().get();
-                artnetLightMemory.set(artnetLightMemory.indexOf(foundLight), light);
+                ArtnetLight foundLight = (ArtnetLight) artnetLightMemory.stream().filter(l -> l.getLightId() == light.getLightId()).findFirst().orElse(null);
+                if(foundLight != null) {
+                    artnetLightMemory.set(artnetLightMemory.indexOf(foundLight), light);
+                }
             }
             //No light is found with the current id in the import file which is present in-memory
             else if(lights.stream().noneMatch(l -> l.getLightId() == light.getLightId())) {
                 //Remove the light from in-memory
-                ArtnetLight foundLight = (ArtnetLight) artnetLightMemory.stream().filter(l -> l.getLightId() == light.getLightId()).findFirst().get();
-                artnetLightMemory.remove(foundLight);
+                ArtnetLight foundLight = (ArtnetLight) artnetLightMemory.stream().filter(l -> l.getLightId() == light.getLightId()).findFirst().orElse(null);
+                if(foundLight != null) {
+                    artnetLightMemory.remove(foundLight);
+                }
             }
         }
         for(ArtnetLight light : lights) {
@@ -392,66 +396,82 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
         //Fetch all the assets that're connected to the ArtNet agent.
         List<Asset> assetsUnderProtocol = assetService.findAssets(protocolConfiguration.getAssetId().orElse(null), new AssetQuery());
         //Get the instance of the ArtNet agent itself.
-        Asset parentAgent = assetsUnderProtocol.stream().filter(a -> a.getWellKnownType() == AssetType.AGENT).findFirst().get();
-
-        for(Asset asset : assetsUnderProtocol)
-        {
-            //TODO CHANGE ASSET TYPE THING TO LIGHT
-            if(asset.getWellKnownType() != AssetType.THING)
-                continue;
-
-            if(!asset.hasAttribute("Id"))//Confirm the asset is a light
-                continue;
-
-            //Asset is valid
-            if(lights.stream().anyMatch(l -> l.getLightId() == asset.getAttribute("Id").get().getValueAsInteger().get())) {
-                ArtnetLight updatedLight = lights.stream().filter(l -> l.getLightId() == asset.getAttribute("Id").get().getValueAsInteger().get()).findFirst().get();
-                List<AssetAttribute> artNetLightAttributes = Arrays.asList(
-                        new AssetAttribute("Id", NUMBER, Values.create(updatedLight.getLightId())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
-                        new AssetAttribute("GroupId", NUMBER, Values.create(updatedLight.getGroupId())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
-                        new AssetAttribute("Universe", NUMBER, Values.create(updatedLight.getUniverse())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
-                        new AssetAttribute("AmountOfLeds", NUMBER, Values.create(updatedLight.getAmountOfLeds())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
-                        new AssetAttribute("RequiredValues", STRING, Values.create(String.join(",", updatedLight.getRequiredValues()))).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
-                        new AssetAttribute("Values", OBJECT, Values.parseOrNull(ARTNET_DEFAULT_LIGHT_STATE)).addMeta(
-                                new MetaItem(AGENT_LINK, new AttributeRef(parentAgent.getId(), agentProtocolConfigName).toArrayValue())
-                        ),
-                        new AssetAttribute("Switch", BOOLEAN, Values.create(true)).addMeta(
-                                new MetaItem(AGENT_LINK, new AttributeRef(parentAgent.getId(), agentProtocolConfigName).toArrayValue())
-                        ),
-                        new AssetAttribute("Dim", NUMBER, Values.create(100)).addMeta(
-                                new MetaItem(AGENT_LINK, new AttributeRef(parentAgent.getId(), agentProtocolConfigName).toArrayValue())
-                        )
-                );
-                asset.setAttributes(artNetLightAttributes);
-                assetService.mergeAsset(asset);
-
-            }
-            else if(lights.stream().noneMatch(l -> l.getLightId() == asset.getAttribute("Id").get().getValueAsInteger().get()))
-                assetService.deleteAsset(asset.getId());//Asset's Id hasn't been found, so remove the asset from the manager.
-        }
-
-        //New data is fetched based on the changes.
-        assetsUnderProtocol = assetService.findAssets(protocolConfiguration.getAssetId().get(), new AssetQuery());
-
-        for(ArtnetLight light : lights)
-        {
-            boolean lightAssetExistsAlready = false;
+        Asset parentAgent = assetsUnderProtocol.stream().filter(a -> a.getWellKnownType() == AssetType.AGENT).findFirst().orElse(null);
+        if(parentAgent != null) {
             for(Asset asset : assetsUnderProtocol)
             {
                 //TODO CHANGE ASSET TYPE THING TO LIGHT
-                if((asset.getWellKnownType() != AssetType.THING))
+                if(asset.getWellKnownType() != AssetType.THING)
                     continue;
 
-                if(!asset.hasAttribute("Id"))
+                if(!asset.hasAttribute("Id"))//Confirm the asset is a light
                     continue;
 
-                if(asset.getAttribute("Id").get().getValueAsInteger().get() == light.getLightId())
-                    lightAssetExistsAlready = true;
+                //Asset is valid
+                AssetAttribute lightAttribute = asset.getAttribute("Id").orElse(null);
+                if(lightAttribute != null) {
+                    int lightId = lightAttribute.getValueAsInteger().orElse(-1);
+                    if(lightId != -1) {
+                        if(lights.stream().anyMatch(l -> l.getLightId() == lightId)) {
+                            ArtnetLight updatedLight = lights.stream().filter(l -> l.getLightId() == lightId).findFirst().orElse(null);
+                            if(updatedLight != null) {
+                                List<AssetAttribute> artNetLightAttributes = Arrays.asList(
+                                        new AssetAttribute("Id", NUMBER, Values.create(updatedLight.getLightId())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
+                                        new AssetAttribute("GroupId", NUMBER, Values.create(updatedLight.getGroupId())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
+                                        new AssetAttribute("Universe", NUMBER, Values.create(updatedLight.getUniverse())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
+                                        new AssetAttribute("AmountOfLeds", NUMBER, Values.create(updatedLight.getAmountOfLeds())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
+                                        new AssetAttribute("RequiredValues", STRING, Values.create(String.join(",", updatedLight.getRequiredValues()))).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
+                                        new AssetAttribute("Values", OBJECT, Values.parseOrNull(ARTNET_DEFAULT_LIGHT_STATE)).addMeta(
+                                                new MetaItem(AGENT_LINK, new AttributeRef(parentAgent.getId(), agentProtocolConfigName).toArrayValue())
+                                        ),
+                                        new AssetAttribute("Switch", BOOLEAN, Values.create(true)).addMeta(
+                                                new MetaItem(AGENT_LINK, new AttributeRef(parentAgent.getId(), agentProtocolConfigName).toArrayValue())
+                                        ),
+                                        new AssetAttribute("Dim", NUMBER, Values.create(100)).addMeta(
+                                                new MetaItem(AGENT_LINK, new AttributeRef(parentAgent.getId(), agentProtocolConfigName).toArrayValue())
+                                        )
+                                );
+                                asset.setAttributes(artNetLightAttributes);
+                                assetService.mergeAsset(asset);
+                            }
+                        }else{
+                            if(lights.stream().noneMatch(l -> l.getLightId() == lightId))
+                                assetService.deleteAsset(asset.getId());
+                        }
+                    }
+                }
             }
-            if(!lightAssetExistsAlready)
-                output.add(formLightAsset(light, parentAgent));
+
+            //New data is fetched based on the changes.
+            assetsUnderProtocol = assetService.findAssets(protocolConfiguration.getAssetId().orElse(null), new AssetQuery());
+            for(ArtnetLight light : lights)
+            {
+                boolean lightAssetExistsAlready = false;
+                for(Asset asset : assetsUnderProtocol)
+                {
+                    //TODO CHANGE ASSET TYPE THING TO LIGHT
+                    if((asset.getWellKnownType() != AssetType.THING))
+                        continue;
+
+                    if(!asset.hasAttribute("Id"))
+                        continue;
+
+                    AssetAttribute lightIdAttribute = asset.getAttribute("Id").orElse(null);
+                    if(lightIdAttribute != null) {
+                        int lightId = lightIdAttribute.getValueAsInteger().orElse(-1);
+                        if(lightId != -1) {
+                            if(lightId == light.getLightId())
+                                lightAssetExistsAlready = true;
+                        }
+                    }
+
+                }
+                if(!lightAssetExistsAlready)
+                    output.add(formLightAsset(light, parentAgent));
+            }
+            return output.toArray(new AssetTreeNode[output.size()]);
         }
-        return output.toArray(new AssetTreeNode[output.size()]);
+        return null;
     }
 
     protected AssetTreeNode formLightAsset(ArtnetLight light, Asset parentAgent) {
