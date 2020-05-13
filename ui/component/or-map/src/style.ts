@@ -1,5 +1,5 @@
 import {css, unsafeCSS} from "lit-element";
-import { DefaultColor1, DefaultColor3, DefaultColor4, DefaultColor5, DefaultHeaderHeight, DefaultBoxShadow} from "@openremote/core";
+import { DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, DefaultHeaderHeight, DefaultBoxShadow} from "@openremote/core";
 
 export const markerColorVar = "--internal-or-map-marker-color";
 export const markerActiveColorVar = "--internal-or-map-marker-active-color";
@@ -146,7 +146,7 @@ export const mapAssetCardStyle = css`
                 --internal-or-asset-summary-card-header-height: var(--or-asset-summary-card-header-height, calc(${unsafeCSS(DefaultHeaderHeight)} - 10px));
                 --internal-or-asset-summary-card-background-color: var(--or-asset-summary-card-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
                 --internal-or-asset-summary-card-background-text-color: var(--or-asset-summary-card-background-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
-                --internal-or-asset-summary-card-separator-color: var(--or-asset-summary-card-separator-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
+                --internal-or-asset-summary-card-separator-color: var(--or-asset-summary-card-separator-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
                 
                 display: block;
             }

@@ -19,6 +19,14 @@ router.on({
         store.dispatch(setActiveAsset(params.id));
         store.dispatch(updatePage("map"));
     },
+    "insights": (params, query) => {
+        store.dispatch(setActiveAsset(null));
+        store.dispatch(updatePage("insights"));
+    },
+    "insights/:id": (params, query) => {
+        store.dispatch(setActiveAsset(params.id));
+        store.dispatch(updatePage("insights", params.id));
+    },
     "assets": (params, query) => {
         store.dispatch(setActiveAsset(null));
         store.dispatch(updatePage("assets"));
@@ -33,6 +41,12 @@ router.on({
     "rules/:id": (params, query) => {
         store.dispatch(updateRule(params.id));
         store.dispatch(updatePage("rules"));
+    },
+    "logs": (params, query) => {
+        store.dispatch(updatePage("logs"));
+    },
+    "gateway": (params, query) => {
+        store.dispatch(updatePage("gateway"));
     },
     "*": (params, query) => {
         store.dispatch(updatePage("map"));

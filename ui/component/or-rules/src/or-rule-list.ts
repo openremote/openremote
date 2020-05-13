@@ -31,6 +31,13 @@ const style = css`
         --internal-or-asset-tree-header-height: var(--internal-or-rules-list-header-height);
     }
     
+    #wrapper {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        width: 100%;
+    }
+
     #wrapper[data-disabled] {
         opacity: 0.3;
         pointer-events: none;
@@ -245,7 +252,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         
                 ${!this._nodes || this._showLoading
                 ? html`
-                        <span id="loading">LOADING</span>`
+                        <span id="loading"><or-translate value="loading"></or-translate></span>`
                 : html`
                         <div id="list-container">
                             <ol id="list">

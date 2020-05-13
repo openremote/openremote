@@ -10,7 +10,7 @@
 #   dosker swarm init
 #   docker pull openremote/deployment
 #   docker-compose -p demo up -d --no-build deployment 
-#   docker stack deploy --compose-file docker-compose-swarm.yml demo
+#   docker stack deploy --compose-file swarm-docker-compose.yml demo
 #
 # Stop the stack:
 #

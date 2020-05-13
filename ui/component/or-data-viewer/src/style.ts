@@ -96,7 +96,7 @@ export const style = css`
         font-weight: bolder;
         line-height: 1em;
         color: var(--internal-or-asset-viewer-title-text-color);
-        margin-bottom: 12px;
+        margin-bottom: 25px;
         flex: 0 0 auto;
     }
    

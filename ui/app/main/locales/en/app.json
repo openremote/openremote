@@ -128,5 +128,6 @@
   "lightSwitch": "Light switch",
   "windowOpen": "Window open",
   "lightSwitchTriggerTimes": "Light switch times",
-  "lightsStand": "Standing light"
+  "lightsStand": "Standing light",
+  "gateway": "Gateway"
 }

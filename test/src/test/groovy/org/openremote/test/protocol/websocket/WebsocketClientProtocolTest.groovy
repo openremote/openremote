@@ -199,57 +199,57 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                             "targetTemperature",
                             Values.create(0.12345))).replace("0.12345", Protocol.DYNAMIC_VALUE_PLACEHOLDER) + "\'")),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_FILTERS,
-                        Values.convert(
+                        Values.convertToValue(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false, false)
                             ] as ValueFilter[]
-                        , Container.JSON).orElse(null)),
+                            , Container.JSON.writer()).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_PREDICATE,
                         new StringPredicate(AssetQuery.Match.CONTAINS, true, "targetTemperature").toModelValue()),
                     new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
-                        Values.convert(
+                        Values.convertToValue(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"targetTemperature\")].attributeState.value", true, false)
                             ] as ValueFilter[]
-                        , Container.JSON).orElse(null)),
+                            , Container.JSON.writer()).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_SUBSCRIPTIONS,
-                        Values.convert(
+                        Values.convertToValue(
                             [
                                 new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(
                                     new ReadAssetAttributesEvent(managerDemoSetup.apartment1LivingroomId, "targetTemperature")
                                 ))
-                            ], Container.JSON).orElse(null))
+                            ], Container.JSON.writer()).orElse(null))
                 ),
             new AssetAttribute("readCo2Level", AttributeValueType.NUMBER)
                 .addMeta(
                     new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
                         new MetaItem(MetaItemType.READ_ONLY),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_FILTERS,
-                        Values.convert(
+                        Values.convertToValue(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false, false)
                             ] as ValueFilter[]
-                        , Container.JSON).orElse(null)),
+                            , Container.JSON.writer()).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_PREDICATE,
                         new StringPredicate(AssetQuery.Match.CONTAINS, "co2Level").toModelValue()),
                     new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
-                        Values.convert(
+                        Values.convertToValue(
                             [
                                 new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"co2Level\")].attributeState.value", true, false),
                             ] as ValueFilter[]
-                        , Container.JSON).orElse(null)),
+                            , Container.JSON.writer()).orElse(null)),
                     new MetaItem(WebsocketClientProtocol.META_SUBSCRIPTIONS,
-                        Values.convert(
+                        Values.convertToValue(
                             [
                                 new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(
                                     new ReadAssetAttributesEvent(managerDemoSetup.apartment1LivingroomId, "co2Level")
                                 ))
                             ]
-                            , Container.JSON).orElse(null))
+                            , Container.JSON.writer()).orElse(null))
                 )
         )
 

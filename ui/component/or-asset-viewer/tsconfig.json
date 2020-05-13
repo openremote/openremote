@@ -15,10 +15,12 @@
     { "path": "../model" },
     { "path": "../or-chart" },
     { "path": "../or-panel" },
+    { "path": "../or-table" },
     { "path": "../or-translate" },
     { "path": "../or-icon" },
     { "path": "../or-map" },
     { "path": "../or-attribute-input" },
-    { "path": "../or-attribute-history" }
+    { "path": "../or-attribute-history" },
+    { "path": "../or-mwc-components" }
   ]
 }

@@ -117,9 +117,4 @@ public class UdpIoClient<T> extends AbstractNettyIoClient<T, InetSocketAddress> 
         super.configureChannel();
         //bootstrap.option(ChannelOption.SO_BROADCAST, true);
     }
-
-    @Override
-    protected synchronized void scheduleReconnect() {
-        // No connection to reconnect
-    }
 }

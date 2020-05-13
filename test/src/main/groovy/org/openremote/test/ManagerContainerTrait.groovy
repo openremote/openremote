@@ -3,7 +3,7 @@ package org.openremote.test
 import org.apache.camel.spi.BrowsableEndpoint
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
-import org.openremote.container.message.MessageBrokerSetupService
+import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetProcessingService
 import spock.util.concurrent.PollingConditions
@@ -115,7 +115,7 @@ trait ManagerContainerTrait extends ContainerTrait {
 
     static void noPendingExchangesOnMessageEndpoint(Container container, String... endpointName) {
         for (String name : endpointName) {
-            def endpoint = container.getService(MessageBrokerSetupService.class).context.getEndpoint(name)
+            def endpoint = container.getService(MessageBrokerService.class).getContext().getEndpoint(name)
             if (!endpoint) {
                 throw new IllegalArgumentException("Messaging endpoint not found: " + name)
             }

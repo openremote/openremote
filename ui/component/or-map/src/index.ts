@@ -134,6 +134,7 @@ export class OrMap extends LitElement {
         }
     }
 
+    
     protected onManagerEvent = (event: OREvent) => {
         switch (event) {
             case OREvent.READY:
@@ -142,6 +143,13 @@ export class OrMap extends LitElement {
                 }
                 break;
             case OREvent.DISPLAY_REALM_CHANGED:
+                if(this._map){
+                    this._map.loadViewSettings().then(()=> {
+                        if(!this._map) return
+                        this._map.setCenter()
+                        this._map.flyTo();
+                    });
+                }
                 break;
         }
     }
@@ -155,6 +163,11 @@ export class OrMap extends LitElement {
         super.disconnectedCallback();
         this._observer!.disconnect();
         manager.removeListener(this.onManagerEvent);
+    }
+
+    public reloadMap() {
+        this._loaded = false;
+        this.loadMap();
     }
 
     public loadMap() {

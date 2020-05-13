@@ -294,8 +294,6 @@ services:
     logging:
         options:
             max-size: 10m
-    ports:
-      - "8081:8080"
 
   # PostgreSQL DBMS
   postgresql:

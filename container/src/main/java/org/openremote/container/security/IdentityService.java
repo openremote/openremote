@@ -22,6 +22,7 @@ package org.openremote.container.security;
 import io.undertow.servlet.api.DeploymentInfo;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 
 import javax.ws.rs.core.UriBuilder;
@@ -31,6 +32,7 @@ import static org.openremote.container.util.MapAccess.*;
 
 public abstract class IdentityService implements ContainerService {
 
+    public static final int PRIORITY = PersistenceService.PRIORITY + 10; // Run after persistence setup
     private static final Logger LOG = Logger.getLogger(IdentityService.class.getName());
 
     public static final String IDENTITY_NETWORK_SECURE = "IDENTITY_NETWORK_SECURE";
@@ -48,7 +50,7 @@ public abstract class IdentityService implements ContainerService {
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY - 20;
+        return PRIORITY;
     }
 
     @Override

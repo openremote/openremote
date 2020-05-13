@@ -27,6 +27,7 @@ out/
 
 bower_components/
 node_modules/
+package-lock.json
 yarn-error.log
 ui/**/yarn.lock
 *.tsbuildinfo

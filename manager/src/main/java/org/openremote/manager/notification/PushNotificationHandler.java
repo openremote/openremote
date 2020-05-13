@@ -27,7 +27,7 @@ import com.google.firebase.messaging.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.asset.Asset;
@@ -78,7 +78,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
     public void init(Container container) throws Exception {
         this.assetStorageService = container.getService(AssetStorageService.class);
-        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
         String firebaseConfigFilePath = container.getConfig().get(FIREBASE_CONFIG_FILE);
 

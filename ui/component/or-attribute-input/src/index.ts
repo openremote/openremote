@@ -133,8 +133,7 @@ export function getAttributeValueTemplate(
                 if (inputType === InputType.JSON && value !== null && typeof(value) !== "string") {
                     value = JSON.stringify(value, null, 2);
                 }
-
-                return Util.getAttributeValue(attribute, attributeDescriptor);
+                return Util.getAttributeValue(attribute, attributeDescriptor) ? Util.getAttributeValue(attribute, attributeDescriptor) : value;
             };
 
             const setValue = (value: any) => {

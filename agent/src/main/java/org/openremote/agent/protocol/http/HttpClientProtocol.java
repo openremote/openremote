@@ -1147,6 +1147,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                 entities.add(lastResponse.readEntity(String.class));
                 while ((lastResponse = executePagingRequest(clientRequest, lastResponse)) != null) {
                     entities.add(lastResponse.readEntity(String.class));
+                    lastResponse.close();
                 }
                 originalResponse = PagingResponse.fromResponse(originalResponse).entity(entities).build();
             }
@@ -1154,6 +1155,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             responseConsumer.accept(originalResponse);
         } catch (Exception e) {
             LOG.log(Level.WARNING, getProtocolDisplayName() + " exception thrown whilst doing polling request [" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: " + clientRequest.requestTarget.getUriBuilder().build().toString());
+        } finally {
             if (originalResponse != null) {
                 originalResponse.close();
             }
@@ -1179,11 +1181,14 @@ public class HttpClientProtocol extends AbstractProtocol {
 
         try {
             response = clientRequest.invoke(valueStr);
+            responseConsumer.accept(response);
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Exception thrown whilst doing attribute write request", e);
+        } finally {
+            if (response != null) {
+                response.close();
+            }
         }
-
-        responseConsumer.accept(response);
     }
 
     protected void onPollingResponse(HttpClientRequest request,
@@ -1205,6 +1210,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                 value = responseBody != null ? Values.create(responseBody) : null;
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Error occurred whilst trying to read response body", e);
+                response.close();
                 if (request.updateConnectionStatus) {
                     updateConnectionStatus(request, protocolConfigurationRef, 500);
                 }

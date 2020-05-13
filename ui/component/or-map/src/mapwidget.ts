@@ -112,6 +112,22 @@ export class MapWidget {
         return this;
     }
 
+    public async loadViewSettings() {
+        let settingsResponse;
+        if (this._type === Type.RASTER) {
+            settingsResponse = await manager.rest.api.MapResource.getSettingsJs();
+        } else {
+            settingsResponse = await manager.rest.api.MapResource.getSettings();
+        }
+        const settings = settingsResponse.data as any;
+
+        // Load options for current realm or fallback to default if exist
+        const realmName = manager.displayRealm || "default";
+        this._viewSettings = settings.options ? settings.options[realmName] ? settings.options[realmName] : settings.options.default : null;
+        return settings
+
+    }
+
     public async load(): Promise<void> {
         if (this._loaded) {
             return;
@@ -124,11 +140,8 @@ export class MapWidget {
             style.id = "mapboxJsStyle";
             style.textContent = mapboxJsStyles;
             this._styleParent.appendChild(style);
-            const settingsResponse = await manager.rest.api.MapResource.getSettingsJs();
-            const settings = settingsResponse.data as any;
+            const settings = await this.loadViewSettings();
 
-            // Load options for current realm or fallback to default if exist
-            this._viewSettings = settings.options ? settings.options[manager.getRealm() || "default"] ? settings.options[manager.getRealm() || "default"] : settings.options.default : null;
             let options: OptionsJS | undefined;
             if (this._viewSettings) {
                 options = {};
@@ -175,11 +188,8 @@ export class MapWidget {
             this._styleParent.appendChild(style);
 
             const map: typeof import("mapbox-gl") = await import(/* webpackChunkName: "mapbox-gl" */ "mapbox-gl");
-            const settingsResponse = await manager.rest.api.MapResource.getSettings();
-            const settings = settingsResponse.data as any;
-
-            // Load options for current realm or fallback to default if exist
-            this._viewSettings = settings.options ? settings.options[manager.getRealm() || "default"] ? settings.options[manager.getRealm() || "default"] : settings.options.default : null;
+            const settings = await this.loadViewSettings();
+                
             const options: OptionsGL = {
                 attributionControl: true,
                 container: this._mapContainer,
