@@ -54,6 +54,7 @@ const style = css`
     .panel-title {
         display: flex;
         align-items: center;
+        margin: -15px -15px 0 0; /* compensate for the click-space of the plusminus button */
         text-transform: uppercase;
         font-weight: bolder;
         line-height: 1em;
@@ -441,7 +442,7 @@ export class OrAttributeCard extends LitElement {
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
                         <span class="panel-title-text">${this.asset.name} - ${i18next.t(this.attributeName)}</span>
-                        <or-icon icon="plus-minus" @click="${() => this._openDialog()}" />
+                        <or-input icon="plus-minus" type="button" @click="${() => this._openDialog()}"></or-input>
                     </div>
                     <div class="panel-content">
                         <div class="top-row">
