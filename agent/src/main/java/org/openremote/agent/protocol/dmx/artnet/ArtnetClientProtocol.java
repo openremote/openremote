@@ -282,20 +282,16 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
             jsonString = new String(rawBinaryData);
         }
         else
-            jsonString = fileInfo.getContents();//Read from .xml file
+            throw new IllegalStateException("The import-file format should be .json.");
         try{
             List<ArtnetLight> newLights = parseArtnetLightsFromImport(new ObjectMapper().readTree(jsonString));
             syncLightsToMemory(newLights);
             return syncLightsToAssets(newLights, protocolConfiguration);
-        } catch (JsonMappingException e) {
-            e.printStackTrace();
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("The provided json is invalid.");
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Could not import the provided lights.");
         }
-
-        return null;
     }
 
     private List<ArtnetLight> parseArtnetLightsFromImport(JsonNode jsonNode) {
