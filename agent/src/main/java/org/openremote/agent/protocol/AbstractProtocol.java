@@ -41,6 +41,7 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -510,7 +511,7 @@ public abstract class AbstractProtocol implements Protocol {
     /**
      * Link an attribute to its linked protocol configuration.
      */
-    abstract protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration);
+    abstract protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) throws IOException;
 
     /**
      * Unlink an attribute from its linked protocol configuration.
