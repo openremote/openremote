@@ -239,7 +239,7 @@ export class OrAttributeCard extends LitElement {
 
         super.updated(changedProperties);
 
-        if (!this.data) {
+        if (!this.data || !this.data.length) {
             return;
         }
 
