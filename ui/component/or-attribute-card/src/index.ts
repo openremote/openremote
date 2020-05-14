@@ -150,34 +150,6 @@ const style = css`
     .delta.delta-plus {     
         color: #4D9D2A;
     }
-    
-    .mdc-dialog .mdc-dialog__surface {
-        min-width: 600px;
-        height: calc(100vh - 50%);
-    }
-
-    .dialog-container {
-        display: flex;
-        flex-direction: row;
-        flex: 1 1 0;
-    }
-
-    .dialog-container > * {
-        flex: 1 1 0;
-    }
-    
-    .dialog-container > or-input{
-        background-color: var(--or-app-color2);
-        border-left: 3px solid var(--or-app-color4);
-    }
-        @media screen and (max-width: 769px) {
-        .mdc-dialog .mdc-dialog__surface {
-            min-width: auto;
-
-            max-width: calc(100vw - 32px);
-            max-height: calc(100% - 32px);
-        }
-    }
 `;
 
 @customElement("or-attribute-card")
