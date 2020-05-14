@@ -190,5 +190,6 @@
     "ENERGY": "%.1f",
     "CO2": "%.1f",
     "HUMIDITY": "%.1f"
-  }
+  },
+  "couldNotRetrieveAttribute": "Could not retrieve attribute information"
 }

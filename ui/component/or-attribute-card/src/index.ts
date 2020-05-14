@@ -1,21 +1,24 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, unsafeCSS} from "lit-element";
 import {classMap} from "lit-html/directives/class-map";
 import i18next from "i18next";
-import {Asset, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
-import {manager, DefaultColor4, DefaultColor5} from "@openremote/core";
-import Chart from "chart.js";
-import {getContentWithMenuTemplate} from "@openremote/or-chart";
+import {Asset, AssetAttribute, Attribute, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
+import {manager, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
+import Chart, {ChartTooltipCallback} from "chart.js";
+import {getContentWithMenuTemplate, OrChartConfig} from "@openremote/or-chart";
 import {InputType} from "@openremote/or-input";
+import "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {getMetaValue} from "@openremote/core/dist/util";
 import moment from "moment";
+import {OrAssetTreeRequestSelectEvent} from "@openremote/or-asset-tree";
+import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+
+const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
 
 // language=CSS
 const style = css`
     
     :host {
         width: 100%;
-        
-        --internal-or-attribute-history-graph-line-color: var(--or-attribute-history-graph-line-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
     }
     
     :host([hidden]) {
@@ -28,47 +31,75 @@ const style = css`
         border-radius: 5px;
         max-width: 100%;
         position: relative;
+        padding: var(--internal-or-asset-viewer-panel-padding);
+    }
+    .panel.panel-empty {
+        display: flex;
+    }
+    .panel.panel-empty .panel-content-wrapper {
+        align-items: center;
+        width: 100%;
+    }
+    .panel.panel-empty .panel-content {
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
     }
     
     .panel-content-wrapper {
-        padding: var(--internal-or-asset-viewer-panel-padding);
-    }
-    
-    .panel-content {
+        height: 200px;
         display: flex;
-        flex-wrap: wrap;
+        flex-direction: column;
     }
         
     .panel-title {
+        display: flex;
+        align-items: center;
+        margin: -15px -15px 0 0; /* compensate for the click-space of the plusminus button */
         text-transform: uppercase;
         font-weight: bolder;
         line-height: 1em;
         color: var(--internal-or-asset-viewer-title-text-color);
-        margin-bottom: 25px;
         flex: 0 0 auto;
+    }
+    
+    .panel-title-text {
+        flex: 1;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+    }
+    
+    .panel-content {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        flex: 1;
     }
     
     .top-row {
         width: 100%;
         display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-    }
-    
-    .center-row {
-        display: flex;
-        align-items: baseline;
-        width: 100%;
+        flex: 0 0 60px;
+        align-items: center;
         justify-content: center;
     }
     
-    .bottom-row {
-        display: flex;
+    .center-row {
         width: 100%;
+        display: flex;
+        flex: 1;
         align-items: center;
     }
     
-    .now {
+    .bottom-row {
+        width: 100%;
+        display: flex;
+        flex: 0 0 24px;
+        align-items: center;
+    }
+    
+    .period-label {
         color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
     }
     
@@ -77,37 +108,66 @@ const style = css`
     }
     
     .main-number-unit {
+        font-size: 24px;
         color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
     }
     
     .chart-wrapper {
-        height: 100px;
+        flex: 1;
+        width: 65%;
+        height: 75%;
+    }
+    
+    .delta-wrapper {
+        flex: 0 0 75px;
+        text-align: right;
+        
+        /*position: absolute;*/
+        /*right: var(--internal-or-asset-viewer-panel-padding);*/
+    }
+    
+    .date-range-wrapper {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .period-selector-wrapper {
+        flex: 0 0 75px;
+    }
+    .period-selector {
+        position: absolute;
+        right: 15px;
+        bottom: 17px;
     }
     
     .delta {
-        flex: 0 0 50px;
         font-weight: bold;
     }
     .delta.delta-min {
         color: red;
     }
     .delta.delta-plus {     
-       color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
+        color: #4D9D2A;
     }
-    
 `;
 
 @customElement("or-attribute-card")
 export class OrAttributeCard extends LitElement {
 
     @property()
-    public assetId!: string;
+    public assetId: string | undefined;
 
     @property()
-    public attributeName!: string;
+    public attributeName: string | undefined;
+
+    @property({type: Object})
+    private assetAttributes: AssetAttribute[] = [];
 
     @property()
     private data: ValueDatapoint<any>[] = [];
+    @property()
+    private graphColour: "#4D9D2A" | "#FF0000" = "#4D9D2A";
 
     @property()
     private mainValue?: number;
@@ -118,8 +178,11 @@ export class OrAttributeCard extends LitElement {
     @property()
     private deltaPlus: string = "";
 
+    private error: boolean = false;
+
     private period: moment.unitOfTime.Base = "month";
     private now?: Date = new Date();
+    private currentPeriod?: { start: number; end: number };
 
     private asset: Asset = {};
     private formattedMainValue: {value: number|undefined, unit: string, formattedValue: string} = {
@@ -131,24 +194,25 @@ export class OrAttributeCard extends LitElement {
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
     private _chart?: Chart;
-    private _style!: CSSStyleDeclaration;
 
     static get styles() {
         return [
+            css`${unsafeCSS(dialogStyle)}`,
             style
         ];
     }
 
     connectedCallback() {
         super.connectedCallback();
-        this._style = window.getComputedStyle(this);
+
         this.getData();
     }
 
     updated(changedProperties: PropertyValues) {
+
         super.updated(changedProperties);
 
-        if (!this.data) {
+        if (!this.data || !this.data.length) {
             return;
         }
 
@@ -159,23 +223,33 @@ export class OrAttributeCard extends LitElement {
                     datasets: [
                         {
                             data: this.data,
-                            lineTension: 0,
+                            lineTension: 0.1,
                             spanGaps: true,
                             backgroundColor: "transparent",
-                            borderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color"),
+                            borderColor: this.graphColour,
                             pointBorderColor: "transparent",
                         }
                     ]
                 },
                 options: {
-                    // onResize: () => this.dispatchEvent(new OrAttributeHistoryEvent("resize")),
                     responsive: true,
                     maintainAspectRatio: false,
                     legend: {
                         display: false
                     },
                     tooltips: {
-                        enabled: false,
+                        displayColors: false,
+                        callbacks: {
+                            title: (tooltipItems, data) => {
+                                return "";
+                            },
+                            label: (tooltipItem, data) => {
+                                return tooltipItem.yLabel; // Removes the colon before the label
+                            },
+                            footer: () => {
+                                return ""; // Hack the broken vertical alignment of body with footerFontSize: 0
+                            }
+                        } as ChartTooltipCallback
                     },
                     scales: {
                         yAxes: [{
@@ -191,14 +265,15 @@ export class OrAttributeCard extends LitElement {
         } else {
             if (changedProperties.has("data")) {
                 this._chart.data.datasets![0].data = this.data;
+                this._chart.data.datasets![0].borderColor = this.graphColour;
                 this._chart.update();
             }
         }
 
         if (changedProperties.has("mainValue") || changedProperties.has("mainValueLastPeriod")) {
-            if (this.mainValueLastPeriod && this.mainValue) {
+            if (this.mainValueLastPeriod !== undefined && this.mainValue !== undefined) {
                 this.delta = this.getFormattedDelta(this.mainValue, this.mainValueLastPeriod);
-                this.deltaPlus = (this.delta.val! > 0) ? "+" : "";
+                this.deltaPlus = (this.delta.val && this.delta.val > 0) ? "+" : "";
             }
         }
         if (changedProperties.has("mainValue")) {
@@ -207,9 +282,75 @@ export class OrAttributeCard extends LitElement {
 
     }
 
+    async onCompleted() {
+        await this.updateComplete;
+    }
+
     disconnectedCallback(): void {
         super.disconnectedCallback();
         this._cleanup();
+    }
+
+    protected _openDialog() {
+        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
+
+        if (dialog) {
+            dialog.dialogContent = html`
+                <or-asset-tree id="chart-asset-tree" 
+                    .selectedIds="${this.asset ? [this.asset.id] : null}]"
+                    @or-asset-tree-request-select="${(e: OrAssetTreeRequestSelectEvent) => {
+                        this.asset = e.detail.detail.node.asset!;
+                        this._getAttributeOptions();
+                        this.requestUpdate();
+                    }}">
+                </or-asset-tree>
+                ${this.asset && this.asset.attributes ? html`
+                    <or-input id="attribute-picker" 
+                        style="display:flex;"
+                        .label="${i18next.t("attribute")}" 
+                        .type="${InputType.LIST}"
+                        .options="${this._getAttributeOptions()}"
+                        .value="${this.attributeName}"></or-input>
+                ` : ``}
+            `;
+            dialog.open();
+        }
+    }
+
+    protected _getAttributeOptions() {
+        if (!this.asset || !this.assetAttributes) {
+            return;
+        }
+
+        if (this.shadowRoot && this.shadowRoot.getElementById("attribute-picker")) {
+            const elm = this.shadowRoot.getElementById("attribute-picker") as HTMLInputElement;
+            elm.value = "";
+        }
+
+        let attributes = [...Util.getAssetAttributes(this.asset)];
+        if (attributes && attributes.length > 0) {
+            attributes = attributes
+                .filter((attr: AssetAttribute) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
+                .filter((attr: AssetAttribute) => (this.assetAttributes && !this.assetAttributes.some((assetAttr: AssetAttribute) => (assetAttr.name === attr.name) && (assetAttr.assetId === attr.assetId))));
+            const options = attributes.map((attr: AssetAttribute) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
+            return options;
+        }
+    }
+
+    private _setAttribute(e: Event) {
+        if (this.shadowRoot && this.shadowRoot.getElementById("attribute-picker")) {
+            const elm = this.shadowRoot.getElementById("attribute-picker") as HTMLInputElement;
+            if (this.asset) {
+                const attr = Util.getAssetAttribute(this.asset, elm.value);
+                if (attr) {
+                    this.assetId = this.asset.id;
+                    this.attributeName = attr.name;
+
+                    this.getData();
+                    this.requestUpdate();
+                }
+            }
+        }
     }
 
     protected _cleanup() {
@@ -221,18 +362,46 @@ export class OrAttributeCard extends LitElement {
 
     protected render() {
 
-        if (this.assetId === "" || this.attributeName === "") {
+        const dialogActions: DialogAction[] = [
+            {
+                actionName: "set",
+                default: true,
+                content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" data-mdc-dialog-action="yes"></or-input>`,
+                action: () => this._setAttribute
+            },
+            {
+                actionName: "cancel",
+                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
+                action: () => {
+                    // Nothing to do here
+                }
+            },
+        ];
+
+        if (!this.assetId || !this.attributeName) {
             return html`
-                <div class="panel">
+                <div class="panel panel-empty">
                     <div class="panel-content-wrapper">
-                        <div class="panel-title">
-                            <or-translate value="error"></or-translate>
-                        </div>
                         <div class="panel-content">
-                            <or-translate value="attributeNotFound"></or-translate>
+                            <or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-input>
                         </div>
                     </div>
                 </div>
+                <or-mwc-dialog id="mdc-dialog" dialogTitle="addAttribute" .dialogActions="${dialogActions}"></or-mwc-dialog>
+            `;
+        }
+
+        if (this.error) {
+            return html`
+                <div class="panel panel-empty">
+                    <div class="panel-content-wrapper">
+                        <div class="panel-content">
+                            <span>${i18next.t("couldNotRetrieveAttribute")}</span>
+                            <or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-input>
+                        </div>
+                    </div>
+                </div>
+                <or-mwc-dialog id="mdc-dialog" dialogTitle="addAttribute" .dialogActions="${dialogActions}"></or-mwc-dialog>
             `;
         }
 
@@ -240,34 +409,43 @@ export class OrAttributeCard extends LitElement {
             <div class="panel" id="attribute-card">
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
-                        ${this.asset.name} - ${i18next.t(this.attributeName)}
+                        <span class="panel-title-text">${this.asset.name} - ${i18next.t(this.attributeName)}</span>
+                        <or-input icon="plus-minus" type="button" @click="${() => this._openDialog()}"></or-input>
                     </div>
                     <div class="panel-content">
                         <div class="top-row">
-                            <span class="now">${Intl.DateTimeFormat(manager.language).format(this.now)}</span>
-                            ${getContentWithMenuTemplate(
-                                html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-input>`, 
-                                [{value: "hour", text: ""}, {value: "day", text: ""}, {value: "week", text: ""}, {value: "month", text: ""}, {value: "year", text: ""}]
-                                    .map((option) => {
-                                        option.text = i18next.t(option.value);
-                                        return option;
-                                    }),
-                                this.period,
-                                (value) => this._setPeriodOption(value))}
-                        </div>
-                        <div class="center-row">
                             <span class="main-number">${this.formattedMainValue!.value}</span>
                             <span class="main-number-unit">${this.formattedMainValue!.unit}</span>
                         </div>
-                        <div class="bottom-row">
-                            <div class="chart-wrapper" style="flex: 1;">
+                        <div class="center-row">
+                            <div class="chart-wrapper">
                                 <canvas id="chart"></canvas>
                             </div>
-                            <span class=${classMap({"delta": true, "delta-min": this.delta.val! < 0, "delta-plus": this.delta.val! > 0})}>${this.deltaPlus}${this.delta.val}${this.delta.unit}</span>
+                            <div class="delta-wrapper">
+                                <span class=${classMap({"delta": true, "delta-min": this.delta.val! < 0, "delta-plus": this.delta.val! > 0})}>${this.deltaPlus}${this.delta.val}${this.delta.unit}</span>
+                            </div>
+                        </div>
+                        <div class="bottom-row">
+                            <div class="date-range-wrapper">
+                                <span class="period-label">${Intl.DateTimeFormat(manager.language).format(this.currentPeriod!.start)}</span>
+                                <span class="period-label">${Intl.DateTimeFormat(manager.language).format(this.currentPeriod!.end)}</span>
+                            </div>
+                            <div class="period-selector-wrapper">
+                                ${getContentWithMenuTemplate(
+                                    html`<or-input class="period-selector" .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-input>`,
+                                    [{value: "hour", text: ""}, {value: "day", text: ""}, {value: "week", text: ""}, {value: "month", text: ""}, {value: "year", text: ""}]
+                                        .map((option) => {
+                                            option.text = i18next.t(option.value);
+                                            return option;
+                                        }),
+                                    this.period,
+                                    (value) => this._setPeriodOption(value))}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+            <or-mwc-dialog id="mdc-dialog" dialogTitle="addAttribute" .dialogActions="${dialogActions}"></or-mwc-dialog>
         `;
     }
 
@@ -284,11 +462,11 @@ export class OrAttributeCard extends LitElement {
         return response.data[0];
     }
 
-    protected async getDatapointsByAttribute(id: string, startOfPeriod: number, endOfPeriod: number): Promise<ValueDatapoint<any>[]> {
+    protected async getDatapointsByAttribute(id: string, attributeName: string, startOfPeriod: number, endOfPeriod: number): Promise<ValueDatapoint<any>[]> {
 
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
             id,
-            this.attributeName,
+            attributeName,
             {
                 interval: this._getInterval(),
                 fromTimestamp: startOfPeriod,
@@ -304,11 +482,17 @@ export class OrAttributeCard extends LitElement {
     }
 
     protected async getData() {
+
+        if (!this.assetId || !this.attributeName) {
+            this.error = true;
+            return false;
+        }
+
         const thisMoment = moment(this.now);
 
         this.asset = await this.getAssetById(this.assetId);
 
-        const currentPeriod = {
+        this.currentPeriod = {
             start: thisMoment.startOf(this.period).toDate().getTime(),
             end: thisMoment.endOf(this.period).toDate().getTime()
         };
@@ -317,14 +501,14 @@ export class OrAttributeCard extends LitElement {
             end: thisMoment.clone().subtract(1, this.period).endOf(this.period).toDate().getTime()
         };
 
-        const p1 = this.getDatapointsByAttribute(this.assetId, currentPeriod.start, currentPeriod.end)
+        const p1 = this.getDatapointsByAttribute(this.assetId, this.attributeName, this.currentPeriod.start, this.currentPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
                 this.mainValue = this.getHighestValue(this.sanitiseDataPoints(this.data));
                 return this.mainValue;
             });
 
-        const p2 = this.getDatapointsByAttribute(this.assetId, lastPeriod.start, lastPeriod.end)
+        const p2 = this.getDatapointsByAttribute(this.assetId, this.attributeName, lastPeriod.start, lastPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.mainValueLastPeriod = this.getHighestValue(this.sanitiseDataPoints(datapoints));
                 return this.mainValueLastPeriod;
@@ -333,6 +517,12 @@ export class OrAttributeCard extends LitElement {
         Promise.all([p1, p2])
             .then((returnvalues) => {
                 this.delta = this.getFormattedDelta(returnvalues[0], returnvalues[1]);
+                this.graphColour = (this.delta.val! < 0) ? "#FF0000" : "#4D9D2A";
+                this.error = false;
+            })
+            .catch((err) => {
+                this.error = true;
+                this.requestUpdate();
             });
 
     }
@@ -363,7 +553,7 @@ export class OrAttributeCard extends LitElement {
     }
 
     protected getFormattedValue(value: number): {value: number, unit: string, formattedValue: string} {
-        const format = getMetaValue(MetaItemType.FORMAT, this.asset.attributes![this.attributeName], undefined);
+        const format = getMetaValue(MetaItemType.FORMAT, this.asset.attributes![this.attributeName!], undefined);
         const unit = format.split(" ").pop();
         return {
             value: value,
