@@ -508,11 +508,11 @@ export class OrAttributeCard extends LitElement {
         return response.data[0];
     }
 
-    protected async getDatapointsByAttribute(id: string, startOfPeriod: number, endOfPeriod: number): Promise<ValueDatapoint<any>[]> {
+    protected async getDatapointsByAttribute(id: string, attributeName: string, startOfPeriod: number, endOfPeriod: number): Promise<ValueDatapoint<any>[]> {
 
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
             id,
-            this.attributeName!,
+            attributeName,
             {
                 interval: this._getInterval(),
                 fromTimestamp: startOfPeriod,
@@ -529,7 +529,7 @@ export class OrAttributeCard extends LitElement {
 
     protected async getData() {
 
-        if (!this.assetId) {
+        if (!this.assetId || !this.attributeName) {
             this.error = true;
             return false;
         }
@@ -547,14 +547,14 @@ export class OrAttributeCard extends LitElement {
             end: thisMoment.clone().subtract(1, this.period).endOf(this.period).toDate().getTime()
         };
 
-        const p1 = this.getDatapointsByAttribute(this.assetId, this.currentPeriod.start, this.currentPeriod.end)
+        const p1 = this.getDatapointsByAttribute(this.assetId, this.attributeName, this.currentPeriod.start, this.currentPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
                 this.mainValue = this.getHighestValue(this.sanitiseDataPoints(this.data));
                 return this.mainValue;
             });
 
-        const p2 = this.getDatapointsByAttribute(this.assetId, lastPeriod.start, lastPeriod.end)
+        const p2 = this.getDatapointsByAttribute(this.assetId, this.attributeName, lastPeriod.start, lastPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.mainValueLastPeriod = this.getHighestValue(this.sanitiseDataPoints(datapoints));
                 return this.mainValueLastPeriod;
