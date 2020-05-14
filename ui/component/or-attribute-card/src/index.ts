@@ -424,12 +424,11 @@ export class OrAttributeCard extends LitElement {
             </div>
         `;
 
-        if (this.error) {
+        if (!this.assetId || !this.attributeName) {
             return html`
                 <div class="panel panel-empty">
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
-                            <span>${i18next.t("couldNotRetrieveAttribute")}</span>
                             <or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-input>
                         </div>
                     </div>
@@ -438,11 +437,12 @@ export class OrAttributeCard extends LitElement {
             `;
         }
 
-        if (!this.assetId || !this.attributeName) {
+        if (this.error) {
             return html`
                 <div class="panel panel-empty">
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
+                            <span>${i18next.t("couldNotRetrieveAttribute")}</span>
                             <or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-input>
                         </div>
                     </div>
