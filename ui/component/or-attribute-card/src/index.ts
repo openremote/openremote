@@ -232,8 +232,6 @@ export class OrAttributeCard extends LitElement {
     connectedCallback() {
         super.connectedCallback();
 
-        if (!this.assetId || !this.attributeName) { return false; }
-
         this.getData();
     }
 
@@ -530,9 +528,15 @@ export class OrAttributeCard extends LitElement {
     }
 
     protected async getData() {
+
+        if (!this.assetId) {
+            this.error = true;
+            return false;
+        }
+
         const thisMoment = moment(this.now);
 
-        this.asset = await this.getAssetById(this.assetId!);
+        this.asset = await this.getAssetById(this.assetId);
 
         this.currentPeriod = {
             start: thisMoment.startOf(this.period).toDate().getTime(),
@@ -543,14 +547,14 @@ export class OrAttributeCard extends LitElement {
             end: thisMoment.clone().subtract(1, this.period).endOf(this.period).toDate().getTime()
         };
 
-        const p1 = this.getDatapointsByAttribute(this.assetId!, this.currentPeriod.start, this.currentPeriod.end)
+        const p1 = this.getDatapointsByAttribute(this.assetId, this.currentPeriod.start, this.currentPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
                 this.mainValue = this.getHighestValue(this.sanitiseDataPoints(this.data));
                 return this.mainValue;
             });
 
-        const p2 = this.getDatapointsByAttribute(this.assetId!, lastPeriod.start, lastPeriod.end)
+        const p2 = this.getDatapointsByAttribute(this.assetId, lastPeriod.start, lastPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.mainValueLastPeriod = this.getHighestValue(this.sanitiseDataPoints(datapoints));
                 return this.mainValueLastPeriod;
