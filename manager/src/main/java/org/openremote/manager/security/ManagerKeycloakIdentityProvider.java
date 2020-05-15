@@ -180,11 +180,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             parameters.add(query.pathPredicate.path);
         }
         if (query.ids != null && query.ids.length > 0) {
-            sb.append(" AND u.id IN (?");
+            sb.append(" AND u.id IN (?").append(parameters.size() + 1);
             parameters.add(query.ids[0]);
 
             for (int i = 1; i < query.ids.length; i++) {
-                sb.append(",?");
+                sb.append(",?").append(parameters.size() + 1);
                 parameters.add(query.ids[i]);
             }
             sb.append(")");
