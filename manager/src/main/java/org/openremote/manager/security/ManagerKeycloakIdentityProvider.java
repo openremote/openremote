@@ -178,6 +178,16 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             sb.append(" AND ?").append(parameters.size() + 1).append(" <@ get_asset_tree_path(ua.asset_id)");
             parameters.add(query.pathPredicate.path);
         }
+        if (query.ids != null && query.ids.length > 0) {
+            sb.append(" AND u.id IN (?").append(parameters.size() + 1);
+            parameters.add(query.ids[0]);
+
+            for (int i = 1; i < query.ids.length; i++) {
+                sb.append(",?").append(parameters.size() + 1);
+                parameters.add(query.ids[i]);
+            }
+            sb.append(")");
+        }
 
         return sb.toString();
     }
