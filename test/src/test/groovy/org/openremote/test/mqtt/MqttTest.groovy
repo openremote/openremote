@@ -25,13 +25,20 @@ class MqttTest extends Specification implements ManagerContainerTrait {
     def "Mqtt broker test"() {
 
         given: "the container environment is started"
-        MqttBrokerService spyMqttBrokerService = Spy(MqttBrokerService)
+        def mqttBrokerServiceAttributeEventCalls = 0
+        def spyMqttBrokerService = Spy(MqttBrokerService) {
+            sendAttributeEvent(_ as String, _ as AttributeEvent) >> {
+                clientId, attributeEvent ->
+                    mqttBrokerServiceAttributeEventCalls++
+                    callRealMethod()
+            }
+        }
 
         def conditions = new PollingConditions(timeout: 10, delay: 1)
         def serverPort = findEphemeralPort()
         def services = Lists.newArrayList(defaultServices())
-        services.replaceAll{it instanceof MqttBrokerService ? spyMqttBrokerService : it}
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        services.replaceAll { it instanceof MqttBrokerService ? spyMqttBrokerService : it }
+        def container = startContainer(defaultConfig(serverPort), services)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def mqttBrokerService = container.getService(MqttBrokerService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
@@ -183,11 +190,12 @@ class MqttTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "An asset changed the client is subscribed on"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerDemoSetup.apartment1HallwayId, "motionSensor", Values.create(50)))
+        def attributeEvent = new AttributeEvent(managerDemoSetup.apartment1HallwayId, "motionSensor", Values.create(50))
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "A publish message should be sent"
         conditions.eventually {
-            1 * mqttBrokerService.sendAssetAttributeUpdateMessage(_ as String, _ as AttributeRef, _ as Optional<Value>)
+            assert mqttBrokerServiceAttributeEventCalls == 1
         }
 
         when: "a mqtt client unsubscribes to an asset"

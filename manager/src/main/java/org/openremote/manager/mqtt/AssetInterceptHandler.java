@@ -21,7 +21,6 @@ package org.openremote.manager.mqtt;
 
 import io.moquette.interception.InterceptHandler;
 import io.moquette.interception.messages.*;
-import org.apache.camel.util.function.TriConsumer;
 import org.keycloak.adapters.rotation.AdapterTokenVerifier;
 import org.keycloak.common.VerificationException;
 import org.keycloak.representations.AccessToken;
@@ -42,12 +41,11 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.RenewEventSubscriptions;
-import org.openremote.model.value.Value;
+import org.openremote.model.interop.BiConsumer;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.mqtt.MqttBrokerService.TOPIC_SEPARATOR;
@@ -63,13 +61,13 @@ public class AssetInterceptHandler implements InterceptHandler {
     protected final AssetProcessingService assetProcessingService;
     protected final MessageBrokerService messageBrokerService;
     protected final MqttConnector mqttConnector;
-    protected final TriConsumer<String, AttributeRef, Optional<Value>> updateAssetAttributeConsumer;
+    protected final BiConsumer<String, AttributeEvent> attributeEventConsumer;
 
     AssetInterceptHandler(AssetStorageService assetStorageService,
                           AssetProcessingService assetProcessingService,
                           ManagerIdentityService managerIdentityService,
                           ManagerKeycloakIdentityProvider managerKeycloakIdentityProvider,
-                          MessageBrokerService messageBrokerService, MqttConnector mqttConnector, TriConsumer<String, AttributeRef, Optional<Value>> updateAssetAttributeConsumer) {
+                          MessageBrokerService messageBrokerService, MqttConnector mqttConnector, BiConsumer<String, AttributeEvent> attributeEventConsumer) {
 
         this.assetStorageService = assetStorageService;
         this.assetProcessingService = assetProcessingService;
@@ -77,7 +75,7 @@ public class AssetInterceptHandler implements InterceptHandler {
         this.identityProvider = managerKeycloakIdentityProvider;
         this.messageBrokerService = messageBrokerService;
         this.mqttConnector = mqttConnector;
-        this.updateAssetAttributeConsumer = updateAssetAttributeConsumer;
+        this.attributeEventConsumer = attributeEventConsumer;
     }
 
     @Override
@@ -146,7 +144,7 @@ public class AssetInterceptHandler implements InterceptHandler {
                         triggeredEventSubscription ->
                                 triggeredEventSubscription.getEvents()
                                         .forEach(event ->
-                                                updateAssetAttributeConsumer.accept(connection.clientId, event.getAttributeRef(), event.getValue())
+                                                attributeEventConsumer.accept(connection.clientId, event)
                                         )
                 );
                 try {

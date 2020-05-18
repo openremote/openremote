@@ -33,7 +33,7 @@ import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
-import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
@@ -112,7 +112,7 @@ public class MqttBrokerService implements ContainerService {
         properties.setProperty(BrokerConstants.HOST_PROPERTY_NAME, host);
         properties.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(port));
         properties.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, String.valueOf(false));
-        List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new AssetInterceptHandler(assetStorageService, assetProcessingService, identityService, identityProvider, messageBrokerService, mqttConnector, this::sendAssetAttributeUpdateMessage));
+        List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new AssetInterceptHandler(assetStorageService, assetProcessingService, identityService, identityProvider, messageBrokerService, mqttConnector, this::sendAttributeEvent));
         mqttBroker.startServer(new MemoryConfig(properties), interceptHandlers, null, new KeycloakAuthenticator(identityProvider), new KeycloakAuthorizatorPolicy(identityProvider, assetStorageService, mqttConnector));
         LOG.fine("Started MQTT broker");
     }
@@ -123,18 +123,19 @@ public class MqttBrokerService implements ContainerService {
         LOG.fine("Stopped MQTT broker");
     }
 
-    public void sendAssetAttributeUpdateMessage(String clientId, AttributeRef attributeRef, Optional<Value> value) {
+    public void sendAttributeEvent(String clientId, AttributeEvent attributeEvent) {
         ByteBuf payload = null;
-        if (value.isPresent()) {
-            Optional<String> stringValue = Values.getString(value.get());
+        if (attributeEvent.getValue().isPresent()) {
+            Value value = attributeEvent.getValue().get();
+            Optional<String> stringValue = Values.getString(value);
             if (stringValue.isPresent()) {
                 payload = Unpooled.copiedBuffer(stringValue.get(), Charset.defaultCharset());
             }
-            Optional<Double> doubleValue = Values.getNumber(value.get());
+            Optional<Double> doubleValue = Values.getNumber(value);
             if (doubleValue.isPresent()) {
                 payload = Unpooled.copyDouble(doubleValue.get());
             }
-            Optional<Boolean> boolValue = Values.getBoolean(value.get());
+            Optional<Boolean> boolValue = Values.getBoolean(value);
             if (boolValue.isPresent()) {
                 payload = Unpooled.copyBoolean(boolValue.get());
             }
@@ -144,7 +145,7 @@ public class MqttBrokerService implements ContainerService {
         }
         MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
                 .qos(MqttQoS.AT_MOST_ONCE)
-                .topicName(ASSETS_TOPIC + TOPIC_SEPARATOR + attributeRef.getEntityId() + TOPIC_SEPARATOR + attributeRef.getAttributeName())
+                .topicName(ASSETS_TOPIC + TOPIC_SEPARATOR + attributeEvent.getEntityId() + TOPIC_SEPARATOR + attributeEvent.getAttributeName())
                 .payload(payload)
                 .build();
 
