@@ -117,8 +117,8 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         ));
         LOG.info("Added demo user '" + testuser1.getUsername() + "' with password '" + testuser1Credentials.getValue() + "'");
 
-        UsersResource tenantBuildingUsersResource = keycloakProvider.getRealms(accessToken).realm("building").users();
-        ClientsResource tenantBuildingClientsResource = keycloakProvider.getRealms(accessToken).realm("building").clients();
+        UsersResource tenantBuildingUsersResource = keycloakProvider.getRealms(accessToken).realm(tenantBuilding.getRealm()).users();
+        ClientsResource tenantBuildingClientsResource = keycloakProvider.getRealms(accessToken).realm(tenantBuilding.getRealm()).clients();
         String tenantBuildingClientObjectId = getClientObjectId(tenantBuildingClientsResource, KEYCLOAK_CLIENT_ID);
         RolesResource tenantBuildingRolesResource = tenantBuildingClientsResource.get(tenantBuildingClientObjectId).roles();
 
@@ -138,8 +138,7 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
 
         ClientResource mqttResource = tenantBuildingClientsResource.get(getClientObjectId(tenantBuildingClientsResource, buildingMqttClientId));
         UserRepresentation user = mqttResource.getServiceAccountUser();
-        UsersResource realmUsersResource = keycloakProvider.getRealms(accessToken).realm(tenantBuilding.getRealm()).users();
-        realmUsersResource.get(user.getId()).roles().clientLevel(tenantBuildingClientObjectId).add(Arrays.asList(
+        tenantBuildingUsersResource.get(user.getId()).roles().clientLevel(tenantBuildingClientObjectId).add(Arrays.asList(
                 tenantBuildingRolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation(),
                 tenantBuildingRolesResource.get(ClientRole.WRITE_ASSETS.getValue()).toRepresentation()
         ));

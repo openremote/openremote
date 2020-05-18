@@ -217,5 +217,8 @@ class MqttTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert mqttBrokerService.mqttConnector.getConnection(mqttClientId).attributeSubscriptions.size() == 0
         }
+
+        cleanup: "the server should be stopped"
+        stopContainer(container)
     }
 }
