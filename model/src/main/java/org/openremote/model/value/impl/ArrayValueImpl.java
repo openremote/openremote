@@ -46,36 +46,36 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
     @Override
     public Optional<String> getString(int index) {
         return get(index)
-            .filter(value -> value.getType() == ValueType.STRING && value instanceof StringValue)
-            .map(value -> ((StringValue) value).getString());
+                .filter(value -> value.getType() == ValueType.STRING && value instanceof StringValue)
+                .map(value -> ((StringValue) value).getString());
     }
 
     @Override
     public Optional<Boolean> getBoolean(int index) {
         return get(index)
-            .filter(value -> value.getType() == ValueType.BOOLEAN && value instanceof BooleanValue)
-            .map(value -> ((BooleanValue) value).getBoolean());
+                .filter(value -> value.getType() == ValueType.BOOLEAN && value instanceof BooleanValue)
+                .map(value -> ((BooleanValue) value).getBoolean());
     }
 
     @Override
     public Optional<Double> getNumber(int index) {
         return get(index)
-            .filter(value -> value.getType() == ValueType.NUMBER && value instanceof NumberValue)
-            .map(value -> ((NumberValue) value).getNumber());
+                .filter(value -> value.getType() == ValueType.NUMBER && value instanceof NumberValue)
+                .map(value -> ((NumberValue) value).getNumber());
     }
 
     @Override
     public Optional<ArrayValue> getArray(int index) {
         return get(index)
-            .filter(value -> value.getType() == ValueType.ARRAY && value instanceof ArrayValue)
-            .map(value -> ((ArrayValue) value));
+                .filter(value -> value.getType() == ValueType.ARRAY && value instanceof ArrayValue)
+                .map(value -> ((ArrayValue) value));
     }
 
     @Override
     public Optional<ObjectValue> getObject(int index) {
         return get(index)
-            .filter(value -> value.getType() == ValueType.OBJECT && value instanceof ObjectValue)
-            .map(value -> ((ObjectValue) value));
+                .filter(value -> value.getType() == ValueType.OBJECT && value instanceof ObjectValue)
+                .map(value -> ((ObjectValue) value));
     }
 
     @Override
@@ -141,6 +141,21 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
     }
 
     @Override
+    public ArrayValue add(String string) {
+        return add(factory.create(string));
+    }
+
+    @Override
+    public ArrayValue add(double number) {
+        return add(factory.create(number));
+    }
+
+    @Override
+    public ArrayValue add(boolean bool) {
+        return add(factory.create(bool));
+    }
+
+    @Override
     public ArrayValue add(int index, Value value) {
         values.add(index, value);
         return this;
@@ -151,6 +166,36 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
         if (values != null) {
             for (Value value : values) {
                 set(length(), value);
+            }
+        }
+        return this;
+    }
+
+    @Override
+    public ArrayValue addAll(String... strings) {
+        if (strings != null) {
+            for (String string : strings) {
+                set(length(), factory.create(string));
+            }
+        }
+        return this;
+    }
+
+    @Override
+    public ArrayValue addAll(double... numbers) {
+        if (numbers != null) {
+            for (double number : numbers) {
+                set(length(), factory.create(number));
+            }
+        }
+        return this;
+    }
+
+    @Override
+    public ArrayValue addAll(boolean... bools) {
+        if (bools != null) {
+            for (boolean bool : bools) {
+                set(length(), factory.create(bool));
             }
         }
         return this;
