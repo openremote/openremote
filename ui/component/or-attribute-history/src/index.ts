@@ -715,9 +715,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             this._loading = false;
             return;
         }
-
-        const startOfPeriod = moment(this.fromTimestamp).startOf(this.period).toDate().getTime();
-        const endOfPeriod = moment(this.fromTimestamp).endOf(this.period).toDate().getTime();
+        const startOfPeriod = moment(this.fromTimestamp).subtract(1, this.period).toDate().getTime();
+        const endOfPeriod = moment(this.fromTimestamp).toDate().getTime();
 
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
             assetId,
