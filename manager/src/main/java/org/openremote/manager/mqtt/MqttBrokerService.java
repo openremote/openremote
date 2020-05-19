@@ -112,7 +112,7 @@ public class MqttBrokerService implements ContainerService {
         properties.setProperty(BrokerConstants.HOST_PROPERTY_NAME, host);
         properties.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(port));
         properties.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, String.valueOf(false));
-        List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new AssetInterceptHandler(assetStorageService, assetProcessingService, identityService, identityProvider, messageBrokerService, mqttConnector, this::sendAttributeEvent));
+        List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new EventInterceptHandler(assetStorageService, assetProcessingService, identityService, identityProvider, messageBrokerService, mqttConnector, this::sendAttributeEvent));
         mqttBroker.startServer(new MemoryConfig(properties), interceptHandlers, null, new KeycloakAuthenticator(identityProvider), new KeycloakAuthorizatorPolicy(identityProvider, assetStorageService, mqttConnector));
         LOG.fine("Started MQTT broker");
     }

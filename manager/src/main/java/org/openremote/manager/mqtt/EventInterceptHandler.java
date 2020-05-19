@@ -19,13 +19,13 @@
  */
 package org.openremote.manager.mqtt;
 
-import io.moquette.interception.InterceptHandler;
+import io.moquette.interception.AbstractInterceptHandler;
 import io.moquette.interception.messages.*;
 import org.keycloak.adapters.rotation.AdapterTokenVerifier;
 import org.keycloak.common.VerificationException;
 import org.keycloak.representations.AccessToken;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.security.ClientCredentialsAuthFrom;
+import org.openremote.container.security.ClientCredentialsAuthForm;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.container.web.socket.WebsocketConstants;
@@ -51,9 +51,9 @@ import java.util.logging.Logger;
 import static org.openremote.manager.mqtt.MqttBrokerService.TOPIC_SEPARATOR;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
-public class AssetInterceptHandler implements InterceptHandler {
+public class EventInterceptHandler extends AbstractInterceptHandler {
 
-    private static final Logger LOG = Logger.getLogger(AssetInterceptHandler.class.getName());
+    private static final Logger LOG = Logger.getLogger(EventInterceptHandler.class.getName());
 
     protected final ManagerIdentityService identityService;
     protected final ManagerKeycloakIdentityProvider identityProvider;
@@ -63,7 +63,7 @@ public class AssetInterceptHandler implements InterceptHandler {
     protected final MqttConnector mqttConnector;
     protected final BiConsumer<String, AttributeEvent> attributeEventConsumer;
 
-    AssetInterceptHandler(AssetStorageService assetStorageService,
+    EventInterceptHandler(AssetStorageService assetStorageService,
                           AssetProcessingService assetProcessingService,
                           ManagerIdentityService managerIdentityService,
                           ManagerKeycloakIdentityProvider managerKeycloakIdentityProvider,
@@ -80,27 +80,43 @@ public class AssetInterceptHandler implements InterceptHandler {
 
     @Override
     public String getID() {
-        return UniqueIdentifierGenerator.generateId(AssetInterceptHandler.class.getName());
+        return UniqueIdentifierGenerator.generateId(EventInterceptHandler.class.getName());
     }
 
     @Override
     public Class<?>[] getInterceptedMessageTypes() {
-        return InterceptHandler.ALL_MESSAGE_TYPES;
+        return new Class[]{
+            InterceptConnectMessage.class,
+            InterceptDisconnectMessage.class,
+            InterceptConnectionLostMessage.class,
+            InterceptSubscribeMessage.class,
+            InterceptUnsubscribeMessage.class
+        };
     }
 
     @Override
     public void onConnect(InterceptConnectMessage interceptConnectMessage) {
         MqttConnector.MqttConnection connection = mqttConnector.createConnection(interceptConnectMessage.getClientID(), interceptConnectMessage.getUsername(), interceptConnectMessage.getPassword());
         String suppliedClientSecret = new String(interceptConnectMessage.getPassword(), StandardCharsets.UTF_8);
-        connection.accessToken = identityProvider.getKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthFrom(connection.username, suppliedClientSecret)).getToken();
+        connection.accessToken = identityProvider.getKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthForm(connection.username, suppliedClientSecret)).getToken();
+
+        try {
+            Map<String, Object> headers = prepareHeaders(connection);
+            headers.put(WebsocketConstants.SESSION_OPEN, true);
+            messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
+        } catch (VerificationException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void onDisconnect(InterceptDisconnectMessage interceptDisconnectMessage) {
         MqttConnector.MqttConnection connection = mqttConnector.removeConnection(interceptDisconnectMessage.getClientID());
         if (connection != null) {
-            CancelEventSubscription<AttributeEvent> cancelEventSubscription = new CancelEventSubscription<>(AttributeEvent.class);
-            messageBrokerService.getProducerTemplate().sendBodyAndHeader(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, WebsocketConstants.SESSION_KEY, connection.clientId);
+            Map<String, Object> headers = new HashMap<>();
+            headers.put(WebsocketConstants.SESSION_KEY, connection.clientId);
+            headers.put(WebsocketConstants.SESSION_CLOSE, true);
+            messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
         }
     }
 
@@ -108,16 +124,13 @@ public class AssetInterceptHandler implements InterceptHandler {
     public void onConnectionLost(InterceptConnectionLostMessage interceptConnectionLostMessage) {
         MqttConnector.MqttConnection connection = mqttConnector.removeConnection(interceptConnectionLostMessage.getClientID());
         if (connection != null) {
-            CancelEventSubscription<AttributeEvent> cancelEventSubscription = new CancelEventSubscription<>(AttributeEvent.class);
-            messageBrokerService.getProducerTemplate().sendBodyAndHeader(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, WebsocketConstants.SESSION_KEY, connection.clientId);
+            Map<String, Object> headers = new HashMap<>();
+            headers.put(WebsocketConstants.SESSION_KEY, connection.clientId);
+            headers.put(WebsocketConstants.SESSION_CLOSE_ERROR, true);
+            messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
+
         }
         LOG.info("Connection lost for client: " + interceptConnectionLostMessage.getClientID());
-    }
-
-    @Override
-    public void onPublish(InterceptPublishMessage message) {
-        System.out.println("moquette mqtt broker message intercepted, topic: " + message.getTopicName()
-                + ", content: " + new String(message.getPayload().array()));
     }
 
     @Override
@@ -172,11 +185,6 @@ public class AssetInterceptHandler implements InterceptHandler {
                 messageBrokerService.getProducerTemplate().sendBodyAndHeader(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, WebsocketConstants.SESSION_KEY, connection.clientId);
             }
         }
-    }
-
-    @Override
-    public void onMessageAcknowledged(InterceptAcknowledgedMessage interceptAcknowledgedMessage) {
-
     }
 
     private Map<String, Object> prepareHeaders(MqttConnector.MqttConnection connection) throws VerificationException {

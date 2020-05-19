@@ -1,13 +1,12 @@
 package org.openremote.manager.mqtt;
 
-import com.google.inject.internal.cglib.core.$AbstractClassGenerator;
 import io.moquette.broker.security.IAuthorizatorPolicy;
 import io.moquette.broker.subscriptions.Topic;
 import org.keycloak.adapters.rotation.AdapterTokenVerifier;
 import org.keycloak.common.VerificationException;
 import org.keycloak.exceptions.TokenNotActiveException;
 import org.keycloak.representations.AccessToken;
-import org.openremote.container.security.ClientCredentialsAuthFrom;
+import org.openremote.container.security.ClientCredentialsAuthForm;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
@@ -78,7 +77,7 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
         }
 
         if (!asset.getRealm().equals(connection.realm)) {
-            LOG.info("Asset not in same clientId");
+            LOG.info("Asset not in same realm");
             return false;
         }
 
@@ -94,7 +93,7 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
         } catch (VerificationException e) {
             if (e instanceof TokenNotActiveException) {
                 String suppliedClientSecret = new String(connection.password, StandardCharsets.UTF_8);
-                connection.accessToken = identityProvider.getKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthFrom(connection.username, suppliedClientSecret)).getToken();
+                connection.accessToken = identityProvider.getKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthForm(connection.username, suppliedClientSecret)).getToken();
                 try {
                     AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
                     return identityProvider.canSubscribeWith(new AccessTokenAuthContext(connection.realm, accessToken), new TenantFilter(connection.realm), roles);

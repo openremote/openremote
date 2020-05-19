@@ -21,21 +21,21 @@ package org.openremote.container.security;
 
 import javax.ws.rs.FormParam;
 
-public class ClientCredentialsAuthFrom extends AuthForm {
+public class ClientCredentialsAuthForm extends AuthForm {
 
     @FormParam("client_secret")
     public String clientSecret;
 
-    public ClientCredentialsAuthFrom setClientSecret(String clientSecret) {
+    public ClientCredentialsAuthForm setClientSecret(String clientSecret) {
         this.clientSecret = clientSecret;
         return this;
     }
 
-    public ClientCredentialsAuthFrom(String clientId, String clientSecret) {
+    public ClientCredentialsAuthForm(String clientId, String clientSecret) {
         this(clientId, clientSecret, "client_credentials");
     }
 
-    public ClientCredentialsAuthFrom(String clientId, String clientSecret, String grantType) {
+    public ClientCredentialsAuthForm(String clientId, String clientSecret, String grantType) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.grantType = grantType;
