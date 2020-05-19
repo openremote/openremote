@@ -177,7 +177,6 @@
   "reset": "Reset",
   "noLongerMatches": "No longer matches",
   "logs":"Logs",
-  "chooseLang": "Choose language",
   "addRemoveAttributes": "Add/remove attributes",
   "attributeValueType": {
     "PERCENTAGE": "%.2f",
