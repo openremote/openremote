@@ -23,16 +23,14 @@ import io.moquette.interception.AbstractInterceptHandler;
 import io.moquette.interception.messages.*;
 import org.keycloak.adapters.rotation.AdapterTokenVerifier;
 import org.keycloak.common.VerificationException;
+import org.keycloak.exceptions.TokenNotActiveException;
 import org.keycloak.representations.AccessToken;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.ClientCredentialsAuthForm;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.util.UniqueIdentifierGenerator;
-import org.openremote.container.web.socket.WebsocketConstants;
-import org.openremote.manager.asset.AssetProcessingService;
-import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.event.ClientEventService;
-import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetFilter;
@@ -41,11 +39,11 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.RenewEventSubscriptions;
-import org.openremote.model.interop.BiConsumer;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.mqtt.MqttBrokerService.TOPIC_SEPARATOR;
@@ -55,27 +53,17 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
 
     private static final Logger LOG = Logger.getLogger(EventInterceptHandler.class.getName());
 
-    protected final ManagerIdentityService identityService;
     protected final ManagerKeycloakIdentityProvider identityProvider;
-    protected final AssetStorageService assetStorageService;
-    protected final AssetProcessingService assetProcessingService;
     protected final MessageBrokerService messageBrokerService;
-    protected final MqttConnector mqttConnector;
-    protected final BiConsumer<String, AttributeEvent> attributeEventConsumer;
+    protected final Map<String, MqttConnection> mqttConnectionMap;
 
-    EventInterceptHandler(AssetStorageService assetStorageService,
-                          AssetProcessingService assetProcessingService,
-                          ManagerIdentityService managerIdentityService,
-                          ManagerKeycloakIdentityProvider managerKeycloakIdentityProvider,
-                          MessageBrokerService messageBrokerService, MqttConnector mqttConnector, BiConsumer<String, AttributeEvent> attributeEventConsumer) {
+    EventInterceptHandler(ManagerKeycloakIdentityProvider managerKeycloakIdentityProvider,
+                          MessageBrokerService messageBrokerService,
+                          Map<String, MqttConnection> mqttConnectionMap) {
 
-        this.assetStorageService = assetStorageService;
-        this.assetProcessingService = assetProcessingService;
-        this.identityService = managerIdentityService;
         this.identityProvider = managerKeycloakIdentityProvider;
         this.messageBrokerService = messageBrokerService;
-        this.mqttConnector = mqttConnector;
-        this.attributeEventConsumer = attributeEventConsumer;
+        this.mqttConnectionMap = mqttConnectionMap;
     }
 
     @Override
@@ -86,47 +74,44 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
     @Override
     public Class<?>[] getInterceptedMessageTypes() {
         return new Class[]{
-            InterceptConnectMessage.class,
-            InterceptDisconnectMessage.class,
-            InterceptConnectionLostMessage.class,
-            InterceptSubscribeMessage.class,
-            InterceptUnsubscribeMessage.class
+                InterceptConnectMessage.class,
+                InterceptDisconnectMessage.class,
+                InterceptConnectionLostMessage.class,
+                InterceptSubscribeMessage.class,
+                InterceptUnsubscribeMessage.class
         };
     }
 
     @Override
     public void onConnect(InterceptConnectMessage interceptConnectMessage) {
-        MqttConnector.MqttConnection connection = mqttConnector.createConnection(interceptConnectMessage.getClientID(), interceptConnectMessage.getUsername(), interceptConnectMessage.getPassword());
+
+        MqttConnection connection = new MqttConnection(interceptConnectMessage.getClientID(), interceptConnectMessage.getUsername(), interceptConnectMessage.getPassword());
         String suppliedClientSecret = new String(interceptConnectMessage.getPassword(), StandardCharsets.UTF_8);
         connection.accessToken = identityProvider.getKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthForm(connection.username, suppliedClientSecret)).getToken();
 
-        try {
-            Map<String, Object> headers = prepareHeaders(connection);
-            headers.put(WebsocketConstants.SESSION_OPEN, true);
-            messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
-        } catch (VerificationException e) {
-            e.printStackTrace();
-        }
+        mqttConnectionMap.put(connection.clientId, connection);
+
+        Map<String, Object> headers = prepareHeaders(connection);
+        headers.put(ConnectionConstants.SESSION_OPEN, true);
+        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
     }
 
     @Override
     public void onDisconnect(InterceptDisconnectMessage interceptDisconnectMessage) {
-        MqttConnector.MqttConnection connection = mqttConnector.removeConnection(interceptDisconnectMessage.getClientID());
+        MqttConnection connection = mqttConnectionMap.remove(interceptDisconnectMessage.getClientID());
         if (connection != null) {
-            Map<String, Object> headers = new HashMap<>();
-            headers.put(WebsocketConstants.SESSION_KEY, connection.clientId);
-            headers.put(WebsocketConstants.SESSION_CLOSE, true);
+            Map<String, Object> headers = prepareHeaders(connection);
+            headers.put(ConnectionConstants.SESSION_CLOSE, true);
             messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
         }
     }
 
     @Override
     public void onConnectionLost(InterceptConnectionLostMessage interceptConnectionLostMessage) {
-        MqttConnector.MqttConnection connection = mqttConnector.removeConnection(interceptConnectionLostMessage.getClientID());
+        MqttConnection connection = mqttConnectionMap.remove(interceptConnectionLostMessage.getClientID());
         if (connection != null) {
-            Map<String, Object> headers = new HashMap<>();
-            headers.put(WebsocketConstants.SESSION_KEY, connection.clientId);
-            headers.put(WebsocketConstants.SESSION_CLOSE_ERROR, true);
+            Map<String, Object> headers = prepareHeaders(connection);
+            headers.put(ConnectionConstants.SESSION_CLOSE_ERROR, true);
             messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
 
         }
@@ -135,38 +120,24 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
 
     @Override
     public void onSubscribe(InterceptSubscribeMessage interceptSubscribeMessage) {
-        MqttConnector.MqttConnection connection = mqttConnector.getConnection(interceptSubscribeMessage.getClientID());
+        MqttConnection connection = mqttConnectionMap.get(interceptSubscribeMessage.getClientID());
         if (connection != null) {
-
             String[] topicParts = interceptSubscribeMessage.getTopicFilter().split(TOPIC_SEPARATOR);
-            AttributeRef attributeRef = new AttributeRef(topicParts[1], topicParts[2]);
-            String subscriptionId = connection.attributeSubscriptions.get(attributeRef);
+            String assetId = topicParts[1];
+            String subscriptionId = connection.assetSubscriptions.get(assetId);
             if (subscriptionId != null) { //renew subscription
                 RenewEventSubscriptions renewEventSubscriptions = new RenewEventSubscriptions(new String[]{subscriptionId});
-                try {
-                    Map<String, Object> headers = prepareHeaders(connection);
-                    messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, renewEventSubscriptions, headers);
-                } catch (VerificationException e) {
-                    e.printStackTrace();
-                }
+                Map<String, Object> headers = prepareHeaders(connection);
+                messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, renewEventSubscriptions, headers);
             } else {
                 EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
                         AttributeEvent.class,
-                        new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(attributeRef.getEntityId()),
-                        String.valueOf(connection.getNextSubscriptionId()),
-                        triggeredEventSubscription ->
-                                triggeredEventSubscription.getEvents()
-                                        .forEach(event ->
-                                                attributeEventConsumer.accept(connection.clientId, event)
-                                        )
+                        new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId),
+                        String.valueOf(connection.getNextSubscriptionId())
                 );
-                try {
-                    Map<String, Object> headers = prepareHeaders(connection);
-                    messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
-                    connection.attributeSubscriptions.put(attributeRef, subscription.getSubscriptionId());
-                } catch (VerificationException e) {
-                    e.printStackTrace();
-                }
+                Map<String, Object> headers = prepareHeaders(connection);
+                messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
+                connection.assetSubscriptions.put(assetId, subscription.getSubscriptionId());
             }
         } else {
             throw new IllegalStateException("Connection with clientId " + interceptSubscribeMessage.getClientID() + " not found.");
@@ -175,24 +146,39 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
 
     @Override
     public void onUnsubscribe(InterceptUnsubscribeMessage interceptUnsubscribeMessage) {
-        MqttConnector.MqttConnection connection = mqttConnector.getConnection(interceptUnsubscribeMessage.getClientID());
+        MqttConnection connection = mqttConnectionMap.get(interceptUnsubscribeMessage.getClientID());
         if (connection != null) {
             String[] topicParts = interceptUnsubscribeMessage.getTopicFilter().split(TOPIC_SEPARATOR);
-            AttributeRef attributeRef = new AttributeRef(topicParts[1], topicParts[2]);
-            String subscriptionId = connection.attributeSubscriptions.remove(attributeRef);
+            String assetId = topicParts[1];
+            String subscriptionId = connection.assetSubscriptions.remove(assetId);
             if (subscriptionId != null) {
+                Map<String, Object> headers = prepareHeaders(connection);
                 CancelEventSubscription<AttributeEvent> cancelEventSubscription = new CancelEventSubscription<>(AttributeEvent.class, subscriptionId);
-                messageBrokerService.getProducerTemplate().sendBodyAndHeader(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, WebsocketConstants.SESSION_KEY, connection.clientId);
+                messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, headers);
             }
         }
     }
 
-    private Map<String, Object> prepareHeaders(MqttConnector.MqttConnection connection) throws VerificationException {
-        AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
+    private Map<String, Object> prepareHeaders(MqttConnection connection) {
         Map<String, Object> headers = new HashMap<>();
-        headers.put(Constants.AUTH_CONTEXT, new AccessTokenAuthContext(connection.realm, accessToken));
-        headers.put(WebsocketConstants.SESSION_KEY, connection.clientId);
+        headers.put(ConnectionConstants.SESSION_KEY, connection.clientId);
         headers.put(ClientEventService.HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
+        try {
+            AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
+            headers.put(Constants.AUTH_CONTEXT, new AccessTokenAuthContext(connection.realm, accessToken));
+        } catch (VerificationException e) {
+            if (e instanceof TokenNotActiveException) {
+                String suppliedClientSecret = new String(connection.password, StandardCharsets.UTF_8);
+                connection.accessToken = identityProvider.getKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthForm(connection.username, suppliedClientSecret)).getToken();
+                try {
+                    AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
+                    headers.put(Constants.AUTH_CONTEXT, new AccessTokenAuthContext(connection.realm, accessToken));
+                } catch (VerificationException verificationException) {
+                    LOG.log(Level.WARNING, "Couldn't verify token", verificationException);
+                }
+            }
+            LOG.log(Level.WARNING, e.getMessage(), e);
+        }
         return headers;
     }
 }

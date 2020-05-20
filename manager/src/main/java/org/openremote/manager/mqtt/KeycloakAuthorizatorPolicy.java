@@ -8,13 +8,15 @@ import org.keycloak.exceptions.TokenNotActiveException;
 import org.keycloak.representations.AccessToken;
 import org.openremote.container.security.ClientCredentialsAuthForm;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
-import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.asset.AssetFilter;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.security.ClientRole;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,15 +28,15 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
     private static final Logger LOG = Logger.getLogger(KeycloakAuthorizatorPolicy.class.getName());
 
     protected final ManagerKeycloakIdentityProvider identityProvider;
-    protected final AssetStorageService assetStorageService;
-    protected final MqttConnector mqttConnector;
+    protected final ClientEventService clientEventService;
+    protected final Map<String, MqttConnection> mqttConnectionMap;
 
     public KeycloakAuthorizatorPolicy(ManagerKeycloakIdentityProvider identityProvider,
-                                      AssetStorageService assetStorageService,
-                                      MqttConnector mqttConnector) {
+                                      ClientEventService clientEventService,
+                                      Map<String, MqttConnection> mqttConnectionMap) {
         this.identityProvider = identityProvider;
-        this.assetStorageService = assetStorageService;
-        this.mqttConnector = mqttConnector;
+        this.clientEventService = clientEventService;
+        this.mqttConnectionMap = mqttConnectionMap;
     }
 
     @Override
@@ -48,7 +50,7 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
     }
 
     private boolean verifyRights(Topic topic, String username, String clientId, ClientRole... roles) {
-        MqttConnector.MqttConnection connection = mqttConnector.getConnection(clientId);
+        MqttConnection connection = mqttConnectionMap.get(clientId);
         if (connection == null) {
             LOG.info("No connection found for clientId: " + clientId);
             return false;
@@ -59,44 +61,32 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             return false;
         }
 
-        if (topic.isEmpty() || topic.getTokens().size() != 3) {
-            LOG.info("Topic may not be empty and should have the following format: assets/{assetId}/{attributeName}");
+        if (topic.isEmpty() || topic.getTokens().size() != 2) {
+            LOG.info("Topic may not be empty and should have the following format: assets/{assetId}");
             return false;
         }
 
         if (!topic.headToken().toString().equals(ASSETS_TOPIC)) {
-            LOG.info("Topic should have the following format: assets/{assetId}/{attributeName}");
+            LOG.info("Topic should have the following format: assets/{assetId}");
             return false;
         }
 
         String assetId = topic.getTokens().get(1).toString();
-        Asset asset = assetStorageService.find(assetId);
-        if (asset == null) {
-            LOG.info("Asset not found for assetId: " + assetId);
-            return false;
-        }
-
-        if (!asset.getRealm().equals(connection.realm)) {
-            LOG.info("Asset not in same realm");
-            return false;
-        }
-
-        String attributeName = topic.getTokens().get(2).toString();
-        if(!asset.getAttribute(attributeName).isPresent()) {
-            LOG.info("Attribute not found: " + attributeName);
-            return false;
-        }
+        EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
+                AttributeEvent.class,
+                new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId)
+        );
 
         try {
             AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
-            return identityProvider.canSubscribeWith(new AccessTokenAuthContext(connection.realm, accessToken), new TenantFilter(connection.realm), roles);
+            return clientEventService.authorizeEventSubscription(new AccessTokenAuthContext(connection.realm, accessToken), subscription);
         } catch (VerificationException e) {
             if (e instanceof TokenNotActiveException) {
                 String suppliedClientSecret = new String(connection.password, StandardCharsets.UTF_8);
                 connection.accessToken = identityProvider.getKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthForm(connection.username, suppliedClientSecret)).getToken();
                 try {
                     AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
-                    return identityProvider.canSubscribeWith(new AccessTokenAuthContext(connection.realm, accessToken), new TenantFilter(connection.realm), roles);
+                    return clientEventService.authorizeEventSubscription(new AccessTokenAuthContext(connection.realm, accessToken), subscription);
                 } catch (VerificationException verificationException) {
                     LOG.log(Level.INFO, "Couldn't verify token", verificationException);
                     return false;

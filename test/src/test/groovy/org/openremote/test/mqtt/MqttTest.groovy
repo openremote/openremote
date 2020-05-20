@@ -8,18 +8,19 @@ import org.openremote.manager.mqtt.MqttBrokerService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.attribute.AttributeEvent
-import org.openremote.model.attribute.AttributeRef
-import org.openremote.model.value.Value
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.RawClient
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.nio.charset.Charset
+
 import static org.openremote.container.util.MapAccess.*
 import static org.openremote.manager.mqtt.KeycloakAuthenticator.MQTT_CLIENT_ID_SEPARATOR
 import static org.openremote.manager.mqtt.MqttBrokerService.MQTT_SERVER_LISTEN_HOST
 import static org.openremote.manager.mqtt.MqttBrokerService.MQTT_SERVER_LISTEN_PORT
+import static org.openremote.manager.mqtt.MqttBrokerService.PAYLOAD_SEPARATOR
 
 class MqttTest extends Specification implements ManagerContainerTrait {
     def "Mqtt broker test"() {
@@ -87,7 +88,7 @@ class MqttTest extends Specification implements ManagerContainerTrait {
 
         then: "no connection should be made"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnector.connectionMap.size() == 0
+            assert mqttBrokerService.mqttConnectionMap.size() == 0
         }
 
         when: "a mqtt client connects"
@@ -123,7 +124,7 @@ class MqttTest extends Specification implements ManagerContainerTrait {
 
         then: "mqtt connection should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnector.getConnection(mqttClientId) != null
+            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId) != null
         }
 
         when: "a mqtt client subscribes to an asset in another realm"
@@ -144,11 +145,11 @@ class MqttTest extends Specification implements ManagerContainerTrait {
 
         then: "No subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnector.getConnection(mqttClientId).attributeSubscriptions.size() == 0
+            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 0
         }
 
         when: "a mqtt client subscribes to an non existing asset"
-        topic = "assets/dhajkdasjfgh/" + managerDemoSetup.thingLightToggleAttributeName
+        topic = "assets/dhajkdasjfgh/"
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -165,11 +166,11 @@ class MqttTest extends Specification implements ManagerContainerTrait {
 
         then: "No subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnector.getConnection(mqttClientId).attributeSubscriptions.size() == 0
+            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 0
         }
 
         when: "a mqtt client subscribes to an asset"
-        topic = "assets/" + managerDemoSetup.apartment1HallwayId + "/motionSensor"
+        topic = "assets/" + managerDemoSetup.apartment1HallwayId
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -186,10 +187,10 @@ class MqttTest extends Specification implements ManagerContainerTrait {
 
         then: "A subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnector.getConnection(mqttClientId).attributeSubscriptions.size() > 0
+            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() > 0
         }
 
-        when: "An asset changed the client is subscribed on"
+        when: "An asset attribute changed the client is subscribed on"
         def attributeEvent = new AttributeEvent(managerDemoSetup.apartment1HallwayId, "motionSensor", Values.create(50))
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
@@ -198,8 +199,17 @@ class MqttTest extends Specification implements ManagerContainerTrait {
             assert mqttBrokerServiceAttributeEventCalls == 1
         }
 
+        when: "Another asset attribute changed the client is subscribed on"
+        attributeEvent = new AttributeEvent(managerDemoSetup.apartment1HallwayId, "presenceDetected", Values.create(true))
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        then: "A second publish message should be sent"
+        conditions.eventually {
+            assert mqttBrokerServiceAttributeEventCalls == 2
+        }
+
         when: "a mqtt client unsubscribes to an asset"
-        topic = "assets/" + managerDemoSetup.apartment1HallwayId + "/motionSensor"
+        topic = "assets/" + managerDemoSetup.apartment1HallwayId
         remainingLength = 4 + topic.size()
 
         client
@@ -213,9 +223,19 @@ class MqttTest extends Specification implements ManagerContainerTrait {
                 .write(topic) // Topic
                 .flush()
 
-        then: "NO subscription should exist"
+
+        then: "No subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnector.getConnection(mqttClientId).attributeSubscriptions.size() == 0
+            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 0
+        }
+
+        when: "Another asset attribute changed without any subscriptions"
+        attributeEvent = new AttributeEvent(managerDemoSetup.apartment1HallwayId, "presenceDetected", Values.create(false))
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        then: "No publish message should be sent"
+        conditions.eventually {
+            assert mqttBrokerServiceAttributeEventCalls == 2
         }
 
         cleanup: "the server should be stopped"

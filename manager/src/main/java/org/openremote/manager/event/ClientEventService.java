@@ -26,7 +26,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.socket.WebsocketConstants;
+import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.mqtt.MqttBrokerService;
@@ -41,8 +41,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
 
-import static org.apache.camel.builder.PredicateBuilder.isInstanceOf;
-import static org.apache.camel.builder.PredicateBuilder.or;
+import static org.apache.camel.builder.PredicateBuilder.*;
 import static org.openremote.manager.gateway.GatewayService.isGatewayClientId;
 
 /**
@@ -148,48 +147,13 @@ public class ClientEventService implements ContainerService {
                 from("websocket://" + WEBSOCKET_EVENTS)
                     .routeId("FromClientWebsocketEvents")
                     .process(exchange -> exchange.getIn().setHeader(HEADER_CONNECTION_TYPE, HEADER_CONNECTION_TYPE_WEBSOCKET))
-                    .choice()
-                    .when(header(WebsocketConstants.SESSION_OPEN))
-                        .to(ClientEventService.CLIENT_EVENT_QUEUE)
-                        .stop()
-                    .when(or(
-                        header(WebsocketConstants.SESSION_CLOSE),
-                        header(WebsocketConstants.SESSION_CLOSE_ERROR)
-                    ))
-                        .to(ClientEventService.CLIENT_EVENT_QUEUE)
-                        .stop()
-                    .when(bodyAs(String.class).startsWith(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX))
-                        .to(ClientEventService.CLIENT_EVENT_QUEUE)
-                        .stop()
-                    .when(bodyAs(String.class).startsWith(CancelEventSubscription.MESSAGE_PREFIX))
-                        .to(ClientEventService.CLIENT_EVENT_QUEUE)
-                        .stop()
-                    .when(bodyAs(String.class).startsWith(RenewEventSubscriptions.MESSAGE_PREFIX))
-                        .to(ClientEventService.CLIENT_EVENT_QUEUE)
-                        .stop()
-                    .when(bodyAs(String.class).startsWith(SharedEvent.MESSAGE_PREFIX))
-                        .convertBodyTo(SharedEvent.class)
-                        .process(exchange -> {
-                            SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
-                            // If there is no timestamp in event, set to system time
-                            if (event.getTimestamp() <= 0) {
-                                event.setTimestamp(timerService.getCurrentTimeMillis());
-                            }
-                        })
-                        .choice()
-                            .when(exchange -> isGatewayClientId(getClientId(exchange)))
-                                .to(GatewayService.GATEWAY_EVENT_TOPIC)
-                            .otherwise()
-                                .to(ClientEventService.CLIENT_EVENT_TOPIC)
-                        .endChoice()
-                    .otherwise()
-                        .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
+                    .to(ClientEventService.CLIENT_EVENT_QUEUE)
                     .end();
 
                 from(ClientEventService.CLIENT_EVENT_QUEUE)
-                    .routeId("ToClientEvents")
+                    .routeId("ClientEvents")
                     .choice()
-                    .when(header(WebsocketConstants.SESSION_OPEN))
+                    .when(header(ConnectionConstants.SESSION_OPEN))
                         .process(exchange -> {
                             String sessionKey = getSessionKey(exchange);
                             sessionKeyConnectionTypeMap.put(sessionKey, (String) exchange.getIn().getHeader(HEADER_CONNECTION_TYPE));
@@ -200,8 +164,8 @@ public class ClientEventService implements ContainerService {
                         .endChoice()
                         .stop()
                     .when(or(
-                        header(WebsocketConstants.SESSION_CLOSE),
-                        header(WebsocketConstants.SESSION_CLOSE_ERROR)
+                        header(ConnectionConstants.SESSION_CLOSE),
+                        header(ConnectionConstants.SESSION_CLOSE_ERROR)
                     ))
                         .process(exchange -> {
                             String sessionKey = getSessionKey(exchange);
@@ -219,8 +183,7 @@ public class ClientEventService implements ContainerService {
                             String sessionKey = getSessionKey(exchange);
                             EventSubscription subscription = exchange.getIn().getBody(EventSubscription.class);
                             AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-                            if (eventSubscriptionAuthorizers.stream()
-                                    .anyMatch(authorizer -> authorizer.apply(authContext, subscription))) {
+                            if (authorizeEventSubscription(authContext, subscription)) {
                                 boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId());
                                 eventSubscriptions.createOrUpdate(sessionKey, restrictedUser, subscription);
                                 subscription.setSubscribed(true);
@@ -235,7 +198,7 @@ public class ClientEventService implements ContainerService {
                         })
                         .stop()
                     .when(or(
-                            isInstanceOf(body(), CancelEventSubscription.class),
+                            body().isInstanceOf(CancelEventSubscription.class),
                             bodyAs(String.class).startsWith(CancelEventSubscription.MESSAGE_PREFIX)
                     ))
                         .choice()
@@ -248,12 +211,12 @@ public class ClientEventService implements ContainerService {
                         })
                         .stop()
                     .when(or(
-                            isInstanceOf(body(), RenewEventSubscriptions.class),
+                            body().isInstanceOf(RenewEventSubscriptions.class),
                             bodyAs(String.class).startsWith(RenewEventSubscriptions.MESSAGE_PREFIX)
                     ))
                         .choice()
-                        .when(bodyAs(String.class).startsWith(RenewEventSubscriptions.MESSAGE_PREFIX))
-                        .convertBodyTo(RenewEventSubscriptions.class)
+                            .when(bodyAs(String.class).startsWith(RenewEventSubscriptions.MESSAGE_PREFIX))
+                            .convertBodyTo(RenewEventSubscriptions.class)
                         .endChoice()
                         .process(exchange -> {
                             String sessionKey = getSessionKey(exchange);
@@ -262,9 +225,39 @@ public class ClientEventService implements ContainerService {
                             eventSubscriptions.update(sessionKey, restrictedUser,exchange.getIn().getBody(RenewEventSubscriptions.class).getSubscriptionIds());
                         })
                         .stop()
-                    .when(body().isInstanceOf(SharedEvent.class))
-                        .split(method(eventSubscriptions, "splitForSubscribers"))
-                        .to("websocket://" + WEBSOCKET_EVENTS)
+                    .when(or(
+                        body().isInstanceOf(SharedEvent.class),
+                        bodyAs(String.class).startsWith(SharedEvent.MESSAGE_PREFIX)
+                    ))
+                        .choice()
+                            .when(bodyAs(String.class).startsWith(SharedEvent.MESSAGE_PREFIX))
+                            .convertBodyTo(SharedEvent.class)
+                        .endChoice()
+                        .process(exchange -> {
+                            SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
+                            // If there is no timestamp in event, set to system time
+                            if (event.getTimestamp() <= 0) {
+                                event.setTimestamp(timerService.getCurrentTimeMillis());
+                            }
+                        })
+                        .choice()
+                            .when(header(Constants.AUTH_CONTEXT).isNotNull())
+                            .choice()
+                                .when(exchange -> isGatewayClientId(getClientId(exchange)))
+                                    .to(GatewayService.GATEWAY_EVENT_TOPIC)
+                                .otherwise()
+                                    .to(ClientEventService.CLIENT_EVENT_TOPIC)
+                            .endChoice()
+                            .when(header(Constants.AUTH_CONTEXT).isNull())
+                                .split(method(eventSubscriptions, "splitForSubscribers"))
+                                .process(exchange -> {
+                                    String sessionKey = getSessionKey(exchange);
+                                    sendToSession(sessionKey, exchange.getIn().getBody());
+                                })
+                        .endChoice()
+                        .stop()
+                    .otherwise()
+                        .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
                     .end();
             }
         });
@@ -282,6 +275,11 @@ public class ClientEventService implements ContainerService {
 
     public void addSubscriptionAuthorizer(EventSubscriptionAuthorizer authorizer) {
         this.eventSubscriptionAuthorizers.add(authorizer);
+    }
+
+    public boolean authorizeEventSubscription(AuthContext authContext, EventSubscription subscription) {
+        return eventSubscriptionAuthorizers.stream()
+                .anyMatch(authorizer -> authorizer.apply(authContext, subscription));
     }
 
     public void publishEvent(SharedEvent event) {
@@ -315,20 +313,20 @@ public class ClientEventService implements ContainerService {
                 messageBrokerService.getProducerTemplate().sendBodyAndHeader(
                         "websocket://" + WEBSOCKET_EVENTS,
                         data,
-                        WebsocketConstants.SESSION_KEY, sessionKey
+                        ConnectionConstants.SESSION_KEY, sessionKey
                 );
             } else if (sessionConnectionType.equals(HEADER_CONNECTION_TYPE_MQTT)) {
                 messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                        MqttBrokerService.MQTT_QUEUE,
+                        MqttBrokerService.MQTT_CLIENT_QUEUE,
                         data,
-                        WebsocketConstants.SESSION_KEY, sessionKey
+                        ConnectionConstants.SESSION_KEY, sessionKey
                 );
             }
         }
     }
 
     public static String getSessionKey(Exchange exchange) {
-        return exchange.getIn().getHeader(WebsocketConstants.SESSION_KEY, String.class);
+        return exchange.getIn().getHeader(ConnectionConstants.SESSION_KEY, String.class);
     }
 
     public EventSubscriptions getEventSubscriptions() {
@@ -343,6 +341,9 @@ public class ClientEventService implements ContainerService {
 
     public static String getClientId(Exchange exchange) {
         AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-        return authContext.getClientId();
+        if(authContext != null) {
+            return authContext.getClientId();
+        }
+        return null;
     }
 }
