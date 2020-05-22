@@ -1,77 +1,91 @@
-import Navigo from "navigo";
-import manager, {Auth} from "@openremote/core";
-import {store} from "./store";
-import "./components/my-app";
-import {resolveApp, updatePage, updateRule, setActiveAsset} from "./actions/app";
+// Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
+declare function require(name: string): any;
 
-// Declare MANAGER_URL
-declare var MANAGER_URL: string;
+import {combineReducers, configureStore} from "@reduxjs/toolkit";
+import "@openremote/or-app";
+import {
+    OrApp,
+    AppConfig,
+    appReducer,
+    headerItemGatewayConnection,
+    headerItemLanguage,
+    headerItemLogout,
+    headerItemLogs,
+    headerItemMap,
+    headerItemAssets,
+    headerItemRules,
+    headerItemInsights} from "@openremote/or-app";
+import "@openremote/or-app/dist/pages/page-map";
+import {pageMapReducer, pageMapProvider} from "@openremote/or-app/dist/pages/page-map";
+import "@openremote/or-app/dist/pages/page-assets";
+import {pageAssetsProvider} from "@openremote/or-app/dist/pages/page-assets";
+import "@openremote/or-app/dist/pages/page-gateway";
+import {pageGatewayProvider} from "@openremote/or-app/dist/pages/page-gateway";
+import "@openremote/or-app/dist/pages/page-insights";
+import {pageInsightsProvider} from "@openremote/or-app/dist/pages/page-insights";
+import "@openremote/or-app/dist/pages/page-rules";
+import {pageRulesProvider} from "@openremote/or-app/dist/pages/page-rules";
+import "@openremote/or-app/dist/pages/page-logs";
+import {pageLogsProvider} from "@openremote/or-app/dist/pages/page-logs";
 
-// Configure routing
-export const router = new Navigo(null, true, "#!");
-
-router.on({
-    "map": (params, query) => {
-        store.dispatch(setActiveAsset(null));
-        store.dispatch(updatePage("map"));
-    },
-    "map/:id": (params, query) => {
-        store.dispatch(setActiveAsset(params.id));
-        store.dispatch(updatePage("map"));
-    },
-    "insights": (params, query) => {
-        store.dispatch(setActiveAsset(null));
-        store.dispatch(updatePage("insights"));
-    },
-    "insights/:id": (params, query) => {
-        store.dispatch(setActiveAsset(params.id));
-        store.dispatch(updatePage("insights", params.id));
-    },
-    "assets": (params, query) => {
-        store.dispatch(setActiveAsset(null));
-        store.dispatch(updatePage("assets"));
-    },
-    "assets/:id": (params, query) => {
-        store.dispatch(setActiveAsset(params.id));
-        store.dispatch(updatePage("assets", params.id));
-    },
-    "rules": (params, query) => {
-        store.dispatch(updatePage("rules"));
-    },
-    "rules/:id": (params, query) => {
-        store.dispatch(updateRule(params.id));
-        store.dispatch(updatePage("rules"));
-    },
-    "logs": (params, query) => {
-        store.dispatch(updatePage("logs"));
-    },
-    "gateway": (params, query) => {
-        store.dispatch(updatePage("gateway"));
-    },
-    "*": (params, query) => {
-        store.dispatch(updatePage("map"));
-    }
+const rootReducer = combineReducers({
+    app: appReducer,
+    map: pageMapReducer
 });
 
-function getUrlParameter(name) {
-    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
-    const regex = new RegExp("[\\?&]" + name + "=([^&#]*)");
-    const results = regex.exec(location.search);
-    return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
-}
+type RootState = ReturnType<typeof rootReducer>;
 
-const realmFromPath = getUrlParameter("realm");
-
-manager.init({
-    managerUrl:  MANAGER_URL,
-    auth: Auth.KEYCLOAK,
-    autoLogin: true,
-    realm: realmFromPath,
-    consoleAutoEnable: true,
-    loadTranslations: ["app", "or"]
-}).then(() => {
-    if (manager.authenticated) {
-        router.resolve();
-        store.dispatch(resolveApp(true));
-    }
+export const store = configureStore({
+    reducer: rootReducer
 });
+
+const orApp = new OrApp(store);
+
+const appConfig: AppConfig<RootState> = {
+    pages: {
+        default: pageMapProvider(store),
+        assets: pageAssetsProvider(store),
+        gateway: pageGatewayProvider(store),
+        logs: pageLogsProvider(store),
+        insights: pageInsightsProvider(store),
+        rules: pageRulesProvider(store)
+    },
+    default: {
+        appTitle: "OpenRemote Demo",
+        logo: require("../images/logo.png"),
+        logoMobile: require("../images/logo-mobile.png"),
+        header: {
+            mainMenu: [
+                headerItemMap(orApp),
+                headerItemAssets(orApp),
+                headerItemRules(orApp),
+                headerItemInsights(orApp)
+                // {
+                //     icon: "android-messages",
+                //     href: "#!messages",
+                //     text: "messages",
+                // }
+            ],
+            secondaryMenu: [
+                headerItemGatewayConnection(orApp),
+                headerItemLanguage(orApp),
+                headerItemLogs(orApp),
+                headerItemLogout(orApp)
+                // {
+                //     icon: "account-cog",
+                //     value: "User management",
+                //     text: "User management",
+                //     isSuperUser: true
+                // },
+                // {
+                //     icon: "tune",
+                //     value: "Settings",
+                //     text: "Settings"
+                // }
+            ]
+        }
+    }
+};
+
+orApp.appConfig = appConfig;
+document.body.appendChild(orApp);

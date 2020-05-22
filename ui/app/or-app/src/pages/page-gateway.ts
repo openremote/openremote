@@ -1,28 +1,51 @@
-import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult, unsafeCSS} from "lit-element";
+import {css, customElement, html, property, PropertyValues, TemplateResult, unsafeCSS} from "lit-element";
 import i18next from "i18next";
-import "@openremote/or-log-viewer";
 import "@openremote/or-panel";
-import {GatewayConnection, GatewayConnectionStatusEvent, ConnectionStatus} from "@openremote/model";
-import { translate } from "@openremote/or-translate";
-import manager, { DefaultColor1 } from "@openremote/core";
-import { InputType, OrInputChangedEvent } from "@openremote/or-input";
+import {ConnectionStatus, GatewayConnection, GatewayConnectionStatusEvent} from "@openremote/model";
+import manager, {DefaultColor1} from "@openremote/core";
+import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import {AppStateKeyed, Page} from "../index";
+import {EnhancedStore} from "@reduxjs/toolkit";
 
-@customElement("or-gateway-connection-panel")
-export class OrGatewayConnectionPanel extends translate(i18next)(LitElement)  {
+export function pageGatewayProvider<S extends AppStateKeyed>(store: EnhancedStore<S>) {
+    return {
+        routes: [
+            "gateway"
+        ],
+        pageCreator: () => {
+            return new PageGateway(store);
+        }
+    };
+}
 
-    // language=CSS
+@customElement("page-gateway")
+class PageGateway<S extends AppStateKeyed> extends Page<S>  {
+
     static get styles() {
+        // language=CSS
         return css`
             :host {
                 flex: 1;
                 width: 100%;
+                
+                display: flex;
+                justify-content: center;
+                
                 --or-panel-heading-margin: 0 0 5px 10px;
                 --or-panel-background-color: var(--or-app-color1, ${unsafeCSS(DefaultColor1)});
-                --or-panel-heading-font-size: large;            
+                --or-panel-heading-font-size: large; 
+            }            
+            
+            @media only screen and (max-width: 1080px){
+                or-panel {
+                    margin: 0;
+                }
             }
             
             or-panel {
                 position: relative;
+                max-width: 1000px;
+                margin-top: 40px;
             }
             
             #status {
@@ -49,8 +72,7 @@ export class OrGatewayConnectionPanel extends translate(i18next)(LitElement)  {
             }
             
             #buttons > or-input {
-                margin: 10px;
-                
+                margin: 10px;                
             }
         `;
     }
@@ -72,6 +94,10 @@ export class OrGatewayConnectionPanel extends translate(i18next)(LitElement)  {
 
     protected _readonly = false;
     protected _eventSubscriptionId?: string;
+
+    constructor(store: EnhancedStore<S>) {
+        super(store);
+    }
 
     connectedCallback() {
         super.connectedCallback();
@@ -125,6 +151,9 @@ export class OrGatewayConnectionPanel extends translate(i18next)(LitElement)  {
                 </div>
             </or-panel>
         `;
+    }
+
+    public stateChanged(state: S) {
     }
 
     protected async _subscribeEvents() {

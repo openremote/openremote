@@ -1,51 +1,24 @@
-import {customElement, html, LitElement, property, TemplateResult, css, unsafeCSS} from "lit-element";
-import {store} from "../../store";
-import {connect} from "pwa-helpers/connect-mixin";
+import {customElement, html, property, TemplateResult, css, unsafeCSS} from "lit-element";
 import "@openremote/or-asset-tree";
 import "@openremote/or-asset-viewer";
 import {ViewerConfig} from "@openremote/or-asset-viewer";
 import {OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
 import {DefaultBoxShadow} from "@openremote/core";
 import moment from "moment";
-import {router} from "../../index";
+import {AppStateKeyed, Page, router} from "../index";
+import {EnhancedStore} from "@reduxjs/toolkit";
 
-// language=CSS
-const style = css`
-    
-    or-asset-tree {
-        align-items: stretch;
-        z-index: 1;
-    }
-    
-    .hideMobile {
-        display: none;
-    }
-        
-    or-asset-viewer {
-        align-items: stretch;
-        z-index: 0;
-    }
-    
-    @media only screen and (min-width: 768px){
-        or-asset-tree {
-            width: 300px;
-            min-width: 300px;
-            box-shadow: ${unsafeCSS(DefaultBoxShadow)} 
+export function pageAssetsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>) {
+    return {
+        routes: [
+            "assets",
+            "assets/:id"
+        ],
+        pageCreator: () => {
+            return new PageAssets(store);
         }
-        
-        .hideMobile {
-            display: flex;
-        }
-        
-        or-asset-viewer,
-        or-asset-viewer.hideMobile {
-            display: initial;
-        }
-     
-      
-        
-    }
-`;
+    };
+}
 
 const viewerConfig: ViewerConfig = {
     historyConfig: {
@@ -433,14 +406,51 @@ const viewerConfig: ViewerConfig = {
 };
 
 @customElement("page-assets")
-class PageAssets extends connect(store)(LitElement)  {
+class PageAssets<S extends AppStateKeyed> extends Page<S>  {
 
     static get styles() {
-        return style;
+        // language=CSS
+        return css`
+            
+            or-asset-tree {
+                align-items: stretch;
+                z-index: 1;
+            }
+            
+            .hideMobile {
+                display: none;
+            }
+                
+            or-asset-viewer {
+                align-items: stretch;
+                z-index: 0;
+            }
+            
+            @media only screen and (min-width: 768px){
+                or-asset-tree {
+                    width: 300px;
+                    min-width: 300px;
+                    box-shadow: ${unsafeCSS(DefaultBoxShadow)} 
+                }
+                
+                .hideMobile {
+                    display: flex;
+                }
+                
+                or-asset-viewer,
+                or-asset-viewer.hideMobile {
+                    display: initial;
+                }
+            }
+        `;
     }
 
     @property()
     protected _assetId;
+
+    constructor(store: EnhancedStore<S>) {
+        super(store);
+    }
 
     firstUpdated() {
         this.shadowRoot.getElementById('pageAssetTree').addEventListener(OrAssetTreeSelectionChangedEvent.NAME, (evt) => this._onTreeSelectionChanged(evt));

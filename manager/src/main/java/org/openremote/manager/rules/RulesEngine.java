@@ -488,7 +488,7 @@ public class RulesEngine<T extends Ruleset> {
 
                 if (deployment.getStatus() == DEPLOYED) {
 
-                    RULES_LOG.fine("Firing rules @" + clock + " of: " + deployment);
+                    RULES_LOG.fine("Executing rules @" + clock + " of: " + deployment);
 
                     // If full detail logging is enabled
                     if (RULES_LOG.isLoggable(Level.FINEST)) {
@@ -506,7 +506,7 @@ public class RulesEngine<T extends Ruleset> {
                 }
 
             } catch (Exception ex) {
-                LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error firing rules of: " + deployment, ex);
+                LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error executing rules of: " + deployment, ex);
 
                 deployment.setStatus(ex instanceof RulesLoopException ? LOOP_ERROR : EXECUTION_ERROR);
                 deployment.setError(ex);
