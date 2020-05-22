@@ -17,7 +17,7 @@ import "@openremote/or-mwc-components/dist/or-mwc-menu";
 import "./or-header";
 import {DEFAULT_LANGUAGES, HeaderConfig, HeaderItem, Languages} from "./or-header";
 import {DialogConfig, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {AnyAction, EnhancedStore, Unsubscribe} from "@reduxjs/toolkit";
+import {AnyAction, EnhancedStore, Unsubscribe, Action} from "@reduxjs/toolkit";
 import {AppStateKeyed, updatePage, updateParams} from "./app";
 import {ThunkMiddleware} from "redux-thunk";
 import { translate } from "@openremote/or-translate";
@@ -68,11 +68,11 @@ export interface PageProvider<S extends AppStateKeyed> {
 
 export abstract class Page<S extends AppStateKeyed> extends translate(i18next)(LitElement) {
 
-    protected _store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware>>;
+    protected _store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>;
 
     protected _storeUnsubscribe!: Unsubscribe;
 
-    constructor(store: EnhancedStore<S>) {
+        constructor(store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>) {
         super();
         this._store = store;
     }
@@ -208,7 +208,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
     protected _config!: DefaultAppConfig;
 
-    protected _store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware>>;
+    protected _store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>;
     protected _storeUnsubscribe!: Unsubscribe;
 
     //language=CSS
@@ -254,7 +254,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         `;
     }
 
-    constructor(store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware>>) {
+    constructor(store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>) {
         super();
         this._store = store;
     }

@@ -464,12 +464,8 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         `;
     }
 
-    stateChanged(state) {
-        if(state.app.activeAsset && this._assetId !== state.app.activeAsset) {
-            this._assetId = state.app.activeAsset
-        } else if (!state.app.activeAsset) {
-            this._assetId = null;
-        }
+    stateChanged(state: S) {
+        this._assetId = state.app.params && state.app.params.id ? state.app.params.id : undefined;
     }
 
     protected _onTreeSelectionChanged(event: OrAssetTreeSelectionChangedEvent) {

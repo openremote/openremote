@@ -2,10 +2,11 @@
   "extends": "../../tsconfig",
   "compilerOptions": {
     "tsBuildInfoFile": "./.tsbuildinfo",
-    "strict": false
+    "strict": true
   },
   "include": [
-    "./src"
+    "./src",
+    "../../component/or-map/@types"
   ],
   "references": [
     { "path": "../or-app" }
