@@ -134,6 +134,7 @@ export function headerItemInsights<S extends AppStateKeyed, A extends AnyAction>
 export function headerItemGatewayConnection<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "cloud",
+        value: "gateway",
         href: "#!gateway",
         text: "gatewayConnection",
         roles: ["write:admin", "read:admin"]

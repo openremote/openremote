@@ -2,7 +2,7 @@ import {css, customElement, html, property, PropertyValues, TemplateResult, unsa
 import i18next from "i18next";
 import "@openremote/or-panel";
 import {ConnectionStatus, GatewayConnection, GatewayConnectionStatusEvent} from "@openremote/model";
-import manager, {DefaultColor1} from "@openremote/core";
+import manager, {DefaultColor1, OREvent} from "@openremote/core";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {AppStateKeyed, Page} from "../index";
 import {EnhancedStore} from "@reduxjs/toolkit";
@@ -95,6 +95,14 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
     protected _readonly = false;
     protected _eventSubscriptionId?: string;
 
+    protected _onManagerEvent = (event: OREvent) => {
+        switch (event) {
+            case OREvent.DISPLAY_REALM_CHANGED:
+                this.realm = manager.displayRealm;
+                break;
+        }
+    };
+
     constructor(store: EnhancedStore<S>) {
         super(store);
     }
@@ -102,12 +110,14 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
     connectedCallback() {
         super.connectedCallback();
         this._readonly = !manager.hasRole("write:admin");
+        manager.addListener(this._onManagerEvent)
         this._subscribeEvents();
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
         this._unsubscribeEvents();
+        manager.removeListener(this._onManagerEvent);
     }
 
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
@@ -123,7 +133,7 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
         super.updated(_changedProperties);
 
         if (!this.realm) {
-            this.realm = this._getRealm();
+            this.realm = manager.displayRealm;
         }
     }
 
@@ -219,9 +229,5 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
         if (event.realm === this.realm) {
             this._connectionStatus = event.connectionStatus;
         }
-    }
-
-    protected _getRealm(): string {
-        return this.realm || manager.getRealm();
     }
 }

@@ -6,6 +6,7 @@ import manager from "@openremote/core";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import "@openremote/or-icon";
 import {MenuItem, getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import { Tenant } from "@openremote/model";
 
 export interface HeaderConfig {
     mainMenu: HeaderItem[];
@@ -45,37 +46,6 @@ function getHeaderMenuItems(items: HeaderItem[]): MenuItem[] {
     });
 }
 
-function getRealmMenu(callback: (language: string) => void): TemplateResult {
-    if (!manager.isSuperUser()) {
-        return html``;
-    }
-
-    const picker = manager.rest.api.TenantResource.getAll().then((response) => {
-
-        const menuItems = response.data.map((r) => {
-            return {
-                text: r.displayName!,
-                value: r.realm!
-            } as MenuItem;
-        });
-
-        return html`
-            ${getContentWithMenuTemplate(
-            html`
-                    <div id="realm-picker">
-                        <span style="margin-left: 10px;">${manager.displayRealm}</span>
-                        <or-icon icon="chevron-down"></or-icon>
-                    </div>
-                `,
-            menuItems,
-            manager.displayRealm,
-            (values: string | string[]) => callback(values as string))}
-        `;
-    });
-
-    return html`${until(picker, html``)}`;
-}
-
 @customElement("or-header")
 class OrHeader extends LitElement {
 
@@ -97,7 +67,7 @@ class OrHeader extends LitElement {
     @query("div[id=mobile-bottom]")
     protected _mobileBottomDiv!: HTMLDivElement;
 
-    protected _realmPicker?: TemplateResult;
+    protected _tenants?: Tenant[];
     protected _hashCallback = (e: Event) => {
         this._onHashChanged(e);
     };
@@ -340,10 +310,6 @@ class OrHeader extends LitElement {
 
     protected render() {
 
-        if (!this._realmPicker) {
-            this._realmPicker = getRealmMenu((value: string) => this._onRealmSelect(value));
-        }
-
         const mainItems = this.config ? this.config.mainMenu : undefined;
         const secondaryItems = this.config ? this.config.secondaryMenu : undefined;
 
@@ -364,7 +330,7 @@ class OrHeader extends LitElement {
                         </div>
                     </nav>
                     <div id="desktop-right">
-                        ${this._realmPicker}
+                        ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
                         ${secondaryItems ? getContentWithMenuTemplate(html`
                             <button id="menu-btn-desktop" class="menu-btn" title="Menu"><or-icon icon="dots-vertical"></or-icon></button>
                         `,
@@ -402,6 +368,46 @@ class OrHeader extends LitElement {
         `;
     }
 
+    protected _getRealmMenu(callback: (language: string) => void): TemplateResult {
+        if (!manager.isSuperUser()) {
+            return html``;
+        }
+
+        const picker = this._getTenants().then((tenants) => {
+
+            const menuItems = tenants.map((r) => {
+                return {
+                    text: r.displayName!,
+                    value: r.realm!
+                } as MenuItem;
+            });
+
+            return html`
+            ${getContentWithMenuTemplate(
+                html`
+                    <div id="realm-picker">
+                        <span style="margin-left: 10px;">${manager.displayRealm}</span>
+                        <or-icon icon="chevron-down"></or-icon>
+                    </div>
+                `,
+                menuItems,
+                manager.displayRealm,
+                (values: string | string[]) => callback(values as string))}
+        `;
+        });
+
+        return html`${until(picker, html``)}`;
+    }
+
+    protected async _getTenants() {
+        if (!this._tenants) {
+            const response = await manager.rest.api.TenantResource.getAll();
+            this._tenants = response.data;
+        }
+
+        return this._tenants;
+    }
+
     protected _onSecondaryMenuSelect(value: string) {
         const headerItem = this.config!.secondaryMenu!.find((item) => item.value === value);
         if (headerItem) {
@@ -417,7 +423,7 @@ class OrHeader extends LitElement {
         }
     }
 
-    protected _onRealmSelect(realm: string) {
+    _onRealmSelect(realm: string) {
         manager.displayRealm = realm;
         this.requestUpdate();
     }
