@@ -58,7 +58,7 @@ ADD selfsigned /opt/selfsigned
 
 ADD cli.ini /root/.config/letsencrypt/
 
-EXPOSE 80 443
+EXPOSE 80 443 8883
 
 HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl --fail --silent http://localhost:80 || exit 1
 
