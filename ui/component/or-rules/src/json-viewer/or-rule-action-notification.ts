@@ -87,7 +87,7 @@ export class OrRuleActionNotification extends LitElement {
         }
         
         if(this.type ===  NotificationTargetType.USER) {
-            if(this._listItems) this._listItems.forEach((user: User) => idOptions.push([user.id!, user.username!] as [string, string]));
+            if(this._listItems) this._listItems.forEach((user: User) => idOptions.push([user.id!, user.username ? user.username : user.email] as [string, string]));
             
         }
        
@@ -95,7 +95,7 @@ export class OrRuleActionNotification extends LitElement {
             targetTypeTemplate = html`<or-input type="${InputType.SELECT}" 
                             .options="${targetTypes}"
                             value="${this.type ? this.type : targetTypes[0]}"
-                            label="${i18next.t("categories")}"
+                            label="${i18next.t("recipients")}"
                             @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationType(e.detail.value)}" 
                             ?readonly="${this.readonly}"></or-input>
             `;
@@ -123,7 +123,7 @@ export class OrRuleActionNotification extends LitElement {
 
         let modalTemplate;
         if(message) {
-            if(messageType === "push-notification") {
+            if(messageType === "push") {
                 modalTemplate = html`
                     <or-rule-notification-modal title="push-notification" .action="${this.action}">
                         <or-rule-form-push-notification .action="${this.action}"></or-rule-form-push-notification>
@@ -253,7 +253,7 @@ export class OrRuleActionNotification extends LitElement {
                 case NotificationTargetType.ASSET:
 
                     const messageType = this.action.notification.message ? this.action.notification.message.type : undefined
-                    if(messageType === "push-notification") {
+                    if(messageType === "push") {
                         const query = {
                             types: [
                             {

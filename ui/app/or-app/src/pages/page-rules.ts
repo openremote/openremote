@@ -1,25 +1,31 @@
-import {css, customElement, html} from "lit-element";
+import {css, customElement, html, property} from "lit-element";
 import "@openremote/or-rules";
 import {RulesConfig} from "@openremote/or-rules";
-import {AssetType, RulesetLang} from "@openremote/model";
+import {AssetType, RulesetLang, NotificationTargetType} from "@openremote/model";
 import {AppStateKeyed, Page} from "../index";
 import {EnhancedStore} from "@reduxjs/toolkit";
 
-export function pageRulesProvider<S extends AppStateKeyed>(store: EnhancedStore<S>) {
+export function pageRulesProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?:RulesConfig) {
     return {
         routes: [
             "rules",
             "rules/:id"
         ],
         pageCreator: () => {
-            return new PageRules(store);
+            const page = new PageRules(store);
+            if(config) page.rulesConfig = config;
+            return page
         }
     };
 }
 
 const rulesConfig: RulesConfig = {
     controls: {
-        allowedLanguages: [RulesetLang.JSON, RulesetLang.FLOW]
+        allowedLanguages: [RulesetLang.JSON, RulesetLang.FLOW, RulesetLang.GROOVY],
+        hideNotificationTargetType: {
+            "email":  [NotificationTargetType.TENANT, NotificationTargetType.ASSET],
+            "push":  [NotificationTargetType.TENANT, NotificationTargetType.CUSTOM],
+        }
     },
     descriptors: {
         all: {
@@ -40,6 +46,9 @@ const rulesConfig: RulesConfig = {
 @customElement("page-rules")
 class PageRules<S extends AppStateKeyed> extends Page<S>  {
 
+    @property()
+    public rulesConfig?: RulesConfig;
+    
     static get styles() {
         // language=CSS
         return css`
@@ -60,7 +69,7 @@ class PageRules<S extends AppStateKeyed> extends Page<S>  {
 
     protected render() {
         return html`
-            <or-rules .config="${rulesConfig}"></or-rules>
+            <or-rules .config="${this.rulesConfig ? this.rulesConfig : rulesConfig}"></or-rules>
         `;
     }
 

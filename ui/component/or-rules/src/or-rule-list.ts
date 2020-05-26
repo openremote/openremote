@@ -257,13 +257,13 @@ export class OrRuleList extends translate(i18next)(LitElement) {
             <div id="wrapper" ?data-disabled="${this.disabled}">
                 ${manager.isSuperUser() ? html`
                     <div class="header-ruleset-type bg-grey">
-                        <p>${i18next.t("realm rules")}</p>
+                        <p>${i18next.t("realmRules")}</p>
                         
                         <div style="flex: 1 1 0; display: flex;">
                             <or-input style="margin: auto;" type="${InputType.SWITCH}" @or-input-changed="${(evt: OrInputChangedEvent) => this._globalRulesets = evt.detail.value}"></or-input>
                         </div>
 
-                        <p>${i18next.t("global rules")}</p>
+                        <p>${i18next.t("globalRules")}</p>
                     </div>
                 ` : ``}
 

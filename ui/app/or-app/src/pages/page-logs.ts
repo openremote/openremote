@@ -1,16 +1,18 @@
-import {css, customElement, html} from "lit-element";
+import {css, customElement, html, property} from "lit-element";
 import "@openremote/or-log-viewer";
 import {ViewerConfig} from "@openremote/or-log-viewer";
 import {AppStateKeyed, Page} from "../index";
 import {EnhancedStore} from "@reduxjs/toolkit";
 
-export function pageLogsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>) {
+export function pageLogsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: ViewerConfig) {
     return {
         routes: [
             "logs"
         ],
         pageCreator: () => {
-            return new PageLogs(store);
+            const page = new PageLogs(store);
+            if(config) page.config = config;
+            return page;
         }
     };
 }
@@ -39,8 +41,9 @@ class PageLogs<S extends AppStateKeyed> extends Page<S> {
     public stateChanged(state: S) {
     }
 
-    protected config: ViewerConfig = {
-    };
+  
+    @property()
+    public config?: ViewerConfig;
 
     protected render() {
         return html`

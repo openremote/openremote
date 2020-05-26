@@ -21,7 +21,7 @@ import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
 
-export type PanelType = "chart";
+export type PanelType = "chart" | "kpi";
 
 export interface DefaultAssets {
     assetId?: string;
@@ -205,10 +205,13 @@ export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitEleme
             content = html`
                 <or-chart id="chart" .config="${this.config.chartConfig}"></or-chart>
             `;
-
         }
 
+        if (panelConfig && panelConfig.type === "kpi") {
+            content = html`
+                <or-chart id="chart" .config="${this.config.chartConfig}"></or-chart>
+            `;
+        }
         return content;
-       
     }
 }

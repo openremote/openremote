@@ -9,6 +9,8 @@ import {
     TemplateResult,
     unsafeCSS
 } from "lit-element";
+import {unsafeHTML} from 'lit-html/directives/unsafe-html.js';
+
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
 import Navigo from "navigo";
@@ -21,7 +23,6 @@ import {AnyAction, EnhancedStore, Unsubscribe, Action} from "@reduxjs/toolkit";
 import {AppStateKeyed, updatePage, updateParams} from "./app";
 import {ThunkMiddleware} from "redux-thunk";
 import { translate } from "@openremote/or-translate";
-
 export * from "./app";
 export * from "./or-header";
 
@@ -371,8 +372,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         if (!this._initialised) {
             return html`<or-mwc-dialog id="app-modal"></or-mwc-dialog>`;
         }
-
         return html`
+            ${unsafeHTML(this._config.styles.strings)}
             <or-header .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
             
             <!-- Main content -->
