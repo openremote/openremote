@@ -581,15 +581,16 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the email should have been sent to all tenant users"
         conditions.eventually {
-            assert notificationMessages.size() == 3
+            assert notificationMessages.size() == 4
             assert ((EmailNotificationMessage) notificationMessages.get(0)).getText() == "Hello world!"
             assert ((EmailNotificationMessage) notificationMessages.get(0)).getSubject() == "Test"
             assert ((EmailNotificationMessage) notificationMessages.get(1)).getText() == "Hello world!"
             assert ((EmailNotificationMessage) notificationMessages.get(1)).getSubject() == "Test"
-            assert toAddresses.size() == 3
+            assert toAddresses.size() == 4
             assert toAddresses.any { it == "testuser2@openremote.local" }
             assert toAddresses.any { it == "testuser3@openremote.local" }
             assert toAddresses.any { it == "building@openremote.local" }
+            assert toAddresses.any { ((String) it).startsWith("service-account") } //mqtt service account
         }
 
         when: "an email attribute is added to an asset"
@@ -603,8 +604,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the child asset with the email attribute should have been sent an email"
         conditions.eventually {
-            assert notificationMessages.size() == 4
-            assert toAddresses.size() == 4
+            assert notificationMessages.size() == 5
+            assert toAddresses.size() == 5
             assert toAddresses.any { it == "kitchen@openremote.local" }
         }
 

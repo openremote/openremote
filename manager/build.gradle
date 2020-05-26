@@ -23,6 +23,8 @@ dependencies {
     compile ("io.netty:netty-codec-http:$nettyVersion") {
         force = true
     }
+
+    compile "io.moquette:moquette-broker:$moquetteVersion"
 }
 
 // Load version properties file and use same version as source code

@@ -23,6 +23,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.impl.DefaultConsumer;
 import org.openremote.container.security.AuthContext;
+import org.openremote.container.web.ConnectionConstants;
 import org.openremote.model.Constants;
 
 import java.util.function.Consumer;
@@ -62,7 +63,7 @@ public class WebsocketConsumer extends DefaultConsumer {
 
     public void sendMessage(final String sessionKey, final AuthContext authContext, final Object message, Consumer<Exchange> exchangePreparer) {
         final Exchange exchange = getEndpoint().createExchange();
-        exchange.getIn().setHeader(WebsocketConstants.SESSION_KEY, sessionKey);
+        exchange.getIn().setHeader(ConnectionConstants.SESSION_KEY, sessionKey);
         exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
         exchange.getIn().setBody(message);
         if (exchangePreparer != null) {
