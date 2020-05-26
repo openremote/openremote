@@ -241,14 +241,14 @@ public class ClientEventService implements ContainerService {
                             }
                         })
                         .choice()
-                            .when(header(Constants.AUTH_CONTEXT).isNotNull())
+                            .when(header(HEADER_CONNECTION_TYPE).isNotNull())
                             .choice()
                                 .when(exchange -> isGatewayClientId(getClientId(exchange)))
                                     .to(GatewayService.GATEWAY_EVENT_TOPIC)
                                 .otherwise()
                                     .to(ClientEventService.CLIENT_EVENT_TOPIC)
                             .endChoice()
-                            .when(header(Constants.AUTH_CONTEXT).isNull())
+                            .when(header(HEADER_CONNECTION_TYPE).isNull())
                                 .split(method(eventSubscriptions, "splitForSubscribers"))
                                 .process(exchange -> {
                                     String sessionKey = getSessionKey(exchange);
