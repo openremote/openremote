@@ -32,18 +32,6 @@ const viewerConfig: DataViewerConfig = {
             assetId:"5442Ite2XVp3Ky9X2y647a",
             attributes: ["UVIndex"]
         }]
-    },
-    "chart2": {
-        type: "chart",
-        hideOnMobile: true,
-        panelStyles: {
-            gridColumn: "1 / -1",
-            gridRowStart: "1"
-        },
-        defaults: [{
-            assetId:"5442Ite2XVp3Ky9X2y647a",
-            attributes: ["UVIndex"]
-        }]
     }
    }
 };

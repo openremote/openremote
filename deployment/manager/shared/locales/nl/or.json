@@ -211,5 +211,6 @@
   "clientId": "Client ID",
   "realm": "Realm",
   "port": "Poort",
-  "host": "Hostname"
+  "host": "Hostname",
+  "couldNotRetrieveAttribute": "Kan de gegevens voor dit attribuut niet ophalen"
 }

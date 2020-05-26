@@ -220,5 +220,6 @@
     "CONSOLE_ERROR": "Console error (see console logs)",
     "EVENTS_CONNECTION_ERROR": "Event bus connection error (see console logs)",
     "TRANSLATION_ERROR": "Translations error (see console logs)"
-  }
+  },
+  "couldNotRetrieveAttribute": "Could not retrieve attribute information"
 }

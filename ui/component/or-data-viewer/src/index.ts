@@ -20,6 +20,7 @@ import {style} from "./style";
 import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
+import "@openremote/or-attribute-card";
 
 export type PanelType = "chart" | "kpi";
 
@@ -209,7 +210,7 @@ export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitEleme
 
         if (panelConfig && panelConfig.type === "kpi") {
             content = html`
-                <or-chart id="chart" .config="${this.config.chartConfig}"></or-chart>
+                <or-attribute-card .config="${this.config.chartConfig}"></or-attribute-card>
             `;
         }
         return content;
