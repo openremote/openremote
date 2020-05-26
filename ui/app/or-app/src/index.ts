@@ -374,7 +374,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             return html`<or-mwc-dialog id="app-modal"></or-mwc-dialog>`;
         }
         return html`
-            ${unsafeHTML(this._config.styles.strings)}
+            ${unsafeHTML(this._config.styles ? this._config.styles.strings : ``)}
             <or-header .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
             
             <!-- Main content -->
