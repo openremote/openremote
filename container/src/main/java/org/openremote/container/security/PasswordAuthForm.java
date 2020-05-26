@@ -21,21 +21,33 @@ package org.openremote.container.security;
 
 import javax.ws.rs.FormParam;
 
-public abstract class AuthForm {
+public class PasswordAuthForm extends AuthForm {
 
-    @FormParam("client_id")
-    public String clientId;
+    @FormParam("username")
+    public String username;
 
-    @FormParam("grant_type")
-    public String grantType;
+    @FormParam("password")
+    public String password;
 
-    public AuthForm setClientId(String clientId) {
-        this.clientId = clientId;
+    public PasswordAuthForm setUsername(String username) {
+        this.username = username;
         return this;
     }
 
-    public AuthForm setGrantType(String grantType) {
-        this.grantType = grantType;
+    public PasswordAuthForm setPassword(String password) {
+        this.password = password;
         return this;
+    }
+
+    public PasswordAuthForm(String clientId, String username, String password) {
+        this(clientId, username, password, "password");
+    }
+
+    public PasswordAuthForm(String clientId, String username, String password, String grantType) {
+        this.clientId = clientId;
+        this.username = username;
+        this.password = password;
+        this.grantType = grantType;
     }
 }
+

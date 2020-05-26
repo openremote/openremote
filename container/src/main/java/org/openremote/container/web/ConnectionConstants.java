@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container.web.socket;
+package org.openremote.container.web;
 
-public interface WebsocketConstants {
+public interface ConnectionConstants {
 
-    String SESSION = "websocket.session";
-    String SESSION_KEY = "websocket.sessionKey";
-    String SEND_TO_ALL = "websocket.sendToAll";
-    String HANDSHAKE_AUTH = "websocket.auth";
-    String SESSION_OPEN = "websocket.sessionOpen";
-    String SESSION_CLOSE = "websocket.sessionClose";
-    String SESSION_CLOSE_ERROR = "websocket.sessionCloseError";
+    String SESSION = "connection.session";
+    String SESSION_KEY = "connection.sessionKey";
+    String SEND_TO_ALL = "connection.sendToAll";
+    String HANDSHAKE_AUTH = "connection.auth";
+    String SESSION_OPEN = "connection.sessionOpen";
+    String SESSION_CLOSE = "connection.sessionClose";
+    String SESSION_CLOSE_ERROR = "connection.sessionCloseError";
 
 }
