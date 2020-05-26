@@ -58,7 +58,7 @@ import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 public class ManagerWebService extends WebService {
 
     public static final String APP_DOCROOT = "APP_DOCROOT";
-    public static final String APP_DOCROOT_DEFAULT = "deployment/manager/app";
+    public static final String APP_DOCROOT_DEFAULT = "deployment/build/manager/app";
     public static final String SHARED_DOCROOT = "SHARED_DOCROOT";
     public static final String SHARED_DOCROOT_DEFAULT = "deployment/manager/shared";
     public static final String CONSOLE_USE_STATIC_BOWER_COMPONENTS = "CONSOLE_USE_STATIC_BOWER_COMPONENTS";

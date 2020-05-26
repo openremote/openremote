@@ -175,6 +175,7 @@
   "oncePerDay": "Max. 1x per dag",
   "oncePerWeek": "Max. 1x per week",
   "reset": "Reset",
+  "noLongerMatches": "Komt niet meer overeen",
   "logs": "Logs",
   "addRemoveAttributes": "Attributen toevoegen/verwijderen",
   "attributeValueType": {
@@ -188,5 +189,12 @@
     "ENERGY": "%.1f",
     "CO2": "%.1f",
     "HUMIDITY": "%.1f"
-  }
+  },
+  "gatewayConnection": "Manager interconnect",
+  "secured": "Beveiligd",
+  "clientSecret": "Client secret",
+  "clientId": "Client ID",
+  "realm": "Realm",
+  "port": "Poort",
+  "host": "Hostname"
 }

@@ -1,9 +1,6 @@
 const util = require("../webpack.util");
 
 bundles = {
-    "index": {
-        excludeOr: true
-    },
     "index.orbundle": undefined
 };
 

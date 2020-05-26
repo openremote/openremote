@@ -355,7 +355,7 @@ export class OrInput extends LitElement {
     }
 
     protected render() {
-        const readonly = this.readonly || this.checkAssetWrite ? !manager.hasRole(ClientRole.WRITE_ASSETS) : false;
+        const readonly = this.checkAssetWrite ? !manager.hasRole(ClientRole.WRITE_ASSETS) || this.readonly  : false;
     
         if (this.type) {
 

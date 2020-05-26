@@ -177,7 +177,6 @@
   "reset": "Reset",
   "noLongerMatches": "No longer matches",
   "logs":"Logs",
-  "chooseLang": "Choose language",
   "addRemoveAttributes": "Add/remove attributes",
   "attributeValueType": {
     "PERCENTAGE": "%.2f",
@@ -197,5 +196,14 @@
   "clientId": "Client ID",
   "realm": "Realm",
   "port": "Port",
-  "host": "Hostname"
+  "host": "Hostname",
+  "errorOccurred": "An error has occurred",
+  "managerError": {
+    "MANAGER_FAILED_TO_LOAD": "Manager failed to load (see console logs)",
+    "KEYCLOAK_FAILED_TO_LOAD": "Keycloak failed to load (see console logs)",
+    "AUTH_TYPE_UNSUPPORTED": "Requested auth type not supported",
+    "CONSOLE_ERROR": "Console error (see console logs)",
+    "EVENTS_CONNECTION_ERROR": "Event bus connection error (see console logs)",
+    "TRANSLATION_ERROR": "Translations error (see console logs)"
+  }
 }

@@ -1,9 +1,21 @@
-import {css, customElement, html, LitElement} from "lit-element";
-import {store} from "../../store";
-import {connect} from "pwa-helpers/connect-mixin";
+import {css, customElement, html} from "lit-element";
 import "@openremote/or-rules";
 import {RulesConfig} from "@openremote/or-rules";
-import {AssetType, AttributeType, RulesetLang} from "@openremote/model";
+import {AssetType, RulesetLang} from "@openremote/model";
+import {AppStateKeyed, Page} from "../index";
+import {EnhancedStore} from "@reduxjs/toolkit";
+
+export function pageRulesProvider<S extends AppStateKeyed>(store: EnhancedStore<S>) {
+    return {
+        routes: [
+            "rules",
+            "rules/:id"
+        ],
+        pageCreator: () => {
+            return new PageRules(store);
+        }
+    };
+}
 
 const rulesConfig: RulesConfig = {
     controls: {
@@ -26,9 +38,10 @@ const rulesConfig: RulesConfig = {
 };
 
 @customElement("page-rules")
-class PageRules extends connect(store)(LitElement)  {
+class PageRules<S extends AppStateKeyed> extends Page<S>  {
 
     static get styles() {
+        // language=CSS
         return css`
             :host {
             
@@ -41,9 +54,16 @@ class PageRules extends connect(store)(LitElement)  {
         `;
     }
 
+    constructor(store: EnhancedStore<S>) {
+        super(store);
+    }
+
     protected render() {
         return html`
             <or-rules .config="${rulesConfig}"></or-rules>
         `;
+    }
+
+    public stateChanged(state: S) {
     }
 }
