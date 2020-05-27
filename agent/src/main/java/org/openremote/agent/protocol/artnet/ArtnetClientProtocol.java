@@ -37,12 +37,12 @@ import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemObje
 import static org.openremote.model.attribute.MetaItemType.AGENT_LINK;
 import static org.openremote.model.attribute.MetaItemType.READ_ONLY;
 
-public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPacket> implements ProtocolLinkedAttributeImport {
+public class ArtnetClientProtocol extends AbstractIoClientProtocol<ArtnetPacket, UdpIoClient<ArtnetPacket>> implements ProtocolLinkedAttributeImport {
 
     private static final String PROTOCOL_VERSION = "1.70";
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":artnet";
     public static final String PROTOCOL_DISPLAY_NAME = "Artnet Client";
-    public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = joinCollections(AbstractArtnetClientProtocol.PROTOCOL_META_ITEM_DESCRIPTORS, AbstractIoClientProtocol.PROTOCOL_GENERIC_META_ITEM_DESCRIPTORS);
+    public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = joinCollections(ArtnetClientProtocol.PROTOCOL_META_ITEM_DESCRIPTORS, AbstractIoClientProtocol.PROTOCOL_GENERIC_META_ITEM_DESCRIPTORS);
     public static final String agentProtocolConfigName = "ArtnetProtocolAgent";
     public static final String ARTNET_DEFAULT_LIGHT_STATE = "{'r': 0, 'g': 0, 'b': 0, 'w': 0}";
     public static final MetaItemDescriptor META_ARTNET_LIGHT_ID = metaItemInteger(
@@ -64,6 +64,16 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
                 }})));
             }})
     );
+    /**
+     * Optionally sets the port that this Artnet client will bind to (if not set then a random ephemeral port will be used)
+     */
+    public static final MetaItemDescriptor META_PROTOCOL_BIND_PORT = metaItemInteger(
+            PROTOCOL_NAME + ":bindPort",
+            ACCESS_PRIVATE,
+            true,
+            1,
+            65536);
+
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
             META_ATTRIBUTE_MATCH_FILTERS,
             META_ATTRIBUTE_MATCH_PREDICATE,
@@ -89,7 +99,6 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
         return PROTOCOL_VERSION;
     }
 
-    @Override
     public List<ArtnetLight> getLightMemory() { return artnetLightMemory; }
 
     @Override
@@ -117,6 +126,40 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
             protocolMessageConsumers.remove(protocolConfiguration.getReferenceOrThrow());
         }
         super.doUnlinkProtocolConfiguration(protocolConfiguration);
+    }
+
+    @Override
+    protected UdpIoClient<ArtnetPacket> createIoClient(AssetAttribute protocolConfiguration) throws Exception {
+        String host = Values.getMetaItemValueOrThrow(
+                protocolConfiguration,
+                META_PROTOCOL_HOST,
+                false,
+                false
+        ).flatMap(Values::getString).orElse(null);
+
+        Integer port = Values.getMetaItemValueOrThrow(
+                protocolConfiguration,
+                META_PROTOCOL_PORT,
+                false,
+                false
+        ).flatMap(Values::getIntegerCoerced).orElse(null);
+
+        Integer bindPort = Values.getMetaItemValueOrThrow(
+                protocolConfiguration,
+                META_PROTOCOL_BIND_PORT,
+                false,
+                false
+        ).flatMap(Values::getIntegerCoerced).orElse(null);
+
+        if (port != null && (port < 1 || port > 65536)) {
+            throw new IllegalArgumentException("Port must be in the range 1-65536");
+        }
+
+        if (bindPort != null && (bindPort < 1 || bindPort > 65536)) {
+            throw new IllegalArgumentException("Bind port must be in the range 1-65536 if specified");
+        }
+
+        return new UdpIoClient<>(host, port, bindPort, executorService);
     }
 
     @Override
@@ -301,7 +344,6 @@ public class ArtnetClientProtocol extends AbstractArtnetClientProtocol<ArtnetPac
         return null;
     }
 
-    @Override
     public void updateLightStateInMemory(Integer lightId, ArtnetLightState updatedLightState)
     {
         if(artnetLightMemory.stream().anyMatch(light -> light.getLightId() == lightId))
