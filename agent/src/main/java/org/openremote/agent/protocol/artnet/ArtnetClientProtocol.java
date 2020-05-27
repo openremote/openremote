@@ -181,7 +181,7 @@ public class ArtnetClientProtocol extends AbstractIoClientProtocol<ArtnetPacket,
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
-        Consumer<ArtnetPacket> messageConsumer = Protocol.createGenericAttributeMessageConsumer(attribute, assetService, this::updateLinkedAttribute);
+        Consumer<ArtnetPacket> messageConsumer = artnetPacket -> {};
         synchronized (protocolMessageConsumers) {
             protocolMessageConsumers.compute(protocolRef, (ref, consumers) -> {
                 if (consumers == null) {
