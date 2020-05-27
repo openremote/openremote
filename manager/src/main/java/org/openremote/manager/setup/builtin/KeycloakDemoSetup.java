@@ -19,13 +19,17 @@
  */
 package org.openremote.manager.setup.builtin;
 
+import org.keycloak.admin.client.resource.ClientResource;
 import org.keycloak.admin.client.resource.ClientsResource;
 import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.openremote.container.Container;
+import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.container.web.ClientRequestInfo;
+import org.openremote.manager.mqtt.MqttBrokerService;
 import org.openremote.manager.setup.AbstractKeycloakSetup;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Tenant;
@@ -33,6 +37,8 @@ import org.openremote.model.Constants;
 
 import java.util.Arrays;
 import java.util.logging.Logger;
+
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
 /**
  * We have the following demo users:
@@ -85,7 +91,7 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         tenantCity = keycloakProvider.getTenant(tenantCity.getRealm());
 
         // Users
-        String masterClientObjectId = getClientObjectId(masterClientsResource);
+        String masterClientObjectId = getClientObjectId(masterClientsResource, KEYCLOAK_CLIENT_ID);
         RolesResource masterRolesResource = masterClientsResource.get(masterClientObjectId).roles();
 
         UserRepresentation testuser1 = new UserRepresentation();
@@ -111,10 +117,31 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         ));
         LOG.info("Added demo user '" + testuser1.getUsername() + "' with password '" + testuser1Credentials.getValue() + "'");
 
-        UsersResource tenantBuildingUsersResource = keycloakProvider.getRealms(accessToken).realm("building").users();
-        ClientsResource tenantBuildingClientsResource = keycloakProvider.getRealms(accessToken).realm("building").clients();
-        String tenantBuildingClientObjectId = getClientObjectId(tenantBuildingClientsResource);
+        UsersResource tenantBuildingUsersResource = keycloakProvider.getRealms(accessToken).realm(tenantBuilding.getRealm()).users();
+        ClientsResource tenantBuildingClientsResource = keycloakProvider.getRealms(accessToken).realm(tenantBuilding.getRealm()).clients();
+        String tenantBuildingClientObjectId = getClientObjectId(tenantBuildingClientsResource, KEYCLOAK_CLIENT_ID);
         RolesResource tenantBuildingRolesResource = tenantBuildingClientsResource.get(tenantBuildingClientObjectId).roles();
+
+        /**
+         * MQTT Client
+         */
+        ClientRepresentation mqttClientRepresentation = new ClientRepresentation();
+        String buildingMqttClientId = MqttBrokerService.MQTT_CLIENT_ID_PREFIX + UniqueIdentifierGenerator.generateId(tenantBuilding.getRealm());
+        mqttClientRepresentation.setClientId(buildingMqttClientId);
+        mqttClientRepresentation.setName("MQTT");
+        mqttClientRepresentation.setStandardFlowEnabled(false);
+        mqttClientRepresentation.setImplicitFlowEnabled(false);
+        mqttClientRepresentation.setDirectAccessGrantsEnabled(false);
+        mqttClientRepresentation.setServiceAccountsEnabled(true);
+        mqttClientRepresentation.setSecret(UniqueIdentifierGenerator.generateId(tenantBuilding.getRealm()));
+        keycloakProvider.createClientApplication(new ClientRequestInfo(null, keycloakProvider.getAdminAccessToken(null)), tenantBuilding.getRealm(), mqttClientRepresentation);
+
+        ClientResource mqttResource = tenantBuildingClientsResource.get(getClientObjectId(tenantBuildingClientsResource, buildingMqttClientId));
+        UserRepresentation user = mqttResource.getServiceAccountUser();
+        tenantBuildingUsersResource.get(user.getId()).roles().clientLevel(tenantBuildingClientObjectId).add(Arrays.asList(
+                tenantBuildingRolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation(),
+                tenantBuildingRolesResource.get(ClientRole.WRITE_ASSETS.getValue()).toRepresentation()
+        ));
 
         UserRepresentation testuser2 = new UserRepresentation();
         testuser2.setUsername("testuser2");
@@ -187,7 +214,7 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
 
         UsersResource tenantCityUsersResource = keycloakProvider.getRealms(accessToken).realm("smartcity").users();
         ClientsResource tenantCityClientsResource = keycloakProvider.getRealms(accessToken).realm("smartcity").clients();
-        String tenantCityClientObjectId = getClientObjectId(tenantCityClientsResource);
+        String tenantCityClientObjectId = getClientObjectId(tenantCityClientsResource, KEYCLOAK_CLIENT_ID);
         RolesResource tenantCityRolesResource = tenantCityClientsResource.get(tenantCityClientObjectId).roles();
 
         UserRepresentation smartCityUser = new UserRepresentation();

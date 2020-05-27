@@ -75,9 +75,9 @@ RUN curl -L https://github.com/docker/compose/releases/download/1.23.2/docker-co
     -o /usr/local/bin/docker-compose && \
     chmod +x /usr/local/bin/docker-compose
 
-# Install NodeJS 10 and Yarn
+# Install NodeJS 10 and Yarn and git
 RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
-    apt-get install -y nodejs && \
+    apt-get install -y nodejs git && \
     npm install --global yarn
 
 WORKDIR /or

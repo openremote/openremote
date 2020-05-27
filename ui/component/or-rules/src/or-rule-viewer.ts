@@ -244,6 +244,31 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                     this.dispatchEvent(new OrRulesSaveEndEvent(false));
                 });
             }
+        } else if (this.ruleset.type === "global") { 
+            if (this.ruleset.id) {
+                manager.rest.api.RulesResource.updateGlobalRuleset(this.ruleset.id!, this.ruleset).then((response) => {
+                    this.disabled = false;
+                    this.modified = false;
+                    this.dispatchEvent(new OrRulesSaveEndEvent(true));
+                }).catch(reason => {
+                    console.error("Failed to save ruleset: " + reason);
+                    this.disabled = false;
+                    this.dispatchEvent(new OrRulesSaveEndEvent(false));
+                });
+            } else {
+                manager.rest.api.RulesResource.createGlobalRuleset(this.ruleset).then((response) => {
+                    if (this.ruleset) {
+                        this.ruleset.id = response.data;
+                    }
+                    this.disabled = false;
+                    this.modified = false;
+                    this.dispatchEvent(new OrRulesSaveEndEvent(true));
+                }).catch(reason => {
+                    console.error("Failed to save ruleset: " + reason);
+                    this.disabled = false;
+                    this.dispatchEvent(new OrRulesSaveEndEvent(false));
+                });
+            }
         }
     }
 

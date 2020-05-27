@@ -23,6 +23,7 @@ import org.apache.camel.CamelExchangeException;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultProducer;
+import org.openremote.container.web.ConnectionConstants;
 
 import javax.websocket.Session;
 import java.io.IOException;
@@ -53,7 +54,7 @@ public class WebsocketProducer extends DefaultProducer {
         if (isSendToAllSet(in)) {
             sendToAll(message, exchange);
         } else {
-            String sessionKey = in.getHeader(WebsocketConstants.SESSION_KEY, String.class);
+            String sessionKey = in.getHeader(ConnectionConstants.SESSION_KEY, String.class);
             if (sessionKey != null) {
                 Session websocket = getEndpoint().getComponent().getWebsocketSessions().get(sessionKey);
                 sendMessage(websocket, message);
@@ -68,7 +69,7 @@ public class WebsocketProducer extends DefaultProducer {
     }
 
     protected boolean isSendToAllSet(Message in) {
-        Boolean value = in.getHeader(WebsocketConstants.SEND_TO_ALL, sendToAll, Boolean.class);
+        Boolean value = in.getHeader(ConnectionConstants.SEND_TO_ALL, sendToAll, Boolean.class);
         return value == null ? false : value;
     }
 

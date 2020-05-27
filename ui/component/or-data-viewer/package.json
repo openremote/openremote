@@ -16,6 +16,7 @@
     "@openremote/model": "^1.1.0",
     "@openremote/or-icon": "^1.1.0",
     "@openremote/or-input": "^1.1.0",
+    "@openremote/or-attribute-card": "^1.1.0",
     "@openremote/or-attribute-input": "^1.1.0",
     "@openremote/or-attribute-history": "^1.1.0",
     "@openremote/or-translate": "^1.1.0",

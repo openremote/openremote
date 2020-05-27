@@ -1,0 +1,28 @@
+{
+  "name": "@openremote/or-attribute-card",
+  "version": "1.1.0",
+  "description": "OpenRemote attribute card",
+  "main": "dist/umd/index.bundle.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "npx tsc -b",
+    "test": "echo \"No tests\" && exit 0",
+    "prepublishOnly": "npx tsc -b && npx webpack"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@openremote/core": "^1.1.0",
+    "@openremote/or-chart": "^1.1.0",
+    "@openremote/or-input": "^1.1.0",
+    "lit-element": "^2.2.1",
+    "moment": "^2.24.0"
+  },
+  "devDependencies": {
+    "tslint": ">=5.11.0",
+    "typescript": ">=3.4.5",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.9"
+  }
+}

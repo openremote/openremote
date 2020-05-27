@@ -13,11 +13,10 @@ import {
     AssetAttribute,
     AttributeDescriptor,
     MetaItemType,
-    MetaItemDescriptor,
-    AttributeValueType
+    MetaItemDescriptor
 } from "@openremote/model";
-import {AssetModelUtil} from "./index";
 import i18next from "i18next";
+import Qs from "qs";
 
 export class Deferred<T> {
 
@@ -49,6 +48,16 @@ export class Deferred<T> {
 export interface GeoNotification {
     predicate: GeofencePredicate;
     notification?: PushNotificationMessage;
+}
+
+export function getQueryParameters(queryStr: string): any {
+    const parsed = Qs.parse(queryStr, {ignoreQueryPrefix: true});
+    return parsed;
+}
+
+export function getQueryParameter(queryStr: string, parameter: string): any | undefined {
+    const parsed = getQueryParameters(queryStr);
+    return parsed ? parsed[parameter] : undefined;
 }
 
 export function getGeoNotificationsFromRulesSet(rulesetDefinition: JsonRulesetDefinition): GeoNotification[] {
@@ -203,18 +212,9 @@ export function getEnumKeyAsString(enm: object, val: string): string {
     return key!;
 }
 
-export function getQueryParameter(name: string): string {
-    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
-    const regex = new RegExp("[\\?&]" + name + "=([^&#]*)");
-    const results = regex.exec(location.search);
-    return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
-}
-
 export function getAssetAttribute(asset: Asset, attributeName: string): AssetAttribute | undefined {
-    if (asset.attributes && asset.attributes.hasOwnProperty(attributeName)) {
-        const attr = asset.attributes[attributeName] as AssetAttribute;
-        attr.name = attributeName;
-        attr.assetId = asset.id;
+    if (asset && asset.attributes && asset.attributes.hasOwnProperty(attributeName)) {
+        const attr = {...asset.attributes[attributeName], name: attributeName, assetId: asset.id} as AssetAttribute;
         return attr;
     }
 }
@@ -222,8 +222,7 @@ export function getAssetAttribute(asset: Asset, attributeName: string): AssetAtt
 export function getAssetAttributes(asset: Asset, exclude?: string[]): AssetAttribute[] {
     if (asset.attributes) {
         return Object.entries(asset.attributes as {[s: string]: AssetAttribute}).filter(([name, attr]) => !exclude || exclude.indexOf(name) >= 0).map(([name, attr]) => {
-            attr.name = name;
-            attr.assetId = asset.id;
+            attr = {...attr, name: name, assetId: asset.id};
             return attr;
         });
     }

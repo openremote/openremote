@@ -52,9 +52,21 @@ public interface ArrayValue extends Value {
 
     ArrayValue add(Value value);
 
+    ArrayValue add(String string);
+
+    ArrayValue add(double number);
+
+    ArrayValue add(boolean bool);
+
     ArrayValue add(int index, Value value);
 
     ArrayValue addAll(Value... values);
+
+    ArrayValue addAll(String... strings);
+
+    ArrayValue addAll(double... numbers);
+
+    ArrayValue addAll(boolean... bools);
 
     ArrayValue deepCopy();
 

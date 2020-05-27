@@ -35,7 +35,6 @@ import org.openremote.container.security.basic.BasicAuthContext;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.web.socket.WebsocketAdapter;
 import org.openremote.container.web.socket.WebsocketComponent;
-import org.openremote.container.web.socket.WebsocketConstants;
 import org.xnio.OptionMap;
 import org.xnio.Options;
 import org.xnio.Xnio;
@@ -112,7 +111,7 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
                                 throw new WebApplicationException("Unsupported user principal type: " + principal, INTERNAL_SERVER_ERROR);
                             }
 
-                            config.getUserProperties().put(WebsocketConstants.HANDSHAKE_AUTH, authContext);
+                            config.getUserProperties().put(ConnectionConstants.HANDSHAKE_AUTH, authContext);
 
                             super.modifyHandshake(config, request, response);
                         }

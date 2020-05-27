@@ -36,7 +36,7 @@ export const style = css`
         display: grid;
         padding: 20px 20px;
         grid-gap: 10px;
-        grid-template-columns: repeat(auto-fill, minmax(calc(50% - 5px),1fr));
+        grid-template-columns: repeat(auto-fill, minmax(calc(25% - 8px), 1fr));
         grid-auto-rows: 5px;
 
         -webkit-animation: fadein 0.3s; /* Safari, Chrome and Opera > 12.1 */

@@ -426,7 +426,7 @@ public class AssetQuery {
     public String toString() {
         return getClass().getSimpleName() + "{" +
                 "select=" + select +
-                ", id='" + ids + '\'' +
+                ", ids=" + (ids != null ? Arrays.toString(ids) : "null") +
                 ", name=" + names +
                 ", parent=" + parents +
                 ", path=" + paths +
