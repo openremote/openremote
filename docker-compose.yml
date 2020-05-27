@@ -45,6 +45,7 @@ volumes:
   proxy-data:
   deployment-data:
   postgresql-data:
+  zwave-data:
 
 services:
 
@@ -84,6 +85,9 @@ services:
         condition: service_healthy
     volumes:
       - deployment-data:/deployment
+      - zwave-data:/zwave
+    # devices:
+    #   - /dev/ttyACM0:/dev/ttyS0
 
   keycloak:
     extends:
