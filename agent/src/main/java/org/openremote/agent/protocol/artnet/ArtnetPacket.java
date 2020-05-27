@@ -1,7 +1,5 @@
-package org.openremote.agent.protocol.dmx.artnet;
+package org.openremote.agent.protocol.artnet;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang.ArrayUtils;
 

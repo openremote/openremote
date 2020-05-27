@@ -1,4 +1,4 @@
-package org.openremote.agent.protocol.dmx;
+package org.openremote.agent.protocol.artnet;
 
 import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
 import org.openremote.agent.protocol.udp.UdpIoClient;
@@ -9,7 +9,6 @@ import org.openremote.model.value.Values;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
@@ -19,9 +18,9 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public abstract class AbstractArtnetClientProtocol<T> extends AbstractIoClientProtocol<T, UdpIoClient<T>> {
 
-    public abstract List<AbstractArtnetLight> getLightMemory();
+    public abstract List<ArtnetLight> getLightMemory();
 
-    public abstract void updateLightStateInMemory(Integer lightId, AbstractArtnetLightState updatedLightState);
+    public abstract void updateLightStateInMemory(Integer lightId, ArtnetLightState updatedLightState);
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractArtnetClientProtocol.class);
 

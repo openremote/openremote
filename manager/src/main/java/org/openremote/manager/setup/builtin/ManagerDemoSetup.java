@@ -20,7 +20,7 @@
 package org.openremote.manager.setup.builtin;
 
 import org.apache.commons.io.IOUtils;
-import org.openremote.agent.protocol.dmx.artnet.ArtnetClientProtocol;
+import org.openremote.agent.protocol.artnet.ArtnetClientProtocol;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.container.util.UniqueIdentifierGenerator;
@@ -28,7 +28,6 @@ import org.openremote.manager.security.UserConfiguration;
 import org.openremote.manager.setup.AbstractManagerSetup;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.geo.GeoJSONPoint;
@@ -38,7 +37,6 @@ import org.openremote.model.simulator.element.ColorSimulatorElement;
 import org.openremote.model.simulator.element.NumberSimulatorElement;
 import org.openremote.model.simulator.element.SwitchSimulatorElement;
 import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
 import java.nio.charset.StandardCharsets;
@@ -46,7 +44,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 import static org.openremote.model.asset.AssetType.*;

@@ -1,10 +1,9 @@
-package org.openremote.agent.protocol.dmx.artnet;
+package org.openremote.agent.protocol.artnet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.openremote.model.attribute.*;
-import org.openremote.agent.protocol.dmx.AbstractArtnetLightState;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
@@ -12,14 +11,15 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ArtnetLightState extends AbstractArtnetLightState {
+public class ArtnetLightState {
 
+    private int lightId;
     private Map<String, Integer> receivedValues;
     private double dim;
     private boolean enabled;
 
     public ArtnetLightState(int lightId, Map<String, Integer> receivedValues, double dim, boolean enabled) {
-        super(lightId);
+        this.lightId = lightId;
         this.receivedValues = receivedValues;
         this.dim = dim;
         this.enabled = enabled;
@@ -37,7 +37,10 @@ public class ArtnetLightState extends AbstractArtnetLightState {
         return enabled;
     }
 
-    @Override
+    public int getLightId() {
+        return lightId;
+    }
+
     public Byte[] getValues() {
         int enable = this.enabled? 1 : 0;
         return Arrays.asList(this.getReceivedValues().values().toArray(new Integer[this.getReceivedValues().size()]))
@@ -46,7 +49,6 @@ public class ArtnetLightState extends AbstractArtnetLightState {
             .toArray(size -> new Byte[size]);
     }
 
-    @Override
     public void fromAttribute(AttributeEvent event, Attribute attr) {
         AttributeRef reference = event.getAttributeRef();
         MetaItem metaItem = attr.getMetaItem("lightId").orElse(null);
