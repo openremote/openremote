@@ -6,6 +6,7 @@ import org.keycloak.adapters.rotation.AdapterTokenVerifier;
 import org.keycloak.common.VerificationException;
 import org.keycloak.exceptions.TokenNotActiveException;
 import org.keycloak.representations.AccessToken;
+import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.ClientCredentialsAuthForm;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.manager.event.ClientEventService;
@@ -13,9 +14,11 @@ import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventSubscription;
+import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.security.ClientRole;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -71,22 +74,15 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             return false;
         }
 
-        String assetId = topic.getTokens().get(1).toString();
-        EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
-                AttributeEvent.class,
-                new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId)
-        );
-
+        AccessToken accessToken = null;
         try {
-            AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
-            return clientEventService.authorizeEventSubscription(new AccessTokenAuthContext(connection.realm, accessToken), subscription);
+            accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
         } catch (VerificationException e) {
             if (e instanceof TokenNotActiveException) {
                 String suppliedClientSecret = new String(connection.password, StandardCharsets.UTF_8);
                 connection.accessToken = identityProvider.getExternalKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthForm(connection.username, suppliedClientSecret)).getToken();
                 try {
-                    AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
-                    return clientEventService.authorizeEventSubscription(new AccessTokenAuthContext(connection.realm, accessToken), subscription);
+                    accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
                 } catch (VerificationException verificationException) {
                     LOG.log(Level.INFO, "Couldn't verify token", verificationException);
                     return false;
@@ -95,6 +91,18 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
                 LOG.log(Level.INFO, "Couldn't verify token", e);
                 return false;
             }
+        }
+
+        AuthContext authContext = new AccessTokenAuthContext(connection.realm, accessToken);
+        if (Arrays.asList(roles).contains(ClientRole.WRITE_ASSETS)) { //write
+            return identityProvider.canSubscribeWith(authContext, new TenantFilter(connection.realm), roles);
+        } else { // read
+            String assetId = topic.getTokens().get(1).toString();
+            EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
+                    AttributeEvent.class,
+                    new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId)
+            );
+            return clientEventService.authorizeEventSubscription(authContext, subscription);
         }
     }
 }

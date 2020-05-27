@@ -35,11 +35,12 @@ import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.RenewEventSubscriptions;
+import org.openremote.model.value.Values;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -78,7 +79,8 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                 InterceptDisconnectMessage.class,
                 InterceptConnectionLostMessage.class,
                 InterceptSubscribeMessage.class,
-                InterceptUnsubscribeMessage.class
+                InterceptUnsubscribeMessage.class,
+                InterceptPublishMessage.class
         };
     }
 
@@ -155,6 +157,23 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                 Map<String, Object> headers = prepareHeaders(connection);
                 CancelEventSubscription<AttributeEvent> cancelEventSubscription = new CancelEventSubscription<>(AttributeEvent.class, subscriptionId);
                 messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, headers);
+            }
+        }
+    }
+
+    @Override
+    public void onPublish(InterceptPublishMessage msg) {
+        MqttConnection connection = mqttConnectionMap.get(msg.getClientID());
+        if (connection != null) {
+            String[] topicParts = msg.getTopicName().split(TOPIC_SEPARATOR);
+            String assetId = topicParts[1];
+            if (connection.assetSubscriptions.containsKey(assetId)) {
+                String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
+                Values.parse(payloadContent).flatMap(Values::getObject).ifPresent(objectValue -> {
+                    Map<String, Object> headers = prepareHeaders(connection);
+                    AttributeEvent attributeEvent = new AttributeEvent(assetId, objectValue.keys()[0], objectValue.get(objectValue.keys()[0]).orElse(null));
+                    messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
+                });
             }
         }
     }

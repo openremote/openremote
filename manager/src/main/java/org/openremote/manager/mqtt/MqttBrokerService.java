@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.mqtt;
 
-import com.google.inject.internal.cglib.proxy.$FixedValue;
 import io.moquette.BrokerConstants;
 import io.moquette.broker.Server;
 import io.moquette.broker.config.MemoryConfig;
@@ -36,9 +35,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
-import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
 import java.nio.charset.Charset;
@@ -61,8 +58,6 @@ public class MqttBrokerService implements ContainerService {
 
     public static final String ASSETS_TOPIC = "assets";
     public static final String TOPIC_SEPARATOR = "/";
-
-    public static final String PAYLOAD_SEPARATOR = ":";
 
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected ClientEventService clientEventService;
@@ -139,8 +134,9 @@ public class MqttBrokerService implements ContainerService {
     }
 
     public void sendAttributeEvent(String clientId, AttributeEvent attributeEvent) {
-        ByteBuf payload = Unpooled.copiedBuffer(attributeEvent.getAttributeName() + PAYLOAD_SEPARATOR, Charset.defaultCharset());
-        attributeEvent.getValue().ifPresent(value -> payload.writeCharSequence(value.toJson(), Charset.defaultCharset()));
+        ObjectValue payloadContent = Values.createObject();
+        payloadContent.put(attributeEvent.getAttributeName(), attributeEvent.getValue().orElse(null));
+        ByteBuf payload = Unpooled.copiedBuffer(payloadContent.toJson(), Charset.defaultCharset());
 
         MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
                 .qos(MqttQoS.AT_MOST_ONCE)
