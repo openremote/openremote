@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
+import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
 import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
 import org.openremote.agent.protocol.io.AbstractNettyIoClient;
@@ -180,7 +181,7 @@ public class ArtnetClientProtocol extends AbstractIoClientProtocol<ArtnetPacket,
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
-        Consumer<ArtnetPacket> messageConsumer = artnetPacket -> {};
+        Consumer<ArtnetPacket> messageConsumer = Protocol.createGenericAttributeMessageConsumer(attribute, assetService, this::updateLinkedAttribute);
         synchronized (protocolMessageConsumers) {
             protocolMessageConsumers.compute(protocolRef, (ref, consumers) -> {
                 if (consumers == null) {
