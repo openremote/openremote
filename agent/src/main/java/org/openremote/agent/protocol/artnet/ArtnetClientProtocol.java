@@ -193,36 +193,44 @@ public class ArtnetClientProtocol extends AbstractIoClientProtocol<ArtnetPacket,
                 return consumers;
             });
         }
-        if(getLinkedAttribute(attribute.getReference().orElse(null)) != null) {
-            AttributeRef parentAttributeRef = attribute.getReference().orElse(null);
-            if(parentAttributeRef != null) {
-                String parentAssetId = getLinkedAttribute(parentAttributeRef).getAssetId().orElse(null);
-                if(parentAssetId != null) {
-                    Asset parentAsset = assetService.findAsset(parentAssetId);
-                    if(parentAsset != null) {
-                        Attribute lightAttribute = parentAsset.getAttribute("Id").orElse(null);
-                        Attribute groupAttribute = parentAsset.getAttribute("GroupId").orElse(null);
-                        Attribute universeAttribute = parentAsset.getAttribute("Universe").orElse(null);
-                        Attribute amountOfLedsAttribute = parentAsset.getAttribute("AmountOfLeds").orElse(null);
-                        Attribute requiredValuesAttribute = parentAsset.getAttribute("RequiredValues").orElse(null);
-                        if(lightAttribute != null && groupAttribute != null && universeAttribute != null && amountOfLedsAttribute != null && requiredValuesAttribute != null) {
-                            int lightId = lightAttribute.getValueAsInteger().orElse(-1);
-                            int groupId = groupAttribute.getValueAsInteger().orElse(-1);
-                            int universe = universeAttribute.getValueAsInteger().orElse(-1);
-                            int amountOfLeds = amountOfLedsAttribute.getValueAsInteger().orElse(-1);
-                            String requiredKeysField = requiredValuesAttribute.getValueAsString().orElse(null);
-                            if(lightId != -1 && groupId != -1 && universe != -1 && amountOfLeds != -1 && requiredKeysField != null) {
-                                String[] requiredKeys = requiredKeysField.split(",");
-                                ArtnetLightState state = new ArtnetLightState(lightId, new LinkedHashMap<String, Integer>(), 100, true);
-                                for(String key : requiredKeys)
-                                    state.getReceivedValues().put(key, 0);
-                                ArtnetLight lightToCreate = new ArtnetLight(lightId, groupId, universe, amountOfLeds, requiredKeys, state, null);
-                                if(artnetLightMemory.stream().noneMatch(light -> light.getLightId() == lightToCreate.getLightId()))
-                                    artnetLightMemory.add(lightToCreate);
-                            }
-                        }
-                    }
-                }
+
+        if(getLinkedAttribute(attribute.getReference().orElse(null)) == null)
+            return;
+
+        AttributeRef parentAttributeRef = attribute.getReference().orElse(null);
+        if(parentAttributeRef == null)
+            return;
+
+        String parentAssetId = getLinkedAttribute(parentAttributeRef).getAssetId().orElse(null);
+        if(parentAssetId == null)
+            return;
+
+        Asset parentAsset = assetService.findAsset(parentAssetId);
+        if(parentAsset == null)
+            return;
+
+        Attribute lightAttribute = parentAsset.getAttribute("Id").orElse(null);
+        Attribute groupAttribute = parentAsset.getAttribute("GroupId").orElse(null);
+        Attribute universeAttribute = parentAsset.getAttribute("Universe").orElse(null);
+        Attribute amountOfLedsAttribute = parentAsset.getAttribute("AmountOfLeds").orElse(null);
+        Attribute requiredValuesAttribute = parentAsset.getAttribute("RequiredValues").orElse(null);
+        if(lightAttribute != null && groupAttribute != null && universeAttribute != null && amountOfLedsAttribute != null && requiredValuesAttribute != null)
+        {
+            int lightId = lightAttribute.getValueAsInteger().orElse(-1);
+            int groupId = groupAttribute.getValueAsInteger().orElse(-1);
+            int universe = universeAttribute.getValueAsInteger().orElse(-1);
+            int amountOfLeds = amountOfLedsAttribute.getValueAsInteger().orElse(-1);
+            String requiredKeysField = requiredValuesAttribute.getValueAsString().orElse(null);
+
+            if(lightId != -1 && groupId != -1 && universe != -1 && amountOfLeds != -1 && requiredKeysField != null)
+            {
+                String[] requiredKeys = requiredKeysField.split(",");
+                ArtnetLightState state = new ArtnetLightState(lightId, new LinkedHashMap<String, Integer>(), 100, true);
+                for(String key : requiredKeys)
+                    state.getReceivedValues().put(key, 0);
+                ArtnetLight lightToCreate = new ArtnetLight(lightId, groupId, universe, amountOfLeds, requiredKeys, state, null);
+                if(artnetLightMemory.stream().noneMatch(light -> light.getLightId() == lightToCreate.getLightId()))
+                    artnetLightMemory.add(lightToCreate);
             }
         }
     }
