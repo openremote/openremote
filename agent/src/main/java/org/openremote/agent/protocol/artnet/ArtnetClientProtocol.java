@@ -182,19 +182,6 @@ public class ArtnetClientProtocol extends AbstractIoClientProtocol<ArtnetPacket,
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
-        Consumer<ArtnetPacket> messageConsumer = artnetPacket -> {};
-        synchronized (protocolMessageConsumers) {
-            protocolMessageConsumers.compute(protocolRef, (ref, consumers) -> {
-                if (consumers == null) {
-                    consumers = new ArrayList<>();
-                }
-                consumers.add(new Pair<AttributeRef, Consumer<ArtnetPacket>>(
-                        attribute.getReferenceOrThrow(),
-                        messageConsumer
-                ));
-                return consumers;
-            });
-        }
 
         if(getLinkedAttribute(attribute.getReference().orElse(null)) == null)
             return;
@@ -257,15 +244,6 @@ public class ArtnetClientProtocol extends AbstractIoClientProtocol<ArtnetPacket,
                 }
             }
         }
-        synchronized (protocolMessageConsumers) {
-            protocolMessageConsumers.compute(protocolConfiguration.getReferenceOrThrow(), (ref, consumers) -> {
-                if (consumers != null) {
-                    consumers.removeIf((attrRefConsumer) -> attrRefConsumer.key.equals(attribute.getReferenceOrThrow()));
-                }
-                return consumers;
-            });
-        }
-
     }
 
     @Override

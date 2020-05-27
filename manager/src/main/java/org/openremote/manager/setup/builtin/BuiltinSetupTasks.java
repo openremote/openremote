@@ -41,7 +41,6 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
             addTask(new ManagerCleanSetup(container));
             addTask(new KeycloakCleanSetup(container));
             addTask(new KeycloakInitSetup(container));
-            addTask(new ArtNetDemoSetup());
             if (isImportDemoUsers(container)) {
                 addTask(new KeycloakDemoSetup(container));
             }
