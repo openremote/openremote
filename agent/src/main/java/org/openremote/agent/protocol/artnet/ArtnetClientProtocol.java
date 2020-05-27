@@ -10,6 +10,7 @@ import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
 import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
 import org.openremote.agent.protocol.io.AbstractNettyIoClient;
 import org.openremote.agent.protocol.udp.UdpIoClient;
+import org.openremote.container.Container;
 import org.openremote.container.util.CodecUtil;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.asset.Asset;
@@ -301,13 +302,12 @@ public class ArtnetClientProtocol extends AbstractIoClientProtocol<ArtnetPacket,
                             ArtnetLight updatedLight = (ArtnetLight) artnetLightMemory.stream().filter(light -> light.getLightId() == lightId).findFirst().orElse(null);
                             if(updatedLight != null) {
                                 ArtnetLightState oldLightState = (ArtnetLightState) updatedLight.getLightState();
-                                ObjectMapper mapper = new ObjectMapper();
                                 //UPDATE LIGHT VALUES (R,G,B FOR EXAMPLE)
                                 if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Values")) {
                                     Map<String, Integer> valuesToUpdate = new LinkedHashMap<String, Integer>();
                                     for(String requiredKey : updatedLight.getRequiredValues()) {
                                         try {
-                                            JsonNode node = mapper.readTree(processedValue.toJson());
+                                            JsonNode node = Container.JSON.readTree(processedValue.toJson());
                                             JsonNode requiredKeyValue = node.get(requiredKey);
                                             if(requiredKeyValue == null)
                                                 throw new NullPointerException("Could not find key: " + requiredKey.toString() + " in the json-file.");
@@ -321,7 +321,7 @@ public class ArtnetClientProtocol extends AbstractIoClientProtocol<ArtnetPacket,
                                 //UPDATE DIM
                                 else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Dim")) {
                                     try {
-                                        JsonNode node = mapper.readTree(processedValue.toJson());
+                                        JsonNode node = Container.JSON.readTree(processedValue.toJson());
                                         int dimValue = node.asInt();
                                         updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), dimValue, oldLightState.isEnabled()));
                                     } catch (JsonProcessingException e) {
@@ -331,7 +331,7 @@ public class ArtnetClientProtocol extends AbstractIoClientProtocol<ArtnetPacket,
                                 //UPDATE ENABLED/DISABLED
                                 else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Switch")) {
                                     try{
-                                        JsonNode node = mapper.readTree(processedValue.toJson());
+                                        JsonNode node = Container.JSON.readTree(processedValue.toJson());
                                         boolean enabled = node.asBoolean();
                                         updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), oldLightState.getDim(), enabled));
                                     } catch (JsonProcessingException e) {
