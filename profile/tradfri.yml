@@ -69,6 +69,10 @@ services:
         condition: service_healthy
     volumes:
       - proxy-data:/deployment
+    # Temporary uses host networking in order to receive multicast messages. THIS SHOULD NOT BE USED IN PRODUCTION!
+    network_mode: host
+    environment:
+      PROXY_BACKEND_HOST: 127.0.0.1
       # Override the haproxy.cfg with custom file
       # -${MY_PROXY_CONFIG_FILE}:/etc/haproxy/haproxy.cfg
 
@@ -86,6 +90,12 @@ services:
       - deployment-data:/deployment
     ports:
     - 5684:5684/udp
+    # Temporary uses host networking in order to receive multicast messages. THIS SHOULD NOT BE USED IN PRODUCTION!
+    network_mode: host
+    environment:
+      KEYCLOAK_HOST: 127.0.0.1
+      KEYCLOAK_PORT: 8081
+      DATABASE_CONNECTION_URL: jdbc:postgresql://localhost/openremote
 
   keycloak:
     extends:
@@ -106,3 +116,5 @@ services:
       service: postgresql
     volumes:
       - postgresql-data:/deployment
+    ports:
+      - "5432:5432"
