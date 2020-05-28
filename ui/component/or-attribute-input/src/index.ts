@@ -23,7 +23,8 @@ export function getAttributeValueTemplate(
     valueChangedCallback: (value: any) => void,
     customProvider?: (assetType: string | undefined, attribute: Attribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean | undefined, disabled: boolean | undefined) => ((value: any) => TemplateResult) | undefined,
     forceInputType?: InputType,
-    labelOverride?: string) {
+    labelOverride?: string,
+    assetId?: string) {
 
     let template: ((value: any) => TemplateResult) | undefined;
 
@@ -148,6 +149,8 @@ export function getAttributeValueTemplate(
                         value = JSON.parse(value);
                     }
                 }
+                const response = manager.rest.api.AssetResource.writeAttributeValue(assetId!, attribute.name!, value);
+
                 valueChangedCallback(value);
             };
 
@@ -244,7 +247,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 }
             } else {
                 this._invalid = false;
-                this._template = getAttributeValueTemplate(this.assetType, this.attribute, this.readonly, this.disabled, (value) => this.onValueChange(value), this.customProvider);
+                this._template = getAttributeValueTemplate(this.assetType, this.attribute, this.readonly, this.disabled, (value) => this.onValueChange(value), this.customProvider, undefined, undefined, this.attribute.assetId);
             }
         }
 
