@@ -106,7 +106,8 @@ public class MqttBrokerService implements ContainerService {
                         .when(body().isInstanceOf(TriggeredEventSubscription.class))
                         .process(exchange -> {
                             String sessionKey = getSessionKey(exchange);
-                            TriggeredEventSubscription<AttributeEvent> triggeredEventSubscription = exchange.getIn().getBody(TriggeredEventSubscription.class);
+                            @SuppressWarnings("unchecked")
+                            TriggeredEventSubscription<AttributeEvent> triggeredEventSubscription = (TriggeredEventSubscription<AttributeEvent>)exchange.getIn().getBody(TriggeredEventSubscription.class);
                             triggeredEventSubscription.getEvents()
                                     .forEach(event -> sendAttributeEvent(sessionKey, event));
                         })
