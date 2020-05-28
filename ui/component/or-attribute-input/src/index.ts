@@ -50,6 +50,9 @@ export function getAttributeValueTemplate(
         let label: string | undefined;
         let unit: string | undefined;
         let options: any | undefined;
+        let helperText: string | undefined;
+        let helperPersistent: boolean | undefined;
+        let iconTrailing: string | undefined;
 
         if (valueDescriptor) {
 
@@ -145,7 +148,13 @@ export function getAttributeValueTemplate(
                 valueChangedCallback(value);
             };
 
-            template = (value) => html`<or-input .type="${inputType}" .label="${label}" .value="${getValue(value)}" .allowedValues="${options}" .min="${min}" .max="${max}" .options="${options}" .readonly="${readonly || ro}" .disabled="${disabled}" @or-input-changed="${(e: OrInputChangedEvent) => setValue(e.detail.value)}"></or-input>`;
+            template = (value) => html`<or-input 
+                .type="${inputType}" .label="${label}" .value="${getValue(value)}" .allowedValues="${options}" 
+                .min="${min}" .max="${max}" .options="${options}" .readonly="${readonly || ro}" .disabled="${disabled}" 
+                helperText="${helperText}" helperPersistent="${helperPersistent}" iconTrailing="${iconTrailing}"
+                @or-input-changed="${(e: OrInputChangedEvent) => setValue(e.detail.value)}"></or-input>
+                <or-translate value="lastChangeWithDate" .options="${{ date: new Date(attribute.valueTimestamp!) } as i18next.TOptions<i18next.InitOptions>}"></or-translate>
+`;
         } else {
             template = () => html``;
         }
