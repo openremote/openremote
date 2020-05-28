@@ -399,6 +399,7 @@ public class ZWNetwork {
             .stream()
             .filter(commandClass -> commandClass.getID().toRaw() != ZWCommandClassID.COMMAND_CLASS_CONFIGURATION.toRaw() &&
                                     commandClass.getID().toRaw() != ZWCommandClassID.COMMAND_CLASS_ZWAVEPLUS_INFO.toRaw() &&
+                                    commandClass.getID().toRaw() != ZWCommandClassID.COMMAND_CLASS_NO_OPERATION.toRaw() &&
                                     commandClass.getID().toRaw() != ZWCommandClassID.COMMAND_CLASS_BASIC.toRaw())
             .map(ZWCommandClass::getChannels)
             .flatMap(List<Channel>::stream)
