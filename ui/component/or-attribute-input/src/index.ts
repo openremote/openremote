@@ -125,6 +125,9 @@ export function getAttributeValueTemplate(
             ro = readonly === undefined ? Util.getMetaValue(MetaItemType.READ_ONLY, attribute, attributeDescriptor) : readonly;
             unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attribute, attributeDescriptor);
             options = Util.getMetaValue(MetaItemType.ALLOWED_VALUES, attribute, attributeDescriptor);
+            helperText = "helpppppertext";
+            helperPersistent = true;
+            iconTrailing = "send";
             if(unit) {
                 label = label + " ("+i18next.t(unit)+")";
             }
