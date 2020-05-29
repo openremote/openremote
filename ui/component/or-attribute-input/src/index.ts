@@ -182,7 +182,7 @@ export function getAttributeValueTemplate(
                     .attr-input-field { flex: 1 }
                     .attr-input-btn { flex: 0 }
                 </style>
-                <div class="wrapper" style="display:flex;">
+                <div class="wrapper">
                     <or-input 
                         class="attr-input-field"
                         .type="${inputType}" .label="${label}" .value="${getValue(value)}" .allowedValues="${options}" 
