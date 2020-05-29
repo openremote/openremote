@@ -143,6 +143,10 @@ export function getAttributeValueTemplate(
                 return Util.getAttributeValue(attribute, attributeDescriptor) ? Util.getAttributeValue(attribute, attributeDescriptor) : value;
             };
 
+            const setHelperTextChanged = (event: OrInputChangedEvent) => {
+                helperText = i18next.t("pressEnterToSend");
+            };
+
             const setValue = (value: any) => {
                 if (inputType === InputType.JSON && value !== null && typeof(value) !== "string") {
                     if (typeof(value) === "string") {
@@ -156,13 +160,14 @@ export function getAttributeValueTemplate(
                 valueChangedCallback(value);
             };
 
-            template = (value) => html`<or-input 
-                .type="${inputType}" .label="${label}" .value="${getValue(value)}" .allowedValues="${options}" 
-                .min="${min}" .max="${max}" .options="${options}" .readonly="${readonly || ro}" .disabled="${disabled}" 
-                helperText="${helperText}" helperPersistent="${helperPersistent}" iconTrailing="${iconTrailing}"
-                @or-input-changed="${(e: OrInputChangedEvent) => setValue(e.detail.value)}"></or-input>
-                <or-translate value="lastChangeWithDate" .options="${{ date: new Date(attribute.valueTimestamp!) } as i18next.TOptions<i18next.InitOptions>}"></or-translate>
-`;
+            template = (value) => html`
+                <style>.mdc-text-field__icon { cursor: pointer !important; }</style>
+                <or-input 
+                    .type="${inputType}" .label="${label}" .value="${getValue(value)}" .allowedValues="${options}" 
+                    .min="${min}" .max="${max}" .options="${options}" .readonly="${readonly || ro}" .disabled="${disabled}" 
+                    helperText="${helperText}" helperPersistent="${helperPersistent}" iconTrailing="${iconTrailing}"
+                    @keyup="${(e: OrInputChangedEvent) => setHelperTextChanged(e)}"
+                    @or-input-changed="${(e: OrInputChangedEvent) => setValue(e.detail.value)}"></or-input>`;
         } else {
             template = () => html``;
         }
