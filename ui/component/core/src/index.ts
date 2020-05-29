@@ -414,6 +414,9 @@ export class Manager implements EventProviderFactory {
     }
 
     set displayRealm(realm: string) {
+        if (!this.isSuperUser()) {
+            return;
+        }
         this._displayRealm = realm;
         this._emitEvent(OREvent.DISPLAY_REALM_CHANGED);
     }

@@ -178,6 +178,21 @@
   "noLongerMatches": "Komt niet meer overeen",
   "logs": "Logs",
   "addRemoveAttributes": "Attributen toevoegen/verwijderen",
+  "email": "Email",
+  "push-notification":"Push notification",
+  "subject": "Onderwerp",
+  "openWebsiteUrl": "Te openen website adres",
+  "openInBrowser": "Openen in browser (voor externe websites)",
+  "buttonTextConfirm": "Tekst voor actie knop",
+  "buttonTextDecline": "Tekst voor negeerknop",
+  "custom": "Handmatig input",
+  "tenant": "Tenant",
+  "tenant_plural": "Tenants",
+  "user_plural": "Gebruikers",
+  "realmRules": "realm rules",
+  "globalRules": "global rules",
+  "recipients": "Ontvangers",
+  "JSON": "Als-Dan",
   "attributeValueType": {
     "PERCENTAGE": "%.2f",
     "NUMBER": "%.0f",
@@ -196,5 +211,6 @@
   "clientId": "Client ID",
   "realm": "Realm",
   "port": "Poort",
-  "host": "Hostname"
+  "host": "Hostname",
+  "couldNotRetrieveAttribute": "Kan de gegevens voor dit attribuut niet ophalen"
 }

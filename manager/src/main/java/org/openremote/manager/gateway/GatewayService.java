@@ -27,7 +27,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.web.ClientRequestInfo;
-import org.openremote.container.web.socket.WebsocketConstants;
+import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -54,7 +54,6 @@ import javax.ws.rs.core.Response;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -194,9 +193,9 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             from(GATEWAY_EVENT_TOPIC)
                 .routeId("FromGatewayUpdates")
                 .choice()
-                .when(header(WebsocketConstants.SESSION_OPEN))
+                .when(header(ConnectionConstants.SESSION_OPEN))
                     .process(exchange -> {
-                        Session session = exchange.getIn().getHeader(WebsocketConstants.SESSION, Session.class);
+                        Session session = exchange.getIn().getHeader(ConnectionConstants.SESSION, Session.class);
                         String sessionKey = getSessionKey(exchange);
                         String clientId = getClientId(exchange);
                         if (isGatewayClientId(clientId)) {
@@ -205,8 +204,8 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                     })
                     .stop()
                 .when(or(
-                    header(WebsocketConstants.SESSION_CLOSE),
-                    header(WebsocketConstants.SESSION_CLOSE_ERROR)
+                    header(ConnectionConstants.SESSION_CLOSE),
+                    header(ConnectionConstants.SESSION_CLOSE_ERROR)
                 ))
                     .process(exchange -> {
                         String clientId = getClientId(exchange);

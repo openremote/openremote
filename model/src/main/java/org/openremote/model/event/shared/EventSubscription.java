@@ -80,6 +80,12 @@ public class EventSubscription<E extends SharedEvent> {
         this.internalConsumer = internalConsumer;
     }
 
+    public EventSubscription(Class<E> eventClass, EventFilter<E> filter, String subscriptionId) {
+        this.eventType = Event.getEventType(eventClass);
+        this.filter = filter;
+        this.subscriptionId = subscriptionId;
+    }
+
     public EventSubscription(Class<E> eventClass, EventFilter<E> filter, String subscriptionId, Consumer<TriggeredEventSubscription<E>> internalConsumer) {
         this.eventType = Event.getEventType(eventClass);
         this.filter = filter;

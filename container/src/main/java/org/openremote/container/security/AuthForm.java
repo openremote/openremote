@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2020, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -21,35 +21,16 @@ package org.openremote.container.security;
 
 import javax.ws.rs.FormParam;
 
-public class AuthForm {
+public abstract class AuthForm {
 
     @FormParam("client_id")
     public String clientId;
 
-    @FormParam("username")
-    public String username;
-
-    @FormParam("password")
-    public String password;
-
     @FormParam("grant_type")
     public String grantType;
 
-    public AuthForm() {
-    }
-
     public AuthForm setClientId(String clientId) {
         this.clientId = clientId;
-        return this;
-    }
-
-    public AuthForm setUsername(String username) {
-        this.username = username;
-        return this;
-    }
-
-    public AuthForm setPassword(String password) {
-        this.password = password;
         return this;
     }
 
@@ -57,16 +38,4 @@ public class AuthForm {
         this.grantType = grantType;
         return this;
     }
-
-    public AuthForm(String clientId, String username, String password) {
-        this(clientId, username, password, "password");
-    }
-
-    public AuthForm(String clientId, String username, String password, String grantType) {
-        this.clientId = clientId;
-        this.username = username;
-        this.password = password;
-        this.grantType = grantType;
-    }
 }
-

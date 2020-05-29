@@ -8,14 +8,16 @@ import moment from "moment";
 import {AppStateKeyed, Page, router} from "../index";
 import {EnhancedStore} from "@reduxjs/toolkit";
 
-export function pageAssetsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>) {
+export function pageAssetsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: ViewerConfig) {
     return {
         routes: [
             "assets",
             "assets/:id"
         ],
         pageCreator: () => {
-            return new PageAssets(store);
+            const page = new PageAssets(store);
+            if(config) page.config = config;
+            return page;
         }
     };
 }
@@ -446,6 +448,9 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
     }
 
     @property()
+    public config?: ViewerConfig;
+    
+    @property()
     protected _assetId;
 
     constructor(store: EnhancedStore<S>) {
@@ -460,7 +465,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         const selectedIds = [this._assetId];
         return html`
               <or-asset-tree id="pageAssetTree" class="${this._assetId ? "hideMobile" : ""}" .selectedIds="${selectedIds}"></or-asset-tree>
-              <or-asset-viewer class="${!this._assetId ? "hideMobile" : ""}" .config="${viewerConfig}" .assetId="${this._assetId}"></or-asset-viewer>
+              <or-asset-viewer class="${!this._assetId ? "hideMobile" : ""}" .config="${this.config ? this.config : viewerConfig}" .assetId="${this._assetId}"></or-asset-viewer>
         `;
     }
 

@@ -5,14 +5,16 @@ import {DefaultBoxShadow} from "@openremote/core";
 import {AppStateKeyed, Page} from "../index";
 import {EnhancedStore} from "@reduxjs/toolkit";
 
-export function pageInsightsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>) {
+export function pageInsightsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?:DataViewerConfig) {
     return {
         routes: [
             "insights",
             "insights/:id"
         ],
         pageCreator: () => {
-            return new PageInsights(store);
+            const page = new PageInsights(store);
+            if(config) page.config = config;
+            return page;
         }
     };
 }
@@ -74,6 +76,9 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
     }
 
     @property()
+    public config?: DataViewerConfig;
+
+    @property()
     protected _assetId;
 
     constructor(store: EnhancedStore<S>) {
@@ -82,7 +87,7 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
 
     protected render(): TemplateResult | void {
         return html`
-              <or-data-viewer .config="${viewerConfig}"></or-data-viewer>
+              <or-data-viewer .config="${this.config ? this.config : viewerConfig}"></or-data-viewer>
         `;
     }
 

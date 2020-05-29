@@ -419,7 +419,8 @@ export class OrInput extends LitElement {
                                         if (this.value === optValue) {
                                             this._selectedIndex = index;
                                         }
-                                        return html`<li class="mdc-list-item${this.value === optValue ? " mdc-list-item--selected" : ""}" role="option" data-value="${optValue}"><or-translate value="${optDisplay}"></or-translate></li>`;
+                                        // todo: it's not actually putting the mdc-list-item--selected class on even when this.value === optValue...
+                                        return html`<li class="${classMap({"mdc-list-item": true, "mdc-list-item--selected": this.value === optValue})}" role="option" data-value="${optValue}"><or-translate value="${optDisplay}"></or-translate></li>`;
                                     }) : ``}
                                 </ul>
                             </div>

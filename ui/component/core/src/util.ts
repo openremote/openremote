@@ -213,7 +213,7 @@ export function getEnumKeyAsString(enm: object, val: string): string {
 }
 
 export function getAssetAttribute(asset: Asset, attributeName: string): AssetAttribute | undefined {
-    if (asset.attributes && asset.attributes.hasOwnProperty(attributeName)) {
+    if (asset && asset.attributes && asset.attributes.hasOwnProperty(attributeName)) {
         const attr = {...asset.attributes[attributeName], name: attributeName, assetId: asset.id} as AssetAttribute;
         return attr;
     }

@@ -67,6 +67,22 @@ const style = css`
     :host {
         position: relative;
     }
+
+    .mdc-dialog .mdc-dialog__surface {
+        min-width: 600px;
+        height: calc(100vh - 50%);
+    }
+
+    .dialog-container {
+        display: flex;
+        flex-direction: row;
+        flex: 1 1 0;
+    }
+
+    .dialog-container > * {
+        flex: 1 1 0;
+    }
+
 `;
 
 @customElement("or-mwc-dialog")

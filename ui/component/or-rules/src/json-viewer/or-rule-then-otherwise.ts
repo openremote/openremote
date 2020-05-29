@@ -274,7 +274,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                         break;
                     case ActionType.NOTIFICATION:
                         action = action as RuleActionNotification
-                        if(type === "push-notification") {
+                        if(type === "push") {
                             buttonIcon = "cellphone-message";
                             buttonColor = NOTIFICATION_COLOR;
                         } else {
@@ -450,7 +450,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             action.action = "notification";
             action.notification = {
                 message: {
-                    type: "push-notification"
+                    type: "push"
                 }
             };
         } else {

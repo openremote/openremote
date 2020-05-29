@@ -82,14 +82,16 @@ const pageMapSlice = createSlice({
 const {assetEventReceived, attributeEventReceived, setAssetSubscriptionId, setAttributeSubscriptionId} = pageMapSlice.actions;
 export const pageMapReducer = pageMapSlice.reducer;
 
-export function pageMapProvider<S extends MapStateKeyed>(store: EnhancedStore<S>) {
+export function pageMapProvider<S extends MapStateKeyed>(store: EnhancedStore<S>, config?:ViewerConfig) {
     return {
         routes: [
             "map",
             "map/:id"
         ],
         pageCreator: () => {
-            return new PageMap(store);
+            const page = new PageMap(store);
+            if(config) page.config = config;
+            return page
         }
     };
 }
@@ -183,6 +185,9 @@ export class PageMap<S extends MapStateKeyed> extends Page<S>  {
         `;
     }
 
+    @property()
+    public config?: ViewerConfig;
+
     @query("#map")
     protected _map?: OrMap;
 
@@ -221,7 +226,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S>  {
 
         return html`
             
-            ${this._currentAsset ? html `<or-map-asset-card .config="${mapCardConfig}" .asset="${this._currentAsset}"></or-map-asset-card>` : ``}
+            ${this._currentAsset ? html `<or-map-asset-card .config="${this.config ? this.config : mapCardConfig}" .asset="${this._currentAsset}"></or-map-asset-card>` : ``}
             
             <or-map id="map" class="or-map">
                 ${

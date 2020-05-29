@@ -179,6 +179,21 @@
   "noLongerMatches": "No longer matches",
   "logs":"Logs",
   "addRemoveAttributes": "Add/remove attributes",
+  "email": "Email",
+  "push-notification":"Push notification",
+  "subject": "subject",
+  "openWebsiteUrl": "Website to be opend",
+  "openInBrowser": "Open in browser (for external websites)",
+  "buttonTextConfirm": "Text for action button",
+  "buttonTextDecline": "Text for decline button",
+  "custom": "Manual input",
+  "tenant": "Tenant",
+  "tenant_plural": "Tenants",
+  "user_plural": "Users",
+  "realmRules": "realm rules",
+  "globalRules": "global rules",
+  "recipients": "Recipients",
+  "JSON": "When-Then",
   "attributeValueType": {
     "PERCENTAGE": "%.2f",
     "NUMBER": "%.0f",
@@ -208,5 +223,6 @@
     "TRANSLATION_ERROR": "Translations error (see console logs)"
   },
   "pressEnterToSend": "Press Enter to send",
-  "sending": "Sending"
+  "sending": "Sending",
+  "couldNotRetrieveAttribute": "Could not retrieve attribute information"
 }

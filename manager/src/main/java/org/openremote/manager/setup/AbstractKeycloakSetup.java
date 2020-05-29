@@ -24,7 +24,7 @@ import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.openremote.container.Container;
-import org.openremote.container.security.AuthForm;
+import org.openremote.container.security.PasswordAuthForm;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
@@ -89,7 +89,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
         // Use direct access grant feature of Keycloak Admin CLI to get superuser access token
         String keycloakAdminPassword = container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT);
         this.accessToken = keycloakProvider.getKeycloak().getAccessToken(
-            MASTER_REALM, new AuthForm(KeycloakIdentityProvider.ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, keycloakAdminPassword)
+            MASTER_REALM, new PasswordAuthForm(KeycloakIdentityProvider.ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, keycloakAdminPassword)
         ).getToken();
 
         masterRealmResource = keycloakProvider.getRealms(accessToken).realm(MASTER_REALM);
@@ -97,11 +97,10 @@ public abstract class AbstractKeycloakSetup implements Setup {
         masterUsersResource = masterRealmResource.users();
     }
 
-    protected String getClientObjectId(ClientsResource clientsResource) {
-        return clientsResource.findByClientId(KEYCLOAK_CLIENT_ID)
+    protected String getClientObjectId(ClientsResource clientsResource, String clientName) {
+        return clientsResource.findByClientId(clientName)
             .stream()
             .map(ClientRepresentation::getId)
-            .findFirst().orElseThrow(() -> new RuntimeException("Client object ID not found: " + KEYCLOAK_CLIENT_ID));
+            .findFirst().orElseThrow(() -> new RuntimeException("Client object ID not found for client name: " + clientName));
     }
-
 }

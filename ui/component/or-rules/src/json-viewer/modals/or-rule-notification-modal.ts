@@ -1,4 +1,4 @@
-import {customElement, html, LitElement, property} from "lit-element";
+import {customElement, html, LitElement, property, PropertyValues} from "lit-element";
 import {
     RuleActionNotification,
     AssetQuery,
@@ -37,9 +37,22 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
         const dialog: OrMwcDialog = this.shadowRoot!.getElementById("notification-modal") as OrMwcDialog;
         if(!this.shadowRoot) return
 
-        const slot = this.shadowRoot.getElementById('notification-form-slot');
-        if (dialog) {
-            dialog.dialogContent = html`${slot}`;
+        const slot:HTMLSlotElement|null = this.shadowRoot.querySelector('.notification-form-slot');
+        if (dialog && slot) {
+            let container = document.createElement("div");
+            slot.assignedNodes({flatten: true}).forEach((child) => {
+                if (child instanceof HTMLElement) {
+                    container.appendChild(child);
+                }
+            });
+            dialog.dialogContent = html`${container}`;
+            this.requestUpdate();
+        }
+    }
+
+    updated(changedProperties: PropertyValues){
+        if(changedProperties.has("action")){
+            this.renderDialogHTML(this.action);
         }
     }
 
@@ -73,9 +86,8 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
 
         return html`
             <or-input .type="${InputType.BUTTON}" .label="${i18next.t("message")}" @click="${notificationPickerModalOpen}"></or-input>
-            <or-mwc-dialog id="notification-modal" dialogTitle="${this.title}" .dialogActions="${notificationPickerModalActions}">
-                <slot id="notification-form-slot"></slot>
-            </or-mwc-dialog>
+            <or-mwc-dialog id="notification-modal" dialogTitle="${this.title}" .dialogActions="${notificationPickerModalActions}"> </or-mwc-dialog>
+            <slot class="notification-form-slot"></slot>
         `
     }
 }

@@ -70,6 +70,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "8883:8883"
 
     # Resource limits
     mem_reservation: 512m
