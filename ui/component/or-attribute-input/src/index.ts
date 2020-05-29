@@ -51,6 +51,8 @@ export function getAttributeValueTemplate(
         let label: string | undefined;
         let unit: string | undefined;
         let options: any | undefined;
+        let currentValue: any | undefined;
+        let hasButton: boolean | undefined;
         let helperText: string | undefined;
         let helperPersistent: boolean | undefined;
         let iconTrailing: string | undefined;
@@ -126,6 +128,8 @@ export function getAttributeValueTemplate(
             ro = readonly === undefined ? Util.getMetaValue(MetaItemType.READ_ONLY, attribute, attributeDescriptor) : readonly;
             unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attribute, attributeDescriptor);
             options = Util.getMetaValue(MetaItemType.ALLOWED_VALUES, attribute, attributeDescriptor);
+            currentValue = undefined;
+            hasButton = inputType === InputType.TEXT || inputType === InputType.NUMBER;
             helperText = i18next.t("updatedWithDate", { date: new Date(attribute.valueTimestamp!) } as i18next.TOptions<i18next.InitOptions>);
             helperPersistent = true;
             iconTrailing = "send";
@@ -140,10 +144,13 @@ export function getAttributeValueTemplate(
                 if (inputType === InputType.JSON && value !== null && typeof(value) !== "string") {
                     value = JSON.stringify(value, null, 2);
                 }
-                return Util.getAttributeValue(attribute, attributeDescriptor) ? Util.getAttributeValue(attribute, attributeDescriptor) : value;
+                currentValue = Util.getAttributeValue(attribute, attributeDescriptor) ? Util.getAttributeValue(attribute, attributeDescriptor) : value;
+                return currentValue;
             };
 
-            const setHelperTextChanged = (event: OrInputChangedEvent) => {
+            // todo: using this fn to put a value into current value so the button knows about it is a bit of a detour but it works for now
+            const setHelperTextChanged = (event: any) => {
+                currentValue = event.path[0].value;
                 helperText = i18next.t("pressEnterToSend");
             };
 
@@ -160,14 +167,25 @@ export function getAttributeValueTemplate(
                 valueChangedCallback(value);
             };
 
+            const clickHandler = (e: any, value: any) => {
+                setValue(value);
+            };
+
             template = (value) => html`
                 <style>.mdc-text-field__icon { cursor: pointer !important; }</style>
-                <or-input 
-                    .type="${inputType}" .label="${label}" .value="${getValue(value)}" .allowedValues="${options}" 
-                    .min="${min}" .max="${max}" .options="${options}" .readonly="${readonly || ro}" .disabled="${disabled}" 
-                    helperText="${helperText}" helperPersistent="${helperPersistent}" iconTrailing="${iconTrailing}"
-                    @keyup="${(e: OrInputChangedEvent) => setHelperTextChanged(e)}"
-                    @or-input-changed="${(e: OrInputChangedEvent) => setValue(e.detail.value)}"></or-input>`;
+                <div class="flexert">
+                    <or-input 
+                        .type="${inputType}" .label="${label}" .value="${getValue(value)}" .allowedValues="${options}" 
+                        .min="${min}" .max="${max}" .options="${options}" .readonly="${readonly || ro}" .disabled="${disabled}" 
+                        helperText="${helperText}" helperPersistent="${helperPersistent}"
+                        @or-input-changed="${(e: OrInputChangedEvent) => setValue(e.detail.value)}"
+                        @keyup="${(e: OrInputChangedEvent) => setHelperTextChanged(e)}"></or-input>
+                    ${hasButton ?
+                        html`<or-input 
+                            icon=${iconTrailing} type="button"
+                            @click="${(e: any) => clickHandler(e, currentValue)}"></or-input>` :
+                        html``}
+                </div>`;
         } else {
             template = () => html``;
         }
