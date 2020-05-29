@@ -177,9 +177,14 @@ export function getAttributeValueTemplate(
             };
 
             template = (value) => html`
-                <style>.mdc-text-field__icon { cursor: pointer !important; }</style>
-                <div class="flexert">
+                <style>
+                    .wrapper { display: flex }
+                    .attr-input-field { flex: 1 }
+                    .attr-input-btn { flex: 0 }
+                </style>
+                <div class="wrapper" style="display:flex;">
                     <or-input 
+                        class="attr-input-field"
                         .type="${inputType}" .label="${label}" .value="${getValue(value)}" .allowedValues="${options}" 
                         .min="${min}" .max="${max}" .options="${options}" .readonly="${readonly || ro}" .disabled="${disabled}" 
                         helperText="${helperText}" helperPersistent="${helperPersistent}"
@@ -187,6 +192,7 @@ export function getAttributeValueTemplate(
                         @keyup="${(e: OrInputChangedEvent) => setHelperTextChanged(e)}"></or-input>
                     ${hasButton ?
                         html`<or-input 
+                            class="attr-input-btn"
                             icon=${iconTrailing} type="button"
                             @click="${(e: any) => clickHandler(e, currentValue)}"></or-input>` :
                         html``}
