@@ -126,7 +126,7 @@ export function getAttributeValueTemplate(
             ro = readonly === undefined ? Util.getMetaValue(MetaItemType.READ_ONLY, attribute, attributeDescriptor) : readonly;
             unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attribute, attributeDescriptor);
             options = Util.getMetaValue(MetaItemType.ALLOWED_VALUES, attribute, attributeDescriptor);
-            helperText = "helpppppertext";
+            helperText = i18next.t("updatedWithDate", { date: new Date(attribute.valueTimestamp!) } as i18next.TOptions<i18next.InitOptions>);
             helperPersistent = true;
             iconTrailing = "send";
             if(unit) {
@@ -149,7 +149,9 @@ export function getAttributeValueTemplate(
                         value = JSON.parse(value);
                     }
                 }
-                const response = manager.rest.api.AssetResource.writeAttributeValue(assetId!, attribute.name!, value);
+                
+                const response = manager.rest.api.AssetResource.writeAttributeValue(assetId!, attribute.name!, value)
+                    .then(() => helperText = i18next.t("updatedWithDate", { date: new Date() } as i18next.TOptions<i18next.InitOptions>))
 
                 valueChangedCallback(value);
             };

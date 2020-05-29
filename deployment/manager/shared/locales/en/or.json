@@ -84,7 +84,7 @@
   "cancel": "Cancel",
   "createdOn": "Created on",
   "createdOnWithDate": "Created on: {{-date, LLLL}}",
-  "lastChangeWithDate": "Last changed on: {{-date, LLLL}}",
+  "updatedWithDate": "Updated on: {{-date, LLLL}}",
   "accessPublicRead": "Public read",
   "type": "Type",
   "path": "Path",
@@ -206,5 +206,7 @@
     "CONSOLE_ERROR": "Console error (see console logs)",
     "EVENTS_CONNECTION_ERROR": "Event bus connection error (see console logs)",
     "TRANSLATION_ERROR": "Translations error (see console logs)"
-  }
+  },
+  "pressEnterToSend": "Press Enter to send",
+  "sending": "Sending"
 }
