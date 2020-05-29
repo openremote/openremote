@@ -155,14 +155,19 @@ export function getAttributeValueTemplate(
             };
 
             const setValue = (value: any) => {
+                iconTrailing = "send-clock";
+                helperText = i18next.t("sending");
+
                 if (inputType === InputType.JSON && value !== null && typeof(value) !== "string") {
                     if (typeof(value) === "string") {
                         value = JSON.parse(value);
                     }
                 }
-                
+
                 const response = manager.rest.api.AssetResource.writeAttributeValue(assetId!, attribute.name!, value)
                     .then(() => helperText = i18next.t("updatedWithDate", { date: new Date() } as i18next.TOptions<i18next.InitOptions>))
+                    .catch(() => helperText = i18next.t("errorOccurred"))
+                    .finally(() => iconTrailing = "send");
 
                 valueChangedCallback(value);
             };
