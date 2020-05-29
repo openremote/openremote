@@ -130,7 +130,7 @@ export function getAttributeValueTemplate(
             options = Util.getMetaValue(MetaItemType.ALLOWED_VALUES, attribute, attributeDescriptor);
             currentValue = undefined;
             hasButton = inputType === InputType.TEXT || inputType === InputType.NUMBER;
-            helperText = i18next.t("updatedWithDate", { date: new Date(attribute.valueTimestamp!) } as i18next.TOptions<i18next.InitOptions>);
+            helperText = i18next.t("updatedWithDate", { date: new Date(attribute.valueTimestamp!).toLocaleString() } as i18next.TOptions<i18next.InitOptions>);
             helperPersistent = true;
             iconTrailing = "send";
             if(unit) {
@@ -165,7 +165,7 @@ export function getAttributeValueTemplate(
                 }
 
                 const response = manager.rest.api.AssetResource.writeAttributeValue(assetId!, attribute.name!, value)
-                    .then(() => helperText = i18next.t("updatedWithDate", { date: new Date() } as i18next.TOptions<i18next.InitOptions>))
+                    .then(() => helperText = i18next.t("updatedWithDate", { date: new Date().toLocaleString() } as i18next.TOptions<i18next.InitOptions>))
                     .catch(() => helperText = i18next.t("errorOccurred"))
                     .finally(() => iconTrailing = "send");
 
