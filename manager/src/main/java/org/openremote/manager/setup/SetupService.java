@@ -53,7 +53,7 @@ public class SetupService implements ContainerService {
 
     @Override
     public int getPriority() {
-        return IdentityService.PRIORITY + 10; // Start just after identity service
+        return PersistenceService.PRIORITY + 10; // Start just after persistence service
     }
 
     @Override
