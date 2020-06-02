@@ -212,15 +212,18 @@ public class PersistenceService implements ContainerService {
 
     protected void prepareSchemas(String connectionUrl, String databaseUsername, String databasePassword) {
         LOG.fine("Preparing database schema");
-        flyway = new Flyway();
-        flyway.setDataSource(connectionUrl, databaseUsername, databasePassword);
         List<String> locations = new ArrayList<>();
         List<String> schemas = new ArrayList<>();
         schemas.add(DEFAULT_SCHEMA_NAME);
         appendSchemas(schemas);
         appendSchemaLocations(locations);
-        flyway.setSchemas(schemas.toArray(new String[0]));
-        flyway.setLocations(locations.toArray(new String[0]));
+
+        flyway = Flyway.configure()
+            .dataSource(connectionUrl, databaseUsername, databasePassword)
+            .schemas(schemas.toArray(new String[0]))
+            .locations(locations.toArray(new String[0]))
+            .baselineOnMigrate(true)
+            .load();
 
         if (forceClean) {
             LOG.warning("!!! Cleaning database !!!");
