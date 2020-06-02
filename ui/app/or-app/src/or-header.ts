@@ -1,5 +1,6 @@
 import {customElement, html, LitElement, property, query, TemplateResult, css, unsafeCSS} from "lit-element";
 import {until} from "lit-html/directives/until";
+import { ifDefined } from 'lit-html/directives/if-defined.js';
 import i18next from "i18next";
 import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor4, DefaultBoxShadowBottom, DefaultHeaderHeight} from "@openremote/core";
 import manager from "@openremote/core";
@@ -359,7 +360,7 @@ class OrHeader extends LitElement {
                         <div id="mobile-bottom">
                                 ${secondaryItems.filter(option => !option.hideMobile && (!option.roles || option.roles.some(r => manager.hasRole(r)))).map(headerItem => {
                                     return html`
-                                        <a class="menu-item" href="${headerItem.href}" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
+                                        <a class="menu-item" href="${ifDefined(headerItem.href)}" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
                                     `
                                 })}
                         </div>` : ``}

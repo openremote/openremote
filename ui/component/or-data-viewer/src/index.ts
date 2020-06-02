@@ -204,13 +204,13 @@ export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitEleme
 
         if (panelConfig && panelConfig.type === "chart") {
             content = html`
-                <or-chart id="chart" .config="${this.config.chartConfig}"></or-chart>
+                <or-chart id="chart" panelName="${panelName}" .config="${this.config.chartConfig}"></or-chart>
             `;
         }
 
         if (panelConfig && panelConfig.type === "kpi") {
             content = html`
-                <or-attribute-card .config="${this.config.chartConfig}"></or-attribute-card>
+                <or-attribute-card panelName="${panelName}" .config="${this.config.chartConfig}"></or-attribute-card>
             `;
         }
         return content;

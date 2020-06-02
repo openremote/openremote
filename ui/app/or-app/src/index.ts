@@ -375,7 +375,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         }
         return html`
             ${unsafeHTML(this._config.styles ? this._config.styles.strings : ``)}
-            <or-header .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
+            <or-header logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
             
             <!-- Main content -->
             <main role="main" class="main-content d-none"></main>
