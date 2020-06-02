@@ -25,10 +25,16 @@ class MqttTest extends Specification implements ManagerContainerTrait {
 
         given: "the container environment is started"
         def mqttBrokerServiceAttributeEventCalls = 0
+        def mqttBrokerServiceAttributeValueCalls = 0
         def spyMqttBrokerService = Spy(MqttBrokerService) {
             sendAttributeEvent(_ as String, _ as AttributeEvent) >> {
                 clientId, attributeEvent ->
                     mqttBrokerServiceAttributeEventCalls++
+                    callRealMethod()
+            }
+            sendAttributeValue(_ as String, _ as AttributeEvent) >> {
+                clientId, attributeEvent ->
+                    mqttBrokerServiceAttributeValueCalls++
                     callRealMethod()
             }
         }
@@ -193,7 +199,7 @@ class MqttTest extends Specification implements ManagerContainerTrait {
         def attributeEvent = new AttributeEvent(managerDemoSetup.apartment1HallwayId, "motionSensor", Values.create(50))
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
-        then: "A publish message should be sent"
+        then: "A publish event message should be sent"
         conditions.eventually {
             assert mqttBrokerServiceAttributeEventCalls == 1
         }
@@ -202,7 +208,7 @@ class MqttTest extends Specification implements ManagerContainerTrait {
         attributeEvent = new AttributeEvent(managerDemoSetup.apartment1HallwayId, "presenceDetected", Values.create(true))
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
-        then: "A second publish message should be sent"
+        then: "A second publish event message should be sent"
         conditions.eventually {
             assert mqttBrokerServiceAttributeEventCalls == 2
         }
@@ -271,9 +277,43 @@ class MqttTest extends Specification implements ManagerContainerTrait {
         attributeEvent = new AttributeEvent(managerDemoSetup.apartment1HallwayId, "presenceDetected", Values.create(false))
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
-        then: "No publish message should be sent"
+        then: "No publish event message should be sent"
         conditions.eventually {
             assert mqttBrokerServiceAttributeEventCalls == 3
+        }
+
+        when: "a mqtt client subscribes to an asset attribute"
+        topic = "assets/" + managerDemoSetup.apartment1HallwayId + "/motionSensor"
+        remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
+
+        client
+        // SUBSCRIBE
+                .write(0x82) // MQTT Control Packet type(8) with QoS level 1
+                .write(remainingLength.byteValue()) // Remaining Length
+                .write(0x00, 0x10) // MessageId
+
+        // Payload
+                .write(0x00, topic.size().byteValue()) // Topic Length
+                .write(topic) // Topic
+                .write(0x01) // QoS level 1
+                .flush()
+
+        and: "that attribute changed"
+        attributeEvent = new AttributeEvent(managerDemoSetup.apartment1HallwayId, "motionSensor", Values.create(30))
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        then: "A publish value message should be sent"
+        conditions.eventually {
+            assert mqttBrokerServiceAttributeValueCalls == 1
+        }
+
+        when: "Another asset attribute changed without any subscriptions on that attribute"
+        attributeEvent = new AttributeEvent(managerDemoSetup.apartment1HallwayId, "presenceDetected", Values.create(true))
+        assetProcessingService.sendAttributeEvent(attributeEvent)
+
+        then: "No publish value message should be sent"
+        conditions.eventually {
+            assert mqttBrokerServiceAttributeValueCalls == 1
         }
 
         cleanup: "the server should be stopped"

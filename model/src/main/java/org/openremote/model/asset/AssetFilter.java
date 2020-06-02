@@ -25,6 +25,7 @@ import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.TextUtil;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<T> {
 
@@ -33,6 +34,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
     protected String[] assetIds;
     protected String realm;
     protected String[] parentIds;
+    protected String[] attributeNames;
 
     public AssetFilter() {
     }
@@ -45,7 +47,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
         return assetIds;
     }
 
-    public AssetFilter<T> setAssetIds(String...assetIds) {
+    public AssetFilter<T> setAssetIds(String... assetIds) {
         this.assetIds = assetIds;
         return this;
     }
@@ -63,8 +65,17 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
         return parentIds;
     }
 
-    public AssetFilter<T> setParentIds(String...parentIds) {
+    public AssetFilter<T> setParentIds(String... parentIds) {
         this.parentIds = parentIds;
+        return this;
+    }
+
+    public String[] getAttributeNames() {
+        return attributeNames;
+    }
+
+    public AssetFilter<T> setAttributeNames(String... attributeNames) {
+        this.attributeNames = attributeNames;
         return this;
     }
 
@@ -94,6 +105,11 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
             }
         }
 
+        if (attributeNames != null && attributeNames.length > 0) {
+            List<String> eventAttributeNames = Arrays.asList(event.getAttributeNames());
+            return Arrays.stream(attributeNames).anyMatch(eventAttributeNames::contains);
+        }
+
         return true;
     }
 
@@ -103,6 +119,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
             "assetIds='" + (assetIds != null ? Arrays.toString(assetIds) : "") + '\'' +
             ", parentIds='" + (parentIds != null ? Arrays.toString(parentIds) : "") + '\'' +
             ", realm='" + realm + '\'' +
+            ", attributeNames='" + (attributeNames != null ? Arrays.toString(attributeNames) : "") + '\'' +
             '}';
     }
 }

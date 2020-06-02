@@ -67,6 +67,11 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
         return asset.parentId;
     }
 
+    @Override
+    public String[] getAttributeNames() {
+        return updatedProperties;
+    }
+
     public Cause getCause() {
         return cause;
     }
