@@ -621,7 +621,6 @@ export class OrAttributeCard extends LitElement {
         const thisMoment = moment(this.now);
 
         this.asset = await this.getAssetById(this.assetId);
-        console.log(this.asset);
         this.currentPeriod = {
             start: thisMoment.startOf(this.period).toDate().getTime(),
             end: thisMoment.endOf(this.period).toDate().getTime()
