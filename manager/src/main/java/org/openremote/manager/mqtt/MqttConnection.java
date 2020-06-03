@@ -15,6 +15,7 @@ public class MqttConnection {
     protected final byte[] password;
     protected final Map<String, String> assetSubscriptions;
     protected final Map<AttributeRef, String> assetAttributeSubscriptions;
+    protected final Map<AttributeRef, String> assetAttributeValueSubscriptions;
     protected String accessToken;
     protected int subscriptionId;
 
@@ -30,6 +31,7 @@ public class MqttConnection {
         this.password = password;
         this.assetSubscriptions = new HashMap<>();
         this.assetAttributeSubscriptions = new HashMap<>();
+        assetAttributeValueSubscriptions = new HashMap<>();
         this.subscriptionId = 0;
     }
 

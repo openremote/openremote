@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.manager.mqtt.MqttBrokerService.ASSET_ATTRIBUTE_VALUE_TOPIC;
 import static org.openremote.manager.mqtt.MqttBrokerService.TOPIC_SEPARATOR;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
@@ -128,14 +129,22 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
             String[] topicParts = interceptSubscribeMessage.getTopicFilter().split(TOPIC_SEPARATOR);
             String assetId = topicParts[1];
             AttributeRef attributeRef = null;
-            if (topicParts.length == 3) { //attribute specific
+            boolean isValueSubscription = false;
+            if (topicParts.length > 2) { //attribute specific
                 attributeRef = new AttributeRef(assetId, topicParts[2]);
+            }
+            if (topicParts.length == 4 && topicParts[3].equals(ASSET_ATTRIBUTE_VALUE_TOPIC)) {
+                isValueSubscription = true;
             }
             String subscriptionId;
             if (attributeRef == null) {
                 subscriptionId = connection.assetSubscriptions.remove(assetId);
             } else {
-                subscriptionId = connection.assetAttributeSubscriptions.remove(attributeRef);
+                if (isValueSubscription) {
+                    subscriptionId = connection.assetAttributeValueSubscriptions.remove(attributeRef);
+                } else {
+                    subscriptionId = connection.assetAttributeSubscriptions.remove(attributeRef);
+                }
             }
             if (subscriptionId != null) { //renew subscription
                 RenewEventSubscriptions renewEventSubscriptions = new RenewEventSubscriptions(new String[]{subscriptionId});
@@ -153,7 +162,11 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                     connection.assetSubscriptions.put(assetId, subscription.getSubscriptionId());
                 } else {
                     attributeAssetFilter.setAttributeNames(attributeRef.getAttributeName());
-                    connection.assetAttributeSubscriptions.put(attributeRef, subscription.getSubscriptionId());
+                    if (isValueSubscription) {
+                        connection.assetAttributeValueSubscriptions.put(attributeRef, subscription.getSubscriptionId());
+                    } else {
+                        connection.assetAttributeSubscriptions.put(attributeRef, subscription.getSubscriptionId());
+                    }
                 }
 
                 Map<String, Object> headers = prepareHeaders(connection);
@@ -171,8 +184,13 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
             String[] topicParts = interceptUnsubscribeMessage.getTopicFilter().split(TOPIC_SEPARATOR);
             String assetId = topicParts[1];
             String subscriptionId;
-            if (topicParts.length == 3) { //attribute specific
-                subscriptionId = connection.assetAttributeSubscriptions.remove(new AttributeRef(assetId, topicParts[2]));
+
+            if (topicParts.length > 2) { //attribute specific
+                if (topicParts.length == 4 && topicParts[3].equals(ASSET_ATTRIBUTE_VALUE_TOPIC)) {
+                    subscriptionId = connection.assetAttributeValueSubscriptions.remove(new AttributeRef(assetId, topicParts[2]));
+                } else {
+                    subscriptionId = connection.assetAttributeSubscriptions.remove(new AttributeRef(assetId, topicParts[2]));
+                }
             } else {
                 subscriptionId = connection.assetSubscriptions.remove(assetId);
             }
@@ -191,8 +209,12 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
             String[] topicParts = msg.getTopicName().split(TOPIC_SEPARATOR);
             String assetId = topicParts[1];
             AttributeRef attributeRef = null;
-            if (topicParts.length == 3) { //attribute specific
+            boolean isValueSubscription = false;
+            if (topicParts.length > 2) { //attribute specific
                 attributeRef = new AttributeRef(assetId, topicParts[2]);
+            }
+            if (topicParts.length == 4 && topicParts[3].equals(ASSET_ATTRIBUTE_VALUE_TOPIC)) {
+                isValueSubscription = true;
             }
             if (attributeRef == null) {
                 if (connection.assetSubscriptions.containsKey(assetId)) {
@@ -204,11 +226,19 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                     });
                 }
             } else {
-                if (connection.assetAttributeSubscriptions.containsKey(attributeRef)) {
+                if (isValueSubscription && connection.assetAttributeValueSubscriptions.containsKey(attributeRef)) {
                     String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
                     Map<String, Object> headers = prepareHeaders(connection);
                     AttributeEvent attributeEvent = new AttributeEvent(assetId, attributeRef.getAttributeName(), Values.create(payloadContent));
                     messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
+                } else if (connection.assetAttributeSubscriptions.containsKey(attributeRef)) {
+                    String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
+                    String attributeName = attributeRef.getAttributeName();
+                    Values.parse(payloadContent).flatMap(Values::getObject).ifPresent(objectValue -> {
+                        Map<String, Object> headers = prepareHeaders(connection);
+                        AttributeEvent attributeEvent = new AttributeEvent(assetId, attributeName, objectValue.get(objectValue.keys()[0]).orElse(null));
+                        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
+                    });
                 }
             }
         }

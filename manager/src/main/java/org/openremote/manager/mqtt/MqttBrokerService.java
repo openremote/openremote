@@ -61,6 +61,7 @@ public class MqttBrokerService implements ContainerService {
 
     public static final String ASSETS_TOPIC = "assets";
     public static final String TOPIC_SEPARATOR = "/";
+    public static final String ASSET_ATTRIBUTE_VALUE_TOPIC = "value";
 
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected ClientEventService clientEventService;
@@ -115,9 +116,10 @@ public class MqttBrokerService implements ContainerService {
                                     .forEach(event -> {
                                         MqttConnection mqttConnection = mqttConnectionMap.get(sessionKey);
                                         if (mqttConnection != null) {
-                                            if (mqttConnection.assetSubscriptions.containsKey(event.getEntityId())) {
+                                            if (mqttConnection.assetSubscriptions.containsKey(event.getEntityId()) || mqttConnection.assetAttributeSubscriptions.containsKey(event.getAttributeRef())) {
                                                 sendAttributeEvent(sessionKey, event);
-                                            } else if (mqttConnection.assetAttributeSubscriptions.containsKey(event.getAttributeRef())) {
+                                            }
+                                            if (mqttConnection.assetAttributeValueSubscriptions.containsKey(event.getAttributeRef())) {
                                                 sendAttributeValue(sessionKey, event);
                                             }
                                         }

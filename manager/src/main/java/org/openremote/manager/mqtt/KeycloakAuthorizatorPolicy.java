@@ -26,8 +26,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.openremote.manager.mqtt.MqttBrokerService.ASSETS_TOPIC;
-import static org.openremote.manager.mqtt.MqttBrokerService.TOPIC_SEPARATOR;
+import static org.openremote.manager.mqtt.MqttBrokerService.*;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
 public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
@@ -75,6 +74,11 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
 
         if (!topic.headToken().toString().equals(ASSETS_TOPIC)) {
             LOG.info("Topic should have the following format: assets/{assetId}(optional: /{attributeName})");
+            return false;
+        }
+
+        if(topic.getTokens().size() == 4 && topic.getTokens().stream().noneMatch(token -> token.toString().equals(ASSET_ATTRIBUTE_VALUE_TOPIC))) {
+            LOG.info("Topic for raw values should end with '" + ASSET_ATTRIBUTE_VALUE_TOPIC + "'");
             return false;
         }
 
