@@ -1,4 +1,5 @@
-# OpenRemote v3
+# OpenRemote v3 [![CI/CD pipeline](https://gitlab.com/openremote/openremote/badges/master/pipeline.svg)](https://gitlab.com/openremote/openremote/pipelines)
+
 
 [Source](https://github.com/openremote/openremote) **·** [Documentation](https://github.com/openremote/openremote/wiki) **·** [Community](https://groups.google.com/forum/#!forum/openremotecommunity) **·** [Issues](https://github.com/openremote/openremote/issues) **·** [Docker Images](https://hub.docker.com/u/openremote/) **·** [OpenRemote Inc.](https://openremote.io)
 

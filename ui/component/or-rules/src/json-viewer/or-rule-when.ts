@@ -7,7 +7,7 @@ import i18next from "i18next";
 import {InputType} from "@openremote/or-input";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {getWhenTypesMenu, updateRuleConditionType} from "./or-rule-condition";
-import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import { translate } from "@openremote/or-translate";
 
 enum ResetOption {

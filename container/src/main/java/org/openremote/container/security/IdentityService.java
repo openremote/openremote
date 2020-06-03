@@ -32,7 +32,7 @@ import static org.openremote.container.util.MapAccess.*;
 
 public abstract class IdentityService implements ContainerService {
 
-    public static final int PRIORITY = PersistenceService.PRIORITY + 10; // Run after persistence setup
+    public static final int PRIORITY = PersistenceService.PRIORITY - 10; // Run before persistence service
     private static final Logger LOG = Logger.getLogger(IdentityService.class.getName());
 
     public static final String IDENTITY_NETWORK_SECURE = "IDENTITY_NETWORK_SECURE";

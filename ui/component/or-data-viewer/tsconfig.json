@@ -14,6 +14,7 @@
     { "path": "../model" },
     { "path": "../or-chart" },
     { "path": "../or-panel" },
-    { "path": "../or-translate" }
+    { "path": "../or-translate" },
+    { "path": "../or-attribute-card" }
   ]
 }

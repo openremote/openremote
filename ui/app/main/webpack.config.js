@@ -88,18 +88,17 @@ module.exports = (env, argv) => {
                 ignore: "!*.js"
             },
             {
-                from: "./images",
-                to: "images"
-            },
-            {
-                from: "./locales",
+                from: path.join(path.dirname(require.resolve("@openremote/or-app/package.json")), "locales"),
                 to: "locales"
             },
             {
-                from: ".htaccess",
-                to: ".htaccess",
-                toType: 'file'
+                from: "./images",
+                to: "images"
             }
+            // {
+            //     from: "./locales",
+            //     to: "locales"
+            // }
         ])
     ];
 

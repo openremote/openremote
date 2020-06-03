@@ -19,7 +19,8 @@
  */
 package org.openremote.manager.setup.database;
 
-import org.flywaydb.core.api.migration.jdbc.JdbcMigration;
+import org.flywaydb.core.api.migration.BaseJavaMigration;
+import org.flywaydb.core.api.migration.Context;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,12 +28,12 @@ import java.sql.PreparedStatement;
 /**
  * TODO An example in the right place
  */
-public class Disabled_V20171031_03__Migration { // implements JdbcMigration {
+public class Disabled_V20171031_03__Migration { //extends BaseJavaMigration {
 
     // @Override
-    public void migrate(Connection connection) throws Exception {
+    public void migrate(Context context) throws Exception {
         /* TODO: Enable to migrate beyond 3.0.0 when SQL files are not good enough
-        try (PreparedStatement statement = connection.prepareStatement(
+        try (PreparedStatement statement = context.getConnection().prepareStatement(
             "alter table openremote.ASSET add column TEST_COLUMN varchar(50)"
         )) {
             statement.execute();

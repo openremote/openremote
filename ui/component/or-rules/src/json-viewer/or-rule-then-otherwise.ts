@@ -9,7 +9,7 @@ import {
     JsonRule,
     RuleActionUnion,
     RuleRecurrence,
-    RuleRecurrenceScope
+    RuleActionNotification
 } from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-input";
@@ -27,11 +27,13 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
     let addAssetTypes = true;
     let addWait = true;
     let addNotification = true;
+    let addPushNotification = true;
 
     if (config && config.controls && config.controls.allowedActionTypes) {
         addAssetTypes = config.controls.allowedActionTypes.indexOf(ActionType.ATTRIBUTE) >= 0;
         addWait = config.controls.allowedActionTypes.indexOf(ActionType.WAIT) >= 0;
         addNotification = config.controls.allowedActionTypes.indexOf(ActionType.NOTIFICATION) >= 0;
+        addPushNotification = config.controls.allowedActionTypes.indexOf(ActionType.PUSH_NOTIFICATION) >= 0;
     }
 
 
@@ -55,9 +57,18 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
 
     if (addNotification) {
         menu.push({
-            text: i18next.t("notification"),
+            text: i18next.t("email"),
             icon: "email",
             value: ActionType.NOTIFICATION,
+            styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
+        } as MenuItem);
+    }
+    
+    if (addPushNotification) {
+        menu.push({
+            text: i18next.t("push-notification"),
+            icon: "cellphone-message",
+            value: ActionType.PUSH_NOTIFICATION,
             styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
         } as MenuItem);
     }
@@ -262,8 +273,14 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                         buttonColor = WAIT_COLOR;
                         break;
                     case ActionType.NOTIFICATION:
-                        buttonIcon = "email";
-                        buttonColor = NOTIFICATION_COLOR;
+                        action = action as RuleActionNotification
+                        if(type === "push") {
+                            buttonIcon = "cellphone-message";
+                            buttonColor = NOTIFICATION_COLOR;
+                        } else {
+                            buttonIcon = "email";
+                            buttonColor = NOTIFICATION_COLOR;
+                        }
                         break;
                     default:
                         const ad = AssetModelUtil.getAssetDescriptor(type);
@@ -295,8 +312,12 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 case ActionType.WAIT:
                     template = html`<span>WAIT NOT IMPLEMENTED</span>`;
                     break;
+                case ActionType.PUSH_NOTIFICATION:
+                    template = html`<or-rule-action-notification id="push-notification" .action="${action}" .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}"></or-rule-action-notification>`;
+                    break;
                 case ActionType.NOTIFICATION:
-                    template = html`<or-rule-action-notification id="rule-notification" .action="${action}" .config="${this.config}" .readonly="${this.readonly}"></or-rule-action-notification>`;
+                case "email":
+                    template = html`<or-rule-action-notification id="email-notification" .action="${action}" .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}"></or-rule-action-notification>`;
                     break;
                 default:
                     template = html`<or-rule-action-attribute .action="${action}" .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}"></or-rule-action-attribute>`;
@@ -346,7 +367,8 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             case "wait":
                 break;
             case "notification":
-                return action.action;
+                const type = action.notification && action.notification.message && action.notification.message.type ? action.notification.message.type : action.action;
+                return type;
                 break;
             case "write-attribute":
             case "update-attribute":
@@ -391,7 +413,6 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
     protected setActionType(actions: RuleActionUnion[], action: RuleActionUnion, value: string) {
 
         action.target = undefined;
-
         switch (action.action) {
             case "wait":
                 action.millis = undefined;
@@ -415,7 +436,25 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         if (value === ActionType.WAIT) {
             action.action = "wait";
         } else if (value === ActionType.NOTIFICATION) {
+            action = action as RuleActionNotification;
             action.action = "notification";
+            action.notification = {
+                message: {
+                    type: "email",
+                    subject: "%RULESET_NAME%",
+                    html: "%TRIGGER_ASSETS%"
+                }
+            };
+        }  else if (value === ActionType.PUSH_NOTIFICATION) {
+            action = action as RuleActionNotification;
+            action.action = "notification";
+            action.notification = {
+                message: {
+                    type: "push",
+                    title: "%RULESET_NAME%",
+                    body: "%TRIGGER_ASSETS%"
+                }
+            };
         } else {
             action.action = "write-attribute";
             action.target = {

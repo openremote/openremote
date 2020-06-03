@@ -113,8 +113,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         }
         try {
             identityService.getIdentityProvider().createUser(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, user
-            );
+                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, user,
+                null);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (WebApplicationException ex) {

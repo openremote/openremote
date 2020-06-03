@@ -19,27 +19,66 @@
  */
 package org.openremote.manager.security;
 
+import org.hibernate.Session;
 import org.openremote.container.Container;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.basic.BasicIdentityProvider;
+import org.openremote.container.security.basic.PasswordStorage;
 import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.manager.persistence.ManagerPersistenceService;
-import org.openremote.model.Constants;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.*;
+import org.openremote.model.util.TextUtil;
 
+import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+import java.util.logging.Logger;
+
+import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
 
 public class ManagerBasicIdentityProvider extends BasicIdentityProvider implements ManagerIdentityProvider {
 
-    final protected Tenant masterTenant = new Tenant(Constants.MASTER_REALM, Constants.MASTER_REALM, "Master", true);
+    private static final Logger LOG = Logger.getLogger(ManagerBasicIdentityProvider.class.getName());
+    final protected ManagerIdentityService identityService;
+    final protected String adminPassword;
 
     public ManagerBasicIdentityProvider(Container container) {
         super(container.getService(ManagerPersistenceService.class));
+        this.identityService = container.getService(ManagerIdentityService.class);
+        adminPassword = container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT);
+    }
+
+    @Override
+    public void start() {
+        super.start();
+
+        // Create master tenant and admin user
+        if (!tenantExists(MASTER_REALM)) {
+            LOG.info("Creating master tenant and admin user");
+
+            // Configure the master realm
+            persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
+                String sql = "insert into PUBLIC.REALM(ID, NAME, ENABLED) values ('master', 'master', true)";
+                PreparedStatement st = connection.prepareStatement(sql);
+                st.executeUpdate();
+                st.close();
+
+                sql = "insert into PUBLIC.REALM_ATTRIBUTE(REALM_ID, NAME, VALUE) values ('master', 'displayName', 'Master')";
+                st = connection.prepareStatement(sql);
+                st.executeUpdate();
+                st.close();
+            }));
+
+            User adminUser = new User();
+            adminUser.setUsername(MASTER_REALM_ADMIN_USER);
+            createUser(null, MASTER_REALM, adminUser, adminPassword);
+        }
     }
 
     @Override
@@ -49,62 +88,95 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
 
     @Override
     public User[] getUsers(ClientRequestInfo clientRequestInfo, String realm) {
-        return new User[0];
+        return getUsers(new UserQuery().tenant(new TenantPredicate(realm)));
     }
 
     @Override
     public User[] getUsers(List<String> userIds) {
-        return new User[0];
+        return getUsers(new UserQuery().ids(userIds.toArray(new String[0])));
     }
 
     @Override
     public User[] getUsers(UserQuery userQuery) {
-        return new User[0];
+        return ManagerIdentityProvider.getUsersFromDb(persistenceService, userQuery);
     }
 
     @Override
     public User getUser(ClientRequestInfo clientRequestInfo, String realm, String userId) {
-        return null;
+        return ManagerIdentityProvider.getUserByIdFromDb(persistenceService, realm, userId);
     }
 
     @Override
-    public User getUser(String realm, String userName) {
-        return null;
+    public User getUser(String realm, String username) {
+        return ManagerIdentityProvider.getUserByUsernameFromDb(persistenceService, realm, username);
     }
 
     @Override
     public void updateUser(ClientRequestInfo clientRequestInfo, String realm, String userId, User user) {
-
+        LOG.info("Updating user: " + user);
+        persistenceService.doTransaction(em -> em.merge(user));
     }
 
     @Override
-    public void createUser(ClientRequestInfo clientRequestInfo, String realm, User user) {
+    public void createUser(ClientRequestInfo clientRequestInfo, String realm, User user, String password) {
+        if (!realm.equals(MASTER_REALM)) {
+            throw new UnsupportedOperationException("This provider does not support realms other than master");
+        }
 
+        if (TextUtil.isNullOrEmpty(password)) {
+            throw new IllegalStateException("Password must be specified for basic identity provider");
+        }
+
+        LOG.info("Creating user: " + user);
+        persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
+            String sql = "insert into PUBLIC.USER_ENTITY(ID, REALM_ID, USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, EMAIL, ENABLED) values (?, ?, ?, ?, ?, ?, ?, ?)";
+            try (PreparedStatement st = connection.prepareStatement(sql)) {
+                st.setString(1, UUID.randomUUID().toString());
+                st.setString(2, MASTER_REALM); // For master REALM NAME and ID are the same
+                st.setString(3, user.getUsername());
+                st.setString(4, PasswordStorage.createHash(password));
+                st.setString(5, user.getFirstName());
+                st.setString(6, user.getLastName());
+                st.setString(7, user.getEmail());
+                st.setBoolean(8, user.getEnabled() != null ? user.getEnabled() : true);
+                st.executeUpdate();
+            }
+        }));
     }
 
     @Override
     public void deleteUser(ClientRequestInfo clientRequestInfo, String realm, String userId) {
-
+        LOG.info("Deleting user: " + userId);
+        persistenceService.doTransaction(em -> {
+            User user = em.find(User.class, userId);
+            if (user != null) {
+                em.remove(user);
+            } else {
+                LOG.info("Cannot delete user as ID not found: " + userId);
+            }
+        });
     }
 
     @Override
     public void resetPassword(ClientRequestInfo clientRequestInfo, String realm, String userId, Credential credential) {
-
+        throw new UnsupportedOperationException("This provider does not support password reset");
     }
 
     @Override
     public Role[] getRoles(ClientRequestInfo clientRequestInfo, String realm, String userId) {
-        return new Role[0];
+        return ClientRole.ALL_ROLES.stream()
+            .map(role -> new Role(UUID.randomUUID().toString(), role, false, true))
+            .toArray(Role[]::new);
     }
 
     @Override
     public void updateRoles(ClientRequestInfo clientRequestInfo, String realm, String userId, Role[] roles) {
-
+        throw new UnsupportedOperationException("This provider does not support updating roles");
     }
 
     @Override
     public boolean isMasterRealmAdmin(ClientRequestInfo clientRequestInfo, String userId) {
-        return false;
+        return true;
     }
 
     @Override
@@ -114,23 +186,22 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
 
     @Override
     public boolean isUserInTenant(String userId, String realm) {
-        return true;
+        return ManagerIdentityProvider.userInTenantFromDb(persistenceService, userId, realm);
     }
 
     @Override
     public Tenant[] getTenants() {
-        return new Tenant[]{masterTenant};
+        return ManagerIdentityProvider.getTenantsFromDb(persistenceService);
     }
 
     @Override
     public Tenant getTenant(String realm) {
-        return Objects.equals(realm, Constants.MASTER_REALM) ? masterTenant : null;
+        return ManagerIdentityProvider.getTenantFromDb(persistenceService, realm);
     }
 
     @Override
     public void updateTenant(ClientRequestInfo clientRequestInfo, String realm, Tenant tenant) {
-        throw new UnsupportedOperationException("This provider does not support multiple tenants");
-
+        throw new UnsupportedOperationException("This provider does not support modifying tenants");
     }
 
     @Override
@@ -150,17 +221,17 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
 
     @Override
     public boolean isTenantActiveAndAccessible(AuthContext authContext, Tenant tenant) {
-        return Objects.equals(tenant.getId(), Constants.MASTER_REALM);
+        return Objects.equals(tenant.getId(), MASTER_REALM);
     }
 
     @Override
     public boolean isTenantActiveAndAccessible(AuthContext authContext, String realm) {
-        return Objects.equals(realm, Constants.MASTER_REALM);
+        return Objects.equals(realm, MASTER_REALM);
     }
 
     @Override
     public boolean tenantExists(String realm) {
-        return Objects.equals(realm, Constants.MASTER_REALM);
+        return ManagerIdentityProvider.tenantExistsFromDb(persistenceService, realm);
     }
 
     @Override

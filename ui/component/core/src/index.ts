@@ -15,7 +15,6 @@ import {
 } from "@openremote/model";
 import * as Util from "./util";
 import orIconSet from "./or-icon-set";
-import {TemplateResult} from "lit-element";
 
 // Re-exports
 export {Util};
@@ -48,12 +47,12 @@ export declare type Keycloak = {
 }
 
 export enum ORError {
-    NONE = "NONE",
     MANAGER_FAILED_TO_LOAD = "MANAGER_FAILED_TO_LOAD",
     KEYCLOAK_FAILED_TO_LOAD = "KEYCLOAK_FAILED_TO_LOAD",
     AUTH_TYPE_UNSUPPORTED = "AUTH_TYPE_UNSUPPORTED",
     CONSOLE_ERROR = "CONSOLE_INIT_ERROR",
-    EVENTS_CONNECTION_ERROR = "EVENTS_CONNECTION_ERROR"
+    EVENTS_CONNECTION_ERROR = "EVENTS_CONNECTION_ERROR",
+    TRANSLATION_ERROR = "TRANSLATION_ERROR"
 }
 
 export enum Auth {
@@ -90,17 +89,6 @@ export interface LoginOptions {
     credentials?: Credentials;
 }
 
-export interface RealmConfig {
-    appTitle?: string;
-    colors?: TemplateResult;
-    logo?: HTMLTemplateElement | string;
-    logoMobile?: HTMLTemplateElement | string;
-    language?: string;
-}
-export interface RealmConfigs {
-    [key: string]: RealmConfig
-}
-
 export interface ManagerConfig {
     managerUrl: string;
     keycloakUrl?: string;
@@ -117,7 +105,6 @@ export interface ManagerConfig {
     loadDescriptors?: boolean;
     loadTranslations?: string[];
     translationsLoadPath?: string;
-    realmConfigs?: RealmConfigs;
     configureTranslationsOptions?: (i18next: i18next.InitOptions) => void;
 }
 
@@ -363,10 +350,6 @@ export class Manager implements EventProviderFactory {
         return this._authenticated;
     }
 
-    get initialised() {
-        return this._config != null;
-    }
-
     get ready() {
         return this._ready;
     }
@@ -398,7 +381,7 @@ export class Manager implements EventProviderFactory {
     }
 
     get isError() {
-        return this._error != null && this._error !== ORError.NONE;
+        return !!this._error;
     }
 
     get connectionStatus() {
@@ -431,6 +414,9 @@ export class Manager implements EventProviderFactory {
     }
 
     set displayRealm(realm: string) {
+        if (!this.isSuperUser()) {
+            return;
+        }
         this._displayRealm = realm;
         this._emitEvent(OREvent.DISPLAY_REALM_CHANGED);
     }
@@ -501,7 +487,7 @@ export class Manager implements EventProviderFactory {
         return normalisedConfig;
     }
 
-    private _error: ORError = ORError.NONE;
+    private _error?: ORError;
     private _config!: ManagerConfig;
     private _authenticated: boolean = false;
     private _ready: boolean = false;
@@ -516,7 +502,7 @@ export class Manager implements EventProviderFactory {
     private _displayRealm?: string = "";
 
     public isManagerSameOrigin(): boolean {
-        if (!this.initialised) {
+        if (!this.ready) {
             return false;
         }
 
@@ -668,6 +654,7 @@ export class Manager implements EventProviderFactory {
             await i18next.use(sprintf).use(i18nextXhr).init(initOptions);
         } catch (e) {
             console.error(e);
+            this._setError(ORError.TRANSLATION_ERROR);
             return false;
         }
 
@@ -804,7 +791,7 @@ export class Manager implements EventProviderFactory {
     }
 
     public login(options?: LoginOptions) {
-        if (!this.initialised) {
+        if (!this.ready) {
             return;
         }
         switch (this._config.auth) {

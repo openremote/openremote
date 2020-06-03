@@ -327,7 +327,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             return;
         }
 
-        return html`           
+        return html`
             <div class=${classMap({"panel": true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
@@ -454,28 +454,31 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 `;
             }
 
-        } else if (panelConfig && panelConfig.type === "chart") {
+        } 
+        // DEPRECATED
+        // else if (panelConfig && panelConfig.type === "chart") {
 
-            let storeDataPointAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
+        //     let storeDataPointAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
           
-            let assetAttributes;
-            // let defaultAttrs = storeDataPointAttrs.filter((attr) => (defaultAttributes && defaultAttributes.indexOf(attr.name!) >= 0));
-            // if(defaultAttrs.length > 0){
-            //     assetAttributes = defaultAttrs;
-            // } else 
-            if(storeDataPointAttrs.length > 0) {
-                assetAttributes = storeDataPointAttrs;
-                assetAttributes.length = 1;
-            }
-            const assetList:Asset[] = [];
-            if(assetAttributes) {
-                assetAttributes.forEach(attr => assetList.push(asset));
-            }
-            content = html`
-                <or-chart id="chart" .config="${viewerConfig.chartConfig}" .activeAsset="${asset}"  activeAssetId="${asset.id}" .assets="${assetList ? assetList : [asset]}" .assetAttributes="${assetAttributes}"></or-chart>
-            `;
+        //     let assetAttributes;
+        //     // let defaultAttrs = storeDataPointAttrs.filter((attr) => (defaultAttributes && defaultAttributes.indexOf(attr.name!) >= 0));
+        //     // if(defaultAttrs.length > 0){
+        //     //     assetAttributes = defaultAttrs;
+        //     // } else 
+        //     if(storeDataPointAttrs.length > 0) {
+        //         assetAttributes = storeDataPointAttrs;
+        //         assetAttributes.length = 1;
+        //     }
+        //     const assetList:Asset[] = [];
+        //     if(assetAttributes) {
+        //         assetAttributes.forEach(attr => assetList.push(asset));
+        //     }
+        //     content = html`
+        //         <or-chart id="chart" panelName="${panelName}" .config="${viewerConfig.chartConfig}" .activeAsset="${asset}"  activeAssetId="${asset.id}" .assets="${assetList ? assetList : [asset]}" .assetAttributes="${assetAttributes}"></or-chart>
+        //     `;
 
-        } else if (panelConfig && panelConfig.type === "location") {
+        // } 
+        else if (panelConfig && panelConfig.type === "location") {
 
             const attribute = attrs.find((attr) => attr.name === AttributeType.LOCATION.attributeName);
             if (attribute) {

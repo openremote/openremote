@@ -20,7 +20,6 @@
 package org.openremote.manager.setup.builtin;
 
 import org.apache.commons.io.IOUtils;
-import org.openremote.agent.protocol.dmx.artnet.ArtnetClientProtocol;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.container.util.UniqueIdentifierGenerator;
@@ -28,7 +27,6 @@ import org.openremote.manager.security.UserConfiguration;
 import org.openremote.manager.setup.AbstractManagerSetup;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.geo.GeoJSONPoint;
@@ -38,7 +36,6 @@ import org.openremote.model.simulator.element.ColorSimulatorElement;
 import org.openremote.model.simulator.element.NumberSimulatorElement;
 import org.openremote.model.simulator.element.SwitchSimulatorElement;
 import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
 import java.nio.charset.StandardCharsets;
@@ -46,7 +43,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 import static org.openremote.model.asset.AssetType.*;
@@ -78,7 +74,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static GeoJSONPoint AREA_3_LOCATION = new GeoJSONPoint(5.487478, 51.446979);
     public static final String agentProtocolConfigName = "simulator123";
     public static final String thingLightToggleAttributeName = "light1Toggle";
-    //public static final String ARTNET_AREA_CONFIGURATION = "{'lights': [{'id': 0, 'universe': 0, 'amountOfLeds': 3}" + "]}";
 
     final protected boolean importDemoScenes;
     public String smartOfficeId;
@@ -267,53 +262,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         thing = assetStorageService.merge(thing);
         thingId = thing.getId();
 
-        //Art-Net Setup
-        //SETUP MAIN ARTNET-ASSET UNDER MASTER ASSET
-        Asset artNetAgent = new Asset();
-        artNetAgent.setRealm(masterTenant.getRealm());
-        artNetAgent.setName("ArtNet Agent");
-        artNetAgent.setType(AGENT);
-        artNetAgent.addAttributes(
-                initProtocolConfiguration(new AssetAttribute(ArtnetClientProtocol.agentProtocolConfigName), ArtnetClientProtocol.PROTOCOL_NAME)
-                        .addMeta(
-                                new MetaItem(
-                                        ArtnetClientProtocol.META_PROTOCOL_HOST,
-                                        Values.create("127.0.0.1")
-                                ),
-                                new MetaItem(
-                                        ArtnetClientProtocol.META_PROTOCOL_PORT,
-                                        Values.create(6454)
-                                )));
-        artNetAgent = assetStorageService.merge(artNetAgent);
-
-        //SETUP LIGHT-ASSETS UNDER AREA
-        for(int i = 0; i <= 1; i++) {
-            Asset artNetLight = new Asset();
-            artNetLight.setParent(artNetAgent);
-            artNetLight.setName("ArtNet Light " + i);
-            artNetLight.setType(THING);
-            List<AssetAttribute> artNetLightAttributes = Arrays.asList(
-                    new AssetAttribute("Id", NUMBER, Values.create(i)).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
-                    new AssetAttribute("GroupId", NUMBER, Values.create(0)).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
-                    new AssetAttribute("Universe", NUMBER, Values.create(0)).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
-                    new AssetAttribute("AmountOfLeds", NUMBER, Values.create(3)).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
-                    new AssetAttribute("RequiredValues", STRING, Values.create("g,r,b,w")).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
-                    new AssetAttribute("Values", OBJECT, Values.parseOrNull(ArtnetClientProtocol.ARTNET_DEFAULT_LIGHT_STATE)).addMeta(
-                            new MetaItem(AGENT_LINK, new AttributeRef(artNetAgent.getId(), ArtnetClientProtocol.agentProtocolConfigName).toArrayValue())
-                    ),
-                    new AssetAttribute("Switch", BOOLEAN, Values.create(true)).addMeta(
-                            new MetaItem(AGENT_LINK, new AttributeRef(artNetAgent.getId(), ArtnetClientProtocol.agentProtocolConfigName).toArrayValue())
-                    ),
-                    new AssetAttribute("Dim", NUMBER, Values.create(100)).addMeta(
-                            new MetaItem(AGENT_LINK, new AttributeRef(artNetAgent.getId(), ArtnetClientProtocol.agentProtocolConfigName).toArrayValue())
-                    )
-            );
-            artNetLight.setAttributes(artNetLightAttributes);
-            artNetLight = assetStorageService.merge(artNetLight);
-
-        }
-        //END Art-Net Setup
-
         // Some sample datapoints
         final Asset finalThing = assetStorageService.find(thingId, true);
         ZonedDateTime now = LocalDateTime.now().atZone(ZoneId.systemDefault());
@@ -427,7 +375,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         smartBuilding.setName("Smart Building");
         smartBuilding.setType(BUILDING);
         smartBuilding.setAttributes(
-            new AssetAttribute(AttributeType.LOCATION, SMART_BUILDING_LOCATION.toValue()),
+            new AssetAttribute(AttributeType.LOCATION, SMART_BUILDING_LOCATION.toValue()).addMeta(SHOW_ON_DASHBOARD),
             new AssetAttribute(AttributeType.GEO_STREET, Values.create("Kastanjelaan 500")),
             new AssetAttribute(AttributeType.GEO_POSTAL_CODE, Values.create(5616)),
             new AssetAttribute(AttributeType.GEO_CITY, Values.create("Eindhoven")),
