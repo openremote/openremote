@@ -2,7 +2,7 @@ import {css, customElement, html, LitElement, property, PropertyValues, query, u
 import {classMap} from "lit-html/directives/class-map";
 import i18next from "i18next";
 import {Asset, AssetAttribute, Attribute, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
-import {manager, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
+import {manager, DefaultColor3, DefaultColor5, Util} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
 import {getContentWithMenuTemplate, OrChartConfig} from "@openremote/or-chart";
 import {InputType} from "@openremote/or-input";
@@ -100,7 +100,7 @@ const style = css`
     }
     
     .period-label {
-        color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+        color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
     }
     
     .main-number {
