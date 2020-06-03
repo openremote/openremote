@@ -182,16 +182,7 @@ export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitEleme
 
 
         return html`
-            <div class=${classMap({"panel": true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
-                <div class="panel-content-wrapper">
-                    <div class="panel-title">
-                        <or-translate value="${name}"></or-translate>
-                    </div>
-                    <div class="panel-content">
-                        ${content}
-                    </div>
-                </div>
-            </div>
+            ${content}
         `;
     }
 
@@ -204,7 +195,16 @@ export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitEleme
 
         if (panelConfig && panelConfig.type === "chart") {
             content = html`
-                <or-chart id="chart" panelName="${panelName}" .config="${this.config.chartConfig}"></or-chart>
+                <div class=${classMap({"panel": true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
+                    <div class="panel-content-wrapper">
+                        <div class="panel-title">
+                            <or-translate value="${name}"></or-translate>
+                        </div>
+                        <div class="panel-content">
+                            <or-chart id="chart" panelName="${panelName}" .config="${this.config.chartConfig}"></or-chart>
+                        </div>
+                    </div>
+                </div>
             `;
         }
 
