@@ -209,6 +209,8 @@ export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitEleme
         }
 
         if (panelConfig && panelConfig.type === "kpi") {
+            panelConfig.hideOnMobile = false;
+            
             content = html`
                 <or-attribute-card panelName="${panelName}" .config="${this.config.chartConfig}"></or-attribute-card>
             `;
