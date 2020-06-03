@@ -42,6 +42,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 public abstract class AbstractUdpClientProtocol<T> extends AbstractIoClientProtocol<T, UdpIoClient<T>> {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractUdpClientProtocol.class);
+
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":abstractUdpClient";
 
     /**
