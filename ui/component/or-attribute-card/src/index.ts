@@ -143,13 +143,8 @@ const style = css`
     }
     
     .delta {
+        color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
         font-weight: bold;
-    }
-    .delta.delta-min {
-        color: red;
-    }
-    .delta.delta-plus {     
-        color: #4D9D2A;
     }
 `;
 export class OrAttributeCardAddAttributeEvent extends CustomEvent<string> {
@@ -552,7 +547,7 @@ export class OrAttributeCard extends LitElement {
                                 <canvas id="chart"></canvas>
                             </div>
                             <div class="delta-wrapper">
-                                <span class=${classMap({"delta": true, "delta-min": this.delta.val! < 0, "delta-plus": this.delta.val! > 0})}>${this.deltaPlus}${this.delta.val}${this.delta.unit}</span>
+                                <span class="delta">${this.deltaPlus}${this.delta.val}${this.delta.unit}</span>
                             </div>
                         </div>
                         <div class="bottom-row">
@@ -702,7 +697,7 @@ export class OrAttributeCard extends LitElement {
                 return {val: math, unit: "%"};
             }
         } else {
-            return {};
+            return {val: 0, unit: "%"};
         }
     }
 
