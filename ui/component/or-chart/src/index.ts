@@ -853,23 +853,23 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _getPeriodOptions() {
         return [
             {
-                text: i18next.t(DatapointInterval.HOUR),
+                text: "hour",
                 value: "hour"
             },
             {
-                text: i18next.t(DatapointInterval.DAY),
+                text: "day",
                 value: "day"
             },
             {
-                text: i18next.t(DatapointInterval.WEEK),
+                text:  "week",
                 value: "week"
             },
             {
-                text: i18next.t(DatapointInterval.MONTH),
+                text:  "month",
                 value: "month"
             },
             {
-                text: i18next.t(DatapointInterval.YEAR),
+                text: "year",
                 value: "year"
             }
         ];

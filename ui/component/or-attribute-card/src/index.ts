@@ -437,6 +437,7 @@ export class OrAttributeCard extends LitElement {
                 this.assetAttributes = view.attributes.map((attr: string, index: number)  => Util.getAssetAttribute(assets[index], attr));
                 if(this.assetAttributes && this.assetAttributes.length > 0) {
                     this.assetId = assets[0].id;
+                    this.period = view.period;
                     this.attributeName = this.assetAttributes[0].name;
                     this.getData();
                 }
@@ -561,7 +562,7 @@ export class OrAttributeCard extends LitElement {
                             <div class="period-selector-wrapper">
                                 ${getContentWithMenuTemplate(
                                     html`<or-input class="period-selector" .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-input>`,
-                                    [{value: "hour", text: ""}, {value: "day", text: ""}, {value: "week", text: ""}, {value: "month", text: ""}, {value: "year", text: ""}]
+                                    [{value: "hour", text: "hour"}, {value: "day", text: "day"}, {value: "week", text: "week"}, {value: "month", text: "month"}, {value: "year", text: "year"}]
                                         .map((option) => {
                                             option.text = i18next.t(option.value);
                                             return option;
@@ -731,6 +732,7 @@ export class OrAttributeCard extends LitElement {
     protected _setPeriodOption(value: any) {
         this.period = value;
 
+        this.saveSettings();
         this.getData();
         this.requestUpdate();
     }

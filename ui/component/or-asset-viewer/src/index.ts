@@ -154,14 +154,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 type: "history",
                 panelStyles: {
                 }
-            },
-            chart: {
-                type: "chart",
-                hideOnMobile: true,
-                panelStyles: {
-                    gridColumn: "1 / -1",
-                    gridRowStart: "1"
-                }
             }
         }
     };

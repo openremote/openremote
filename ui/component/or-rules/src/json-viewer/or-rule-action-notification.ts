@@ -91,14 +91,20 @@ export class OrRuleActionNotification extends LitElement {
             if(this._listItems) this._listItems.forEach((user: User) => idOptions.push([user.id!, user.username ? user.username : user.email] as [string, string]));
             
         }
-       
-        if(targetTypes.length > 0){
+        if(this.type){
             targetTypeTemplate = html`<or-input type="${InputType.SELECT}" 
                             .options="${targetTypes}"
-                            value="${this.type ? this.type : targetTypes[0]}"
+                            value="${this.type}"
                             label="${i18next.t("recipients")}"
                             @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationType(e.detail.value)}" 
                             ?readonly="${this.readonly}"></or-input>
+            `;
+        } else if(targetTypes.length > 0 ){
+            targetTypeTemplate = html`<or-input type="${InputType.SELECT}" 
+                        .options="${targetTypes}"
+                        label="${i18next.t("recipients")}"
+                        @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationType(e.detail.value)}" 
+                        ?readonly="${this.readonly}"></or-input>
             `;
         }
 
@@ -321,7 +327,9 @@ export class OrRuleActionNotification extends LitElement {
     }
 
     protected loadUsers() {
-        manager.rest.api.UserResource.getAll(manager.displayRealm).then((response) => this._listItems = response.data);
+        manager.rest.api.UserResource.getAll(manager.displayRealm).then((response) => this._listItems = response.data).then(() => {
+            this.requestUpdate();
+        });
     }
 
     protected loadAssets(query: object) {

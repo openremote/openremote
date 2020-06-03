@@ -69,7 +69,7 @@ const style = css`
     }
 
     .mdc-dialog .mdc-dialog__surface {
-        min-width: 600px;
+        width: 600px;
         height: calc(100vh - 50%);
     }
 
