@@ -630,6 +630,7 @@ export class OrAttributeCard extends LitElement {
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
                 this.mainValue = this.getHighestValue(this.sanitiseDataPoints(this.data));
+                this.formattedMainValue = this.getFormattedValue(this.mainValue);
                 return this.mainValue;
             });
 
@@ -678,6 +679,11 @@ export class OrAttributeCard extends LitElement {
 
     protected getFormattedValue(value: number): {value: number, unit: string, formattedValue: string} {
         const format = getMetaValue(MetaItemType.FORMAT, this.asset.attributes![this.attributeName!], undefined);
+
+        if (!format) {
+            return {value: value, unit: "", formattedValue: value.toString()};
+        }
+
         const unit = format.split(" ").pop();
         return {
             value: value,
