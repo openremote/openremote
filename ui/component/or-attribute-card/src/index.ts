@@ -535,7 +535,7 @@ export class OrAttributeCard extends LitElement {
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
                         <span class="panel-title-text">${this.asset.name} - ${i18next.t(this.attributeName)}</span>
-                        <or-input icon="plus-minus" type="button" @click="${() => this._openDialog()}"></or-input>
+                        <or-input icon="pencil" type="button" @click="${() => this._openDialog()}"></or-input>
                     </div>
                     <div class="panel-content">
                         <div class="top-row">
