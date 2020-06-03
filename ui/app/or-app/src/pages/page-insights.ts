@@ -32,6 +32,14 @@ const viewerConfig: DataViewerConfig = {
             assetId:"5442Ite2XVp3Ky9X2y647a",
             attributes: ["UVIndex"]
         }]
+    },
+    "kpi": {
+        type: "kpi",
+        hideOnMobile: true,
+        defaults: [{
+            assetId:"5442Ite2XVp3Ky9X2y647a",
+            attributes: ["UVIndex"]
+        }]
     }
    }
 };
