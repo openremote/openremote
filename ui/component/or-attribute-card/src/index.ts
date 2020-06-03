@@ -151,6 +151,24 @@ const style = css`
         color: #4D9D2A;
     }
 `;
+export class OrAttributeCardAddAttributeEvent extends CustomEvent<string> {
+
+    public static readonly NAME = "or-attribute-card-add-attribute";
+
+    constructor(value:string) {
+        super(OrAttributeCardAddAttributeEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: value
+        });
+    }
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [OrAttributeCardAddAttributeEvent.NAME]: OrAttributeCardAddAttributeEvent;
+    }
+}
 
 @customElement("or-attribute-card")
 export class OrAttributeCard extends LitElement {
@@ -160,6 +178,9 @@ export class OrAttributeCard extends LitElement {
 
     @property()
     public attributeName: string | undefined;
+
+    @property()
+    public panelName?: string;
 
     @property({type: Object})
     private assetAttributes: AssetAttribute[] = [];
@@ -202,15 +223,54 @@ export class OrAttributeCard extends LitElement {
         ];
     }
 
+    constructor(){
+        super();
+        this.addEventListener(OrAttributeCardAddAttributeEvent.NAME, this._setAttribute)
+    }
+
     connectedCallback() {
         super.connectedCallback();
 
         this.getData();
     }
+    
+    renderDialogHTML() {
+        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
+        if(!this.shadowRoot) return
+
+        if (dialog) {
+            dialog.dialogContent =html`
+                <or-asset-tree id="chart-asset-tree" 
+                    .selectedIds="${this.asset ? [this.asset.id] : null}]"
+                    @or-asset-tree-request-select="${(e: OrAssetTreeRequestSelectEvent) => {
+                        this.asset = {...e.detail.detail.node.asset!}
+                        this._getAttributeOptions();
+                        let attributes = [...Util.getAssetAttributes(this.asset)];
+                        this.assetAttributes = [...attributes];
+                    }}">
+                </or-asset-tree>
+                ${this.asset && this.asset.attributes ? html`
+                    <or-input id="attribute-picker" 
+                        style="display:flex;"
+                        .label="${i18next.t("attribute")}" 
+                        .type="${InputType.LIST}"
+                        .options="${this._getAttributeOptions()}"
+                        .value="${this.attributeName}"></or-input>
+                ` : ``}
+            `;
+            this.requestUpdate();
+        }
+    }
 
     updated(changedProperties: PropertyValues) {
+        if (changedProperties.has("assetAttributes")) {
+            this.renderDialogHTML();
+        }
 
-        super.updated(changedProperties);
+        if (changedProperties.has("assetId") && this.assetId && changedProperties.get("assetId") !== this.assetId) {
+            this.getSettings();
+        }
+
 
         if (!this.data || !this.data.length) {
             return;
@@ -279,7 +339,7 @@ export class OrAttributeCard extends LitElement {
         if (changedProperties.has("mainValue")) {
             this.formattedMainValue = this.getFormattedValue(this.mainValue!);
         }
-
+      
     }
 
     async onCompleted() {
@@ -299,9 +359,10 @@ export class OrAttributeCard extends LitElement {
                 <or-asset-tree id="chart-asset-tree" 
                     .selectedIds="${this.asset ? [this.asset.id] : null}]"
                     @or-asset-tree-request-select="${(e: OrAssetTreeRequestSelectEvent) => {
-                        this.asset = e.detail.detail.node.asset!;
+                        this.asset = {...e.detail.detail.node.asset!};
+                        let attributes = [...Util.getAssetAttributes(this.asset)];
+                        this.assetAttributes = [...attributes];
                         this._getAttributeOptions();
-                        this.requestUpdate();
                     }}">
                 </or-asset-tree>
                 ${this.asset && this.asset.attributes ? html`
@@ -330,25 +391,22 @@ export class OrAttributeCard extends LitElement {
         let attributes = [...Util.getAssetAttributes(this.asset)];
         if (attributes && attributes.length > 0) {
             attributes = attributes
-                .filter((attr: AssetAttribute) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
-                .filter((attr: AssetAttribute) => (this.assetAttributes && !this.assetAttributes.some((assetAttr: AssetAttribute) => (assetAttr.name === attr.name) && (assetAttr.assetId === attr.assetId))));
+                .filter((attr: AssetAttribute) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
             const options = attributes.map((attr: AssetAttribute) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
             return options;
         }
     }
 
-    private _setAttribute(e: Event) {
-        if (this.shadowRoot && this.shadowRoot.getElementById("attribute-picker")) {
-            const elm = this.shadowRoot.getElementById("attribute-picker") as HTMLInputElement;
-            if (this.asset) {
-                const attr = Util.getAssetAttribute(this.asset, elm.value);
-                if (attr) {
-                    this.assetId = this.asset.id;
-                    this.attributeName = attr.name;
+    private _setAttribute(event:OrAttributeCardAddAttributeEvent) {
+        if (this.asset && event) {
+            const attr = Util.getAssetAttribute(this.asset , event.detail);
+            if (attr) {
+                this.assetId = this.asset.id;
+                this.attributeName = attr.name;
 
-                    this.getData();
-                    this.requestUpdate();
-                }
+                this.getData();
+                this.saveSettings();
+                this.requestUpdate();
             }
         }
     }
@@ -360,15 +418,73 @@ export class OrAttributeCard extends LitElement {
         }
     }
 
+    getSettings() {
+        const configStr = window.localStorage.getItem('OrChartConfig')
+        if(!configStr || !this.panelName) return
+
+        const viewSelector = this.assetId ? this.assetId : window.location.hash;
+        const config = JSON.parse(configStr);
+        const view = config.views[viewSelector][this.panelName];
+        if(!view) return
+        const query = {
+            ids: view.assetIds
+        }
+        if(view.assetIds === this.assetAttributes.map(attr => attr.assetId)) return 
+
+        manager.rest.api.AssetResource.queryAssets(query).then((response) => {
+            const assets = response.data;
+            if(assets.length > 0) {
+                this.assetAttributes = view.attributes.map((attr: string, index: number)  => Util.getAssetAttribute(assets[index], attr));
+                if(this.assetAttributes && this.assetAttributes.length > 0) {
+                    this.assetId = assets[0].id;
+                    this.attributeName = this.assetAttributes[0].name;
+                    this.getData();
+                }
+            }
+        });
+
+    }
+
+    saveSettings() {
+        const viewSelector = window.location.hash;
+        const attributes = [this.attributeName];
+        const assetIds = [this.assetId];
+        const configStr = window.localStorage.getItem('OrChartConfig')
+        if(!this.panelName) return
+
+        let config:OrChartConfig;
+        if(configStr) {
+            config = JSON.parse(configStr);
+        } else {
+            config = {
+                views: {
+                    [viewSelector]: {
+                        [this.panelName] : {
+
+                        }
+                    }
+                }
+            }
+        }   
+
+        config.views[viewSelector][this.panelName] = {
+            assetIds: assetIds,
+            attributes: attributes,
+            period: this.period
+        };
+        const message = {
+            provider: "STORAGE",
+            action: "STORE",
+            key: "OrChartConfig",
+            value: JSON.stringify(config)
+
+        }
+        manager.console._doSendProviderMessage(message)
+    }
+
     protected render() {
 
         const dialogActions: DialogAction[] = [
-            {
-                actionName: "set",
-                default: true,
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" data-mdc-dialog-action="yes"></or-input>`,
-                action: () => this._setAttribute
-            },
             {
                 actionName: "cancel",
                 content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
@@ -376,6 +492,18 @@ export class OrAttributeCard extends LitElement {
                     // Nothing to do here
                 }
             },
+            {
+                actionName: "yes",
+                default: true,
+                content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" data-mdc-dialog-action="yes"></or-input>`,
+                action: () => {
+                    const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
+                    if (dialog.shadowRoot && dialog.shadowRoot.getElementById("attribute-picker")) {
+                        const elm = dialog.shadowRoot.getElementById("attribute-picker") as HTMLInputElement;
+                        this.dispatchEvent(new OrAttributeCardAddAttributeEvent(elm.value));
+                    }
+                }
+            }
         ];
 
         if (!this.assetId || !this.attributeName) {
@@ -485,13 +613,14 @@ export class OrAttributeCard extends LitElement {
 
         if (!this.assetId || !this.attributeName) {
             this.error = true;
+            this.getSettings();
             return false;
         }
 
         const thisMoment = moment(this.now);
 
         this.asset = await this.getAssetById(this.assetId);
-
+        console.log(this.asset);
         this.currentPeriod = {
             start: thisMoment.startOf(this.period).toDate().getTime(),
             end: thisMoment.endOf(this.period).toDate().getTime()

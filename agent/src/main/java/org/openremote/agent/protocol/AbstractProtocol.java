@@ -346,25 +346,23 @@ public abstract class AbstractProtocol implements Protocol {
      * {@link #doInboundValueProcessing} before sending on the sensor queue.
      */
     final protected void updateLinkedAttribute(final AttributeState state, long timestamp) {
-        withLock(getProtocolName() + "::updateLinkedAttribute", () -> {
-            AssetAttribute attribute = linkedAttributes.get(state.getAttributeRef());
+        AssetAttribute attribute = linkedAttributes.get(state.getAttributeRef());
 
-            if (attribute == null) {
-                LOG.severe("Update linked attribute called for un-linked attribute: " + state);
-                return;
-            }
+        if (attribute == null) {
+            LOG.severe("Update linked attribute called for un-linked attribute: " + state);
+            return;
+        }
 
-            Pair<Boolean, Value> ignoreAndConverted = Protocol.doInboundValueProcessing(attribute, state.getValue().orElse(null), assetService);
+        Pair<Boolean, Value> ignoreAndConverted = Protocol.doInboundValueProcessing(attribute, state.getValue().orElse(null), assetService);
 
-            if (ignoreAndConverted.key) {
-                LOG.fine("Value conversion returned ignore so attribute will not be updated: " + attribute.getReferenceOrThrow());
-                return;
-            }
+        if (ignoreAndConverted.key) {
+            LOG.fine("Value conversion returned ignore so attribute will not be updated: " + attribute.getReferenceOrThrow());
+            return;
+        }
 
-            AttributeEvent attributeEvent = new AttributeEvent(new AttributeState(attribute.getReferenceOrThrow(), ignoreAndConverted.value), timestamp);
-            LOG.fine("Sending on sensor queue: " + attributeEvent);
-            producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, getProtocolName());
-        });
+        AttributeEvent attributeEvent = new AttributeEvent(new AttributeState(attribute.getReferenceOrThrow(), ignoreAndConverted.value), timestamp);
+        LOG.fine("Sending on sensor queue: " + attributeEvent);
+        producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, getProtocolName());
     }
 
     /**

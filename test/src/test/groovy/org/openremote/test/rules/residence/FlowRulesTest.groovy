@@ -77,5 +77,8 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
             println(bedroomTargetTemp)
             assert bedroomTargetTemp.intValue() == (startTemperature.intValue() + 10) : ("it was actually " +  bedroomTargetTemp.intValue())//convert to int considering floating point inaccuracy
         }
+
+        cleanup: "the container is stopped"
+        container.stop()
     }
 }

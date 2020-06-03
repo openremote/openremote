@@ -354,7 +354,7 @@ export class Console {
         }
     }
 
-    protected _doSendProviderMessage(msg: any) {
+    public _doSendProviderMessage(msg: any) {
         if (this.isMobile) {
             this._postNativeShellMessage({type: "provider", data: msg});
         } else {

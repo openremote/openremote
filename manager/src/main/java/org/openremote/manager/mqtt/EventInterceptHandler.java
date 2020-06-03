@@ -33,13 +33,17 @@ import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetFilter;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.RenewEventSubscriptions;
+import org.openremote.model.value.Values;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -78,7 +82,8 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                 InterceptDisconnectMessage.class,
                 InterceptConnectionLostMessage.class,
                 InterceptSubscribeMessage.class,
-                InterceptUnsubscribeMessage.class
+                InterceptUnsubscribeMessage.class,
+                InterceptPublishMessage.class
         };
     }
 
@@ -124,20 +129,37 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
         if (connection != null) {
             String[] topicParts = interceptSubscribeMessage.getTopicFilter().split(TOPIC_SEPARATOR);
             String assetId = topicParts[1];
-            String subscriptionId = connection.assetSubscriptions.get(assetId);
+            AttributeRef attributeRef = null;
+            if (topicParts.length == 3) { //attribute specific
+                attributeRef = new AttributeRef(assetId, topicParts[2]);
+            }
+            String subscriptionId;
+            if (attributeRef == null) {
+                subscriptionId = connection.assetSubscriptions.remove(assetId);
+            } else {
+                subscriptionId = connection.assetAttributeSubscriptions.remove(attributeRef);
+            }
             if (subscriptionId != null) { //renew subscription
                 RenewEventSubscriptions renewEventSubscriptions = new RenewEventSubscriptions(new String[]{subscriptionId});
                 Map<String, Object> headers = prepareHeaders(connection);
                 messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, renewEventSubscriptions, headers);
             } else {
+                AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId);
                 EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
                         AttributeEvent.class,
-                        new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId),
+                        attributeAssetFilter,
                         String.valueOf(connection.getNextSubscriptionId())
                 );
+
+                if (attributeRef == null) { //attribute specific
+                    connection.assetSubscriptions.put(assetId, subscription.getSubscriptionId());
+                } else {
+                    attributeAssetFilter.setAttributeNames(attributeRef.getAttributeName());
+                    connection.assetAttributeSubscriptions.put(attributeRef, subscription.getSubscriptionId());
+                }
+
                 Map<String, Object> headers = prepareHeaders(connection);
                 messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
-                connection.assetSubscriptions.put(assetId, subscription.getSubscriptionId());
             }
         } else {
             throw new IllegalStateException("Connection with clientId " + interceptSubscribeMessage.getClientID() + " not found.");
@@ -150,11 +172,46 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
         if (connection != null) {
             String[] topicParts = interceptUnsubscribeMessage.getTopicFilter().split(TOPIC_SEPARATOR);
             String assetId = topicParts[1];
-            String subscriptionId = connection.assetSubscriptions.remove(assetId);
+            String subscriptionId;
+            if (topicParts.length == 3) { //attribute specific
+                subscriptionId = connection.assetAttributeSubscriptions.remove(new AttributeRef(assetId, topicParts[2]));
+            } else {
+                subscriptionId = connection.assetSubscriptions.remove(assetId);
+            }
             if (subscriptionId != null) {
                 Map<String, Object> headers = prepareHeaders(connection);
                 CancelEventSubscription<AttributeEvent> cancelEventSubscription = new CancelEventSubscription<>(AttributeEvent.class, subscriptionId);
                 messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, headers);
+            }
+        }
+    }
+
+    @Override
+    public void onPublish(InterceptPublishMessage msg) {
+        MqttConnection connection = mqttConnectionMap.get(msg.getClientID());
+        if (connection != null) {
+            String[] topicParts = msg.getTopicName().split(TOPIC_SEPARATOR);
+            String assetId = topicParts[1];
+            AttributeRef attributeRef = null;
+            if (topicParts.length == 3) { //attribute specific
+                attributeRef = new AttributeRef(assetId, topicParts[2]);
+            }
+            if (attributeRef == null) {
+                if (connection.assetSubscriptions.containsKey(assetId)) {
+                    String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
+                    Values.parse(payloadContent).flatMap(Values::getObject).ifPresent(objectValue -> {
+                        Map<String, Object> headers = prepareHeaders(connection);
+                        AttributeEvent attributeEvent = new AttributeEvent(assetId, objectValue.keys()[0], objectValue.get(objectValue.keys()[0]).orElse(null));
+                        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
+                    });
+                }
+            } else {
+                if (connection.assetAttributeSubscriptions.containsKey(attributeRef)) {
+                    String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
+                    Map<String, Object> headers = prepareHeaders(connection);
+                    AttributeEvent attributeEvent = new AttributeEvent(assetId, attributeRef.getAttributeName(), Values.create(payloadContent));
+                    messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
+                }
             }
         }
     }

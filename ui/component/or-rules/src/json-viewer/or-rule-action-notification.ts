@@ -77,6 +77,7 @@ export class OrRuleActionNotification extends LitElement {
                 });
             }
         }
+
         if(this.type === NotificationTargetType.ASSET) {
             idOptions.push(["*", i18next.t("matched")]);
             if(this._listItems) this._listItems.forEach((asset: Asset) => idOptions.push([asset.id!, asset.name!] as [string, string]));
@@ -91,7 +92,7 @@ export class OrRuleActionNotification extends LitElement {
             
         }
        
-        if(this.type){
+        if(targetTypes.length > 0){
             targetTypeTemplate = html`<or-input type="${InputType.SELECT}" 
                             .options="${targetTypes}"
                             value="${this.type ? this.type : targetTypes[0]}"
@@ -156,7 +157,7 @@ export class OrRuleActionNotification extends LitElement {
     }
 
     getNotificationTargetType() {
-        if(!this.action.target) return NotificationTargetType.CUSTOM;
+        if(!this.action.target) return;
         
         if(this.action.target.assets || this.action.target.matchedAssets) return NotificationTargetType.ASSET;
         if(this.action.target.users) return NotificationTargetType.USER;

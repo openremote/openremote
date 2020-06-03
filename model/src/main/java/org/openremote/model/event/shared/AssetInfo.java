@@ -26,4 +26,6 @@ public interface AssetInfo {
     String getRealm();
 
     String getParentId();
+
+    String[] getAttributeNames();
 }

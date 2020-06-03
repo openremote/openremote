@@ -82,6 +82,10 @@ const style = css`
     .dialog-container > * {
         flex: 1 1 0;
     }
+    
+    .mdc-list {
+        padding: 0 24px
+    }
 
 `;
 
@@ -190,7 +194,6 @@ export class OrMwcDialog extends LitElement {
 
     protected _onDialogClosed(action?: string) {
         this.dispatchEvent(new OrMwcDialogClosedEvent(action));
-
         if (action && this.dialogActions) {
             const matchedAction = this.dialogActions.find((dialogAction) => dialogAction.actionName === action);
             if (matchedAction && matchedAction.action) {

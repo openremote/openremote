@@ -35,12 +35,12 @@ import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK
 import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_HOST_DEFAULT;
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD;
+import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT;
 import static org.openremote.model.Constants.*;
 
 public abstract class AbstractKeycloakSetup implements Setup {
 
-    public static final String SETUP_ADMIN_PASSWORD = "SETUP_ADMIN_PASSWORD";
-    public static final String SETUP_ADMIN_PASSWORD_DEFAULT = "secret";
     public static final String SETUP_EMAIL_FROM_KEYCLOAK = "SETUP_EMAIL_FROM_KEYCLOAK";
     public static final String SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT = "no-reply@";
 
@@ -97,11 +97,10 @@ public abstract class AbstractKeycloakSetup implements Setup {
         masterUsersResource = masterRealmResource.users();
     }
 
-    protected String getClientObjectId(ClientsResource clientsResource, String clientId) {
-        return clientsResource.findByClientId(clientId)
+    protected String getClientObjectId(ClientsResource clientsResource, String clientName) {
+        return clientsResource.findByClientId(clientName)
             .stream()
             .map(ClientRepresentation::getId)
-            .findFirst().orElseThrow(() -> new RuntimeException("Client object ID not found: " + clientId));
+            .findFirst().orElseThrow(() -> new RuntimeException("Client object ID not found for client name: " + clientName));
     }
-
 }

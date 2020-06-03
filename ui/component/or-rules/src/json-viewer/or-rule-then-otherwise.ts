@@ -57,7 +57,7 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
 
     if (addNotification) {
         menu.push({
-            text: i18next.t("notification"),
+            text: i18next.t("email"),
             icon: "email",
             value: ActionType.NOTIFICATION,
             styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
@@ -450,7 +450,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             action.action = "notification";
             action.notification = {
                 message: {
-                    type: "push"
+                    type: "push",
+                    title: "%RULESET_NAME%",
+                    body: "%TRIGGER_ASSETS%"
                 }
             };
         } else {
