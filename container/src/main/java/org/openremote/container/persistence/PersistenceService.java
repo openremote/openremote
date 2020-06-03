@@ -72,7 +72,7 @@ public class PersistenceService implements ContainerService {
     public static final int DATABASE_MAX_POOL_SIZE_DEFAULT = 20;
     public static final String DATABASE_CONNECTION_TIMEOUT_SECONDS = "DATABASE_CONNECTION_TIMEOUT_SECONDS";
     public static final int DATABASE_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 5;
-    public static final int PRIORITY = Integer.MIN_VALUE + 10;
+    public static final int PRIORITY = Integer.MIN_VALUE + 100;
 
     protected MessageBrokerService messageBrokerService;
     protected Database database;
@@ -212,15 +212,25 @@ public class PersistenceService implements ContainerService {
 
     protected void prepareSchemas(String connectionUrl, String databaseUsername, String databasePassword) {
         LOG.fine("Preparing database schema");
-        flyway = new Flyway();
-        flyway.setDataSource(connectionUrl, databaseUsername, databasePassword);
         List<String> locations = new ArrayList<>();
         List<String> schemas = new ArrayList<>();
         schemas.add(DEFAULT_SCHEMA_NAME);
         appendSchemas(schemas);
         appendSchemaLocations(locations);
-        flyway.setSchemas(schemas.toArray(new String[0]));
-        flyway.setLocations(locations.toArray(new String[0]));
+
+        flyway = Flyway.configure()
+            .dataSource(connectionUrl, databaseUsername, databasePassword)
+            .schemas(schemas.toArray(new String[0]))
+            .locations(locations.toArray(new String[0]))
+            .baselineOnMigrate(true)
+            .load();
+
+        MigrationInfo currentMigration = flyway.info().current();
+
+        if (currentMigration == null && !forceClean) {
+            LOG.warning("DB is empty so changing forceClean to true");
+            forceClean = true;
+        }
 
         if (forceClean) {
             LOG.warning("!!! Cleaning database !!!");

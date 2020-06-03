@@ -40,6 +40,7 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
 
 public class ManagerBasicIdentityProvider extends BasicIdentityProvider implements ManagerIdentityProvider {
 
@@ -61,10 +62,21 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
         if (!tenantExists(MASTER_REALM)) {
             LOG.info("Creating master tenant and admin user");
 
-            createTenant(null, new Tenant(MASTER_REALM, MASTER_REALM, "Master", true));
+            // Configure the master realm
+            persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
+                String sql = "insert into PUBLIC.REALM(ID, NAME, ENABLED) values ('master', 'master', true)";
+                PreparedStatement st = connection.prepareStatement(sql);
+                st.executeUpdate();
+                st.close();
+
+                sql = "insert into PUBLIC.REALM_ATTRIBUTE(REALM_ID, NAME, VALUE) values ('master', 'displayName', 'Master')";
+                st = connection.prepareStatement(sql);
+                st.executeUpdate();
+                st.close();
+            }));
+
             User adminUser = new User();
-            adminUser.setFirstName("Admin");
-            adminUser.setLastName("User");
+            adminUser.setUsername(MASTER_REALM_ADMIN_USER);
             createUser(null, MASTER_REALM, adminUser, adminPassword);
         }
     }
@@ -130,7 +142,6 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
                 st.executeUpdate();
             }
         }));
-        persistenceService.doTransaction(em -> em.merge(user));
     }
 
     @Override
@@ -190,7 +201,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
 
     @Override
     public void updateTenant(ClientRequestInfo clientRequestInfo, String realm, Tenant tenant) {
-        throw new UnsupportedOperationException("This provider does not support multiple tenants");
+        throw new UnsupportedOperationException("This provider does not support modifying tenants");
     }
 
     @Override
@@ -220,7 +231,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
 
     @Override
     public boolean tenantExists(String realm) {
-        return Objects.equals(realm, MASTER_REALM);
+        return ManagerIdentityProvider.tenantExistsFromDb(persistenceService, realm);
     }
 
     @Override

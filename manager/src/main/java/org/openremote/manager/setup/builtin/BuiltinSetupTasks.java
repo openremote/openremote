@@ -54,8 +54,6 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
             if (isImportDemoAgent(container)) {
                 addTask(new ManagerDemoAgentSetup(container));
             }
-        } else {
-            addTask(new BasicIdentityInitSetup(container));
         }
 
         return getTasks();
