@@ -2,7 +2,7 @@ import {css, customElement, html, LitElement, property, PropertyValues, query, u
 import {classMap} from "lit-html/directives/class-map";
 import i18next from "i18next";
 import {Asset, AssetAttribute, Attribute, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
-import {manager, DefaultColor3, DefaultColor5, Util} from "@openremote/core";
+import {manager, DefaultColor3, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
 import {getContentWithMenuTemplate, OrChartConfig} from "@openremote/or-chart";
 import {InputType} from "@openremote/or-input";
@@ -18,6 +18,7 @@ const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css")
 const style = css`
     
     :host {
+        --internal-or-attribute-history-graph-line-color: var(--or-attribute-history-graph-line-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
         width: 100%;
     }
     
@@ -182,13 +183,13 @@ export class OrAttributeCard extends LitElement {
     @property()
     public panelName?: string;
 
+    protected _style!: CSSStyleDeclaration;
+
     @property({type: Object})
     private assetAttributes: AssetAttribute[] = [];
 
     @property()
     private data: ValueDatapoint<any>[] = [];
-    @property()
-    private graphColour: "#4D9D2A" | "#FF0000" = "#4D9D2A";
 
     @property()
     private mainValue?: number;
@@ -231,6 +232,7 @@ export class OrAttributeCard extends LitElement {
     connectedCallback() {
         super.connectedCallback();
 
+        this._style = window.getComputedStyle(this);
         this.getData();
     }
     
@@ -286,7 +288,7 @@ export class OrAttributeCard extends LitElement {
                             lineTension: 0.1,
                             spanGaps: true,
                             backgroundColor: "transparent",
-                            borderColor: this.graphColour,
+                            borderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color"),
                             pointBorderColor: "transparent",
                         }
                     ]
@@ -325,7 +327,6 @@ export class OrAttributeCard extends LitElement {
         } else {
             if (changedProperties.has("data")) {
                 this._chart.data.datasets![0].data = this.data;
-                this._chart.data.datasets![0].borderColor = this.graphColour;
                 this._chart.update();
             }
         }
@@ -646,7 +647,6 @@ export class OrAttributeCard extends LitElement {
         Promise.all([p1, p2])
             .then((returnvalues) => {
                 this.delta = this.getFormattedDelta(returnvalues[0], returnvalues[1]);
-                this.graphColour = (this.delta.val! < 0) ? "#FF0000" : "#4D9D2A";
                 this.error = false;
             })
             .catch((err) => {
