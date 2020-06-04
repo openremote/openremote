@@ -189,8 +189,8 @@
   "tenant": "Tenant",
   "tenant_plural": "Tenants",
   "user_plural": "Gebruikers",
-  "realmRules": "realm rules",
-  "globalRules": "global rules",
+  "realmRules": "Realm regels",
+  "globalRules": "Globale regels",
   "recipients": "Ontvangers",
   "JSON": "Als-Dan",
   "attributeValueType": {
@@ -212,5 +212,14 @@
   "realm": "Realm",
   "port": "Poort",
   "host": "Hostname",
+  "errorOccurred": "Er is een fout opgetreden",
+  "managerError": {
+    "MANAGER_FAILED_TO_LOAD": "Manager kan niet geladen worden (bekijk de console logs)",
+    "KEYCLOAK_FAILED_TO_LOAD": "Keycloak kan niet geladen worden (bekijk de console logs)",
+    "AUTH_TYPE_UNSUPPORTED": "Opgevraagde auth type wordt niet ondersteund",
+    "CONSOLE_ERROR": "Console foutmelding (bekijk de console logs)",
+    "EVENTS_CONNECTION_ERROR": "Event bus connectie fout (bekijk de console logs)",
+    "TRANSLATION_ERROR": "Vertalingen fout (bekijk de console logs)"
+  },
   "couldNotRetrieveAttribute": "Kan de gegevens voor dit attribuut niet ophalen"
 }
