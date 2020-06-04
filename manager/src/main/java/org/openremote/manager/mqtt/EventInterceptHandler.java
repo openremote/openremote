@@ -209,12 +209,8 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
             String[] topicParts = msg.getTopicName().split(TOPIC_SEPARATOR);
             String assetId = topicParts[1];
             AttributeRef attributeRef = null;
-            boolean isValueSubscription = false;
             if (topicParts.length > 2) { //attribute specific
                 attributeRef = new AttributeRef(assetId, topicParts[2]);
-            }
-            if (topicParts.length == 4 && topicParts[3].equals(ASSET_ATTRIBUTE_VALUE_TOPIC)) {
-                isValueSubscription = true;
             }
             if (attributeRef == null) {
                 if (connection.assetSubscriptions.containsKey(assetId)) {
@@ -226,19 +222,11 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                     });
                 }
             } else {
-                if (isValueSubscription && connection.assetAttributeValueSubscriptions.containsKey(attributeRef)) {
+                if (connection.assetAttributeSubscriptions.containsKey(attributeRef) || connection.assetAttributeValueSubscriptions.containsKey(attributeRef)) {
                     String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
                     Map<String, Object> headers = prepareHeaders(connection);
                     AttributeEvent attributeEvent = new AttributeEvent(assetId, attributeRef.getAttributeName(), Values.create(payloadContent));
                     messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
-                } else if (connection.assetAttributeSubscriptions.containsKey(attributeRef)) {
-                    String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
-                    String attributeName = attributeRef.getAttributeName();
-                    Values.parse(payloadContent).flatMap(Values::getObject).ifPresent(objectValue -> {
-                        Map<String, Object> headers = prepareHeaders(connection);
-                        AttributeEvent attributeEvent = new AttributeEvent(assetId, attributeName, objectValue.get(objectValue.keys()[0]).orElse(null));
-                        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
-                    });
                 }
             }
         }
