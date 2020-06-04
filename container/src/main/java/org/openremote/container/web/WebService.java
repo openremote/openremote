@@ -272,32 +272,32 @@ public abstract class WebService implements ContainerService {
 
         return resteasyDeployment;
     }
+    protected void createCorsFilter(Container container) {
+        CORSFilter corsFilter = null;
 
-    protected FilterInfo createCorsFilter(Container container) {
-
-        if (corsFilterInfo == null) {
-
-            CORSFilter corsFilter = new CORSFilter();
-            corsFilter.setAllowCredentials(true);
-            corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
-            corsFilter.setExposedHeaders("*");
-            corsFilter.setCorsMaxAge(1209600);
-
-            if (!devMode) {
-                String allowedOriginsStr = getString(container.getConfig(), WEBSERVER_ALLOWED_ORIGINS, WEBSERVER_ALLOWED_ORIGINS_DEFAULT);
-                if (allowedOriginsStr != null) {
-                    String[] allowedOrigins = allowedOriginsStr.split(";");
-                    Arrays.stream(allowedOrigins).forEach(allowedOrigin ->
-                        corsFilter.getAllowedOrigins().add(allowedOrigin)
-                    );
-                }
-            } else {
-                corsFilter.getAllowedOrigins().add("*");
+        if (!devMode) {
+            String allowedOriginsStr = getString(container.getConfig(), WEBSERVER_ALLOWED_ORIGINS, WEBSERVER_ALLOWED_ORIGINS_DEFAULT);
+            if (allowedOriginsStr != null) {
+                corsFilter = new CORSFilter();
+                corsFilter.setAllowCredentials(true);
+                corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
+                corsFilter.setExposedHeaders("*");
+                corsFilter.setCorsMaxAge(1209600);
+                String[] allowedOrigins = allowedOriginsStr.split(";");
+                corsFilter.getAllowedOrigins().addAll(Arrays.asList(allowedOrigins));
             }
-
-            corsFilterInfo = Servlets.filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(corsFilter));
+        } else {
+            corsFilter = new CORSFilter();
+            corsFilter.getAllowedOrigins().add("*");
+            corsFilter.setAllowCredentials(true);
+            corsFilter.setExposedHeaders("*");
+            corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
+            corsFilter.setCorsMaxAge(1209600);
         }
 
-        return corsFilterInfo;
+        if (corsFilter != null) {
+            CORSFilter finalCorsFilter = corsFilter;
+            corsFilterInfo = Servlets.filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(finalCorsFilter));
+        }
     }
 }
