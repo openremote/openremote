@@ -33,10 +33,12 @@ import org.openremote.model.security.UserResource;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.ClientErrorException;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.ResourceBundle;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -64,6 +66,10 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public User get(RequestParams requestParams, String realm, String userId) {
+        if (!isSuperUser() && !Objects.equals(getUserId(), userId)) {
+            throw new ForbiddenException("Regular users can only retrieve their own roles");
+        }
+
         try {
             return identityService.getIdentityProvider().getUser(
                 new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId
@@ -73,6 +79,14 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         } catch (Exception ex) {
             throw new WebApplicationException(ex);
         }
+    }
+
+    @Override
+    public User getCurrent(RequestParams requestParams) {
+        if (!isAuthenticated()) {
+            throw new ForbiddenException("Must be authenticated");
+        }
+        return get(requestParams, getRequestRealm(), getUserId());
     }
 
     @Override
@@ -151,6 +165,10 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public Role[] getRoles(@BeanParam RequestParams requestParams, String realm, String userId) {
+        if (!isSuperUser() && !Objects.equals(getUserId(), userId)) {
+            throw new ForbiddenException("Regular users can only retrieve their own roles");
+        }
+
         try {
             return identityService.getIdentityProvider().getRoles(
                 new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId
@@ -160,6 +178,14 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         } catch (Exception ex) {
             throw new WebApplicationException(ex);
         }
+    }
+
+    @Override
+    public Role[] getCurrentUserRoles(RequestParams requestParams) {
+        if (!isAuthenticated()) {
+            throw new ForbiddenException("Must be authenticated");
+        }
+        return getRoles(requestParams, getRequestRealm(), getUserId());
     }
 
     @Override

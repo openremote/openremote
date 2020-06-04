@@ -11,7 +11,9 @@ import {
     AssetDescriptor,
     AttributeDescriptor,
     AttributeValueDescriptor,
-    MetaItemDescriptor
+    MetaItemDescriptor,
+    User,
+    Role
 } from "@openremote/model";
 import * as Util from "./util";
 import orIconSet from "./or-icon-set";
@@ -367,18 +369,22 @@ export class Manager implements EventProviderFactory {
         return this._config;
     }
 
-    get roles() {
-        if (!this._keycloak || !this._keycloak.resourceAccess) {
-            return [];
+    get roles(): string[] {
+        if (this._keycloak) {
+            if (this._keycloak.resourceAccess) {
+                let roles: string[];
+                if (this._config.clientId && this._keycloak!.resourceAccess.hasOwnProperty(this._config.clientId)) {
+                    roles = this._keycloak!.resourceAccess[this._config.clientId].roles;
+                } else {
+                    roles = this._keycloak!.resourceAccess.account.roles;
+                }
+                return roles || [];
+            }
+        } else if (this._basicIdentity && this._basicIdentity.roles) {
+            return this._basicIdentity.roles.map((r) => r.name!);
         }
 
-        let roles: String[];
-        if (this._config.clientId && this._keycloak!.resourceAccess.hasOwnProperty(this._config.clientId)) {
-            roles = this._keycloak!.resourceAccess[this._config.clientId].roles;
-        } else {
-            roles = this._keycloak!.resourceAccess.account.roles;
-        }
-        return roles || [];
+        return [];
     }
 
     get managerVersion() {
@@ -504,7 +510,11 @@ export class Manager implements EventProviderFactory {
     private _name: string = "";
     private _username: string = "";
     private _keycloak?: Keycloak;
-    private _basicToken?: string;
+    private _basicIdentity?: {
+        token: string | undefined,
+        user: User | undefined,
+        roles: Role[] | undefined
+    };
     private _keycloakUpdateTokenInterval?: number = undefined;
     private _managerVersion: string = "";
     private _listeners: EventCallback[] = [];
@@ -798,8 +808,8 @@ export class Manager implements EventProviderFactory {
             }
             const options = redirectUrl && redirectUrl !== "" ? {redirectUri: redirectUrl} : null;
             this._keycloak.logout(options);
-        } else if (this._basicToken) {
-            this._basicToken = undefined;
+        } else if (this._basicIdentity) {
+            this._basicIdentity = undefined;
             if (redirectUrl) {
                 window.location.href = redirectUrl;
             } else {
@@ -864,7 +874,11 @@ export class Manager implements EventProviderFactory {
         };
         let authenticated = false;
 
-        const url = this.config.managerUrl + "/api/" + this.config.realm + "/asset/user/current";
+        this._basicIdentity = {
+            roles: undefined,
+            token: undefined,
+            user: undefined
+        };
 
         while (!authenticated) {
             result = await this.config.basicLoginProvider(result.username, result.password);
@@ -881,24 +895,27 @@ export class Manager implements EventProviderFactory {
                 continue;
             }
 
-            const response = await fetch(url, {
-                method: "GET",
-                credentials: "include",
-                headers: {
-                    Authorization: "Basic " + btoa(result.username + ":" + result.password)
-                }
-            });
+            // Update basic token so we can use rest api to make calls
+            this._basicIdentity!.token = btoa(result.username + ":" + result.password);
+            const userResponse = await rest.api.UserResource.getCurrent();
+            const status = userResponse.status;
 
-            const status = response.status;
             if (status === 200) {
                 console.log("Basic authentication successful");
                 authenticated = true;
-                this._basicToken = btoa(result.username + ":" + result.password);
+                this._basicIdentity!.user = userResponse.data;
+
+                // Get user roles
+                const rolesResponse = await rest.api.UserResource.getCurrentUserRoles();
+                this._basicIdentity!.roles = rolesResponse.data;
+
                 // Undertow incorrectly returns 403 when no authorization header and a 401 when it is set and not valid
             } else if (status === 401 || status === 403) {
                 console.log("Basic authentication invalid credentials, trying again");
+                this._basicIdentity = undefined;
             } else {
                 console.log("Unkown response so aborting");
+                this._basicIdentity = undefined;
                 break;
             }
         }
@@ -934,26 +951,26 @@ export class Manager implements EventProviderFactory {
     }
 
     public getAuthorizationHeader(): string | undefined {
-        if (this._keycloak && this.authenticated) {
+        if (this._keycloak) {
             return "Bearer " + this._keycloak.token;
         }
 
-        if (this._basicToken && this.authenticated) {
-            return "Basic " + this._basicToken;
+        if (this.getBasicToken()) {
+            return "Basic " + this.getBasicToken();
         }
 
         return undefined;
     }
 
     public getKeycloakToken(): string | undefined {
-        if (this._keycloak && this.authenticated) {
+        if (this._keycloak) {
             return this._keycloak.token;
         }
         return undefined;
     }
 
     public getBasicToken(): string | undefined {
-        return this._basicToken;
+        return this._basicIdentity ? this._basicIdentity.token : undefined;
     }
 
     public getRealm(): string | undefined {
