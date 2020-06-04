@@ -1,13 +1,18 @@
-import {customElement, html, LitElement, property, query, TemplateResult, css, unsafeCSS} from "lit-element";
+import {css, customElement, html, LitElement, property, query, TemplateResult, unsafeCSS} from "lit-element";
 import {until} from "lit-html/directives/until";
-import { ifDefined } from 'lit-html/directives/if-defined.js';
-import i18next from "i18next";
-import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor4, DefaultBoxShadowBottom, DefaultHeaderHeight} from "@openremote/core";
-import manager from "@openremote/core";
+import {ifDefined} from "lit-html/directives/if-defined.js";
+import manager, {
+    DefaultBoxShadowBottom,
+    DefaultColor1,
+    DefaultColor2,
+    DefaultColor3,
+    DefaultColor4,
+    DefaultHeaderHeight
+} from "@openremote/core";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import "@openremote/or-icon";
-import {MenuItem, getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
-import { Tenant } from "@openremote/model";
+import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {Tenant} from "@openremote/model";
 
 export interface HeaderConfig {
     mainMenu: HeaderItem[];
@@ -29,15 +34,15 @@ export interface Languages {
 }
 
 export const DEFAULT_LANGUAGES: Languages = {
-    "en": "english",
-    "nl": "dutch",
-    "fr": "french",
-    "de": "german",
-    "es": "spanish"
+    en: "english",
+    nl: "dutch",
+    fr: "french",
+    de: "german",
+    es: "spanish"
 };
 
 function getHeaderMenuItems(items: HeaderItem[]): MenuItem[] {
-    return items.filter(option => !option.roles || option.roles.some(r => manager.hasRole(r))).map(option => {
+    return items.filter((option) => !option.roles || option.roles.some((r) => manager.hasRole(r))).map((option) => {
         return {
             text: option.text,
             value: option.value ? option.value : "",
@@ -49,29 +54,6 @@ function getHeaderMenuItems(items: HeaderItem[]): MenuItem[] {
 
 @customElement("or-header")
 class OrHeader extends LitElement {
-
-    @property({type: Boolean})
-    private _drawerOpened = false;
-
-    @property({type: String})
-    public logo?: string;
-
-    @property({ type: String })
-    public logoMobile? : string;
-
-    @property({ type: Object })
-    public config?: HeaderConfig;
-
-    @property({ type: String })
-    private activeMenu: string | undefined = window.location.hash ? window.location.hash : "#!map";
-
-    @query("div[id=mobile-bottom]")
-    protected _mobileBottomDiv!: HTMLDivElement;
-
-    protected _tenants?: Tenant[];
-    protected _hashCallback = (e: Event) => {
-        this._onHashChanged(e);
-    };
 
     // language=CSS
     static get styles() {
@@ -294,19 +276,47 @@ class OrHeader extends LitElement {
     `;
     }
 
-    connectedCallback(): void {
+    @property({type: String})
+    public logo?: string;
+
+    @property({ type: String })
+    public logoMobile?: string;
+
+    @property({ type: Object })
+    public config?: HeaderConfig;
+
+    @query("div[id=mobile-bottom]")
+    protected _mobileBottomDiv!: HTMLDivElement;
+
+    protected _tenants?: Tenant[];
+
+    @property({type: Boolean})
+    private _drawerOpened = false;
+
+    @property({ type: String })
+    private activeMenu: string | undefined = window.location.hash ? window.location.hash : "#!map";
+
+    public connectedCallback(): void {
         super.connectedCallback();
         window.addEventListener("hashchange", this._hashCallback, false);
     }
 
-    disconnectedCallback(): void {
+    public disconnectedCallback(): void {
         super.disconnectedCallback();
         window.removeEventListener("hashchange", this._hashCallback);
     }
 
-    _onHashChanged(e: Event) {
-        const menu = window.location.hash.split('/')[0];
+    public _onHashChanged(e: Event) {
+        const menu = window.location.hash.split("/")[0];
         this.activeMenu = menu;
+    }
+
+    public _onRealmSelect(realm: string) {
+        manager.displayRealm = realm;
+        this.requestUpdate();
+    }
+    protected _hashCallback = (e: Event) => {
+        this._onHashChanged(e);
     }
 
     protected render() {
@@ -323,10 +333,10 @@ class OrHeader extends LitElement {
                     <!-- This gets hidden on a small screen-->
                     <nav id="toolbar-list">
                         <div id="desktop-left">
-                            ${mainItems ? mainItems.filter(option => !option.roles || option.roles.some(r => manager.hasRole(r))).map(headerItem => {
+                            ${mainItems ? mainItems.filter((option) => !option.roles || option.roles.some((r) => manager.hasRole(r))).map((headerItem) => {
                                 return html`
                                     <a class="menu-item" href="${headerItem.href}" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
-                                `
+                                `;
                             }) : ``}
                         </div>
                     </nav>
@@ -348,20 +358,20 @@ class OrHeader extends LitElement {
                 <div>                    
                     <div id="mobile-top">
                         <nav id="drawer-list">
-                            ${mainItems ? mainItems.filter(option => !option.hideMobile && (!option.roles || option.roles.some(r => manager.hasRole(r)))).map(headerItem => {
+                            ${mainItems ? mainItems.filter((option) => !option.hideMobile && (!option.roles || option.roles.some((r) => manager.hasRole(r)))).map((headerItem) => {
                                 return html`
                                     <a class="menu-item" href="${headerItem.href}" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
-                                `
+                                `;
                             }) : ``}
                         </nav>
                     </div>
                     
                     ${secondaryItems ? html`
                         <div id="mobile-bottom">
-                                ${secondaryItems.filter(option => !option.hideMobile && (!option.roles || option.roles.some(r => manager.hasRole(r)))).map(headerItem => {
+                                ${secondaryItems.filter((option) => !option.hideMobile && (!option.roles || option.roles.some((r) => manager.hasRole(r)))).map((headerItem) => {
                                     return html`
                                         <a class="menu-item" href="${ifDefined(headerItem.href)}" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
-                                    `
+                                    `;
                                 })}
                         </div>` : ``}
                 </div>
@@ -422,11 +432,6 @@ class OrHeader extends LitElement {
         } else if (headerItem.href) {
             window.location.href = headerItem.href;
         }
-    }
-
-    _onRealmSelect(realm: string) {
-        manager.displayRealm = realm;
-        this.requestUpdate();
     }
 
     protected _closeDrawer() {

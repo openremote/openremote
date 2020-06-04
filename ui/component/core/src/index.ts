@@ -15,6 +15,7 @@ import {
 } from "@openremote/model";
 import * as Util from "./util";
 import orIconSet from "./or-icon-set";
+import { Deferred } from "./util";
 
 // Re-exports
 export {Util};
@@ -48,7 +49,7 @@ export declare type Keycloak = {
 
 export enum ORError {
     MANAGER_FAILED_TO_LOAD = "MANAGER_FAILED_TO_LOAD",
-    KEYCLOAK_FAILED_TO_LOAD = "KEYCLOAK_FAILED_TO_LOAD",
+    AUTH_FAILED = "AUTH_FAILED",
     AUTH_TYPE_UNSUPPORTED = "AUTH_TYPE_UNSUPPORTED",
     CONSOLE_ERROR = "CONSOLE_INIT_ERROR",
     EVENTS_CONNECTION_ERROR = "EVENTS_CONNECTION_ERROR",
@@ -89,6 +90,13 @@ export interface LoginOptions {
     credentials?: Credentials;
 }
 
+export interface BasicLoginResult {
+    username: string;
+    password: string;
+    cancel: boolean;
+    closeCallback: undefined | ((authenticated: boolean) => void);
+}
+
 export interface ManagerConfig {
     managerUrl: string;
     keycloakUrl?: string;
@@ -106,6 +114,7 @@ export interface ManagerConfig {
     loadTranslations?: string[];
     translationsLoadPath?: string;
     configureTranslationsOptions?: (i18next: i18next.InitOptions) => void;
+    basicLoginProvider?: (username: string | undefined, password: string | undefined) => PromiseLike<BasicLoginResult>;
 }
 
 export class IconSetAddedEvent extends CustomEvent<void> {
@@ -491,9 +500,11 @@ export class Manager implements EventProviderFactory {
     private _config!: ManagerConfig;
     private _authenticated: boolean = false;
     private _ready: boolean = false;
+    private _readyCallback?: () => PromiseLike<any>;
     private _name: string = "";
     private _username: string = "";
     private _keycloak?: Keycloak;
+    private _basicToken?: string;
     private _keycloakUpdateTokenInterval?: number = undefined;
     private _managerVersion: string = "";
     private _listeners: EventCallback[] = [];
@@ -544,13 +555,9 @@ export class Manager implements EventProviderFactory {
             success = this.doRestApiInit();
         }
 
-        if (success) {
-            success = await this.doConsoleInit();
-        }
+        success = await this.doConsoleInit() && success;
 
-        if (success) {
-            success = await this.doTranslateInit();
-        }
+        success = await this.doTranslateInit() && success;
 
         if (success) {
             success = await this.doDescriptorsInit();
@@ -561,6 +568,9 @@ export class Manager implements EventProviderFactory {
         //     success = await this.doEventsSubscriptionInit();
         // }
         if (success) {
+            if (this._readyCallback) {
+                await this._readyCallback();
+            }
             this._ready = true;
             this._emitEvent(OREvent.READY);
         }
@@ -615,7 +625,7 @@ export class Manager implements EventProviderFactory {
         });
 
         // Look for language preference in local storage
-        const language = await this.console.retrieveData("LANGUAGE");
+        const language = !this.console ? undefined : await this.console.retrieveData("LANGUAGE");
         const initOptions: i18next.InitOptions = {
             lng: language,
             fallbackLng: "en",
@@ -687,39 +697,40 @@ export class Manager implements EventProviderFactory {
         let success = true;
         switch (this._config.auth) {
             case Auth.BASIC:
-                // TODO: Implement Basic auth support
-                if (this._config.credentials) {
-                    rest.setBasicAuth(this._config.credentials.username, this._config.credentials.password);
-                }
-                this._setError(ORError.AUTH_TYPE_UNSUPPORTED);
-                success = false;
+                success = await this.initialiseBasicAuth();
                 break;
             case Auth.KEYCLOAK:
                 success = await this.loadAndInitialiseKeycloak();
-                // Add interceptor to inject authorization header on each request
-                rest.addRequestInterceptor(
-                    (config: AxiosRequestConfig) => {
-                        if (!config.headers.Authorization) {
-                            const token = this.getKeycloakToken();
 
-                            if (token) {
-                                config.headers.Authorization = "Bearer " + token;
-                            }
-                        }
-
-                        return config;
-                    }
-                );
+                if (!success) {
+                    // Try fallback to BASIC
+                    console.log("Falling back to basic auth");
+                    this._config.auth = Auth.BASIC;
+                    return this.doAuthInit();
+                }
                 break;
             case Auth.NONE:
                 // Nothing for us to do here
-                break;
+                return true;
             default:
                 this._setError(ORError.AUTH_TYPE_UNSUPPORTED);
-                success = false;
-                break;
+                return false;
         }
 
+        // Add interceptor to inject authorization header on each request
+        rest.addRequestInterceptor(
+            (config: AxiosRequestConfig) => {
+                if (!config.headers.Authorization) {
+                    const authHeader = this.getAuthorizationHeader();
+
+                    if (authHeader) {
+                        config.headers.Authorization = authHeader;
+                    }
+                }
+
+                return config;
+            }
+        );
         return success;
     }
 
@@ -787,25 +798,23 @@ export class Manager implements EventProviderFactory {
             }
             const options = redirectUrl && redirectUrl !== "" ? {redirectUri: redirectUrl} : null;
             this._keycloak.logout(options);
+        } else if (this._basicToken) {
+            this._basicToken = undefined;
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            } else {
+                window.location.reload();
+            }
         }
     }
 
     public login(options?: LoginOptions) {
-        if (!this.ready) {
-            return;
-        }
         switch (this._config.auth) {
             case Auth.BASIC:
                 if (options && options.credentials) {
                     this._config.credentials = Object.assign({}, options.credentials);
                 }
-                const username = this._config.credentials ? this._config.credentials.username : null;
-                const password = this._config.credentials ? this._config.credentials.password : null;
-
-                if (username && password && username !== "" && password !== "") {
-                    // TODO: Perform some request to check basic auth credentials
-                    this._setAuthenticated(true);
-                }
+                this.doBasicLogin();
                 break;
             case Auth.KEYCLOAK:
                 if (this._keycloak) {
@@ -821,6 +830,83 @@ export class Manager implements EventProviderFactory {
                 break;
             case Auth.NONE:
                 break;
+        }
+    }
+
+    protected async initialiseBasicAuth(): Promise<boolean> {
+
+        if (!this.config.basicLoginProvider) {
+            console.log("No basicLoginProvider defined on config so cannot display login UI");
+            return false;
+        }
+
+        if (this.config.autoLogin) {
+            // Delay basic login until other inits are done
+            this._readyCallback = () => {
+                return this.doBasicLogin();
+            };
+        }
+
+        return true;
+    }
+
+    protected async doBasicLogin() {
+
+        if (!this.config.basicLoginProvider) {
+            return;
+        }
+
+        let result: BasicLoginResult = {
+            username: this._config.credentials ? this._config.credentials.username : "",
+            password: this._config.credentials ? this._config.credentials.password : "",
+            cancel: false,
+            closeCallback: undefined
+        };
+        let authenticated = false;
+
+        const url = this.config.managerUrl + "/api/" + this.config.realm + "/asset/user/current";
+
+        while (!authenticated) {
+            result = await this.config.basicLoginProvider(result.username, result.password);
+
+            if (result.cancel) {
+                console.log("Basic authentication cancelled by user");
+                if (result.closeCallback) {
+                    result.closeCallback(false);
+                }
+                break;
+            }
+
+            if (!result.username || !result.password) {
+                continue;
+            }
+
+            const response = await fetch(url, {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    Authorization: "Basic " + btoa(result.username + ":" + result.password)
+                }
+            });
+
+            const status = response.status;
+            if (status === 200) {
+                console.log("Basic authentication successful");
+                authenticated = true;
+                this._basicToken = btoa(result.username + ":" + result.password);
+                // Undertow incorrectly returns 403 when no authorization header and a 401 when it is set and not valid
+            } else if (status === 401 || status === 403) {
+                console.log("Basic authentication invalid credentials, trying again");
+            } else {
+                console.log("Unkown response so aborting");
+                break;
+            }
+        }
+
+        this._setAuthenticated(authenticated);
+
+        if (result.closeCallback) {
+            result.closeCallback(authenticated);
         }
     }
 
@@ -852,6 +938,10 @@ export class Manager implements EventProviderFactory {
             return "Bearer " + this._keycloak.token;
         }
 
+        if (this._basicToken && this.authenticated) {
+            return "Basic " + this._basicToken;
+        }
+
         return undefined;
     }
 
@@ -860,6 +950,10 @@ export class Manager implements EventProviderFactory {
             return this._keycloak.token;
         }
         return undefined;
+    }
+
+    public getBasicToken(): string | undefined {
+        return this._basicToken;
     }
 
     public getRealm(): string | undefined {
@@ -891,12 +985,17 @@ export class Manager implements EventProviderFactory {
     protected async loadAndInitialiseKeycloak(): Promise<boolean> {
 
         try {
+
+            // There's a bug in some Keycloak versions which means the init promise doesn't resolve
+            // so putting a check in place; wrap keycloak promise in proper ES6 promise
+            let keycloakPromise: any = null;
+
             // Load the keycloak JS API
             await Util.loadJs(this._config.keycloakUrl + "/js/keycloak.js");
 
             // Should have Keycloak global var now
             if (!(window as any).Keycloak) {
-                this._setError(ORError.KEYCLOAK_FAILED_TO_LOAD);
+                console.log("Keycloak global variable not found probably failed to load keycloak or manager doesn't support it");
                 return false;
             }
 
@@ -917,9 +1016,6 @@ export class Manager implements EventProviderFactory {
                 this._setAuthenticated(false);
             };
 
-            // There's a bug in some Keycloak versions which means the init promise doesn't resolve
-            // so putting a check in place; wrap keycloak promise in proper ES6 promise
-            let keycloakPromise: any = null;
             try {
                 // Try to use a stored offline refresh token if defined
                 const offlineToken = await this._getNativeOfflineRefreshToken();
@@ -964,7 +1060,7 @@ export class Manager implements EventProviderFactory {
                 return false;
             }
         } catch (error) {
-            this._setError(ORError.KEYCLOAK_FAILED_TO_LOAD);
+            this._setError(ORError.AUTH_FAILED);
             console.error("Failed to load Keycloak");
             return false;
         }
