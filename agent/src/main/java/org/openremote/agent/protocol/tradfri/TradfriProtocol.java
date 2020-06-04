@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.AttributeValueType.BOOLEAN;
+import static org.openremote.model.attribute.AttributeValueType.NUMBER;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 import static org.openremote.model.attribute.MetaItemType.*;
 import static org.openremote.model.attribute.MetaItemType.RANGE_MAX;
@@ -252,7 +253,6 @@ public class TradfriProtocol extends AbstractProtocol {
                 LOG.fine("Attribute is not linked to a Tradfri light so cannot process event: " + event);
                 return;
             }
-
             controlInfo.key.controlDevice(controlInfo.value, event);
         }
     }
@@ -283,6 +283,7 @@ public class TradfriProtocol extends AbstractProtocol {
     protected Asset createLightAsset(Light light, MetaItem agentLink, AssetAttribute protocolConfiguration) {
         String name = UniqueIdentifierGenerator.generateId("tradfri_" + light.getInstanceId());
         Asset asset = new Asset(light.getName(), AssetType.LIGHT);
+        asset.getAttribute("lightDimLevel").get().setType(NUMBER);
         asset.getAttribute("lightDimLevel").get().setMeta(
                 new MetaItem(RANGE_MIN, Values.create(0)),
                 new MetaItem(RANGE_MAX, Values.create(255)),
@@ -306,6 +307,27 @@ public class TradfriProtocol extends AbstractProtocol {
         );
         asset.setId(name);
         asset.setParentId(protocolConfiguration.getAssetId().get());
+        EventHandler<LightChangeOnEvent> lightOnOffEventHandler = new EventHandler<LightChangeOnEvent>() {
+            @Override
+            public void handle(LightChangeOnEvent event){
+                asset.getAttribute("lightStatus").get().setValue(Values.create(light.getOn()));
+                asset.setRealm(assetService.findAsset(protocolConfiguration.getAssetId().get()).getRealm());
+                assetService.mergeAsset(asset);
+            }
+        };
+        EventHandler<LightChangeBrightnessEvent> lightBrightnessEventHandler = new EventHandler<LightChangeBrightnessEvent>() {
+            @Override
+            public void handle(LightChangeBrightnessEvent event){
+                asset.getAttribute("lightDimLevel").get().setValue(Values.create(light.getBrightness()));
+                asset.setRealm(assetService.findAsset(protocolConfiguration.getAssetId().get()).getRealm());
+                assetService.mergeAsset(asset);
+            }
+        };
+        light.enableObserve();
+        light.addEventHandler(lightOnOffEventHandler);
+        light.addEventHandler(lightBrightnessEventHandler);
+        asset.getAttribute("lightStatus").get().setValue(Values.create(light.getOn()));
+        asset.getAttribute("lightDimLevel").get().setValue(Values.create(light.getBrightness()));
         assetService.mergeAsset(asset);
         return asset;
     }
@@ -324,6 +346,17 @@ public class TradfriProtocol extends AbstractProtocol {
         );
         asset.setId(name);
         asset.setParentId(protocolConfiguration.getAssetId().get());
+        EventHandler<PlugChangeOnEvent> plugOnOffEventHandler = new EventHandler<PlugChangeOnEvent>() {
+            @Override
+            public void handle(PlugChangeOnEvent event) {
+                asset.getAttribute("plugOnOrOff").get().setValue(Values.create(plug.getOn()));
+                asset.setRealm(assetService.findAsset(protocolConfiguration.getAssetId().get()).getRealm());
+                assetService.mergeAsset(asset);
+            }
+        };
+        plug.enableObserve();
+        plug.addEventHandler(plugOnOffEventHandler);
+        asset.getAttribute("plugOnOrOff").get().setValue(Values.create(plug.getOn()));
         assetService.mergeAsset(asset);
         return asset;
     }
