@@ -19,7 +19,12 @@
  */
 package org.openremote.container.security;
 
+import io.undertow.server.HandlerWrapper;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.util.HttpString;
+import org.jboss.resteasy.spi.CorsHeaders;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -47,6 +52,7 @@ public abstract class IdentityService implements ContainerService {
     // The externally visible address of this installation
     protected UriBuilder externalServerUri;
     protected IdentityProvider identityProvider;
+    protected boolean devMode;
 
     @Override
     public int getPriority() {
@@ -58,6 +64,7 @@ public abstract class IdentityService implements ContainerService {
         boolean identityNetworkSecure = getBoolean(container.getConfig(), IDENTITY_NETWORK_SECURE, IDENTITY_NETWORK_SECURE_DEFAULT);
         String identityNetworkHost = getString(container.getConfig(), IDENTITY_NETWORK_HOST, IDENTITY_NETWORK_HOST_DEFAULT);
         int identityNetworkPort = getInteger(container.getConfig(), IDENTITY_NETWORK_WEBSERVER_PORT, IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT);
+        devMode = container.isDevMode();
 
         externalServerUri = UriBuilder.fromUri("")
             .scheme(identityNetworkSecure ? "https" : "http")
@@ -94,6 +101,31 @@ public abstract class IdentityService implements ContainerService {
         deploymentInfo.addOuterHandlerChainWrapper(AuthOverloadHandler::new);
         deploymentInfo.setSecurityDisabled(false);
         identityProvider.secureDeployment(deploymentInfo);
+
+        if (devMode) {
+            // We need to add an undertow handler wrapper to inject CORS headers on 401/403 responses as the authentication
+            // handler doesn't include headers set by deployment filters
+            deploymentInfo.addOuterHandlerChainWrapper(new HandlerWrapper() {
+                @Override
+                public HttpHandler wrap(HttpHandler handler) {
+                    return new HttpHandler() {
+                        @Override
+                        public void handleRequest(HttpServerExchange exchange) throws Exception {
+
+                            if (exchange.isInIoThread()) {
+                                exchange.dispatch(this);
+                                return;
+                            }
+
+                            String origin = exchange.getRequestHeaders().getFirst(CorsHeaders.ORIGIN);
+                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_ORIGIN), origin);
+                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS), "true");
+                            handler.handleRequest(exchange);
+                        }
+                    };
+                }
+            });
+        }
     }
 
     /**

@@ -94,6 +94,7 @@ public class ManagerWebService extends WebService {
         String defaultApp = getString(container.getConfig(), APP_DEFAULT, APP_DEFAULT_DEFAULT);
 
         ResteasyDeployment resteasyDeployment = createResteasyDeployment(container, getApiClasses(), getApiSingletons(), true);
+
         // Serve REST API
         HttpHandler apiHandler = createApiHandler(identityService, resteasyDeployment);
         // Serve JavaScript API

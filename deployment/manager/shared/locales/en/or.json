@@ -215,11 +215,13 @@
   "errorOccurred": "An error has occurred",
   "managerError": {
     "MANAGER_FAILED_TO_LOAD": "Manager failed to load (see console logs)",
-    "KEYCLOAK_FAILED_TO_LOAD": "Keycloak failed to load (see console logs)",
+    "AUTH_FAILED": "Auth failed to load (see console logs)",
     "AUTH_TYPE_UNSUPPORTED": "Requested auth type not supported",
     "CONSOLE_ERROR": "Console error (see console logs)",
     "EVENTS_CONNECTION_ERROR": "Event bus connection error (see console logs)",
     "TRANSLATION_ERROR": "Translations error (see console logs)"
   },
-  "couldNotRetrieveAttribute": "Could not retrieve attribute information"
+  "couldNotRetrieveAttribute": "Could not retrieve attribute information",
+  "submit": "Submit",
+  "password": "Password"
 }
