@@ -67,7 +67,7 @@ public class GatewayConnector {
     protected boolean disabled;
     protected boolean initialSyncInProgress;
     protected ScheduledFuture<?> syncProcessorFuture;
-    Set<String> syncAssetIds;
+    List<String> syncAssetIds;
     int syncIndex;
     int syncErrors;
     String expectedSyncResponseName;
@@ -317,7 +317,7 @@ public class GatewayConnector {
                 .stream()
                 .sorted(Comparator.comparingInt(assetLevelExtractor))
                 .map(Asset::getId)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+                .collect(Collectors.toList());
 
             if (syncAssetIds.isEmpty()) {
                 deleteObsoleteLocalAssets();
@@ -349,6 +349,11 @@ public class GatewayConnector {
                 requestAssets();
                 return;
             }
+
+            // Returned asset order may not match request order so re-order
+            returnedAssets = returnedAssets.stream()
+                .sorted(Comparator.comparingInt(a -> syncAssetIds.indexOf(a.getId())))
+                .collect(Collectors.toList());
 
             // Merge returned assets ensuring the latest version of each is merged
             returnedAssets.stream()
