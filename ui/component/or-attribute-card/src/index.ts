@@ -198,7 +198,7 @@ export class OrAttributeCard extends LitElement {
     private error: boolean = false;
 
     private period: moment.unitOfTime.Base = "month";
-    private now?: Date = new Date();
+    private now: Date = new Date();
     private currentPeriod?: { start: number; end: number };
 
     private asset: Asset = {};
