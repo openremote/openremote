@@ -98,6 +98,7 @@ const style = css`
         display: flex;
         flex: 0 0 24px;
         align-items: center;
+        margin-top: 10px;
     }
     
     .period-label {
