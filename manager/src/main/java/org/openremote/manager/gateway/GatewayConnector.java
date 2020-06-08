@@ -28,6 +28,7 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.Values;
 
 import java.util.*;
@@ -40,13 +41,14 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.model.query.AssetQuery.Select.selectExcludeAll;
+import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 /**
  * Handles all communication between a gateway representation in the local manager and the actual gateway
  */
 public class GatewayConnector {
 
-    private static final Logger LOG = Logger.getLogger(GatewayConnector.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayConnector.class.getName());
     public static long SYNC_TIMEOUT_MILLIS = 10000; // How long to wait for a response before resending request
     public static long ASSET_CRUD_TIMEOUT_MILLIS = 10000; // How long to wait for a response when merging an asset before throwing an exception
     public static int MAX_SYNC_RETRIES = 5;

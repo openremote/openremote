@@ -44,6 +44,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Values;
 
@@ -63,12 +64,13 @@ import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.manager.event.ClientEventService.getClientId;
 import static org.openremote.manager.event.ClientEventService.getSessionKey;
+import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 public class GatewayService extends RouteBuilder implements ContainerService, AssetUpdateProcessor {
 
     public static final int GATEWAY_SERVICE_PRIORITY = DEFAULT_PRIORITY - 10;
     public static final String GATEWAY_CLIENT_ID_PREFIX = "gateway-";
-    private static final Logger LOG = Logger.getLogger(GatewayService.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayService.class.getName());
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
     protected ManagerIdentityService identityService;
@@ -239,7 +241,11 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             // This is a change to a locally registered gateway
             if (attribute.getNameOrThrow().equals("disabled")) {
                 boolean disabled = attribute.getValueAsBoolean().orElse(false);
-                connector.setDisabled(disabled);
+                boolean isAlreadyDisabled = asset.getAttribute("disabled").flatMap(AssetAttribute::getValueAsBoolean).orElse(false);
+                if (disabled != isAlreadyDisabled) {
+                    connector.setDisabled(disabled);
+                    updateGatewayClient(connector, !disabled);
+                }
             }
         } else {
             String gatewayId = assetIdGatewayIdMap.get(asset.getId());
@@ -254,6 +260,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                         LOG.info("Gateway is not connected so attribute event for descendant asset will be dropped (Asset ID=" + asset.getId() + ", Gateway ID=" + gatewayId + "): " + attribute);
                         throw new AssetProcessingException(AssetProcessingException.Reason.GATEWAY_DISCONNECTED, "Gateway is not connected: Gateway ID=" + connector.gatewayId);
                     }
+                    LOG.fine("Attribute event for a gateway descendant asset being forwarded to the gateway (Asset ID=" + asset.getId() + ", Gateway ID=" + gatewayId + "): " + attribute);
                     connector.sendMessageToGateway(
                         new AttributeEvent(
                             asset.getId(),
@@ -385,6 +392,8 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
         if (connector.isDisabled()) {
             LOG.warning("Gateway is currently disabled so will be ignored: Gateway ID=" + gatewayId);
+            // Should not have got passed keycloak ensure keycloak client is disabled
+            updateGatewayClient(connector, false);
             clientEventService.sendToSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
             disconnectRunnable.run();
             return;
@@ -430,6 +439,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                 // Check if disabled
                 boolean isNowDisabled = gateway.getAttribute("disabled").flatMap(AssetAttribute::getValueAsBoolean).orElse(false);
                 connector.setDisabled(isNowDisabled);
+                updateGatewayClient(connector, !isNowDisabled);
                 break;
             case DELETE:
                 // Check if this gateway has a connector
@@ -511,6 +521,15 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                 LOG.log(Level.SEVERE, "Failed to merge registered gateway: " + gateway.getId(), e);
             }
         }
+    }
+
+    protected void updateGatewayClient(GatewayConnector connector, boolean enabled) {
+        final ClientsResource clientsResource = identityProvider.getRealms(getClientRequestInfo()).realm(connector.getRealm()).clients();
+        clientsResource.findByClientId(GATEWAY_CLIENT_ID_PREFIX + connector.gatewayId).stream().findFirst().ifPresent(
+            clientRepresentation -> {
+                clientRepresentation.setEnabled(enabled);
+                clientsResource.get(clientRepresentation.getId()).update(clientRepresentation);
+            });
     }
 
     protected void destroyGatewayClient(Asset gateway) {
