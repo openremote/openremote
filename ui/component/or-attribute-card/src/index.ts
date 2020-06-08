@@ -652,7 +652,6 @@ export class OrAttributeCard extends LitElement {
 
         const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(this.attributeName!);
         const unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
-        let label = Util.getAttributeLabel(attr, attributeDescriptor);
 
         if (!format) { return {value: roundedVal, unit: unit, formattedValue: roundedVal.toString()}; }
 
