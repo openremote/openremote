@@ -226,5 +226,28 @@
   },
   "couldNotRetrieveAttribute": "Could not retrieve attribute information",
   "submit": "Submit",
-  "password": "Password"
+  "password": "Password",
+  "units": {
+    "EUR": "€",
+    "GBP": "£",
+    "KILOWATT": "kW",
+    "KILOWATT_PEAK": "kWp",
+    "KILOWATT_PER_HOUR": "kWh",
+    "MILLIMETER_PER_SQUARE_METER": "mm/m²",
+    "MILLIS": "ms",
+    "SECONDS": "s",
+    "MINUTES": "min",
+    "KILOGRAM_CARBON_PER_KILOWATT_HOUR": "kg CO₂/kWh",
+    "KILOGRAM": "kg",
+    "CELSIUS": "°C",
+    "KILOMETERS_PER_HOUR": "km/h",
+    "METERS_PER_HOUR": "m/h",
+    "DEGREES": "°",
+    "PERCENTAGE": "%",
+    "METERS_PER_SECOND": "m/s",
+    "EUR_PER_KILOWATT_HOUR": "€/kWh",
+    "EUR_PER_MONTH": "€/month",
+    "GBP_PER_KILOWATT_HOUR": "£/kWh",
+    "GBP_PER_MONTH": "£/month"
+  }
 }

@@ -2,7 +2,7 @@ import {css, customElement, html, LitElement, property, PropertyValues, query, u
 import {classMap} from "lit-html/directives/class-map";
 import i18next from "i18next";
 import {Asset, AssetAttribute, Attribute, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
-import {manager, DefaultColor3, DefaultColor4, DefaultColor5, Util, AssetModelUtil} from "@openremote/core";
+import {manager, DefaultColor3, DefaultColor4, Util, AssetModelUtil} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
 import {getContentWithMenuTemplate, OrChartConfig} from "@openremote/or-chart";
 import {InputType} from "@openremote/or-input";
@@ -93,17 +93,13 @@ const style = css`
         align-items: center;
     }
     
-    .period-label {
-        color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-    }
-    
     .main-number {
         font-size: 42px;
     }
     
     .main-number-unit {
         font-size: 42px;
-        color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+        color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
     }
     
     .chart-wrapper {
@@ -635,9 +631,10 @@ export class OrAttributeCard extends LitElement {
         const roundedVal = +value.toFixed(1); // + operator prevents str return
 
         const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(this.attributeName!);
-        const unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
+        const unitKey = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
+        const unit = i18next.t("units." + unitKey);
 
-        if (!format) { return {value: roundedVal, unit: unit, formattedValue: roundedVal.toString()}; }
+        if (!format || !unitKey) { return {value: roundedVal, unit: "", formattedValue: roundedVal.toString()}; }
 
         return {
             value: roundedVal,
