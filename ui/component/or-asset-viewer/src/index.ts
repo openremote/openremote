@@ -387,11 +387,6 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
             }
         };
 
-        // let headers = ["a", "b", "c"];
-        // let rows = [["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"],
-        //     ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"], ["0", "1", "2"]];
-        // let columnFilter = viewerConfig.groupConfig!.columnFilters || ["a"];
-
         // Function to update the table and message when assets or config changes
         let updateTable = () => {
 
