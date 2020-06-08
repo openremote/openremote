@@ -128,7 +128,7 @@ export class OrRuleActionNotification extends LitElement {
             valueTemplate = html`<or-input .type="${InputType.TEXT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value)}" ?readonly="${this.readonly}" .value="${value}" ></or-input>`
         }
 
-        let modalTemplate;
+        let modalTemplate = html``;
         if(message) {
             if(messageType === "push") {
                 modalTemplate = html`
@@ -163,10 +163,15 @@ export class OrRuleActionNotification extends LitElement {
     }
 
     getNotificationTargetType() {
-        if(!this.action.target) return;
+        if(this.action.target) {
+            if(this.action.target.assets || this.action.target.matchedAssets) return NotificationTargetType.ASSET;
+            if(this.action.target.users) return NotificationTargetType.USER;
+        } else if(this.action.notification) {
+            if(this.action.notification.message && this.action.notification.message.type === "email") return NotificationTargetType.CUSTOM;
+        } else {
+            return;
+        }
         
-        if(this.action.target.assets || this.action.target.matchedAssets) return NotificationTargetType.ASSET;
-        if(this.action.target.users) return NotificationTargetType.USER;
     }
 
 
@@ -239,7 +244,6 @@ export class OrRuleActionNotification extends LitElement {
             case NotificationTargetType.TENANT:
                 break;
             case NotificationTargetType.CUSTOM:
-                delete this.action.target;
                 break;
         }
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
