@@ -622,7 +622,6 @@ export class OrAttributeCard extends LitElement {
                 this.data = datapoints || [];
                 this.mainValue = this.getHighestValue(this.data);
                 this.formattedMainValue = this.getFormattedValue(this.mainValue);
-                return this.mainValue;
 
                 this.error = false;
 
