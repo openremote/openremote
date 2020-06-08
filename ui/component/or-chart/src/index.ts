@@ -659,8 +659,12 @@ export class OrChart extends translate(i18next)(LitElement) {
                         display: false
                     },
                     tooltips: {
-                        mode: 'index',
-                        intersect: true
+                        mode: 'x',
+                        intersect: false
+                    },
+                    hover: {
+                        mode: 'x',
+                        intersect: false
                     },
                     scales: {
                         yAxes: [{
@@ -727,7 +731,6 @@ export class OrChart extends translate(i18next)(LitElement) {
             if(assets.length > 0) {
                 this.assets = view.assetIds.map((assetId: string)  => assets.find(x => x.id === assetId));
                 this.assetAttributes = view.attributes.map((attr: string, index: number)  => Util.getAssetAttribute(this.assets[index], attr));
-                console.log(this.assets, this.assetAttributes);
                 this.period = view.period;
                 this._loading = false;
             }
@@ -952,10 +955,10 @@ export class OrChart extends translate(i18next)(LitElement) {
             });
 
             data = data.concat(cPredictedData);
-    
           
             data = data.concat(cData);
         }
+        
         Promise.all(data).then((completed=> {
             this._data = completed;
         }))
@@ -1080,7 +1083,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     if (typeof datapoint['y'] !== 'undefined') {
                         datapoint['y'] = Math.round(datapoint['y'] * 100) / 100
                     } else {
-                        delete datapoint['y']
+                        delete datapoint['y'];
                     }
                 });
                 return data;

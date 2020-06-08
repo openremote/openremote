@@ -32,8 +32,10 @@ export const style = css`
     }
     
     #container {
+        max-width: 1400px;
         box-sizing: border-box;
         display: grid;
+        margin: auto;
         padding: 20px 20px;
         grid-gap: 10px;
         grid-template-columns: repeat(auto-fill, minmax(calc(25% - 8px), 1fr));
@@ -124,7 +126,13 @@ export const style = css`
         display: none;
         cursor: pointer;
     }
-    
+
+    @media screen and (max-width: 1024px) {
+        #container {
+            grid-template-columns: repeat(auto-fill, minmax(calc(50% - 8px), 1fr));
+        }
+    }
+
     @media screen and (max-width: 769px) {
         .back-navigation {
             display: block;
