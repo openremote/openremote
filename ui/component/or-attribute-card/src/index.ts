@@ -106,11 +106,11 @@ const style = css`
     }
     
     .main-number {
-        font-size: 24px;
+        font-size: 42px;
     }
     
     .main-number-unit {
-        font-size: 24px;
+        font-size: 42px;
         color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
     }
     
