@@ -2,7 +2,7 @@ import {css, customElement, html, LitElement, property, PropertyValues, query, u
 import {classMap} from "lit-html/directives/class-map";
 import i18next from "i18next";
 import {Asset, AssetAttribute, Attribute, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
-import {manager, DefaultColor3, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
+import {manager, DefaultColor3, DefaultColor4, DefaultColor5, Util, AssetModelUtil} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
 import {getContentWithMenuTemplate, OrChartConfig} from "@openremote/or-chart";
 import {InputType} from "@openremote/or-input";
@@ -647,13 +647,15 @@ export class OrAttributeCard extends LitElement {
 
     protected getFormattedValue(value: number): {value: number, unit: string, formattedValue: string} {
         const format = getMetaValue(MetaItemType.FORMAT, this.asset.attributes![this.attributeName!], undefined);
+        const attr = this.asset.attributes![this.attributeName!];
         const roundedVal = +value.toFixed(1); // + operator prevents str return
 
-        if (!format) {
-            return {value: roundedVal, unit: "", formattedValue: value.toString()};
-        }
+        const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(this.attributeName!);
+        const unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
+        let label = Util.getAttributeLabel(attr, attributeDescriptor);
 
-        const unit = format.split(" ").pop();
+        if (!format) { return {value: roundedVal, unit: unit, formattedValue: roundedVal.toString()}; }
+
         return {
             value: roundedVal,
             unit: unit,
