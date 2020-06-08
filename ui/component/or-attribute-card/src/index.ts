@@ -26,14 +26,6 @@ const style = css`
         display: none;
     }
     
-    .panel {
-        background-color: var(--internal-or-asset-viewer-panel-color);     
-        border: 1px solid #e5e5e5;
-        border-radius: 5px;
-        max-width: 100%;
-        position: relative;
-        padding: var(--internal-or-asset-viewer-panel-padding);
-    }
     .panel.panel-empty {
         display: flex;
     }
