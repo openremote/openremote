@@ -32,6 +32,7 @@ export const style = css`
     }
     
     #container {
+        width: 100%;
         max-width: 1400px;
         box-sizing: border-box;
         display: grid;

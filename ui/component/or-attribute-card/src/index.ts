@@ -88,13 +88,16 @@ const style = css`
         align-items: center;
     }
     
-    .main-number {
+    .main-number {   
+        color: var(--internal-or-asset-viewer-title-text-color);
         font-size: 42px;
     }
     
     .main-number-unit {
         font-size: 42px;
-        color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+        color: var(--internal-or-asset-viewer-title-text-color);
+        font-weight: 200;
+        margin-left: 5px;
     }
     
     .chart-wrapper {
