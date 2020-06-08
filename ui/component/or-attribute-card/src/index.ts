@@ -181,10 +181,9 @@ export class OrAttributeCard extends LitElement {
     private currentPeriod?: { start: number; end: number };
 
     private asset: Asset = {};
-    private formattedMainValue: {value: number|undefined, unit: string, formattedValue: string} = {
+    private formattedMainValue: {value: number|undefined, unit: string} = {
         value: undefined,
-        unit: "",
-        formattedValue: ""
+        unit: ""
     };
 
     @query("#chart")
@@ -620,8 +619,7 @@ export class OrAttributeCard extends LitElement {
         return Math.max.apply(Math, data.map((e: ValueDatapoint<any>) => e.y || false ));
     }
 
-    protected getFormattedValue(value: number): {value: number, unit: string, formattedValue: string} {
-        const format = getMetaValue(MetaItemType.FORMAT, this.asset.attributes![this.attributeName!], undefined);
+    protected getFormattedValue(value: number): {value: number, unit: string} {
         const attr = this.asset.attributes![this.attributeName!];
         const roundedVal = +value.toFixed(1); // + operator prevents str return
 
@@ -629,12 +627,11 @@ export class OrAttributeCard extends LitElement {
         const unitKey = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
         const unit = i18next.t("units." + unitKey);
 
-        if (!format || !unitKey) { return {value: roundedVal, unit: "", formattedValue: roundedVal.toString()}; }
+        if (!unitKey) { return {value: roundedVal, unit: "" }; }
 
         return {
             value: roundedVal,
-            unit: unit,
-            formattedValue: i18next.t(format, { postProcess: "sprintf", sprintf: [roundedVal] }).trim()
+            unit: unit
         };
     }
 
