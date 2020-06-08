@@ -126,12 +126,9 @@ const style = css`
         justify-content: space-between;
     }
     
-    .period-selector-wrapper {
-        flex: 0 0 75px;
-    }
     .period-selector {
         position: absolute;
-        right: 15px;
+        right: 8px;
         bottom: 17px;
     }
     
