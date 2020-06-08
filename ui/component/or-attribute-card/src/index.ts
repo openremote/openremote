@@ -647,16 +647,17 @@ export class OrAttributeCard extends LitElement {
 
     protected getFormattedValue(value: number): {value: number, unit: string, formattedValue: string} {
         const format = getMetaValue(MetaItemType.FORMAT, this.asset.attributes![this.attributeName!], undefined);
+        const roundedVal = +value.toFixed(1); // + operator prevents str return
 
         if (!format) {
-            return {value: value, unit: "", formattedValue: value.toString()};
+            return {value: roundedVal, unit: "", formattedValue: value.toString()};
         }
 
         const unit = format.split(" ").pop();
         return {
-            value: value,
+            value: roundedVal,
             unit: unit,
-            formattedValue: i18next.t(format, { postProcess: "sprintf", sprintf: [value] }).trim()
+            formattedValue: i18next.t(format, { postProcess: "sprintf", sprintf: [roundedVal] }).trim()
         };
     }
 
