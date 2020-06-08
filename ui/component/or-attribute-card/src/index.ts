@@ -677,14 +677,12 @@ export class OrAttributeCard extends LitElement {
     }
 
     protected getFormattedDelta(firstVal: number, lastVal: number): {val?: number, unit?: string} {
-        console.log(firstVal,lastVal);
         if (firstVal && lastVal) {
             if (lastVal === 0 && firstVal === 0) {
                 return {val: 0, unit: "%"};
             } else if (lastVal === 0 && firstVal !== 0) {
                 return {val: 100, unit: "%"};
             } else {
-                console.log("helo");
                 const math = Math.round((lastVal - firstVal) / firstVal * 100);
                 return {val: math, unit: "%"};
             }
