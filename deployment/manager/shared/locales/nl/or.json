@@ -179,7 +179,7 @@
   "logs": "Logs",
   "addRemoveAttributes": "Attributen toevoegen/verwijderen",
   "email": "Email",
-  "push-notification":"Push notification",
+  "push-notification":"Push notificatie",
   "subject": "Onderwerp",
   "openWebsiteUrl": "Te openen website adres",
   "openInBrowser": "Openen in browser (voor externe websites)",
@@ -193,6 +193,9 @@
   "globalRules": "Globale regels",
   "recipients": "Ontvangers",
   "JSON": "Als-Dan",
+  "FLOW": "Flow",
+  "GROOVY": "Groovy",
+  "JAVASCRIPT": "JavaScript",
   "attributeValueType": {
     "PERCENTAGE": "%.2f",
     "NUMBER": "%.0f",
@@ -207,7 +210,7 @@
   },
   "gatewayConnection": "Manager interconnect",
   "secured": "Beveiligd",
-  "clientSecret": "Client secret",
+  "clientSecret": "Client wachtwoord",
   "clientId": "Client ID",
   "realm": "Realm",
   "port": "Poort",
@@ -221,5 +224,7 @@
     "EVENTS_CONNECTION_ERROR": "Event bus connectie fout (bekijk de console logs)",
     "TRANSLATION_ERROR": "Vertalingen fout (bekijk de console logs)"
   },
-  "couldNotRetrieveAttribute": "Kan de gegevens voor dit attribuut niet ophalen"
+  "couldNotRetrieveAttribute": "Kan de gegevens voor dit attribuut niet ophalen",
+  "submit": "Verzenden",
+  "password": "Wachtwoord"
 }

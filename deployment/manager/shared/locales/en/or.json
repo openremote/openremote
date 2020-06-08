@@ -193,6 +193,9 @@
   "globalRules": "global rules",
   "recipients": "Recipients",
   "JSON": "When-Then",
+  "FLOW": "Flow",
+  "GROOVY": "Groovy",
+  "JAVASCRIPT": "JavaScript",
   "attributeValueType": {
     "PERCENTAGE": "%.2f",
     "NUMBER": "%.0f",
