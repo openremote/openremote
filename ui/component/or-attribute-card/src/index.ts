@@ -620,6 +620,7 @@ export class OrAttributeCard extends LitElement {
         return this.getDatapointsByAttribute(this.assetId, this.attributeName, this.currentPeriod.start, this.currentPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
+                this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data));
                 this.mainValue = this.getHighestValue(this.data);
                 this.formattedMainValue = this.getFormattedValue(this.mainValue);
 
@@ -659,14 +660,32 @@ export class OrAttributeCard extends LitElement {
         };
     }
 
-    protected getFormattedDelta(currentPeriodVal: number, lastPeriodVal: number): {val?: number, unit?: string} {
-        if (currentPeriodVal && lastPeriodVal) {
-            if (lastPeriodVal === 0 && currentPeriodVal === 0) {
+    protected getFirstKnownMeasurement(data: ValueDatapoint<any>[]): number {
+        for (let i = 0; i <= data.length; i++) {
+            if (data[i].y !== undefined)
+                return data[i].y;
+        }
+        return 0;
+    }
+
+    protected getLastKnownMeasurement(data: ValueDatapoint<any>[]): number {
+        for (let i = data.length - 1; i >= 0; i--) {
+            if (data[i].y !== undefined)
+                return data[i].y;
+        }
+        return 0;
+    }
+
+    protected getFormattedDelta(firstVal: number, lastVal: number): {val?: number, unit?: string} {
+        console.log(firstVal,lastVal);
+        if (firstVal && lastVal) {
+            if (lastVal === 0 && firstVal === 0) {
                 return {val: 0, unit: "%"};
-            } else if (lastPeriodVal === 0 && currentPeriodVal !== 0) {
+            } else if (lastVal === 0 && firstVal !== 0) {
                 return {val: 100, unit: "%"};
             } else {
-                const math = Math.round((currentPeriodVal - lastPeriodVal) / lastPeriodVal * 100);
+                console.log("helo");
+                const math = Math.round((lastVal - firstVal) / firstVal * 100);
                 return {val: math, unit: "%"};
             }
         } else {
