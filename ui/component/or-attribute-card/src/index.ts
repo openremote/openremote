@@ -26,6 +26,9 @@ const style = css`
         display: none;
     }
     
+    .panel {
+        position: relative;
+    }
     .panel.panel-empty {
         display: flex;
     }
@@ -116,8 +119,8 @@ const style = css`
     
     .period-selector {
         position: absolute;
-        right: 8px;
-        bottom: 17px;
+        right: -16px;
+        bottom: 0;
     }
     
     .delta {
