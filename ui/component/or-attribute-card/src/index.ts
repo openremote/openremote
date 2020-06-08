@@ -322,15 +322,11 @@ export class OrAttributeCard extends LitElement {
             if (changedProperties.has("data")) {
                 this._chart.data.datasets![0].data = this.data;
                 this._chart.update();
-            }
-        }
-
-        if (changedProperties.has("mainValue") || changedProperties.has("mainValueLastPeriod")) {
-            if (this.mainValueLastPeriod !== undefined && this.mainValue !== undefined) {
-                this.delta = this.getFormattedDelta(this.mainValue, this.mainValueLastPeriod);
+                this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data));
                 this.deltaPlus = (this.delta.val && this.delta.val > 0) ? "+" : "";
             }
         }
+
         if (changedProperties.has("mainValue")) {
             this.formattedMainValue = this.getFormattedValue(this.mainValue!);
         }
