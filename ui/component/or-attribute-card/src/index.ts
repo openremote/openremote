@@ -78,7 +78,7 @@ const style = css`
         flex: 1;
     }
     
-    .top-row {
+    .mainvalue-wrapper {
         width: 100%;
         display: flex;
         flex: 0 0 60px;
@@ -86,19 +86,11 @@ const style = css`
         justify-content: center;
     }
     
-    .center-row {
+    .graph-wrapper {
         width: 100%;
         display: flex;
         flex: 1;
         align-items: center;
-    }
-    
-    .bottom-row {
-        width: 100%;
-        display: flex;
-        flex: 0 0 24px;
-        align-items: center;
-        margin-top: 10px;
     }
     
     .period-label {
@@ -533,23 +525,18 @@ export class OrAttributeCard extends LitElement {
                         <or-input icon="pencil" type="button" @click="${() => this._openDialog()}"></or-input>
                     </div>
                     <div class="panel-content">
-                        <div class="top-row">
+                        <div class="mainvalue-wrapper">
                             <span class="main-number">${this.formattedMainValue!.value}</span>
                             <span class="main-number-unit">${this.formattedMainValue!.unit}</span>
                         </div>
-                        <div class="center-row">
+                        <div class="graph-wrapper">
                             <div class="chart-wrapper">
                                 <canvas id="chart"></canvas>
                             </div>
                             <div class="delta-wrapper">
                                 <span class="delta">${this.deltaPlus}${this.delta.val}${this.delta.unit}</span>
                             </div>
-                        </div>
-                        <div class="bottom-row">
-                            <div class="date-range-wrapper">
-                                <span class="period-label">${Intl.DateTimeFormat(manager.language).format(this.currentPeriod!.start)}</span>
-                                <span class="period-label">${Intl.DateTimeFormat(manager.language).format(this.currentPeriod!.end)}</span>
-                            </div>
+                            
                             <div class="period-selector-wrapper">
                                 ${getContentWithMenuTemplate(
                                     html`<or-input class="period-selector" .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-input>`,
