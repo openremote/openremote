@@ -190,8 +190,6 @@ export class OrAttributeCard extends LitElement {
     @property()
     private mainValue?: number;
     @property()
-    private mainValueLastPeriod?: number;
-    @property()
     private delta: {val?: number, unit?: string} = {};
     @property()
     private deltaPlus: string = "";
@@ -622,29 +620,17 @@ export class OrAttributeCard extends LitElement {
             start: thisMoment.clone().subtract(1, this.period).toDate().getTime(),
             end: thisMoment.clone().toDate().getTime()
         };
-        const lastPeriod = {
-            start: thisMoment.clone().subtract(1, this.period).startOf(this.period).toDate().getTime(),
-            end: thisMoment.clone().subtract(1, this.period).endOf(this.period).toDate().getTime()
-        };
 
-        const p1 = this.getDatapointsByAttribute(this.assetId, this.attributeName, this.currentPeriod.start, this.currentPeriod.end)
+        return this.getDatapointsByAttribute(this.assetId, this.attributeName, this.currentPeriod.start, this.currentPeriod.end)
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
                 this.mainValue = this.getHighestValue(this.data);
                 this.formattedMainValue = this.getFormattedValue(this.mainValue);
                 return this.mainValue;
-            });
 
-        const p2 = this.getDatapointsByAttribute(this.assetId, this.attributeName, lastPeriod.start, lastPeriod.end)
-            .then((datapoints: ValueDatapoint<any>[]) => {
-                this.mainValueLastPeriod = this.getHighestValue(datapoints);
-                return this.mainValueLastPeriod;
-            });
-
-        Promise.all([p1, p2])
-            .then((returnvalues) => {
-                this.delta = this.getFormattedDelta(returnvalues[0], returnvalues[1]);
                 this.error = false;
+
+                return this.mainValue;
             })
             .catch((err) => {
                 this.error = true;
