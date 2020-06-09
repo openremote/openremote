@@ -31,6 +31,8 @@ import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
 import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import { GenericAxiosResponse } from "axios";
+import { OrIcon } from "@openremote/or-icon";
 
 export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group";
 
@@ -391,19 +393,22 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
 
             const loadingMsg: OrTranslate = hostElement.shadowRoot!.getElementById(panelName + "-attribute-table-msg") as OrTranslate;
             const attributeTable: OrTable = hostElement.shadowRoot!.getElementById(panelName + "-attribute-table") as OrTable;
+            const addRemoveButton: OrIcon = hostElement.shadowRoot!.getElementById(panelName + "-add-remove-columns") as OrIcon;
 
-            if (!loadingMsg || !attributeTable) {
+            if (!loadingMsg || !attributeTable || !addRemoveButton) {
                 return;
             }
 
             if (selectedAttributes.length === 0 || !childAssets || childAssets.length === 0) {
-                loadingMsg.value = "noData";
+                loadingMsg.value = "noChildAssets";
                 loadingMsg.hidden = false;
                 attributeTable.hidden = true;
+                addRemoveButton.classList.remove("active");
                 return;
             }
 
             // Update table properties which will cause a re-render
+            addRemoveButton.classList.add("active");
             loadingMsg.hidden = true;
             attributeTable.hidden = false;
             const headers = [...selectedAttributes].sort();
@@ -430,20 +435,24 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
         // Define the DOM content for this panel
         content = html`
                 <style>
-                    #asset-group-add-remove-columns {
+                    .asset-group-add-remove-button {
                         position: absolute;
                         top: 20px;
                         right: var(--internal-or-asset-viewer-panel-padding);
+                        opacity: 0.5;
+                    }
+                    .asset-group-add-remove-button.active {
                         cursor: pointer;
+                        opacity: 1;
                     }
                 </style>
-                <or-icon id="asset-group-add-remove-columns" icon="pencil" @click="${() => attributePickerModalOpen()}"></or-icon>
+                <or-icon class="asset-group-add-remove-button" .id="${panelName}-add-remove-columns" icon="pencil" @click="${() => attributePickerModalOpen()}"></or-icon>
                 <or-table hidden .id="${panelName}-attribute-table" .options="{stickyFirstColumn:true}"></or-table>
                 <span><or-translate id="${panelName}-attribute-table-msg" value="loading"></or-translate></span>
                 <or-mwc-dialog id="${panelName}-attribute-modal" dialogTitle="addRemoveAttributes" .dialogActions="${attributePickerModalActions}"></or-mwc-dialog>
             `;
     } else {
-        if(attrs.length === 0) {
+        if (attrs.length === 0) {
             return undefined;
         }
 
@@ -482,17 +491,24 @@ export function getField(name: string, isProperty: boolean, styles: { [style: st
 }
 
 async function getAssetChildren(id: string, childAssetType: string): Promise<Asset[]> {
-    const response = await manager.rest.api.AssetResource.queryAssets({
-        select: {
-            excludePath: true,
-            excludeParentInfo: true
-        },
-        parents: [
-            {
-                id: id
-            }
-        ]
-    });
+    let response: GenericAxiosResponse<Asset[]>;
+
+    try {
+        response = await manager.rest.api.AssetResource.queryAssets({
+            select: {
+                excludePath: true,
+                excludeParentInfo: true
+            },
+            parents: [
+                {
+                    id: id
+                }
+            ]
+        });
+    } catch (e) {
+        console.log("Failed to get child assets: " + e);
+        return [];
+    }
 
     if (response.status !== 200 || !response.data) {
         return [];

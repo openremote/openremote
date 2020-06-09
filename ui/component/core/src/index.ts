@@ -644,8 +644,8 @@ export class Manager implements EventProviderFactory {
             ns: this.config.loadTranslations,
             interpolation: {
                 format: function(value, format, lng) {
-                    if (format === 'uppercase') return value.toUpperCase();
-                    if(value instanceof Date) {
+                    if (format === "uppercase") return value.toUpperCase();
+                    if (value instanceof Date) {
                         return moment(value).format(format);
                     }
                     return value;
