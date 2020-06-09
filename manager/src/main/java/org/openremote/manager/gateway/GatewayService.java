@@ -105,7 +105,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         executorService = container.getService(ManagerExecutorService.class);
 
         if (!identityService.isKeycloakEnabled()) {
-            LOG.warning("Gateways are not supported when not using Keycloak identity provider");
+            LOG.warning("Incoming edge gateway connections disabled: Not supported when not using Keycloak identity provider");
             active = false;
         } else {
             active = true;
