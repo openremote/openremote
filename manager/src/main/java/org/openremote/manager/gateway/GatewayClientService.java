@@ -64,6 +64,7 @@ import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
  */
 public class GatewayClientService extends RouteBuilder implements ContainerService {
 
+    public static final int PRIORITY = ManagerWebService.PRIORITY - 300;
     private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayClientService.class.getName());
     public static final String CLIENT_EVENT_SESSION_PREFIX = GatewayClientService.class.getSimpleName() + ":";
     protected AssetStorageService assetStorageService;

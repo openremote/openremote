@@ -37,9 +37,9 @@ import static org.openremote.container.util.MapAccess.getString;
 public class TimerService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(TimerService.class.getName());
-
     public static final String TIMER_CLOCK_TYPE = "TIMER_CLOCK_TYPE";
     public static final String TIMER_CLOCK_TYPE_DEFAULT = Clock.REAL.toString();
+    public static final int PRIORITY = ContainerService.HIGH_PRIORITY + 300;
 
     public enum Clock {
         REAL {
@@ -88,7 +88,7 @@ public class TimerService implements ContainerService {
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return PRIORITY;
     }
 
     @Override

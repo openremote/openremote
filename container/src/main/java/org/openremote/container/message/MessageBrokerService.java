@@ -29,6 +29,7 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.concurrent.ContainerExecutor;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.DefaultWebsocketComponent;
 import org.openremote.container.web.WebService;
@@ -46,7 +47,7 @@ public class MessageBrokerService implements ContainerService {
     public static final String MESSAGE_SESSION_ALLOWED_ORIGIN = "MESSAGE_SESSION_ALLOWED_ORIGIN";
     public static final String MESSAGE_SESSION_ALLOWED_ORIGIN_DEFAULT = null;
     private static final Logger LOG = Logger.getLogger(MessageBrokerService.class.getName());
-    public static final int PRIORITY = ContainerService.DEFAULT_PRIORITY - 100;
+    public static final int PRIORITY = ContainerService.HIGH_PRIORITY;
 
     protected ProducerTemplate producerTemplate;
     protected MessageBrokerContext context;

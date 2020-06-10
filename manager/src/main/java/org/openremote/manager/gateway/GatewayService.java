@@ -68,7 +68,7 @@ import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 public class GatewayService extends RouteBuilder implements ContainerService, AssetUpdateProcessor {
 
-    public static final int GATEWAY_SERVICE_PRIORITY = DEFAULT_PRIORITY - 10;
+    public static final int PRIORITY = HIGH_PRIORITY + 100;
     public static final String GATEWAY_CLIENT_ID_PREFIX = "gateway-";
     private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayService.class.getName());
     protected AssetStorageService assetStorageService;
@@ -93,7 +93,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
     @Override
     public int getPriority() {
-        return GATEWAY_SERVICE_PRIORITY;
+        return PRIORITY;
     }
 
     @Override
@@ -243,6 +243,9 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                 boolean disabled = attribute.getValueAsBoolean().orElse(false);
                 boolean isAlreadyDisabled = asset.getAttribute("disabled").flatMap(AssetAttribute::getValueAsBoolean).orElse(false);
                 if (disabled != isAlreadyDisabled) {
+                    if (disabled) {
+                        connector.sendMessageToGateway(new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
+                    }
                     connector.setDisabled(disabled);
                     updateGatewayClient(connector, !disabled);
                 }
@@ -438,6 +441,9 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
                 // Check if disabled
                 boolean isNowDisabled = gateway.getAttribute("disabled").flatMap(AssetAttribute::getValueAsBoolean).orElse(false);
+                if (isNowDisabled) {
+                    connector.sendMessageToGateway(new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
+                }
                 connector.setDisabled(isNowDisabled);
                 updateGatewayClient(connector, !isNowDisabled);
                 break;

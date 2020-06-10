@@ -39,7 +39,10 @@ package org.openremote.container;
  */
 public interface ContainerService {
 
-    int DEFAULT_PRIORITY = Integer.MAX_VALUE - 100;
+    int DEFAULT_PRIORITY = 1000;
+    int HIGH_PRIORITY = Integer.MIN_VALUE + 1000;
+    int MED_PRIORITY = 0;
+    int LOW_PRIORITY = Integer.MAX_VALUE - 1000;
 
     /**
      * Gets the priority of this service which is used to determine initialization order when services are auto
