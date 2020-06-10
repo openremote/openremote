@@ -11,6 +11,16 @@ if [ -d "/deployment/keycloak/themes" ]; then
         fi
     done
 fi
+# Additional symlinks for custom themes during dev
+if [ -d "/deployment/keycloak/customthemes" ]; then
+    for dir in /deployment/keycloak/customthemes/*; do
+        if [ -d ${dir} ]; then
+            echo "${dir##*/}"
+            ln -s ${dir} /opt/jboss/keycloak/themes/${dir##*/}
+        fi
+    done
+fi
+
 
 exec /opt/jboss/tools/docker-entrypoint.sh $@
 exit $?
