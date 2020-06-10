@@ -6,6 +6,7 @@ import {manager, DefaultColor3, DefaultColor4, Util, AssetModelUtil} from "@open
 import Chart, {ChartTooltipCallback} from "chart.js";
 import {getContentWithMenuTemplate, OrChartConfig} from "@openremote/or-chart";
 import {InputType} from "@openremote/or-input";
+import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {getMetaValue} from "@openremote/core/dist/util";
 import moment from "moment";
@@ -91,6 +92,11 @@ const style = css`
     .main-number {   
         color: var(--internal-or-asset-viewer-title-text-color);
         font-size: 42px;
+    }
+    
+    .main-number-icon {   
+        font-size: 24px;
+        margin-right: 10px;
     }
     
     .main-number-unit {
@@ -516,6 +522,7 @@ export class OrAttributeCard extends LitElement {
                     </div>
                     <div class="panel-content">
                         <div class="mainvalue-wrapper">
+                            <span class="main-number-icon">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.asset!.type!))}</span>
                             <span class="main-number">${this.formattedMainValue!.value}</span>
                             <span class="main-number-unit">${this.formattedMainValue!.unit}</span>
                         </div>
