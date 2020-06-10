@@ -575,6 +575,20 @@ export class OrAttributeCard extends LitElement {
         return response.data;
     }
 
+    protected async getAttributeValue(assetId: string, attributeName: string): Promise<any> {
+
+        const response = await manager.rest.api.AssetResource.queryAssets({
+            ids: [assetId],
+            recursive: false
+        });
+
+        if (response.status !== 200 || !response.data) {
+            return [];
+        }
+
+        return response.data;
+    }
+
     protected async getData() {
 
         if (!this.assetId || !this.attributeName) {
@@ -591,16 +605,19 @@ export class OrAttributeCard extends LitElement {
             end: thisMoment.clone().toDate().getTime()
         };
 
-        return this.getDatapointsByAttribute(this.assetId, this.attributeName, this.currentPeriod.start, this.currentPeriod.end)
+        this.getAttributeValue(this.assetId, this.attributeName)
+            .then((response) => {
+                this.mainValue = response[0].attributes[this.attributeName!].value;
+                this.formattedMainValue = this.getFormattedValue(this.mainValue!);
+
+                return this.getDatapointsByAttribute(this.assetId!, this.attributeName!, this.currentPeriod!.start, this.currentPeriod!.end);
+            })
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
                 this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data));
-                this.mainValue = this.getLastKnownMeasurement(this.data);
-                this.formattedMainValue = this.getFormattedValue(this.mainValue);
 
                 this.error = false;
 
-                return this.mainValue;
             })
             .catch((err) => {
                 this.error = true;
@@ -637,7 +654,7 @@ export class OrAttributeCard extends LitElement {
 
     protected getFirstKnownMeasurement(data: ValueDatapoint<any>[]): number {
         for (let i = 0; i <= data.length; i++) {
-            if (data[i].y !== undefined)
+            if (data[i] && data[i].y !== undefined)
                 return data[i].y;
         }
         return 0;
@@ -645,7 +662,7 @@ export class OrAttributeCard extends LitElement {
 
     protected getLastKnownMeasurement(data: ValueDatapoint<any>[]): number {
         for (let i = data.length - 1; i >= 0; i--) {
-            if (data[i].y !== undefined)
+            if (data[i] && data[i].y !== undefined)
                 return data[i].y;
         }
         return 0;
