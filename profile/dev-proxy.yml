@@ -50,7 +50,7 @@ services:
     ports:
       - "8081:8080"
     volumes:
-      - ../ui/keycloak/themes/openremote:/opt/jboss/keycloak/themes/openremote
+      - ../ui/keycloak/themes:/deployment/keycloak/themes
     depends_on:
       postgresql:
         condition: service_healthy
