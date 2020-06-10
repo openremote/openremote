@@ -109,7 +109,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractProtocol.class);
-    public static final int PRIORITY = MessageBrokerService.PRIORITY + 10;
+    public static final int PRIORITY = MessageBrokerService.PRIORITY + 100;
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected final Set<AttributeRef> dynamicAttributes = new HashSet<>();
     protected final Map<AttributeRef, LinkedProtocolInfo> linkedProtocolConfigurations = new HashMap<>();

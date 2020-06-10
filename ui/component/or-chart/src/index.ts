@@ -224,9 +224,6 @@ const style = css`
         --or-icon-fill: var(--or-app-color4);
     }
     
-    #attribute-list {
-    }
-    
     .attribute-list-item-label {
         display: flex;
         flex: 1 1 0;
@@ -273,6 +270,7 @@ const style = css`
         flex: 1 1 0;
         position: relative;
         overflow: auto;
+        min-height: 400px;
         max-height: 550px;
     }
 

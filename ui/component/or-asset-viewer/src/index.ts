@@ -31,6 +31,8 @@ import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
 import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import { GenericAxiosResponse } from "axios";
+import { OrIcon } from "@openremote/or-icon";
 
 export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group";
 
@@ -57,9 +59,9 @@ export interface GroupPanelConfig extends PanelConfig {
 export interface AssetViewerConfig {
     panels?: {[name: string]: PanelConfig};
     viewerStyles?: { [style: string]: string };
-    propertyViewProvider?: (asset: Asset, property: string, value: any, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
-    attributeViewProvider?: (asset: Asset, attribute: Attribute, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
-    panelViewProvider?: (asset: Asset, attributes: Attribute[], panelName: string, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
+    propertyViewProvider?: (asset: Asset, property: string, value: any, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
+    attributeViewProvider?: (asset: Asset, attribute: Attribute, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
+    panelViewProvider?: (asset: Asset, attributes: Attribute[], panelName: string, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     mapType?: MapType;
     historyConfig?: HistoryConfig;
     chartConfig?: OrChartConfig;
@@ -115,13 +117,13 @@ function getPanel(name: string, panelConfig: PanelConfig, content: TemplateResul
         `;
 }
 
-export function getPanelContent(panelName: string, asset: Asset, attributes: AssetAttribute[], viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, shadowRoot: ShadowRoot | null): TemplateResult | undefined {
+export function getPanelContent(panelName: string, asset: Asset, attributes: AssetAttribute[], hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig): TemplateResult | undefined {
     if (panelConfig.hide || attributes.length === 0) {
         return;
     }
 
     if (viewerConfig.panelViewProvider) {
-        const template = viewerConfig.panelViewProvider(asset, attributes, panelName, viewerConfig, panelConfig);
+        const template = viewerConfig.panelViewProvider(asset, attributes, panelName, hostElement, viewerConfig, panelConfig);
         if (template) {
             return template;
         }
@@ -158,8 +160,8 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
         if (historyAttrs.length > 0) {
 
             const attributeChanged = (attributeName: string) => {
-                if (shadowRoot) {
-                    const attributeHistory = shadowRoot.getElementById("attribute-history") as OrAttributeHistory;
+                if (hostElement.shadowRoot) {
+                    const attributeHistory = hostElement.shadowRoot.getElementById("attribute-history") as OrAttributeHistory;
 
                     if (attributeHistory) {
 
@@ -173,7 +175,6 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
                     }
                 }
             };
-
 
             const options = historyAttrs.map((attr) => {
                 const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attr.name!);
@@ -261,7 +262,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
             const center = lngLat ? lngLat.toArray() : undefined;
             const showOnMapMeta = Util.getFirstMetaItem(attribute, MetaItemType.SHOW_ON_DASHBOARD.urn!);
             const attributeMetaChanged = async (value: string) => {
-                if (shadowRoot) {
+                if (hostElement.shadowRoot) {
 
                     if (attribute) {
 
@@ -368,7 +369,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
         ];
 
         const attributePickerModalOpen = () => {
-            const dialog: OrMwcDialog = shadowRoot!.getElementById(panelName + "-attribute-modal") as OrMwcDialog;
+            const dialog: OrMwcDialog = hostElement.shadowRoot!.getElementById(panelName + "-attribute-modal") as OrMwcDialog;
 
             if (dialog) {
                 newlySelectedAttributes.length = 0;
@@ -390,21 +391,24 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
         // Function to update the table and message when assets or config changes
         let updateTable = () => {
 
-            const loadingMsg: OrTranslate = shadowRoot!.getElementById(panelName + "-attribute-table-msg") as OrTranslate;
-            const attributeTable: OrTable = shadowRoot!.getElementById(panelName + "-attribute-table") as OrTable;
+            const loadingMsg: OrTranslate = hostElement.shadowRoot!.getElementById(panelName + "-attribute-table-msg") as OrTranslate;
+            const attributeTable: OrTable = hostElement.shadowRoot!.getElementById(panelName + "-attribute-table") as OrTable;
+            const addRemoveButton: OrIcon = hostElement.shadowRoot!.getElementById(panelName + "-add-remove-columns") as OrIcon;
 
-            if (!loadingMsg || !attributeTable) {
+            if (!loadingMsg || !attributeTable || !addRemoveButton) {
                 return;
             }
 
             if (selectedAttributes.length === 0 || !childAssets || childAssets.length === 0) {
-                loadingMsg.value = "noData";
+                loadingMsg.value = "noChildAssets";
                 loadingMsg.hidden = false;
                 attributeTable.hidden = true;
+                addRemoveButton.classList.remove("active");
                 return;
             }
 
             // Update table properties which will cause a re-render
+            addRemoveButton.classList.add("active");
             loadingMsg.hidden = true;
             attributeTable.hidden = false;
             const headers = [...selectedAttributes].sort();
@@ -419,6 +423,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
                 arr.unshift(asset.name!);
                 return arr;
             });
+            window.setTimeout(() => OrAssetViewer.generateGrid(hostElement.shadowRoot), 0);
         };
 
         // Load child assets async then update the table
@@ -430,26 +435,31 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
         // Define the DOM content for this panel
         content = html`
                 <style>
-                    #asset-group-add-remove-columns {
+                    .asset-group-add-remove-button {
                         position: absolute;
                         top: 20px;
                         right: var(--internal-or-asset-viewer-panel-padding);
+                        opacity: 0.5;
+                    }
+                    .asset-group-add-remove-button.active {
+                        cursor: pointer;
+                        opacity: 1;
                     }
                 </style>
-                <or-icon id="asset-group-add-remove-columns" icon="plus-minus" @click="${() => attributePickerModalOpen()}"></or-icon>
+                <or-icon class="asset-group-add-remove-button" .id="${panelName}-add-remove-columns" icon="pencil" @click="${() => attributePickerModalOpen()}"></or-icon>
                 <or-table hidden .id="${panelName}-attribute-table" .options="{stickyFirstColumn:true}"></or-table>
                 <span><or-translate id="${panelName}-attribute-table-msg" value="loading"></or-translate></span>
                 <or-mwc-dialog id="${panelName}-attribute-modal" dialogTitle="addRemoveAttributes" .dialogActions="${attributePickerModalActions}"></or-mwc-dialog>
             `;
     } else {
-        if(attrs.length === 0) {
+        if (attrs.length === 0) {
             return undefined;
         }
 
         content = html`
                 ${attrs.sort((attr1, attr2) => attr1.name! < attr2.name! ? -1 : attr1.name! > attr2.name! ? 1 : 0).map((attr) => {
             let style = styles ? styles[attr.name!] : undefined;
-            return getField(attr.name!, false, style, getAttributeTemplate(asset, attr, viewerConfig, panelConfig));
+            return getField(attr.name!, false, style, getAttributeTemplate(asset, attr, hostElement, viewerConfig, panelConfig));
         })}
             `;
     }
@@ -457,16 +467,16 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
     return content;
 }
 
-export function getAttributeTemplate(asset: Asset, attribute: AssetAttribute, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) {
+export function getAttributeTemplate(asset: Asset, attribute: AssetAttribute, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) {
     if (viewerConfig.attributeViewProvider) {
-        const result = viewerConfig.attributeViewProvider(asset, attribute, viewerConfig, panelConfig);
+        const result = viewerConfig.attributeViewProvider(asset, attribute, hostElement, viewerConfig, panelConfig);
         if (result) {
             return result;
         }
     }
     return html`
-            <or-attribute-input dense .assetType="${asset!.type}" .attribute="${attribute}" .label="${i18next.t(attribute.name!)}"></or-attribute-input>
-        `;
+        <or-attribute-input dense .assetType="${asset!.type}" .attribute="${attribute}" .label="${i18next.t(attribute.name!)}"></or-attribute-input>
+    `;
 }
 
 export function getField(name: string, isProperty: boolean, styles: { [style: string]: string } | undefined, content: TemplateResult | undefined): TemplateResult {
@@ -481,17 +491,24 @@ export function getField(name: string, isProperty: boolean, styles: { [style: st
 }
 
 async function getAssetChildren(id: string, childAssetType: string): Promise<Asset[]> {
-    const response = await manager.rest.api.AssetResource.queryAssets({
-        select: {
-            excludePath: true,
-            excludeParentInfo: true
-        },
-        parents: [
-            {
-                id: id
-            }
-        ]
-    });
+    let response: GenericAxiosResponse<Asset[]>;
+
+    try {
+        response = await manager.rest.api.AssetResource.queryAssets({
+            select: {
+                excludePath: true,
+                excludeParentInfo: true
+            },
+            parents: [
+                {
+                    id: id
+                }
+            ]
+        });
+    } catch (e) {
+        console.log("Failed to get child assets: " + e);
+        return [];
+    }
 
     if (response.status !== 200 || !response.data) {
         return [];
@@ -514,7 +531,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             group: {
                 type: "group",
                 // childAssetTypes: {
-                //     "urn:openremote:asset:enviroment": {
+                //     "urn:openremote:asset:environment": {
                 //         availableAttributes: ["nO2"],
                 //         selectedAttributes: ["nO2"]
                 //     }
@@ -652,7 +669,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 </div>
                 <div id="container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
                     ${this._viewerConfig.panels ? html`${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
-                        const panelTemplate = getPanel(name, panelConfig, getPanelContent(name, this.asset!, this._attributes!, this._viewerConfig!, panelConfig, this.shadowRoot));
+                        const panelTemplate = getPanel(name, panelConfig, getPanelContent(name, this.asset!, this._attributes!, this, this._viewerConfig!, panelConfig));
                         return panelTemplate || ``;
                     })}` : ``}
                 </div>

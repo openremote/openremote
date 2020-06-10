@@ -792,4 +792,13 @@ export class OrInput extends LitElement {
             this.dispatchEvent(new OrInputChangedEvent(this.value, previousValue));
         }
     }
+
+    public get valid(): boolean {
+        const elem = this.shadowRoot!.getElementById("elem") as any;
+        if (elem && elem.checkValidity) {
+            return elem.checkValidity();
+        }
+        return true;
+    }
+
 }

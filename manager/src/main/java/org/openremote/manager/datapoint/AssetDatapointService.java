@@ -56,6 +56,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
     public static final String DATA_POINTS_MAX_AGE_DAYS = "DATA_POINTS_MAX_AGE_DAYS";
     public static final String DATA_POINTS_MAX_AGE_DAYS_DEFAULT = "31";
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
+    public static final int PRIORITY = AssetStorageService.PRIORITY + 100;
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
     protected TimerService timerService;
@@ -65,7 +66,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return PRIORITY;
     }
 
     @Override

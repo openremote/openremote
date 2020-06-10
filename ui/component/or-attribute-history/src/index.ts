@@ -30,7 +30,6 @@ import {JSONPath} from "jsonpath-plus";
 import moment from "moment";
 import {styleMap} from "lit-html/directives/style-map";
 
-
 export class OrAttributeHistoryEvent extends CustomEvent<OrAttributeHistoryEventDetail> {
 
     public static readonly NAME = "or-attribute-history-event";
@@ -57,7 +56,6 @@ declare global {
         [OrAttributeHistoryEvent.NAME]: OrAttributeHistoryEvent;
     }
 }
-
 
 export type TableColumnType = "timestamp" | "prop";
 
@@ -87,7 +85,7 @@ export interface TableConfig {
             attributeNames?: {[attributeName: string]: AssetTableConfig};
             attributeValueTypes?: {[attributeValueType: string]: AssetTableConfig};
         };
-    },
+    };
     attributeNames?: {[attributeName: string]: AssetTableConfig};
     attributeValueTypes?: {[attributeValueType: string]: AssetTableConfig};
 }

@@ -35,9 +35,14 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.util.MapAccess.*;
 
+/**
+ * Needs to run before persistence service because if BASIC identity provider is configured then flyway must be
+ * configured to manage PUBLIC schema for user data; that configuration is done by the
+ * {@link org.openremote.container.security.basic.BasicIdentityProvider} and must happen before flyway initialisation.
+ */
 public abstract class IdentityService implements ContainerService {
 
-    public static final int PRIORITY = PersistenceService.PRIORITY - 10; // Run before persistence service
+    public static final int PRIORITY = PersistenceService.PRIORITY - 10;
     private static final Logger LOG = Logger.getLogger(IdentityService.class.getName());
 
     public static final String IDENTITY_NETWORK_SECURE = "IDENTITY_NETWORK_SECURE";

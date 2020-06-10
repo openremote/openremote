@@ -34,6 +34,7 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.value.ObjectValue;
@@ -51,6 +52,7 @@ import static org.openremote.manager.event.ClientEventService.getSessionKey;
 
 public class MqttBrokerService implements ContainerService {
 
+    public static final int PRIORITY = ManagerWebService.PRIORITY - 100;
     private static final Logger LOG = Logger.getLogger(MqttBrokerService.class.getName());
 
     public static final String MQTT_CLIENT_QUEUE = "seda://MqttClientQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
@@ -76,7 +78,7 @@ public class MqttBrokerService implements ContainerService {
 
     @Override
     public int getPriority() {
-        return DEFAULT_PRIORITY;
+        return PRIORITY;
     }
 
     @Override

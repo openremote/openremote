@@ -47,6 +47,7 @@ import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.gateway.GatewayConnectionStatusEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.syslog.SyslogEvent;
 
 import java.util.*;
@@ -56,13 +57,15 @@ import java.util.stream.Collectors;
 
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
+import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 /**
  * Handles outbound connections to central managers
  */
 public class GatewayClientService extends RouteBuilder implements ContainerService {
 
-    private static final Logger LOG = Logger.getLogger(GatewayClientService.class.getName());
+    public static final int PRIORITY = ManagerWebService.PRIORITY - 300;
+    private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayClientService.class.getName());
     public static final String CLIENT_EVENT_SESSION_PREFIX = GatewayClientService.class.getSimpleName() + ":";
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;

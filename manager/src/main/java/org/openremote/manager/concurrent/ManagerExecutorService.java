@@ -39,12 +39,12 @@ public class ManagerExecutorService implements ProtocolExecutorService {
      */
     public static final String SCHEDULED_TASKS_THREADS_MAX = "SCHEDULED_TASKS_THREADS_MAX";
     public static final int SCHEDULED_TASKS_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
-
+    public static final int PRIORITY = ContainerService.HIGH_PRIORITY + 200;
     protected ScheduledExecutorService scheduledTasksExecutor;
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return PRIORITY;
     }
 
     @Override

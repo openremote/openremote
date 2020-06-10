@@ -87,10 +87,10 @@ module.exports = (env, argv) => {
                 to: "modules/@webcomponents/webcomponentsjs",
                 ignore: "!*.js"
             },
-            {
-                from: path.join(path.dirname(require.resolve("@openremote/or-app/package.json")), "locales"),
-                to: "locales"
-            },
+            // {
+            //     from: path.join(path.dirname(require.resolve("@openremote/or-app/package.json")), "locales"),
+            //     to: "locales"
+            // },
             {
                 from: "./images",
                 to: "images"

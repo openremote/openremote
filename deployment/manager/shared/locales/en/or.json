@@ -249,5 +249,6 @@
     "EUR_PER_MONTH": "€/month",
     "GBP_PER_KILOWATT_HOUR": "£/kWh",
     "GBP_PER_MONTH": "£/month"
-  }
+  },
+  "noChildAssets": "No child assets"
 }

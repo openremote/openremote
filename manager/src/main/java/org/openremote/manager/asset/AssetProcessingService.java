@@ -120,6 +120,7 @@ import static org.openremote.model.attribute.AttributeEvent.Source.*;
  */
 public class AssetProcessingService extends RouteBuilder implements ContainerService {
 
+    public static final int PRIORITY = AssetStorageService.PRIORITY + 1000;
     private static final Logger LOG = Logger.getLogger(AssetProcessingService.class.getName());
 
     // TODO: Some of these options should be configurable depending on expected load etc.
@@ -144,7 +145,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return PRIORITY;
     }
 
     @Override
