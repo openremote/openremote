@@ -43,7 +43,7 @@ public class TradfriProtocol extends AbstractProtocol {
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, TradfriProtocol.class);
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":tradfri";
-    public static final String PROTOCOL_DISPLAY_NAME = "Tradfri";
+    public static final String PROTOCOL_DISPLAY_NAME = "IKEA TRÅDFRI";
 
     /**
      * IP address of the Tradfri gateway to connect to
