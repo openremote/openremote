@@ -24,6 +24,7 @@ import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.container.Container;
+import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.setup.AbstractKeycloakSetup;
 
 import java.util.List;
@@ -53,9 +54,9 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
             }
         }
 
-        // Find out if there is a client already present for this application, if so, delete it
+        // Find out if there is a client already present for this application, if so, delete it as well as any gateway clients
         masterClientsResource.findAll().stream()
-            .filter(clientRepresentation -> clientRepresentation.getClientId().equals(KEYCLOAK_CLIENT_ID))
+            .filter(clientRepresentation -> clientRepresentation.getClientId().equals(KEYCLOAK_CLIENT_ID) || clientRepresentation.getClientId().startsWith(GatewayService.GATEWAY_CLIENT_ID_PREFIX))
             .map(ClientRepresentation::getId)
             .forEach(clientObjectId -> {
                 LOG.info("Deleting client: " + clientObjectId);

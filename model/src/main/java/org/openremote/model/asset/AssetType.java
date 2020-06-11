@@ -26,8 +26,7 @@ import org.openremote.model.value.Values;
 
 import java.util.Optional;
 
-import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
-import static org.openremote.model.Constants.ASSET_NAMESPACE;
+import static org.openremote.model.Constants.*;
 import static org.openremote.model.attribute.AttributeType.*;
 import static org.openremote.model.attribute.AttributeValueType.*;
 import static org.openremote.model.attribute.MetaItemType.*;

@@ -30,7 +30,6 @@ import {JSONPath} from "jsonpath-plus";
 import moment from "moment";
 import {styleMap} from "lit-html/directives/style-map";
 
-
 export class OrAttributeHistoryEvent extends CustomEvent<OrAttributeHistoryEventDetail> {
 
     public static readonly NAME = "or-attribute-history-event";
@@ -57,7 +56,6 @@ declare global {
         [OrAttributeHistoryEvent.NAME]: OrAttributeHistoryEvent;
     }
 }
-
 
 export type TableColumnType = "timestamp" | "prop";
 
@@ -87,7 +85,7 @@ export interface TableConfig {
             attributeNames?: {[attributeName: string]: AssetTableConfig};
             attributeValueTypes?: {[attributeValueType: string]: AssetTableConfig};
         };
-    },
+    };
     attributeNames?: {[attributeName: string]: AssetTableConfig};
     attributeValueTypes?: {[attributeValueType: string]: AssetTableConfig};
 }
@@ -311,9 +309,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         return html`
             <div id="container">
                 <div id="controls">
-                    <or-input .checkAssetWrite="${false}" .type="${InputType.SELECT}" ?disabled="${disabled}" .label="${i18next.t("timeframe")}" @or-input-changed="${(evt: OrInputChangedEvent) => this.period = evt.detail.value}" .value="${this.period}" .options="${this._getPeriodOptions().map(item => item.value)}"></or-input>
+                    <or-input  .type="${InputType.SELECT}" ?disabled="${disabled}" .label="${i18next.t("timeframe")}" @or-input-changed="${(evt: OrInputChangedEvent) => this.period = evt.detail.value}" .value="${this.period}" .options="${this._getPeriodOptions().map(item => item.value)}"></or-input>
                     <div id="ending-controls">
-                        <or-input id="ending-date" .checkAssetWrite="${false}" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.fromTimestamp}" @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
+                        <or-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.fromTimestamp}" @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
                         <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this.fromTimestamp = this._updateTimestamp(this.fromTimestamp!, false)}"></or-icon>
                         <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this.fromTimestamp = this._updateTimestamp(this.fromTimestamp!, true)}"></or-icon>
                         <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-double-right" @click="${() => this.fromTimestamp = this._updateTimestamp(new Date())}"></or-icon>
@@ -715,9 +713,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             this._loading = false;
             return;
         }
-
-        const startOfPeriod = moment(this.fromTimestamp).startOf(this.period).toDate().getTime();
-        const endOfPeriod = moment(this.fromTimestamp).endOf(this.period).toDate().getTime();
+        const startOfPeriod = moment(this.fromTimestamp).subtract(1, this.period).toDate().getTime();
+        const endOfPeriod = moment(this.fromTimestamp).toDate().getTime();
 
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
             assetId,

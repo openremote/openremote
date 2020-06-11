@@ -5,12 +5,16 @@ import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.query.filter.UserAssetPredicate;
 
+import java.util.Arrays;
+
 public class UserQuery {
 
     // Restriction predicates
     public TenantPredicate tenantPredicate;
     public UserAssetPredicate assetPredicate;
     public PathPredicate pathPredicate;
+    public String[] ids;
+    public String[] usernames;
     public int limit;
 
     public UserQuery() {
@@ -31,6 +35,16 @@ public class UserQuery {
         return this;
     }
 
+    public UserQuery ids(String...ids) {
+        this.ids = ids;
+        return this;
+    }
+
+    public UserQuery usernames(String...usernames) {
+        this.usernames = usernames;
+        return this;
+    }
+
     public UserQuery limit(int limit) {
         this.limit = limit;
         return this;
@@ -42,6 +56,8 @@ public class UserQuery {
             "tenantPredicate=" + tenantPredicate +
             ", assetPredicate=" + assetPredicate +
             ", pathPredicate=" + pathPredicate +
+            ", ids=" + (ids != null ? Arrays.toString(ids) : "null") +
+            ", usernames=" + (usernames != null ? Arrays.toString(usernames) : "null") +
             ", limit=" + limit +
             '}';
     }

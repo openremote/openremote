@@ -74,7 +74,9 @@ export interface ChartConfig {
 
 export interface OrChartConfig {
     chart?: ChartConfig;
-    views: {[name: string]: ChartViewConfig};
+    views: {[name: string]: {
+        [panelName: string]: ChartViewConfig
+    }};
 }
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
@@ -222,9 +224,6 @@ const style = css`
         --or-icon-fill: var(--or-app-color4);
     }
     
-    #attribute-list {
-    }
-    
     .attribute-list-item-label {
         display: flex;
         flex: 1 1 0;
@@ -271,6 +270,7 @@ const style = css`
         flex: 1 1 0;
         position: relative;
         overflow: auto;
+        min-height: 400px;
         max-height: 550px;
     }
 
@@ -366,6 +366,9 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     @property({type: Object})
     public config?: OrChartConfig;
+
+    @property()
+    public panelName?: string;
 
     @property()
     protected periodCompare: boolean = false;
@@ -654,8 +657,12 @@ export class OrChart extends translate(i18next)(LitElement) {
                         display: false
                     },
                     tooltips: {
-                        mode: 'index',
-                        intersect: true
+                        mode: 'x',
+                        intersect: false
+                    },
+                    hover: {
+                        mode: 'x',
+                        intersect: false
                     },
                     scales: {
                         yAxes: [{
@@ -705,12 +712,11 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     getSettings() {
         const configStr = window.localStorage.getItem('OrChartConfig')
-        if(!configStr) return
+        if(!configStr || !this.panelName) return
 
         const viewSelector = this.activeAssetId ? this.activeAssetId : window.location.hash;
         const config = JSON.parse(configStr);
-        const view = config.views[viewSelector]
-        
+        const view = config.views[viewSelector][this.panelName];
         if(!view) return
         const query = {
             ids: view.assetIds
@@ -720,10 +726,12 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         manager.rest.api.AssetResource.queryAssets(query).then((response) => {
             const assets = response.data;
-            this.assets = view.assetIds.map((assetId: string)  => assets.find(x => x.id === assetId));
-            this.assetAttributes = view.attributes.map((attr: string, index: number)  => Util.getAssetAttribute(this.assets[index], attr));
-            this.period = view.period;
-            this._loading = false;
+            if(assets.length > 0) {
+                this.assets = view.assetIds.map((assetId: string)  => assets.find(x => x.id === assetId));
+                this.assetAttributes = view.attributes.map((attr: string, index: number)  => Util.getAssetAttribute(this.assets[index], attr));
+                this.period = view.period;
+                this._loading = false;
+            }
         });
 
     }
@@ -734,23 +742,36 @@ export class OrChart extends translate(i18next)(LitElement) {
         const assetIds = assets.map(asset => asset.id);
         const attributes = this.assetAttributes.map(attr => attr.name);
         const configStr = window.localStorage.getItem('OrChartConfig')
+        if(!this.panelName) return
+
         let config:OrChartConfig;
         if(configStr) {
             config = JSON.parse(configStr);
         } else {
             config = {
                 views: {
-                    [viewSelector]: {}
+                    [viewSelector]: {
+                        [name] : {
+
+                        }
+                    }
                 }
             }
         }   
 
-        config.views[viewSelector] = {
+        config.views[viewSelector][this.panelName] = {
             assetIds: assetIds,
             attributes: attributes,
             period: this.period
         };
-        window.localStorage.setItem('OrChartConfig', JSON.stringify(config))
+        const message = {
+            provider: "STORAGE",
+            action: "STORE",
+            key: "OrChartConfig",
+            value: JSON.stringify(config)
+
+        }
+        manager.console._doSendProviderMessage(message)
     }
     
     _openDialog() {
@@ -833,23 +854,23 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _getPeriodOptions() {
         return [
             {
-                text: i18next.t(DatapointInterval.HOUR),
+                text: "hour",
                 value: "hour"
             },
             {
-                text: i18next.t(DatapointInterval.DAY),
+                text: "day",
                 value: "day"
             },
             {
-                text: i18next.t(DatapointInterval.WEEK),
+                text:  "week",
                 value: "week"
             },
             {
-                text: i18next.t(DatapointInterval.MONTH),
+                text:  "month",
                 value: "month"
             },
             {
-                text: i18next.t(DatapointInterval.YEAR),
+                text: "year",
                 value: "year"
             }
         ];
@@ -932,10 +953,10 @@ export class OrChart extends translate(i18next)(LitElement) {
             });
 
             data = data.concat(cPredictedData);
-    
           
             data = data.concat(cData);
         }
+        
         Promise.all(data).then((completed=> {
             this._data = completed;
         }))
@@ -1060,7 +1081,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     if (typeof datapoint['y'] !== 'undefined') {
                         datapoint['y'] = Math.round(datapoint['y'] * 100) / 100
                     } else {
-                        delete datapoint['y']
+                        delete datapoint['y'];
                     }
                 });
                 return data;

@@ -50,6 +50,7 @@ import java.util.logging.Logger;
 
 public class AssetPredictedDatapointService implements ContainerService, ProtocolPredictedAssetService {
 
+    public static final int PRIORITY = AssetStorageService.PRIORITY + 300;
     private static final Logger LOG = Logger.getLogger(AssetPredictedDatapointService.class.getName());
 
     protected PersistenceService persistenceService;
@@ -57,7 +58,7 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return PRIORITY;
     }
 
     @Override

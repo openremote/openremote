@@ -24,7 +24,6 @@ export interface MenuItem {
     text?: string;
     secondaryText?: string;
     value: string;
-    href?: string;
     styleMap?: {[style: string]: string};
 }
 
@@ -189,7 +188,6 @@ export class OrMwcMenu extends LitElement {
 
                 const isSelected = this.isValueSelected((item as MenuItem).value);
                 let icon = item.icon;
-                const href = item.href;
                 const text = item.text !== undefined ? item.text : item.value;
                 let leftTemplate: TemplateResult | string = ``;
                 let rightTemplate: TemplateResult | string = ``;
@@ -209,7 +207,8 @@ export class OrMwcMenu extends LitElement {
                         <or-icon icon="${item.trailingIcon}"></or-icon>
                     </span>`;
                 }
-                const listItem = html`
+                
+                return html`
                     <li @click="${(e: MouseEvent) => {this._itemClicked(e, item)}}" style="${item.styleMap ? styleMap(item.styleMap) : ""}" class="mdc-list-item ${isSelected ? "mdc-menu-item--selected" : ""}" role="menuitem" aria-checked="${isSelected}">
                         ${leftTemplate}
                         ${!text ? html`` : html`
@@ -221,18 +220,6 @@ export class OrMwcMenu extends LitElement {
                         ${rightTemplate}
                     </li>
                 `;
-                
-                if(href) {
-                    return html`
-                        <a href="${href}" data-navigo>
-                            ${listItem}
-                        </a>
-                    `;
-                } else {
-                    return listItem;
-                }
-
-
             })}
         `;
     }
@@ -270,12 +257,13 @@ export class OrMwcMenu extends LitElement {
     }
 
     private _itemClicked(e: MouseEvent, item: MenuItem) {
+        e.stopPropagation();
         const value = item.value;
 
         if (!this.multiSelect) {
             this.values = value;
+            this._mdcComponent!.open = false;
         } else {
-            e.stopPropagation();
             if (!Array.isArray(this.values)) {
                 this.values = this.values ? [this.values] : [];
             }

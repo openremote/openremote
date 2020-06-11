@@ -2,7 +2,6 @@ package org.openremote.test.gateway
 
 import com.google.common.collect.Lists
 import io.netty.channel.ChannelHandler
-import org.apache.camel.builder.AdviceWithRouteBuilder
 import org.apache.http.client.utils.URIBuilder
 import org.openremote.agent.protocol.http.HttpClientProtocol
 import org.openremote.agent.protocol.http.OAuthClientCredentialsGrant
@@ -10,13 +9,11 @@ import org.openremote.agent.protocol.io.AbstractNettyIoClient
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.agent.protocol.websocket.WebsocketIoClient
 import org.openremote.container.Container
-import org.openremote.container.message.MessageBrokerSetupService
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.container.web.ClientRequestInfo
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.concurrent.ManagerExecutorService
-import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.gateway.GatewayClientService
 import org.openremote.manager.gateway.GatewayConnector
 import org.openremote.manager.gateway.GatewayService
@@ -24,7 +21,6 @@ import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
-import org.openremote.model.Constants
 import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.*
@@ -44,8 +40,8 @@ import java.util.stream.Collectors
 import java.util.stream.IntStream
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
-import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD
+import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 import static org.openremote.model.util.TextUtil.isNullOrEmpty
 
@@ -135,10 +131,9 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         and: "the server should have sent a CONNECTED message and an asset read request"
         conditions.eventually {
-            assert clientReceivedMessages.size() >= 2
-            assert clientReceivedMessages[0] == "CONNECTED"
-            assert clientReceivedMessages[1].startsWith(SharedEvent.MESSAGE_PREFIX)
-            def readAssetsEvent = Container.JSON.readValue(clientReceivedMessages[1].substring(SharedEvent.MESSAGE_PREFIX.length()), ReadAssetsEvent.class)
+            assert clientReceivedMessages.size() >= 1
+            assert clientReceivedMessages[0].startsWith(SharedEvent.MESSAGE_PREFIX)
+            def readAssetsEvent = Container.JSON.readValue(clientReceivedMessages[0].substring(SharedEvent.MESSAGE_PREFIX.length()), ReadAssetsEvent.class)
             assert readAssetsEvent.name == GatewayConnector.ASSET_READ_EVENT_NAME_INITIAL
             assert readAssetsEvent.assetQuery != null
             assert readAssetsEvent.assetQuery.select.excludeAttributes
@@ -544,7 +539,12 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert gatewayService.gatewayConnectorMap.get(gateway.getId()).disabled
             assert !gatewayService.gatewayConnectorMap.get(gateway.getId()).connected
-            assert gatewayClient.connectionStatus == ConnectionStatus.WAITING
+            assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTING
+        }
+
+        and: "the central manager should have sent a disconnect event to the client"
+        conditions.eventually {
+            assert clientReceivedMessages.last().contains("gateway-disconnect")
         }
         gatewayClient.disconnect()
 
@@ -605,12 +605,11 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert gateway.getAttribute("status").flatMap{it.getValueAsString()}.orElse(null) == ConnectionStatus.CONNECTING.name()
         }
 
-        and: "the local manager should have sent a CONNECTED message and an asset read request"
+        and: "the local manager should have sent an asset read request"
         conditions.eventually {
-            assert clientReceivedMessages.size() >= 2
-            assert clientReceivedMessages[0] == "CONNECTED"
-            assert clientReceivedMessages[1].startsWith(SharedEvent.MESSAGE_PREFIX)
-            assert clientReceivedMessages[1].contains("read-assets")
+            assert clientReceivedMessages.size() >= 1
+            assert clientReceivedMessages[0].startsWith(SharedEvent.MESSAGE_PREFIX)
+            assert clientReceivedMessages[0].contains("read-assets")
         }
 
         when: "the previously received messages are cleared"

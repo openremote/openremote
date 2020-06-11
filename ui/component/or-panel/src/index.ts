@@ -15,7 +15,8 @@ const style = css`
         --internal-or-panel-heading-margin: var(--or-panel-heading-margin, 0 0 5px 7px);
         --internal-or-panel-border: var(--or-panel-border, 1px solid #e5e5e5);
         --internal-or-panel-border-radius: var(--or-panel-border-radius, 5px);
-              
+        --internal-or-panel-heading-font-size: var(--or-panel-heading-font-size, larger);
+        
         display: block;
     }
 
@@ -37,7 +38,7 @@ const style = css`
     
     strong {
         margin: var(--internal-or-panel-heading-margin);
-        font-size: 16px;
+        font-size: var(--internal-or-panel-heading-font-size);
     }
 `;
 

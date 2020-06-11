@@ -25,7 +25,6 @@ import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
@@ -122,6 +121,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     private static final Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
+    public static final int PRIORITY = MED_PRIORITY;
     protected static String META_ITEM_RESTRICTED_READ_SQL_FRAGMENT;
     protected static String META_ITEM_PUBLIC_READ_SQL_FRAGMENT;
     protected TimerService timerService;
@@ -204,7 +204,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return PRIORITY;
     }
 
     @Override
@@ -251,7 +251,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 this)
         );
 
-        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }
 
     @Override
@@ -1991,13 +1991,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Collectors.toList());
-        TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription(events, subscriptionId);
+        TriggeredEventSubscription<?> triggeredEventSubscription = new TriggeredEventSubscription<>(events, subscriptionId);
         clientEventService.sendToSession(sessionKey, triggeredEventSubscription);
     }
 
     protected void replyWithAssetEvent(String sessionKey, String subscriptionId, Asset asset) {
         AssetEvent event = new AssetEvent(AssetEvent.Cause.READ, asset, null);
-        TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription(Collections.singletonList(event), subscriptionId);
+        TriggeredEventSubscription<?> triggeredEventSubscription = new TriggeredEventSubscription<>(Collections.singletonList(event), subscriptionId);
         clientEventService.sendToSession(sessionKey, triggeredEventSubscription);
     }
 

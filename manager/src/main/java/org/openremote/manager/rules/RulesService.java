@@ -22,7 +22,7 @@ package org.openremote.manager.rules;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
@@ -96,6 +96,7 @@ import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttrib
  */
 public class RulesService extends RouteBuilder implements ContainerService, AssetUpdateProcessor {
 
+    public static final int PRIORITY = AssetProcessingService.PRIORITY + 100;
     public static final String RULE_EVENT_EXPIRES = "RULE_EVENT_EXPIRES";
     public static final String RULE_EVENT_EXPIRES_DEFAULT = "1h";
     private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
@@ -127,7 +128,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return PRIORITY;
     }
 
     @Override
@@ -172,7 +173,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
         geofenceAssetAdapters.addAll(container.getServices(GeofenceAssetAdapter.class));
         geofenceAssetAdapters.sort(Comparator.comparingInt(GeofenceAssetAdapter::getPriority));
-        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
         configEventExpires = getString(container.getConfig(), RULE_EVENT_EXPIRES, RULE_EVENT_EXPIRES_DEFAULT);
 
         container.getService(ManagerWebService.class).getApiSingletons().add(

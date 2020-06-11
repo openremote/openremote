@@ -26,7 +26,6 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.concurrent.GlobalLock;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
@@ -42,6 +41,7 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -109,7 +109,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractProtocol.class);
-    public static final int PRIORITY = ContainerService.DEFAULT_PRIORITY - 100;
+    public static final int PRIORITY = MessageBrokerService.PRIORITY + 100;
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected final Set<AttributeRef> dynamicAttributes = new HashSet<>();
     protected final Map<AttributeRef, LinkedProtocolInfo> linkedProtocolConfigurations = new HashMap<>();
@@ -132,13 +132,7 @@ public abstract class AbstractProtocol implements Protocol {
         executorService = container.getService(ProtocolExecutorService.class);
         assetService = container.getService(ProtocolAssetService.class);
         predictedAssetService = container.getService(ProtocolPredictedAssetService.class);
-    }
-
-    @Override
-    final public void start(Container container) throws Exception {
-        LOG.fine("Starting protocol: " + getProtocolName());
-        this.messageBrokerContext = container.getService(MessageBrokerSetupService.class).getContext();
-        this.producerTemplate = container.getService(MessageBrokerService.class).getProducerTemplate();
+        messageBrokerContext = container.getService(MessageBrokerService.class).getContext();
 
         withLock(getProtocolName() + "::start", () -> {
             try {
@@ -162,6 +156,12 @@ public abstract class AbstractProtocol implements Protocol {
                 throw new RuntimeException(ex);
             }
         });
+    }
+
+    @Override
+    final public void start(Container container) throws Exception {
+        LOG.fine("Starting protocol: " + getProtocolName());
+        this.producerTemplate = container.getService(MessageBrokerService.class).getProducerTemplate();
     }
 
     @Override
@@ -346,25 +346,23 @@ public abstract class AbstractProtocol implements Protocol {
      * {@link #doInboundValueProcessing} before sending on the sensor queue.
      */
     final protected void updateLinkedAttribute(final AttributeState state, long timestamp) {
-        withLock(getProtocolName() + "::updateLinkedAttribute", () -> {
-            AssetAttribute attribute = linkedAttributes.get(state.getAttributeRef());
+        AssetAttribute attribute = linkedAttributes.get(state.getAttributeRef());
 
-            if (attribute == null) {
-                LOG.severe("Update linked attribute called for un-linked attribute: " + state);
-                return;
-            }
+        if (attribute == null) {
+            LOG.severe("Update linked attribute called for un-linked attribute: " + state);
+            return;
+        }
 
-            Pair<Boolean, Value> ignoreAndConverted = Protocol.doInboundValueProcessing(attribute, state.getValue().orElse(null), assetService);
+        Pair<Boolean, Value> ignoreAndConverted = Protocol.doInboundValueProcessing(attribute, state.getValue().orElse(null), assetService);
 
-            if (ignoreAndConverted.key) {
-                LOG.fine("Value conversion returned ignore so attribute will not be updated: " + attribute.getReferenceOrThrow());
-                return;
-            }
+        if (ignoreAndConverted.key) {
+            LOG.fine("Value conversion returned ignore so attribute will not be updated: " + attribute.getReferenceOrThrow());
+            return;
+        }
 
-            AttributeEvent attributeEvent = new AttributeEvent(new AttributeState(attribute.getReferenceOrThrow(), ignoreAndConverted.value), timestamp);
-            LOG.fine("Sending on sensor queue: " + attributeEvent);
-            producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, getProtocolName());
-        });
+        AttributeEvent attributeEvent = new AttributeEvent(new AttributeState(attribute.getReferenceOrThrow(), ignoreAndConverted.value), timestamp);
+        LOG.fine("Sending on sensor queue: " + attributeEvent);
+        producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, getProtocolName());
     }
 
     /**
@@ -511,7 +509,7 @@ public abstract class AbstractProtocol implements Protocol {
     /**
      * Link an attribute to its linked protocol configuration.
      */
-    abstract protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration);
+    abstract protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) throws Exception;
 
     /**
      * Unlink an attribute from its linked protocol configuration.

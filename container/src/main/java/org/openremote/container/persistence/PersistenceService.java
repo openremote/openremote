@@ -32,19 +32,16 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
 import javax.ws.rs.core.UriBuilder;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.util.MapAccess.*;
 
 /**
- * Uses the SQL database schema {@link #SCHEMA_NAME} for all operations.
+ * Uses the SQL database schema {@link #DEFAULT_SCHEMA_NAME} for all operations.
  */
 public class PersistenceService implements ContainerService {
 
@@ -57,8 +54,8 @@ public class PersistenceService implements ContainerService {
      * database artifacts from wipe/migrate in FlywayDB...) you must have it in the 'public'
      * schema. Hence we need a different schema here.
      */
-    public static final String SCHEMA_NAME = "openremote";
-
+    public static final String DEFAULT_SCHEMA_NAME = "openremote";
+    public static final String SETUP_WIPE_CLEAN_INSTALL = "SETUP_WIPE_CLEAN_INSTALL";
     public static final String PERSISTENCE_UNIT_NAME = "PERSISTENCE_UNIT_NAME";
     public static final String PERSISTENCE_UNIT_NAME_DEFAULT = "OpenRemotePU";
     public static final String DATABASE_PRODUCT = "DATABASE_PRODUCT";
@@ -75,7 +72,7 @@ public class PersistenceService implements ContainerService {
     public static final int DATABASE_MAX_POOL_SIZE_DEFAULT = 20;
     public static final String DATABASE_CONNECTION_TIMEOUT_SECONDS = "DATABASE_CONNECTION_TIMEOUT_SECONDS";
     public static final int DATABASE_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 5;
-    public static final int PRIORITY = 100;
+    public static final int PRIORITY = Integer.MIN_VALUE + 100;
 
     protected MessageBrokerService messageBrokerService;
     protected Database database;
@@ -85,7 +82,8 @@ public class PersistenceService implements ContainerService {
 
     protected Flyway flyway;
     protected boolean forceClean;
-    protected List<String> defaultSchemaLocations = new ArrayList<>();
+    protected Set<String> defaultSchemaLocations = new HashSet<>();
+    protected Set<String> schemas = new HashSet<>();
 
     @Override
     public int getPriority() {
@@ -112,27 +110,19 @@ public class PersistenceService implements ContainerService {
         }
 
         persistenceUnitName = getString(container.getConfig(), PERSISTENCE_UNIT_NAME, PERSISTENCE_UNIT_NAME_DEFAULT);
+
+        forceClean = getBoolean(container.getConfig(), SETUP_WIPE_CLEAN_INSTALL, container.isDevMode());
+
+        openDatabase(container, database);
+
+        this.entityManagerFactory =
+            Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties);
     }
 
-    protected void openDatabase(Container container, Database database) {
-        String connectionUrl = getString(container.getConfig(), DATABASE_CONNECTION_URL, DATABASE_CONNECTION_URL_DEFAULT);
-        connectionUrl = UriBuilder.fromUri(connectionUrl).replaceQueryParam("currentSchema", SCHEMA_NAME).build().toString();
-        String databaseUsername = getString(container.getConfig(), DATABASE_USERNAME, DATABASE_USERNAME_DEFAULT);
-        String databasePassword = getString(container.getConfig(), DATABASE_PASSWORD, DATABASE_PASSWORD_DEFAULT);
-        int databaseMinPoolSize = getInteger(container.getConfig(), DATABASE_MIN_POOL_SIZE, DATABASE_MIN_POOL_SIZE_DEFAULT);
-        int databaseMaxPoolSize = getInteger(container.getConfig(), DATABASE_MAX_POOL_SIZE, DATABASE_MAX_POOL_SIZE_DEFAULT);
-        int connectionTimeoutSeconds = getInteger(container.getConfig(), DATABASE_CONNECTION_TIMEOUT_SECONDS, DATABASE_CONNECTION_TIMEOUT_SECONDS_DEFAULT);
-        LOG.info("Opening database connection: " + connectionUrl);
-        database.open(persistenceUnitProperties, connectionUrl, databaseUsername, databasePassword, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
-
-        prepareSchema(connectionUrl, databaseUsername, databasePassword);
-    }
 
     @Override
     public void start(Container container) throws Exception {
-        openDatabase(container, database);
-        this.entityManagerFactory =
-            Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties);
+
     }
 
     @Override
@@ -145,12 +135,8 @@ public class PersistenceService implements ContainerService {
         }
     }
 
-    public boolean isForceClean() {
+    public boolean isSetupWipeCleanInstall() {
         return forceClean;
-    }
-
-    public void setForceClean(boolean forceClean) {
-        this.forceClean = forceClean;
     }
 
     public EntityManager createEntityManager() {
@@ -202,18 +188,49 @@ public class PersistenceService implements ContainerService {
         return entityManagerFactory;
     }
 
-    public List<String> getDefaultSchemaLocations() {
+    public Set<String> getDefaultSchemaLocations() {
         return defaultSchemaLocations;
     }
 
-    protected void prepareSchema(String connectionUrl, String databaseUsername, String databasePassword) {
+    public Set<String> getSchemas() {
+        return schemas;
+    }
+
+    protected void openDatabase(Container container, Database database) {
+        String connectionUrl = getString(container.getConfig(), DATABASE_CONNECTION_URL, DATABASE_CONNECTION_URL_DEFAULT);
+        connectionUrl = UriBuilder.fromUri(connectionUrl).replaceQueryParam("currentSchema", DEFAULT_SCHEMA_NAME).build().toString();
+        String databaseUsername = getString(container.getConfig(), DATABASE_USERNAME, DATABASE_USERNAME_DEFAULT);
+        String databasePassword = getString(container.getConfig(), DATABASE_PASSWORD, DATABASE_PASSWORD_DEFAULT);
+        int databaseMinPoolSize = getInteger(container.getConfig(), DATABASE_MIN_POOL_SIZE, DATABASE_MIN_POOL_SIZE_DEFAULT);
+        int databaseMaxPoolSize = getInteger(container.getConfig(), DATABASE_MAX_POOL_SIZE, DATABASE_MAX_POOL_SIZE_DEFAULT);
+        int connectionTimeoutSeconds = getInteger(container.getConfig(), DATABASE_CONNECTION_TIMEOUT_SECONDS, DATABASE_CONNECTION_TIMEOUT_SECONDS_DEFAULT);
+        LOG.info("Opening database connection: " + connectionUrl);
+        database.open(persistenceUnitProperties, connectionUrl, databaseUsername, databasePassword, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
+
+        prepareSchemas(connectionUrl, databaseUsername, databasePassword);
+    }
+
+    protected void prepareSchemas(String connectionUrl, String databaseUsername, String databasePassword) {
         LOG.fine("Preparing database schema");
-        flyway = new Flyway();
-        flyway.setDataSource(connectionUrl, databaseUsername, databasePassword);
-        flyway.setSchemas(SCHEMA_NAME);
         List<String> locations = new ArrayList<>();
+        List<String> schemas = new ArrayList<>();
+        schemas.add(DEFAULT_SCHEMA_NAME);
+        appendSchemas(schemas);
         appendSchemaLocations(locations);
-        flyway.setLocations(locations.toArray(new String[locations.size()]));
+
+        flyway = Flyway.configure()
+            .dataSource(connectionUrl, databaseUsername, databasePassword)
+            .schemas(schemas.toArray(new String[0]))
+            .locations(locations.toArray(new String[0]))
+            .baselineOnMigrate(true)
+            .load();
+
+        MigrationInfo currentMigration = flyway.info().current();
+
+        if (currentMigration == null && !forceClean) {
+            LOG.warning("DB is empty so changing forceClean to true");
+            forceClean = true;
+        }
 
         if (forceClean) {
             LOG.warning("!!! Cleaning database !!!");
@@ -232,6 +249,10 @@ public class PersistenceService implements ContainerService {
 
     protected void appendSchemaLocations(List<String> locations) {
         locations.addAll(defaultSchemaLocations);
+    }
+
+    protected void appendSchemas(List<String> schemas) {
+        schemas.addAll(this.schemas);
     }
 
     @Override

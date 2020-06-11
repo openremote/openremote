@@ -21,6 +21,7 @@ package org.openremote.model.gateway;
 
 import jsinterop.annotations.JsType;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
 
@@ -46,8 +47,15 @@ public interface GatewayClientResource {
     @Path("connection/{realm}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @RolesAllowed({Constants.READ_ADMIN_ROLE})
     GatewayConnection getConnection(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
+
+    @GET
+    @Path("status/{realm}")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    ConnectionStatus getConnectionStatus(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     /**
      * Get the {@link GatewayConnection}s for all realms, user must be a super user
@@ -56,7 +64,7 @@ public interface GatewayClientResource {
     @Path("connection")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @RolesAllowed({Constants.READ_ADMIN_ROLE})
     List<GatewayConnection> getConnections(@BeanParam RequestParams requestParams);
 
     /**

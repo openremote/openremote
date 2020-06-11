@@ -3,7 +3,7 @@ import {CalendarEvent, ClientRole, RulesetLang, TenantRuleset} from "@openremote
 import "@openremote/or-translate";
 import manager, {EventCallback, OREvent} from "@openremote/core";
 import "@openremote/or-input";
-import {InputType} from "@openremote/or-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {style as OrAssetTreeStyle} from "@openremote/or-asset-tree";
 import {
     OrRulesRequestAddEvent,
@@ -48,6 +48,18 @@ const style = css`
         padding-left: 10px;
     }
     
+    .header-ruleset-type {
+        display: flex;
+        align-items: center;
+        height: var(--internal-or-asset-tree-header-height);
+        line-height: var(--internal-or-asset-tree-header-height);
+        color: var(--internal-or-asset-tree-header-text-color);
+    }
+    
+    .header-ruleset-type p {
+        margin: 0 15px;
+    }
+
     .node-status {
         width: 10px;
         height: 10px;
@@ -110,6 +122,9 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     @property({attribute: false})
     protected _showLoading: boolean = true;
 
+    @property({type: Boolean})
+    protected _globalRulesets: boolean = false;
+
     protected _selectedNodes: RulesetNode[] = [];
     protected _initCallback?: EventCallback;
     protected _ready = false;
@@ -131,7 +146,12 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     }
 
     protected get _allowedLanguages(): RulesetLang[] | undefined {
-        return this.config && this.config.controls && this.config.controls.allowedLanguages ? this.config.controls.allowedLanguages : OrRuleList.DEFAULT_ALLOWED_LANGUAGES;
+        const languages = this.config && this.config.controls && this.config.controls.allowedLanguages ? [...this.config.controls.allowedLanguages] : OrRuleList.DEFAULT_ALLOWED_LANGUAGES;
+        if(!manager.isSuperUser() || !this._globalRulesets) {
+            const index = languages.indexOf(RulesetLang.GROOVY);
+            if(index > 0) languages.splice(index)
+        }
+        return languages;
     }
 
     protected _updateLanguage() {
@@ -180,6 +200,11 @@ export class OrRuleList extends translate(i18next)(LitElement) {
             this._updateLanguage();
         }
 
+        if (_changedProperties.has("_globalRulesets")) {
+            this._updateLanguage(); 
+            this.refresh();
+        }
+        
         if (manager.ready) {
             if (!this._nodes) {
                 this._loadRulesets();
@@ -221,7 +246,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                 addTemplate = getContentWithMenuTemplate(
                     html`<or-input type="${InputType.BUTTON}" icon="plus"></or-input>`,
                     allowedLanguages.map((l) => {
-                        return {value: l, text: l} as MenuItem;
+                        return {value: l, text: i18next.t(l)} as MenuItem;
                     }),
                     this.language,
                     (v) => this._onAddClicked(v as RulesetLang));
@@ -231,6 +256,18 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         }
         return html`
             <div id="wrapper" ?data-disabled="${this.disabled}">
+                ${manager.isSuperUser() ? html`
+                    <div class="header-ruleset-type bg-grey">
+                        <p>${i18next.t("realmRules")}</p>
+                        
+                        <div style="flex: 1 1 0; display: flex;">
+                            <or-input style="margin: auto;" type="${InputType.SWITCH}" @or-input-changed="${(evt: OrInputChangedEvent) => this._globalRulesets = evt.detail.value}"></or-input>
+                        </div>
+
+                        <p>${i18next.t("globalRules")}</p>
+                    </div>
+                ` : ``}
+
                 <div id="header">
                     <div id="title-container">
                         <or-translate id="title" value="rule_plural"></or-translate>
@@ -391,7 +428,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     }
 
     protected _onAddClicked(lang: RulesetLang) {
-        this.dispatchEvent(new OrRulesRequestAddEvent(lang));
+        const type = this._globalRulesets ? "global": "tenant";
+        this.dispatchEvent(new OrRulesRequestAddEvent(lang, type));
     }
 
     protected _onSearchClicked() {
@@ -425,18 +463,28 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
     protected _loadRulesets() {
         const sortFunction = this._getSortFunction();
-        const params = {
-            fullyPopulate: true,
-            language:  this._allowedLanguages
-        }
-        
-        manager.rest.api.RulesResource.getTenantRulesets(this._getRealm() || manager.config.realm, params).then((response: any) => {
-            if (response && response.data) {
-                this._buildTreeNodes(response.data, sortFunction);
+
+        if(this._globalRulesets) {
+            manager.rest.api.RulesResource.getGlobalRulesets({fullyPopulate: true }).then((response: any) => {
+                if (response && response.data) {
+                    this._buildTreeNodes(response.data, sortFunction);
+                }
+            }).catch((reason: any) => {
+                console.error("Error: " + reason);
+            });
+        } else {
+            const params = {
+                fullyPopulate: true,
+                language:  this._allowedLanguages
             }
-        }).catch((reason: any) => {
-            console.error("Error: " + reason);
-        });
+            manager.rest.api.RulesResource.getTenantRulesets(this._getRealm() || manager.config.realm, params).then((response: any) => {
+                if (response && response.data) {
+                    this._buildTreeNodes(response.data, sortFunction);
+                }
+            }).catch((reason: any) => {
+                console.error("Error: " + reason);
+            });
+        }
     }
 
     protected _buildTreeNodes(rulesets: TenantRuleset[], sortFunction: (a: RulesetNode, b: RulesetNode) => number) {

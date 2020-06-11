@@ -25,6 +25,7 @@ import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.AgentStatusEvent;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.Event;
+import org.openremote.model.gateway.GatewayConnectionStatusEvent;
 import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.rules.RulesEngineStatusEvent;
 import org.openremote.model.rules.RulesetChangedEvent;
@@ -51,6 +52,7 @@ import org.openremote.model.syslog.SyslogEvent;
     @JsonSubTypes.Type(value = RulesEngineStatusEvent.class, name = "rules-engine-status"),
     @JsonSubTypes.Type(value = RulesetChangedEvent.class, name = "ruleset-changed"),
     @JsonSubTypes.Type(value = GatewayDisconnectEvent.class, name = "gateway-disconnect"),
+    @JsonSubTypes.Type(value = GatewayConnectionStatusEvent.class, name = "gateway-connection-status"),
     @JsonSubTypes.Type(value = DeleteAssetsRequestEvent.class, name = "delete-assets-request"),
     @JsonSubTypes.Type(value = DeleteAssetsResponseEvent.class, name = "delete-assets-response")
 })

@@ -27,7 +27,7 @@ import org.openremote.agent.protocol.io.AbstractNettyIoClient;
 import org.openremote.agent.protocol.websocket.WebsocketIoClient;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
@@ -42,10 +42,13 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.gateway.GatewayConnection;
-import org.openremote.model.gateway.GatewayDisconnectEvent;
+import org.openremote.model.gateway.GatewayConnectionStatusEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogEvent;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -54,13 +57,15 @@ import java.util.stream.Collectors;
 
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
+import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 /**
  * Handles outbound connections to central managers
  */
 public class GatewayClientService extends RouteBuilder implements ContainerService {
 
-    private static final Logger LOG = Logger.getLogger(GatewayClientService.class.getName());
+    public static final int PRIORITY = ManagerWebService.PRIORITY - 300;
+    private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayClientService.class.getName());
     public static final String CLIENT_EVENT_SESSION_PREFIX = GatewayClientService.class.getSimpleName() + ":";
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
@@ -91,7 +96,22 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             new GatewayClientResourceImpl(timerService, identityService, this)
         );
 
-        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
+
+        clientEventService.addSubscriptionAuthorizer((authContext, eventSubscription) -> {
+            if (!eventSubscription.isEventType(GatewayConnectionStatusEvent.class)) {
+                return false;
+            }
+
+            // If not a super user force a filter for the users realm
+            if (!authContext.isSuperUser()) {
+                @SuppressWarnings("unchecked")
+                EventSubscription<GatewayConnectionStatusEvent> subscription = (EventSubscription<GatewayConnectionStatusEvent>) eventSubscription;
+                subscription.setFilter(new TenantFilter<>(authContext.getAuthenticatedRealm()));
+            }
+
+            return true;
+        });
     }
 
     @Override
@@ -150,7 +170,9 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                     }
                 case CREATE:
                     connectionRealmMap.put(connection.getLocalRealm(), connection);
-                    clientRealmMap.put(connection.getLocalRealm(), createGatewayClient(connection));
+                    if (!connection.isDisabled()) {
+                        clientRealmMap.put(connection.getLocalRealm(), createGatewayClient(connection));
+                    }
                     break;
                 case DELETE:
                     connectionRealmMap.remove(connection.getLocalRealm());
@@ -242,6 +264,8 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         LOG.info("Destroying gateway IO client: " + connection);
         try {
             client.disconnect();
+            client.removeAllConnectionStatusConsumers();
+            client.removeAllMessageConsumers();
         } catch (Exception e) {
             LOG.log(Level.WARNING, "An exception occurred whilst trying to disconnect the gateway IO client", e);
         }
@@ -250,6 +274,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
     protected void onGatewayClientConnectionStatusChanged(GatewayConnection connection, ConnectionStatus connectionStatus) {
         LOG.info("Connection status change for gateway IO client '" + connectionStatus + "': " + connection);
+        clientEventService.publishEvent(new GatewayConnectionStatusEvent(timerService.getCurrentTimeMillis(), connection.getLocalRealm(), connectionStatus));
     }
 
     protected void onCentralManagerMessage(GatewayConnection connection, String message) {
@@ -331,7 +356,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         return new ArrayList<>(connectionRealmMap.values());
     }
 
-    protected void setConnection(GatewayConnection connection) {
+    public void setConnection(GatewayConnection connection) {
         LOG.info("Updating/creating gateway connection: " + connection);
         persistenceService.doTransaction(em -> em.merge(connection));
     }
@@ -358,5 +383,20 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         }
 
         return true;
+    }
+
+    protected ConnectionStatus getConnectionStatus(String realm) {
+        GatewayConnection connection = connectionRealmMap.get(realm);
+
+        if (connection == null) {
+            return null;
+        }
+
+        if (connection.isDisabled()) {
+            return ConnectionStatus.DISABLED;
+        }
+
+        WebsocketIoClient<String> client = clientRealmMap.get(realm);
+        return client != null ? client.getConnectionStatus() : null;
     }
 }

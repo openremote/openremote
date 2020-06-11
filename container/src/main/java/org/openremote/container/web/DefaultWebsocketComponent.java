@@ -29,14 +29,12 @@ import io.undertow.websockets.jsr.DefaultContainerConfigurator;
 import io.undertow.websockets.jsr.UndertowContainerProvider;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import org.keycloak.KeycloakPrincipal;
-import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.basic.BasicAuthContext;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.web.socket.WebsocketAdapter;
 import org.openremote.container.web.socket.WebsocketComponent;
-import org.openremote.container.web.socket.WebsocketConstants;
 import org.xnio.OptionMap;
 import org.xnio.Options;
 import org.xnio.Xnio;
@@ -54,6 +52,7 @@ import static org.openremote.container.web.WebService.pathStartsWithHandler;
 
 public class DefaultWebsocketComponent extends WebsocketComponent {
 
+    public static final String WEBSOCKET_PATH = "/websocket";
     private static final Logger LOG = Logger.getLogger(DefaultWebsocketComponent.class.getName());
 
     static {
@@ -78,7 +77,7 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
         WebSocketDeploymentInfo webSocketDeploymentInfo = new WebSocketDeploymentInfo();
 
         getConsumers().entrySet().forEach(consumerEntry -> {
-            String endpointPath = MessageBrokerSetupService.WEBSOCKET_PATH + "/" + consumerEntry.getKey();
+            String endpointPath = WEBSOCKET_PATH + "/" + consumerEntry.getKey();
             LOG.info("Deploying websocket endpoint: " + endpointPath);
             webSocketDeploymentInfo.addEndpoint(
                 ServerEndpointConfig.Builder.create(WebsocketAdapter.class, endpointPath)
@@ -112,7 +111,7 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
                                 throw new WebApplicationException("Unsupported user principal type: " + principal, INTERNAL_SERVER_ERROR);
                             }
 
-                            config.getUserProperties().put(WebsocketConstants.HANDSHAKE_AUTH, authContext);
+                            config.getUserProperties().put(ConnectionConstants.HANDSHAKE_AUTH, authContext);
 
                             super.modifyHandshake(config, request, response);
                         }
@@ -141,7 +140,7 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
         String deploymentName = "WebSocket Deployment";
         deploymentInfo = new DeploymentInfo()
             .setDeploymentName(deploymentName)
-            .setContextPath(MessageBrokerSetupService.WEBSOCKET_PATH)
+            .setContextPath(WEBSOCKET_PATH)
             .addServletContextAttribute(WebSocketDeploymentInfo.ATTRIBUTE_NAME, webSocketDeploymentInfo)
             .setClassLoader(WebsocketComponent.class.getClassLoader());
 
@@ -154,7 +153,7 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
         deploymentInfo.addSecurityConstraints(constraint);
 
         HttpHandler handler = webService.addServletDeployment(identityService, deploymentInfo, true);
-        websocketHttpHandler = pathStartsWithHandler(deploymentName, MessageBrokerSetupService.WEBSOCKET_PATH, handler);
+        websocketHttpHandler = pathStartsWithHandler(deploymentName, WEBSOCKET_PATH, handler);
 
         // Give web socket handler higher priority than any other handlers already added
         webService.getRequestHandlers().add(0, websocketHttpHandler);

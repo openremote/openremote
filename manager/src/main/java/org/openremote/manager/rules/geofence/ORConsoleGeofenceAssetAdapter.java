@@ -21,7 +21,7 @@ package org.openremote.manager.rules.geofence;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
-import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
@@ -83,7 +83,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
     @Override
     public int getPriority() {
-        return MessageBrokerSetupService.PRIORITY + 10;
+        return MessageBrokerService.PRIORITY + 200; // Start after MessageBrokerService so we can add routes
     }
 
     @Override
@@ -92,7 +92,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         this.notificationService = container.getService(NotificationService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.executorService = container.getService(ManagerExecutorService.class);
-        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }
 
     @Override

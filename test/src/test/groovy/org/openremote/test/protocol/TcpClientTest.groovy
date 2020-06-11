@@ -148,10 +148,10 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
         when: "we lose connection to the server"
         echoServer.stop()
 
-        then: "the client status should change to WAITING"
+        then: "the client status should change to CONNECTING"
         conditions.eventually {
-            assert client.connectionStatus == ConnectionStatus.WAITING
-            assert connectionStatus == ConnectionStatus.WAITING
+            assert client.connectionStatus == ConnectionStatus.CONNECTING
+            assert connectionStatus == ConnectionStatus.CONNECTING
         }
 
         when: "the connection to the server is restored"

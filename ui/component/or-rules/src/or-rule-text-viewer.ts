@@ -81,34 +81,48 @@ export class OrRuleTextViewer extends LitElement implements RuleView {
     }
 
     protected render(): TemplateResult | void {
-
-        if (!this._rules) {
-            return html``;
-        }
-
         return html`
             <div id="ace-editor"></div>
         `;
     }
 
+    protected refresh() {
+        this.destoryEditor()
+        this.initEditor();
+    }
+
+    protected destoryEditor() {
+        if (this._aceEditor) {
+            this._aceEditor.destroy();
+            this._aceEditor = undefined;
+        }
+    }
+
+    protected initEditor() {
+        if (this._aceElem) {
+            this._aceEditor = ace.edit(this._aceElem, {
+                mode: this._getMode(),
+                value: this._getRulesString(),
+                useSoftTabs: true,
+                tabSize: 2,
+                readOnly: this.readonly,
+                showPrintMargin: false
+            });
+            this._aceEditor.on("change", () => this._onEditorChanged());
+            this._aceEditor.renderer.attachToShadowRoot();
+        }
+    }
+
     protected updated(_changedProperties: PropertyValues): void {
+        if(_changedProperties.has('_ruleset')){
+            this.refresh();
+        }
+        
         if (!this._aceElem) {
-            if (this._aceEditor) {
-                this._aceEditor.destroy();
-                this._aceEditor = undefined;
-            }
+            this.destoryEditor();
         } else {
             if (!this._aceEditor) {
-                this._aceEditor = ace.edit(this._aceElem, {
-                    mode: this._getMode(),
-                    value: this._getRulesString(),
-                    useSoftTabs: true,
-                    tabSize: 2,
-                    readOnly: this.readonly,
-                    showPrintMargin: false
-                });
-                this._aceEditor.on("change", () => this._onEditorChanged());
-                this._aceEditor.renderer.attachToShadowRoot();
+              this.initEditor();
             }
         }
     }

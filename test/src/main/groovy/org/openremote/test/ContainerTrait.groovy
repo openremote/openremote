@@ -29,10 +29,10 @@ import org.keycloak.representations.AccessTokenResponse
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService
-import org.openremote.container.message.MessageBrokerSetupService
-import org.openremote.container.security.AuthForm
+import org.openremote.container.security.PasswordAuthForm
 import org.openremote.container.security.IdentityService
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
+import org.openremote.container.web.DefaultWebsocketComponent
 import org.openremote.container.web.WebClient
 import org.openremote.manager.web.ManagerWebService
 import org.openremote.model.Constants
@@ -112,7 +112,7 @@ trait ContainerTrait {
 
     static AccessTokenResponse authenticate(Container container, String realm, String clientId, String username, String password) {
         ((KeycloakIdentityProvider)container.getService(IdentityService.class).getIdentityProvider()).getKeycloak()
-                .getAccessToken(realm, new AuthForm(clientId, username, password))
+                .getAccessToken(realm, new PasswordAuthForm(clientId, username, password))
     }
 
     static ProducerTemplate getMessageProducerTemplate(Container container) {
@@ -130,7 +130,7 @@ trait ContainerTrait {
     static getWebsocketServerUrl(UriBuilder uriBuilder, String endpointPath, String realm, String accessToken) {
         uriBuilder.clone()
                 .scheme("ws")
-                .replacePath(MessageBrokerSetupService.WEBSOCKET_PATH)
+                .replacePath(DefaultWebsocketComponent.WEBSOCKET_PATH)
                 .path(endpointPath)
                 .queryParam(Constants.REQUEST_HEADER_REALM, realm)
                 .queryParam("Authorization", "Bearer " + accessToken)

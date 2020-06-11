@@ -304,6 +304,11 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             .proxy(KeycloakResource.class);
     }
 
+    public KeycloakResource getExternalKeycloak() {
+        return getTarget(httpClient, keycloakServiceUri.build(), null, null, externalServerUri.build())
+                .proxy(KeycloakResource.class);
+    }
+
     public RealmsResource getRealms(ClientRequestInfo clientRequestInfo) {
         return getRealms(clientRequestInfo.getRemoteAddress(), clientRequestInfo.getAccessToken());
     }

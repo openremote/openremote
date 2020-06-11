@@ -522,7 +522,7 @@ public abstract class AbstractManagerSetup implements Setup {
     protected Asset createDemoPeopleCounterAsset(String name, Asset area, GeoJSON location, Supplier<MetaItem[]> agentLinker) {
         Asset peopleCounterAsset = new Asset(name, PEOPLE_COUNTER, area);
         peopleCounterAsset.setAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()),
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD),
             new AssetAttribute("peopleCountIn", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("People Count In")),
@@ -579,7 +579,7 @@ public abstract class AbstractManagerSetup implements Setup {
     protected Asset createDemoMicrophoneAsset(String name, Asset area, GeoJSON location, Supplier<MetaItem[]> agentLinker) {
         Asset microphoneAsset = new Asset(name, MICROPHONE, area);
         microphoneAsset.setAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()),
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD),
             new AssetAttribute("microphoneLevel", SOUND)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Microphone Level")),
@@ -642,7 +642,7 @@ public abstract class AbstractManagerSetup implements Setup {
     protected Asset createDemoEnvironmentAsset(String name, Asset area, GeoJSON location, Supplier<MetaItem[]> agentLinker) {
         Asset environmentAsset = new Asset(name, ENVIRONMENT_SENSOR, area);
         environmentAsset.setAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()),
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD),
             new AssetAttribute("temperature", TEMPERATURE)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Temperature Level")),
@@ -708,7 +708,7 @@ public abstract class AbstractManagerSetup implements Setup {
     protected Asset createDemoLightAsset(String name, Asset area, GeoJSON location) {
         Asset lightAsset = new Asset(name, LIGHT, area);
         lightAsset.setAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()),
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD),
             new AssetAttribute("lightStatus", BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Light Status")),

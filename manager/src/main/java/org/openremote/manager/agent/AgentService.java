@@ -31,7 +31,6 @@ import org.openremote.agent.protocol.ProtocolAssetService;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingException;
@@ -75,7 +74,6 @@ import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.container.persistence.PersistenceEvent.*;
 import static org.openremote.manager.asset.AssetProcessingService.ASSET_QUEUE;
-import static org.openremote.manager.gateway.GatewayService.GATEWAY_SERVICE_PRIORITY;
 import static org.openremote.model.AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttributes;
@@ -96,7 +94,7 @@ import static org.openremote.model.util.TextUtil.isValidURN;
 public class AgentService extends RouteBuilder implements ContainerService, AssetUpdateProcessor, ProtocolAssetService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
-    public static final int AGENT_SERVICE_PRIORITY = GATEWAY_SERVICE_PRIORITY + 1; // Start after the gateway service
+    public static final int PRIORITY = DEFAULT_PRIORITY + 100; // Start quite late to ensure protocols etc. are initialised
     protected TimerService timerService;
     protected ManagerIdentityService identityService;
     protected AssetProcessingService assetProcessingService;
@@ -118,7 +116,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
      */
     @Override
     public int getPriority() {
-        return AGENT_SERVICE_PRIORITY;
+        return PRIORITY;
     }
 
     @Override
@@ -135,8 +133,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         clientEventService.addSubscriptionAuthorizer((auth, subscription) ->
             subscription.isEventType(AgentStatusEvent.class)
                 && identityService.getIdentityProvider()
-                .canSubscribeWith(auth, subscription.getFilter() instanceof TenantFilter
-                    ? ((TenantFilter) subscription.getFilter())
+                .canSubscribeWith(auth, subscription.getFilter() instanceof TenantFilter<?>
+                    ? ((TenantFilter<?>) subscription.getFilter())
                     : null, ClientRole.READ_ASSETS));
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
@@ -158,7 +156,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
     @Override
     public void start(Container container) throws Exception {
-        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
         // Load all protocol instances and fail hard and fast when a duplicate is found
         Collection<Protocol> discoveredProtocols = container.getServices(Protocol.class);
@@ -203,8 +201,9 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             .routeId("AgentPersistenceChanges")
             .filter(isPersistenceEventForEntityType(Asset.class))
             .process(exchange -> {
-                PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
-                Asset asset = (Asset) persistenceEvent.getEntity();
+                @SuppressWarnings("unchecked")
+                PersistenceEvent<Asset> persistenceEvent = (PersistenceEvent<Asset>)exchange.getIn().getBody(PersistenceEvent.class);
+                Asset asset = persistenceEvent.getEntity();
                 if (isPersistenceEventForAssetType(AGENT).matches(exchange)) {
                     processAgentChange(asset, persistenceEvent);
                 } else {
@@ -239,7 +238,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         }
 
         // Check protocol configuration has changed
-        @SuppressWarnings("ConstantConditions")
+        @SuppressWarnings("OptionalGetWithoutIsPresent")
         AssetAttribute oldProtocolConfiguration = agent.getAttribute(protocolRef.getAttributeName()).get();
         if (oldProtocolConfiguration.equals(protocolConfiguration)) {
             // Protocol configuration hasn't changed so nothing to do here
@@ -342,7 +341,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     /**
      * Looks for new, modified and obsolete protocol configurations and links / unlinks any associated attributes
      */
-    protected void processAgentChange(Asset agent, PersistenceEvent persistenceEvent) {
+    protected void processAgentChange(Asset agent, PersistenceEvent<?> persistenceEvent) {
 
         LOG.finest("Processing agent persistence event: " + persistenceEvent.getCause());
 
@@ -541,7 +540,19 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     protected String getAgentAncestorId(Asset asset) {
         if (asset.getPath() == null) {
             // Fully load
-            asset = assetStorageService.find(asset.getId());
+            Asset fullyLoaded = assetStorageService.find(asset.getId());
+            if (fullyLoaded != null) {
+                asset = fullyLoaded;
+            } else if (!TextUtil.isNullOrEmpty(asset.getParentId())) {
+                fullyLoaded = assetStorageService.find(asset.getParentId());
+                List<String> path = new ArrayList<>(Arrays.asList(fullyLoaded.getPath()));
+                path.add(0, asset.getId());
+                asset.setPath(path.toArray(new String[0]));
+            }
+        }
+
+        if (asset.getPath() == null) {
+            return null;
         }
 
         return Arrays.stream(asset.getPath())
@@ -798,14 +809,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     /**
      * Gets all agent link attributes and their linked protocol configuration and groups them by Protocol Configuration
      */
-    @SuppressWarnings("ConstantConditions")
     protected Map<AssetAttribute, List<AssetAttribute>> getGroupedAgentLinkAttributes(Stream<AssetAttribute> attributes,
                                                                                       Predicate<AssetAttribute> filter) {
 
         return getGroupedAgentLinkAttributes(attributes, filter, null);
     }
 
-    @SuppressWarnings("ConstantConditions")
     protected Map<AssetAttribute, List<AssetAttribute>> getGroupedAgentLinkAttributes(Stream<AssetAttribute> attributes,
                                                                                       Predicate<AssetAttribute> filter,
                                                                                       Consumer<AssetAttribute> notFoundConsumer) {

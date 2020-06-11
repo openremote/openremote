@@ -34,6 +34,7 @@ import org.openremote.container.Container;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.jsapi.JSAPIServlet;
+import org.openremote.manager.asset.AssetStorageService;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.UriBuilder;
@@ -57,8 +58,9 @@ import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 
 public class ManagerWebService extends WebService {
 
+    public static final int PRIORITY = LOW_PRIORITY + 100;
     public static final String APP_DOCROOT = "APP_DOCROOT";
-    public static final String APP_DOCROOT_DEFAULT = "deployment/manager/app";
+    public static final String APP_DOCROOT_DEFAULT = "deployment/build/manager/app";
     public static final String SHARED_DOCROOT = "SHARED_DOCROOT";
     public static final String SHARED_DOCROOT_DEFAULT = "deployment/manager/shared";
     public static final String CONSOLE_USE_STATIC_BOWER_COMPONENTS = "CONSOLE_USE_STATIC_BOWER_COMPONENTS";
@@ -84,7 +86,7 @@ public class ManagerWebService extends WebService {
      */
     @Override
     public int getPriority() {
-        return Integer.MAX_VALUE - 1;
+        return PRIORITY;
     }
     @Override
     public void init(Container container) throws Exception {
@@ -94,6 +96,7 @@ public class ManagerWebService extends WebService {
         String defaultApp = getString(container.getConfig(), APP_DEFAULT, APP_DEFAULT_DEFAULT);
 
         ResteasyDeployment resteasyDeployment = createResteasyDeployment(container, getApiClasses(), getApiSingletons(), true);
+
         // Serve REST API
         HttpHandler apiHandler = createApiHandler(identityService, resteasyDeployment);
         // Serve JavaScript API

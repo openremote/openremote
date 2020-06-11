@@ -12,7 +12,7 @@ public class I18NService implements ContainerService {
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return ContainerService.HIGH_PRIORITY + 400;
     }
 
     @Override

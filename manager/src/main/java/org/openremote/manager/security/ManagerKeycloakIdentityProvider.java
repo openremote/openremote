@@ -30,7 +30,7 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
-import org.openremote.container.security.AuthForm;
+import org.openremote.container.security.PasswordAuthForm;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ClientRequestInfo;
@@ -38,14 +38,13 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.apps.ConsoleAppService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
-import javax.persistence.TypedQuery;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -54,7 +53,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.IntStream;
 
 import static org.openremote.container.util.JsonUtil.convert;
 import static org.openremote.container.web.WebClient.getTarget;
@@ -105,110 +103,27 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public User[] getUsers(ClientRequestInfo clientRequestInfo, String realm) {
-        List<UserRepresentation> userRepresentations =
-            getRealms(clientRequestInfo)
-                .realm(realm).users().search(null, 0, Integer.MAX_VALUE);
-        List<User> users = new ArrayList<>();
-        for (UserRepresentation userRepresentation : userRepresentations) {
-            users.add(convertUser(realm, userRepresentation));
-        }
-        return users.toArray(new User[users.size()]);
+        return getUsers(new UserQuery().tenant(new TenantPredicate(realm)));
     }
 
     @Override
     public User[] getUsers(List<String> userIds) {
-        return persistenceService.doReturningTransaction(em -> {
-            List<User> result =
-                em.createQuery("select u from User u where u.id IN :userIds", User.class)
-                    .setParameter("userIds", userIds)
-                    .getResultList();
-
-            return result.toArray(new User[result.size()]);
-        });
+        return getUsers(new UserQuery().ids(userIds.toArray(new String[0])));
     }
 
     @Override
     public User[] getUsers(UserQuery userQuery) {
-
-        LOG.fine("Building: " + userQuery);
-        StringBuilder sb = new StringBuilder();
-        List<Object> parameters = new ArrayList<>();
-        sb.append(buildSelectString(userQuery));
-        sb.append(buildFromString(userQuery));
-        sb.append(buildWhereString(userQuery, parameters));
-        sb.append(buildLimit(userQuery));
-
-        return persistenceService.doReturningTransaction(entityManager -> {
-            TypedQuery<User> query = entityManager.createQuery(sb.toString(), User.class);
-            IntStream.range(0, parameters.size()).forEach(i -> query.setParameter(i + 1, parameters.get(i)));
-            List<User> users = query.getResultList();
-            return users.toArray(new User[users.size()]);
-        });
-    }
-
-    protected String buildSelectString(UserQuery query) {
-        return "SELECT DISTINCT(u)";
-    }
-
-    protected String buildFromString(UserQuery query) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(" FROM User u");
-
-        if (query.assetPredicate != null || query.pathPredicate != null) {
-            sb.append(" join UserAsset ua on ua.id.userId = u.id");
-        }
-
-        return sb.toString();
-    }
-
-    protected String buildWhereString(UserQuery query, List<Object> parameters) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(" WHERE 1=1");
-
-        if (query.tenantPredicate != null && !TextUtil.isNullOrEmpty(query.tenantPredicate.realm)) {
-            sb.append(" AND u.realm = ?").append(parameters.size() + 1);
-            parameters.add(query.tenantPredicate.realm);
-        }
-        if (query.assetPredicate != null) {
-            sb.append(" AND ua.id.assetId = ?").append(parameters.size() + 1);
-            parameters.add(query.assetPredicate.id);
-        }
-        if (query.pathPredicate != null) {
-            sb.append(" AND ?").append(parameters.size() + 1).append(" <@ get_asset_tree_path(ua.asset_id)");
-            parameters.add(query.pathPredicate.path);
-        }
-
-        return sb.toString();
-    }
-
-    protected String buildLimit(UserQuery userQuery) {
-        if (userQuery.limit > 0) {
-            return " LIMIT " + userQuery.limit;
-        }
-        return "";
+        return ManagerIdentityProvider.getUsersFromDb(persistenceService, userQuery);
     }
 
     @Override
     public User getUser(ClientRequestInfo clientRequestInfo, String realm, String userId) {
-        return convertUser(
-            realm,
-            getRealms(clientRequestInfo)
-                .realm(realm).users().get(userId).toRepresentation()
-        );
+        return ManagerIdentityProvider.getUserByIdFromDb(persistenceService, realm, userId);
     }
 
     @Override
-    public User getUser(String realm, String userName) {
-        return persistenceService.doReturningTransaction(em -> {
-            List<User> result =
-                em.createQuery("select u from User u where u.realm = :realm and u.username = :username", User.class)
-                    .setParameter("realm", realm)
-                    .setParameter("username", userName)
-                    .getResultList();
-            return result.size() > 0 ? result.get(0) : null;
-        });
+    public User getUser(String realm, String username) {
+        return ManagerIdentityProvider.getUserByUsernameFromDb(persistenceService, realm, username);
     }
 
     @Override
@@ -220,7 +135,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void createUser(ClientRequestInfo clientRequestInfo, String realm, User user) {
+    public void createUser(ClientRequestInfo clientRequestInfo, String realm, User user, String password) {
         Response response = getRealms(clientRequestInfo)
             .realm(realm).users().create(
                 convert(Container.JSON, UserRepresentation.class, user)
@@ -231,6 +146,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     .entity(response.getEntity())
                     .build()
             );
+        } else {
+            response.close();
         }
     }
 
@@ -244,6 +161,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     .entity(response.getEntity())
                     .build()
             );
+        } else {
+            response.close();
         }
     }
 
@@ -283,7 +202,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             ));
         }
 
-        return roles.toArray(new Role[roles.size()]);
+        return roles.toArray(new Role[0]);
     }
 
     @Override
@@ -327,33 +246,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public Tenant[] getTenants() {
-
-        return persistenceService.doReturningTransaction(entityManager -> {
-            List<Tenant> realms = entityManager.createQuery(
-                "select t from Tenant t where t.enabled = true and (t.notBefore is null or t.notBefore = 0 or to_timestamp(t.notBefore) <= now())"
-            , Tenant.class).getResultList();
-
-            // Make sure the master tenant is always on top
-            realms.sort((o1, o2) -> {
-                if (o1.getRealm().equals(MASTER_REALM))
-                    return -1;
-                if (o2.getRealm().equals(MASTER_REALM))
-                    return 1;
-                return o1.getRealm().compareTo(o2.getRealm());
-            });
-
-            return realms.toArray(new Tenant[realms.size()]);
-        });
+        return ManagerIdentityProvider.getTenantsFromDb(persistenceService);
     }
 
     @Override
     public Tenant getTenant(String realm) {
-        return persistenceService.doReturningTransaction(em -> {
-                    List<Tenant> tenants = em.createQuery("select t from Tenant t where t.realm = :realm and t.enabled = true and (t.notBefore is null or t.notBefore = 0 or to_timestamp(t.notBefore) <= now())", Tenant.class)
-                            .setParameter("realm", realm).getResultList();
-                    return tenants.size() == 1 ? tenants.get(0) : null;
-                }
-        );
+        return ManagerIdentityProvider.getTenantFromDb(persistenceService, realm);
     }
 
     @Override
@@ -415,14 +313,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public boolean tenantExists(String realm) {
-        return persistenceService.doReturningTransaction(em -> {
-
-            long count = em.createQuery(
-                    "select count(t) from Tenant t where t.realm = :realm and t.enabled = true and (t.notBefore is null or t.notBefore = 0 or to_timestamp(t.notBefore) <= now())",
-                    Long.class).setParameter("realm", realm).getSingleResult();
-
-            return count > 0;
-        });
+        return ManagerIdentityProvider.tenantExistsFromDb(persistenceService, realm);
     }
 
     @Override
@@ -433,10 +324,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public boolean isUserInTenant(String userId, String realm) {
-        return persistenceService.doReturningTransaction(em -> {
-            User user = em.find(User.class, userId);
-            return (user != null && realm.equals(user.getRealm()));
-        });
+        return ManagerIdentityProvider.userInTenantFromDb(persistenceService, userId, realm);
     }
 
     @Override
@@ -503,7 +391,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             if (token == null || !token.getIssuedFor().equals(ADMIN_CLI_CLIENT_ID)) {
                 return getKeycloak().getAccessToken(
-                    MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, keycloakAdminPassword)
+                    MASTER_REALM, new PasswordAuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, keycloakAdminPassword)
                 ).getToken();
             }
             return clientRequestInfo.getAccessToken();
@@ -562,7 +450,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         }
     }
 
-    protected User convertUser(String realm, UserRepresentation userRepresentation) {
+    public static User convertUser(String realm, UserRepresentation userRepresentation) {
         User user = convert(Container.JSON, User.class, userRepresentation);
         user.setRealm(realm);
         return user;
@@ -572,13 +460,15 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         // Fire persistence event although we don't use database for Tenant CUD but call Keycloak API
         PersistenceEvent persistenceEvent = new PersistenceEvent<>(cause, tenant, new String[0], null);
 
-        messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-            PersistenceEvent.PERSISTENCE_TOPIC,
-            ExchangePattern.InOnly,
-            persistenceEvent,
-            PersistenceEvent.HEADER_ENTITY_TYPE,
-            persistenceEvent.getEntity().getClass()
-        );
+        if (messageBrokerService.getProducerTemplate() != null) {
+            messageBrokerService.getProducerTemplate().sendBodyAndHeader(
+                PersistenceEvent.PERSISTENCE_TOPIC,
+                ExchangePattern.InOnly,
+                persistenceEvent,
+                PersistenceEvent.HEADER_ENTITY_TYPE,
+                persistenceEvent.getEntity().getClass()
+            );
+        }
 
         clientEventService.publishEvent(
             new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), tenant.getRealm(), null)
@@ -597,6 +487,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     .build()
             );
         } else {
+            response.close();
+
             componentRepresentation = realmResource.components()
                 .query(componentRepresentation.getParentId(),
                     componentRepresentation.getProviderType(),
@@ -609,6 +501,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                         .entity(response.getEntity())
                         .build()
                 );
+            } else {
+                response.close();
             }
         }
         return componentRepresentation.getId();
@@ -626,6 +520,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     .build()
             );
         } else {
+            response.close();
+
             componentRepresentation = realmResource.components()
                 .query(componentRepresentation.getParentId(),
                     componentRepresentation.getProviderType(),

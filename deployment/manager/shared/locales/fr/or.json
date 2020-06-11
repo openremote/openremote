@@ -117,10 +117,10 @@
     "NUMBER": "%.0f",
     "TEMPERATURE": "%.1f",
     "POWER": "%.1f",
-    "CURRENCY": "%.1f",
+    "CURRENCY": "%.3f",
     "SPEED": "%.1f",
     "CHARGE": "%.1f",
-    "ENERGY": "%.1f",
+    "ENERGY": "%.3f",
     "CO2": "%.1f",
     "HUMIDITY": "%.1f"
   }

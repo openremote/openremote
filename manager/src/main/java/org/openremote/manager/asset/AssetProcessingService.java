@@ -26,7 +26,6 @@ import org.openremote.agent.protocol.Protocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
@@ -121,6 +120,7 @@ import static org.openremote.model.attribute.AttributeEvent.Source.*;
  */
 public class AssetProcessingService extends RouteBuilder implements ContainerService {
 
+    public static final int PRIORITY = AssetStorageService.PRIORITY + 1000;
     private static final Logger LOG = Logger.getLogger(AssetProcessingService.class.getName());
 
     // TODO: Some of these options should be configurable depending on expected load etc.
@@ -145,7 +145,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return PRIORITY;
     }
 
     @Override
@@ -219,7 +219,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         processors.add(assetDatapointService);
         processors.add(assetAttributeLinkingService);
 
-        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }
 
     @Override

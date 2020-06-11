@@ -64,16 +64,12 @@ import static org.openremote.container.util.MapAccess.getBoolean;
  */
 public interface SetupTasks {
 
-    String SETUP_WIPE_CLEAN_INSTALL = "SETUP_WIPE_CLEAN_INSTALL";
+
     String SETUP_IMPORT_DEMO_USERS = "SETUP_IMPORT_DEMO_USERS";
     String SETUP_IMPORT_DEMO_ASSETS = "SETUP_IMPORT_DEMO_ASSETS";
     String SETUP_IMPORT_DEMO_RULES = "SETUP_IMPORT_DEMO_RULES";
     String SETUP_IMPORT_DEMO_SCENES = "SETUP_IMPORT_DEMO_SCENES";
     String SETUP_IMPORT_DEMO_AGENT = "SETUP_IMPORT_DEMO_AGENT";
-
-    static boolean isSetupWipeCleanInstall(Container container) {
-        return getBoolean(container.getConfig(), SETUP_WIPE_CLEAN_INSTALL, container.isDevMode());
-    }
 
     static boolean isImportDemoUsers(Container container) {
         return isImportDemoAssets(container)

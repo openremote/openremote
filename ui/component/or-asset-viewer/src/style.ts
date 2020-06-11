@@ -138,8 +138,9 @@ export const style = css`
         font-weight: bolder;
         line-height: 1em;
         color: var(--internal-or-asset-viewer-title-text-color);
-        margin-bottom: 25px;
+        margin-bottom: 20px;
         flex: 0 0 auto;
+        letter-spacing: 0.025em;
     }
    
     .field {
@@ -152,6 +153,14 @@ export const style = css`
     .field > * {
         width: 100%;
         box-sizing: border-box;
+    }
+
+    #attributes-panel .panel-content > :first-child, #info-panel .panel-content > :first-child {
+        margin-top: 0;
+    }
+
+    #attributes-panel .panel-content > :last-child, #info-panel .panel-content > :last-child {
+        margin-bottom: 0;
     }
     
     .msg {

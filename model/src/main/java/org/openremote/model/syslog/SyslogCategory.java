@@ -56,6 +56,12 @@ public enum SyslogCategory {
         "Protocol",
         true,
         "Protocol"
+    ),
+    GATEWAY(
+        "Gateway",
+        true,
+        "GatewayService",
+        "GatewayConnector"
     );
 
     protected final String categoryLabel;

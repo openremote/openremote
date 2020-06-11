@@ -23,7 +23,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.socket.WebsocketConstants;
+import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.CancelEventSubscription;
@@ -31,7 +31,6 @@ import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.TextUtil;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -200,13 +199,13 @@ public class EventSubscriptions {
                     || sessionSubscription.subscription.getFilter().apply(event)) {
                     LOG.fine("Creating message for subscribed session '" + sessionKey + "': " + event);
                     List<SharedEvent> events = Collections.singletonList(event);
-                    TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription(events, sessionSubscription.subscriptionId);
+                    TriggeredEventSubscription<?> triggeredEventSubscription = new TriggeredEventSubscription<>(events, sessionSubscription.subscriptionId);
 
                     if (sessionSubscription.subscription.getInternalConsumer() == null) {
                         Message msg = new DefaultMessage();
                         msg.setBody(triggeredEventSubscription); // Don't copy the event, use same reference
                         msg.setHeaders(new HashMap<>(exchange.getIn().getHeaders())); // Copy headers
-                        msg.setHeader(WebsocketConstants.SESSION_KEY, sessionKey);
+                        msg.setHeader(ConnectionConstants.SESSION_KEY, sessionKey);
                         messageList.add(msg);
                     } else {
                         sessionSubscription.subscription.getInternalConsumer().accept(triggeredEventSubscription);

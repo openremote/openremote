@@ -23,6 +23,7 @@ import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -62,13 +63,13 @@ public class RulesetStorageService implements ContainerService {
     }
 
     private static final Logger LOG = Logger.getLogger(RulesetStorageService.class.getName());
-
+    public static final int PRIORITY = AssetStorageService.PRIORITY + 200;
     protected PersistenceService persistenceService;
     protected ManagerIdentityService identityService;
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return PRIORITY;
     }
 
     @Override
@@ -257,10 +258,11 @@ public class RulesetStorageService implements ContainerService {
 
     protected void appendLimit(StringBuilder sb, RulesetQuery query) {
         if (query.limit > 0) {
-            sb.append(" LIMIT " + query.limit);
+            sb.append(" LIMIT ").append(query.limit);
         }
     }
 
+    @SuppressWarnings("unchecked")
     protected <T extends Ruleset> T mapResultTuple(Class<T> rulesetType, RulesetQuery query, ResultSet rs) throws SQLException {
         T ruleset;
 
@@ -270,13 +272,13 @@ public class RulesetStorageService implements ContainerService {
             TenantRuleset tenantRuleset = new TenantRuleset();
             tenantRuleset.setRealm(rs.getString("REALM"));
             tenantRuleset.setAccessPublicRead(rs.getBoolean("ACCESS_PUBLIC_READ"));
-            ruleset = (T)tenantRuleset;
+            ruleset = (T) tenantRuleset;
         } else if (rulesetType == AssetRuleset.class) {
             AssetRuleset assetRuleset = new AssetRuleset();
             assetRuleset.setAssetId(rs.getString("ASSET_ID"));
             assetRuleset.setRealm(rs.getString("REALM"));
             assetRuleset.setAccessPublicRead(rs.getBoolean("ACCESS_PUBLIC_READ"));
-            ruleset = (T)assetRuleset;
+            ruleset = (T) assetRuleset;
         } else {
             throw new UnsupportedOperationException("Ruleset type not supported: " + rulesetType);
         }

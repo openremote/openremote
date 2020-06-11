@@ -106,6 +106,11 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
                     if (status != Status.STATUS_COMMITTED)
                         return;
 
+                    if (messageBrokerService.getProducerTemplate() == null) {
+                        // Message broker not started yet
+                        return;
+                    }
+
                     for (PersistenceEvent persistenceEvent : persistenceEvents) {
                         try {
                             messageBrokerService.getProducerTemplate().sendBodyAndHeader(
