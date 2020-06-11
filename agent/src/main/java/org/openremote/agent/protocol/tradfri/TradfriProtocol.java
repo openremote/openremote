@@ -283,6 +283,7 @@ public class TradfriProtocol extends AbstractProtocol {
     protected Asset createLightAsset(Light light, MetaItem agentLink, AssetAttribute protocolConfiguration) {
         String name = UniqueIdentifierGenerator.generateId("tradfri_" + light.getInstanceId());
         Asset asset = new Asset(light.getName(), AssetType.LIGHT);
+        asset.addAttributes(new AssetAttribute("colorTemperature", NUMBER, Values.create(0)));
         asset.getAttribute("lightDimLevel").get().setType(NUMBER);
         asset.getAttribute("lightDimLevel").get().setMeta(
                 new MetaItem(RANGE_MIN, Values.create(0)),
@@ -305,6 +306,14 @@ public class TradfriProtocol extends AbstractProtocol {
                 new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                 agentLink
         );
+        asset.getAttribute("colorTemperature").get().setMeta(
+                new MetaItem(RANGE_MIN, Values.create(250)),
+                new MetaItem(RANGE_MAX, Values.create(454)),
+                new MetaItem(LABEL, Values.create("Tradfri color temperature")),
+                new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
+                new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
+                agentLink
+        );
         asset.setId(name);
         asset.setParentId(protocolConfiguration.getAssetId().get());
         EventHandler<LightChangeOnEvent> lightOnOffEventHandler = new EventHandler<LightChangeOnEvent>() {
@@ -323,11 +332,31 @@ public class TradfriProtocol extends AbstractProtocol {
                 assetService.mergeAsset(asset);
             }
         };
+        EventHandler<LightChangeColourEvent> lightRGBEventHandler = new EventHandler<LightChangeColourEvent>() {
+            @Override
+            public void handle(LightChangeColourEvent event) {
+                asset.getAttribute("colorGBW").get().setValue(Values.createObject().put("red", light.getColourRGB().getRed()).put("green", light.getColourRGB().getGreen()).put("blue", light.getColourRGB().getBlue()));
+                asset.setRealm(assetService.findAsset(protocolConfiguration.getAssetId().get()).getRealm());
+                assetService.mergeAsset(asset);
+            }
+        };
+        EventHandler<LightChangeColourTemperatureEvent> lightColorTemperatureEventHandler = new EventHandler<LightChangeColourTemperatureEvent>() {
+            @Override
+            public void handle(LightChangeColourTemperatureEvent event) {
+                asset.getAttribute("colorTemperature").get().setValue(Values.create(light.getColourTemperature()));
+                asset.setRealm(assetService.findAsset(protocolConfiguration.getAssetId().get()).getRealm());
+                assetService.mergeAsset(asset);
+            }
+        };
         light.enableObserve();
         light.addEventHandler(lightOnOffEventHandler);
         light.addEventHandler(lightBrightnessEventHandler);
+        light.addEventHandler(lightRGBEventHandler);
+        light.addEventHandler(lightColorTemperatureEventHandler);
         asset.getAttribute("lightStatus").get().setValue(Values.create(light.getOn()));
         asset.getAttribute("lightDimLevel").get().setValue(Values.create(light.getBrightness()));
+        asset.getAttribute("colorGBW").get().setValue(Values.createObject().put("red", light.getColourRGB().getRed()).put("green", light.getColourRGB().getGreen()).put("blue", light.getColourRGB().getBlue()));
+        asset.getAttribute("colorTemperature").get().setValue(Values.create(light.getColourTemperature()));
         assetService.mergeAsset(asset);
         return asset;
     }

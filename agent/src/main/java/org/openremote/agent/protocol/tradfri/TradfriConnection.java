@@ -115,6 +115,9 @@ public class TradfriConnection {
                             String[] numbers = digits.split(",");
                             light.setColourRGB(Integer.parseInt(numbers[0]), Integer.parseInt(numbers[1]), Integer.parseInt(numbers[2]));
                             break;
+                        case "colorTemperature":
+                            light.setColourTemperature((int) Float.parseFloat(event.getValue().get().toString()));
+                            break;
                     }
                 }
                 else if (device.isPlug()) {
