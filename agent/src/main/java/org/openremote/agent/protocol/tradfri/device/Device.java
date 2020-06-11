@@ -194,7 +194,7 @@ public class Device {
     /**
      * Add an event handler to the device
      * @param eventHandler The event handler to add to the device
-     *                     @since 1.0.0
+     * @since 1.0.0
      */
     public void addEventHandler(EventHandler eventHandler){
         this.eventHandlers.add(eventHandler);

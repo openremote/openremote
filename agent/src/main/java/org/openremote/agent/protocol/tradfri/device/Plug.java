@@ -78,6 +78,7 @@ public class Plug extends Device {
     /**
      * Set the on / off state of the plug
      * @param on The new on / off state for the plug (true for on, false for off)
+     * @return True if successfully updated the plug, false if not
      * @since 1.0.0
      */
     public boolean setOn(Boolean on) {

@@ -480,7 +480,7 @@ public class Light extends Device {
      * @since 1.1.0
      */
     public boolean setColour(ColourRGB colourRGB){
-        return setColour(colourRGB);
+        return setColour(colourRGB, null);
     }
 
     /**
@@ -489,7 +489,7 @@ public class Light extends Device {
      * @param colourGreen The green value of the new colour for the light
      * @param colourBlue The blue value of the new colour for the light
      * @param transitionTime The transition time for updating the light
-     * * @return True if successfully updated the colour of the light, false if not
+     * @return True if successfully updated the colour of the light, false if not
      * @since 1.0.0
      */
     public boolean setColourRGB(int colourRed, int colourGreen, int colourBlue, Integer transitionTime) {
