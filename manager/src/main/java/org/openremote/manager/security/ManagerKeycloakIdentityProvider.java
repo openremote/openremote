@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.security;
 
+import io.undertow.util.Headers;
 import org.apache.camel.ExchangePattern;
 import org.keycloak.TokenVerifier;
 import org.keycloak.admin.client.resource.*;
@@ -48,15 +49,19 @@ import org.openremote.model.util.TextUtil;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_HOST;
+import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_HOST_DEFAULT;
 import static org.openremote.container.util.JsonUtil.convert;
-import static org.openremote.container.web.WebClient.getTarget;
-import static org.openremote.manager.setup.AbstractKeycloakSetup.*;
+import static org.openremote.container.util.MapAccess.getBoolean;
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.web.WebService.WEBSERVER_ALLOWED_ORIGINS;
+import static org.openremote.container.web.WebService.WEBSERVER_ALLOWED_ORIGINS_DEFAULT;
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_EMAIL_FROM_KEYCLOAK;
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT;
 import static org.openremote.model.Constants.*;
 
 public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider implements ManagerIdentityProvider {
@@ -265,20 +270,15 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant) {
-        createTenant(clientRequestInfo, tenant, null);
-    }
-
-    @Override
-    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, TenantEmailConfig emailConfig) {
+    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, Container container) {
         LOG.fine("Create tenant: " + tenant);
         RealmRepresentation realmRepresentation = convert(Container.JSON, RealmRepresentation.class, tenant);
-        configureRealm(realmRepresentation, emailConfig);
-        clientRequestInfo = new ClientRequestInfo(clientRequestInfo.getRemoteAddress(), getAdminAccessToken(clientRequestInfo));
         // TODO This is not atomic, write compensation actions
         getRealms(clientRequestInfo).create(realmRepresentation);
+        realmRepresentation = getRealms(clientRequestInfo).realm(tenant.getRealm()).toRepresentation();
+        configureRealm(realmRepresentation, container);
+        clientRequestInfo = new ClientRequestInfo(clientRequestInfo.getRemoteAddress(), getAdminAccessToken(clientRequestInfo));
         createClientApplication(clientRequestInfo, realmRepresentation.getRealm());
-
         publishModification(PersistenceEvent.Cause.CREATE, tenant);
     }
 
@@ -360,10 +360,44 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     }
 
-    public void configureRealm(RealmRepresentation realmRepresentation, TenantEmailConfig emailConfig) {
+    public void configureRealm(RealmRepresentation realmRepresentation, Container container) {
         configureRealm(realmRepresentation, Constants.ACCESS_TOKEN_LIFESPAN_SECONDS);
-        if (emailConfig != null)
-            realmRepresentation.setSmtpServer(emailConfig.asMap());
+
+        // Configure SMTP
+        String host = container.getConfig().getOrDefault(SETUP_EMAIL_HOST, null);
+        if (!TextUtil.isNullOrEmpty(host) && (realmRepresentation.getSmtpServer() == null || realmRepresentation.getSmtpServer().isEmpty())) {
+            LOG.info("Configuring Keycloak SMTP settings for realm: " + realmRepresentation.getRealm());
+            Map<String, String> emailConfig = new HashMap<>();
+            emailConfig.put("host", host);
+            emailConfig.put("port", container.getConfig().getOrDefault(SETUP_EMAIL_PORT, Integer.toString(SETUP_EMAIL_PORT_DEFAULT)));
+            emailConfig.put("user", container.getConfig().getOrDefault(SETUP_EMAIL_USER, null));
+            emailConfig.put("password", container.getConfig().getOrDefault(SETUP_EMAIL_PASSWORD, null));
+            emailConfig.put("auth", container.getConfig().containsKey(SETUP_EMAIL_USER) ? "true" : "false");
+            emailConfig.put("tls", Boolean.toString(getBoolean(container.getConfig(), SETUP_EMAIL_TLS, SETUP_EMAIL_TLS_DEFAULT)));
+            emailConfig.put("from", getString(container.getConfig(), SETUP_EMAIL_FROM_KEYCLOAK, SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT + getString(container.getConfig(), IDENTITY_NETWORK_HOST, IDENTITY_NETWORK_HOST_DEFAULT)));
+            realmRepresentation.setSmtpServer(emailConfig);
+        }
+
+        // Configure CSP header
+        Map<String, String> headers = realmRepresentation.getBrowserSecurityHeaders();
+        if (headers == null) {
+            headers = new HashMap<>();
+            realmRepresentation.setBrowserSecurityHeaders(headers);
+        }
+
+        if (container.isDevMode()) {
+                headers.computeIfPresent("contentSecurityPolicy", (hdrName, hdrValue) -> "frame-src *; frame-ancestors *; object-src 'none'");
+        } else {
+            String allowedOriginsStr = getString(container.getConfig(), WEBSERVER_ALLOWED_ORIGINS, WEBSERVER_ALLOWED_ORIGINS_DEFAULT);
+            if (!TextUtil.isNullOrEmpty(allowedOriginsStr)) {
+                headers.compute("contentSecurityPolicy", (hdrName, hdrValue) ->
+                        "frame-src 'self' " +
+                        allowedOriginsStr.replace(';', ' ') +
+                        "; frame-ancestors 'self' " +
+                        allowedOriginsStr.replace(';', ' ') +
+                        "; object-src 'none'");
+            }
+        }
     }
 
     public void createClientApplication(ClientRequestInfo clientRequestInfo, String realm) {

@@ -80,14 +80,14 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         tenantBuilding.setRealm("building");
         tenantBuilding.setDisplayName("Building");
         tenantBuilding.setEnabled(true);
-        keycloakProvider.createTenant(new ClientRequestInfo(null, accessToken), tenantBuilding, emailConfig);
+        keycloakProvider.createTenant(new ClientRequestInfo(null, accessToken), tenantBuilding, container);
         tenantBuilding = keycloakProvider.getTenant(tenantBuilding.getRealm());
 
         tenantCity = new Tenant();
         tenantCity.setRealm("smartcity");
         tenantCity.setDisplayName("Smart City");
         tenantCity.setEnabled(true);
-        keycloakProvider.createTenant(new ClientRequestInfo(null, accessToken), tenantCity, emailConfig);
+        keycloakProvider.createTenant(new ClientRequestInfo(null, accessToken), tenantCity, container);
         tenantCity = keycloakProvider.getTenant(tenantCity.getRealm());
 
         // Users

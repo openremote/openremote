@@ -63,7 +63,7 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         masterRealm.setLoginTheme(masterRealmKeycloakTheme);
 
         // Set SMTP server, theme, timeouts, etc.
-        keycloakProvider.configureRealm(masterRealm, emailConfig);
+        keycloakProvider.configureRealm(masterRealm, container);
 
         masterRealmResource.update(masterRealm);
 

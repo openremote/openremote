@@ -176,7 +176,16 @@ export function headerItemLogs<S extends AppStateKeyed, A extends AnyAction>(orA
     };
 }
 
-function getRealm(): string {
+export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: "account",
+        value: "account",
+        href: "#!account",
+        text: "account"
+    };
+}
+
+function getRealmQueryParameter(): string {
     return Util.getQueryParameter(location.search, "realm");
 }
 
@@ -184,7 +193,7 @@ const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
     managerUrl: MANAGER_URL,
     auth: Auth.KEYCLOAK,
     autoLogin: true,
-    realm: getRealm(),
+    realm: getRealmQueryParameter(),
     consoleAutoEnable: true,
     loadTranslations: ["app", "or"]
 };
@@ -317,7 +326,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             })
         }
 
-        const realm = getRealm();
+        const realm = getRealmQueryParameter();
         const config = this._getConfig(realm);
 
         if (!config) {

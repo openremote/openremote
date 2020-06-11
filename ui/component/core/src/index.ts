@@ -395,6 +395,14 @@ export class Manager implements EventProviderFactory {
         return this._managerVersion && this._managerVersion !== "";
     }
 
+    get managerUrl() {
+        return this._config.managerUrl;
+    }
+
+    get keycloakUrl() {
+        return this._config.keycloakUrl;
+    }
+
     get isError() {
         return !!this._error;
     }
@@ -982,6 +990,10 @@ export class Manager implements EventProviderFactory {
 
     protected isMobile(): boolean {
         return this.console && this.console.isMobile;
+    }
+
+    public isKeycloak(): boolean {
+        return !!this._keycloak;
     }
 
     protected _onAuthenticated() {

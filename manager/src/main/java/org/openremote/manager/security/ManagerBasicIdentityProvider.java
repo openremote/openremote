@@ -205,12 +205,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant) {
-        throw new UnsupportedOperationException("This provider does not support multiple tenants");
-    }
-
-    @Override
-    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, TenantEmailConfig emailConfig) {
+    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, Container container) {
         throw new UnsupportedOperationException("This provider does not support multiple tenants");
     }
 

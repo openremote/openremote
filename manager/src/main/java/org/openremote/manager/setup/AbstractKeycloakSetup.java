@@ -28,16 +28,11 @@ import org.openremote.container.security.PasswordAuthForm;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
-import org.openremote.model.security.TenantEmailConfig;
-import org.openremote.model.util.TextUtil;
 
-import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_HOST;
-import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_HOST_DEFAULT;
-import static org.openremote.container.util.MapAccess.getBoolean;
-import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD;
 import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT;
-import static org.openremote.model.Constants.*;
+import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
 
 public abstract class AbstractKeycloakSetup implements Setup {
 
@@ -48,7 +43,6 @@ public abstract class AbstractKeycloakSetup implements Setup {
     final protected ManagerIdentityService identityService;
     final protected ManagerKeycloakIdentityProvider keycloakProvider;
     final protected SetupService setupService;
-    final protected TenantEmailConfig emailConfig;
     protected String accessToken;
     protected RealmResource masterRealmResource;
     protected ClientsResource masterClientsResource;
@@ -59,25 +53,6 @@ public abstract class AbstractKeycloakSetup implements Setup {
         this.identityService = container.getService(ManagerIdentityService.class);
         this.keycloakProvider = ((ManagerKeycloakIdentityProvider)identityService.getIdentityProvider());
         this.setupService = container.getService(SetupService.class);
-
-        // Configure SMTP
-        String host = container.getConfig().getOrDefault(SETUP_EMAIL_HOST, null);
-
-        if (!TextUtil.isNullOrEmpty(host)) {
-            String user = container.getConfig().getOrDefault(SETUP_EMAIL_USER, null);
-            String password = container.getConfig().getOrDefault(SETUP_EMAIL_PASSWORD, null);
-
-            emailConfig = new TenantEmailConfig();
-            emailConfig.setHost(host);
-            emailConfig.setStarttls(getBoolean(container.getConfig(), SETUP_EMAIL_TLS, SETUP_EMAIL_TLS_DEFAULT));
-            emailConfig.setPort(getInteger(container.getConfig(), SETUP_EMAIL_PORT, SETUP_EMAIL_PORT_DEFAULT));
-            emailConfig.setAuth(!TextUtil.isNullOrEmpty(user));
-            emailConfig.setUser(user);
-            emailConfig.setPassword(password);
-            emailConfig.setFrom(container.getConfig().getOrDefault(SETUP_EMAIL_FROM_KEYCLOAK, SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT + container.getConfig().getOrDefault(IDENTITY_NETWORK_HOST, IDENTITY_NETWORK_HOST_DEFAULT)));
-        } else {
-            emailConfig = null;
-        }
     }
 
     public ManagerKeycloakIdentityProvider getKeycloakProvider() {

@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.security;
 
+import org.openremote.container.Container;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.IdentityProvider;
@@ -79,9 +80,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     void updateTenant(ClientRequestInfo clientRequestInfo, String realm, Tenant tenant);
 
-    void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant);
-
-    void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, TenantEmailConfig emailConfig);
+    void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, Container container);
 
     void deleteTenant(ClientRequestInfo clientRequestInfo, String realm);
 
