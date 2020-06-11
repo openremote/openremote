@@ -273,11 +273,10 @@ export function getAttributeValue(attribute: Attribute, descriptor: AttributeDes
     }
     const format = getMetaValue(MetaItemType.FORMAT, attribute , undefined);
     const valueType = attribute.type;
-    if(format){
-        return i18next.t(format, { postProcess: 'sprintf', sprintf: [attribute.value] });
-    }
-    else if(attribute.value) {
-        return i18next.t(["attributeValueType."+valueType, fallbackFormat || "%s"], { postProcess: 'sprintf', sprintf: [attribute.value] });
+    if (format) {
+        return i18next.t(format, { postProcess: "sprintf", sprintf: [attribute.value] });
+    } else if (attribute.value) {
+        return i18next.t(["attributeValueType." + valueType, fallbackFormat || "%s"], { postProcess: "sprintf", sprintf: [attribute.value] });
     } else {
         return attribute.value;
     }

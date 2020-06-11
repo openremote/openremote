@@ -83,7 +83,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
     @Override
     public int getPriority() {
-        return MessageBrokerService.PRIORITY + 10;
+        return MessageBrokerService.PRIORITY + 200; // Start after MessageBrokerService so we can add routes
     }
 
     @Override

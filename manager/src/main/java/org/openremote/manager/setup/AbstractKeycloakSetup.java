@@ -35,12 +35,12 @@ import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK
 import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_HOST_DEFAULT;
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD;
+import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT;
 import static org.openremote.model.Constants.*;
 
 public abstract class AbstractKeycloakSetup implements Setup {
 
-    public static final String SETUP_ADMIN_PASSWORD = "SETUP_ADMIN_PASSWORD";
-    public static final String SETUP_ADMIN_PASSWORD_DEFAULT = "secret";
     public static final String SETUP_EMAIL_FROM_KEYCLOAK = "SETUP_EMAIL_FROM_KEYCLOAK";
     public static final String SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT = "no-reply@";
 

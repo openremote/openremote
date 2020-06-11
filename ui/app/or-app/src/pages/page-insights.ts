@@ -29,8 +29,29 @@ const viewerConfig: DataViewerConfig = {
             gridRowStart: "1"
         },
         defaults: [{
-            assetId:"5442Ite2XVp3Ky9X2y647a",
+            assetId:"2qRArBNm5BjeJpPawE59z8",
             attributes: ["UVIndex"]
+        }]
+    },
+    "kpi": {
+        type: "kpi",
+        defaults: [{
+            assetId:"2qRArBNm5BjeJpPawE59z8",
+            attributes: ["UVIndex"],
+        }]
+    },
+    "asdf": {
+        type: "kpi",
+        defaults: [{
+            assetId:"2qRArBNm5BjeJpPawE59z8",
+            attributes: ["UVIndex"],
+        }]
+    },
+    "adf": {
+        type: "kpi",
+        defaults: [{
+            assetId:"2qRArBNm5BjeJpPawE59z8",
+            attributes: ["UVIndex"],
         }]
     }
    }

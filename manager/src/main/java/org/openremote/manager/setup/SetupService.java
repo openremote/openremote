@@ -21,6 +21,7 @@ package org.openremote.manager.setup;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.setup.builtin.BuiltinSetupTasks;
@@ -33,7 +34,7 @@ import java.util.logging.Logger;
 /**
  * Executes setup tasks for a clean installation when the application starts.
  * <p>
- * This service is disabled when {@link AbstractSetupTasks#SETUP_WIPE_CLEAN_INSTALL} is <code>false</code>.
+ * This service is disabled when {@link PersistenceService#SETUP_WIPE_CLEAN_INSTALL} is <code>false</code>.
  * <p>
  * First, this service will load an implementation of {@link SetupTasks} from the
  * classpath using {@link ServiceLoader}. If multiple providers are found, an error
@@ -52,14 +53,16 @@ public class SetupService implements ContainerService {
 
     @Override
     public int getPriority() {
-        return IdentityService.PRIORITY + 10; // Start just after identity service so we know what tasks to run
+        return PersistenceService.PRIORITY + 10; // Start just after persistence service
     }
 
     @Override
     public void init(Container container) throws Exception {
 
-        if (!SetupTasks.isSetupWipeCleanInstall(container)) {
-            LOG.info("Setup service disabled, " + SetupTasks.SETUP_WIPE_CLEAN_INSTALL + "=false");
+        boolean isClean = container.getService(PersistenceService.class).isSetupWipeCleanInstall();
+
+        if (!isClean) {
+            LOG.info("Setup service disabled, " + PersistenceService.SETUP_WIPE_CLEAN_INSTALL + "=false");
             return;
         }
 

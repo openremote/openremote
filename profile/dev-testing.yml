@@ -11,7 +11,6 @@ volumes:
 services:
 
   keycloak:
-    restart: always
     extends:
       file: deploy.yml
       service: keycloak

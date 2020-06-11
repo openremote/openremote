@@ -38,7 +38,7 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
 
         // Basic vs Keycloak identity provider
         if (container.getService(ManagerIdentityService.class).isKeycloakEnabled()) {
-            addTask(new ManagerCleanSetup(container));
+            // Keycloak is not managed by persistence service so need separate clean task
             addTask(new KeycloakCleanSetup(container));
             addTask(new KeycloakInitSetup(container));
             if (isImportDemoUsers(container)) {
@@ -53,12 +53,6 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
             }
             if (isImportDemoAgent(container)) {
                 addTask(new ManagerDemoAgentSetup(container));
-            }
-        } else {
-            addTask(new ManagerCleanSetup(container));
-            addTask(new BasicIdentityInitSetup(container));
-            if (isImportDemoUsers(container)) {
-                addTask(new BasicIdentityDemoSetup(container));
             }
         }
 

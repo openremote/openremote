@@ -19,16 +19,17 @@
  */
 package org.openremote.container.persistence.migrations;
 
-import org.flywaydb.core.api.migration.jdbc.JdbcMigration;
+import org.flywaydb.core.api.migration.BaseJavaMigration;
+import org.flywaydb.core.api.migration.Context;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 
-public class V0_1_2__ExampleMigration implements JdbcMigration {
+public class V0_1_2__ExampleMigration extends BaseJavaMigration {
+
     @Override
-    public void migrate(Connection connection) throws Exception {
+    public void migrate(Context context) throws Exception {
         PreparedStatement statement =
-            connection.prepareStatement("ALTER TABLE public.asset ADD COLUMN test_column varchar(50)");
+            context.getConnection().prepareStatement("ALTER TABLE public.asset ADD COLUMN test_column varchar(50)");
 
         try {
             statement.execute();

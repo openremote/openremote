@@ -14,6 +14,7 @@ public class UserQuery {
     public UserAssetPredicate assetPredicate;
     public PathPredicate pathPredicate;
     public String[] ids;
+    public String[] usernames;
     public int limit;
 
     public UserQuery() {
@@ -39,6 +40,11 @@ public class UserQuery {
         return this;
     }
 
+    public UserQuery usernames(String...usernames) {
+        this.usernames = usernames;
+        return this;
+    }
+
     public UserQuery limit(int limit) {
         this.limit = limit;
         return this;
@@ -51,6 +57,7 @@ public class UserQuery {
             ", assetPredicate=" + assetPredicate +
             ", pathPredicate=" + pathPredicate +
             ", ids=" + (ids != null ? Arrays.toString(ids) : "null") +
+            ", usernames=" + (usernames != null ? Arrays.toString(usernames) : "null") +
             ", limit=" + limit +
             '}';
     }

@@ -19,10 +19,18 @@
  */
 package org.openremote.container.security.basic;
 
+import io.undertow.UndertowMessages;
+import io.undertow.security.api.AuthenticationMechanism;
+import io.undertow.security.api.AuthenticationMechanismFactory;
+import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
+import io.undertow.security.impl.BasicAuthenticationMechanism;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.form.FormParserFactory;
+import io.undertow.servlet.api.AuthMethodConfig;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
 import org.openremote.container.persistence.PersistenceService;
@@ -31,21 +39,100 @@ import org.openremote.model.Constants;
 
 import javax.persistence.NoResultException;
 import javax.persistence.NonUniqueResultException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
+
+import static io.undertow.util.Headers.AUTHORIZATION;
 
 public abstract class BasicIdentityProvider implements IdentityProvider {
 
-    private static final Logger LOG = Logger.getLogger(BasicIdentityProvider.class.getName());
+    /**
+     * This is a fix for {@link BasicAuthenticationMechanism} which doesn't conform to RFC2617.
+     * see: https://issues.redhat.com/browse/UNDERTOW-1727
+     * <p>
+     * When no {@link io.undertow.util.Headers#AUTHORIZATION} header is supplied then a 401 is returned with
+     * {@link io.undertow.util.Headers#WWW_AUTHENTICATE} header unless {@link #silent} is true in which case
+     * a 403 will be returned.
+     * <p>
+     * When an {@link io.undertow.util.Headers#AUTHORIZATION} header is supplied and is valid then the request
+     * can proceed otherwise a 403 is returned.
+     */
+    protected static class BasicFixAuthenticationMechanism extends BasicAuthenticationMechanism {
 
+        protected static class Factory implements AuthenticationMechanismFactory {
+            @Override
+            public AuthenticationMechanism create(String mechanismName, IdentityManager identityManager, FormParserFactory formParserFactory, Map<String, String> properties) {
+                String realm = properties.get(REALM);
+                String silent = properties.get(SILENT);
+                String charsetString = properties.get(CHARSET);
+                Charset charset = charsetString == null ? StandardCharsets.UTF_8 : Charset.forName(charsetString);
+                Map<Pattern, Charset> userAgentCharsets = new HashMap<>();
+                String userAgentString = properties.get(USER_AGENT_CHARSETS);
+                if(userAgentString != null) {
+                    String[] parts = userAgentString.split(",");
+                    if(parts.length % 2 != 0) {
+                        throw UndertowMessages.MESSAGES.userAgentCharsetMustHaveEvenNumberOfItems(userAgentString);
+                    }
+                    for(int i = 0; i < parts.length; i += 2) {
+                        Pattern pattern = Pattern.compile(parts[i]);
+                        Charset c = Charset.forName(parts[i + 1]);
+                        userAgentCharsets.put(pattern, c);
+                    }
+                }
+                return new BasicFixAuthenticationMechanism(realm, mechanismName, silent != null && silent.equals("true"), identityManager, charset, userAgentCharsets);
+            }
+        }
+
+        // field is private in super class so need to redefine!!!
+        private final boolean silent;
+        public static Factory FACTORY = new Factory();
+
+        public BasicFixAuthenticationMechanism(String realmName, String mechanismName, boolean silent, IdentityManager identityManager, Charset charset, Map<Pattern, Charset> userAgentCharsets) {
+            super(realmName, mechanismName, false, identityManager, charset, userAgentCharsets);
+            this.silent = silent;
+        }
+
+        @Override
+        public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
+            String authHeader = exchange.getRequestHeaders().getFirst(AUTHORIZATION);
+
+            if (authHeader == null) {
+                if (silent) {
+                    return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
+                } else {
+                    return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
+                }
+            }
+            return super.authenticate(exchange, securityContext);
+        }
+
+        @Override
+        public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
+            String authHeader = exchange.getRequestHeaders().getFirst(AUTHORIZATION);
+            if (silent || authHeader != null) {
+                return ChallengeResult.NOT_SENT;
+            }
+            return super.sendChallenge(exchange, securityContext);
+        }
+    }
+
+    private static final Logger LOG = Logger.getLogger(BasicIdentityProvider.class.getName());
     final protected PersistenceService persistenceService;
 
     public BasicIdentityProvider(PersistenceService persistenceService) {
         this.persistenceService = persistenceService;
+        // Add schema and scripts for the PUBLIC realm to replicate keycloak user tables
         this.persistenceService.getDefaultSchemaLocations().add(
             "classpath:org/openremote/container/persistence/schema/basicidentityprovider"
         );
+        this.persistenceService.getSchemas().add("public");
     }
 
     @Override
@@ -65,7 +152,10 @@ public abstract class BasicIdentityProvider implements IdentityProvider {
 
     @Override
     public void secureDeployment(DeploymentInfo deploymentInfo) {
-        LoginConfig loginConfig = new LoginConfig("BASIC", "OpenRemote");
+        LoginConfig loginConfig = new LoginConfig("OpenRemote");
+        // Make it silent to prevent 401 WWW-Authenticate modal dialog
+        deploymentInfo.addAuthenticationMechanism("BASIC-FIX", BasicFixAuthenticationMechanism.FACTORY);
+        loginConfig.addFirstAuthMethod(new AuthMethodConfig("BASIC-FIX", Collections.singletonMap("silent", "true")));
         deploymentInfo.setLoginConfig(loginConfig);
         deploymentInfo.setIdentityManager(new IdentityManager() {
             @Override

@@ -74,7 +74,6 @@ import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.container.persistence.PersistenceEvent.*;
 import static org.openremote.manager.asset.AssetProcessingService.ASSET_QUEUE;
-import static org.openremote.manager.gateway.GatewayService.GATEWAY_SERVICE_PRIORITY;
 import static org.openremote.model.AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttributes;
@@ -95,7 +94,7 @@ import static org.openremote.model.util.TextUtil.isValidURN;
 public class AgentService extends RouteBuilder implements ContainerService, AssetUpdateProcessor, ProtocolAssetService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
-    public static final int AGENT_SERVICE_PRIORITY = GATEWAY_SERVICE_PRIORITY + 1; // Start after the gateway service
+    public static final int PRIORITY = DEFAULT_PRIORITY + 100; // Start quite late to ensure protocols etc. are initialised
     protected TimerService timerService;
     protected ManagerIdentityService identityService;
     protected AssetProcessingService assetProcessingService;
@@ -117,7 +116,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
      */
     @Override
     public int getPriority() {
-        return AGENT_SERVICE_PRIORITY;
+        return PRIORITY;
     }
 
     @Override

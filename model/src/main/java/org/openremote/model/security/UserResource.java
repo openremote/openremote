@@ -31,12 +31,9 @@ import javax.ws.rs.*;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
- * Manage users in realms.
- * <p>
- * All operations can only be called by the superuser.
- * <p>
- * TODO Relax permissions to allow regular users to maintain their own realm
+ * Manage users in realms and get info of current user.
  */
+// TODO Relax permissions to allow regular users to maintain their own realm
 @Path("user")
 @JsType(isNative = true)
 public interface UserResource {
@@ -53,9 +50,14 @@ public interface UserResource {
     @Path("{realm}/{userId}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed(Constants.READ_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
     User get(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
+
+    @GET
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
+    User getCurrent(@BeanParam RequestParams requestParams);
 
     @PUT
     @Path("{realm}/{userId}")
@@ -96,12 +98,18 @@ public interface UserResource {
     @Path("{realm}/{userId}/role")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed(Constants.READ_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
     Role[] getRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
+    @GET
+    @Path("role")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
+    Role[] getCurrentUserRoles(@BeanParam RequestParams requestParams);
+
     @PUT
-    @Path("{realm}/{userId}/role")
+    @Path("{realm}/role/{userId}")
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)

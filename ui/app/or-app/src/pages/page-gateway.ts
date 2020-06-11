@@ -45,6 +45,7 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
             or-panel {
                 position: relative;
                 max-width: 1000px;
+                min-width: 600px;
                 margin-top: 40px;
             }
             

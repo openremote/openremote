@@ -98,7 +98,6 @@ public abstract class WebService implements ContainerService {
     protected Undertow undertow;
     protected List<RequestHandler> httpHandlers = new ArrayList<>();
     protected URI containerHostUri;
-    protected CORSFilter corsFilter;
     protected FilterInfo corsFilterInfo;
 
     protected static String getLocalIpAddress() throws Exception {
@@ -175,7 +174,7 @@ public abstract class WebService implements ContainerService {
             // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
             deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
 
-
+            // Add CORS filter that works for any servlet deployment
             if (corsFilterInfo != null) {
                 deploymentInfo.addFilter(corsFilterInfo);
                 deploymentInfo.addFilterUrlMapping(corsFilterInfo.getName(), "*", DispatcherType.REQUEST);
@@ -273,8 +272,9 @@ public abstract class WebService implements ContainerService {
 
         return resteasyDeployment;
     }
-
     protected void createCorsFilter(Container container) {
+        CORSFilter corsFilter = null;
+
         if (!devMode) {
             String allowedOriginsStr = getString(container.getConfig(), WEBSERVER_ALLOWED_ORIGINS, WEBSERVER_ALLOWED_ORIGINS_DEFAULT);
             if (allowedOriginsStr != null) {
@@ -284,9 +284,7 @@ public abstract class WebService implements ContainerService {
                 corsFilter.setExposedHeaders("*");
                 corsFilter.setCorsMaxAge(1209600);
                 String[] allowedOrigins = allowedOriginsStr.split(";");
-                Arrays.stream(allowedOrigins).forEach(allowedOrigin ->
-                    corsFilter.getAllowedOrigins().add(allowedOrigin)
-                );
+                corsFilter.getAllowedOrigins().addAll(Arrays.asList(allowedOrigins));
             }
         } else {
             corsFilter = new CORSFilter();
@@ -298,7 +296,8 @@ public abstract class WebService implements ContainerService {
         }
 
         if (corsFilter != null) {
-            corsFilterInfo = Servlets.filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(corsFilter));
+            CORSFilter finalCorsFilter = corsFilter;
+            corsFilterInfo = Servlets.filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(finalCorsFilter));
         }
     }
 }

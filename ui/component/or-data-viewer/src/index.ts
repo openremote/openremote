@@ -184,9 +184,12 @@ export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitEleme
         return html`
             <div class=${classMap({"panel": true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
                 <div class="panel-content-wrapper">
-                    <div class="panel-title">
-                        <or-translate value="${name}"></or-translate>
-                    </div>
+                    ${(panelConfig && panelConfig.type === "chart") ? html`
+                        <div class="panel-title">
+                            <or-translate value="${name}"></or-translate>
+                        </div>
+                    ` :  ``}
+                   
                     <div class="panel-content">
                         ${content}
                     </div>
@@ -203,14 +206,12 @@ export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitEleme
         let content: TemplateResult | undefined;
 
         if (panelConfig && panelConfig.type === "chart") {
-            content = html`
-                <or-chart id="chart" .config="${this.config.chartConfig}"></or-chart>
-            `;
+            content = html`<or-chart id="chart" panelName="${panelName}" .config="${this.config.chartConfig}"></or-chart>`;
         }
 
         if (panelConfig && panelConfig.type === "kpi") {
             content = html`
-                <or-attribute-card .config="${this.config.chartConfig}"></or-attribute-card>
+                <or-attribute-card panelName="${panelName}" .config="${this.config.chartConfig}"></or-attribute-card>
             `;
         }
         return content;

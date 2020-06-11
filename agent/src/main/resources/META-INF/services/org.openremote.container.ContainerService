@@ -6,6 +6,7 @@ org.openremote.agent.protocol.velbus.VelbusTcpProtocol
 org.openremote.agent.protocol.velbus.VelbusSerialProtocol
 org.openremote.agent.protocol.http.HttpClientProtocol
 org.openremote.agent.protocol.udp.UdpClientProtocol
+org.openremote.agent.protocol.websocket.WebsocketClientProtocol
+org.openremote.agent.protocol.artnet.ArtnetClientProtocol
 org.openremote.agent.protocol.tcp.TcpClientProtocol
 org.openremote.agent.protocol.serial.SerialClientProtocol
-org.openremote.agent.protocol.websocket.WebsocketClientProtocol

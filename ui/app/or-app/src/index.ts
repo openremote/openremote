@@ -9,20 +9,22 @@ import {
     TemplateResult,
     unsafeCSS
 } from "lit-element";
-import {unsafeHTML} from 'lit-html/directives/unsafe-html.js';
-
+import {unsafeHTML} from "lit-html/directives/unsafe-html";
+import "@openremote/or-translate";
+import "@openremote/or-mwc-components/dist/or-mwc-menu";
+import "./or-header";
+import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
 import Navigo from "navigo";
-import manager, {Auth, DefaultColor2, DefaultColor3, DefaultHeaderHeight, ManagerConfig, Util} from "@openremote/core";
-import "@openremote/or-mwc-components/dist/or-mwc-menu";
-import "./or-header";
+import manager, {Auth, DefaultColor2, DefaultColor3, DefaultHeaderHeight, ManagerConfig, Util, BasicLoginResult} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig, HeaderItem, Languages} from "./or-header";
 import {DialogConfig, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {AnyAction, EnhancedStore, Unsubscribe, Action} from "@reduxjs/toolkit";
 import {AppStateKeyed, updatePage, updateParams} from "./app";
 import {ThunkMiddleware} from "redux-thunk";
 import { translate } from "@openremote/or-translate";
+import { InputType, OrInputChangedEvent } from "@openremote/or-input";
 export * from "./app";
 export * from "./or-header";
 
@@ -55,11 +57,11 @@ export interface AppConfig<S extends AppStateKeyed> {
     pages?: {
         default: PageProvider<S>;
         [name: string]: PageProvider<S>;
-    }
+    };
     default?: DefaultAppConfig;
     realms?: {
         [realm: string]: RealmAppConfig;
-    }
+    };
 }
 
 export interface PageProvider<S extends AppStateKeyed> {
@@ -213,7 +215,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected _store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>;
     protected _storeUnsubscribe!: Unsubscribe;
 
-    //language=CSS
+    // language=CSS
     static get styles() {
         return css`
             :host {
@@ -326,6 +328,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         }
 
         const managerConfig = this.managerConfig || DEFAULT_MANAGER_CONFIG;
+        managerConfig.basicLoginProvider = (u, p) => this.doBasicLogin(u, p);
 
         console.info("Initialising the manager");
 
@@ -337,6 +340,54 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 this.showErrorModal(manager.isError ? "managerError." + manager.error : "");
             }
         });
+    }
+
+    protected doBasicLogin(username: string | undefined, password: string | undefined): PromiseLike<BasicLoginResult> {
+        const deferred = new Util.Deferred<BasicLoginResult>();
+
+        let u = username;
+        let p = password;
+
+        // language=CSS
+        const styles = html`
+            #login-logo {
+                width: 24px;
+                height: 24px;
+            }
+            
+            #login_wrapper > or-input {
+                margin: 10px 0;
+                width: 100%;
+            }
+        `;
+
+        this.showModal({
+            styles: html`<style>${styles}</style>`,
+            title: html`<img id="login-logo" src="${this._config.logoMobile || this._config.logo}" /></or-icon><or-translate value="login"></or-translate>`,
+            content: html`
+                <div id="login_wrapper">
+                    <or-input .label="${i18next.t("user")}" .type="${InputType.TEXT}" min="1" required .value="${username}" @or-input-changed="${(e: OrInputChangedEvent) => u = e.detail.value}"></or-input>            
+                    <or-input .label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" required .value="${password}" @or-input-changed="${(e: OrInputChangedEvent) => p = e.detail.value}"></or-input>           
+                </div>
+            `,
+            actions: [
+                {
+                    actionName: "submit",
+                    default: true,
+                    action: () => {
+                        deferred.resolve({
+                            cancel: false,
+                            username: u,
+                            password: p,
+                            closeCallback: () => { this.closeModal(); }
+                        });
+                    },
+                    content: html`<or-input .type=${InputType.BUTTON} .label="${i18next.t("submit")}" raised></or-input>`
+                }
+            ]
+        });
+
+        return deferred.promise;
     }
 
     protected updated(changedProps: PropertyValues) {
@@ -375,7 +426,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         }
         return html`
             ${unsafeHTML(this._config.styles ? this._config.styles.strings : ``)}
-            <or-header .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
+            <or-header logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
             
             <!-- Main content -->
             <main role="main" class="main-content d-none"></main>
@@ -416,13 +467,19 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                  content: i18next.t("ok"),
                  default: true
              }]
-         })
+         });
     }
 
     public showModal(config: DialogConfig) {
         if (this._appModal) {
             this._appModal.config = config;
             this._appModal.open();
+        }
+    }
+
+    public closeModal() {
+        if (this._appModal) {
+            this._appModal.close();
         }
     }
 

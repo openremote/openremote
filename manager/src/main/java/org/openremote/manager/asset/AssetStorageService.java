@@ -121,6 +121,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     private static final Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
+    public static final int PRIORITY = MED_PRIORITY;
     protected static String META_ITEM_RESTRICTED_READ_SQL_FRAGMENT;
     protected static String META_ITEM_PUBLIC_READ_SQL_FRAGMENT;
     protected TimerService timerService;
@@ -203,7 +204,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return PRIORITY;
     }
 
     @Override

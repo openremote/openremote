@@ -41,6 +41,7 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -108,7 +109,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractProtocol.class);
-    public static final int PRIORITY = MessageBrokerService.PRIORITY + 10;
+    public static final int PRIORITY = MessageBrokerService.PRIORITY + 100;
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected final Set<AttributeRef> dynamicAttributes = new HashSet<>();
     protected final Map<AttributeRef, LinkedProtocolInfo> linkedProtocolConfigurations = new HashMap<>();
@@ -508,7 +509,7 @@ public abstract class AbstractProtocol implements Protocol {
     /**
      * Link an attribute to its linked protocol configuration.
      */
-    abstract protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration);
+    abstract protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) throws Exception;
 
     /**
      * Unlink an attribute from its linked protocol configuration.

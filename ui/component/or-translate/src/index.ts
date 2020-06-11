@@ -32,6 +32,6 @@ export class OrTranslate extends translate(i18next)(LitElement) {
     }
 
     protected _getTranslatedValue() {
-        return this.value ? i18next.t(this.value, this.options) : "";
+        return this.value ? i18next.isInitialized ? i18next.t(this.value, this.options) : this.value : "";
     }
 }

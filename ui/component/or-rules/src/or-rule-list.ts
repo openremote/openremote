@@ -55,8 +55,9 @@ const style = css`
         line-height: var(--internal-or-asset-tree-header-height);
         color: var(--internal-or-asset-tree-header-text-color);
     }
+    
     .header-ruleset-type p {
-        margin: 0 20px;
+        margin: 0 15px;
     }
 
     .node-status {

@@ -140,7 +140,7 @@ public class Util {
             }
 
             long adjustedMax = Math.max(maxDelay - jitterMargin, jitterMargin);
-            long delay = Math.min(initialDelay * (long)Math.pow(2, retries), adjustedMax);
+            long delay = Math.max(initialDelay, Math.min(initialDelay * (long)Math.pow(2, retries), adjustedMax));
             delay += Math.random()*jitterMargin;
             retries++;
 

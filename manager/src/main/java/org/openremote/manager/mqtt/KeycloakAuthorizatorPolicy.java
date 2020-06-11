@@ -1,6 +1,7 @@
 package org.openremote.manager.mqtt;
 
 import io.moquette.broker.security.IAuthorizatorPolicy;
+import io.moquette.broker.subscriptions.Token;
 import io.moquette.broker.subscriptions.Topic;
 import org.keycloak.adapters.rotation.AdapterTokenVerifier;
 import org.keycloak.common.VerificationException;
@@ -19,11 +20,13 @@ import org.openremote.model.security.ClientRole;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
-import static org.openremote.manager.mqtt.MqttBrokerService.ASSETS_TOPIC;
+import static org.openremote.manager.mqtt.MqttBrokerService.*;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
 public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
@@ -64,13 +67,18 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             return false;
         }
 
-        if (topic.isEmpty() || topic.getTokens().size() != 2) {
-            LOG.info("Topic may not be empty and should have the following format: assets/{assetId}");
+        if (topic.isEmpty() || topic.getTokens().size() < 2) {
+            LOG.info("Topic may not be empty and should have the following format: assets/{assetId}(optional: /{attributeName})");
             return false;
         }
 
         if (!topic.headToken().toString().equals(ASSETS_TOPIC)) {
-            LOG.info("Topic should have the following format: assets/{assetId}");
+            LOG.info("Topic should have the following format: assets/{assetId}(optional: /{attributeName})");
+            return false;
+        }
+
+        if(topic.getTokens().size() == 4 && topic.getTokens().stream().noneMatch(token -> token.toString().equals(ASSET_ATTRIBUTE_VALUE_TOPIC))) {
+            LOG.info("Topic for raw values should end with '" + ASSET_ATTRIBUTE_VALUE_TOPIC + "'");
             return false;
         }
 
@@ -97,10 +105,15 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
         if (Arrays.asList(roles).contains(ClientRole.WRITE_ASSETS)) { //write
             return identityProvider.canSubscribeWith(authContext, new TenantFilter(connection.realm), roles);
         } else { // read
-            String assetId = topic.getTokens().get(1).toString();
+            String[] topicParts = topic.getTokens().stream().map(Token::toString).toArray(String[]::new);
+            String assetId = topicParts[1];
+            AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId);
+            if (topicParts.length == 3) { //attribute specific
+                attributeAssetFilter.setAttributeNames(topicParts[2]);
+            }
             EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
                     AttributeEvent.class,
-                    new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId)
+                    attributeAssetFilter
             );
             return clientEventService.authorizeEventSubscription(authContext, subscription);
         }
