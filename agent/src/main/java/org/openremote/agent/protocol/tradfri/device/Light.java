@@ -3,11 +3,13 @@ package org.openremote.agent.protocol.tradfri.device;
 import org.openremote.agent.protocol.tradfri.payload.DeviceRequest;
 import org.openremote.agent.protocol.tradfri.util.ApiEndpoint;
 import org.openremote.agent.protocol.tradfri.util.CoapClient;
+import org.openremote.agent.protocol.tradfri.util.ColourRGB;
+import org.openremote.agent.protocol.tradfri.util.ColourXY;
 
 /**
  * The class that represents an IKEA TRÅDFRI light
  * @author Stijn Groenen
- * @version 1.0.0
+ * @version 1.1.0
  */
 public class Light extends Device {
 
@@ -121,6 +123,24 @@ public class Light extends Device {
     }
 
     /**
+     * Get the XY values of the colour of the light
+     * @return The XY values of the colour of the light
+     * @since 1.1.0
+     */
+    public ColourXY getColourXY() {
+        return new ColourXY(properties.getColourX(), properties.getColourY());
+    }
+
+    /**
+     * Get the RGB values of the colour of the light
+     * @return The RGB values of the colour of the light
+     * @since 1.1.0
+     */
+    public ColourRGB getColourRGB() {
+        return ColourRGB.fromHS(properties.getHue() != null ? properties.getHue() : 0, properties.getSaturation() != null ? properties.getSaturation() : 0);
+    }
+
+    /**
      * Get the colour temperature of the light
      * @return The colour temperature of the light
      * @since 1.0.0
@@ -209,37 +229,36 @@ public class Light extends Device {
 
     /**
      * Update the colour of the light in the update queue
+     * @param colourXY The new colour for the light
+     * @since 1.1.0
+     */
+    public void updateColour(ColourXY colourXY) {
+        newProperties.setColourX(colourXY.getX());
+        newProperties.setColourY(colourXY.getY());
+        newProperties.setColourHex(null);
+        newProperties.setHue(null);
+        newProperties.setSaturation(null);
+        newProperties.setColourTemperature(null);
+    }
+
+    /**
+     * Update the colour of the light in the update queue
+     * @param colourRGB The new colour for the light
+     * @since 1.1.0
+     */
+    public void updateColour(ColourRGB colourRGB) {
+        updateColour(ColourXY.fromRGB(colourRGB));
+    }
+
+    /**
+     * Update the colour of the light in the update queue
      * @param colourRed The red value of the new colour for the light
      * @param colourGreen The green value of the new colour for the light
      * @param colourBlue The blue value of the new colour for the light
      * @since 1.0.0
      */
     public void updateColourRGB(int colourRed, int colourGreen, int colourBlue) {
-        double red = colourRed;
-        double green = colourGreen;
-        double blue = colourBlue;
-
-        red = (red > 0.04045) ? Math.pow((red + 0.055) / (1.0 + 0.055), 2.4) : (red / 12.92);
-        green = (green > 0.04045) ? Math.pow((green + 0.055) / (1.0 + 0.055), 2.4) : (green / 12.92);
-        blue = (blue > 0.04045) ? Math.pow((blue + 0.055) / (1.0 + 0.055), 2.4) : (blue / 12.92);
-
-        double X = red * 0.664511 + green * 0.154324 + blue * 0.162028;
-        double Y = red * 0.283881 + green * 0.668433 + blue * 0.047685;
-        double Z = red * 0.000088 + green * 0.072310 + blue * 0.986039;
-
-        double x = (X / (X + Y + Z));
-        double y = (Y / (X + Y + Z));
-
-        int xyX = (int) (x * 65535 + 0.5);
-        int xyY = (int) (y * 65535 + 0.5);
-
-        LightProperties newProperties = new LightProperties();
-        newProperties.setColourX(xyX);
-        newProperties.setColourY(xyY);
-        newProperties.setColourHex(null);
-        newProperties.setHue(null);
-        newProperties.setSaturation(null);
-        newProperties.setColourTemperature(null);
+        updateColour(new ColourRGB(colourRed, colourGreen, colourBlue));
     }
 
     /**
@@ -424,6 +443,48 @@ public class Light extends Device {
 
     /**
      * Set the colour of the light
+     * @param colourXY The new colour for the light
+     * @param transitionTime The transition time for updating the light
+     * @return True if successfully updated the colour of the light, false if not
+     * @since 1.1.0
+     */
+    public boolean setColour(ColourXY colourXY, Integer transitionTime) {
+        return setColourXY(colourXY.getX(), colourXY.getY(), transitionTime);
+    }
+
+    /**
+     * Set the colour of the light
+     * @param colourXY The new colour for the light
+     * @return True if successfully updated the colour of the light, false if not
+     * @since 1.1.0
+     */
+    public boolean setColour(ColourXY colourXY){
+        return setColour(colourXY, null);
+    }
+
+    /**
+     * Set the colour of the light
+     * @param colourRGB The new colour for the light
+     * @param transitionTime The transition time for updating the light
+     * @return True if successfully updated the colour of the light, false if not
+     * @since 1.1.0
+     */
+    public boolean setColour(ColourRGB colourRGB, Integer transitionTime) {
+        return setColour(ColourXY.fromRGB(colourRGB), transitionTime);
+    }
+
+    /**
+     * Set the colour of the light
+     * @param colourRGB The new colour for the light
+     * @return True if successfully updated the colour of the light, false if not
+     * @since 1.1.0
+     */
+    public boolean setColour(ColourRGB colourRGB){
+        return setColour(colourRGB);
+    }
+
+    /**
+     * Set the colour of the light
      * @param colourRed The red value of the new colour for the light
      * @param colourGreen The green value of the new colour for the light
      * @param colourBlue The blue value of the new colour for the light
@@ -432,29 +493,7 @@ public class Light extends Device {
      * @since 1.0.0
      */
     public boolean setColourRGB(int colourRed, int colourGreen, int colourBlue, Integer transitionTime) {
-        double red = colourRed;
-        double green = colourGreen;
-        double blue = colourBlue;
-
-        red = (red > 0.04045) ? Math.pow((red + 0.055) / (1.0 + 0.055), 2.4) : (red / 12.92);
-        green = (green > 0.04045) ? Math.pow((green + 0.055) / (1.0 + 0.055), 2.4) : (green / 12.92);
-        blue = (blue > 0.04045) ? Math.pow((blue + 0.055) / (1.0 + 0.055), 2.4) : (blue / 12.92);
-
-        double X = red * 0.664511 + green * 0.154324 + blue * 0.162028;
-        double Y = red * 0.283881 + green * 0.668433 + blue * 0.047685;
-        double Z = red * 0.000088 + green * 0.072310 + blue * 0.986039;
-
-        double x = (X / (X + Y + Z));
-        double y = (Y / (X + Y + Z));
-
-        int xyX = (int) (x * 65535 + 0.5);
-        int xyY = (int) (y * 65535 + 0.5);
-
-        LightProperties newProperties = new LightProperties();
-        newProperties.setColourX(xyX);
-        newProperties.setColourY(xyY);
-        newProperties.setTransitionTime(transitionTime);
-        return applyUpdate(newProperties);
+        return setColour(new ColourRGB(colourRed, colourGreen, colourBlue), transitionTime);
     }
 
     /**
@@ -466,7 +505,7 @@ public class Light extends Device {
      * @since 1.0.0
      */
     public boolean setColourRGB(int colourRed, int colourGreen, int colourBlue){
-        return setColourRGB(colourRed, colourGreen, colourBlue, null);
+        return setColour(new ColourRGB(colourRed, colourGreen, colourBlue));
     }
 
     /**

@@ -12,7 +12,7 @@ import org.openremote.agent.protocol.tradfri.util.ApiCode;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class DeviceInfo extends DeviceProperties {
+public class DeviceInfo extends DeviceProperties{
 
     /**
      * The manufacturer of the device

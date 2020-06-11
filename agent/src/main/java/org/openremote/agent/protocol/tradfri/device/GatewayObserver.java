@@ -22,7 +22,7 @@ public class GatewayObserver extends Observer {
     /**
      * The IKEA TRÅDFRI gateway to observe
      */
-    private org.openremote.agent.protocol.tradfri.device.Gateway gateway;
+    private Gateway gateway;
 
     /**
      * A cache of the devices registered to the IKEA TRÅDFRI gateway

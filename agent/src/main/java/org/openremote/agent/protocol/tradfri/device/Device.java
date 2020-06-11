@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * The class that represents an IKEA TRÅDFRI device
  * @author Stijn Groenen
- * @version 1.0.0
+ * @version 1.1.0
  */
 public class Device {
 
@@ -207,6 +207,19 @@ public class Device {
      */
     public void removeEventHandler(EventHandler eventHandler){
         this.eventHandlers.remove(eventHandler);
+    }
+
+    /**
+     * Get the type of the device
+     * @return The type of the device
+     * @since 1.1.0
+     */
+    public DeviceType getType(){
+        if(isLight()) return DeviceType.LIGHT;
+        if(isPlug()) return DeviceType.PLUG;
+        if(isRemote()) return DeviceType.REMOTE;
+        if(isMotionSensor()) return DeviceType.MOTION_SENSOR;
+        return DeviceType.UNKNOWN;
     }
 
     /**

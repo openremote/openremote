@@ -11,7 +11,7 @@ import java.util.ArrayList;
 /**
  * The class that observes a device to automagically detect changes
  * @author Stijn Groenen
- * @version 1.0.0
+ * @version 1.1.0
  */
 public class DeviceObserver extends Observer {
 
@@ -61,6 +61,8 @@ public class DeviceObserver extends Observer {
                 if(checkChanges(oldProperties.getSaturation(), newProperties.getSaturation())) changeEvents.add(new LightChangeSaturationEvent(device.toLight(), oldProperties, newProperties));
                 if(checkChanges(oldProperties.getColourX(), newProperties.getColourX())) changeEvents.add(new LightChangeColourXEvent(device.toLight(), oldProperties, newProperties));
                 if(checkChanges(oldProperties.getColourY(), newProperties.getColourY())) changeEvents.add(new LightChangeColourYEvent(device.toLight(), oldProperties, newProperties));
+                if(checkChanges(oldProperties.getColourX(), newProperties.getColourX()) || checkChanges(oldProperties.getColourY(), newProperties.getColourY())) changeEvents.add(new LightChangeColourXYEvent(device.toLight(), oldProperties, newProperties));
+                if(checkChanges(oldProperties.getColourX(), newProperties.getColourX()) || checkChanges(oldProperties.getColourY(), newProperties.getColourY()) || checkChanges(oldProperties.getHue(), newProperties.getHue()) || checkChanges(oldProperties.getSaturation(), newProperties.getSaturation())) changeEvents.add(new LightChangeColourEvent(device.toLight(), oldProperties, newProperties));
                 if(checkChanges(oldProperties.getColourTemperature(), newProperties.getColourTemperature())) changeEvents.add(new LightChangeColourTemperatureEvent(device.toLight(), oldProperties, newProperties));
                 if(changeEvents.size() > 0){
                     events.add(new LightChangeEvent(device.toLight(), oldProperties, newProperties));

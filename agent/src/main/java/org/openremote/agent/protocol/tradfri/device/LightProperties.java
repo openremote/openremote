@@ -13,7 +13,7 @@ import org.openremote.agent.protocol.tradfri.util.ApiCode;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class LightProperties extends DeviceProperties {
+public class LightProperties extends DeviceProperties{
 
     /**
      * The on state of the light (true for on, false for off)

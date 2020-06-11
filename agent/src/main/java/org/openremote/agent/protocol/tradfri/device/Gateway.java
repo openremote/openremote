@@ -1,6 +1,5 @@
 package org.openremote.agent.protocol.tradfri.device;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.openremote.agent.protocol.tradfri.device.event.EventHandler;
 import org.openremote.agent.protocol.tradfri.payload.AuthenticateRequest;
 import org.openremote.agent.protocol.tradfri.payload.AuthenticateResponse;
@@ -8,6 +7,7 @@ import org.openremote.agent.protocol.tradfri.payload.DeviceResponse;
 import org.openremote.agent.protocol.tradfri.util.ApiEndpoint;
 import org.openremote.agent.protocol.tradfri.util.CoapClient;
 import org.openremote.agent.protocol.tradfri.util.Credentials;
+import org.apache.commons.lang3.RandomStringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,6 +57,7 @@ public class Gateway {
         request.setIdentity(identity);
         setCredentials("Client_identity", securityCode);
         AuthenticateResponse response = coapClient.post(ApiEndpoint.getUri(ApiEndpoint.AUTHENTICATE), request, AuthenticateResponse.class);
+        if(response == null) return null;
         Credentials credentials = new Credentials(identity, response.getPresharedKey());
         setCredentials(credentials);
         return credentials;
@@ -142,6 +143,7 @@ public class Gateway {
     public Device[] getDevices(){
         ArrayList<Device> deviceList = new ArrayList<>();
         int[] deviceIds = getDeviceIds();
+        if(deviceIds == null) return null;
         for(int deviceId: deviceIds){
             Device device = getDevice(deviceId);
             deviceList.add(device);
