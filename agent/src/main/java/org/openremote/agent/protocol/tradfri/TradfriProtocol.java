@@ -287,21 +287,23 @@ public class TradfriProtocol extends AbstractProtocol {
         asset.getAttribute("lightDimLevel").get().setType(NUMBER);
         asset.getAttribute("lightDimLevel").get().setMeta(
                 new MetaItem(RANGE_MIN, Values.create(0)),
-                new MetaItem(RANGE_MAX, Values.create(255)),
-                new MetaItem(LABEL, Values.create("Tradfri dimLevel (0 - 255)")),
+                new MetaItem(RANGE_MAX, Values.create(254)),
+                new MetaItem(LABEL, Values.create("Brightness (0 - 254)")),
+                new MetaItem(DESCRIPTION, Values.create("The brightness of the TRÅDFRI light (Only for dimmable lights)")),
                 new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                 new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                 agentLink
         );
         asset.getAttribute("lightStatus").get().setMeta(
-                new MetaItem(LABEL, Values.create("Tradfri light (on/off)")),
+                new MetaItem(LABEL, Values.create("State (on/off)")),
+                new MetaItem(DESCRIPTION, Values.create("The state of the TRÅDFRI light (Checked means on, unchecked means off)")),
                 new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                 new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                 agentLink
         );
         asset.getAttribute("colorGBW").get().setMeta(
-                new MetaItem(LABEL, Values.create("Color RGBW")),
-                new MetaItem(DESCRIPTION, Values.create("The RGBW color of the Tradfri bulb")),
+                new MetaItem(LABEL, Values.create("Color")),
+                new MetaItem(DESCRIPTION, Values.create("The color of the TRÅDFRI light (Only for RGB lights)")),
                 new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                 new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                 agentLink
@@ -309,7 +311,8 @@ public class TradfriProtocol extends AbstractProtocol {
         asset.getAttribute("colorTemperature").get().setMeta(
                 new MetaItem(RANGE_MIN, Values.create(250)),
                 new MetaItem(RANGE_MAX, Values.create(454)),
-                new MetaItem(LABEL, Values.create("Tradfri color temperature")),
+                new MetaItem(LABEL, Values.create("Color temperature")),
+                new MetaItem(DESCRIPTION, Values.create("The color temperature of the TRÅDFRI light (Only for white spectrum lights)")),
                 new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                 new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                 agentLink
@@ -368,7 +371,8 @@ public class TradfriProtocol extends AbstractProtocol {
                 new AssetAttribute("plugOnOrOff", BOOLEAN, Values.create(false))
         );
         asset.getAttribute("plugOnOrOff").get().setMeta(
-                new MetaItem(LABEL, Values.create("Tradfri plug (on/off)")),
+                new MetaItem(LABEL, Values.create("State (on/off)")),
+                new MetaItem(DESCRIPTION, Values.create("The state of the TRÅDFRI plug (Checked means on, unchecked means off)")),
                 new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                 new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                 agentLink
