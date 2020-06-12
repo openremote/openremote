@@ -49,6 +49,7 @@ public class TradfriConnection {
 
         try {
             Gateway gateway = new Gateway(gatewayIp);
+            gateway.setTimeout(10000L);
             Credentials credentials = gateway.connect(securityCode);
             if (credentials != null) {
                 if (gateway.enableObserve()) {

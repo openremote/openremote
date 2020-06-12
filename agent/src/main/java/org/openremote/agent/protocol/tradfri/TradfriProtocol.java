@@ -10,9 +10,7 @@ import org.openremote.agent.protocol.tradfri.device.event.*;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
@@ -20,18 +18,13 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
 
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.function.Consumer;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
-import static org.openremote.model.attribute.AttributeValueType.BOOLEAN;
-import static org.openremote.model.attribute.AttributeValueType.NUMBER;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
-import static org.openremote.model.attribute.MetaItemType.*;
-import static org.openremote.model.attribute.MetaItemType.RANGE_MAX;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
@@ -55,7 +48,7 @@ public class TradfriProtocol extends AbstractProtocol {
      */
     public static final String META_TRADFRI_SECURITY_CODE = PROTOCOL_NAME + ":psk";
 
-    protected static final String VERSION = "0.1";
+    protected static final String VERSION = "1.0";
 
     protected static final List<MetaItemDescriptor> PROTOCOL_CONFIG_META_ITEM_DESCRIPTORS = Arrays.asList(
             new MetaItemDescriptorImpl(META_TRADFRI_GATEWAY_HOST, ValueType.STRING, false, null, null, 1, null, false, null, null, null),
@@ -188,13 +181,11 @@ public class TradfriProtocol extends AbstractProtocol {
         for (Device device : devices) {
             if (device.isPlug()) {
                 Plug plug = device.toPlug();
-                Asset plugAsset = createPlugAsset(plug, agentLink, protocolConfiguration);
-                tradfriDevices.put(plugAsset.getId(), plug);
+                new TradfriPlugAsset(protocolConfiguration, agentLink, assetService, plug, tradfriDevices);
             }
             else if (device.isLight()) {
                 Light light = device.toLight();
-                Asset lightAsset = createLightAsset(light, agentLink, protocolConfiguration);
-                tradfriDevices.put(lightAsset.getId(), light);
+                new TradfriLightAsset(protocolConfiguration, agentLink, assetService, light, tradfriDevices);
             }
         }
     }
@@ -281,119 +272,5 @@ public class TradfriProtocol extends AbstractProtocol {
         synchronized (attributeMap) {
             attributeMap.remove(attributeRef);
         }
-    }
-
-    protected Asset createLightAsset(Light light, MetaItem agentLink, AssetAttribute protocolConfiguration) {
-        String name = UniqueIdentifierGenerator.generateId("tradfri_" + light.getInstanceId());
-        Asset asset = new Asset(light.getName(), AssetType.LIGHT);
-        asset.addAttributes(new AssetAttribute("colorTemperature", NUMBER, Values.create(0)));
-        asset.getAttribute("lightDimLevel").get().setType(NUMBER);
-        asset.getAttribute("lightDimLevel").get().setMeta(
-                new MetaItem(RANGE_MIN, Values.create(0)),
-                new MetaItem(RANGE_MAX, Values.create(254)),
-                new MetaItem(LABEL, Values.create("Brightness (0 - 254)")),
-                new MetaItem(DESCRIPTION, Values.create("The brightness of the TRÅDFRI light (Only for dimmable lights)")),
-                new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
-                new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
-                agentLink
-        );
-        asset.getAttribute("lightStatus").get().setMeta(
-                new MetaItem(LABEL, Values.create("State (on/off)")),
-                new MetaItem(DESCRIPTION, Values.create("The state of the TRÅDFRI light (Checked means on, unchecked means off)")),
-                new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
-                new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
-                agentLink
-        );
-        asset.getAttribute("colorGBW").get().setMeta(
-                new MetaItem(LABEL, Values.create("Color")),
-                new MetaItem(DESCRIPTION, Values.create("The color of the TRÅDFRI light (Only for RGB lights)")),
-                new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
-                new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
-                agentLink
-        );
-        asset.getAttribute("colorTemperature").get().setMeta(
-                new MetaItem(RANGE_MIN, Values.create(250)),
-                new MetaItem(RANGE_MAX, Values.create(454)),
-                new MetaItem(LABEL, Values.create("Color temperature")),
-                new MetaItem(DESCRIPTION, Values.create("The color temperature of the TRÅDFRI light (Only for white spectrum lights)")),
-                new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
-                new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
-                agentLink
-        );
-        asset.setId(name);
-        asset.setParentId(protocolConfiguration.getAssetId().get());
-        EventHandler<LightChangeOnEvent> lightOnOffEventHandler = new EventHandler<LightChangeOnEvent>() {
-            @Override
-            public void handle(LightChangeOnEvent event){
-                asset.getAttribute("lightStatus").get().setValue(Values.create(light.getOn()));
-                asset.setRealm(assetService.findAsset(protocolConfiguration.getAssetId().get()).getRealm());
-                assetService.mergeAsset(asset);
-            }
-        };
-        EventHandler<LightChangeBrightnessEvent> lightBrightnessEventHandler = new EventHandler<LightChangeBrightnessEvent>() {
-            @Override
-            public void handle(LightChangeBrightnessEvent event){
-                asset.getAttribute("lightDimLevel").get().setValue(Values.create(light.getBrightness()));
-                asset.setRealm(assetService.findAsset(protocolConfiguration.getAssetId().get()).getRealm());
-                assetService.mergeAsset(asset);
-            }
-        };
-        EventHandler<LightChangeColourEvent> lightRGBEventHandler = new EventHandler<LightChangeColourEvent>() {
-            @Override
-            public void handle(LightChangeColourEvent event) {
-                asset.getAttribute("colorGBW").get().setValue(Values.createObject().put("red", light.getColourRGB().getRed()).put("green", light.getColourRGB().getGreen()).put("blue", light.getColourRGB().getBlue()));
-                asset.setRealm(assetService.findAsset(protocolConfiguration.getAssetId().get()).getRealm());
-                assetService.mergeAsset(asset);
-            }
-        };
-        EventHandler<LightChangeColourTemperatureEvent> lightColorTemperatureEventHandler = new EventHandler<LightChangeColourTemperatureEvent>() {
-            @Override
-            public void handle(LightChangeColourTemperatureEvent event) {
-                asset.getAttribute("colorTemperature").get().setValue(Values.create(light.getColourTemperature()));
-                asset.setRealm(assetService.findAsset(protocolConfiguration.getAssetId().get()).getRealm());
-                assetService.mergeAsset(asset);
-            }
-        };
-        light.enableObserve();
-        light.addEventHandler(lightOnOffEventHandler);
-        light.addEventHandler(lightBrightnessEventHandler);
-        light.addEventHandler(lightRGBEventHandler);
-        light.addEventHandler(lightColorTemperatureEventHandler);
-        asset.getAttribute("lightStatus").get().setValue(Values.create(light.getOn()));
-        asset.getAttribute("lightDimLevel").get().setValue(Values.create(light.getBrightness()));
-        asset.getAttribute("colorGBW").get().setValue(Values.createObject().put("red", light.getColourRGB().getRed()).put("green", light.getColourRGB().getGreen()).put("blue", light.getColourRGB().getBlue()));
-        asset.getAttribute("colorTemperature").get().setValue(Values.create(light.getColourTemperature()));
-        assetService.mergeAsset(asset);
-        return asset;
-    }
-
-    protected Asset createPlugAsset(Plug plug, MetaItem agentLink, AssetAttribute protocolConfiguration) {
-        String name = UniqueIdentifierGenerator.generateId("tradfri_" + plug.getInstanceId());
-        Asset asset = new Asset(plug.getName(), AssetType.THING);
-        asset.setAttributes(
-                new AssetAttribute("plugOnOrOff", BOOLEAN, Values.create(false))
-        );
-        asset.getAttribute("plugOnOrOff").get().setMeta(
-                new MetaItem(LABEL, Values.create("State (on/off)")),
-                new MetaItem(DESCRIPTION, Values.create("The state of the TRÅDFRI plug (Checked means on, unchecked means off)")),
-                new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
-                new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
-                agentLink
-        );
-        asset.setId(name);
-        asset.setParentId(protocolConfiguration.getAssetId().get());
-        EventHandler<PlugChangeOnEvent> plugOnOffEventHandler = new EventHandler<PlugChangeOnEvent>() {
-            @Override
-            public void handle(PlugChangeOnEvent event) {
-                asset.getAttribute("plugOnOrOff").get().setValue(Values.create(plug.getOn()));
-                asset.setRealm(assetService.findAsset(protocolConfiguration.getAssetId().get()).getRealm());
-                assetService.mergeAsset(asset);
-            }
-        };
-        plug.enableObserve();
-        plug.addEventHandler(plugOnOffEventHandler);
-        asset.getAttribute("plugOnOrOff").get().setValue(Values.create(plug.getOn()));
-        assetService.mergeAsset(asset);
-        return asset;
     }
 }
