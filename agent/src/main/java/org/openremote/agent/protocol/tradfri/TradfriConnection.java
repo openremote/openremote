@@ -50,16 +50,12 @@ public class TradfriConnection {
         try {
             Gateway gateway = new Gateway(gatewayIp);
             Credentials credentials = gateway.connect(securityCode);
-            String key = credentials.getKey();
-            if (key != null) {
-                if(gateway.enableObserve()){
+            if (credentials != null) {
+                if (gateway.enableObserve()) {
                     onConnectionStatusChanged(ConnectionStatus.CONNECTED);
                     this.gateway = gateway;
                     return gateway;
                 }
-            }
-            else {
-                onConnectionStatusChanged(ConnectionStatus.ERROR_AUTHENTICATION);
             }
         }
         catch (Exception exception) {
