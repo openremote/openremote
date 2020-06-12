@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * The class that is used to communicate with the IKEA TRÅDFRI gateway
  * @author Stijn Groenen
- * @version 1.0.0
+ * @version 1.2.0
  */
 public class Gateway {
 
@@ -101,6 +101,24 @@ public class Gateway {
      */
     public Credentials getCredentials(){
         return coapClient.getCredentials();
+    }
+
+    /**
+     * Get timeout for connections to the IKEA TRÅDFRI gateway (in milliseconds)
+     * @return The timeout for connections to the IKEA TRÅDFRI gateway (in milliseconds)
+     * @since 1.2.0
+     */
+    public long getTimeout() {
+        return coapClient.getTimeout();
+    }
+
+    /**
+     * Change the timeout for connections to the IKEA TRÅDFRI gateway (in milliseconds)
+     * @param timeout The new timeout for connections to the IKEA TRÅDFRI gateway (in milliseconds)
+     * @since 1.2.0
+     */
+    public void setTimeout(long timeout){
+        coapClient.setTimeout(timeout);
     }
 
     /**

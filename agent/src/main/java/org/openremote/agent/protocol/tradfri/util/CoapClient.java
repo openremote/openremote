@@ -20,7 +20,7 @@ import java.net.InetSocketAddress;
 /**
  * The class that is used to communicate with the IKEA TRÅDFRI gateway using the CoAP protocol
  * @author Stijn Groenen
- * @version 1.0.0
+ * @version 1.2.0
  */
 public class CoapClient {
 
@@ -38,6 +38,12 @@ public class CoapClient {
      * A DTLS endpoint used to secure the connection between the CoAP client and the IKEA TRÅDFRI gateway
      */
     private Endpoint dtlsEndpoint;
+
+    /**
+     * The timeout for connections between the CoAP client and the IKEA TRÅDFRI gateway (in milliseconds)
+     * @value 20000
+     */
+    private long timeout = 20000L;
 
     /**
      * Construct the CoapClient class
@@ -93,6 +99,24 @@ public class CoapClient {
     }
 
     /**
+     * Get timeout for connections between the CoAP client and the IKEA TRÅDFRI gateway (in milliseconds)
+     * @return The timeout for connections between the CoAP client and the IKEA TRÅDFRI gateway (in milliseconds)
+     * @since 1.2.0
+     */
+    public long getTimeout() {
+        return this.timeout;
+    }
+
+    /**
+     * Change the timeout for connections between the CoAP client and the IKEA TRÅDFRI gateway (in milliseconds)
+     * @param timeout The new timeout for connections between the CoAP client and the IKEA TRÅDFRI gateway (in milliseconds)
+     * @since 1.2.0
+     */
+    public void setTimeout(long timeout){
+        this.timeout = timeout;
+    }
+
+    /**
      * Make a CoAP request to the specified endpoint
      * @param request The Request object
      * @param endpoint The endpoint to make a request to
@@ -105,7 +129,7 @@ public class CoapClient {
         try {
             request.setURI(endpoint);
             request.send();
-            Response response = request.waitForResponse();
+            Response response = request.waitForResponse(timeout);
             if (response == null) return null;
             String responsePayload = response.getPayloadString();
             if (responseType == String.class) return (T) responsePayload;
@@ -145,6 +169,7 @@ public class CoapClient {
      */
     public CoapObserveRelation requestObserve(String endpoint, CoapHandler handler) {
         org.eclipse.californium.core.CoapClient client = new org.eclipse.californium.core.CoapClient();
+        client.setTimeout(timeout);
         Request request = Request.newGet();
         request.setURI(endpoint);
         request.setObserve();
