@@ -175,6 +175,9 @@ public class TradfriProtocol extends AbstractProtocol {
                 };
                 gateway.addEventHandler(gatewayEventHandler);
             }
+            else {
+                updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.ERROR_CONFIGURATION);
+            }
             synchronized (statusConsumerMap) {
                 statusConsumerMap.put(protocolRef, statusConsumer);
             }
