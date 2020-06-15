@@ -116,6 +116,11 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
     @Override
     public void start(Container container) throws Exception {
+
+        if (!active) {
+            return;
+        }
+
         List<Asset> gateways = assetStorageService.findAll(new AssetQuery().types(AssetType.GATEWAY));
         List<String> gatewayIds = gateways.stream().map(Asset::getId).collect(Collectors.toList());
         gateways = gateways.stream()

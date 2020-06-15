@@ -155,7 +155,7 @@ services:
       # when running  in container. Default is 127.0.0.1.
       WEBSERVER_LISTEN_HOST: 0.0.0.0
 
-      APP_DEFAULT: ${APP_DEFAULT:-manager}
+      APP_DEFAULT: ${APP_DEFAULT:-main}
 
       JAVA_OPTS: '-Xms400m -Xmx400m
                   -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m

@@ -66,7 +66,7 @@ public class ManagerWebService extends WebService {
     public static final String CONSOLE_USE_STATIC_BOWER_COMPONENTS = "CONSOLE_USE_STATIC_BOWER_COMPONENTS";
     public static final boolean CONSOLE_USE_STATIC_BOWER_COMPONENTS_DEFAULT = true;
     public static final String APP_DEFAULT = "APP_DEFAULT";
-    public static final String APP_DEFAULT_DEFAULT = "manager";
+    public static final String APP_DEFAULT_DEFAULT = "main";
     public static final String API_PATH = "/api";
     public static final String JSAPI_PATH = "/jsapi";
     public static final String STATIC_PATH = "/static";

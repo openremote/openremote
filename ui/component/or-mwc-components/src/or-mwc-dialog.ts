@@ -128,6 +128,7 @@ export class OrMwcDialog extends LitElement {
     public open() {
         if (this._mdcElem && !this._mdcComponent) {
             this._mdcComponent = new MDCDialog(this._mdcElem);
+            this._mdcComponent!.scrimClickAction = "";
         }
         if (this._mdcComponent) {
             this._mdcComponent.open();

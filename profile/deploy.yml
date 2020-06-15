@@ -175,7 +175,7 @@ services:
       # APP_DOCROOT: '/deployment/manager/app'
       # SHARED_DOCROOT: '/deployment/manager/shared'
       # Custom default app name to load when '/' is requested
-      APP_DEFAULT: ${APP_DEFAULT:-manager}
+      APP_DEFAULT: ${APP_DEFAULT:-main}
 
       # Disable HTTP redirects when a console application requests libraries which
       # are delivered and used on the platform. This is necessary if your console application
