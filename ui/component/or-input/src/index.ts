@@ -13,6 +13,7 @@ import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
 import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
 import moment from "moment";
 import {DefaultColor4, DefaultColor8} from "@openremote/core";
+import i18next from "i18next";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("!!raw-loader!@material/button/dist/mdc.button.css");
@@ -439,7 +440,8 @@ export class OrInput extends LitElement {
                             opts = (this.options as string[]).map((option) => [option, option]);
                         }
                     }
-
+                    const value = opts && opts.find(([optValue, optDisplay], index) => this.value === optValue);
+                    const valueLabel = value ? value[1] : this.value;
                     this._selectedIndex = -1;
 
                     return html`
@@ -448,18 +450,20 @@ export class OrInput extends LitElement {
                             @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
                                 <div id="menu-anchor" class="mdc-select__anchor select-class">
                                     <or-icon class="mdc-select__dropdown-icon" icon="menu-down"></or-icon>
-                                    <div id="elem" class="mdc-select__selected-text" role="button" aria-haspopup="listbox" aria-controls="component-helper-text" aria-describedby="component-helper-text" aria-labelledby="component-label component"></div>
+                                    <input id="elem" readonly class="mdc-select__selected-text" role="button" value="${i18next.t(valueLabel)}" aria-haspopup="listbox" aria-controls="component-helper-text" aria-describedby="component-helper-text" aria-labelledby="component-label component"/>
                                     ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
                                     ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
-                                </div>                            
-    
+                                </div>   
+                                 
                                 <div class="mdc-select__menu mdc-menu mdc-menu-surface select-class" role="listbox">
                                     <ul class="mdc-list">
                                         ${opts ? opts.map(([optValue, optDisplay], index) => {
                                             if (this.value === optValue) {
                                                 this._selectedIndex = index;
                                             }
-                                            return html`<li class="mdc-list-item" role="option" data-value="${optValue}">${optDisplay}</li>`;
+                                            return html`<li class="mdc-list-item ${this._selectedIndex === index ? "mdc-menu-item--selected" : ""}" role="option" aria-checked="${this._selectedIndex === index}"  data-value="${optValue}">
+                                                                <span><or-translate value="${optDisplay}"></or-translate></span>
+                                                         </li>`;
                                         }) : ``}
                                     </ul>
                                 </div>                                
