@@ -108,7 +108,7 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             String[] topicParts = topic.getTokens().stream().map(Token::toString).toArray(String[]::new);
             String assetId = topicParts[1];
             AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId);
-            if (topicParts.length == 3) { //attribute specific
+            if (topicParts.length >= 3) { //attribute specific
                 attributeAssetFilter.setAttributeNames(topicParts[2]);
             }
             EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
