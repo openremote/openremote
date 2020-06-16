@@ -54,6 +54,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 import static java.util.stream.Collectors.toList;
@@ -67,7 +68,7 @@ public class ZWNetwork {
     private final ZWControllerFactory controllerFactory;
     protected Controller controller;
     protected IoClient<SerialDataPacket> ioClient;
-    private final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
+    private final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new CopyOnWriteArrayList<>();
     private final Map<Consumer<org.openremote.protocol.zwave.model.commandclasses.channel.value.Value>, ChannelConsumerLink> consumerLinkMap = new HashMap<>();
 
     public ZWNetwork(ZWControllerFactory controllerFactory) {
@@ -317,7 +318,7 @@ public class ZWNetwork {
         return controllerFactory.createController(ioClient);
     }
 
-    protected synchronized void onConnectionStatusChanged(ConnectionStatus status) {
+    protected void onConnectionStatusChanged(ConnectionStatus status) {
         connectionStatusConsumers.forEach(consumer ->consumer.accept(status));
     }
 
