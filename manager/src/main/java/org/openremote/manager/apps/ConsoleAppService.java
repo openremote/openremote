@@ -21,9 +21,12 @@ package org.openremote.manager.apps;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.apps.AppConfig;
+import org.openremote.model.datapoint.AssetDatapoint;
 
 import java.nio.file.Files;
 import java.util.logging.Logger;
@@ -35,6 +38,7 @@ public class ConsoleAppService implements ContainerService {
     protected TimerService timerService;
     protected ManagerWebService managerWebService;
     protected ManagerIdentityService identityService;
+    protected PersistenceService persistenceService;
 
     @Override
     public int getPriority() {
@@ -47,6 +51,7 @@ public class ConsoleAppService implements ContainerService {
         this.timerService = container.getService(TimerService.class);
         this.managerWebService = container.getService(ManagerWebService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
+        this.persistenceService = container.getService(PersistenceService.class);
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
             new ConsoleAppResourceImpl(this)
@@ -66,6 +71,16 @@ public class ConsoleAppService implements ContainerService {
             .filter(Files::isDirectory)
             .map(dir -> dir.getFileName().toString())
             .toArray(String[]::new);
+    }
+
+    public AppConfig getAppConfig(String realm) {
+        return persistenceService.doReturningTransaction(entityManager ->
+                entityManager.createQuery(
+                        "select ac from AppConfig ac " +
+                                "where ac.realm = :realm",
+                        AppConfig.class)
+                        .setParameter("realm", realm)
+                        .getResultList()).stream().findFirst().orElse(null);
     }
 
     @Override
