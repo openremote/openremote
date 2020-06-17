@@ -20,7 +20,7 @@
 package org.openremote.manager.apps;
 
 import org.openremote.container.web.WebResource;
-import org.openremote.model.apps.AppConfig;
+import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.apps.ConsoleAppResource;
 import org.openremote.model.http.RequestParams;
 
@@ -49,7 +49,7 @@ public class ConsoleAppResourceImpl extends WebResource implements ConsoleAppRes
     }
 
     @Override
-    public AppConfig getAppConfig(RequestParams requestParams) {
+    public ConsoleAppConfig getAppConfig(RequestParams requestParams) {
         try {
             return consoleAppService.getAppConfig(getRequestRealm());
         } catch (Exception ex) {

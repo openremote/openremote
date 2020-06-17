@@ -48,5 +48,5 @@ public interface ConsoleAppResource {
     @Path("config")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    AppConfig getAppConfig(@BeanParam RequestParams requestParams);
+    ConsoleAppConfig getAppConfig(@BeanParam RequestParams requestParams);
 }

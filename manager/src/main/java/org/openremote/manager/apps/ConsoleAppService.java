@@ -25,8 +25,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.apps.AppConfig;
-import org.openremote.model.datapoint.AssetDatapoint;
+import org.openremote.model.apps.ConsoleAppConfig;
 
 import java.nio.file.Files;
 import java.util.logging.Logger;
@@ -73,12 +72,12 @@ public class ConsoleAppService implements ContainerService {
             .toArray(String[]::new);
     }
 
-    public AppConfig getAppConfig(String realm) {
+    public ConsoleAppConfig getAppConfig(String realm) {
         return persistenceService.doReturningTransaction(entityManager ->
                 entityManager.createQuery(
-                        "select ac from AppConfig ac " +
+                        "select ac from ConsoleAppConfig ac " +
                                 "where ac.realm = :realm",
-                        AppConfig.class)
+                        ConsoleAppConfig.class)
                         .setParameter("realm", realm)
                         .getResultList()).stream().findFirst().orElse(null);
     }

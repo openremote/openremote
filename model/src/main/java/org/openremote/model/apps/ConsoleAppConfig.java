@@ -8,8 +8,8 @@ import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 @Entity
-@Table(name = "APP_CONFIG")
-public class AppConfig {
+@Table(name = "CONSOLE_APP_CONFIG")
+public class ConsoleAppConfig {
 
     public enum MenuPosition {
         BOTTOM_LEFT,
@@ -18,7 +18,7 @@ public class AppConfig {
         TOP_RIGHT
     }
 
-    public AppConfig() {
+    public ConsoleAppConfig() {
     }
 
     @Id

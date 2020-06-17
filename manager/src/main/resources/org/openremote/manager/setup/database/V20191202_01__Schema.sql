@@ -141,7 +141,7 @@ create table GATEWAY_CONNECTION (
     primary key (LOCAL_REALM)
 );
 
-create table APP_CONFIG (
+create table CONSOLE_APP_CONFIG (
     ID              int8                     not null,
     REALM           varchar(255)             not null,
     URL             varchar(255)             not null,
