@@ -27,7 +27,7 @@
     "url-search-params-polyfill": "^5.0.0"
   },
   "devDependencies": {
-    "@mdi/svg": ">=4.5.95",
+    "@mdi/svg": ">=5.3.45",
     "@types/qs": "^6.5.3",
     "tslint": ">=5.11.0",
     "typescript": ">=3.4.5",
