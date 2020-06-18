@@ -24,12 +24,19 @@ public class TradfriPlugAsset extends TradfriAsset {
 
     /**
      * Construct the TradfriPlugAsset class
+     * @param parentId the parent id.
+     * @param agentLink the agent link.
+     * @param plug the plug.
+     * @param assetService the asset service.
      */
     public TradfriPlugAsset(String parentId, MetaItem agentLink, Plug plug, ProtocolAssetService assetService) {
         super(parentId, plug, AssetType.THING, assetService);
         this.agentLink = agentLink;
     }
 
+    /**
+     * Method to create the asset attributes
+     */
     @Override
     public void createAssetAttributes() {
         AssetAttribute plugOnOrOff = new AssetAttribute("plugOnOrOff", BOOLEAN, Values.create(false));
@@ -43,6 +50,9 @@ public class TradfriPlugAsset extends TradfriAsset {
         setAttributes(plugOnOrOff);
     }
 
+    /**
+     * Method to create the event handlers
+     */
     @Override
     public void createEventHandlers() {
         Asset asset = this;
@@ -57,6 +67,9 @@ public class TradfriPlugAsset extends TradfriAsset {
         device.addEventHandler(plugOnOffEventHandler);
     }
 
+    /**
+     * Method to set the initial values
+     */
     @Override
     public void setInitialValues() {
         Optional<AssetAttribute> plugOnOrOff = getAttribute("plugOnOrOff");

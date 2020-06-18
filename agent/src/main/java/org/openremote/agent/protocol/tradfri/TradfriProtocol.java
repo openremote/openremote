@@ -124,7 +124,7 @@ public class TradfriProtocol extends AbstractProtocol {
 
     /**
      * Gets the protocol configuration template.
-     * @return
+     * @return the configuration template of the protocol.
      */
     @Override
     public AssetAttribute getProtocolConfigurationTemplate() {
@@ -137,7 +137,7 @@ public class TradfriProtocol extends AbstractProtocol {
 
     /**
      * Gets the protocol configuration meta item descriptors.
-     * @return
+     * @return the protocol configuration meta item descriptors.
      */
     @Override
     protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
@@ -146,7 +146,7 @@ public class TradfriProtocol extends AbstractProtocol {
 
     /**
      * Gets the linked attribute meta item descriptors.
-     * @return
+     * @return the linked attribute meta item descriptors.
      */
     @Override
     protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
@@ -156,7 +156,7 @@ public class TradfriProtocol extends AbstractProtocol {
     /**
      * Validates the protocol configuration.
      * @param protocolConfiguration the protocol configuration
-     * @return
+     * @return the attribute validation result.
      */
     @Override
     public AttributeValidationResult validateProtocolConfiguration(AssetAttribute protocolConfiguration){
@@ -331,7 +331,7 @@ public class TradfriProtocol extends AbstractProtocol {
     /**
      * Method to retrieve the connection.
      * @param gatewayIp the gateway IP address of the connection.
-     * @return
+     * @return the corresponding TRÅDFRI connection.
      */
     protected TradfriConnection getConnection(String gatewayIp) {
         synchronized (tradfriConnections) {

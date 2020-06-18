@@ -22,13 +22,20 @@ public class TradfriLightAsset extends TradfriAsset {
     private final MetaItem agentLink;
 
     /**
-     * Construct the TradfriLightAsset class
+     * Construct the TradfriLightAsset class.
+     * @param parentId parent id.
+     * @param agentLink the agent link.
+     * @param light the light.
+     * @param assetService the asset service.
      */
     public TradfriLightAsset(String parentId, MetaItem agentLink, Light light, ProtocolAssetService assetService) {
         super(parentId, light, AssetType.LIGHT, assetService);
         this.agentLink = agentLink;
     }
 
+    /**
+     * Method to create the asset attributes
+     */
     @Override
     public void createAssetAttributes() {
         Optional<AssetAttribute> lightDimLevel = getAttribute("lightDimLevel");
@@ -73,6 +80,9 @@ public class TradfriLightAsset extends TradfriAsset {
         addAttributes(colorTemperature);
     }
 
+    /**
+     * Method to create the event handlers
+     */
     @Override
     public void createEventHandlers() {
         Asset asset = this;
@@ -118,6 +128,9 @@ public class TradfriLightAsset extends TradfriAsset {
         light.addEventHandler(lightColorTemperatureEventHandler);
     }
 
+    /**
+     * Method to set the initial values
+     */
     @Override
     public void setInitialValues() {
         Optional<AssetAttribute> lightStatus = getAttribute("lightStatus");

@@ -72,7 +72,7 @@ public class TradfriConnection {
 
     /**
      * Handles the connection.
-     * @return
+     * @return the gateway.
      */
     public synchronized Gateway connect() {
         if (connectionStatus == ConnectionStatus.CONNECTED || connectionStatus == ConnectionStatus.CONNECTING) {
