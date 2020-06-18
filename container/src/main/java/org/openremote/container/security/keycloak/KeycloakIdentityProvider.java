@@ -28,7 +28,9 @@ import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
 import io.undertow.util.HttpString;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.adapters.KeycloakDeploymentBuilder;
@@ -37,18 +39,15 @@ import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.idm.PublishedRealmRepresentation;
 import org.openremote.container.Container;
 import org.openremote.container.security.IdentityProvider;
-import org.openremote.container.web.ClientRequestInfo;
-import org.openremote.container.web.ProxyWebClientBuilder;
-import org.openremote.container.web.WebClient;
-import org.openremote.container.web.WebService;
+import org.openremote.container.web.*;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.NotFoundException;
-import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -60,6 +59,7 @@ import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebClient.getTarget;
 import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
 import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 
 public abstract class KeycloakIdentityProvider implements IdentityProvider {
@@ -159,7 +159,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     // This will pass authentication ("NOT ATTEMPTED" state), but later fail any role authorization
     final protected KeycloakDeployment notAuthenticatedKeycloakDeployment = new KeycloakDeployment();
     // The client we use to access Keycloak
-    protected Client httpClient;
+    protected ResteasyClient httpClient;
+    protected ResteasyWebTarget keycloakTarget;
     // Cache Keycloak deployment per realm/client so we don't have to access Keycloak for every token validation
     protected LoadingCache<KeycloakRealmClient, KeycloakDeployment> keycloakDeploymentCache;
     // The configuration for the Keycloak servlet extension, looks up the client application per realm
@@ -168,7 +169,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     protected HttpHandler authProxyHandler;
 
     @SuppressWarnings("deprecation")
-    public KeycloakIdentityProvider(String clientId, UriBuilder externalServerUri, Container container) {
+    protected KeycloakIdentityProvider(String clientId, UriBuilder externalServerUri, ExecutorService executorService, Container container) {
         this.clientId = clientId;
         this.externalServerUri = externalServerUri;
 
@@ -210,30 +211,18 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 .connectionPoolSize(
                     getInteger(container.getConfig(), KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT)
                 );
-//        ResteasyClientBuilder clientBuilder = (ResteasyClientBuilder) ResteasyClientBuilder.newBuilder();
-//        clientBuilder.httpEngine(
-//            new EngineBuilder(httpClientBuilder ->
-//                httpClientBuilder.addInterceptorLast((HttpRequestInterceptor) (request, context) ->
-//                    request.setHeader(HTTP.TARGET_HOST, new HttpHost(externalServerUri.build().getHost(), externalServerUri.build().getPort()).toHostString())
-//                )
-//            ).build()
-//        );
-//
-//        clientBuilder
-//            .connectionCheckoutTimeout(
-//                getInteger(container.getConfig(), KEYCLOAK_CONNECT_TIMEOUT, KEYCLOAK_CONNECT_TIMEOUT_DEFAULT),
-//                TimeUnit.MILLISECONDS
-//            )
-//            .readTimeout(
-//                getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
-//                TimeUnit.MILLISECONDS
-//            )
-//            .connectionPoolSize(
-//                getInteger(container.getConfig(), KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT)
-//            );
-
-
         httpClient = WebClient.registerDefaults(clientBuilder).build();
+
+        WebTargetBuilder targetBuilder = new WebTargetBuilder(httpClient, keycloakServiceUri.build());
+        targetBuilder.setOAuthAuthentication(new OAuthPasswordGrant(
+            keycloakServiceUri.clone().path("/realms/master/protocol/openid-connect/token").build().toString(),
+            ADMIN_CLI_CLIENT_ID,
+            null,
+            "openid",
+            MASTER_REALM_ADMIN_USER,
+            container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
+        ));
+        keycloakTarget = targetBuilder.build();
 
         keycloakDeploymentCache = createKeycloakDeploymentCache();
 
@@ -292,8 +281,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     }
 
     public KeycloakResource getKeycloak() {
-        return getTarget(httpClient, keycloakServiceUri.build(), null, null, null)
-            .proxy(KeycloakResource.class);
+        return keycloakTarget.proxy(KeycloakResource.class);
     }
 
     public KeycloakResource getExternalKeycloak() {
@@ -326,9 +314,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
      * directly). This should not be overloaded because we want to know who is calling this method with "null", as this
      * can lead to subtle runtime problems.
      */
-    final protected RealmsResource getRealms(ClientRequestInfo clientRequestInfo) {
-        return getTarget(httpClient, keycloakServiceUri.build(), clientRequestInfo.getAccessToken(), clientRequestInfo.getRemoteAddress(), clientRequestInfo.getRemoteAddress() != null ? externalServerUri.build() : null)
-            .proxy(RealmsResource.class);
+    final protected RealmsResource getRealms() {
+        return keycloakTarget.proxy(RealmsResource.class);
     }
 
     protected void waitForKeycloak() {

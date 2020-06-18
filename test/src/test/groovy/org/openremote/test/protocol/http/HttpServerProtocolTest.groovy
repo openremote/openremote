@@ -21,8 +21,11 @@ package org.openremote.test.protocol.http
 
 import org.jboss.resteasy.spi.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
-import org.openremote.agent.protocol.controller.PollingKey
 import org.openremote.agent.protocol.http.*
+import org.openremote.container.web.OAuthGrant
+import org.openremote.container.web.OAuthPasswordGrant
+import org.openremote.container.web.OAuthRefreshTokenGrant
+import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService

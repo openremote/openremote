@@ -35,6 +35,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.apps.ConsoleAppService;
+import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
@@ -84,7 +85,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     final protected Container container;
 
     public ManagerKeycloakIdentityProvider(UriBuilder externalServerUri, Container container) {
-        super(KEYCLOAK_CLIENT_ID, externalServerUri, container);
+        super(KEYCLOAK_CLIENT_ID, externalServerUri, container.getService(ManagerExecutorService.class), container);
 
         this.container = container;
         this.keycloakAdminPassword = container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT);
@@ -400,11 +401,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     public void deleteClient(String realm, ClientRepresentation client) {
         getRealms().realm(realm).clients().get(client.getId()).remove();
-    }
-
-    // TODO: This shouldn't really be exposed as identity provider shouldn't leak implementation
-    public RealmsResource getRealms() {
-        return super.getRealms(new ClientRequestInfo(null, getAdminAccessToken()));
     }
 
     public User getClientServiceUser(String realm, String clientId) {

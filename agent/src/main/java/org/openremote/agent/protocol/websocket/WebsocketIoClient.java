@@ -33,8 +33,8 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.CharsetUtil;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.openremote.agent.protocol.ProtocolExecutorService;
-import org.openremote.agent.protocol.http.OAuthFilter;
-import org.openremote.agent.protocol.http.OAuthGrant;
+import org.openremote.container.web.OAuthFilter;
+import org.openremote.container.web.OAuthGrant;
 import org.openremote.agent.protocol.io.AbstractNettyIoClient;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
@@ -52,8 +52,8 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.agent.protocol.http.WebTargetBuilder.CONNECTION_TIMEOUT_MILLISECONDS;
-import static org.openremote.agent.protocol.http.WebTargetBuilder.createClient;
+import static org.openremote.container.web.WebTargetBuilder.CONNECTION_TIMEOUT_MILLISECONDS;
+import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**

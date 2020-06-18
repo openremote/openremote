@@ -258,12 +258,11 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         then: "the protocol should be relinked"
         conditions.eventually {
             assert udpClientProtocol.protocolIoClientMap.size() == 1
-            assert udpClientProtocol.protocolIoClientMap.get(new AttributeRef(agent.id, "protocolConfig")) != client
+            assert !udpClientProtocol.protocolIoClientMap.get(new AttributeRef(agent.id, "protocolConfig")).is(client)
             assert udpClientProtocol.protocolMessageConsumers.size() == 1
         }
 
         when: "the linked attributes are also updated to work with hex server"
-        def consumer = udpClientProtocol.protocolMessageConsumers.get(new AttributeRef(agent.id, "protocolConfig")).stream().filter({it.key.equals(new AttributeRef(asset.id, "echoHello"))})
         asset.getAttribute("echoHello").ifPresent({it.meta.replaceAll{it.name.get() == UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE.urn ? new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create('"abcdef"')) : it}})
         asset.getAttribute("echoWorld").ifPresent({it.meta.replaceAll{it.name.get() == UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE.urn ? new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create('"123456"')) : it}})
         asset = assetStorageService.merge(asset)
@@ -272,7 +271,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         conditions.eventually {
             assert udpClientProtocol.protocolMessageConsumers.size() == 1
             assert udpClientProtocol.protocolMessageConsumers.get(new AttributeRef(agent.id, "protocolConfig")).size() == 2
-            assert udpClientProtocol.protocolMessageConsumers.get(new AttributeRef(agent.id, "protocolConfig")).stream().filter({it.key.equals(new AttributeRef(asset.id, "echoHello"))}) != consumer
+            assert udpClientProtocol.linkedAttributes.get(new AttributeRef(asset.getId(), "echoHello")).getMetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE).flatMap{it.getValueAsString()}.orElse(null) == '"abcdef"'
         }
 
         when: "the hello linked attribute is executed"

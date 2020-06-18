@@ -20,7 +20,7 @@
 package org.openremote.test.protocol.websocket
 
 import org.openremote.agent.protocol.Protocol
-import org.openremote.agent.protocol.http.OAuthPasswordGrant
+import org.openremote.container.web.OAuthPasswordGrant
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.agent.protocol.websocket.WebsocketClientProtocol
 import org.openremote.agent.protocol.websocket.WebsocketHttpSubscription

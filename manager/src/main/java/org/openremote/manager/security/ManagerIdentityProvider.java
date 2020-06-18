@@ -41,9 +41,6 @@ import static org.openremote.model.Constants.MASTER_REALM;
  */
 public interface ManagerIdentityProvider extends IdentityProvider {
 
-    String SETUP_ADMIN_PASSWORD = "SETUP_ADMIN_PASSWORD";
-    String SETUP_ADMIN_PASSWORD_DEFAULT = "secret";
-
     User[] getUsers(String realm);
 
     User[] getUsers(List<String> userIds);
