@@ -5,7 +5,7 @@ import org.openremote.agent.protocol.tradfri.device.Gateway;
 /**
  * The class that represents an event that occurred to an IKEA TRÅDFRI gateway
  */
-public class GatewayEvent extends Event {
+public class GatewayEvent {
 
     /**
      * The IKEA TRÅDFRI gateway for which the event occurred
@@ -17,7 +17,6 @@ public class GatewayEvent extends Event {
      * @param gateway The IKEA TRÅDFRI gateway for which the event occurred
      */
     public GatewayEvent(Gateway gateway) {
-        super();
         this.gateway = gateway;
     }
 

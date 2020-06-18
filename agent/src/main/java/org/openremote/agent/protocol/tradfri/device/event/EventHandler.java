@@ -5,7 +5,7 @@ import java.lang.reflect.ParameterizedType;
 /**
  * The class that handles events for IKEA TRÅDFRI devices
  */
-public abstract class EventHandler<T extends Event> {
+public abstract class EventHandler<T> {
 
     /**
      * Construct the EventHandler class

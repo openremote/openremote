@@ -5,7 +5,7 @@ import org.openremote.agent.protocol.tradfri.device.Device;
 /**
  * The class that represents a device event that occurred to an IKEA TRÅDFRI device
  */
-public class DeviceEvent extends Event {
+public class DeviceEvent {
 
     /**
      * The device for which the event occurred
@@ -17,7 +17,6 @@ public class DeviceEvent extends Event {
      * @param device The device for which the event occurred
      */
     public DeviceEvent(Device device) {
-        super();
         this.device = device;
     }
 

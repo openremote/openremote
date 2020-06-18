@@ -2,7 +2,6 @@ package org.openremote.agent.protocol.tradfri.device;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.openremote.agent.protocol.tradfri.device.event.Event;
 import org.openremote.agent.protocol.tradfri.device.event.EventHandler;
 import org.openremote.agent.protocol.tradfri.device.event.GatewayEvent;
 import org.openremote.agent.protocol.tradfri.util.ApiEndpoint;
@@ -65,7 +64,7 @@ public class GatewayObserver extends Observer {
         try {
             int[] deviceIds = objectMapper.readValue(payload, int[].class);
             ArrayList<EventHandler> called = new ArrayList<>();
-            Event event = new GatewayEvent(gateway);
+            GatewayEvent event = new GatewayEvent(gateway);
             for (EventHandler eventHandler : gateway.getEventHandlers()) {
                 if (eventHandler.getEventType().isAssignableFrom(event.getClass()) && !called.contains(eventHandler)) {
                     eventHandler.handle(event);
