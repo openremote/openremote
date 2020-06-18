@@ -37,12 +37,6 @@ public class DeviceInfo extends DeviceProperties{
     private String firmwareVersion;
 
     /**
-     * The power source of the device
-     */
-    @JsonProperty(ApiCode.POWER_SOURCE)
-    private DevicePowerSource powerSource;
-
-    /**
      * The battery level of the device
      */
     @JsonProperty(ApiCode.BATTERY_LEVEL)
@@ -87,14 +81,6 @@ public class DeviceInfo extends DeviceProperties{
     }
 
     /**
-     * Get the power source of the device
-     * @return The power source of the device
-     */
-    public DevicePowerSource getPowerSource() {
-        return this.powerSource;
-    }
-
-    /**
      * Get the battery level of the device
      * @return The battery level of the device
      */
@@ -136,15 +122,6 @@ public class DeviceInfo extends DeviceProperties{
      */
     public void setFirmwareVersion(String firmwareVersion) {
         this.firmwareVersion = firmwareVersion;
-    }
-
-    /**
-     * Set the power source of the device<br>
-     * <i>Note: This does not change the actual device</i>
-     * @param powerSource The new power source of the device
-     */
-    public void setPowerSource(DevicePowerSource powerSource) {
-        this.powerSource = powerSource;
     }
 
     /**

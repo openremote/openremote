@@ -192,18 +192,6 @@ public class Device {
     }
 
     /**
-     * Get the type of the device
-     * @return The type of the device
-     */
-    public DeviceType getType(){
-        if(isLight()) return DeviceType.LIGHT;
-        if(isPlug()) return DeviceType.PLUG;
-        if(isRemote()) return DeviceType.REMOTE;
-        if(isMotionSensor()) return DeviceType.MOTION_SENSOR;
-        return DeviceType.UNKNOWN;
-    }
-
-    /**
      * Check if the device is a {@link Light}
      * @return True if the device is a {@link Light}, false if not
      */
@@ -234,40 +222,6 @@ public class Device {
      */
     public Plug toPlug(){
         if(isPlug()) return (Plug) this;
-        return null;
-    }
-
-    /**
-     * Check if the device is a {@link Remote}
-     * @return True if the device is a {@link Remote}, false if not
-     */
-    public boolean isRemote(){
-        return this instanceof Remote;
-    }
-
-    /**
-     * Convert the device to the {@link Remote} class
-     * @return The device as {@link Remote}
-     */
-    public Remote toRemote(){
-        if(isRemote()) return (Remote) this;
-        return null;
-    }
-
-    /**
-     * Check if the device is a {@link MotionSensor}
-     * @return True if the device is a {@link MotionSensor}, false if not
-     */
-    public boolean isMotionSensor(){
-        return this instanceof MotionSensor;
-    }
-
-    /**
-     * Convert the device to the {@link MotionSensor} class
-     * @return The device as {@link MotionSensor}
-     */
-    public MotionSensor toMotionSensor(){
-        if(isMotionSensor()) return (MotionSensor) this;
         return null;
     }
 

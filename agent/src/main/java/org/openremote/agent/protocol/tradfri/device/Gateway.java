@@ -132,10 +132,6 @@ public class Gateway {
             return new Light(response.getName(), response.getCreationDate(), response.getInstanceId(), response.getDeviceInfo(), response.getLightProperties()[0], coapClient);
         }else if(response.getPlugProperties() != null && response.getPlugProperties().length > 0){
             return new Plug(response.getName(), response.getCreationDate(), response.getInstanceId(), response.getDeviceInfo(), response.getPlugProperties()[0], coapClient);
-        }else if(response.getDeviceInfo().getModelName().equals("TRADFRI remote control")){
-            return new Remote(response.getName(), response.getCreationDate(), response.getInstanceId(), response.getDeviceInfo(), coapClient);
-        }else if(response.getDeviceInfo().getModelName().equals("TRADFRI motion sensor")){
-            return new MotionSensor(response.getName(), response.getCreationDate(), response.getInstanceId(), response.getDeviceInfo(), coapClient);
         }else{
             return new Device(response.getName(), response.getCreationDate(), response.getInstanceId(), response.getDeviceInfo(), coapClient);
         }

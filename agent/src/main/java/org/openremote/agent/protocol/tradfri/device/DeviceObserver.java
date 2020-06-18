@@ -52,12 +52,6 @@ public class DeviceObserver extends Observer {
                 ArrayList<DeviceEvent> changeEvents = new ArrayList<>();
                 if(checkChanges(oldProperties.getOn(), newProperties.getOn())) changeEvents.add(new LightChangeOnEvent(device.toLight(), oldProperties, newProperties));
                 if(checkChanges(oldProperties.getBrightness(), newProperties.getBrightness())) changeEvents.add(new LightChangeBrightnessEvent(device.toLight(), oldProperties, newProperties));
-                if(checkChanges(oldProperties.getColourHex(), newProperties.getColourHex())) changeEvents.add(new LightChangeColourHexEvent(device.toLight(), oldProperties, newProperties));
-                if(checkChanges(oldProperties.getHue(), newProperties.getHue())) changeEvents.add(new LightChangeHueEvent(device.toLight(), oldProperties, newProperties));
-                if(checkChanges(oldProperties.getSaturation(), newProperties.getSaturation())) changeEvents.add(new LightChangeSaturationEvent(device.toLight(), oldProperties, newProperties));
-                if(checkChanges(oldProperties.getColourX(), newProperties.getColourX())) changeEvents.add(new LightChangeColourXEvent(device.toLight(), oldProperties, newProperties));
-                if(checkChanges(oldProperties.getColourY(), newProperties.getColourY())) changeEvents.add(new LightChangeColourYEvent(device.toLight(), oldProperties, newProperties));
-                if(checkChanges(oldProperties.getColourX(), newProperties.getColourX()) || checkChanges(oldProperties.getColourY(), newProperties.getColourY())) changeEvents.add(new LightChangeColourXYEvent(device.toLight(), oldProperties, newProperties));
                 if(checkChanges(oldProperties.getColourX(), newProperties.getColourX()) || checkChanges(oldProperties.getColourY(), newProperties.getColourY()) || checkChanges(oldProperties.getHue(), newProperties.getHue()) || checkChanges(oldProperties.getSaturation(), newProperties.getSaturation())) changeEvents.add(new LightChangeColourEvent(device.toLight(), oldProperties, newProperties));
                 if(checkChanges(oldProperties.getColourTemperature(), newProperties.getColourTemperature())) changeEvents.add(new LightChangeColourTemperatureEvent(device.toLight(), oldProperties, newProperties));
                 if(changeEvents.size() > 0){
@@ -73,10 +67,6 @@ public class DeviceObserver extends Observer {
                     events.add(new PlugChangeEvent(device.toPlug(), oldProperties, newProperties));
                     events.add(new PlugChangeOnEvent(device.toPlug(), oldProperties, newProperties));
                 }
-            }else if(device.isRemote()){
-                events.add(new RemoteEvent(device.toRemote()));
-            }else if(device.isMotionSensor()){
-                events.add(new MotionSensorEvent(device.toMotionSensor()));
             }
             for(EventHandler eventHandler: device.getEventHandlers()){
                 for(DeviceEvent event: events){
