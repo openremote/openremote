@@ -32,8 +32,6 @@ dependencies {
     //IKEA Tradfri agent dependencies
     compile "org.eclipse.californium:californium-core:2.1.0"
     compile "org.eclipse.californium:scandium:2.1.0"
-    compile "org.apache.commons:commons-lang3:3.9"
-    compile "com.fasterxml.jackson.core:jackson-databind:2.10.2"
 
 }
 
