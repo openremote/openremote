@@ -2,8 +2,7 @@ package org.openremote.agent.protocol.tradfri.device;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.openremote.agent.protocol.tradfri.device.event.DeviceAddedEvent;
-import org.openremote.agent.protocol.tradfri.device.event.DeviceRemovedEvent;
+import org.openremote.agent.protocol.tradfri.device.event.Event;
 import org.openremote.agent.protocol.tradfri.device.event.EventHandler;
 import org.openremote.agent.protocol.tradfri.device.event.GatewayEvent;
 import org.openremote.agent.protocol.tradfri.util.ApiEndpoint;
@@ -65,34 +64,12 @@ public class GatewayObserver extends Observer {
     public void callEventHandlers(String payload) {
         try {
             int[] deviceIds = objectMapper.readValue(payload, int[].class);
-            ArrayList<GatewayEvent> events = new ArrayList<>();
             ArrayList<EventHandler> called = new ArrayList<>();
-            events.add(new GatewayEvent(gateway));
-            ArrayList<Integer> added = new ArrayList<>();
-            HashMap<Integer, Device> removed = (HashMap<Integer, Device>) devices.clone();
-            for (int deviceId : deviceIds) {
-                if (devices.containsKey(deviceId)) {
-                    removed.remove(deviceId);
-                } else {
-                    added.add(deviceId);
-                }
-            }
-            for (Integer addedDeviceId : added) {
-                Device device = gateway.getDevice(addedDeviceId);
-                devices.put(addedDeviceId, device);
-                events.add(new DeviceAddedEvent(gateway, device));
-            }
-            for (Integer removedDeviceId : removed.keySet()) {
-                Device device = devices.get(removedDeviceId);
-                devices.remove(removedDeviceId);
-                events.add(new DeviceRemovedEvent(gateway, device));
-            }
+            Event event = new GatewayEvent(gateway);
             for (EventHandler eventHandler : gateway.getEventHandlers()) {
-                for (GatewayEvent event : events) {
-                    if (eventHandler.getEventType().isAssignableFrom(event.getClass()) && !called.contains(eventHandler)) {
-                        eventHandler.handle(event);
-                        called.add(eventHandler);
-                    }
+                if (eventHandler.getEventType().isAssignableFrom(event.getClass()) && !called.contains(eventHandler)) {
+                    eventHandler.handle(event);
+                    called.add(eventHandler);
                 }
             }
         } catch (JsonProcessingException ignored) {
