@@ -291,14 +291,14 @@ public class GatewayConnector {
             return;
         }
 
-        if (!expectedSyncResponseName.equalsIgnoreCase(e.getName())) {
-            LOG.info("Unexpected response from gateway so ignoring (expected=" + expectedSyncResponseName + ", actual =" + e.getName() + "): " + e);
+        if (!expectedSyncResponseName.equalsIgnoreCase(e.getMessageId())) {
+            LOG.info("Unexpected response from gateway so ignoring (expected=" + expectedSyncResponseName + ", actual =" + e.getMessageId() + "): " + e);
             return;
         }
 
         syncProcessorFuture.cancel(true);
         syncProcessorFuture = null;
-        boolean isInitialResponse = ASSET_READ_EVENT_NAME_INITIAL.equalsIgnoreCase(e.getName());
+        boolean isInitialResponse = ASSET_READ_EVENT_NAME_INITIAL.equalsIgnoreCase(e.getMessageId());
 
         if (isInitialResponse) {
 

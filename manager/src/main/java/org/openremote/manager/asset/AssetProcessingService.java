@@ -32,6 +32,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.agent.AgentService;
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.event.EventSubscriptionAuthorizer;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.rules.RulesService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -161,56 +162,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         assetAttributeLinkingService = container.getService(AssetAttributeLinkingService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
+        EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, assetStorageService);
 
         clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
-            if (!subscription.isEventType(AttributeEvent.class) && !subscription.isEventType(AssetEvent.class)) {
+            if (!subscription.isEventType(AttributeEvent.class)) {
                 return false;
             }
-
-            // Only Asset ID filters allowed
-            if (subscription.getFilter() != null && !(subscription.getFilter() instanceof AssetFilter)) {
-                return false;
-            }
-
-            // Attribute event subscriptions must have a filter, as you can't subscribe to ALL asset attribute events
-            if (subscription.isEventType(AttributeEvent.class) && subscription.getFilter() == null) {
-                return false;
-            }
-
-            if (subscription.getFilter() != null) {
-                AssetFilter filter = (AssetFilter) subscription.getFilter();
-
-                // Superuser can get events for any asset
-                if (auth.isSuperUser())
-                    return true;
-
-                // Regular user must have role
-                if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
-                    return false;
-                }
-
-                boolean isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(auth.getUserId());
-
-                // Client can subscribe to several assets
-                for (String assetId : filter.getAssetIds()) {
-                    Asset asset = assetStorageService.find(assetId);
-                    // If the asset doesn't exist, subscription must fail
-                    if (asset == null)
-                        return false;
-                    if (isRestrictedUser) {
-                        // Restricted users can only get events for their linked assets
-                        if (!assetStorageService.isUserAsset(auth.getUserId(), assetId))
-                            return false;
-                        // TODO Restricted clients should only receive events for PROTECTED attributes!
-                    } else {
-                        // Regular users can only get events for assets in their realm
-                        if (!asset.getRealm().equals(auth.getAuthenticatedRealm()))
-                            return false;
-                    }
-                }
-                return true;
-            }
-            return false;
+            return assetEventAuthorizer.apply(auth, subscription);
         });
 
         processors.add(gatewayService);

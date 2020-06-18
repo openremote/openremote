@@ -250,7 +250,7 @@ public class ClientEventService implements ContainerService {
                                 .otherwise()
                                     .to(ClientEventService.CLIENT_EVENT_TOPIC)
                             .endChoice()
-                            .when(header(HEADER_CONNECTION_TYPE).isNull())
+                            .when(header(HEADER_CONNECTION_TYPE).isNull()) // Outbound message to clients
                                 .split(method(eventSubscriptions, "splitForSubscribers"))
                                 .process(exchange -> {
                                     String sessionKey = getSessionKey(exchange);

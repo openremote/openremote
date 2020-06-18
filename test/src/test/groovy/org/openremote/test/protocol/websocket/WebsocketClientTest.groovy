@@ -119,8 +119,8 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         then: "the client receives the event"
         conditions.eventually {
             assert lastMessage != null
-            assert lastMessage.indexOf(SharedEvent.MESSAGE_PREFIX) == 0
-            def triggeredEvent = Container.JSON.readValue(lastMessage.substring(SharedEvent.MESSAGE_PREFIX.length()), TriggeredEventSubscription.class)
+            assert lastMessage.indexOf(TriggeredEventSubscription.MESSAGE_PREFIX) == 0
+            def triggeredEvent = Container.JSON.readValue(lastMessage.substring(TriggeredEventSubscription.MESSAGE_PREFIX.length()), TriggeredEventSubscription.class)
             assert triggeredEvent.subscriptionId == "1"
             assert triggeredEvent.events.size() == 1
             assert ((AttributeEvent)triggeredEvent.events[0]).entityId == managerDemoSetup.apartment1LivingroomId

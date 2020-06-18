@@ -48,7 +48,6 @@ import org.openremote.model.gateway.GatewayConnectionStatusEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.syslog.SyslogEvent;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -312,7 +311,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 // Force realm to be the one that this client is associated with
                 query.tenant(new TenantPredicate(connection.getLocalRealm()));
                 List<Asset> assets = assetStorageService.findAll(readAssets.getAssetQuery());
-                sendCentralManagerMessage(connection.getLocalRealm(), messageFromSharedEvent(new AssetsEvent(readAssets.getName(), assets)));
+                sendCentralManagerMessage(connection.getLocalRealm(), messageFromSharedEvent(new AssetsEvent(readAssets.getMessageId(), assets)));
             }
         }
     }

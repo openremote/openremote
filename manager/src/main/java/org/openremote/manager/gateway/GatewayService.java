@@ -516,12 +516,10 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         clientRepresentation.setSecret(secret);
 
         LOG.info("Creating gateway keycloak client for gateway id: " + gateway.getId());
+        clientRepresentation = identityProvider.createClient(gateway.getRealm(), clientRepresentation);
 
-        ClientsResource clientsResource = identityProvider.getRealms(getClientRequestInfo()).realm(gateway.getRealm()).clients();
-        Response response = clientsResource.create(clientRepresentation);
-        response.close();
-        if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-            LOG.warning("Failed to create Keycloak client for gateway '" + gateway.getId() + "' Response=" + response.getStatus());
+        if (clientRepresentation == null) {
+            LOG.warning("Failed to create Keycloak client for gateway '" + gateway.getId());
         } else {
             gateway.getAttribute("clientId").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(clientId)));
             gateway.getAttribute("clientSecret").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(secret)));
@@ -535,12 +533,9 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
     }
 
     protected void updateGatewayClient(GatewayConnector connector, boolean enabled) {
-        final ClientsResource clientsResource = identityProvider.getRealms(getClientRequestInfo()).realm(connector.getRealm()).clients();
-        clientsResource.findByClientId(GATEWAY_CLIENT_ID_PREFIX + connector.gatewayId).stream().findFirst().ifPresent(
-            clientRepresentation -> {
-                clientRepresentation.setEnabled(enabled);
-                clientsResource.get(clientRepresentation.getId()).update(clientRepresentation);
-            });
+        ClientRepresentation client = identityProvider.getClient(connector.getRealm(), GATEWAY_CLIENT_ID_PREFIX + connector.gatewayId);
+        client.setEnabled(enabled);
+        identityProvider.updateClient(connector.getRealm(), client);
     }
 
     protected void destroyGatewayClient(Asset gateway) {
@@ -550,16 +545,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             return;
         }
 
-        final ClientsResource clientsResource = identityProvider.getRealms(getClientRequestInfo()).realm(gateway.getRealm()).clients();
-        clientsResource.findByClientId(id).stream().findFirst().ifPresent(
-            clientRepresentation -> {
-                clientsResource.get(clientRepresentation.getId()).remove();
-            });
-    }
-
-    protected ClientRequestInfo getClientRequestInfo() {
-        String accessToken = identityProvider.getAdminAccessToken(null);
-        return new ClientRequestInfo(null, accessToken);
+        identityProvider.deleteClient(gateway.getRealm(), id);
     }
 
     protected Consumer<Object> createConnectorMessageConsumer(String sessionId) {

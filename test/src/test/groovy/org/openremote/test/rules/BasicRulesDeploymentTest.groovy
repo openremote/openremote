@@ -1,6 +1,6 @@
 package org.openremote.test.rules
 
-import org.openremote.container.web.ClientRequestInfo
+
 import org.openremote.manager.rules.RulesFacts
 import org.openremote.manager.rules.RulesLoopException
 import org.openremote.manager.rules.RulesService
@@ -194,7 +194,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         def apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
         def tenantBuildingTenant = keycloakDemoSetup.tenantBuilding
         tenantBuildingTenant.setEnabled(false)
-        identityService.getIdentityProvider().updateTenant(new ClientRequestInfo(null, accessToken), tenantBuildingTenant.getRealm(), tenantBuildingTenant)
+        identityService.getIdentityProvider().updateTenant(tenantBuildingTenant)
 
         then: "the tenants rule engine should stop and all asset rule engines in this realm should also stop"
         conditions.eventually {
@@ -223,7 +223,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         when: "the disabled tenant is re-enabled"
         tenantBuildingTenant.setEnabled(true)
-        identityService.getIdentityProvider().updateTenant(new ClientRequestInfo(null, accessToken), tenantBuildingTenant.getRealm(), tenantBuildingTenant)
+        identityService.getIdentityProvider().updateTenant(tenantBuildingTenant)
 
         then: "the tenants rule engine should start and all asset rule engines from this realm should also start"
         conditions.eventually {

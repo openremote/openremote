@@ -19,34 +19,34 @@
  */
 package org.openremote.manager.setup;
 
-import org.keycloak.admin.client.resource.ClientsResource;
-import org.keycloak.admin.client.resource.RealmResource;
-import org.keycloak.admin.client.resource.UsersResource;
-import org.keycloak.representations.idm.ClientRepresentation;
 import org.openremote.container.Container;
-import org.openremote.container.security.PasswordAuthForm;
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
-
-import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD;
-import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT;
-import static org.openremote.model.Constants.MASTER_REALM;
-import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
+import org.openremote.model.security.ClientRole;
+import org.openremote.model.security.Tenant;
+import org.openremote.model.security.User;
 
 public abstract class AbstractKeycloakSetup implements Setup {
 
     public static final String SETUP_EMAIL_FROM_KEYCLOAK = "SETUP_EMAIL_FROM_KEYCLOAK";
     public static final String SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT = "no-reply@";
+    public static final ClientRole[] PUBLIC_USER_ROLES = new ClientRole[] {
+        ClientRole.READ_ASSETS,
+        ClientRole.READ_MAP
+    };
+    public static final ClientRole[] REGULAR_USER_ROLES = new ClientRole[] {
+        ClientRole.WRITE_USER,
+        ClientRole.READ_MAP,
+        ClientRole.READ_ASSETS,
+        ClientRole.READ_RULES,
+        ClientRole.WRITE_ASSETS,
+        ClientRole.WRITE_RULES
+    };
 
     final protected Container container;
     final protected ManagerIdentityService identityService;
     final protected ManagerKeycloakIdentityProvider keycloakProvider;
     final protected SetupService setupService;
-    protected String accessToken;
-    protected RealmResource masterRealmResource;
-    protected ClientsResource masterClientsResource;
-    protected UsersResource masterUsersResource;
 
     public AbstractKeycloakSetup(Container container) {
         this.container = container;
@@ -59,23 +59,30 @@ public abstract class AbstractKeycloakSetup implements Setup {
         return keycloakProvider;
     }
 
-    @Override
-    public void onStart() throws Exception {
-        // Use direct access grant feature of Keycloak Admin CLI to get superuser access token
-        String keycloakAdminPassword = container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT);
-        this.accessToken = keycloakProvider.getKeycloak().getAccessToken(
-            MASTER_REALM, new PasswordAuthForm(KeycloakIdentityProvider.ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, keycloakAdminPassword)
-        ).getToken();
-
-        masterRealmResource = keycloakProvider.getRealms(accessToken).realm(MASTER_REALM);
-        masterClientsResource = masterRealmResource.clients();
-        masterUsersResource = masterRealmResource.users();
+    protected Tenant createTenant(String realm, String displayName) {
+        Tenant tenant = new Tenant();
+        tenant.setRealm(realm);
+        tenant.setDisplayName(displayName);
+        tenant.setEnabled(true);
+        tenant.setDuplicateEmailsAllowed(true);
+        tenant = keycloakProvider.createTenant(tenant);
+        return tenant;
     }
 
-    protected String getClientObjectId(ClientsResource clientsResource, String clientName) {
-        return clientsResource.findByClientId(clientName)
-            .stream()
-            .map(ClientRepresentation::getId)
-            .findFirst().orElseThrow(() -> new RuntimeException("Client object ID not found for client name: " + clientName));
+    protected User createUser(String realm, String username, String password, String firstName, String lastName, String email, boolean enabled, ClientRole[] roles) {
+        User user = new User();
+        user.setUsername(username);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setEmail(email);
+        user.setEnabled(enabled);
+        user = keycloakProvider.createUser(realm, user, password);
+        if (user == null) {
+            return null;
+        }
+        if (roles != null && roles.length > 0) {
+            keycloakProvider.updateRoles(realm, user.getId(), roles);
+        }
+        return user;
     }
 }

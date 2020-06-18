@@ -20,26 +20,19 @@
 package org.openremote.manager.security;
 
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.manager.i18n.I18NService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.http.ConstraintViolationReport;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.security.Credential;
-import org.openremote.model.security.Role;
-import org.openremote.model.security.User;
-import org.openremote.model.security.UserResource;
+import org.openremote.model.security.*;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.ResourceBundle;
+import java.util.*;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.openremote.model.Constants.MASTER_REALM;
@@ -55,7 +48,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     public User[] getAll(RequestParams requestParams, String realm) {
         try {
             return identityService.getIdentityProvider().getUsers(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm
+                realm
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -72,7 +65,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
         try {
             return identityService.getIdentityProvider().getUser(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId
+                realm, userId
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -102,7 +95,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         }
         try {
             identityService.getIdentityProvider().updateUser(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId, user
+                realm, user
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -115,7 +108,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     public void create(RequestParams requestParams, String realm, User user) {
         try {
             identityService.getIdentityProvider().createUser(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, user,
+                realm, user,
                 null);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -139,7 +132,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         }
         try {
             identityService.getIdentityProvider().deleteUser(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId
+                realm, userId
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -154,7 +147,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     public void resetPassword(@BeanParam RequestParams requestParams, String realm, String userId, Credential credential) {
         try {
             identityService.getIdentityProvider().resetPassword(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId, credential
+                realm, userId, credential
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -171,7 +164,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
         try {
             return identityService.getIdentityProvider().getRoles(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId
+                realm, userId
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -192,7 +185,12 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     public void updateRoles(@BeanParam RequestParams requestParams, String realm, String userId, Role[] roles) {
         try {
             identityService.getIdentityProvider().updateRoles(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId, roles
+                realm,
+                userId,
+                Arrays.stream(roles)
+                    .filter(Role::isAssigned)
+                    .map(r -> Arrays.stream(ClientRole.values()).filter(cr -> cr.getValue().equals(r.getName())).findFirst().orElse(null))
+                    .toArray(ClientRole[]::new)
             );
         } catch (ClientErrorException ex) {
             ex.printStackTrace(System.out);
@@ -207,7 +205,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             return null;
 
         if (!identityService.getIdentityProvider().isMasterRealmAdmin(
-            new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), userId
+            userId
         )) return null;
 
         ResourceBundle validationMessages = getContainer().getService(I18NService.class).getValidationMessages();
@@ -226,7 +224,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             return null;
 
         if (!identityService.getIdentityProvider().isMasterRealmAdmin(
-            new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), user.getId()
+            user.getId()
         )) return null;
 
         ResourceBundle validationMessages = getContainer().getService(I18NService.class).getValidationMessages();

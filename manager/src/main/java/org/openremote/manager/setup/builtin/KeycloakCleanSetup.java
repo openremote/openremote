@@ -19,18 +19,15 @@
  */
 package org.openremote.manager.setup.builtin;
 
-import org.keycloak.admin.client.resource.RealmsResource;
-import org.keycloak.admin.client.resource.UserResource;
-import org.keycloak.representations.idm.ClientRepresentation;
-import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.container.Container;
-import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.setup.AbstractKeycloakSetup;
 
-import java.util.List;
+import java.util.Arrays;
 import java.util.logging.Logger;
 
-import static org.openremote.model.Constants.*;
+import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.DEFAULT_CLIENTS;
+import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
 
 public class KeycloakCleanSetup extends AbstractKeycloakSetup {
 
@@ -46,30 +43,26 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
 
         // Delete all realms that are not the master realm
         LOG.info("Deleting all non-master realms");
-        RealmsResource realmsResource = keycloakProvider.getRealms(accessToken);
-        List<RealmRepresentation> realms = realmsResource.findAll();
-        for (RealmRepresentation realmRepresentation : realms) {
-            if (!realmRepresentation.getRealm().equals(MASTER_REALM)) {
-                keycloakProvider.getRealms(accessToken).realm(realmRepresentation.getRealm()).remove();
+        Arrays.stream(keycloakProvider.getTenants()).forEach(tenant -> {
+            if (!tenant.getRealm().equals(MASTER_REALM)) {
+                LOG.info("Deleting tenant: " + tenant);
+                keycloakProvider.deleteTenant(tenant.getRealm());
             }
-        }
+        });
 
-        // Find out if there is a client already present for this application, if so, delete it as well as any gateway clients
-        masterClientsResource.findAll().stream()
-            .filter(clientRepresentation -> clientRepresentation.getClientId().equals(KEYCLOAK_CLIENT_ID) || clientRepresentation.getClientId().startsWith(GatewayService.GATEWAY_CLIENT_ID_PREFIX))
-            .map(ClientRepresentation::getId)
-            .forEach(clientObjectId -> {
-                LOG.info("Deleting client: " + clientObjectId);
-                masterClientsResource.get(clientObjectId).remove();
-            });
+        Arrays.stream(keycloakProvider.getUsers(MASTER_REALM)).forEach(user -> {
+            if (!user.getUsername().equals(MASTER_REALM_ADMIN_USER)) {
+                LOG.info("Deleting user: " + user);
+                keycloakProvider.deleteUser(MASTER_REALM, user.getId());
+            }
+        });
 
-        // Find out if there are any users except the admin, delete them
-        masterUsersResource.search(null, null, null).stream()
-            .filter(userRepresentation -> !userRepresentation.getUsername().equals(MASTER_REALM_ADMIN_USER))
-            .map(userRepresentation -> {
-                LOG.info("Deleting user: " + userRepresentation);
-                return masterUsersResource.get(userRepresentation.getId());
-            })
-            .forEach(UserResource::remove);
+        // Delete all non built in clients
+        Arrays.stream(keycloakProvider.getClients(MASTER_REALM)).forEach(client -> {
+            if (!DEFAULT_CLIENTS.contains(client.getClientId())) {
+                LOG.info("Deleting client: " + client.getClientId());
+                keycloakProvider.deleteClient(MASTER_REALM, client);
+            }
+        });
     }
 }
