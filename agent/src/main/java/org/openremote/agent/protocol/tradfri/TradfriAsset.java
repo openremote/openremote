@@ -6,11 +6,28 @@ import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
 
+/**
+ * Abstract class for TRÅDFRI assets
+ */
 public abstract class TradfriAsset extends Asset {
 
+    /**
+     * The device.
+     */
     protected Device device;
+
+    /**
+     * The asset service.
+     */
     protected ProtocolAssetService assetService;
 
+    /**
+     * Construct the TradfriAsset class.
+     * @param parentId the parent id.
+     * @param device the device.
+     * @param assetType the asset type.
+     * @param assetService the asset service.
+     */
     public TradfriAsset(String parentId, Device device, AssetType assetType, ProtocolAssetService assetService) {
         super(device.getName(), assetType);
         this.device = device;

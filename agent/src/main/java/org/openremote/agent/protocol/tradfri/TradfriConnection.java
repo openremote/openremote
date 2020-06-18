@@ -18,28 +18,62 @@ import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
+/**
+ * The class that represents the configuration for the IKEA TRÅDFRI connection.
+ */
 public class TradfriConnection {
 
+    /**
+     * The connection status, the default is disconnected
+     */
     protected ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;
 
+    /**
+     * The connection status consumers of the IKEA TRÅDFRI connection
+     */
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
 
+    /**
+     * The executor service of the IKEA TRÅDFRI connection
+     */
     protected final ProtocolExecutorService executorService;
 
+    /**
+     * The IP address of the gateway
+     */
     protected final String gatewayIp;
 
+    /**
+     * The security code that's needed to connect to the gateway.
+     */
     protected final String securityCode;
 
+    /**
+     * The logger for the IKEA TRÅDFRI connection.
+     */
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, TradfriConnection.class);
 
+    /**
+     * The IKEA TRÅDFRI gateway.
+     */
     private Gateway gateway;
 
+    /**
+     * Construct the TradfriConnection class.
+     * @param gatewayIp the IP address of the gateway.
+     * @param securityCode the security code to connect to the gateway.
+     * @param executorService the executor service.
+     */
     public TradfriConnection(String gatewayIp, String securityCode, ProtocolExecutorService executorService) {
         this.gatewayIp = gatewayIp;
         this.securityCode = securityCode;
         this.executorService = executorService;
     }
 
+    /**
+     * Handles the connection.
+     * @return
+     */
     public synchronized Gateway connect() {
         if (connectionStatus == ConnectionStatus.CONNECTED || connectionStatus == ConnectionStatus.CONNECTING) {
             LOG.finest("Already connected or connection in progress");
@@ -65,6 +99,10 @@ public class TradfriConnection {
         return null;
     }
 
+    /**
+     * Updates the connection status.
+     * @param connectionStatus the connection status.
+     */
     protected synchronized void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
         this.connectionStatus = connectionStatus;
 
@@ -73,12 +111,19 @@ public class TradfriConnection {
         );
     }
 
+    /**
+     * Adds a connection status consumer.
+     * @param connectionStatusConsumer the connection status consumer.
+     */
     public synchronized void addConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer) {
         if (!connectionStatusConsumers.contains(connectionStatusConsumer)) {
             connectionStatusConsumers.add(connectionStatusConsumer);
         }
     }
 
+    /**
+     * Handles the disconnection.
+     */
     public synchronized void disconnect() {
         if (connectionStatus == ConnectionStatus.DISCONNECTING || connectionStatus == ConnectionStatus.DISCONNECTED) {
             LOG.finest("Already disconnecting or disconnected");
@@ -91,10 +136,20 @@ public class TradfriConnection {
         }
     }
 
+    /**
+     * Removes the connection status consumer.
+     * @param connectionStatusConsumer the connection status consumer.
+     */
     public synchronized void removeConnectionStatusConsumer(java.util.function.Consumer<ConnectionStatus> connectionStatusConsumer) {
         connectionStatusConsumers.remove(connectionStatusConsumer);
     }
 
+    /**
+     * Method to update the values of the device attributes,
+     * based on the values entered in the User Interface.
+     * @param device the device to which the update applies.
+     * @param event the event representing the update.
+     */
     public void controlDevice(Device device, AttributeEvent event) {
         try {
             if (this.connectionStatus == ConnectionStatus.CONNECTED && event.getValue().isPresent()) {

@@ -17,6 +17,9 @@ import static org.openremote.model.attribute.MetaItemType.*;
 
 public class TradfriPlugAsset extends TradfriAsset {
 
+    /**
+     * The agentlink.
+     */
     private final MetaItem agentLink;
 
     /**

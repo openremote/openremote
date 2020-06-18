@@ -15,7 +15,6 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
-import org.openremote.model.rules.flow.Option;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
@@ -31,52 +30,102 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 /**
- * This protocol is used to connect to a Tradfri Gateway
+ * The class that represents the configuration for the IKEA TRÅDFRI protocol.
  */
 public class TradfriProtocol extends AbstractProtocol {
 
+    /**
+     * The logger for the IKEA TRÅDFRI protocol.
+     */
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, TradfriProtocol.class);
 
+    /**
+     * The protocol name for the IKEA TRÅDFRI protocol.
+     */
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":tradfri";
+
+    /**
+     * The display name for the IKEA TRÅDFRI protocol.
+     */
     public static final String PROTOCOL_DISPLAY_NAME = "IKEA TRÅDFRI";
 
     /**
-     * IP address of the Tradfri gateway to connect to
+     * The meta gateway host for the IKEA TRÅDFRI protocol.
      */
     public static final String META_TRADFRI_GATEWAY_HOST = PROTOCOL_NAME + ":gatewayHost";
 
     /**
-     * Secret key that is needed to connect to the Tradfri gateway
+     * The meta security code for the IKEA TRÅDFRI protocol
+     * This security code is used when connecting to the gateway.
      */
     public static final String META_TRADFRI_SECURITY_CODE = PROTOCOL_NAME + ":psk";
 
+    /**
+     * The current version of the IKEA TRÅDFRI protocol
+     */
     protected static final String VERSION = "1.0";
 
+    /**
+     * The protocol meta item descriptors that are used to connect to the gateway.
+     * The first MetaItemDescriptorImpl is used to hold the entered IP address of the Gateway.
+     * The second MetaItemDescriptorImpl is used to hold the entered security code (needed to connect to the gateway).
+     */
     protected static final List<MetaItemDescriptor> PROTOCOL_CONFIG_META_ITEM_DESCRIPTORS = Arrays.asList(
             new MetaItemDescriptorImpl(META_TRADFRI_GATEWAY_HOST, ValueType.STRING, false, null, null, 1, null, false, null, null, null),
             new MetaItemDescriptorImpl(META_TRADFRI_SECURITY_CODE, ValueType.STRING, false, null, null, 1, null, false, null, null, null)
     );
 
+    /**
+     * Map to store/manage the connections to the gateway.
+     */
     final protected Map<String, TradfriConnection> tradfriConnections = new HashMap<>();
+
+    /**
+     * Map to store/manage the TRÅDFRI devices.
+     */
     final protected HashMap<String, Device> tradfriDevices = new HashMap<>();
+
+    /**
+     * Map to store/manage the consumer of the connection status.
+     */
     final protected Map<AttributeRef, Consumer<ConnectionStatus>> statusConsumerMap = new HashMap<>();
+
+    /**
+     * Map to store/manage the attributes of the TRÅDFRI devices.
+     */
     final protected Map<AttributeRef, Pair<TradfriConnection, Device>> attributeMap = new HashMap<>();
 
+    /**
+     * Gets the name of the protocol.
+     * @return the name of the protocol.
+     */
     @Override
     public String getProtocolName() {
         return PROTOCOL_NAME;
     }
 
+    /**
+     * Gets the display name of the protocol.
+     * @return the display name of the protocol.
+     */
     @Override
     public String getProtocolDisplayName() {
         return PROTOCOL_DISPLAY_NAME;
     }
 
+    /**
+     * Gets the current version number of the protocol.
+     * @return the current version number of the protocol.
+     */
     @Override
     public String getVersion() {
         return VERSION;
     }
 
+    /**
+     * Gets the protocol configuration template.
+     * @return
+     */
     @Override
     public AssetAttribute getProtocolConfigurationTemplate() {
         return super.getProtocolConfigurationTemplate()
@@ -86,16 +135,29 @@ public class TradfriProtocol extends AbstractProtocol {
                 );
     }
 
+    /**
+     * Gets the protocol configuration meta item descriptors.
+     * @return
+     */
     @Override
     protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
         return PROTOCOL_CONFIG_META_ITEM_DESCRIPTORS;
     }
 
+    /**
+     * Gets the linked attribute meta item descriptors.
+     * @return
+     */
     @Override
     protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
         return null;
     }
 
+    /**
+     * Validates the protocol configuration.
+     * @param protocolConfiguration the protocol configuration
+     * @return
+     */
     @Override
     public AttributeValidationResult validateProtocolConfiguration(AssetAttribute protocolConfiguration){
         AttributeValidationResult result = super.validateProtocolConfiguration(protocolConfiguration);
@@ -123,6 +185,12 @@ public class TradfriProtocol extends AbstractProtocol {
         return result;
     }
 
+    /**
+     * Manages the configuration of the protocol.
+     * Checks if assets are not duplicated, makes the connection to the gateway,
+     * retrieves the devices, and adds a event handler for the gateway.
+     * @param protocolConfiguration the protocol configuration.
+     */
     @Override
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         Optional<String> gatewayIpParam = protocolConfiguration.getMetaItem(META_TRADFRI_GATEWAY_HOST).flatMap(AbstractValueHolder::getValueAsString);
@@ -181,24 +249,10 @@ public class TradfriProtocol extends AbstractProtocol {
         }
     }
 
-    private void addDevices(Device[] devices, MetaItem agentLink, AssetAttribute protocolConfiguration){
-        String parentId = null;
-        Optional<String> assetId = protocolConfiguration.getAssetId();
-        if(assetId.isPresent()) parentId = assetId.get();
-        for (Device device : devices) {
-            if (device.isPlug()) {
-                Plug plug = device.toPlug();
-                Asset asset = new TradfriPlugAsset(parentId, agentLink, plug, assetService);
-                tradfriDevices.put(asset.getId(), plug);
-            }
-            else if (device.isLight()) {
-                Light light = device.toLight();
-                Asset asset = new TradfriLightAsset(parentId, agentLink, light, assetService);
-                tradfriDevices.put(asset.getId(), light);
-            }
-        }
-    }
-
+    /**
+     * Handles the disconnections of the protocol.
+     * @param protocolConfiguration the protocol configuration.
+     */
     @Override
     protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         Consumer<ConnectionStatus> statusConsumer;
@@ -211,12 +265,22 @@ public class TradfriProtocol extends AbstractProtocol {
             TradfriConnection tradfriConnection = tradfriConnections.get(gatewayIp);
             if (tradfriConnection != null) {
                 tradfriConnection.removeConnectionStatusConsumer(statusConsumer);
+                for (Device device: tradfriDevices.values()) {
+                    device.getEventHandlers().clear();
+                    device.disableObserve();
+                }
+
                 tradfriConnection.disconnect();
                 tradfriConnections.remove(gatewayIp);
             }
         }
     }
 
+    /**
+     * Links the attribute.
+     * @param attribute the attribute of the asset.
+     * @param protocolConfiguration the protocol configuration.
+     */
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
        String gatewayIp = protocolConfiguration.getMetaItem(META_TRADFRI_GATEWAY_HOST).flatMap(AbstractValueHolder::getValueAsString).orElse("");
@@ -229,12 +293,23 @@ public class TradfriProtocol extends AbstractProtocol {
        }
     }
 
+    /**
+     * Unlinks the attribute.
+     * @param attribute the attribute of the asset.
+     * @param protocolConfiguration the protocol configuration.
+     */
     @Override
     protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         final AttributeRef attributeRef = attribute.getReferenceOrThrow();
         removeDevice(attributeRef);
     }
 
+    /**
+     * Handles the updates of the attribute values
+     * @param event the event that contains the attribute ref.
+     * @param processedValue the processed value.
+     * @param protocolConfiguration the protocol configuration.
+     */
     @Override
     protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
         if (!protocolConfiguration.isEnabled()) {
@@ -253,12 +328,24 @@ public class TradfriProtocol extends AbstractProtocol {
         }
     }
 
+    /**
+     * Method to retrieve the connection.
+     * @param gatewayIp the gateway IP address of the connection.
+     * @return
+     */
     protected TradfriConnection getConnection(String gatewayIp) {
         synchronized (tradfriConnections) {
             return tradfriConnections.get(gatewayIp);
         }
     }
 
+    /**
+     * Adds a device to the attributeMap.
+     * By doing this, the attribute is registered for sending commands.
+     * @param attributeRef the reference of the entity.
+     * @param tradfriConnection the TRÅDFRI connection.
+     * @param device the TRÅDFRI device that needs to be added to the map.
+     */
     protected void addDevice(AttributeRef attributeRef, TradfriConnection tradfriConnection, Device device) {
         synchronized (attributeMap) {
             Pair<TradfriConnection, Device> controlInfo = attributeMap.get(attributeRef);
@@ -270,9 +357,38 @@ public class TradfriProtocol extends AbstractProtocol {
         }
     }
 
+    /**
+     * Removes a device from the attributeMap.
+     * By doing this, the attribute is unregistered for sending commands.
+     * @param attributeRef the reference of the entity.
+     */
     protected void removeDevice(AttributeRef attributeRef) {
         synchronized (attributeMap) {
             attributeMap.remove(attributeRef);
+        }
+    }
+
+    /**
+     * Checks the device type, and creates an asset for that device type.
+     * @param devices the discovered devices.
+     * @param agentLink the agent link.
+     * @param protocolConfiguration the protocol configuration.
+     */
+    private void addDevices(Device[] devices, MetaItem agentLink, AssetAttribute protocolConfiguration){
+        String parentId = null;
+        Optional<String> assetId = protocolConfiguration.getAssetId();
+        if(assetId.isPresent()) parentId = assetId.get();
+        for (Device device : devices) {
+            if (device.isPlug()) {
+                Plug plug = device.toPlug();
+                Asset asset = new TradfriPlugAsset(parentId, agentLink, plug, assetService);
+                tradfriDevices.put(asset.getId(), plug);
+            }
+            else if (device.isLight()) {
+                Light light = device.toLight();
+                Asset asset = new TradfriLightAsset(parentId, agentLink, light, assetService);
+                tradfriDevices.put(asset.getId(), light);
+            }
         }
     }
 }
