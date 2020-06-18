@@ -10,7 +10,8 @@ import {
     AssetEvent,
     ReadAssetEvent,
     TriggeredEventSubscription,
-    AttributeRef
+    AttributeRef,
+    EventIdentifier
 } from "@openremote/model";
 
 export enum EventProviderStatus {
@@ -39,6 +40,8 @@ export interface EventProvider {
     subscribeAttributeEvents(ids: string[] | AttributeRef[], requestCurrentValues: boolean, callback: (event: AttributeEvent) => void): Promise<string>;
 
     sendEvent<T extends SharedEvent>(event: T): void;
+
+    sendEventWithReply<T extends SharedEvent & EventIdentifier, U extends SharedEvent & EventIdentifier>(event: T): Promise<U>;
 }
 
 // Interface to provide a singleton implementation of EventProvider
@@ -57,6 +60,7 @@ const SUBSCRIBED_MESSAGE_PREFIX = "SUBSCRIBED:";
 const UNSUBSCRIBE_MESSAGE_PREFIX = "UNSUBSCRIBE:";
 const RENEW_MESSAGE_PREFIX = "RENEW:";
 const UNAUTHORIZED_MESSAGE_PREFIX = "UNAUTHORIZED:";
+const TRIGGERED_MESSAGE_PREFIX = "TRIGGERED:";
 const EVENT_MESSAGE_PREFIX = "EVENT:";
 
 abstract class EventProviderImpl implements EventProvider {
@@ -183,12 +187,12 @@ abstract class EventProviderImpl implements EventProvider {
                     }
                 }
             },
-            reason => {
+            (reason) => {
                 if (this._pendingSubscription) {
-                    let subscriptionInfo = this._pendingSubscription;
+                    const subscriptionInfo = this._pendingSubscription;
                     this._pendingSubscription = null;
                     this._processNextSubscription();
-                    let deferred = subscriptionInfo.deferred;
+                    const deferred = subscriptionInfo.deferred;
                     subscriptionInfo.deferred = null;
 
                     if (deferred) {
@@ -202,7 +206,7 @@ abstract class EventProviderImpl implements EventProvider {
 
     public unsubscribe<T extends SharedEvent>(subscriptionId: string) {
 
-        let callback = this._subscriptionMap[subscriptionId];
+        const callback = this._subscriptionMap[subscriptionId];
         if (callback) {
             delete this._subscriptionMap[subscriptionId];
             this._doUnsubscribe(subscriptionId);
@@ -210,7 +214,17 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     public sendEvent<T extends SharedEvent>(event: T): void {
-        this._doSend(event);
+
+        if (this._status === EventProviderStatus.CONNECTED) {
+            this._doSend(event);
+        }
+    }
+
+    public sendEventWithReply<T extends SharedEvent & EventIdentifier, U extends SharedEvent & EventIdentifier>(event: T): Promise<U> {
+        if (this._status !== EventProviderStatus.CONNECTED) {
+            return Promise.reject("Not connected");
+        }
+        return this._doSendWithReply(event);
     }
 
     public async subscribeAssetEvents(ids: string[] | AttributeRef[] | null, requestCurrentValues: boolean, callback: (event: AssetEvent) => void): Promise<string> {
@@ -421,6 +435,8 @@ abstract class EventProviderImpl implements EventProvider {
 
     protected abstract _doSend<T extends SharedEvent>(event: T): void;
 
+    protected abstract _doSendWithReply<T extends SharedEvent & EventIdentifier, U extends SharedEvent & EventIdentifier>(event: T): Promise<U>;
+
     protected abstract _doConnect(): Promise<boolean>;
 
     protected abstract _doDisconnect(): void;
@@ -439,6 +455,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
     protected _webSocket: WebSocket | undefined = undefined;
     protected _connectDeferred: Deferred<boolean> | null = null;
     protected _subscribeDeferred: Deferred<string> | null = null;
+    protected _repliesDeferred: Map<string, Deferred<any>> = new Map<string, Deferred<any>>();
     protected _renewalTimer: number | null = null;
 
     get endpointUrl(): string {
@@ -499,10 +516,11 @@ export class WebSocketEventProvider extends EventProviderImpl {
         };
 
         this._webSocket!.onmessage = (e) => {
-            let msg = e.data as string;
+            const msg = e.data as string;
+
             if (msg && msg.startsWith(SUBSCRIBED_MESSAGE_PREFIX)) {
-                let jsonStr = msg.substring(SUBSCRIBED_MESSAGE_PREFIX.length);
-                let subscription = JSON.parse(jsonStr) as EventSubscription<SharedEvent>;
+                const jsonStr = msg.substring(SUBSCRIBED_MESSAGE_PREFIX.length);
+                const subscription = JSON.parse(jsonStr) as EventSubscription<SharedEvent>;
 
                 // Create a renewal timer if not done so
                 if (!this._renewalTimer) {
@@ -511,27 +529,37 @@ export class WebSocketEventProvider extends EventProviderImpl {
                     }, WebSocketEventProvider._subscriptionRenewalMillis);
                 }
 
-                let deferred = this._subscribeDeferred;
+                const deferred = this._subscribeDeferred;
                 this._subscribeDeferred = null;
                 if (deferred) {
                     deferred.resolve(subscription.subscriptionId);
                 }
             } else if (msg.startsWith(UNAUTHORIZED_MESSAGE_PREFIX)) {
-                let jsonStr = msg.substring(UNAUTHORIZED_MESSAGE_PREFIX.length);
-                let subscription = JSON.parse(jsonStr) as EventSubscription<SharedEvent>;
-                let deferred = this._subscribeDeferred;
+                const jsonStr = msg.substring(UNAUTHORIZED_MESSAGE_PREFIX.length);
+                const subscription = JSON.parse(jsonStr) as EventSubscription<SharedEvent>;
+                const deferred = this._subscribeDeferred;
                 this._subscribeDeferred = null;
                 if (deferred) {
                     console.warn("Unauthorized event subscription: " + subscription);
                     deferred.reject("Unauthorized");
                 }
-            } else if (msg.startsWith(EVENT_MESSAGE_PREFIX)) {
-                let str = msg.substring(EVENT_MESSAGE_PREFIX.length);
-                let triggered = JSON.parse(str) as TriggeredEventSubscription<SharedEvent>;
+            } else if (msg.startsWith(TRIGGERED_MESSAGE_PREFIX)) {
+                const str = msg.substring(TRIGGERED_MESSAGE_PREFIX.length);
+                const triggered = JSON.parse(str) as TriggeredEventSubscription<SharedEvent>;
                 if (triggered.events) {
                     triggered.events.forEach((event) => {
                         this._onMessageReceived(triggered.subscriptionId!, event);
                     });
+                }
+            } else if (msg.startsWith(EVENT_MESSAGE_PREFIX)) {
+                const str = msg.substring(EVENT_MESSAGE_PREFIX.length);
+                const event = JSON.parse(str) as SharedEvent;
+                if ((event as EventIdentifier).messageId) {
+                    const deferred = this._repliesDeferred.get((event as EventIdentifier).messageId!);
+                    this._repliesDeferred.delete((event as EventIdentifier).messageId!);
+                    if (deferred) {
+                        deferred.resolve(event as (SharedEvent & EventIdentifier));
+                    }
                 }
             }
         };
@@ -549,6 +577,8 @@ export class WebSocketEventProvider extends EventProviderImpl {
 
     protected _doDisconnect(): void {
         this._webSocket!.close();
+        this._subscribeDeferred = null;
+        this._repliesDeferred.clear();
     }
 
     protected _doSubscribe<T extends SharedEvent>(subscription: EventSubscription<T>): Promise<string> {
@@ -570,11 +600,11 @@ export class WebSocketEventProvider extends EventProviderImpl {
         if (!this._webSocket) {
             return;
         }
-        let cancelSubscription: CancelEventSubscription<SharedEvent> = {
+        const cancelSubscription: CancelEventSubscription<SharedEvent> = {
             subscriptionId: subscriptionId
         };
         this._webSocket.send(UNSUBSCRIBE_MESSAGE_PREFIX + JSON.stringify(cancelSubscription));
-        if (Object.keys(this._subscriptionMap).length == 0 && this._renewalTimer) {
+        if (Object.keys(this._subscriptionMap).length === 0 && this._renewalTimer) {
             clearInterval(this._renewalTimer);
         }
     }
@@ -584,18 +614,30 @@ export class WebSocketEventProvider extends EventProviderImpl {
             return;
         }
 
-        let renewSubscriptions: RenewEventSubscriptions = {
+        const renewSubscriptions: RenewEventSubscriptions = {
             subscriptionIds: Object.keys(this._subscriptionMap)
         };
         this._webSocket.send(RENEW_MESSAGE_PREFIX + JSON.stringify(renewSubscriptions));
     }
 
     protected _doSend<T extends SharedEvent>(event: T): void {
-        if (!this._webSocket) {
-            return;
+        const message = EVENT_MESSAGE_PREFIX + JSON.stringify(event);
+        this._webSocket!.send(message);
+    }
+
+    protected _doSendWithReply<T extends SharedEvent & EventIdentifier, U extends SharedEvent & EventIdentifier>(event: T): Promise<U> {
+
+        if (!event.messageId) {
+            event.messageId = new Date().getTime().toString(10);
         }
 
-        let message = EVENT_MESSAGE_PREFIX + JSON.stringify(event);
-        this._webSocket.send(message);
+        if (this._repliesDeferred.has(event.messageId)) {
+            return Promise.reject("There's already a pending send and reply with this ID");
+        }
+
+        const deferred = new Deferred<U>();
+        this._repliesDeferred.set(event.messageId, deferred);
+        this._webSocket!.send(EVENT_MESSAGE_PREFIX + JSON.stringify(event));
+        return deferred.promise;
     }
 }

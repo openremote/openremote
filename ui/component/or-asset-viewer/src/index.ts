@@ -24,7 +24,8 @@ import {
     AttributeEvent,
     AttributeType,
     MetaItem,
-    MetaItemType
+    MetaItemType,
+    SharedEvent
 } from "@openremote/model";
 import {style} from "./style";
 import i18next from "i18next";
@@ -778,22 +779,25 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     //     return html`<or-input id="property-${property}" type="${type}" .minLength="${minLength}" .maxLength="${maxLength}" dense .value="${value}" readonly label="${i18next.t(property)}"></or-input>`;
     // }
 
-
     // TODO: Add debounce in here to minimise render calls
-    onAttributeEvent(event: AttributeEvent) {
-        const attrName = event.attributeState!.attributeRef!.attributeName!;
+    _onEvent(event: SharedEvent) {
+        if (event.eventType === "asset") {
+            this.asset = (event as AssetEvent).asset;
+            this._loading = false;
+            return;
+        }
 
-        if (this.asset && this.asset.attributes && this.asset.attributes.hasOwnProperty(attrName)) {
-            if (event.attributeState!.deleted) {
-                delete this.asset.attributes[attrName];
-                this.asset = {...this.asset}
+        if (event.eventType === "attribute") {
+            const attributeEvent = event as AttributeEvent;
+            const attrName = attributeEvent.attributeState!.attributeRef!.attributeName!;
+
+            if (this.asset && this.asset.attributes && this.asset.attributes.hasOwnProperty(attrName)) {
+                if (attributeEvent.attributeState!.deleted) {
+                    delete this.asset.attributes[attrName];
+                    this.asset = {...this.asset};
+                }
             }
         }
-    }
-
-    onAssetEvent(event: AssetEvent) {
-        this.asset = event.asset;
-        this._loading = false;
     }
 
     protected _getPanelConfig(asset: Asset): AssetViewerConfig {

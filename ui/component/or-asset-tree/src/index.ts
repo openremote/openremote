@@ -1,11 +1,11 @@
 import {customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
 import "@openremote/or-input";
 import "@openremote/or-icon";
-import {Asset, AssetQuery, AssetTreeNode, Constants, Tenant, ClientRole} from "@openremote/model";
+import {Asset, AssetQuery, AssetTreeNode, ClientRole, SharedEvent, EventIdentifier, AssetsEvent, AssetEvent, ReadAssetsEvent, AssetEventCause} from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
-import manager, {AssetModelUtil, OREvent, EventCallback} from "@openremote/core";
-import {OrInputChangedEvent, InputType} from "@openremote/or-input";
+import manager, {AssetModelUtil, OREvent, EventCallback, subscribe} from "@openremote/core";
+import {InputType} from "@openremote/or-input";
 import Qs from "qs";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
@@ -121,7 +121,7 @@ declare global {
 // TODO: Add websocket support
 // TODO: Make modal a standalone component
 @customElement("or-asset-tree")
-export class OrAssetTree extends LitElement {
+export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     static get styles() {
         return [
@@ -136,7 +136,7 @@ export class OrAssetTree extends LitElement {
     public assets?: Asset[];
 
     @property({type: Array})
-    public assetIds?: string[];
+    public _assetIdsOverride?: string[];
 
     @property({type: Array})
     public rootAssets?: Asset[];
@@ -163,20 +163,30 @@ export class OrAssetTree extends LitElement {
     public selectedIds?: string[];
 
     @property({type: String})
-    public sortBy?: string;
+    public sortBy?: string = "name";
 
     @property({attribute: false})
     protected _nodes?: UiAssetTreeNode[];
 
-    @property()
-    protected _showLoading: boolean = true;
-
+    protected _connected: boolean = false;
     protected _selectedNodes: UiAssetTreeNode[] = [];
     protected _initCallback?: EventCallback;
-    protected _ready = false;
 
     public get selectedNodes(): UiAssetTreeNode[] {
         return this._selectedNodes ? [...this._selectedNodes] : [];
+    }
+
+    /**
+     * Override subscribe mixin behaviour to get re-render
+     */
+    public set assetIds(assetIds: string[]) {
+        this._assetIdsOverride = assetIds;
+        super.assetIds = assetIds;
+    }
+
+    public connectedCallback() {
+        super.connectedCallback();
+        manager.addListener(this.onManagerEvent);
     }
 
     public disconnectedCallback() {
@@ -184,26 +194,8 @@ export class OrAssetTree extends LitElement {
         manager.removeListener(this.onManagerEvent);
     }
 
-    protected _onReady() {
-        this._ready = true;
-        this._loadAssets();
-    }
-
-    protected firstUpdated(_changedProperties: PropertyValues): void {
-        super.firstUpdated(_changedProperties);
-        manager.addListener(this.onManagerEvent);
-        if (manager.ready) {
-            this._onReady();
-        }
-    }
-
     protected onManagerEvent = (event: OREvent) => {
         switch (event) {
-            case OREvent.READY:
-                if (!manager.ready) {
-                    this._onReady();
-                }
-                break;
             case OREvent.DISPLAY_REALM_CHANGED:
                 this._nodes = undefined;
                 break;
@@ -232,7 +224,7 @@ export class OrAssetTree extends LitElement {
                 </div>
             </div>
 
-            ${!this._nodes || this._showLoading
+            ${!this._nodes
                 ? html`
                     <span id="loading"><or-translate value="loading"></or-translate></span>`
                 : html`
@@ -254,30 +246,11 @@ export class OrAssetTree extends LitElement {
         return this.readonly || !manager.hasRole(ClientRole.WRITE_RULES);
     }
 
-    protected _treeNodeTemplate(treeNode: UiAssetTreeNode, level: number): TemplateResult | string {
-
-        const descriptor = AssetModelUtil.getAssetDescriptor(treeNode.asset!.type!);
-
-        return html`
-            <li ?data-selected="${treeNode.selected}" ?data-expanded="${treeNode.expanded}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, treeNode)}">
-                <div class="node-container" style="padding-left: ${level*22}px">
-                    <div class="node-name">
-                        <div class="expander" ?data-expandable="${treeNode.expandable}"></div>
-                        ${getAssetDescriptorIconTemplate(descriptor)}
-                        <span>${treeNode.asset!.name}</span>
-                    </div>
-                </div>
-                <ol>
-                    ${!treeNode.children ? `` : treeNode.children.map((childNode) => this._treeNodeTemplate(childNode, level + 1))}
-                </ol>
-            </li>
-        `;
-    }
-
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
         const result = super.shouldUpdate(_changedProperties);
 
-        if (_changedProperties.has("assetIds")
+        if (_changedProperties.has("_assetIdsOverride")
+            || _changedProperties.has("assets")
             || _changedProperties.has("rootAssets")
             || _changedProperties.has("rootAssetIds")) {
             this._nodes = undefined;
@@ -471,38 +444,27 @@ export class OrAssetTree extends LitElement {
     }
 
     protected _getSortFunction(): (a: UiAssetTreeNode, b: UiAssetTreeNode) => number {
-        return (a, b) => { return (a.asset as any)![this.sortBy!] < (b.asset as any)![this.sortBy!] ? -1 : (a.asset as any)![this.sortBy!] > (b.asset as any)![this.sortBy!] ? 1 : 0 };
-    }
-
-    protected _getRealm(): string | undefined {
-        return manager.isSuperUser() ? manager.displayRealm : manager.getRealm();
-    }
-
-    protected _doRequest<T>(event: CustomEvent<RequestEventDetail<T>>, handler: (detail: T) => void) {
-        this.dispatchEvent(event);
-        window.setTimeout(() => {
-            if (event.detail.allow) {
-                handler(event.detail.detail);
-            }
-        })
+        return (a, b) => (a.asset as any)![this.sortBy!] < (b.asset as any)![this.sortBy!] ? -1 : (a.asset as any)![this.sortBy!] > (b.asset as any)![this.sortBy!] ? 1 : 0;
     }
 
     protected _loadAssets() {
 
-        if (!this._ready) {
-            return;
-        }
-
         const sortFunction = this._getSortFunction();
 
         if (!this.assets) {
-            let query: AssetQuery = {
+
+            if (!this._connected) {
+                return;
+            }
+
+            const query: AssetQuery = {
                 tenant: {
-                    realm: this._getRealm()
+                    realm: manager.isSuperUser() ? manager.displayRealm : manager.getRealm()
                 },
-                select: {
+                select: { // Just need the basic asset info
+                    excludeAttributes: true,
                     excludePath: true,
-                    excludeParentInfo: false
+                    excludeParentInfo: true
                 }
             };
 
@@ -517,11 +479,67 @@ export class OrAssetTree extends LitElement {
                 query.recursive = true;
             }
 
-            manager.rest.api.AssetResource.queryAssets(query).then((response) => {
-                this._buildTreeNodes(response.data, sortFunction);
-            });
+            this._sendEventWithReply({
+                eventType: "read-assets",
+                assetQuery: query
+            } as ReadAssetsEvent)
+                .then((ev: SharedEvent & EventIdentifier) =>
+                    this._buildTreeNodes((ev as AssetsEvent).assets!, sortFunction));
         } else {
             this._buildTreeNodes(this.assets, sortFunction);
+        }
+    }
+
+    /* Subscribe mixin overrides */
+
+    public async _addEventSubscriptions(): Promise<string[]> {
+        // Subscribe to asset events for all assets in the realm
+        const subscriptions = [];
+        subscriptions.push(await manager.getEventProvider()!.subscribeAssetEvents(null, false, (event) => this._onEvent(event)));
+        return subscriptions;
+    }
+
+    public onEventsConnect() {
+        this._connected = true;
+        this._loadAssets();
+    }
+
+    public onEventsDisconnect() {
+        this._connected = false;
+        this._nodes = undefined;
+    }
+
+    public _onEvent(event: SharedEvent) {
+
+        if (event.eventType === "assets") {
+            const assetsEvent = event as AssetsEvent;
+            this._buildTreeNodes(assetsEvent.assets!, this._getSortFunction());
+            return;
+        }
+
+        if (event.eventType === "asset" && this._nodes && this._nodes.length > 0) {
+
+            const assetEvent = event as AssetEvent;
+            if (assetEvent.cause === AssetEventCause.READ) {
+                return;
+            }
+            if (assetEvent.cause === AssetEventCause.UPDATE
+                && !(assetEvent.updatedProperties!.includes("name")
+                    || assetEvent.updatedProperties!.includes("parentId"))) {
+                return;
+            }
+
+            // Extract all assets, update and rebuild tree
+            const assets: Asset[] = [];
+            if (assetEvent.cause !== AssetEventCause.DELETE) {
+                assets.push(assetEvent.asset!);
+            }
+            OrAssetTree._forEachNodeRecursive(this._nodes, (node) => {
+                if (node.asset!.id !== assetEvent.asset!.id) {
+                    assets.push(node.asset!);
+                }
+            });
+            this._buildTreeNodes(assets, this._getSortFunction());
         }
     }
 
@@ -558,10 +576,10 @@ export class OrAssetTree extends LitElement {
 
             this._nodes = rootAssets;
         }
+
         if (this.selectedIds && this.selectedIds.length > 0) {
             this._updateSelectedNodes();
         }
-        this._showLoading = false;
     }
 
     protected _buildChildTreeNodes(treeNode: UiAssetTreeNode, assets: Asset[], sortFunction: (a: UiAssetTreeNode, b: UiAssetTreeNode) => number) {
@@ -581,6 +599,26 @@ export class OrAssetTree extends LitElement {
         });
     }
 
+    protected _treeNodeTemplate(treeNode: UiAssetTreeNode, level: number): TemplateResult | string {
+
+        const descriptor = AssetModelUtil.getAssetDescriptor(treeNode.asset!.type!);
+
+        return html`
+            <li ?data-selected="${treeNode.selected}" ?data-expanded="${treeNode.expanded}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, treeNode)}">
+                <div class="node-container" style="padding-left: ${level * 22}px">
+                    <div class="node-name">
+                        <div class="expander" ?data-expandable="${treeNode.expandable}"></div>
+                        ${getAssetDescriptorIconTemplate(descriptor)}
+                        <span>${treeNode.asset!.name}</span>
+                    </div>
+                </div>
+                <ol>
+                    ${!treeNode.children ? `` : treeNode.children.map((childNode) => this._treeNodeTemplate(childNode, level + 1))}
+                </ol>
+            </li>
+        `;
+    }
+
     protected static _forEachNodeRecursive(nodes: UiAssetTreeNode[], fn: (node: UiAssetTreeNode) => void) {
         if (!nodes) {
             return;
@@ -589,6 +627,15 @@ export class OrAssetTree extends LitElement {
         nodes.forEach((node) => {
             fn(node);
             this._forEachNodeRecursive(node.children, fn);
+        });
+    }
+
+    protected _doRequest<T>(event: CustomEvent<RequestEventDetail<T>>, handler: (detail: T) => void) {
+        this.dispatchEvent(event);
+        window.setTimeout(() => {
+            if (event.detail.allow) {
+                handler(event.detail.detail);
+            }
         });
     }
 }

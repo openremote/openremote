@@ -39,7 +39,7 @@ orAttributeTemplateProvider.setTemplate((attribute: AssetAttribute) => {
 });
 
 @customElement("or-attribute-field")
-export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitElement)) {
+export class OrAttributeInput extends translate(i18next)(LitElement) {
 
     static get styles() {
         return css`

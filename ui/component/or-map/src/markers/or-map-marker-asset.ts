@@ -1,6 +1,6 @@
 import {customElement, property, PropertyValues} from "lit-element";
 import {OrMapMarker} from "./or-map-marker";
-import {AttributeEvent, AttributeType, GeoJSONPoint, AssetType, AssetEvent, AssetEventCause, Asset, MetaItemType} from "@openremote/model";
+import {AttributeEvent, AttributeType, GeoJSONPoint, AssetType, AssetEvent, AssetEventCause, Asset, MetaItemType, SharedEvent} from "@openremote/model";
 import {subscribe} from "@openremote/core";
 import manager, {AssetModelUtil} from "@openremote/core";
 import {Util} from "@openremote/core";
@@ -63,22 +63,31 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
         return super.shouldUpdate(_changedProperties);
     }
 
-    public onAttributeEvent(event: AttributeEvent) {
-        if (event.attributeState!.attributeRef!.attributeName === AttributeType.LOCATION.attributeName) {
-            this._updateLocation(event.attributeState!.value as GeoJSONPoint);
-        }
-    }
+    public _onEvent(event: SharedEvent) {
+        if (event.eventType === "attribute") {
+            const attributeEvent = event as AttributeEvent;
 
-    public onAssetEvent(event: AssetEvent) {
-        switch (event.cause) {
-            case AssetEventCause.READ:
-            case AssetEventCause.CREATE:
-            case AssetEventCause.UPDATE:
-                this.onAssetChanged(event.asset);
-                break;
-            case AssetEventCause.DELETE:
-                this.onAssetChanged(undefined);
-                break;
+            if (attributeEvent.attributeState!.attributeRef!.attributeName === AttributeType.LOCATION.attributeName) {
+                this._updateLocation(attributeEvent.attributeState!.value as GeoJSONPoint);
+                return;
+            }
+
+            return;
+        }
+
+        if (event.eventType === "asset") {
+            const assetEvent = event as AssetEvent;
+
+            switch (assetEvent.cause) {
+                case AssetEventCause.READ:
+                case AssetEventCause.CREATE:
+                case AssetEventCause.UPDATE:
+                    this.onAssetChanged(assetEvent.asset);
+                    break;
+                case AssetEventCause.DELETE:
+                    this.onAssetChanged(undefined);
+                    break;
+            }
         }
     }
 
