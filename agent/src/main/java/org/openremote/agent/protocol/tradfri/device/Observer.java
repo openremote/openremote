@@ -15,8 +15,6 @@ import java.util.HashMap;
 
 /**
  * The class that observes a device to automagically detect changes
- * @author Stijn Groenen
- * @version 1.0.0
  */
 public abstract class Observer implements CoapHandler {
 
@@ -39,7 +37,6 @@ public abstract class Observer implements CoapHandler {
      * Construct the Observer class
      * @param endpoint The endpoint to observe
      * @param coapClient A CoAP client that can be used to communicate with the device using the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public Observer(String endpoint, CoapClient coapClient) {
         this.endpoint = endpoint;
@@ -49,7 +46,6 @@ public abstract class Observer implements CoapHandler {
     /**
      * Start observing the endpoint to automagically detect changes
      * @return True if successfully started observing, false if not
-     * @since 1.0.0
      */
     public boolean start(){
         if(coapObserveRelation == null || coapObserveRelation.isCanceled()){
@@ -62,7 +58,6 @@ public abstract class Observer implements CoapHandler {
     /**
      * Stop observing the device
      * @return True if successfully stopped observing, false if not
-     * @since 1.0.0
      */
     public boolean stop(){
         if(coapObserveRelation != null && !coapObserveRelation.isCanceled()){
@@ -77,7 +72,6 @@ public abstract class Observer implements CoapHandler {
      * @param oldValue The old value
      * @param newValue The new value
      * @return True if there is a difference between the old value and the new value, false if they are the same
-     * @since 1.0.0
      */
     protected boolean checkChanges(Object oldValue, Object newValue){
         return ((oldValue == null && newValue != null) || (newValue == null && oldValue != null) || (oldValue != null && !oldValue.equals(newValue)));
@@ -86,7 +80,6 @@ public abstract class Observer implements CoapHandler {
     /**
      * Handles a new response from the CoAP client
      * @param coapResponse The response to the CoAP request
-     * @since 1.0.0
      */
     @Override
     public void onLoad(CoapResponse coapResponse) {
@@ -102,7 +95,6 @@ public abstract class Observer implements CoapHandler {
 
     /**
      * Handles an error from the CoAP client
-     * @since 1.0.0
      */
     @Override
     public void onError() {
@@ -111,7 +103,6 @@ public abstract class Observer implements CoapHandler {
     /**
      * Call the appropriate event handlers
      * @param payload The payload text of the CoAP response
-     * @since 1.0.0
      */
     public abstract void callEventHandlers(String payload);
 

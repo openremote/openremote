@@ -4,8 +4,6 @@ import java.awt.*;
 
 /**
  * The class that contains RGB values that make up a colour
- * @author Stijn Groenen
- * @version 1.1.0
  */
 public class ColourRGB {
 
@@ -29,7 +27,6 @@ public class ColourRGB {
      * @param red The red value of the colour
      * @param green The green value of the colour
      * @param blue The blue value of the colour
-     * @since 1.1.0
      */
     public ColourRGB(Integer red, Integer green, Integer blue) {
         this.red = red;
@@ -39,7 +36,6 @@ public class ColourRGB {
 
     /**
      * Construct the ColourRGB class
-     * @since 1.1.0
      */
     public ColourRGB() {
     }
@@ -47,7 +43,6 @@ public class ColourRGB {
     /**
      * Get the red value of the colour
      * @return The red value of the colour
-     * @since 1.1.0
      */
     public Integer getRed() {
         return this.red;
@@ -56,7 +51,6 @@ public class ColourRGB {
     /**
      * Get the green value of the colour
      * @return The green value of the colour
-     * @since 1.1.0
      */
     public Integer getGreen() {
         return this.green;
@@ -65,7 +59,6 @@ public class ColourRGB {
     /**
      * Get the blue value of the colour
      * @return The blue value of the colour
-     * @since 1.1.0
      */
     public Integer getBlue() {
         return this.blue;
@@ -74,7 +67,6 @@ public class ColourRGB {
     /**
      * Set the red value of the colour
      * @param red The new red value of the colour
-     * @since 1.1.0
      */
     public void setRed(Integer red) {
         this.red = red;
@@ -83,7 +75,6 @@ public class ColourRGB {
     /**
      * Set the green value of the colour
      * @param green The new green value of the colour
-     * @since 1.1.0
      */
     public void setGreen(Integer green) {
         this.green = green;
@@ -92,7 +83,6 @@ public class ColourRGB {
     /**
      * Set the blue value of the colour
      * @param blue The new blue value of the colour
-     * @since 1.1.0
      */
     public void setBlue(Integer blue) {
         this.blue = blue;
@@ -101,7 +91,6 @@ public class ColourRGB {
     /**
      * Convert to the {@link ColourXY} class
      * @return The {@link ColourXY} class
-     * @since 1.1.0
      */
     public ColourXY toXY(){
         double red = Math.max(Math.min(this.red, 255), 0);
@@ -139,7 +128,6 @@ public class ColourRGB {
      * @param hue The hue value
      * @param saturation The saturation value
      * @return The ColourRGB class
-     * @since 1.1.0
      */
     public static ColourRGB fromHS(int hue, int saturation){
         float hueNormalised = hue/65535f;

@@ -5,8 +5,6 @@ import org.openremote.agent.protocol.tradfri.device.Gateway;
 
 /**
  * The class that represents a device removed event that occurred to an IKEA TRÅDFRI gateway
- * @author Stijn Groenen
- * @version 1.0.0
  */
 public class DeviceRemovedEvent extends GatewayEvent {
 
@@ -19,7 +17,6 @@ public class DeviceRemovedEvent extends GatewayEvent {
      * Construct the DeviceRemovedEvent class
      * @param gateway The IKEA TRÅDFRI gateway for which the event occurred
      * @param device The removed device for which the event occurred
-     * @since 1.0.0
      */
     public DeviceRemovedEvent(Gateway gateway, Device device) {
         super(gateway);
@@ -29,7 +26,6 @@ public class DeviceRemovedEvent extends GatewayEvent {
     /**
      * Get the removed device for which the event occurred
      * @return The removed device for which the event occurred
-     * @since 1.0.0
      */
     public Device getDevice(){
         return this.device;
@@ -38,7 +34,6 @@ public class DeviceRemovedEvent extends GatewayEvent {
     /**
      * Get the id of the removed device for which the event occurred
      * @return The id of the removed device for which the event occurred
-     * @since 1.0.0
      */
     public int getDeviceId(){
         return this.device.getInstanceId();

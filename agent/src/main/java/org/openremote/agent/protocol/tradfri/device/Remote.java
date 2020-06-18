@@ -4,8 +4,6 @@ import org.openremote.agent.protocol.tradfri.util.CoapClient;
 
 /**
  * The class that represents an IKEA TRÅDFRI remote
- * @author Stijn Groenen
- * @version 1.0.0
  */
 public class Remote extends Device {
 
@@ -16,7 +14,6 @@ public class Remote extends Device {
      * @param instanceId The instance id of the remote
      * @param deviceInfo The information of the device
      * @param coapClient A CoAP client that can be used to communicate with the plug using the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public Remote(String name, Long creationDate, Integer instanceId, DeviceInfo deviceInfo, CoapClient coapClient){
         super(name, creationDate, instanceId, deviceInfo, coapClient);

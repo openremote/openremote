@@ -6,8 +6,6 @@ import org.openremote.agent.protocol.tradfri.util.ApiCode;
 
 /**
  * The class that contains the payload of a response to the authenticate request from the IKEA TRÅDFRI gateway
- * @author Stijn Groenen
- * @version 1.0.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AuthenticateResponse {
@@ -26,7 +24,6 @@ public class AuthenticateResponse {
 
     /**
      * Construct the AuthenticateResponse class
-     * @since 1.0.0
      */
     public AuthenticateResponse(){
     }
@@ -34,7 +31,6 @@ public class AuthenticateResponse {
     /**
      * Get the preshared key that can be used to authenticate to the IKEA TRÅDFRI gateway
      * @return The preshared key that can be used to authenticate to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public String getPresharedKey() {
         return this.presharedKey;
@@ -43,7 +39,6 @@ public class AuthenticateResponse {
     /**
      * Get the firmware version of the IKEA TRÅDFRI gateway
      * @return The firmware version of the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public String getGatewayFirmwareVersion() {
         return this.gatewayFirmwareVersion;
@@ -52,7 +47,6 @@ public class AuthenticateResponse {
     /**
      * Set the preshared key that can be used to authenticate to the IKEA TRÅDFRI gateway
      * @param presharedKey The new preshared key that can be used to authenticate to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public void setPresharedKey(String presharedKey) {
         this.presharedKey = presharedKey;
@@ -61,7 +55,6 @@ public class AuthenticateResponse {
     /**
      * Set the firmware version of the IKEA TRÅDFRI gateway
      * @param gatewayFirmwareVersion The new firmware version of the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public void setGatewayFirmwareVersion(String gatewayFirmwareVersion) {
         this.gatewayFirmwareVersion = gatewayFirmwareVersion;

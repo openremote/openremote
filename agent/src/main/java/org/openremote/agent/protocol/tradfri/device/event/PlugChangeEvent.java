@@ -5,8 +5,6 @@ import org.openremote.agent.protocol.tradfri.device.PlugProperties;
 
 /**
  * The class that represents a change event that occurred to an IKEA TRÅDFRI plug
- * @author Stijn Groenen
- * @version 1.0.0
  */
 public class PlugChangeEvent extends PlugEvent {
 
@@ -25,7 +23,6 @@ public class PlugChangeEvent extends PlugEvent {
      * @param plug The plug for which the event occurred
      * @param oldProperties The old properties of the plug (from before the event occurred)
      * @param newProperties The new properties of the plug (from after the event occurred)
-     * @since 1.0.0
      */
     public PlugChangeEvent(Plug plug, PlugProperties oldProperties, PlugProperties newProperties) {
         super(plug);
@@ -36,7 +33,6 @@ public class PlugChangeEvent extends PlugEvent {
     /**
      * Get the old properties of the plug (from before the event occurred)
      * @return The old properties of the plug
-     * @since 1.0.0
      */
     public PlugProperties getOldProperties(){
         return oldProperties;
@@ -45,7 +41,6 @@ public class PlugChangeEvent extends PlugEvent {
     /**
      * Get the new properties of the plug (from after the event occurred)
      * @return The new properties of the plug
-     * @since 1.0.0
      */
     public PlugProperties getNewProperties(){
         return newProperties;

@@ -19,8 +19,6 @@ import java.net.InetSocketAddress;
 
 /**
  * The class that is used to communicate with the IKEA TRÅDFRI gateway using the CoAP protocol
- * @author Stijn Groenen
- * @version 1.2.0
  */
 public class CoapClient {
 
@@ -47,7 +45,6 @@ public class CoapClient {
 
     /**
      * Construct the CoapClient class
-     * @since 1.0.0
      */
     public CoapClient(){
         objectMapper = new ObjectMapper();
@@ -56,7 +53,6 @@ public class CoapClient {
     /**
      * Get the credentials used to communicate with the IKEA TRÅDFRI gateway
      * @return The credentials that can be used to authenticate to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public Credentials getCredentials() {
         return this.credentials;
@@ -65,7 +61,6 @@ public class CoapClient {
     /**
      * Change the credentials used to communicate with the IKEA TRÅDFRI gateway
      * @param credentials The new credentials that can be used to authenticate to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public void setCredentials(Credentials credentials){
         this.credentials = credentials;
@@ -77,7 +72,6 @@ public class CoapClient {
     /**
      * Set up a secure connection between the CoAP client and the IKEA TRÅDFRI gateway
      * @throws IOException Thrown if a failure to open a connection between the CoAP client and the IKEA TRÅDFRI gateway occurs
-     * @since 1.0.0
      */
     private void updateDtlsConnector() throws IOException {
         if(dtlsEndpoint != null) dtlsEndpoint.destroy();
@@ -101,7 +95,6 @@ public class CoapClient {
     /**
      * Get timeout for connections between the CoAP client and the IKEA TRÅDFRI gateway (in milliseconds)
      * @return The timeout for connections between the CoAP client and the IKEA TRÅDFRI gateway (in milliseconds)
-     * @since 1.2.0
      */
     public long getTimeout() {
         return this.timeout;
@@ -110,7 +103,6 @@ public class CoapClient {
     /**
      * Change the timeout for connections between the CoAP client and the IKEA TRÅDFRI gateway (in milliseconds)
      * @param timeout The new timeout for connections between the CoAP client and the IKEA TRÅDFRI gateway (in milliseconds)
-     * @since 1.2.0
      */
     public void setTimeout(long timeout){
         this.timeout = timeout;
@@ -123,7 +115,6 @@ public class CoapClient {
      * @param responseType The expected type of response
      * @param <T> The expected type of response
      * @return The response from the IKEA TRÅDFRI gateway (converted to the expected response type)
-     * @since 1.0.0
      */
     private <T> T request(Request request, String endpoint, Class<T> responseType) {
         try {
@@ -147,7 +138,6 @@ public class CoapClient {
      * @param responseType The expected type of response
      * @param <T> The expected type of response
      * @return The response from the IKEA TRÅDFRI gateway (converted to the expected response type)
-     * @since 1.0.0
      */
     private <T> T requestWithPayload(Request request, String endpoint, Object payload, Class<T> responseType) {
         try {
@@ -165,7 +155,6 @@ public class CoapClient {
      * @param endpoint The endpoint to make a request to
      * @param handler The handler to handle the responses from the observe request
      * @return The observe relation that represents the connection to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public CoapObserveRelation requestObserve(String endpoint, CoapHandler handler) {
         org.eclipse.californium.core.CoapClient client = new org.eclipse.californium.core.CoapClient();
@@ -183,7 +172,6 @@ public class CoapClient {
      * @param responseType The expected type of response
      * @param <T> The expected type of response
      * @return The response from the IKEA TRÅDFRI gateway (converted to the expected response type)
-     * @since 1.0.0
      */
     public <T> T get(String endpoint, Class<T> responseType) {
         Request request = Request.newGet();
@@ -197,7 +185,6 @@ public class CoapClient {
      * @param responseType The expected type of response
      * @param <T> The expected type of response
      * @return The response from the IKEA TRÅDFRI gateway (converted to the expected response type)
-     * @since 1.0.0
      */
     public <T> T post(String endpoint, Object payload, Class<T> responseType) {
         Request request = Request.newPost();
@@ -211,7 +198,6 @@ public class CoapClient {
      * @param responseType The expected type of response
      * @param <T> The expected type of response
      * @return The response from the IKEA TRÅDFRI gateway (converted to the expected response type)
-     * @since 1.0.0
      */
     public <T> T put(String endpoint, Object payload, Class<T> responseType) {
         Request request = Request.newPut();

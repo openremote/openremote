@@ -4,14 +4,11 @@ import java.lang.reflect.ParameterizedType;
 
 /**
  * The class that handles events for IKEA TRÅDFRI devices
- * @author Stijn Groenen
- * @version 1.0.0
  */
 public abstract class EventHandler<T extends Event> {
 
     /**
      * Construct the EventHandler class
-     * @since 1.0.0
      */
     public EventHandler(){
     }
@@ -19,7 +16,6 @@ public abstract class EventHandler<T extends Event> {
     /**
      * Handle the event
      * @param event The event that occurred
-     * @since 1.0.0
      */
     public abstract void handle(T event);
 

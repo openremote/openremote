@@ -8,8 +8,6 @@ import org.openremote.agent.protocol.tradfri.util.ApiCode;
 
 /**
  * The class that contains the payload for a request to update a IKEA TRÅDFRI device
- * @author Stijn Groenen
- * @version 1.0.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DeviceRequest {
@@ -28,7 +26,6 @@ public class DeviceRequest {
 
     /**
      * Construct the DeviceRequest class
-     * @since 1.0.0
      */
     public DeviceRequest(){
     }
@@ -36,7 +33,6 @@ public class DeviceRequest {
     /**
      * Get the new properties of the light (if the device is a light)
      * @return The new properties of the light
-     * @since 1.0.0
      */
     public LightProperties[] getLightProperties() {
         return this.lightProperties;
@@ -45,7 +41,6 @@ public class DeviceRequest {
     /**
      * Get the new properties of the plug (if the device is a plug)
      * @return The new properties of the plug
-     * @since 1.0.0
      */
     public PlugProperties[] getPlugProperties() {
         return this.plugProperties;
@@ -54,7 +49,6 @@ public class DeviceRequest {
     /**
      * Set the new properties of the light (if the device is a light)
      * @param lightProperties The new properties of the light
-     * @since 1.0.0
      */
     public void setLightProperties(LightProperties[] lightProperties) {
         this.lightProperties = lightProperties;
@@ -63,7 +57,6 @@ public class DeviceRequest {
     /**
      * Set the new properties of the plug (if the device is a plug)
      * @param plugProperties The new properties of the plug
-     * @since 1.0.0
      */
     public void setPlugProperties(PlugProperties[] plugProperties) {
         this.plugProperties = plugProperties;

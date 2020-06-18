@@ -6,8 +6,6 @@ import org.openremote.agent.protocol.tradfri.util.ApiCode;
 
 /**
  * The class that contains the payload for a request to authenticate to the IKEA TRÅDFRI gateway
- * @author Stijn Groenen
- * @version 1.0.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthenticateRequest {
@@ -20,7 +18,7 @@ public class AuthenticateRequest {
 
     /**
      * Construct the AuthenticateRequest class
-     * @since 1.0.0
+
      */
     public AuthenticateRequest(){
     }
@@ -28,7 +26,6 @@ public class AuthenticateRequest {
     /**
      * Get the identity of the client to register to the IKEA TRÅDFRI gateway
      * @return The identity of the client to register to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public String getIdentity() {
         return this.identity;
@@ -37,7 +34,6 @@ public class AuthenticateRequest {
     /**
      * Set the identity of the client to register to the IKEA TRÅDFRI gateway
      * @param identity The new identity of the client to register to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public void setIdentity(String identity) {
         this.identity = identity;

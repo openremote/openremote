@@ -2,14 +2,11 @@ package org.openremote.agent.protocol.tradfri.util;
 
 /**
  * The class that contains constants for hexadecimal colour temperatures allowed by the IKEA TRÅDFRI API
- * @author Stijn Groenen
- * @version 1.0.0
  */
 public class ColourTemperatureHex {
 
     /**
      * Construct the ColourTemperatureHex class
-     * @since 1.0.0
      */
     private ColourTemperatureHex() {
     }

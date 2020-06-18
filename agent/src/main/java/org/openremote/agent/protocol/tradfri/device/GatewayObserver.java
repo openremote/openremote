@@ -14,8 +14,6 @@ import java.util.HashMap;
 
 /**
  * The class that observes an IKEA TRÅDFRI gateway to automagically detect changes
- * @author Stijn Groenen
- * @version 1.0.0
  */
 public class GatewayObserver extends Observer {
 
@@ -38,7 +36,6 @@ public class GatewayObserver extends Observer {
      * Construct the GatewayObserver class
      * @param gateway The IKEA TRÅDFRI gateway to observe
      * @param coapClient A CoAP client that can be used to communicate with the device using the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public GatewayObserver(Gateway gateway, CoapClient coapClient) {
         super(ApiEndpoint.getUri(ApiEndpoint.DEVICES), coapClient);
@@ -49,7 +46,6 @@ public class GatewayObserver extends Observer {
     /**
      * Start observing the gateway to automagically detect changes
      * @return True if successfully started observing, false if not
-     * @since 1.0.0
      */
     @Override
     public boolean start(){
@@ -64,7 +60,6 @@ public class GatewayObserver extends Observer {
     /**
      * Handles a new response from the CoAP client and calls the appropriate event handlers for the IKEA TRÅDFRI gateway
      * @param payload The payload of the response to the CoAP request
-     * @since 1.0.0
      */
     @Override
     public void callEventHandlers(String payload) {

@@ -9,8 +9,6 @@ import org.openremote.agent.protocol.tradfri.util.ApiCode;
 
 /**
  * The class that contains the payload for a response of an IKEA TRÅDFRI device
- * @author Stijn Groenen
- * @version 1.0.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DeviceResponse {
@@ -53,7 +51,6 @@ public class DeviceResponse {
 
     /**
      * Construct the DeviceResponse class
-     * @since 1.0.0
      */
     public DeviceResponse(){
     }
@@ -61,7 +58,6 @@ public class DeviceResponse {
     /**
      * Get the name of the device
      * @return The name of the device
-     * @since 1.0.0
      */
     public String getName() {
         return this.name;
@@ -70,7 +66,6 @@ public class DeviceResponse {
     /**
      * Get the creation date of the device
      * @return The creation date of the device
-     * @since 1.0.0
      */
     public Long getCreationDate() {
         return this.creationDate;
@@ -79,7 +74,6 @@ public class DeviceResponse {
     /**
      * Get the instance id of the device
      * @return The instance id of the device
-     * @since 1.0.0
      */
     public Integer getInstanceId() {
         return this.instanceId;
@@ -88,7 +82,6 @@ public class DeviceResponse {
     /**
      * Get the information of the device
      * @return The instance id of the device
-     * @since 1.0.0
      */
     public DeviceInfo getDeviceInfo() {
         return this.deviceInfo;
@@ -97,7 +90,6 @@ public class DeviceResponse {
     /**
      * Get the properties of the light (if the device is a light)
      * @return The properties of the light
-     * @since 1.0.0
      */
     public LightProperties[] getLightProperties() {
         return this.lightProperties;
@@ -106,7 +98,6 @@ public class DeviceResponse {
     /**
      * Get the properties of the plug (if the device is a plug)
      * @return The properties of the plug
-     * @since 1.0.0
      */
     public PlugProperties[] getPlugProperties() {
         return this.plugProperties;
@@ -115,7 +106,6 @@ public class DeviceResponse {
     /**
      * Set the name of the device
      * @param name The name of the device
-     * @since 1.0.0
      */
     public void setName(String name) {
         this.name = name;
@@ -124,7 +114,6 @@ public class DeviceResponse {
     /**
      * Set the creation date of the device
      * @param creationDate The creation date of the device
-     * @since 1.0.0
      */
     public void setCreationDate(Long creationDate) {
         this.creationDate = creationDate;
@@ -133,7 +122,6 @@ public class DeviceResponse {
     /**
      * Set the instance id of the device
      * @param instanceId The instance id of the device
-     * @since 1.0.0
      */
     public void setInstanceId(Integer instanceId) {
         this.instanceId = instanceId;
@@ -142,7 +130,6 @@ public class DeviceResponse {
     /**
      * Set the information of the device
      * @param deviceInfo The information of the device
-     * @since 1.0.0
      */
     public void setDeviceInfo(DeviceInfo deviceInfo) {
         this.deviceInfo = deviceInfo;
@@ -151,7 +138,6 @@ public class DeviceResponse {
     /**
      * Set the properties of the light (if the device is a light)
      * @param lightProperties The new properties of the light
-     * @since 1.0.0
      */
     public void setLightProperties(LightProperties[] lightProperties) {
         this.lightProperties = lightProperties;
@@ -160,7 +146,6 @@ public class DeviceResponse {
     /**
      * Set the properties of the plug (if the device is a plug)
      * @param plugProperties The new properties of the plug
-     * @since 1.0.0
      */
     public void setPlugProperties(PlugProperties[] plugProperties) {
         this.plugProperties = plugProperties;

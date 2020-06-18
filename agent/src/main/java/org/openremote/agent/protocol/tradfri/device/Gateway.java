@@ -14,8 +14,6 @@ import java.util.List;
 
 /**
  * The class that is used to communicate with the IKEA TRÅDFRI gateway
- * @author Stijn Groenen
- * @version 1.2.0
  */
 public class Gateway {
 
@@ -37,7 +35,6 @@ public class Gateway {
     /**
      * Construct the Gateway class
      * @param ip The IP-address of the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public Gateway(String ip) {
         ApiEndpoint.setGatewayIp(ip);
@@ -49,7 +46,6 @@ public class Gateway {
      * Connect and authenticate to the IKEA TRÅDFRI gateway using a security code
      * @param securityCode The security code of the IKEA TRÅDFRI gateway
      * @return Credentials that can be used to authenticate to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public Credentials connect(String securityCode) {
         String identity = RandomStringUtils.randomAlphanumeric(16);
@@ -67,7 +63,6 @@ public class Gateway {
      * Connect and authenticate to the IKEA TRÅDFRI gateway using credentials
      * @param credentials The credentials that can be used to authenticate to the IKEA TRÅDFRI gateway
      * @return Credentials that can be used to authenticate to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public Credentials connect(Credentials credentials){
         setCredentials(credentials);
@@ -77,7 +72,6 @@ public class Gateway {
     /**
      * Change the credentials used to communicate with the IKEA TRÅDFRI gateway
      * @param credentials The new credentials that can be used to authenticate to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public void setCredentials(Credentials credentials){
         coapClient.setCredentials(credentials);
@@ -87,7 +81,6 @@ public class Gateway {
      * Change the credentials used to communicate with the IKEA TRÅDFRI gateway
      * @param identity The new identity that can be used to authenticate to the IKEA TRÅDFRI gateway
      * @param key The new key that can be used to authenticate to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public void setCredentials(String identity, String key){
         Credentials credentials = new Credentials(identity, key);
@@ -97,7 +90,6 @@ public class Gateway {
     /**
      * Get the credentials used to communicate with the IKEA TRÅDFRI gateway
      * @return The credentials that can be used to authenticate to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public Credentials getCredentials(){
         return coapClient.getCredentials();
@@ -106,7 +98,6 @@ public class Gateway {
     /**
      * Get timeout for connections to the IKEA TRÅDFRI gateway (in milliseconds)
      * @return The timeout for connections to the IKEA TRÅDFRI gateway (in milliseconds)
-     * @since 1.2.0
      */
     public long getTimeout() {
         return coapClient.getTimeout();
@@ -115,7 +106,6 @@ public class Gateway {
     /**
      * Change the timeout for connections to the IKEA TRÅDFRI gateway (in milliseconds)
      * @param timeout The new timeout for connections to the IKEA TRÅDFRI gateway (in milliseconds)
-     * @since 1.2.0
      */
     public void setTimeout(long timeout){
         coapClient.setTimeout(timeout);
@@ -124,7 +114,6 @@ public class Gateway {
     /**
      * Get the ids of the devices registered to the IKEA TRÅDFRI gateway
      * @return An array of the ids of the devices registered to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public int[] getDeviceIds(){
         return coapClient.get(ApiEndpoint.getUri(ApiEndpoint.DEVICES), int[].class);
@@ -134,7 +123,6 @@ public class Gateway {
      * Get the a device registered to the IKEA TRÅDFRI gateway
      * @param id The id of a device registered to the IKEA TRÅDFRI gateway
      * @return The device with the provided id
-     * @since 1.0.0
      */
     public Device getDevice(int id){
         DeviceResponse response = coapClient.get(ApiEndpoint.getUri(ApiEndpoint.DEVICES, String.valueOf(id)), DeviceResponse.class);
@@ -156,7 +144,6 @@ public class Gateway {
     /**
      * Get the devices registered to the IKEA TRÅDFRI gateway
      * @return An array of the devices registered to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public Device[] getDevices(){
         ArrayList<Device> deviceList = new ArrayList<>();
@@ -174,7 +161,6 @@ public class Gateway {
     /**
      * Enable observe to automagically detect changes to the device
      * @return True if successfully enabled observe, false if not
-     * @since 1.0.0
      */
     public boolean enableObserve() {
         if(observer == null) observer = new GatewayObserver(this, this.coapClient);
@@ -184,7 +170,6 @@ public class Gateway {
     /**
      * Disable observe
      * @return True if successfully disabled observe, false if not
-     * @since 1.0.0
      */
     public boolean disableObserve() {
         if(observer == null) return false;
@@ -194,7 +179,6 @@ public class Gateway {
     /**
      * Get a list of event handlers for the IKEA TRÅDFRI gateway
      * @return A list of event handlers for the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public List<EventHandler> getEventHandlers(){
         return eventHandlers;
@@ -212,7 +196,6 @@ public class Gateway {
     /**
      * Remove an event handler from the IKEA TRÅDFRI gateway
      * @param eventHandler The event handler to remove from the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public void removeEventHandler(EventHandler eventHandler){
         this.eventHandlers.remove(eventHandler);

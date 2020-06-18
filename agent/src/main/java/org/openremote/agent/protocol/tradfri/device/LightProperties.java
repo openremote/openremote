@@ -8,8 +8,6 @@ import org.openremote.agent.protocol.tradfri.util.ApiCode;
 
 /**
  * The class that contains the properties of an IKEA TRÅDFRI light
- * @author Stijn Groenen
- * @version 1.0.0
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -72,7 +70,6 @@ public class LightProperties extends DeviceProperties{
 
     /**
      * Construct the LightProperties class
-     * @since 1.0.0
      */
     public LightProperties(){
     }
@@ -80,7 +77,6 @@ public class LightProperties extends DeviceProperties{
     /**
      * Get the on state of the light
      * @return The on state of the light (true for on, false for off)
-     * @since 1.0.0
      */
     public Boolean getOn() {
         return this.on;
@@ -89,7 +85,6 @@ public class LightProperties extends DeviceProperties{
     /**
      * Get the brightness of the light
      * @return The brightness of the light
-     * @since 1.0.0
      */
     public Integer getBrightness() {
         return this.brightness;
@@ -98,7 +93,6 @@ public class LightProperties extends DeviceProperties{
     /**
      * Get the colour of the light in hexadecimals
      * @return The colour of the light in hexadecimals
-     * @since 1.0.0
      */
     public String getColourHex() {
         return this.colourHex;
@@ -107,7 +101,6 @@ public class LightProperties extends DeviceProperties{
     /**
      * Get the hue of the light
      * @return The hue of the light
-     * @since 1.0.0
      */
     public Integer getHue() {
         return this.hue;
@@ -116,7 +109,6 @@ public class LightProperties extends DeviceProperties{
     /**
      * Get the saturation of the light
      * @return The saturation of the light
-     * @since 1.0.0
      */
     public Integer getSaturation() {
         return this.saturation;
@@ -125,7 +117,6 @@ public class LightProperties extends DeviceProperties{
     /**
      * Get the X value of the colour of the light
      * @return The X value of the colour of the light
-     * @since 1.0.0
      */
     public Integer getColourX() {
         return this.colourX;
@@ -134,7 +125,6 @@ public class LightProperties extends DeviceProperties{
     /**
      * Get the Y value of the colour of the light
      * @return The Y value of the colour of the light
-     * @since 1.0.0
      */
     public Integer getColourY() {
         return this.colourY;
@@ -143,7 +133,6 @@ public class LightProperties extends DeviceProperties{
     /**
      * Get the colour temperature of the light
      * @return The colour temperature of the light
-     * @since 1.0.0
      */
     public Integer getColourTemperature() {
         return this.colourTemperature;
@@ -152,7 +141,6 @@ public class LightProperties extends DeviceProperties{
     /**
      * Get the transition time for updating the light
      * @return The transition time for updating the light
-     * @since 1.0.0
      */
     public Integer getTransitionTime() {
         return this.transitionTime;
@@ -162,7 +150,6 @@ public class LightProperties extends DeviceProperties{
      * Set the on state of the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
      * @param on The new on state for the light (true for on, false for off)
-     * @since 1.0.0
      */
     public void setOn(Boolean on) {
         this.on = on;
@@ -172,7 +159,6 @@ public class LightProperties extends DeviceProperties{
      * Set the brightness of the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
      * @param brightness The new brightness for the light
-     * @since 1.0.0
      */
     public void setBrightness(Integer brightness) {
         this.brightness = brightness;
@@ -187,7 +173,6 @@ public class LightProperties extends DeviceProperties{
      *     <li>Colour temperatures: {@link org.openremote.agent.protocol.tradfri.util.ColourTemperatureHex}</li>
      * </ul>
      * @param colourHex The new colour for the light
-     * @since 1.0.0
      */
     public void setColourHex(String colourHex) {
         this.colourHex = colourHex;
@@ -197,7 +182,6 @@ public class LightProperties extends DeviceProperties{
      * Set the hue of the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
      * @param hue The new hue for the light
-     * @since 1.0.0
      */
     public void setHue(Integer hue) {
         this.hue = hue;
@@ -207,7 +191,6 @@ public class LightProperties extends DeviceProperties{
      * Set the saturation of the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
      * @param saturation The new saturation for the light
-     * @since 1.0.0
      */
     public void setSaturation(Integer saturation) {
         this.saturation = saturation;
@@ -217,7 +200,6 @@ public class LightProperties extends DeviceProperties{
      * Set the X value of the colour of the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
      * @param colourX The X value of the new colour for the light
-     * @since 1.0.0
      */
     public void setColourX(Integer colourX) {
         this.colourX = colourX;
@@ -227,7 +209,6 @@ public class LightProperties extends DeviceProperties{
      * Set the Y value of the colour of the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
      * @param colourY The Y value of the new colour for the light
-     * @since 1.0.0
      */
     public void setColourY(Integer colourY) {
         this.colourY = colourY;
@@ -237,7 +218,6 @@ public class LightProperties extends DeviceProperties{
      * Set the colour temperature of the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
      * @param colourTemperature The new colour temperature for the light
-     * @since 1.0.0
      */
     public void setColourTemperature(Integer colourTemperature) {
         this.colourTemperature = colourTemperature;
@@ -247,7 +227,6 @@ public class LightProperties extends DeviceProperties{
      * Set the transition time for updating the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
      * @param transitionTime The new transition time for updating the light
-     * @since 1.0.0
      */
     public void setTransitionTime(Integer transitionTime) {
         this.transitionTime = transitionTime;

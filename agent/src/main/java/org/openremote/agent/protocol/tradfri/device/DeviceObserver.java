@@ -10,8 +10,6 @@ import java.util.ArrayList;
 
 /**
  * The class that observes a device to automagically detect changes
- * @author Stijn Groenen
- * @version 1.1.0
  */
 public class DeviceObserver extends Observer {
 
@@ -29,7 +27,6 @@ public class DeviceObserver extends Observer {
      * Construct the DeviceObserver class
      * @param device The device to observe
      * @param coapClient A CoAP client that can be used to communicate with the device using the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public DeviceObserver(Device device, CoapClient coapClient) {
         super(device.getEndpoint(), coapClient);
@@ -40,7 +37,6 @@ public class DeviceObserver extends Observer {
     /**
      * Handles a new response from the CoAP client and calls the appropriate event handlers for the device
      * @param payload The payload of the response to the CoAP request
-     * @since 1.0.0
      */
     @Override
     public void callEventHandlers(String payload) {

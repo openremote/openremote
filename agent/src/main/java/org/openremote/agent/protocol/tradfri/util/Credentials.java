@@ -2,8 +2,6 @@ package org.openremote.agent.protocol.tradfri.util;
 
 /**
  * The class that contains the credentials used to authenticate to the IKEA TRÅDFRI gateway
- * @author Stijn Groenen
- * @version 1.0.0
  */
 public class Credentials {
 
@@ -21,7 +19,6 @@ public class Credentials {
      * Construct the Credentials class
      * @param identity The identity that can be used to authenticate to the IKEA TRÅDFRI gateway
      * @param key The key that can be used to authenticate to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public Credentials(String identity, String key) {
         this.identity = identity;
@@ -30,7 +27,6 @@ public class Credentials {
 
     /**
      * Construct the Credentials class
-     * @since 1.0.0
      */
     public Credentials() {
     }
@@ -38,7 +34,6 @@ public class Credentials {
     /**
      * Get the identity that can be used to authenticate to the IKEA TRÅDFRI gateway
      * @return The identity that can be used to authenticate to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public String getIdentity() {
         return this.identity;
@@ -47,7 +42,6 @@ public class Credentials {
     /**
      * Get the key that can be used to authenticate to the IKEA TRÅDFRI gateway
      * @return The key that can be used to authenticate to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public String getKey() {
         return this.key;
@@ -56,7 +50,6 @@ public class Credentials {
     /**
      * Set the identity that can be used to authenticate to the IKEA TRÅDFRI gateway
      * @param identity The new identity that can be used to authenticate to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public void setIdentity(String identity) {
         this.identity = identity;
@@ -65,7 +58,6 @@ public class Credentials {
     /**
      * Set the key that can be used to authenticate to the IKEA TRÅDFRI gateway
      * @param key The new key that can be used to authenticate to the IKEA TRÅDFRI gateway
-     * @since 1.0.0
      */
     public void setKey(String key) {
         this.key = key;
