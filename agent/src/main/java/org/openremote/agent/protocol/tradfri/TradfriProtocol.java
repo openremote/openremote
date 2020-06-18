@@ -10,10 +10,12 @@ import org.openremote.agent.protocol.tradfri.device.event.*;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
+import org.openremote.model.rules.flow.Option;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
@@ -144,31 +146,33 @@ public class TradfriProtocol extends AbstractProtocol {
             Gateway gateway = tradfriConnection.connect();
             if(gateway != null){
                 Device[] devices = gateway.getDevices();
-                addDevices(devices, agentLink, protocolConfiguration);
-                EventHandler<GatewayEvent> gatewayEventHandler = new EventHandler<GatewayEvent>() {
-                    @Override
-                    public void handle(GatewayEvent event) {
-                        Device[] newDevices = event.getGateway().getDevices();
-                        ArrayList<Device> added = new ArrayList<>();
-                        HashMap<String, Device> removed = (HashMap<String, Device>) tradfriDevices.clone();
-                        for (Device device : newDevices) {
-                            String name = UniqueIdentifierGenerator.generateId("tradfri_" + device.getInstanceId());
-                            if (tradfriDevices.containsKey(name)) {
-                                removed.remove(name);
-                            } else {
-                                added.add(device);
+                if(devices != null){
+                    addDevices(devices, agentLink, protocolConfiguration);
+                    EventHandler<GatewayEvent> gatewayEventHandler = new EventHandler<GatewayEvent>() {
+                        @Override
+                        public void handle(GatewayEvent event) {
+                            Device[] newDevices = event.getGateway().getDevices();
+                            if(newDevices == null) return;
+                            ArrayList<Device> added = new ArrayList<>();
+                            HashMap<String, Device> removed = (HashMap<String, Device>) tradfriDevices.clone();
+                            for (Device device : newDevices) {
+                                String name = UniqueIdentifierGenerator.generateId("tradfri_" + device.getInstanceId());
+                                if (tradfriDevices.containsKey(name)) {
+                                    removed.remove(name);
+                                } else {
+                                    added.add(device);
+                                }
+                            }
+                            addDevices(added.toArray(new Device[added.size()]), agentLink, protocolConfiguration);
+                            for (String removedDeviceId : removed.keySet()) {
+                                tradfriDevices.remove(removedDeviceId);
+                                assetService.deleteAsset(removedDeviceId);
                             }
                         }
-                        addDevices(added.toArray(new Device[added.size()]), agentLink, protocolConfiguration);
-                        for (String removedDeviceId : removed.keySet()) {
-                            tradfriDevices.remove(removedDeviceId);
-                            assetService.deleteAsset(removedDeviceId);
-                        }
-                    }
-                };
-                gateway.addEventHandler(gatewayEventHandler);
-            }
-            else {
+                    };
+                    gateway.addEventHandler(gatewayEventHandler);
+                }
+            } else {
                 updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.ERROR_CONFIGURATION);
             }
             synchronized (statusConsumerMap) {
@@ -178,14 +182,19 @@ public class TradfriProtocol extends AbstractProtocol {
     }
 
     private void addDevices(Device[] devices, MetaItem agentLink, AssetAttribute protocolConfiguration){
+        String parentId = null;
+        Optional<String> assetId = protocolConfiguration.getAssetId();
+        if(assetId.isPresent()) parentId = assetId.get();
         for (Device device : devices) {
             if (device.isPlug()) {
                 Plug plug = device.toPlug();
-                new TradfriPlugAsset(protocolConfiguration, agentLink, assetService, plug, tradfriDevices);
+                Asset asset = new TradfriPlugAsset(parentId, agentLink, plug, assetService);
+                tradfriDevices.put(asset.getId(), plug);
             }
             else if (device.isLight()) {
                 Light light = device.toLight();
-                new TradfriLightAsset(protocolConfiguration, agentLink, assetService, light, tradfriDevices);
+                Asset asset = new TradfriLightAsset(parentId, agentLink, light, assetService);
+                tradfriDevices.put(asset.getId(), light);
             }
         }
     }
@@ -213,23 +222,16 @@ public class TradfriProtocol extends AbstractProtocol {
        String gatewayIp = protocolConfiguration.getMetaItem(META_TRADFRI_GATEWAY_HOST).flatMap(AbstractValueHolder::getValueAsString).orElse("");
        final AttributeRef attributeRef = attribute.getReferenceOrThrow();
        TradfriConnection tradfriConnection = getConnection(gatewayIp);
-
-       if (tradfriConnection == null) {
-          return;
-       }
-
-       for (Device dev : tradfriDevices.values()) {
-           String deviceId = UniqueIdentifierGenerator.generateId("tradfri_" + dev.getInstanceId());
-           if (deviceId.equals(attributeRef.getEntityId())) {
-               addDevice(attributeRef, tradfriConnection, dev);
-           }
+       if (tradfriConnection == null) return;
+       if(tradfriDevices.containsKey(attributeRef.getEntityId())){
+           Device device = tradfriDevices.get(attributeRef.getEntityId());
+           addDevice(attributeRef, tradfriConnection, device);
        }
     }
 
     @Override
     protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         final AttributeRef attributeRef = attribute.getReferenceOrThrow();
-
         removeDevice(attributeRef);
     }
 

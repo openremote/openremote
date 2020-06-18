@@ -4,45 +4,27 @@ import org.openremote.agent.protocol.ProtocolAssetService;
 import org.openremote.agent.protocol.tradfri.device.Device;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
-import org.openremote.model.attribute.MetaItem;
 
-import java.util.HashMap;
+public abstract class TradfriAsset extends Asset {
 
-public abstract class TradfriAsset {
-    private String name;
-    protected Asset asset;
-    protected AssetAttribute protocolConfiguration;
-    protected MetaItem agentLink;
-    protected ProtocolAssetService assetService;
     protected Device device;
+    protected ProtocolAssetService assetService;
 
-    public TradfriAsset(AssetAttribute protocolConfiguration, MetaItem agentLink, ProtocolAssetService assetService, Device device, AssetType assetType, HashMap<String, Device> tradfriDevices) {
-        this.name = UniqueIdentifierGenerator.generateId("tradfri_" + device.getInstanceId());
-        this.asset = new Asset(device.getName(), assetType);
-        this.protocolConfiguration = protocolConfiguration;
-        this.agentLink = agentLink;
-        this.assetService = assetService;
+    public TradfriAsset(String parentId, Device device, AssetType assetType, ProtocolAssetService assetService) {
+        super(device.getName(), assetType);
         this.device = device;
-        this.setIds();
+        this.assetService = assetService;
+        if(parentId != null && !parentId.isEmpty()){
+            setParentId(parentId);
+            setRealm(assetService.findAsset(parentId).getRealm());
+        }
+        setId(UniqueIdentifierGenerator.generateId("tradfri_" + device.getInstanceId()));
         this.createAssetAttributes();
         this.setInitialValues();
         this.createEventHandlers();
         device.enableObserve();
-        this.assetService.mergeAsset(this.asset);
-        tradfriDevices.put(asset.getId(), device);
-    }
-
-    /**
-     * Method to set the id and parent id of the asset
-     */
-    public void setIds() {
-        asset.setId(name);
-        if (!protocolConfiguration.getAssetId().isPresent()) {
-            return;
-        }
-        asset.setParentId(protocolConfiguration.getAssetId().get());
+        assetService.mergeAsset(this);
     }
 
     /**
