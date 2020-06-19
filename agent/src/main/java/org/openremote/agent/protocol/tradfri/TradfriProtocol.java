@@ -58,7 +58,7 @@ public class TradfriProtocol extends AbstractProtocol {
      * The meta security code for the IKEA TRÅDFRI protocol
      * This security code is used when connecting to the gateway.
      */
-    public static final String META_TRADFRI_SECURITY_CODE = PROTOCOL_NAME + ":psk";
+    public static final String META_TRADFRI_SECURITY_CODE = PROTOCOL_NAME + ":securityCode";
 
     /**
      * The current version of the IKEA TRÅDFRI protocol
