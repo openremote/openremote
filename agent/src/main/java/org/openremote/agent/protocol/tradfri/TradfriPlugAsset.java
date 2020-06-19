@@ -54,7 +54,8 @@ public class TradfriPlugAsset extends TradfriAsset {
             @Override
             public void handle(PlugChangeOnEvent event) {
                 Optional<AssetAttribute> plugOnOrOff = getAttribute("plugOnOrOff");
-                plugOnOrOff.ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(device.toPlug().getOn())));
+                Plug plug = device.toPlug();
+                if(plugOnOrOff.isPresent() && plug.getOn() != null) plugOnOrOff.get().setValue(Values.create(plug.getOn()));
                 assetService.mergeAsset(asset);
             }
         };
@@ -66,7 +67,8 @@ public class TradfriPlugAsset extends TradfriAsset {
      */
     @Override
     public void setInitialValues() {
+        Plug plug = device.toPlug();
         Optional<AssetAttribute> plugOnOrOff = getAttribute("plugOnOrOff");
-        plugOnOrOff.ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(device.toPlug().getOn())));
+        if(plugOnOrOff.isPresent() && plug.getOn() != null) plugOnOrOff.get().setValue(Values.create(plug.getOn()));
     }
 }

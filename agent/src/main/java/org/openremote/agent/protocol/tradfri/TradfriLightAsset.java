@@ -84,7 +84,8 @@ public class TradfriLightAsset extends TradfriAsset {
             @Override
             public void handle(LightChangeOnEvent event) {
                 Optional<AssetAttribute> lightStatus = getAttribute("lightStatus");
-                lightStatus.ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(device.toLight().getOn())));
+                Light light = device.toLight();
+                if(lightStatus.isPresent() && light.getOn() != null) lightStatus.get().setValue(Values.create(light.getOn()));
                 assetService.mergeAsset(asset);
             }
         };
@@ -93,7 +94,8 @@ public class TradfriLightAsset extends TradfriAsset {
             @Override
             public void handle(LightChangeBrightnessEvent event) {
                 Optional<AssetAttribute> lightDimLevel = getAttribute("lightDimLevel");
-                lightDimLevel.ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(device.toLight().getBrightness())));
+                Light light = device.toLight();
+                if(lightDimLevel.isPresent() && light.getBrightness() != null) lightDimLevel.get().setValue(Values.create(light.getBrightness()));
                 assetService.mergeAsset(asset);
             }
         };
@@ -102,7 +104,8 @@ public class TradfriLightAsset extends TradfriAsset {
             @Override
             public void handle(LightChangeColourEvent event) {
                 Optional<AssetAttribute> colorGBW = getAttribute("colorGBW");
-                colorGBW.ifPresent(assetAttribute -> assetAttribute.setValue(Values.createObject().put("red", device.toLight().getColourRGB().getRed()).put("green", device.toLight().getColourRGB().getGreen()).put("blue", device.toLight().getColourRGB().getBlue())));
+                Light light = device.toLight();
+                if(colorGBW.isPresent() && light.getColourRGB() != null) colorGBW.get().setValue(Values.createObject().put("red", light.getColourRGB().getRed()).put("green", light.getColourRGB().getGreen()).put("blue", light.getColourRGB().getBlue()));
                 assetService.mergeAsset(asset);
             }
         };
@@ -111,7 +114,8 @@ public class TradfriLightAsset extends TradfriAsset {
             @Override
             public void handle(LightChangeColourTemperatureEvent event) {
                 Optional<AssetAttribute> colorTemperature = getAttribute("colorTemperature");
-                colorTemperature.ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(device.toLight().getColourTemperature())));
+                Light light = device.toLight();
+                if(colorTemperature.isPresent() && light.getColourTemperature() != null) colorTemperature.get().setValue(Values.create(light.getColourTemperature()));
                 assetService.mergeAsset(asset);
             }
         };
@@ -127,13 +131,14 @@ public class TradfriLightAsset extends TradfriAsset {
      */
     @Override
     public void setInitialValues() {
+        Light light = device.toLight();
         Optional<AssetAttribute> lightStatus = getAttribute("lightStatus");
-        lightStatus.ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(device.toLight().getOn())));
+        if(lightStatus.isPresent() && light.getOn() != null) lightStatus.get().setValue(Values.create(light.getOn()));
         Optional<AssetAttribute> lightDimLevel = getAttribute("lightDimLevel");
-        lightDimLevel.ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(device.toLight().getBrightness())));
+        if(lightDimLevel.isPresent() && light.getBrightness() != null) lightDimLevel.get().setValue(Values.create(light.getBrightness()));
         Optional<AssetAttribute> colorGBW = getAttribute("colorGBW");
-        colorGBW.ifPresent(assetAttribute -> assetAttribute.setValue(Values.createObject().put("red", device.toLight().getColourRGB().getRed()).put("green", device.toLight().getColourRGB().getGreen()).put("blue", device.toLight().getColourRGB().getBlue())));
+        if(colorGBW.isPresent() && light.getColourRGB() != null) colorGBW.get().setValue(Values.createObject().put("red", light.getColourRGB().getRed()).put("green", light.getColourRGB().getGreen()).put("blue", light.getColourRGB().getBlue()));
         Optional<AssetAttribute> colorTemperature = getAttribute("colorTemperature");
-        colorTemperature.ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(device.toLight().getColourTemperature())));
+        if(colorTemperature.isPresent() && light.getColourTemperature() != null) colorTemperature.get().setValue(Values.create(light.getColourTemperature()));
     }
 }
