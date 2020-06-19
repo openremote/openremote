@@ -87,8 +87,8 @@ public class TradfriConnection {
             Credentials credentials = gateway.connect(securityCode);
             if (credentials != null) {
                 if (gateway.enableObserve()) {
-                    onConnectionStatusChanged(ConnectionStatus.CONNECTED);
                     this.gateway = gateway;
+                    onConnectionStatusChanged(ConnectionStatus.CONNECTED);
                     return gateway;
                 }
             }
@@ -125,10 +125,7 @@ public class TradfriConnection {
      * Handles the disconnection.
      */
     public synchronized void disconnect() {
-        if (connectionStatus == ConnectionStatus.DISCONNECTING || connectionStatus == ConnectionStatus.DISCONNECTED) {
-            LOG.finest("Already disconnecting or disconnected");
-            return;
-        }
+        if (connectionStatus != ConnectionStatus.CONNECTED) return;
         LOG.finest("Disconnecting");
         onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
         if(gateway.disableObserve()){
