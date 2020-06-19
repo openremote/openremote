@@ -17,11 +17,6 @@ import static org.openremote.model.attribute.MetaItemType.*;
 public class TradfriLightAsset extends TradfriAsset {
 
     /**
-     * The agent link.
-     */
-    private final MetaItem agentLink;
-
-    /**
      * Construct the TradfriLightAsset class.
      * @param parentId parent id.
      * @param agentLink the agent link.
@@ -29,8 +24,7 @@ public class TradfriLightAsset extends TradfriAsset {
      * @param assetService the asset service.
      */
     public TradfriLightAsset(String parentId, MetaItem agentLink, Light light, ProtocolAssetService assetService) {
-        super(parentId, light, AssetType.LIGHT, assetService);
-        this.agentLink = agentLink;
+        super(parentId, light, AssetType.LIGHT, assetService, agentLink);
     }
 
     /**

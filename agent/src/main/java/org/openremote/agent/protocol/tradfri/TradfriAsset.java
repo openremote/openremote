@@ -5,6 +5,7 @@ import org.openremote.agent.protocol.tradfri.device.Device;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
+import org.openremote.model.attribute.MetaItem;
 
 /**
  * Abstract class for TRÅDFRI assets
@@ -22,16 +23,22 @@ public abstract class TradfriAsset extends Asset {
     protected ProtocolAssetService assetService;
 
     /**
+     * The agent link.
+     */
+    protected MetaItem agentLink;
+
+    /**
      * Construct the TradfriAsset class.
      * @param parentId the parent id.
      * @param device the device.
      * @param assetType the asset type.
      * @param assetService the asset service.
      */
-    public TradfriAsset(String parentId, Device device, AssetType assetType, ProtocolAssetService assetService) {
+    public TradfriAsset(String parentId, Device device, AssetType assetType, ProtocolAssetService assetService, MetaItem agentLink) {
         super(device.getName(), assetType);
         this.device = device;
         this.assetService = assetService;
+        this.agentLink = agentLink;
         if(parentId != null && !parentId.isEmpty()){
             setParentId(parentId);
             setRealm(assetService.findAsset(parentId).getRealm());
