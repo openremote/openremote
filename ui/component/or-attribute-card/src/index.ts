@@ -185,7 +185,7 @@ export class OrAttributeCard extends LitElement {
     @property()
     private deltaPlus: string = "";
     @property()
-    private deltaFormat: string = "percentage";
+    private deltaFormat: string = "absolute";
 
     private error: boolean = false;
 
@@ -732,21 +732,22 @@ export class OrAttributeCard extends LitElement {
     }
 
     protected getFormattedDelta(firstVal: number, lastVal: number, mode?: string): {val?: number, unit?: string} {
-        if (mode === "absolute") {
-            return {val: Math.round(lastVal - firstVal), unit: ""};
-        }
-        if (firstVal && lastVal) {
-            if (lastVal === 0 && firstVal === 0) {
-                return {val: 0, unit: "%"};
-            } else if (lastVal === 0 && firstVal !== 0) {
-                return {val: 100, unit: "%"};
+        if (mode === "percentage") {
+            if (firstVal && lastVal) {
+                if (lastVal === 0 && firstVal === 0) {
+                    return {val: 0, unit: "%"};
+                } else if (lastVal === 0 && firstVal !== 0) {
+                    return {val: 100, unit: "%"};
+                } else {
+                    const math = Math.round((lastVal - firstVal) / firstVal * 100);
+                    return {val: math, unit: "%"};
+                }
             } else {
-                const math = Math.round((lastVal - firstVal) / firstVal * 100);
-                return {val: math, unit: "%"};
+                return {val: 0, unit: "%"};
             }
-        } else {
-            return {val: 0, unit: "%"};
         }
+
+        return {val: Math.round(lastVal - firstVal), unit: ""};
     }
 
     protected handleMenuSelect(value: ContextMenuOptions) {
