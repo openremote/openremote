@@ -218,8 +218,8 @@ export class OrAttributeCard extends LitElement {
         this.getData();
     }
     
-    renderDialogHTML() {
-        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
+    renderEditAttributeDialogHTML() {
+        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog-editattribute") as OrMwcDialog;
         if(!this.shadowRoot) return
 
         if (dialog) {
@@ -248,7 +248,7 @@ export class OrAttributeCard extends LitElement {
 
     updated(changedProperties: PropertyValues) {
         if (changedProperties.has("assetAttributes")) {
-            this.renderDialogHTML();
+            this.renderEditAttributeDialogHTML();
         }
 
         if (changedProperties.has("assetId") && this.assetId && changedProperties.get("assetId") !== this.assetId) {
@@ -330,8 +330,8 @@ export class OrAttributeCard extends LitElement {
         this._cleanup();
     }
 
-    protected _openDialog() {
-        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
+    protected _openEditAttributeDialog() {
+        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog-editattribute") as OrMwcDialog;
 
         if (dialog) {
             dialog.dialogContent = html`
@@ -464,7 +464,7 @@ export class OrAttributeCard extends LitElement {
 
     protected render() {
 
-        const dialogActions: DialogAction[] = [
+        const dialogEditAttributeActions: DialogAction[] = [
             {
                 actionName: "cancel",
                 content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
@@ -477,7 +477,7 @@ export class OrAttributeCard extends LitElement {
                 default: true,
                 content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" data-mdc-dialog-action="yes"></or-input>`,
                 action: () => {
-                    const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
+                    const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog-editattribute") as OrMwcDialog;
                     if (dialog.shadowRoot && dialog.shadowRoot.getElementById("attribute-picker")) {
                         const elm = dialog.shadowRoot.getElementById("attribute-picker") as HTMLInputElement;
                         this.dispatchEvent(new OrAttributeCardAddAttributeEvent(elm.value));
@@ -491,11 +491,11 @@ export class OrAttributeCard extends LitElement {
                 <div class="panel panel-empty">
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
-                            <or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-input>
+                            <or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openEditAttributeDialog()}"></or-input>
                         </div>
                     </div>
                 </div>
-                <or-mwc-dialog id="mdc-dialog" dialogTitle="addAttribute" .dialogActions="${dialogActions}"></or-mwc-dialog>
+                <or-mwc-dialog id="mdc-dialog-editattribute" dialogTitle="addAttribute" .dialogActions="${dialogEditAttributeActions}"></or-mwc-dialog>
             `;
         }
 
@@ -505,11 +505,11 @@ export class OrAttributeCard extends LitElement {
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
                             <span>${i18next.t("couldNotRetrieveAttribute")}</span>
-                            <or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-input>
+                            <or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openEditAttributeDialog()}"></or-input>
                         </div>
                     </div>
                 </div>
-                <or-mwc-dialog id="mdc-dialog" dialogTitle="addAttribute" .dialogActions="${dialogActions}"></or-mwc-dialog>
+                <or-mwc-dialog id="mdc-dialog-editattribute" dialogTitle="addAttribute" .dialogActions="${dialogEditAttributeActions}"></or-mwc-dialog>
             `;
         }
 
@@ -549,7 +549,7 @@ export class OrAttributeCard extends LitElement {
                     </div>
                 </div>
             </div>
-            <or-mwc-dialog id="mdc-dialog" dialogTitle="addAttribute" .dialogActions="${dialogActions}"></or-mwc-dialog>
+            <or-mwc-dialog id="mdc-dialog-editattribute" dialogTitle="addAttribute" .dialogActions="${dialogEditAttributeActions}"></or-mwc-dialog>
         `;
     }
 
