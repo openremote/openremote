@@ -13,7 +13,7 @@ import moment from "moment";
 import {OrAssetTreeRequestSelectEvent} from "@openremote/or-asset-tree";
 import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 
-export type ContextMenuOptions = "editAttribute" | "editDelta";
+export type ContextMenuOptions = "editAttribute" | "editDelta" | "editCurrentValue";
 
 const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
 
@@ -181,6 +181,8 @@ export class OrAttributeCard extends LitElement {
     @property()
     private mainValue?: number;
     @property()
+    private decimals: number = 2;
+    @property()
     private delta: {val?: number, unit?: string} = {};
     @property()
     private deltaPlus: string = "";
@@ -319,7 +321,7 @@ export class OrAttributeCard extends LitElement {
             }
         }
 
-        if (changedProperties.has("mainValue")) {
+        if (changedProperties.has("mainValue") || changedProperties.has("decimals")) {
             this.formattedMainValue = this.getFormattedValue(this.mainValue!);
         }
       
@@ -356,6 +358,17 @@ export class OrAttributeCard extends LitElement {
                         .options="${this._getAttributeOptions()}"
                         .value="${this.attributeName}"></or-input>
                 ` : ``}
+            `;
+            dialog.open();
+        }
+    }
+
+    protected _openEditCurrentValueDialog() {
+        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog-editcurrentvalue") as OrMwcDialog;
+
+        if (dialog) {
+            dialog.dialogContent = html`
+                <or-input id="current-value-decimals" .label="${i18next.t("decimals")}" value="${this.decimals}" .type="${InputType.TEXT}"></or-input>
             `;
             dialog.open();
         }
@@ -506,6 +519,29 @@ export class OrAttributeCard extends LitElement {
             }
         ];
         
+        const dialogEditCurrentValueActions: DialogAction[] = [
+            {
+                actionName: "cancel",
+                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
+                action: () => {
+                    // Nothing to do here
+                }
+            },
+            {
+                actionName: "yes",
+                default: true,
+                content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("ok")}" data-mdc-dialog-action="yes"></or-input>`,
+                action: () => {
+                    const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog-editcurrentvalue") as OrMwcDialog;
+                    if (dialog.shadowRoot && dialog.shadowRoot.getElementById("current-value-decimals")) {
+                        const elm = dialog.shadowRoot.getElementById("current-value-decimals") as HTMLInputElement;
+                        this.decimals = parseInt(elm.value);
+                        this.formattedMainValue = this.getFormattedValue(this.mainValue!);
+                    }
+                }
+            }
+        ];
+
         const dialogEditDeltaActions: DialogAction[] = [
             {
                 actionName: "cancel",
@@ -567,6 +603,10 @@ export class OrAttributeCard extends LitElement {
                             {
                                 text: i18next.t("editDelta"),
                                 value: "editDelta"
+                            },
+                            {
+                                text: i18next.t("editCurrentValue"),
+                                value: "editCurrentValue"
                             }
                         ],
                         undefined,
@@ -602,6 +642,7 @@ export class OrAttributeCard extends LitElement {
                 </div>
             </div>
             <or-mwc-dialog id="mdc-dialog-editattribute" dialogTitle="addAttribute" .dialogActions="${dialogEditAttributeActions}"></or-mwc-dialog>
+            <or-mwc-dialog id="mdc-dialog-editcurrentvalue" dialogTitle="editCurrentValue" .dialogActions="${dialogEditCurrentValueActions}"></or-mwc-dialog>
             <or-mwc-dialog id="mdc-dialog-editdelta" dialogTitle="editDelta" .dialogActions="${dialogEditDeltaActions}"></or-mwc-dialog>
         `;
     }
@@ -701,7 +742,7 @@ export class OrAttributeCard extends LitElement {
 
     protected getFormattedValue(value: number): {value: number, unit: string} {
         const attr = this.asset.attributes![this.attributeName!];
-        const roundedVal = +value.toFixed(1); // + operator prevents str return
+        const roundedVal = +value.toFixed(this.decimals); // + operator prevents str return
 
         const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(this.attributeName!);
         const unitKey = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
@@ -756,6 +797,9 @@ export class OrAttributeCard extends LitElement {
         }
         else if (value === "editDelta") {
             this._openEditDeltaDialog()
+        }
+        else if (value === "editCurrentValue") {
+            this._openEditCurrentValueDialog()
         }
     }
 

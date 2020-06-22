@@ -253,5 +253,7 @@
   "noChildAssets": "No child assets",
   "account": "Account",
   "editAttribute": "Edit attribute",
-  "editDelta": "Edit delta"
+  "editDelta": "Edit delta",
+  "editCurrentValue": "Edit current value",
+  "decimals": "Decimals"
 }
