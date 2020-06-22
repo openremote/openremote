@@ -371,7 +371,7 @@ export class OrAttributeCard extends LitElement {
 
         if (dialog) {
             dialog.dialogContent = html`
-                <or-input id="delta-mode-picker" value="1" @or-input-changed="${(evt: OrInputChangedEvent) => this.deltaFormat = evt.detail.value}" .type="${InputType.LIST}" .options="${options}"></or-input>
+                <or-input id="delta-mode-picker" value="${this.deltaFormat}" @or-input-changed="${(evt: OrInputChangedEvent) => this.deltaFormat = evt.detail.value}" .type="${InputType.LIST}" .options="${options}"></or-input>
             `;
             dialog.open();
         }
