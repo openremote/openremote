@@ -84,6 +84,7 @@
   "cancel": "Cancel",
   "createdOn": "Created on",
   "createdOnWithDate": "Created on: {{-date, LLLL}}",
+  "updatedWithDate": "Updated on: {{-date, LLLL}}",
   "accessPublicRead": "Public read",
   "type": "Type",
   "path": "Path",
