@@ -535,7 +535,10 @@ export class OrAttributeCard extends LitElement {
                     const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog-editcurrentvalue") as OrMwcDialog;
                     if (dialog.shadowRoot && dialog.shadowRoot.getElementById("current-value-decimals")) {
                         const elm = dialog.shadowRoot.getElementById("current-value-decimals") as HTMLInputElement;
-                        this.decimals = parseInt(elm.value);
+                        const input = parseInt(elm.value);
+                        if (input < 0) {this.decimals = 0;}
+                        else if (input > 10) {this.decimals = 10;}
+                        else {this.decimals = input;}
                         this.formattedMainValue = this.getFormattedValue(this.mainValue!);
                     }
                 }
