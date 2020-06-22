@@ -13,6 +13,8 @@ import moment from "moment";
 import {OrAssetTreeRequestSelectEvent} from "@openremote/or-asset-tree";
 import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 
+export type ContextMenuOptions = "editAttribute" | "editDelta";
+
 const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
 
 // language=CSS
@@ -518,7 +520,21 @@ export class OrAttributeCard extends LitElement {
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
                         <span class="panel-title-text">${this.asset.name} - ${i18next.t(this.attributeName)}</span>
-                        <or-input icon="pencil" type="button" @click="${() => this._openDialog()}"></or-input>
+                        ${getContentWithMenuTemplate(html`
+                            <or-input icon="dots-vertical" type="button"></or-input>
+                        `, 
+                        [
+                            {
+                                text: i18next.t("editAttribute"),
+                                value: "editAttribute"
+                            },
+                            {
+                                text: i18next.t("editDelta"),
+                                value: "editDelta"
+                            }
+                        ],
+                        undefined,
+                        (values: string | string[]) => this.handleMenuSelect(values as ContextMenuOptions))}
                     </div>
                     <div class="panel-content">
                         <div class="mainvalue-wrapper">
@@ -690,6 +706,15 @@ export class OrAttributeCard extends LitElement {
             }
         } else {
             return {val: 0, unit: "%"};
+        }
+    }
+
+    protected handleMenuSelect(value: ContextMenuOptions) {
+        if (value === "editAttribute") {
+            this._openEditAttributeDialog()
+        }
+        else if (value === "editDelta") {
+            this._openEditDeltaDialog()
         }
     }
 
