@@ -167,7 +167,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             );
         } else {
             response.close();
-            user = getUserByUsername(realm, user.getUsername());
+            user = getUserByUsername(realm, user.getUsername().toLowerCase());//Username is stored in lowercase in Keycloak
             if (user != null && !TextUtil.isNullOrEmpty(password)) {
                 CredentialRepresentation credentials = new CredentialRepresentation();
                 credentials.setType("password");
