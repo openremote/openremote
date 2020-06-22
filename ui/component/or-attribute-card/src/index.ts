@@ -5,7 +5,7 @@ import {Asset, AssetAttribute, Attribute, DatapointInterval, MetaItemType, Value
 import {manager, DefaultColor3, DefaultColor4, Util, AssetModelUtil} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
 import {getContentWithMenuTemplate, OrChartConfig} from "@openremote/or-chart";
-import {InputType} from "@openremote/or-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {getMetaValue} from "@openremote/core/dist/util";
@@ -184,6 +184,8 @@ export class OrAttributeCard extends LitElement {
     private delta: {val?: number, unit?: string} = {};
     @property()
     private deltaPlus: string = "";
+    @property()
+    private deltaFormat: string = "percentage";
 
     private error: boolean = false;
 
@@ -359,6 +361,22 @@ export class OrAttributeCard extends LitElement {
         }
     }
 
+    protected _openEditDeltaDialog() {
+        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog-editdelta") as OrMwcDialog;
+
+        const options = [
+            ["percentage", "Percentage"],
+            ["absolute", "Absolute"]
+        ];
+
+        if (dialog) {
+            dialog.dialogContent = html`
+                <or-input id="delta-mode-picker" value="1" @or-input-changed="${(evt: OrInputChangedEvent) => this.deltaFormat = evt.detail.value}" .type="${InputType.LIST}" .options="${options}"></or-input>
+            `;
+            dialog.open();
+        }
+    }
+
     protected _getAttributeOptions() {
         if (!this.asset || !this.assetAttributes) {
             return;
@@ -487,6 +505,24 @@ export class OrAttributeCard extends LitElement {
                 }
             }
         ];
+        
+        const dialogEditDeltaActions: DialogAction[] = [
+            {
+                actionName: "cancel",
+                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
+                action: () => {
+                    // Nothing to do here
+                }
+            },
+            {
+                actionName: "yes",
+                default: true,
+                content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("ok")}" data-mdc-dialog-action="yes"></or-input>`,
+                action: () => {
+                    this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data), this.deltaFormat);
+                }
+            }
+        ];
 
         if (!this.assetId || !this.attributeName) {
             return html`
@@ -566,6 +602,7 @@ export class OrAttributeCard extends LitElement {
                 </div>
             </div>
             <or-mwc-dialog id="mdc-dialog-editattribute" dialogTitle="addAttribute" .dialogActions="${dialogEditAttributeActions}"></or-mwc-dialog>
+            <or-mwc-dialog id="mdc-dialog-editdelta" dialogTitle="editDelta" .dialogActions="${dialogEditDeltaActions}"></or-mwc-dialog>
         `;
     }
 
@@ -694,7 +731,10 @@ export class OrAttributeCard extends LitElement {
         return 0;
     }
 
-    protected getFormattedDelta(firstVal: number, lastVal: number): {val?: number, unit?: string} {
+    protected getFormattedDelta(firstVal: number, lastVal: number, mode?: string): {val?: number, unit?: string} {
+        if (mode === "absolute") {
+            return {val: Math.round(lastVal - firstVal), unit: ""};
+        }
         if (firstVal && lastVal) {
             if (lastVal === 0 && firstVal === 0) {
                 return {val: 0, unit: "%"};
