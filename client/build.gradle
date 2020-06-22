@@ -113,7 +113,7 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
          sourceSets.main.output.classesDirs,
          sourceSets.main.compileClasspath]
     }
-    maxHeapSize = "1024M"
+    maxHeapSize = "1536M"
     /*
       -[no]allowMissingSrc           Allows -src flags to reference missing directories. (defaults to OFF)
       -bindAddress                   The ip address of the code server. Defaults to 127.0.0.1.

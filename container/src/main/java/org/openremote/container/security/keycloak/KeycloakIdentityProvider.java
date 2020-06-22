@@ -376,12 +376,14 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 public KeycloakDeployment load(KeycloakRealmClient keycloakRealmClient) {
                     LOG.fine("Loading adapter config for client '" + keycloakRealmClient.clientId + "' in realm '" + keycloakRealmClient.realm + "'");
 
-                    AdapterConfig adapterConfig = getKeycloak().getAdapterConfig(
+                    KeycloakResource keycloak = getTarget(httpClient, keycloakServiceUri.build(), null, null, null).proxy(KeycloakResource.class);
+
+                    AdapterConfig adapterConfig = keycloak.getAdapterConfig(
                         keycloakRealmClient.realm, keycloakRealmClient.clientId
                     );
 
                     // Get the public key for token verification
-                    PublishedRealmRepresentation realmRepresentation = getKeycloak().getPublishedRealm(keycloakRealmClient.realm);
+                    PublishedRealmRepresentation realmRepresentation = keycloak.getPublishedRealm(keycloakRealmClient.realm);
                     adapterConfig.setRealmKey(realmRepresentation.getPublicKeyPem());
 
                     // Must rewrite the auth-server URL to our external host and port, which
