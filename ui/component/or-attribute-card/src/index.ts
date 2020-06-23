@@ -233,11 +233,11 @@ export class OrAttributeCard extends LitElement {
                 <or-asset-tree id="chart-asset-tree" 
                     .selectedIds="${this.asset ? [this.asset.id] : null}]"
                     @or-asset-tree-request-select="${(e: OrAssetTreeRequestSelectEvent) => {
-                        this.asset = {...e.detail.detail.node.asset!}
-                        this._getAttributeOptions();
-                        let attributes = [...Util.getAssetAttributes(this.asset)];
-                        this.assetAttributes = [...attributes];
-                    }}">
+                this.asset = {...e.detail.detail.node.asset!}
+                this._getAttributeOptions();
+                let attributes = [...Util.getAssetAttributes(this.asset)];
+                this.assetAttributes = [...attributes];
+            }}">
                 </or-asset-tree>
                 ${this.asset && this.asset.attributes ? html`
                     <or-input id="attribute-picker" 
@@ -344,11 +344,11 @@ export class OrAttributeCard extends LitElement {
                 <or-asset-tree id="chart-asset-tree" 
                     .selectedIds="${this.asset ? [this.asset.id] : null}]"
                     @or-asset-tree-request-select="${(e: OrAssetTreeRequestSelectEvent) => {
-                        this.asset = {...e.detail.detail.node.asset!};
-                        let attributes = [...Util.getAssetAttributes(this.asset)];
-                        this.assetAttributes = [...attributes];
-                        this._getAttributeOptions();
-                    }}">
+                this.asset = {...e.detail.detail.node.asset!};
+                let attributes = [...Util.getAssetAttributes(this.asset)];
+                this.assetAttributes = [...attributes];
+                this._getAttributeOptions();
+            }}">
                 </or-asset-tree>
                 ${this.asset && this.asset.attributes ? html`
                     <or-input id="attribute-picker" 
@@ -597,29 +597,29 @@ export class OrAttributeCard extends LitElement {
                         <span class="panel-title-text">${this.asset.name} - ${i18next.t(this.attributeName)}</span>
                         ${getContentWithMenuTemplate(html`
                             <or-input icon="dots-vertical" type="button"></or-input>
-                        `, 
-                        [
-                            {
-                                text: i18next.t("editAttribute"),
-                                value: "editAttribute"
-                            },
-                            {
-                                text: i18next.t("editDelta"),
-                                value: "editDelta"
-                            },
-                            {
-                                text: i18next.t("editCurrentValue"),
-                                value: "editCurrentValue"
-                            }
-                        ],
-                        undefined,
-                        (values: string | string[]) => this.handleMenuSelect(values as ContextMenuOptions))}
+                        `,
+            [
+                {
+                    text: i18next.t("editAttribute"),
+                    value: "editAttribute"
+                },
+                {
+                    text: i18next.t("editDelta"),
+                    value: "editDelta"
+                },
+                {
+                    text: i18next.t("editCurrentValue"),
+                    value: "editCurrentValue"
+                }
+            ],
+            undefined,
+            (values: string | string[]) => this.handleMenuSelect(values as ContextMenuOptions))}
                     </div>
                     <div class="panel-content">
                         <div class="mainvalue-wrapper">
                             <span class="main-number-icon">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.asset!.type!))}</span>
-                            <span class="main-number">${this.formattedMainValue!.value}</span>
-                            <span class="main-number-unit">${this.formattedMainValue!.unit}</span>
+                            <span class="main-number ${this.mainValueSize}">${this.formattedMainValue!.value}</span>
+                            <span class="main-number-unit ${this.mainValueSize}">${this.formattedMainValue!.unit}</span>
                         </div>
                         <div class="graph-wrapper">
                             <div class="chart-wrapper">
