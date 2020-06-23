@@ -108,6 +108,22 @@ const style = css`
         margin-left: 5px;
     }
     
+    .main-number.xs, .main-number-unit.xs {
+        font-size: 18px;
+    }
+    .main-number.s, .main-number-unit.s {
+        font-size: 24px;
+    }
+    .main-number.m, .main-number-unit.m {
+        font-size: 30px;
+    }
+    .main-number.l, .main-number-unit.l {
+        font-size: 36px;
+    }
+    .main-number.xl, .main-number-unit.xl {
+        font-size: 42px;
+    }
+    
     .chart-wrapper {
         flex: 1;
         width: 65%;
@@ -181,7 +197,9 @@ export class OrAttributeCard extends LitElement {
     @property()
     private mainValue?: number;
     @property()
-    private decimals: number = 2;
+    private mainValueDecimals: number = 2;
+    @property()
+    private mainValueSize: "xs" | "s" | "m" | "l" | "xl" = "m";
     @property()
     private delta: {val?: number, unit?: string} = {};
     @property()
@@ -223,7 +241,7 @@ export class OrAttributeCard extends LitElement {
         this._style = window.getComputedStyle(this);
         this.getData();
     }
-    
+
     renderEditAttributeDialogHTML() {
         const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog-editattribute") as OrMwcDialog;
         if(!this.shadowRoot) return
@@ -321,10 +339,10 @@ export class OrAttributeCard extends LitElement {
             }
         }
 
-        if (changedProperties.has("mainValue") || changedProperties.has("decimals")) {
+        if (changedProperties.has("mainValue") || changedProperties.has("mainValueDecimals")) {
             this.formattedMainValue = this.getFormattedValue(this.mainValue!);
         }
-      
+
     }
 
     async onCompleted() {
@@ -368,7 +386,7 @@ export class OrAttributeCard extends LitElement {
 
         if (dialog) {
             dialog.dialogContent = html`
-                <or-input id="current-value-decimals" .label="${i18next.t("decimals")}" value="${this.decimals}" .type="${InputType.TEXT}"></or-input>
+                <or-input id="current-value-decimals" .label="${i18next.t("decimals")}" value="${this.mainValueDecimals}" .type="${InputType.TEXT}"></or-input>
             `;
             dialog.open();
         }
@@ -441,7 +459,7 @@ export class OrAttributeCard extends LitElement {
         const query = {
             ids: view.assetIds
         }
-        if(view.assetIds === this.assetAttributes.map(attr => attr.assetId)) return 
+        if(view.assetIds === this.assetAttributes.map(attr => attr.assetId)) return
 
         manager.rest.api.AssetResource.queryAssets(query).then((response) => {
             const assets = response.data;
@@ -478,7 +496,7 @@ export class OrAttributeCard extends LitElement {
                     }
                 }
             }
-        }   
+        }
 
         config.views[viewSelector][this.panelName] = {
             assetIds: assetIds,
@@ -518,7 +536,7 @@ export class OrAttributeCard extends LitElement {
                 }
             }
         ];
-        
+
         const dialogEditCurrentValueActions: DialogAction[] = [
             {
                 actionName: "cancel",
@@ -536,9 +554,9 @@ export class OrAttributeCard extends LitElement {
                     if (dialog.shadowRoot && dialog.shadowRoot.getElementById("current-value-decimals")) {
                         const elm = dialog.shadowRoot.getElementById("current-value-decimals") as HTMLInputElement;
                         const input = parseInt(elm.value);
-                        if (input < 0) {this.decimals = 0;}
-                        else if (input > 10) {this.decimals = 10;}
-                        else {this.decimals = input;}
+                        if (input < 0) {this.mainValueDecimals = 0;}
+                        else if (input > 10) {this.mainValueDecimals = 10;}
+                        else {this.mainValueDecimals = input;}
                         this.formattedMainValue = this.getFormattedValue(this.mainValue!);
                     }
                 }
@@ -745,11 +763,13 @@ export class OrAttributeCard extends LitElement {
 
     protected getFormattedValue(value: number): {value: number, unit: string} {
         const attr = this.asset.attributes![this.attributeName!];
-        const roundedVal = +value.toFixed(this.decimals); // + operator prevents str return
+        const roundedVal = +value.toFixed(this.mainValueDecimals); // + operator prevents str return
 
         const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(this.attributeName!);
         const unitKey = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
         const unit = i18next.t("units." + unitKey);
+
+        this.setMainValueSize(roundedVal.toString());
 
         if (!unitKey) { return {value: roundedVal, unit: "" }; }
 
@@ -804,6 +824,14 @@ export class OrAttributeCard extends LitElement {
         else if (value === "editCurrentValue") {
             this._openEditCurrentValueDialog()
         }
+    }
+
+    protected setMainValueSize(value: string) {
+        if (value.length >= 20) { this.mainValueSize = "xs" }
+        if (value.length < 20) { this.mainValueSize = "s" }
+        if (value.length < 15) { this.mainValueSize = "m" }
+        if (value.length < 10) { this.mainValueSize = "l" }
+        if (value.length < 5) { this.mainValueSize = "xl" }
     }
 
     protected _getInterval() {
