@@ -335,12 +335,15 @@ export class OrAttributeCard extends LitElement {
                 this._chart.data.datasets![0].data = this.data;
                 this._chart.update();
                 this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data));
-                this.deltaPlus = (this.delta.val && this.delta.val > 0) ? "+" : "";
             }
         }
 
         if (changedProperties.has("mainValue") || changedProperties.has("mainValueDecimals")) {
             this.formattedMainValue = this.getFormattedValue(this.mainValue!);
+        }
+
+        if (changedProperties.has("delta")) {
+            this.deltaPlus = (this.delta.val && this.delta.val > 0) ? "+" : "";
         }
 
     }
@@ -740,9 +743,9 @@ export class OrAttributeCard extends LitElement {
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
                 this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data));
+                this.deltaPlus = (this.delta.val && this.delta.val > 0) ? "+" : "";
 
                 this.error = false;
-
             })
             .catch((err) => {
                 this.error = true;
