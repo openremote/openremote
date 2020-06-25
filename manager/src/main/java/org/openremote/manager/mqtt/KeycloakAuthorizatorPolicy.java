@@ -84,6 +84,20 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             return false;
         }
 
+        Token token = topic.getTokens().get(1);
+        Asset asset = assetStorageService.find(token.toString());
+        if(asset == null) {
+            LOG.log(Level.INFO, "Asset not found");
+            return false;
+        }
+        if(topic.getTokens().size() > 2) {
+            token = topic.getTokens().get(2);
+            if (!asset.getAttribute(token.toString()).isPresent()) {
+                LOG.log(Level.INFO, "Attribute not found on asset");
+                return false;
+            }
+        }
+
         AccessToken accessToken = null;
         try {
             accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
@@ -105,19 +119,7 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
 
         AuthContext authContext = new AccessTokenAuthContext(connection.realm, accessToken);
         if (Arrays.asList(roles).contains(ClientRole.WRITE_ASSETS)) { //write
-            Token token = topic.getTokens().get(1);
-            Asset asset = assetStorageService.find(token.toString());
-            if(asset == null) {
-                LOG.log(Level.INFO, "Asset not found");
-                return false;
-            }
-            if(topic.getTokens().size() > 2) {
-                token = topic.getTokens().get(2);
-                if (!asset.getAttribute(token.toString()).isPresent()) {
-                    LOG.log(Level.INFO, "Attribute not found on asset");
-                    return false;
-                }
-            }
+
             return identityProvider.canSubscribeWith(authContext, new TenantFilter(connection.realm), roles);
         } else { // read
             String[] topicParts = topic.getTokens().stream().map(Token::toString).toArray(String[]::new);
