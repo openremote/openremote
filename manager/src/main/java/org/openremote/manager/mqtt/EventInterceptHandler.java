@@ -39,6 +39,7 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.RenewEventSubscriptions;
+import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
 import java.nio.charset.Charset;
@@ -221,8 +222,22 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                 });
             } else {
                 String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
+                Value value = null;
+                if (Character.isLetter(payloadContent.charAt(0))) {
+                    if (payloadContent.equals(Boolean.TRUE.toString())) {
+                        value = Values.create(true);
+                    }
+                    if (payloadContent.equals(Boolean.FALSE.toString())) {
+                        value = Values.create(false);
+                    }
+                    payloadContent = '"' + payloadContent + '"';
+                }
+                if (value == null) {
+                    value = Values.parse(payloadContent).orElse(Values.create(payloadContent));
+                }
+
                 Map<String, Object> headers = prepareHeaders(connection);
-                AttributeEvent attributeEvent = new AttributeEvent(assetId, attributeRef.getAttributeName(), Values.create(payloadContent));
+                AttributeEvent attributeEvent = new AttributeEvent(assetId, attributeRef.getAttributeName(), value);
                 messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
             }
         }
