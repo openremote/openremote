@@ -172,7 +172,7 @@ public class TradfriConnection {
                 else if (device.isPlug()) {
                     Plug plug = device.toPlug();
                     switch (event.getAttributeName()){
-                        case "plugOnOrOff":
+                        case "plugStatus":
                             plug.setOn(Boolean.parseBoolean(event.getValue().get().toString()));
                             break;
                     }

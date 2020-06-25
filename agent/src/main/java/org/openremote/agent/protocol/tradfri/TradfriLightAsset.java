@@ -32,43 +32,54 @@ public class TradfriLightAsset extends TradfriAsset {
      */
     @Override
     public void createAssetAttributes() {
-        Optional<AssetAttribute> lightDimLevel = getAttribute("lightDimLevel");
-        if (lightDimLevel.isPresent()) {
-            lightDimLevel.get().setType(NUMBER);
-            lightDimLevel.get().setMeta(
+        Optional<AssetAttribute> lightDimLevelOptional = getAttribute("lightDimLevel");
+        if (lightDimLevelOptional.isPresent()) {
+            AssetAttribute lightDimLevel = lightDimLevelOptional.get();
+            lightDimLevel.setType(NUMBER);
+            lightDimLevel.addMeta(
                     new MetaItem(RANGE_MIN, Values.create(0)),
                     new MetaItem(RANGE_MAX, Values.create(254)),
-                    new MetaItem(LABEL, Values.create("Brightness (0 - 254)")),
-                    new MetaItem(DESCRIPTION, Values.create("The brightness of the TRÅDFRI light (Only for dimmable lights)")),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                     agentLink
             );
+            lightDimLevel.setDescription("The brightness (0 - 254) of the TRÅDFRI light (Only for dimmable lights)");
+            lightDimLevel.setReadOnly(false);
         }
-        Optional<AssetAttribute> lightStatus = getAttribute("lightStatus");
-        lightStatus.ifPresent(assetAttribute -> assetAttribute.setMeta(
-                new MetaItem(LABEL, Values.create("State (on/off)")),
-                new MetaItem(DESCRIPTION, Values.create("The state of the TRÅDFRI light (Checked means on, unchecked means off)")),
-                new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
-                new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
-                agentLink
-        ));
-        Optional<AssetAttribute> colorGBW = getAttribute("colorGBW");
-        colorGBW.ifPresent(assetAttribute -> assetAttribute.setMeta(
-                new MetaItem(LABEL, Values.create("Color")),
-                new MetaItem(DESCRIPTION, Values.create("The color of the TRÅDFRI light (Only for RGB lights)")),
-                new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
-                new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
-                agentLink
-        ));
+
+        Optional<AssetAttribute> lightStatusOptional = getAttribute("lightStatus");
+        if(lightStatusOptional.isPresent()){
+            AssetAttribute lightStatus = lightStatusOptional.get();
+            lightStatus.addMeta(
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
+                    agentLink
+            );
+            lightStatus.setDescription("The state of the TRÅDFRI light (Checked means on, unchecked means off)");
+            lightStatus.setReadOnly(false);
+        }
+
+        Optional<AssetAttribute> colorGBWOptional = getAttribute("colorGBW");
+        if(colorGBWOptional.isPresent()){
+            AssetAttribute colorGBW = colorGBWOptional.get();
+            colorGBW.addMeta(
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
+                    agentLink
+            );
+            colorGBW.setDescription("The color of the TRÅDFRI light (Only for RGB lights)");
+            colorGBW.setReadOnly(false);
+        }
+
         AssetAttribute colorTemperature = new AssetAttribute("colorTemperature", NUMBER, Values.create(0));
-        colorTemperature.setMeta(
+        colorTemperature.addMeta(
                 new MetaItem(RANGE_MIN, Values.create(250)),
                 new MetaItem(RANGE_MAX, Values.create(454)),
-                new MetaItem(LABEL, Values.create("Color temperature")),
-                new MetaItem(DESCRIPTION, Values.create("The color temperature of the TRÅDFRI light (Only for white spectrum lights)")),
+                new MetaItem(LABEL, Values.create("Color Temperature")),
+                new MetaItem(DESCRIPTION, Values.create("The color temperature (250 - 454) of the TRÅDFRI light (Only for white spectrum lights)")),
                 new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                 new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
+                new MetaItem(READ_ONLY, Values.create(false)),
                 agentLink
         );
         addAttributes(colorTemperature);
@@ -132,12 +143,16 @@ public class TradfriLightAsset extends TradfriAsset {
     @Override
     public void setInitialValues() {
         Light light = device.toLight();
+
         Optional<AssetAttribute> lightStatus = getAttribute("lightStatus");
         if(lightStatus.isPresent() && light.getOn() != null) lightStatus.get().setValue(Values.create(light.getOn()));
+
         Optional<AssetAttribute> lightDimLevel = getAttribute("lightDimLevel");
         if(lightDimLevel.isPresent() && light.getBrightness() != null) lightDimLevel.get().setValue(Values.create(light.getBrightness()));
+
         Optional<AssetAttribute> colorGBW = getAttribute("colorGBW");
         if(colorGBW.isPresent() && light.getColourRGB() != null) colorGBW.get().setValue(Values.createObject().put("red", light.getColourRGB().getRed()).put("green", light.getColourRGB().getGreen()).put("blue", light.getColourRGB().getBlue()));
+
         Optional<AssetAttribute> colorTemperature = getAttribute("colorTemperature");
         if(colorTemperature.isPresent() && light.getColourTemperature() != null) colorTemperature.get().setValue(Values.create(light.getColourTemperature()));
     }

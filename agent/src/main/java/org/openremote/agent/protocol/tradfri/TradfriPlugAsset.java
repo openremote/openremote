@@ -33,15 +33,18 @@ public class TradfriPlugAsset extends TradfriAsset {
      */
     @Override
     public void createAssetAttributes() {
-        AssetAttribute plugOnOrOff = new AssetAttribute("plugOnOrOff", BOOLEAN, Values.create(false));
-        plugOnOrOff.setMeta(
-                new MetaItem(LABEL, Values.create("State (on/off)")),
+        AssetAttribute plugStatus = new AssetAttribute("plugStatus", BOOLEAN, Values.create(false));
+        plugStatus.addMeta(
+                new MetaItem(LABEL, Values.create("Plug Status")),
                 new MetaItem(DESCRIPTION, Values.create("The state of the TRÅDFRI plug (Checked means on, unchecked means off)")),
                 new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                 new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
+                new MetaItem(READ_ONLY, Values.create(false)),
+                new MetaItem(RULE_STATE, Values.create(true)),
+                new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                 agentLink
         );
-        setAttributes(plugOnOrOff);
+        setAttributes(plugStatus);
     }
 
     /**
@@ -53,9 +56,9 @@ public class TradfriPlugAsset extends TradfriAsset {
         EventHandler<PlugChangeOnEvent> plugOnOffEventHandler = new EventHandler<PlugChangeOnEvent>() {
             @Override
             public void handle(PlugChangeOnEvent event) {
-                Optional<AssetAttribute> plugOnOrOff = getAttribute("plugOnOrOff");
+                Optional<AssetAttribute> plugStatus = getAttribute("plugStatus");
                 Plug plug = device.toPlug();
-                if(plugOnOrOff.isPresent() && plug.getOn() != null) plugOnOrOff.get().setValue(Values.create(plug.getOn()));
+                if(plugStatus.isPresent() && plug.getOn() != null) plugStatus.get().setValue(Values.create(plug.getOn()));
                 assetService.mergeAsset(asset);
             }
         };
@@ -68,7 +71,7 @@ public class TradfriPlugAsset extends TradfriAsset {
     @Override
     public void setInitialValues() {
         Plug plug = device.toPlug();
-        Optional<AssetAttribute> plugOnOrOff = getAttribute("plugOnOrOff");
-        if(plugOnOrOff.isPresent() && plug.getOn() != null) plugOnOrOff.get().setValue(Values.create(plug.getOn()));
+        Optional<AssetAttribute> plugStatus = getAttribute("plugStatus");
+        if(plugStatus.isPresent() && plug.getOn() != null) plugStatus.get().setValue(Values.create(plug.getOn()));
     }
 }
