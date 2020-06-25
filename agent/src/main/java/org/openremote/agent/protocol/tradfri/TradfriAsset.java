@@ -35,7 +35,7 @@ public abstract class TradfriAsset extends Asset {
      * @param assetService the asset service.
      */
     public TradfriAsset(String parentId, Device device, AssetType assetType, ProtocolAssetService assetService, MetaItem agentLink) {
-        super(device.getName(), assetType);
+        super(device.getName() != null && !device.getName().isEmpty() ? device.getName() : "Unnamed " + device.getInstanceId(), assetType);
         this.device = device;
         this.assetService = assetService;
         this.agentLink = agentLink;
