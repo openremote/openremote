@@ -10,8 +10,10 @@ import org.keycloak.representations.AccessToken;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.ClientCredentialsAuthForm;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
+import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventSubscription;
@@ -20,11 +22,9 @@ import org.openremote.model.security.ClientRole;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static org.openremote.manager.mqtt.MqttBrokerService.*;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
@@ -34,13 +34,15 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
     private static final Logger LOG = Logger.getLogger(KeycloakAuthorizatorPolicy.class.getName());
 
     protected final ManagerKeycloakIdentityProvider identityProvider;
+    protected final AssetStorageService assetStorageService;
     protected final ClientEventService clientEventService;
     protected final Map<String, MqttConnection> mqttConnectionMap;
 
     public KeycloakAuthorizatorPolicy(ManagerKeycloakIdentityProvider identityProvider,
-                                      ClientEventService clientEventService,
+                                      AssetStorageService assetStorageService, ClientEventService clientEventService,
                                       Map<String, MqttConnection> mqttConnectionMap) {
         this.identityProvider = identityProvider;
+        this.assetStorageService = assetStorageService;
         this.clientEventService = clientEventService;
         this.mqttConnectionMap = mqttConnectionMap;
     }
@@ -103,6 +105,19 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
 
         AuthContext authContext = new AccessTokenAuthContext(connection.realm, accessToken);
         if (Arrays.asList(roles).contains(ClientRole.WRITE_ASSETS)) { //write
+            Token token = topic.getTokens().get(1);
+            Asset asset = assetStorageService.find(token.toString());
+            if(asset == null) {
+                LOG.log(Level.INFO, "Asset not found");
+                return false;
+            }
+            if(topic.getTokens().size() > 2) {
+                token = topic.getTokens().get(2);
+                if (!asset.getAttribute(token.toString()).isPresent()) {
+                    LOG.log(Level.INFO, "Attribute not found on asset");
+                    return false;
+                }
+            }
             return identityProvider.canSubscribeWith(authContext, new TenantFilter(connection.realm), roles);
         } else { // read
             String[] topicParts = topic.getTokens().stream().map(Token::toString).toArray(String[]::new);

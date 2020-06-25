@@ -213,21 +213,17 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                 attributeRef = new AttributeRef(assetId, topicParts[2]);
             }
             if (attributeRef == null) {
-                if (connection.assetSubscriptions.containsKey(assetId)) {
-                    String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
-                    Values.parse(payloadContent).flatMap(Values::getObject).ifPresent(objectValue -> {
-                        Map<String, Object> headers = prepareHeaders(connection);
-                        AttributeEvent attributeEvent = new AttributeEvent(assetId, objectValue.keys()[0], objectValue.get(objectValue.keys()[0]).orElse(null));
-                        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
-                    });
-                }
-            } else {
-                if (connection.assetAttributeSubscriptions.containsKey(attributeRef) || connection.assetAttributeValueSubscriptions.containsKey(attributeRef)) {
-                    String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
+                String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
+                Values.parse(payloadContent).flatMap(Values::getObject).ifPresent(objectValue -> {
                     Map<String, Object> headers = prepareHeaders(connection);
-                    AttributeEvent attributeEvent = new AttributeEvent(assetId, attributeRef.getAttributeName(), Values.create(payloadContent));
+                    AttributeEvent attributeEvent = new AttributeEvent(assetId, objectValue.keys()[0], objectValue.get(objectValue.keys()[0]).orElse(null));
                     messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
-                }
+                });
+            } else {
+                String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
+                Map<String, Object> headers = prepareHeaders(connection);
+                AttributeEvent attributeEvent = new AttributeEvent(assetId, attributeRef.getAttributeName(), Values.create(payloadContent));
+                messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
             }
         }
     }
