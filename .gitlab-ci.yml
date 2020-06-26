@@ -5,6 +5,13 @@ default:
     - docker:dind
   timeout: 1h 30m
 
+stages:
+  - build
+  - build_fail
+  - test
+  - deploy
+  - dast
+
 lint-Dockerfile:
   stage: build
   script:
@@ -25,10 +32,16 @@ lint-swarm-Dockerfile:
 build-master:
   stage: build
   before_script:
+    - export DOCKER_CLI_EXPERIMENTAL=enabled
+    - mkdir -p /root/.docker/cli-plugins
+    - mv .docker/cli-plugins/docker-buildx /root/.docker/cli-plugins/
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker login -u "$DOCKERHUB_USER" -p "$DOCKERHUB_PASSWORD"
   script:
-    - docker build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
+    - docker buildx use default
+    - docker buildx ls
+    - docker context ls
+    - docker buildx build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
     - docker run -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "./gradlew --console plain clean installDist"
@@ -39,8 +52,42 @@ build-master:
     - docker push openremote/deployment:${CACHE_TAG:-latest}
     - docker push openremote/manager:${CACHE_TAG:-latest}
     - docker push openremote/manager-swarm:${CACHE_TAG:-latest}
+    ## TODO dind does not support arm64 archieture for now, therefore the code below breaks the build
+    # # Build ARM images
+    # - docker buildx build --platform linux/arm64 -t openremote/manager:arm64 manager/build/install/manager
+    # - docker buildx build --platform linux/arm64 -t openremote/deployment:arm64 deployment
+    # - docker buildx build --platform linux/arm64 -t openremote/proxy:arm64 proxy
+    # - docker buildx build --platform linux/arm64 -t openremote/keycloak:arm64 keycloak
+    # - docker buildx build --platform linux/arm64 -t openremote/postgresql:arm64 postgresql
+    # # Push ARM images
+    # - docker push openremote/manager:arm64
+    # - docker push openremote/deployment:arm64
+    # - docker push openremote/proxy:arm64
+    # - docker push openremote/keycloak:arm64
+    # - docker push openremote/postgresql:arm64
   only:
     - master
+
+# This step is executed when build fails. The purpose is to e-mail a git commiter about the problem.
+email failed pipeline:
+  stage: build_fail
+  image: docker:latest
+  script:
+    - docker pull registry.gitlab.com/openremote/openremote:master
+    - export WHO=$(docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master git log --pretty="%ce" -1)
+    - export WHEN=$(docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master git log --pretty="%ad %ar" -1)
+    - export WHAT=$(docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master git log --pretty="%h %s" -1)
+    - export REPO=$(docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master git remote get-url origin|xargs basename)
+    - echo $REPO
+    - docker run -v $(pwd):/usr/src/myapp -w /usr/src/myapp
+      -e "WHO=$WHO"
+      -e "WHAT=$WHAT"
+      -e "WHEN=$WHEN"
+      -e "REPO=$REPO"
+      -e "SMTP_USERNAME=$SMTP_USERNAME"
+      -e "SMTP_PASSWORD=$SMTP_PASSWORD"
+      --rm python:3 python deployment/aws-mail.py
+  when: on_failure
 
 test-master:
   before_script:

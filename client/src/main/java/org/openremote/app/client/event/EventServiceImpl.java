@@ -125,8 +125,9 @@ public class EventServiceImpl implements EventService {
             data = data.substring(UnauthorizedEventSubscription.MESSAGE_PREFIX.length());
             UnauthorizedEventSubscription<?> failure = unauthorizedEventSubscriptionMapper.read(data);
             eventBus.dispatch(new SubscriptionFailureEvent(failure.getSubscription().getEventType()));
-        } else if (data.startsWith(SharedEvent.MESSAGE_PREFIX)) {
-            data = data.substring(SharedEvent.MESSAGE_PREFIX.length());
+        } else if (data.startsWith(TriggeredEventSubscription.MESSAGE_PREFIX)) {
+            data = data.substring(TriggeredEventSubscription.MESSAGE_PREFIX.length());
+
             if (data.startsWith("{")) {
                 TriggeredEventSubscription<?> triggered = triggeredEventSubscriptionMapper.read(data);
                 if (triggered.getEvents() == null) {
@@ -135,7 +136,10 @@ public class EventServiceImpl implements EventService {
                 } else {
                     triggered.getEvents().forEach(eventBus::dispatch);
                 }
-            } else if (data.startsWith("[")) {
+            }
+        } else if (data.startsWith(SharedEvent.MESSAGE_PREFIX)) {
+            data = data.substring(SharedEvent.MESSAGE_PREFIX.length());
+            if (data.startsWith("[")) {
                 // Handle array of events
                 SharedEvent[] events = sharedEventArrayMapper.read(data);
                 for (SharedEvent event : events) {

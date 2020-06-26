@@ -141,6 +141,19 @@ create table GATEWAY_CONNECTION (
     primary key (LOCAL_REALM)
 );
 
+create table CONSOLE_APP_CONFIG (
+    ID              int8                     not null,
+    REALM           varchar(255)             not null,
+    URL             varchar(255)             not null,
+    MENU_ENABLED    varchar(255)             not null default false,
+    MENU_POSITION   varchar(255)             not null default 'BOTTOM_LEFT',
+    MENU_IMAGE      varchar(255)             null,
+    PRIMARY_COLOR   varchar(255)             not null default '#43A047',
+    SECONDARY_COLOR varchar(255)             not null default '#C1D72E',
+    LINKS           jsonb                    null,
+    primary key (ID)
+);
+
 /*
   ############################# FUNCTIONS #############################
  */

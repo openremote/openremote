@@ -20,24 +20,19 @@
 package org.openremote.manager.security;
 
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.manager.i18n.I18NService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.http.ConstraintViolationReport;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.security.Credential;
-import org.openremote.model.security.Role;
-import org.openremote.model.security.User;
-import org.openremote.model.security.UserResource;
+import org.openremote.model.security.*;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.ClientErrorException;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.openremote.model.Constants.MASTER_REALM;
@@ -51,12 +46,9 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public User[] getAll(RequestParams requestParams, String realm) {
-        if (!isSuperUser()) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
         try {
             return identityService.getIdentityProvider().getUsers(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm
+                realm
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -67,12 +59,13 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public User get(RequestParams requestParams, String realm, String userId) {
-        if (!isSuperUser()) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        if (!isSuperUser() && !Objects.equals(getUserId(), userId)) {
+            throw new ForbiddenException("Regular users can only retrieve their own roles");
         }
+
         try {
             return identityService.getIdentityProvider().getUser(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId
+                realm, userId
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -82,10 +75,15 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public void update(RequestParams requestParams, String realm, String userId, User user) {
-        if (!isSuperUser()) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
+    public User getCurrent(RequestParams requestParams) {
+        if (!isAuthenticated()) {
+            throw new ForbiddenException("Must be authenticated");
         }
+        return get(requestParams, getRequestRealm(), getUserId());
+    }
+
+    @Override
+    public void update(RequestParams requestParams, String realm, String userId, User user) {
         ConstraintViolationReport violationReport;
         if ((violationReport = isIllegalMasterAdminUserMutation(requestParams, realm, user)) != null) {
             throw new WebApplicationException(
@@ -97,7 +95,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         }
         try {
             identityService.getIdentityProvider().updateUser(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId, user
+                realm, user
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -108,13 +106,10 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public void create(RequestParams requestParams, String realm, User user) {
-        if (!isSuperUser()) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
         try {
             identityService.getIdentityProvider().createUser(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, user
-            );
+                realm, user,
+                null);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (WebApplicationException ex) {
@@ -126,9 +121,6 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public void delete(RequestParams requestParams, String realm, String userId) {
-        if (!isSuperUser()) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
         ConstraintViolationReport violationReport;
         if ((violationReport = isIllegalMasterAdminUserDeletion(requestParams, realm, userId)) != null) {
             throw new WebApplicationException(
@@ -140,7 +132,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         }
         try {
             identityService.getIdentityProvider().deleteUser(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId
+                realm, userId
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -153,12 +145,9 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public void resetPassword(@BeanParam RequestParams requestParams, String realm, String userId, Credential credential) {
-        if (!isSuperUser()) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
         try {
             identityService.getIdentityProvider().resetPassword(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId, credential
+                realm, userId, credential
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -169,12 +158,13 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public Role[] getRoles(@BeanParam RequestParams requestParams, String realm, String userId) {
-        if (!isSuperUser()) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        if (!isSuperUser() && !Objects.equals(getUserId(), userId)) {
+            throw new ForbiddenException("Regular users can only retrieve their own roles");
         }
+
         try {
             return identityService.getIdentityProvider().getRoles(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId
+                realm, userId
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -184,13 +174,23 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public void updateRoles(@BeanParam RequestParams requestParams, String realm, String userId, Role[] roles) {
-        if (!isSuperUser()) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
+    public Role[] getCurrentUserRoles(RequestParams requestParams) {
+        if (!isAuthenticated()) {
+            throw new ForbiddenException("Must be authenticated");
         }
+        return getRoles(requestParams, getRequestRealm(), getUserId());
+    }
+
+    @Override
+    public void updateRoles(@BeanParam RequestParams requestParams, String realm, String userId, Role[] roles) {
         try {
             identityService.getIdentityProvider().updateRoles(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId, roles
+                realm,
+                userId,
+                Arrays.stream(roles)
+                    .filter(Role::isAssigned)
+                    .map(r -> Arrays.stream(ClientRole.values()).filter(cr -> cr.getValue().equals(r.getName())).findFirst().orElse(null))
+                    .toArray(ClientRole[]::new)
             );
         } catch (ClientErrorException ex) {
             ex.printStackTrace(System.out);
@@ -205,7 +205,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             return null;
 
         if (!identityService.getIdentityProvider().isMasterRealmAdmin(
-            new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), userId
+            userId
         )) return null;
 
         ResourceBundle validationMessages = getContainer().getService(I18NService.class).getValidationMessages();
@@ -224,7 +224,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             return null;
 
         if (!identityService.getIdentityProvider().isMasterRealmAdmin(
-            new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), user.getId()
+            user.getId()
         )) return null;
 
         ResourceBundle validationMessages = getContainer().getService(I18NService.class).getValidationMessages();

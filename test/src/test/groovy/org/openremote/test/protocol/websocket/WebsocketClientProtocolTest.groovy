@@ -20,7 +20,7 @@
 package org.openremote.test.protocol.websocket
 
 import org.openremote.agent.protocol.Protocol
-import org.openremote.agent.protocol.http.OAuthPasswordGrant
+import org.openremote.container.web.OAuthPasswordGrant
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.agent.protocol.websocket.WebsocketClientProtocol
 import org.openremote.agent.protocol.websocket.WebsocketHttpSubscription
@@ -35,6 +35,7 @@ import org.openremote.model.Constants
 import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.*
+import org.openremote.model.event.TriggeredEventSubscription
 import org.openremote.model.event.shared.EventSubscription
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.query.AssetQuery
@@ -53,8 +54,8 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
-import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD
+import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration
@@ -201,7 +202,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_FILTERS,
                         Values.convertToValue(
                             [
-                                new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
+                                new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false, false)
                             ] as ValueFilter[]
                             , Container.JSON.writer()).orElse(null)),
@@ -210,7 +211,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
                         Values.convertToValue(
                             [
-                                new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
+                                new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"targetTemperature\")].attributeState.value", true, false)
                             ] as ValueFilter[]
                             , Container.JSON.writer()).orElse(null)),
@@ -229,7 +230,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_FILTERS,
                         Values.convertToValue(
                             [
-                                new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
+                                new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false, false)
                             ] as ValueFilter[]
                             , Container.JSON.writer()).orElse(null)),
@@ -238,7 +239,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
                         Values.convertToValue(
                             [
-                                new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
+                                new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"co2Level\")].attributeState.value", true, false),
                             ] as ValueFilter[]
                             , Container.JSON.writer()).orElse(null)),
@@ -269,7 +270,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
             Values.create(19.5))
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
-        then: "the linked targetTemperature attribute should contain this written value"
+        then: "the linked targetTemperature attribute should contain this written value (it should have been written to the target temp attribute and then read back again)"
         conditions.eventually {
             asset = assetStorageService.find(asset.getId(), true)
             assert asset.getAttribute("readWriteTargetTemp").flatMap{it.getValueAsNumber()}.orElse(null) == 19.5d

@@ -21,7 +21,7 @@ package org.openremote.test.protocol.websocket
 
 import io.netty.channel.ChannelHandler
 import org.apache.http.client.utils.URIBuilder
-import org.openremote.agent.protocol.http.OAuthPasswordGrant
+import org.openremote.container.web.OAuthPasswordGrant
 import org.openremote.agent.protocol.io.AbstractNettyIoClient
 import org.openremote.agent.protocol.websocket.WebsocketIoClient
 import org.openremote.container.Container
@@ -34,15 +34,14 @@ import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.event.TriggeredEventSubscription
 import org.openremote.model.event.shared.EventSubscription
-import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
-import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD
+import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 
@@ -119,8 +118,8 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         then: "the client receives the event"
         conditions.eventually {
             assert lastMessage != null
-            assert lastMessage.indexOf(SharedEvent.MESSAGE_PREFIX) == 0
-            def triggeredEvent = Container.JSON.readValue(lastMessage.substring(SharedEvent.MESSAGE_PREFIX.length()), TriggeredEventSubscription.class)
+            assert lastMessage.indexOf(TriggeredEventSubscription.MESSAGE_PREFIX) == 0
+            def triggeredEvent = Container.JSON.readValue(lastMessage.substring(TriggeredEventSubscription.MESSAGE_PREFIX.length()), TriggeredEventSubscription.class)
             assert triggeredEvent.subscriptionId == "1"
             assert triggeredEvent.events.size() == 1
             assert ((AttributeEvent)triggeredEvent.events[0]).entityId == managerDemoSetup.apartment1LivingroomId

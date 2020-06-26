@@ -590,6 +590,7 @@ public class Asset implements IdentifiableEntity {
             "id='" + id + '\'' +
             ", name='" + name + '\'' +
             ", type ='" + type + '\'' +
+            ", parentId='" + parentId + '\'' +
             '}';
     }
 

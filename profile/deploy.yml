@@ -102,7 +102,7 @@ services:
       DEV_MODE: ${DEV_MODE:-false}
 
       # This switch can wipe your database, this is the factory reset!
-      SETUP_WIPE_CLEAN_INSTALL: ${SETUP_WIPE_CLEAN_INSTALL:-true}
+      SETUP_WIPE_CLEAN_INSTALL: ${SETUP_WIPE_CLEAN_INSTALL:-false}
       SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
 
       # When you are ready to permanently install your project, replace it with the next lines...
@@ -175,7 +175,7 @@ services:
       # APP_DOCROOT: '/deployment/manager/app'
       # SHARED_DOCROOT: '/deployment/manager/shared'
       # Custom default app name to load when '/' is requested
-      APP_DEFAULT: ${APP_DEFAULT:-manager}
+      APP_DEFAULT: ${APP_DEFAULT:-main}
 
       # Disable HTTP redirects when a console application requests libraries which
       # are delivered and used on the platform. This is necessary if your console application

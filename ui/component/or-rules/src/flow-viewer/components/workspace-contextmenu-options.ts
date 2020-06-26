@@ -48,7 +48,7 @@ export const createContextMenuButtons = (workspace: EditorWorkspace, e: MouseEve
         {
             type: "button",
             label: i18next.t("processors", "Processors"),
-            icon: "settings",
+            icon: "cog",
             action: () => { ContextMenu.open(e.pageX, e.pageY, workspace, createNodeButtons(NodeType.PROCESSOR)); }
         },
         {

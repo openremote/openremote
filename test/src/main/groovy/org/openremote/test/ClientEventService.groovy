@@ -55,15 +55,19 @@ class ClientEventService implements EventService {
                             data = data.substring(UnauthorizedEventSubscription.MESSAGE_PREFIX.length())
                             UnauthorizedEventSubscription failure = objectMapper.readValue(data, UnauthorizedEventSubscription.class)
                             eventBus.dispatch(new SubscriptionFailureEvent(failure.subscription.getEventType()))
-                        } else if (data.startsWith(SharedEvent.MESSAGE_PREFIX)) {
-                            data = data.substring(SharedEvent.MESSAGE_PREFIX.length())
+                        } else if (data.startsWith(TriggeredEventSubscription.MESSAGE_PREFIX)) {
+                            data = data.substring(TriggeredEventSubscription.MESSAGE_PREFIX.length())
 
                             if (data.startsWith("{")) {
                                 TriggeredEventSubscription event = objectMapper.readValue(data, TriggeredEventSubscription.class)
                                 if (event.events != null) {
                                     event.events.forEach{ Event evt -> eventBus.dispatch(evt)}
                                 }
-                            } else if (data.startsWith("[")) {
+                            }
+                        } else if (data.startsWith(SharedEvent.MESSAGE_PREFIX)) {
+                            data = data.substring(SharedEvent.MESSAGE_PREFIX.length())
+
+                            if (data.startsWith("[")) {
                                 // Handle array of events
                                 SharedEvent[] events = objectMapper.readValue(data, SharedEvent[].class)
                                 for (SharedEvent event : events) {

@@ -9,7 +9,8 @@ import {
     AttributeValueDescriptor,
     AttributeValueType,
     MetaItemType,
-    ValueType
+    ValueType,
+    SharedEvent
 } from "@openremote/model";
 import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import "@openremote/or-input";
@@ -253,7 +254,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     }
 
     public render() {
-
         if (this._invalid) {
             return html`
                 <div>INVALID</div>
@@ -271,15 +271,20 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         }
     }
 
-    public onAttributeEvent(event: AttributeEvent) {
+    public _onEvent(event: SharedEvent) {
+        if (event.eventType !== "attribute") {
+            return;
+        }
+        const attributeEvent = event as AttributeEvent;
+
         const oldValue = this.attribute ? this.attribute.value : undefined;
         if (this.attribute) {
-            this.attribute.value = event.attributeState!.value;
+            this.attribute.value = attributeEvent.attributeState!.value;
             this.attribute.valueTimestamp = event.timestamp;
             this._loading = false;
             super.requestUpdate();
         }
-        this.dispatchEvent(new OrInputChangedEvent(event.attributeState!.value, oldValue));
+        this.dispatchEvent(new OrInputChangedEvent(attributeEvent.attributeState!.value, oldValue));
     }
 
     protected onValueChange(newValue: any) {

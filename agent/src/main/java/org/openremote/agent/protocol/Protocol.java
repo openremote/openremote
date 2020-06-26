@@ -21,7 +21,7 @@ package org.openremote.agent.protocol;
 
 import org.apache.commons.codec.binary.BinaryCodec;
 import org.apache.commons.codec.binary.Hex;
-import org.openremote.agent.protocol.http.OAuthGrant;
+import org.openremote.container.web.OAuthGrant;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.model.AbstractValueHolder;

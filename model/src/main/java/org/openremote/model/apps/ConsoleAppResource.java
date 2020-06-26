@@ -25,10 +25,7 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
 
 import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -47,4 +44,9 @@ public interface ConsoleAppResource {
     @SuppressWarnings("unusable-by-js")
     String[] getInstalledApps(@BeanParam RequestParams requestParams);
 
+    @GET
+    @Path("config")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    ConsoleAppConfig getAppConfig(@BeanParam RequestParams requestParams);
 }

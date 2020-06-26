@@ -28,6 +28,7 @@ import java.util.List;
 
 public class TriggeredEventSubscription<T extends SharedEvent> {
 
+    public static final String MESSAGE_PREFIX = "TRIGGERED:";
     protected List<T> events;
     protected String subscriptionId;
 

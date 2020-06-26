@@ -67,7 +67,7 @@ public class EventTypeConverters implements TypeConverters {
 
     @Converter
     public String writeTriggeredEventSubscription(TriggeredEventSubscription triggeredEventSubscription, Exchange exchange) throws Exception {
-        return SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(triggeredEventSubscription);
+        return TriggeredEventSubscription.MESSAGE_PREFIX + Container.JSON.writeValueAsString(triggeredEventSubscription);
     }
 
     @Converter

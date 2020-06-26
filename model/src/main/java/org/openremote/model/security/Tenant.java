@@ -78,6 +78,9 @@ public class Tenant {
     @Transient
     protected String emailTheme;
 
+    @Transient
+    protected Integer accessTokenLifespan;
+
     @JsIgnore
     public Tenant() {
         this(null, null, null, null);
@@ -199,6 +202,8 @@ public class Tenant {
     public void setEmailTheme(String emailTheme) {
         this.emailTheme = emailTheme;
     }
+
+
 
     @Override
     public String toString() {

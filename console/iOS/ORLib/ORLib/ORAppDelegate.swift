@@ -27,25 +27,25 @@ import CoreLocation
 
 @UIApplicationMain
 open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
-
+    
     public var window: UIWindow?
     public let gcmMessageIDKey = "gcm.message_id"
     public var reachabilityAlert : UIAlertController?
     public var reachabilityAlertShown = false
     public let internetReachability = Reachability()
-
+    
     private var geofenceProvider : GeofenceProvider?
-
+    
     open func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         UNUserNotificationCenter.current().delegate = self
         // if the app was launched because of geofencing
-
-        var paths = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)
+        
+        let paths = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)
         let documentsDirectory = paths[0]
         let fileName = "\(Date()).log"
         let logFilePath = (documentsDirectory as NSString).appendingPathComponent(fileName)
         freopen(logFilePath.cString(using: String.Encoding.ascii)!, "a+", stderr)
-
+        
         if launchOptions?[UIApplication.LaunchOptionsKey.location] != nil {
             NSLog("%@", "App started from location update")
             // create new GeofenceProvider which creates a CLLocationManager that will receive the location update
@@ -67,7 +67,7 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
         } else {
             FirebaseApp.configure()
             Messaging.messaging().delegate = self
-
+            
             NotificationCenter.default.addObserver(self,
                                                    selector: #selector(self.reachabilityChanged(note:)),
                                                    name: NSNotification.Name.reachabilityChanged,
@@ -81,7 +81,7 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
         }
         return true
     }
-
+    
     open func applicationWillResignActive(_ application: UIApplication) {
         // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
         // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
@@ -89,7 +89,7 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
         reachabilityAlertShown = false
         internetReachability?.stopNotifier()
     }
-
+    
     open func applicationDidEnterBackground(_ application: UIApplication) {
         // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
         // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
@@ -97,7 +97,7 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
         reachabilityAlertShown = false
         internetReachability?.stopNotifier()
     }
-
+    
     open func applicationWillEnterForeground(_ application: UIApplication) {
         // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -109,7 +109,7 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
             }
         }
     }
-
+    
     open func applicationDidBecomeActive(_ application: UIApplication) {
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -121,26 +121,28 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
             }
         }
     }
-
+    
     open func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
         reachabilityAlert?.dismiss(animated: true, completion: nil)
         reachabilityAlertShown = false
         internetReachability?.stopNotifier()
     }
-
+    
     open func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         Messaging.messaging().apnsToken = deviceToken
         InstanceID.instanceID().getID { (result, error) in
             if let error = error {
                 print("Error fetching remote instange ID: \(error)")
             }
-            if let token =  InstanceID.instanceID().token(), let deviceId = result {
-                TokenManager.sharedInstance.storeDeviceId(token: token, deviceId: deviceId)
+            InstanceID.instanceID().instanceID { (tokenResult, tokenError) in
+                if let tResult = tokenResult, let deviceId = result {
+                    TokenManager.sharedInstance.storeDeviceId(token: tResult.token, deviceId: deviceId)
+                }
             }
         }
     }
-
+    
     open func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         if let action = userInfo[DefaultsKey.actionKey] as? String {
             if action == Actions.geofenceRefresh {
@@ -162,7 +164,7 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
                 }
             }
         }
-
+        
         if let notificationIdString = userInfo[ActionType.notificationId] as? String, let notificationId = Int64(notificationIdString) {
             if let defaults = UserDefaults(suiteName: ORAppGroup.entitlement), let consoleId = defaults.string(forKey: GeofenceProvider.consoleIdKey) {
                 ORNotificationResource.sharedInstance.notificationDelivered(notificationId: notificationId, targetId: consoleId)
@@ -170,24 +172,24 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
         }
         completionHandler(UIBackgroundFetchResult.newData)
     }
-
+    
     open func application(_ application: UIApplication, open url: URL, sourceApplication: String?, annotation: Any) -> Bool {
         return true
     }
-
+    
     @objc open func reachabilityChanged(note: NSNotification) {
         if let reachability = note.object as? Reachability {
             updateReachabilityStatus(reachability: reachability)
         }
     }
-
+    
     private func updateReachabilityStatus(reachability: Reachability) {
         if reachability.connection == .none {
             if (!reachabilityAlertShown) {
                 let topWindow = UIWindow(frame: UIScreen.main.bounds)
                 topWindow.rootViewController = UIViewController()
                 topWindow.windowLevel = UIWindow.Level.alert + 1
-
+                
                 reachabilityAlert = UIAlertController(title: "Network Error", message: "Your device seems to be offline", preferredStyle: .alert)
                 let reachabilityRetryAction = UIAlertAction(title: "Retry", style: .default, handler: { (action) in
                     self.reachabilityAlertShown = false
@@ -212,7 +214,7 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
             }
         }
     }
-
+    
     open func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
             if challenge.protectionSpace.host == ORServer.hostURL {
@@ -225,37 +227,37 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
 }
 
 extension ORAppDelegate : UNUserNotificationCenterDelegate {
-
+    
     open func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         let userInfo = notification.request.content.userInfo
         var notificationId : Int64? = nil
-
+        
         if let notificationIdString = userInfo[ActionType.notificationId] as? String{
             notificationId = Int64(notificationIdString)
         }
         if let notiId = notificationId, let defaults = UserDefaults(suiteName: ORAppGroup.entitlement), let consoleId = defaults.string(forKey: GeofenceProvider.consoleIdKey) {
             ORNotificationResource.sharedInstance.notificationDelivered(notificationId: notiId, targetId: consoleId)
         }
-
+        
         completionHandler([.alert, .sound])
     }
-
+    
     open func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-
+        
         let userInfo = response.notification.request.content.userInfo
         var notificationId : Int64? = nil
         var consoleId : String?
-
+        
         if let notificationIdString = userInfo[ActionType.notificationId] as? String{
             notificationId = Int64(notificationIdString)
         }
-
+        
         if let defaults = UserDefaults(suiteName: ORAppGroup.entitlement) {
             consoleId = defaults.string(forKey: GeofenceProvider.consoleIdKey);
         }
-
+        
         NSLog("%@", "Action chosen: \(response.actionIdentifier)")
-
+        
         switch response.actionIdentifier {
         case UNNotificationDefaultActionIdentifier:
             if let urlToOpen = userInfo[ActionType.appUrl] as? String, !urlToOpen.isEmpty {
@@ -338,20 +340,21 @@ extension ORAppDelegate : MessagingDelegate {
             if let error = error {
                 print("Error fetching remote instange ID: \(error)")
             }
-            if let token =  InstanceID.instanceID().token(), let deviceId = result {
-                TokenManager.sharedInstance.storeDeviceId(token: token, deviceId: deviceId)
+            if let deviceId = result {
+                TokenManager.sharedInstance.storeDeviceId(token: fcmToken, deviceId: deviceId)
             }
         }
     }
-
+    
     open func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String) {
         print("Firebase registration token: \(fcmToken)")
         InstanceID.instanceID().getID { (result, error) in
             if let error = error {
                 print("Error fetching remote instange ID: \(error)")
             }
-            if let token =  InstanceID.instanceID().token(), let deviceId = result {
-                TokenManager.sharedInstance.storeDeviceId(token: token, deviceId: deviceId)
+            
+            if  let deviceId = result {
+                TokenManager.sharedInstance.storeDeviceId(token: fcmToken, deviceId: deviceId)
             }
         }
     }

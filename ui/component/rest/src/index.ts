@@ -15,9 +15,9 @@ export class RestApi {
         this._axiosInstance = axios.create();
         this._axiosInstance.defaults.headers["Content-Type"] = "application/json";
         this._axiosInstance.interceptors.request.use((config) => {
-            config.paramsSerializer = params => Qs.stringify(params, {arrayFormat: 'repeat'});
+            config.paramsSerializer = (params) => Qs.stringify(params, {arrayFormat: "repeat"});
             return config;
-        })
+        });
     }
 
     get axiosInstance() {
@@ -26,13 +26,6 @@ export class RestApi {
 
     public setTimeout(timeout: number) {
         this._axiosInstance.defaults.timeout = timeout;
-    }
-
-    public setBasicAuth(username: string, password: string) {
-        this._axiosInstance.defaults.auth = {
-            password: password,
-            username: username
-        };
     }
 
     public addRequestInterceptor(interceptor: (config: AxiosRequestConfig) => AxiosRequestConfig) {

@@ -21,8 +21,11 @@ package org.openremote.test.protocol.http
 
 import org.jboss.resteasy.spi.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
-import org.openremote.agent.protocol.controller.PollingKey
 import org.openremote.agent.protocol.http.*
+import org.openremote.container.web.OAuthGrant
+import org.openremote.container.web.OAuthPasswordGrant
+import org.openremote.container.web.OAuthRefreshTokenGrant
+import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -46,8 +49,8 @@ import javax.ws.rs.client.ClientRequestFilter
 import javax.ws.rs.core.*
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
-import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD
+import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration
 

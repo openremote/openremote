@@ -5,7 +5,7 @@ import "@openremote/or-translate";
 import {IconSets} from "@openremote/or-icon";
 import i18next from "i18next";
 
-import {AssetEvent, AttributeEvent, MetaItemType} from "@openremote/model";
+import {AssetEvent, AttributeEvent, MetaItemType, SharedEvent} from "@openremote/model";
 import {getApartment1Asset} from "./util";
 
 @customElement("or-demo")
@@ -81,14 +81,14 @@ class OrDemo extends subscribe(manager)(LitElement) {
         this.requestUpdate();
     }
 
-    public onAssetEvent(event: AssetEvent) {
+    public onEvent(event: SharedEvent) {
         console.log("Asset Event Received:" + JSON.stringify(event, null, 2));
-    }
 
-    public onAttributeEvent(event: AttributeEvent) {
-        console.log("Attribute Event Received:" + JSON.stringify(event, null, 2));
-        if (event.attributeState && event.attributeState.attributeRef!.attributeName === "alarmEnabled") {
-            this.alarmEnabled = event.attributeState!.value;
+        if (event.eventType === "attribute") {
+            const attributeEvent = event as AttributeEvent;
+            if (attributeEvent.attributeState && attributeEvent.attributeState.attributeRef!.attributeName === "alarmEnabled") {
+                this.alarmEnabled = attributeEvent.attributeState!.value;
+            }
         }
     }
 }

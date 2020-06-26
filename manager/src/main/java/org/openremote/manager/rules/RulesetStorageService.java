@@ -23,6 +23,7 @@ import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -62,13 +63,13 @@ public class RulesetStorageService implements ContainerService {
     }
 
     private static final Logger LOG = Logger.getLogger(RulesetStorageService.class.getName());
-
+    public static final int PRIORITY = AssetStorageService.PRIORITY + 200;
     protected PersistenceService persistenceService;
     protected ManagerIdentityService identityService;
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return PRIORITY;
     }
 
     @Override

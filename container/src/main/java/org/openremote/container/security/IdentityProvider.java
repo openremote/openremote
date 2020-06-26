@@ -26,6 +26,9 @@ import io.undertow.servlet.api.DeploymentInfo;
  */
 public interface IdentityProvider {
 
+    String SETUP_ADMIN_PASSWORD = "SETUP_ADMIN_PASSWORD";
+    String SETUP_ADMIN_PASSWORD_DEFAULT = "secret";
+
     void init();
 
     void start();

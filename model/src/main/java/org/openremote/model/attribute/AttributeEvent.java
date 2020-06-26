@@ -144,6 +144,11 @@ public class AttributeEvent extends SharedEvent implements AssetInfo {
         return this;
     }
 
+    @Override
+    public String[] getAttributeNames() {
+        return new String[]{getAttributeRef().getAttributeName()};
+    }
+
     public String getAttributeName() {
         return getAttributeRef().getAttributeName();
     }

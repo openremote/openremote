@@ -77,6 +77,7 @@ export class OrRuleActionNotification extends LitElement {
                 });
             }
         }
+
         if(this.type === NotificationTargetType.ASSET) {
             idOptions.push(["*", i18next.t("matched")]);
             if(this._listItems) this._listItems.forEach((asset: Asset) => idOptions.push([asset.id!, asset.name!] as [string, string]));
@@ -90,14 +91,20 @@ export class OrRuleActionNotification extends LitElement {
             if(this._listItems) this._listItems.forEach((user: User) => idOptions.push([user.id!, user.username ? user.username : user.email] as [string, string]));
             
         }
-       
         if(this.type){
             targetTypeTemplate = html`<or-input type="${InputType.SELECT}" 
                             .options="${targetTypes}"
-                            value="${this.type ? this.type : targetTypes[0]}"
+                            value="${this.type}"
                             label="${i18next.t("recipients")}"
                             @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationType(e.detail.value)}" 
                             ?readonly="${this.readonly}"></or-input>
+            `;
+        } else if(targetTypes.length > 0 ){
+            targetTypeTemplate = html`<or-input type="${InputType.SELECT}" 
+                        .options="${targetTypes}"
+                        label="${i18next.t("recipients")}"
+                        @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationType(e.detail.value)}" 
+                        ?readonly="${this.readonly}"></or-input>
             `;
         }
 
@@ -121,7 +128,7 @@ export class OrRuleActionNotification extends LitElement {
             valueTemplate = html`<or-input .type="${InputType.TEXT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value)}" ?readonly="${this.readonly}" .value="${value}" ></or-input>`
         }
 
-        let modalTemplate;
+        let modalTemplate = html``;
         if(message) {
             if(messageType === "push") {
                 modalTemplate = html`
@@ -156,10 +163,15 @@ export class OrRuleActionNotification extends LitElement {
     }
 
     getNotificationTargetType() {
-        if(!this.action.target) return NotificationTargetType.CUSTOM;
+        if(this.action.target) {
+            if(this.action.target.assets || this.action.target.matchedAssets) return NotificationTargetType.ASSET;
+            if(this.action.target.users) return NotificationTargetType.USER;
+        } else if(this.action.notification) {
+            if(this.action.notification.message && this.action.notification.message.type === "email") return NotificationTargetType.CUSTOM;
+        } else {
+            return;
+        }
         
-        if(this.action.target.assets || this.action.target.matchedAssets) return NotificationTargetType.ASSET;
-        if(this.action.target.users) return NotificationTargetType.USER;
     }
 
 
@@ -232,7 +244,6 @@ export class OrRuleActionNotification extends LitElement {
             case NotificationTargetType.TENANT:
                 break;
             case NotificationTargetType.CUSTOM:
-                delete this.action.target;
                 break;
         }
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
@@ -320,7 +331,9 @@ export class OrRuleActionNotification extends LitElement {
     }
 
     protected loadUsers() {
-        manager.rest.api.UserResource.getAll(manager.displayRealm).then((response) => this._listItems = response.data);
+        manager.rest.api.UserResource.getAll(manager.displayRealm).then((response) => this._listItems = response.data).then(() => {
+            this.requestUpdate();
+        });
     }
 
     protected loadAssets(query: object) {

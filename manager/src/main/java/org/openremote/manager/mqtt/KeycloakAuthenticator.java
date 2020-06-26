@@ -20,17 +20,11 @@
 package org.openremote.manager.mqtt;
 
 import io.moquette.broker.security.IAuthenticator;
-import org.keycloak.admin.client.resource.ClientResource;
-import org.keycloak.admin.client.resource.ClientsResource;
-import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.idm.ClientRepresentation;
-import org.openremote.container.web.ClientRequestInfo;
-import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.security.Tenant;
 
-import javax.ws.rs.NotFoundException;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.logging.Logger;
 
 public class KeycloakAuthenticator implements IAuthenticator {
@@ -52,26 +46,22 @@ public class KeycloakAuthenticator implements IAuthenticator {
             realm = realm.substring(0, indexSplit);
         }
 
-        RealmResource realmResource = identityProvider.getRealms(getClientRequestInfo()).realm(realm);
-        if (realmResource == null) {
+        Tenant tenant = identityProvider.getTenant(realm);
+        if (tenant == null) {
             LOG.info("Realm not found");
             return false;
         }
 
-        List<ClientRepresentation> clientRepresentations = realmResource.clients().findByClientId(clientId);
-        if (clientRepresentations.isEmpty()) {
+        ClientRepresentation client = identityProvider.getClient(realm, clientId);
+
+        if (client == null) {
             LOG.info("Client not found");
             return false;
         }
 
         String suppliedClientSecret = new String(password, StandardCharsets.UTF_8);
-        String clientSecret = realmResource.clients().get(clientRepresentations.get(0).getId()).getSecret().getValue();
+        String clientSecret = client.getSecret();
 
         return suppliedClientSecret.equals(clientSecret);
-    }
-
-    private ClientRequestInfo getClientRequestInfo() {
-        String accessToken = identityProvider.getAdminAccessToken(null);
-        return new ClientRequestInfo(null, accessToken);
     }
 }

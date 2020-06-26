@@ -27,10 +27,12 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ConnectionConstants;
+import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.mqtt.MqttBrokerService;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.event.shared.*;
 import org.openremote.model.syslog.SyslogEvent;
@@ -93,8 +95,8 @@ import static org.openremote.manager.gateway.GatewayService.isGatewayClientId;
  */
 public class ClientEventService implements ContainerService {
 
+    public static final int PRIORITY = ManagerWebService.PRIORITY - 200;
     private static final Logger LOG = Logger.getLogger(ClientEventService.class.getName());
-
     public static final String WEBSOCKET_EVENTS = "events";
 
     // TODO: Some of these options should be configurable depending on expected load etc.
@@ -118,7 +120,7 @@ public class ClientEventService implements ContainerService {
 
     @Override
     public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
+        return PRIORITY;
     }
 
     @Override
@@ -248,7 +250,7 @@ public class ClientEventService implements ContainerService {
                                 .otherwise()
                                     .to(ClientEventService.CLIENT_EVENT_TOPIC)
                             .endChoice()
-                            .when(header(HEADER_CONNECTION_TYPE).isNull())
+                            .when(header(HEADER_CONNECTION_TYPE).isNull()) // Outbound message to clients
                                 .split(method(eventSubscriptions, "splitForSubscribers"))
                                 .process(exchange -> {
                                     String sessionKey = getSessionKey(exchange);

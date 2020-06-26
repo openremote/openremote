@@ -44,6 +44,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Values;
 
@@ -63,12 +64,13 @@ import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.manager.event.ClientEventService.getClientId;
 import static org.openremote.manager.event.ClientEventService.getSessionKey;
+import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 public class GatewayService extends RouteBuilder implements ContainerService, AssetUpdateProcessor {
 
-    public static final int GATEWAY_SERVICE_PRIORITY = DEFAULT_PRIORITY - 10;
+    public static final int PRIORITY = HIGH_PRIORITY + 100;
     public static final String GATEWAY_CLIENT_ID_PREFIX = "gateway-";
-    private static final Logger LOG = Logger.getLogger(GatewayService.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayService.class.getName());
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
     protected ManagerIdentityService identityService;
@@ -91,7 +93,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
     @Override
     public int getPriority() {
-        return GATEWAY_SERVICE_PRIORITY;
+        return PRIORITY;
     }
 
     @Override
@@ -103,7 +105,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         executorService = container.getService(ManagerExecutorService.class);
 
         if (!identityService.isKeycloakEnabled()) {
-            LOG.warning("Gateways are not supported when not using Keycloak identity provider");
+            LOG.warning("Incoming edge gateway connections disabled: Not supported when not using Keycloak identity provider");
             active = false;
         } else {
             active = true;
@@ -114,6 +116,11 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
     @Override
     public void start(Container container) throws Exception {
+
+        if (!active) {
+            return;
+        }
+
         List<Asset> gateways = assetStorageService.findAll(new AssetQuery().types(AssetType.GATEWAY));
         List<String> gatewayIds = gateways.stream().map(Asset::getId).collect(Collectors.toList());
         gateways = gateways.stream()
@@ -239,7 +246,14 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             // This is a change to a locally registered gateway
             if (attribute.getNameOrThrow().equals("disabled")) {
                 boolean disabled = attribute.getValueAsBoolean().orElse(false);
-                connector.setDisabled(disabled);
+                boolean isAlreadyDisabled = asset.getAttribute("disabled").flatMap(AssetAttribute::getValueAsBoolean).orElse(false);
+                if (disabled != isAlreadyDisabled) {
+                    if (disabled) {
+                        connector.sendMessageToGateway(new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
+                    }
+                    connector.setDisabled(disabled);
+                    updateGatewayClient(connector, !disabled);
+                }
             }
         } else {
             String gatewayId = assetIdGatewayIdMap.get(asset.getId());
@@ -254,6 +268,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                         LOG.info("Gateway is not connected so attribute event for descendant asset will be dropped (Asset ID=" + asset.getId() + ", Gateway ID=" + gatewayId + "): " + attribute);
                         throw new AssetProcessingException(AssetProcessingException.Reason.GATEWAY_DISCONNECTED, "Gateway is not connected: Gateway ID=" + connector.gatewayId);
                     }
+                    LOG.fine("Attribute event for a gateway descendant asset being forwarded to the gateway (Asset ID=" + asset.getId() + ", Gateway ID=" + gatewayId + "): " + attribute);
                     connector.sendMessageToGateway(
                         new AttributeEvent(
                             asset.getId(),
@@ -385,6 +400,8 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
         if (connector.isDisabled()) {
             LOG.warning("Gateway is currently disabled so will be ignored: Gateway ID=" + gatewayId);
+            // Should not have got passed keycloak ensure keycloak client is disabled
+            updateGatewayClient(connector, false);
             clientEventService.sendToSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
             disconnectRunnable.run();
             return;
@@ -429,7 +446,11 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
                 // Check if disabled
                 boolean isNowDisabled = gateway.getAttribute("disabled").flatMap(AssetAttribute::getValueAsBoolean).orElse(false);
+                if (isNowDisabled) {
+                    connector.sendMessageToGateway(new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
+                }
                 connector.setDisabled(isNowDisabled);
+                updateGatewayClient(connector, !isNowDisabled);
                 break;
             case DELETE:
                 // Check if this gateway has a connector
@@ -495,12 +516,10 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         clientRepresentation.setSecret(secret);
 
         LOG.info("Creating gateway keycloak client for gateway id: " + gateway.getId());
+        clientRepresentation = identityProvider.createClient(gateway.getRealm(), clientRepresentation);
 
-        ClientsResource clientsResource = identityProvider.getRealms(getClientRequestInfo()).realm(gateway.getRealm()).clients();
-        Response response = clientsResource.create(clientRepresentation);
-        response.close();
-        if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-            LOG.warning("Failed to create Keycloak client for gateway '" + gateway.getId() + "' Response=" + response.getStatus());
+        if (clientRepresentation == null) {
+            LOG.warning("Failed to create Keycloak client for gateway '" + gateway.getId());
         } else {
             gateway.getAttribute("clientId").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(clientId)));
             gateway.getAttribute("clientSecret").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(secret)));
@@ -513,6 +532,12 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         }
     }
 
+    protected void updateGatewayClient(GatewayConnector connector, boolean enabled) {
+        ClientRepresentation client = identityProvider.getClient(connector.getRealm(), GATEWAY_CLIENT_ID_PREFIX + connector.gatewayId);
+        client.setEnabled(enabled);
+        identityProvider.updateClient(connector.getRealm(), client);
+    }
+
     protected void destroyGatewayClient(Asset gateway) {
         String id = gateway.getAttribute("clientId").flatMap(AssetAttribute::getValueAsString).orElse(null);
         if (TextUtil.isNullOrEmpty(id)) {
@@ -520,16 +545,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             return;
         }
 
-        final ClientsResource clientsResource = identityProvider.getRealms(getClientRequestInfo()).realm(gateway.getRealm()).clients();
-        clientsResource.findByClientId(id).stream().findFirst().ifPresent(
-            clientRepresentation -> {
-                clientsResource.get(clientRepresentation.getId()).remove();
-            });
-    }
-
-    protected ClientRequestInfo getClientRequestInfo() {
-        String accessToken = identityProvider.getAdminAccessToken(null);
-        return new ClientRequestInfo(null, accessToken);
+        identityProvider.deleteClient(gateway.getRealm(), id);
     }
 
     protected Consumer<Object> createConnectorMessageConsumer(String sessionId) {

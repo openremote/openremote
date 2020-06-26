@@ -5,7 +5,11 @@ import {AssetType, RulesetLang, NotificationTargetType} from "@openremote/model"
 import {AppStateKeyed, Page} from "../index";
 import {EnhancedStore} from "@reduxjs/toolkit";
 
-export function pageRulesProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?:RulesConfig) {
+export interface PageRulesConfig {
+    rules: RulesConfig;
+}
+
+export function pageRulesProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config: PageRulesConfig = PAGE_RULES_CONFIG_DEFAULT) {
     return {
         routes: [
             "rules",
@@ -13,33 +17,35 @@ export function pageRulesProvider<S extends AppStateKeyed>(store: EnhancedStore<
         ],
         pageCreator: () => {
             const page = new PageRules(store);
-            if(config) page.rulesConfig = config;
-            return page
+            if (config) {
+                page.config = config;
+            }
+            return page;
         }
     };
 }
 
-const rulesConfig: RulesConfig = {
-    controls: {
-        allowedLanguages: [RulesetLang.JSON, RulesetLang.FLOW, RulesetLang.GROOVY],
-        hideNotificationTargetType: {
-            "email":  [NotificationTargetType.TENANT, NotificationTargetType.ASSET],
-            "push":  [NotificationTargetType.TENANT, NotificationTargetType.CUSTOM],
-        }
-    },
-    descriptors: {
-        all: {
-            excludeAssets: [
-                AssetType.BUILDING.type,
-                AssetType.CITY.type,
-                AssetType.AREA.type,
-                AssetType.FLOOR.type,
-                AssetType.AGENT.type
-            ]
-        }
-    },
-    json: {
-
+export const PAGE_RULES_CONFIG_DEFAULT: PageRulesConfig = {
+    rules: {
+        controls: {
+            allowedLanguages: [RulesetLang.JSON, RulesetLang.FLOW, RulesetLang.GROOVY],
+            hideNotificationTargetType: {
+                email: [NotificationTargetType.TENANT, NotificationTargetType.ASSET],
+                push: [NotificationTargetType.TENANT, NotificationTargetType.CUSTOM],
+            }
+        },
+        descriptors: {
+            all: {
+                excludeAssets: [
+                    AssetType.BUILDING.type,
+                    AssetType.CITY.type,
+                    AssetType.AREA.type,
+                    AssetType.FLOOR.type,
+                    AssetType.AGENT.type
+                ]
+            }
+        },
+        json: {}
     }
 };
 
@@ -47,7 +53,7 @@ const rulesConfig: RulesConfig = {
 class PageRules<S extends AppStateKeyed> extends Page<S>  {
 
     @property()
-    public rulesConfig?: RulesConfig;
+    public config?: PageRulesConfig;
     
     static get styles() {
         // language=CSS
@@ -69,7 +75,7 @@ class PageRules<S extends AppStateKeyed> extends Page<S>  {
 
     protected render() {
         return html`
-            <or-rules .config="${this.rulesConfig ? this.rulesConfig : rulesConfig}"></or-rules>
+            <or-rules .config="${this.config && this.config.rules ? this.config.rules : PAGE_RULES_CONFIG_DEFAULT.rules}"></or-rules>
         `;
     }
 

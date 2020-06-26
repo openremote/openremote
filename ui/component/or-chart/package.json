@@ -20,7 +20,7 @@
     "@openremote/or-panel": "^1.1.0",
     "@openremote/or-translate": "^1.1.0",
     "@openremote/or-mwc-components": "^1.1.0",
-    "chart.js": "^2.8.0",
+    "chart.js": "2.9.3",
     "chartjs-plugin-annotation": "0.5.7",
     "jsonpath-plus": "^1.1.0",
     "lit-element": "^2.2.1",

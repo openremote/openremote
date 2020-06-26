@@ -50,7 +50,7 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
         }
     }
 
-    updated(changedProperties: PropertyValues){
+    firstUpdated(changedProperties: PropertyValues){
         if(changedProperties.has("action")){
             this.renderDialogHTML(this.action);
         }
@@ -58,8 +58,7 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
 
     protected render() {
         if(!this.action) return html``;
-
-
+        
         const notificationPickerModalActions: DialogAction[] = [
             {
                 actionName: "cancel",
@@ -86,7 +85,7 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
 
         return html`
             <or-input .type="${InputType.BUTTON}" .label="${i18next.t("message")}" @click="${notificationPickerModalOpen}"></or-input>
-            <or-mwc-dialog id="notification-modal" dialogTitle="${this.title}" .dialogActions="${notificationPickerModalActions}"> </or-mwc-dialog>
+            <or-mwc-dialog id="notification-modal" dialogTitle="${this.title}" .dialogActions="${notificationPickerModalActions}"></or-mwc-dialog>
             <slot class="notification-form-slot"></slot>
         `
     }

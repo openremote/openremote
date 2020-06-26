@@ -42,21 +42,5 @@ services:
     volumes:
       - deployment-data:/deployment
     environment:
-      # This switch can wipe all your Manager and Keycloak data! Typically you would only run the
-      # stack once with this switch enabled to create the initial database and optionally import
-      # some examples. To go into production, ensure the postgresql service's data is permanently
-      # stored in a volume. Then disable the force clean switch, so you can restart services without
-      # wiping the database. The database schemas will be upgraded to new versions of the services
-      # automatically, you do not have to wipe all data to install a new version of OpenRemote.
-      SETUP_WIPE_CLEAN_INSTALL: 'true'
-
-      # If you force clean, a new master admin user will be created with this password.
-      SETUP_ADMIN_PASSWORD: secret
-
-      # Other demo data can be imported as needed, these examples only use the simulator protocol.
-      SETUP_IMPORT_DEMO_USERS: 'true'
-      SETUP_IMPORT_DEMO_ASSETS: 'true'
-      SETUP_IMPORT_DEMO_RULES: 'true'
-
       # Use basic identity service instead of Keycloak, set master admin password
       IDENTITY_PROVIDER: basic
