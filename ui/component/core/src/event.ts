@@ -6,12 +6,14 @@ import {
     EventSubscription,
     RenewEventSubscriptions,
     SharedEvent,
-    ReadAssetAttributesEvent,
     AssetEvent,
-    ReadAssetEvent,
     TriggeredEventSubscription,
     AttributeRef,
-    EventIdentifier
+    EventRequestResponseWrapper,
+    ReadAssetsEvent,
+    AssetsEvent,
+    AssetEventCause,
+    Attribute
 } from "@openremote/model";
 
 export enum EventProviderStatus {
@@ -41,7 +43,7 @@ export interface EventProvider {
 
     sendEvent<T extends SharedEvent>(event: T): void;
 
-    sendEventWithReply<T extends SharedEvent & EventIdentifier, U extends SharedEvent & EventIdentifier>(event: T): Promise<U>;
+    sendEventWithReply<T extends SharedEvent, U extends SharedEvent>(event: EventRequestResponseWrapper<T>): Promise<U>;
 }
 
 // Interface to provide a singleton implementation of EventProvider
@@ -62,6 +64,7 @@ const RENEW_MESSAGE_PREFIX = "RENEW:";
 const UNAUTHORIZED_MESSAGE_PREFIX = "UNAUTHORIZED:";
 const TRIGGERED_MESSAGE_PREFIX = "TRIGGERED:";
 const EVENT_MESSAGE_PREFIX = "EVENT:";
+const EVENT_REQUEST_RESPONSE_MESSAGE_PREFIX = "REQUESTRESPONSE:";
 
 abstract class EventProviderImpl implements EventProvider {
 
@@ -108,7 +111,7 @@ abstract class EventProviderImpl implements EventProvider {
 
         this._doConnect().then((connected: boolean) => {
             if (this._connectingDeferred) {
-                let deferred = this._connectingDeferred;
+                const deferred = this._connectingDeferred;
                 this._connectingDeferred = null;
 
                 if (this._reconnectTimer) {
@@ -156,7 +159,7 @@ abstract class EventProviderImpl implements EventProvider {
 
     public subscribe<T extends SharedEvent>(eventSubscription: EventSubscription<T>, callback: (event: T) => void): Promise<string> {
 
-        let subscriptionInfo = {
+        const subscriptionInfo: EventSubscriptionInfo<SharedEvent> = {
             eventSubscription: eventSubscription,
             callback: callback as ((event: SharedEvent) => void),
             deferred: new Deferred<string>()
@@ -164,7 +167,7 @@ abstract class EventProviderImpl implements EventProvider {
 
         if (this._pendingSubscription != null || this._status !== EventProviderStatus.CONNECTED) {
             this._queuedSubscriptions.push(subscriptionInfo);
-            return subscriptionInfo.deferred.promise;
+            return subscriptionInfo.deferred!.promise;
         }
 
         this._pendingSubscription = subscriptionInfo;
@@ -172,15 +175,15 @@ abstract class EventProviderImpl implements EventProvider {
         this._doSubscribe(eventSubscription).then(
             subscriptionId => {
                 if (this._pendingSubscription) {
-                    let subscriptionInfo = this._pendingSubscription;
+                    const subscription = this._pendingSubscription;
                     this._pendingSubscription = null;
 
                     // Store subscriptionId and callback
-                    this._subscriptionMap[subscriptionId] = subscriptionInfo;
+                    this._subscriptionMap[subscriptionId] = subscription;
 
                     this._processNextSubscription();
-                    let deferred = subscriptionInfo.deferred;
-                    subscriptionInfo.deferred = null;
+                    const deferred = subscription.deferred;
+                    subscription.deferred = null;
 
                     if (deferred) {
                         deferred.resolve(subscriptionId);
@@ -189,11 +192,11 @@ abstract class EventProviderImpl implements EventProvider {
             },
             (reason) => {
                 if (this._pendingSubscription) {
-                    const subscriptionInfo = this._pendingSubscription;
+                    const subscription = this._pendingSubscription;
                     this._pendingSubscription = null;
                     this._processNextSubscription();
-                    const deferred = subscriptionInfo.deferred;
-                    subscriptionInfo.deferred = null;
+                    const deferred = subscription.deferred;
+                    subscription.deferred = null;
 
                     if (deferred) {
                         deferred.reject(reason);
@@ -220,7 +223,7 @@ abstract class EventProviderImpl implements EventProvider {
         }
     }
 
-    public sendEventWithReply<T extends SharedEvent & EventIdentifier, U extends SharedEvent & EventIdentifier>(event: T): Promise<U> {
+    public sendEventWithReply<T extends SharedEvent, U extends SharedEvent>(event: EventRequestResponseWrapper<T>): Promise<U> {
         if (this._status !== EventProviderStatus.CONNECTED) {
             return Promise.reject("Not connected");
         }
@@ -229,7 +232,7 @@ abstract class EventProviderImpl implements EventProvider {
 
     public async subscribeAssetEvents(ids: string[] | AttributeRef[] | null, requestCurrentValues: boolean, callback: (event: AssetEvent) => void): Promise<string> {
 
-        let subscription: EventSubscription<AssetEvent> = {
+        const subscription: EventSubscription<AssetEvent> = {
             eventType: "asset"
         };
 
@@ -248,16 +251,32 @@ abstract class EventProviderImpl implements EventProvider {
         try {
             subscriptionId = await this.subscribe(subscription, callback);
 
-            // Get the current state of each asset
+            // Get the current state of the assets
             if (assetIds && requestCurrentValues) {
-                assetIds.forEach(assetId => {
-                    let readEvent: ReadAssetEvent = {
-                        assetId: assetId,
-                        eventType: "read-asset",
-                        subscriptionId: subscriptionId!
-                    };
-                    this.sendEvent(readEvent);
-                });
+                const readRequest: EventRequestResponseWrapper<ReadAssetsEvent> = {
+                    messageId: "read-assets:" + assetIds.join(",") + ":" + subscriptionId,
+                    event: {
+                        eventType: "read-assets",
+                        assetQuery: {
+                            ids: assetIds,
+                            select: {
+                                excludeParentInfo: true,
+                                excludePath: true
+                            }
+                        }
+                    }
+                }
+                const response: AssetsEvent = await this.sendEventWithReply(readRequest);
+                if (response.assets) {
+                    response.assets.forEach((asset) => {
+                        const assetEvent: AssetEvent = {
+                            eventType: "asset",
+                            asset: asset,
+                            cause: AssetEventCause.READ
+                        };
+                        callback(assetEvent);
+                    });
+                }
             }
         } catch (e) {
             console.error("Failed to subscribe to asset events for assets: " + ids);
@@ -277,10 +296,10 @@ abstract class EventProviderImpl implements EventProvider {
         }
 
         const isAttributeRef = typeof ids[0] !== "string";
-        const assetIds = isAttributeRef ? (ids as AttributeRef[]).map((id) => id.entityId!) : ids as string[];
+        const assetIds = isAttributeRef ? [...new Set((ids as AttributeRef[]).map((id) => id.entityId!))] : [...new Set(ids as string[])];
         const attributes = isAttributeRef ? ids as AttributeRef[] : undefined;
 
-        let subscription: EventSubscription<AttributeEvent> = {
+        const subscription: EventSubscription<AttributeEvent> = {
             eventType: "attribute",
             filter: {
                 filterType: "asset",
@@ -305,15 +324,40 @@ abstract class EventProviderImpl implements EventProvider {
 
             // Get the current value of each assets attributes
             if (requestCurrentValues) {
-                assetIds.forEach((assetId) => {
-                    let readEvent: ReadAssetAttributesEvent = {
-                        assetId: assetId,
-                        eventType: "read-asset-attributes",
-                        attributeNames: attributes ? attributes.filter((attr) => attr.entityId === assetId).map((attr) => attr.attributeName!) : undefined,
-                        subscriptionId: subscriptionId!
-                    };
-                    this.sendEvent(readEvent);
-                });
+                const readEvent: EventRequestResponseWrapper<ReadAssetsEvent> = {
+                    messageId: "read-assets:" + assetIds.join("") + ":" + subscriptionId,
+                    event: {
+                        eventType: "read-assets",
+                        assetQuery: {
+                            ids: assetIds,
+                            select: {
+                                excludeParentInfo: true,
+                                excludePath: true
+                            }
+                        }
+                    }
+                };
+                const response: AssetsEvent = await this.sendEventWithReply(readEvent);
+                if (response.assets) {
+                    response.assets.forEach((asset) => {
+                        Object.entries(asset.attributes!).forEach(([attributeName, v]) => {
+                            const attr = v as Attribute;
+                            if (!attributes || attributes.find((attributeRef) => attributeRef.entityId === asset.id && attributeRef.attributeName === attributeName)) {
+                                callback({
+                                    eventType: "attribute",
+                                    timestamp: attr.valueTimestamp,
+                                    attributeState: {
+                                        value: attr.value,
+                                        attributeRef: {
+                                            entityId: asset.id,
+                                            attributeName: attributeName
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    })
+                }
             }
         } catch (e) {
             console.error("Failed to subscribe to attribute events for assets/attributes: " + assetIds.join(", "));
@@ -332,19 +376,19 @@ abstract class EventProviderImpl implements EventProvider {
         }
 
         setTimeout(() => {
-            let subscriptionInfo = this._queuedSubscriptions.shift();
+            const subscriptionInfo = this._queuedSubscriptions.shift();
             if (subscriptionInfo) {
                 this.subscribe(subscriptionInfo.eventSubscription, subscriptionInfo.callback)
                     .then(
                         (id: string) => {
-                            let deferred = subscriptionInfo!.deferred;
+                            const deferred = subscriptionInfo!.deferred;
                             subscriptionInfo!.deferred = null;
 
                             if (deferred) {
                                 deferred.resolve(id);
                             }
                         }, reason => {
-                            let deferred = subscriptionInfo!.deferred;
+                            const deferred = subscriptionInfo!.deferred;
                             subscriptionInfo!.deferred = null;
 
                             if (deferred) {
@@ -369,7 +413,7 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     protected _onMessageReceived(subscriptionId: string, event: SharedEvent) {
-        let subscriptionInfo = this._subscriptionMap[subscriptionId];
+        const subscriptionInfo = this._subscriptionMap[subscriptionId];
 
         if (subscriptionInfo) {
             subscriptionInfo.callback(event);
@@ -435,7 +479,7 @@ abstract class EventProviderImpl implements EventProvider {
 
     protected abstract _doSend<T extends SharedEvent>(event: T): void;
 
-    protected abstract _doSendWithReply<T extends SharedEvent & EventIdentifier, U extends SharedEvent & EventIdentifier>(event: T): Promise<U>;
+    protected abstract _doSendWithReply<T extends SharedEvent, U extends SharedEvent>(event: EventRequestResponseWrapper<T>): Promise<U>;
 
     protected abstract _doConnect(): Promise<boolean>;
 
@@ -455,7 +499,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
     protected _webSocket: WebSocket | undefined = undefined;
     protected _connectDeferred: Deferred<boolean> | null = null;
     protected _subscribeDeferred: Deferred<string> | null = null;
-    protected _repliesDeferred: Map<string, Deferred<any>> = new Map<string, Deferred<any>>();
+    protected _repliesDeferred: Map<string, Deferred<SharedEvent>> = new Map<string, Deferred<SharedEvent>>();
     protected _renewalTimer: number | null = null;
 
     get endpointUrl(): string {
@@ -485,7 +529,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
 
         this._webSocket!.onopen = () => {
             if (this._connectDeferred) {
-                let deferred = this._connectDeferred;
+                const deferred = this._connectDeferred;
                 this._connectDeferred = null;
                 deferred.resolve(true);
             }
@@ -493,7 +537,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
 
         this._webSocket!.onerror = () => {
             if (this._connectDeferred) {
-                let deferred = this._connectDeferred;
+                const deferred = this._connectDeferred;
                 this._connectDeferred = null;
                 deferred.resolve(false);
             } else {
@@ -507,7 +551,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
             this._webSocket = undefined;
 
             if (this._connectDeferred) {
-                let deferred = this._connectDeferred;
+                const deferred = this._connectDeferred;
                 this._connectDeferred = null;
                 deferred.resolve(false);
             } else {
@@ -551,14 +595,14 @@ export class WebSocketEventProvider extends EventProviderImpl {
                         this._onMessageReceived(triggered.subscriptionId!, event);
                     });
                 }
-            } else if (msg.startsWith(EVENT_MESSAGE_PREFIX)) {
-                const str = msg.substring(EVENT_MESSAGE_PREFIX.length);
-                const event = JSON.parse(str) as SharedEvent;
-                if ((event as EventIdentifier).messageId) {
-                    const deferred = this._repliesDeferred.get((event as EventIdentifier).messageId!);
-                    this._repliesDeferred.delete((event as EventIdentifier).messageId!);
+            } else if (msg.startsWith(EVENT_REQUEST_RESPONSE_MESSAGE_PREFIX)) {
+                const str = msg.substring(EVENT_REQUEST_RESPONSE_MESSAGE_PREFIX.length);
+                const event = JSON.parse(str) as EventRequestResponseWrapper<SharedEvent>;
+                if (event.messageId && event.event) {
+                    const deferred = this._repliesDeferred.get(event.messageId!);
+                    this._repliesDeferred.delete(event.messageId!);
                     if (deferred) {
-                        deferred.resolve(event as (SharedEvent & EventIdentifier));
+                        deferred.resolve(event.event);
                     }
                 }
             }
@@ -625,7 +669,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
         this._webSocket!.send(message);
     }
 
-    protected _doSendWithReply<T extends SharedEvent & EventIdentifier, U extends SharedEvent & EventIdentifier>(event: T): Promise<U> {
+    protected _doSendWithReply<T extends SharedEvent, U extends SharedEvent>(event: EventRequestResponseWrapper<T>): Promise<U> {
 
         if (!event.messageId) {
             event.messageId = new Date().getTime().toString(10);
@@ -635,9 +679,9 @@ export class WebSocketEventProvider extends EventProviderImpl {
             return Promise.reject("There's already a pending send and reply with this ID");
         }
 
-        const deferred = new Deferred<U>();
+        const deferred = new Deferred<SharedEvent>();
         this._repliesDeferred.set(event.messageId, deferred);
-        this._webSocket!.send(EVENT_MESSAGE_PREFIX + JSON.stringify(event));
-        return deferred.promise;
+        this._webSocket!.send(EVENT_REQUEST_RESPONSE_MESSAGE_PREFIX + JSON.stringify(event));
+        return (deferred as unknown as Deferred<U>).promise;
     }
 }

@@ -17,7 +17,6 @@ import {
 } from "@openremote/model";
 import * as Util from "./util";
 import orIconSet from "./or-icon-set";
-import { Deferred } from "./util";
 
 // Re-exports
 export {Util};
@@ -99,6 +98,11 @@ export interface BasicLoginResult {
     closeCallback: undefined | ((authenticated: boolean) => void);
 }
 
+export enum MapType {
+    VECTOR = "VECTOR",
+    RASTER = "RASTER"
+}
+
 export interface ManagerConfig {
     managerUrl: string;
     keycloakUrl?: string;
@@ -113,6 +117,7 @@ export interface ManagerConfig {
     pollingIntervalMillis?: number;
     loadIcons?: boolean;
     loadDescriptors?: boolean;
+    mapType?: MapType;
     loadTranslations?: string[];
     translationsLoadPath?: string;
     configureTranslationsOptions?: (i18next: i18next.InitOptions) => void;
@@ -446,6 +451,10 @@ export class Manager implements EventProviderFactory {
 
     getEventProvider(): EventProvider | undefined {
         return this.events;
+    }
+
+    get mapType() {
+        return this._config.mapType || MapType.VECTOR;
     }
 
     protected static normaliseConfig(config: ManagerConfig): ManagerConfig {

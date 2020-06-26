@@ -125,6 +125,11 @@ public class AssetViewActivity
             this::onAttributeEvent
         ));
 
+        registrations.add(environment.getEventBus().register(
+            AssetEvent.class,
+            this::onAssetEvent
+        ));
+
         writeAssetToView();
         writeAttributesToView();
         loadParent();
@@ -226,6 +231,17 @@ public class AssetViewActivity
                 attributeView.onAttributeChanged(attributeEvent.getTimestamp());
                 break;
             }
+        }
+    }
+
+    protected void onAssetEvent(AssetEvent assetEvent) {
+        for (AttributeView attributeView : attributeViews) {
+            attributeView.getAttribute().getReference().map(AttributeRef::getAttributeName)
+                .flatMap(attributeName -> assetEvent.getAsset().getAttribute(attributeName))
+                .ifPresent(assetAttribute ->
+                    attributeView.getAttribute().setValue(
+                        assetAttribute.getValue().orElse(null),
+                        assetAttribute.getValueTimestamp().orElse(0L)));
         }
     }
 
@@ -369,14 +385,14 @@ public class AssetViewActivity
 
     protected void readAllAttributeValues() {
         environment.getEventService().dispatch(
-            new ReadAssetAttributesEvent(asset.getId())
+            new ReadAssetEvent(asset.getId())
         );
     }
 
     protected void readAttributeValue(AssetAttribute attribute) {
         attribute.getReference().ifPresent(attributeRef ->
             environment.getEventService().dispatch(
-                new ReadAssetAttributesEvent(attributeRef.getEntityId(), attributeRef.getAttributeName())
+                new ReadAssetAttributeEvent(attributeRef)
             )
         );
     }

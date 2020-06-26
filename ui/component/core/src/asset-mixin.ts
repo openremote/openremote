@@ -1,7 +1,7 @@
 /* tslint:disable:no-empty */
 import {EventProviderFactory, EventProviderStatus} from "./event";
-import {arraysEqual} from "./util";
-import {AttributeRef, SharedEvent, EventIdentifier} from "@openremote/model";
+import {objectsEqual} from "./util";
+import {AttributeRef, SharedEvent, EventRequestResponseWrapper} from "@openremote/model";
 
 declare type Constructor<T = {}> = new (...args: any[]) => T;
 
@@ -132,7 +132,7 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
         }
 
         public set assetIds(assetIds: string[] | undefined) {
-            if (arraysEqual(this._assetIds, assetIds)) {
+            if (objectsEqual(this._assetIds, assetIds)) {
                 return;
             }
 
@@ -145,7 +145,7 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
         }
 
         public set attributeRefs(attributes: AttributeRef[] | undefined) {
-            if (arraysEqual(this._attributeRefs, attributes)) {
+            if (objectsEqual(this._attributeRefs, attributes)) {
                 return;
             }
 
@@ -157,7 +157,7 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
             eventProviderFactory.getEventProvider()!.sendEvent(event);
         }
 
-        public _sendEventWithReply(event: SharedEvent & EventIdentifier): Promise<SharedEvent & EventIdentifier> {
+        public _sendEventWithReply<U extends SharedEvent, V extends SharedEvent>(event: EventRequestResponseWrapper<U>): Promise<V> {
             return eventProviderFactory.getEventProvider()!.sendEventWithReply(event);
         }
 

@@ -37,11 +37,11 @@ export const PAGE_RULES_CONFIG_DEFAULT: PageRulesConfig = {
         descriptors: {
             all: {
                 excludeAssets: [
-                    AssetType.BUILDING.type,
-                    AssetType.CITY.type,
-                    AssetType.AREA.type,
-                    AssetType.FLOOR.type,
-                    AssetType.AGENT.type
+                    AssetType.BUILDING.type!,
+                    AssetType.CITY.type!,
+                    AssetType.AREA.type!,
+                    AssetType.FLOOR.type!,
+                    AssetType.AGENT.type!
                 ]
             }
         },

@@ -6,8 +6,7 @@
     "rootDir": "src"
   },
   "include": [
-    "./src",
-    "../or-map/@types"
+    "./src"
   ],
   "references": [
     { "path": "../core" },
@@ -18,7 +17,6 @@
     { "path": "../or-table" },
     { "path": "../or-translate" },
     { "path": "../or-icon" },
-    { "path": "../or-map" },
     { "path": "../or-attribute-input" },
     { "path": "../or-attribute-history" },
     { "path": "../or-mwc-components" }

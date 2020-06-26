@@ -5,7 +5,6 @@ import "@openremote/or-attribute-input";
 import "@openremote/or-attribute-history";
 import "@openremote/or-chart";
 import "@openremote/or-table";
-import "@openremote/or-map";
 import "@openremote/or-panel";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {OrTranslate, translate} from "@openremote/or-translate";
@@ -14,7 +13,6 @@ import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import {OrTable} from "@openremote/or-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
-import {Type as MapType, Util as MapUtil} from "@openremote/or-map";
 import {
     Asset,
     AssetAttribute,
@@ -23,7 +21,6 @@ import {
     Attribute,
     AttributeEvent,
     AttributeType,
-    MetaItem,
     MetaItemType,
     SharedEvent
 } from "@openremote/model";
@@ -63,7 +60,6 @@ export interface AssetViewerConfig {
     propertyViewProvider?: (asset: Asset, property: string, value: any, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     attributeViewProvider?: (asset: Asset, attribute: Attribute, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     panelViewProvider?: (asset: Asset, attributes: Attribute[], panelName: string, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
-    mapType?: MapType;
     historyConfig?: HistoryConfig;
     chartConfig?: OrChartConfig;
 }
@@ -71,7 +67,6 @@ export interface AssetViewerConfig {
 export interface ViewerConfig {
     default?: AssetViewerConfig;
     assetTypes?: { [assetType: string]: AssetViewerConfig };
-    mapType?: MapType;
     historyConfig?: HistoryConfig;
 }
 
@@ -180,7 +175,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
             const options = historyAttrs.map((attr) => {
                 const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attr.name!);
                 let label = Util.getAttributeLabel(attr, attributeDescriptor);
-                let unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
+                const unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
                 if(unit) {
                     label = label + " ("+i18next.t(unit)+")";
                 }
@@ -257,60 +252,11 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
 
         const attribute = attrs.find((attr) => attr.name === AttributeType.LOCATION.attributeName);
         if (attribute) {
-            // Special handling for location panel which shows an attribute selector and a map showing the location of the attribute
-            const mapType = viewerConfig.mapType || OrAssetViewer.DEFAULT_MAP_TYPE;
-            const lngLat = MapUtil.getLngLat(attribute);
-            const center = lngLat ? lngLat.toArray() : undefined;
-            const showOnMapMeta = Util.getFirstMetaItem(attribute, MetaItemType.SHOW_ON_DASHBOARD.urn!);
-            const attributeMetaChanged = async (value: string) => {
-                if (hostElement.shadowRoot) {
-
-                    if (attribute) {
-
-                        if(asset.id && asset.attributes && asset.attributes.location){
-
-                            const showOnMapMeta = Util.getFirstMetaItem(attribute, MetaItemType.SHOW_ON_DASHBOARD.urn!);
-                            if(showOnMapMeta) {
-                                showOnMapMeta.value = value;
-                            } else {
-                                const meta:MetaItem = {
-                                    name: MetaItemType.SHOW_ON_DASHBOARD.urn,
-                                    value: value
-                                }
-
-                                if(attribute.meta){
-                                    attribute.meta.push(meta);
-                                }
-                            }
-                            asset.attributes.location = {...attribute};
-                            const response = await manager.rest.api.AssetResource.update(asset.id, asset);
-
-                            if (response.status !== 200) {
-                            }
-                        }
-
-
-                    }
-                }
-            };
-
             content = html`
-                    <style>
-                        or-map {
-                            border: #e5e5e5 1px solid;
-                        }
-                        
-                        #location-map-input {
-                            padding: 20px 0 0 0;
-                        }
-                    </style>
-                    <or-map id="location-map" class="or-map" .center="${center}" type="${mapType}">
-                         <or-map-marker-asset active .asset="${asset}"></or-map-marker-asset>
-                    </or-map>
-                    ${attribute.name === AttributeType.LOCATION.attributeName ? html`
-                        <or-input id="location-map-input" type="${InputType.SWITCH}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeMetaChanged(evt.detail.value)}" dense .value="${showOnMapMeta ? showOnMapMeta.value : undefined}" label="${i18next.t("showOnMap")}"></or-input>
-                    ` : ``}                    
-                `;
+                <div class="field">
+                    <or-attribute-input .assetType="${asset.type}" .attribute="${attribute}"></or-attribute-input>
+                </div>
+            `;
         }
     } else if (panelConfig && panelConfig.type === "group") {
 
@@ -476,7 +422,7 @@ export function getAttributeTemplate(asset: Asset, attribute: AssetAttribute, ho
         }
     }
     return html`
-        <or-attribute-input dense .assetType="${asset!.type}" .attribute="${attribute}" .label="${i18next.t(attribute.name!)}"></or-attribute-input>
+        <or-attribute-input dense .assetType="${asset!.type}" .attribute="${attribute}"}"></or-attribute-input>
     `;
 }
 
@@ -521,7 +467,6 @@ async function getAssetChildren(id: string, childAssetType: string): Promise<Ass
 @customElement("or-asset-viewer")
 export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElement)) {
 
-    public static DEFAULT_MAP_TYPE = MapType.VECTOR;
     public static DEFAULT_PANEL_TYPE: PanelType = "attribute";
 
     public static DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
@@ -832,7 +777,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 config.attributeViewProvider = assetConfig.attributeViewProvider || (this.config.default ? this.config.default.attributeViewProvider : undefined);
                 config.panelViewProvider = assetConfig.panelViewProvider || (this.config.default ? this.config.default.panelViewProvider : undefined);
                 config.propertyViewProvider = assetConfig.propertyViewProvider || (this.config.default ? this.config.default.propertyViewProvider : undefined);
-                config.mapType = assetConfig.mapType || this.config.mapType;
                 config.historyConfig = assetConfig.historyConfig || this.config.historyConfig;
             }
         }

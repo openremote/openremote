@@ -496,8 +496,14 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         super(store);
     }
 
-    firstUpdated() {
-        this.shadowRoot.getElementById('pageAssetTree').addEventListener(OrAssetTreeSelectionChangedEvent.NAME, (evt) => this._onTreeSelectionChanged(evt));
+    connectedCallback() {
+        super.connectedCallback();
+        this.addEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
     }
 
     protected render(): TemplateResult | void {
@@ -514,8 +520,10 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
 
     protected _onTreeSelectionChanged(event: OrAssetTreeSelectionChangedEvent) {
         const nodes = event.detail;
-        if(nodes[0]){
-            router.navigate('assets/'+nodes[0].asset.id);
+        if (nodes[0]) {
+            router.navigate("assets/" + nodes[0].asset.id);
+        } else {
+            router.navigate("assets/");
         }
     }
 }
