@@ -21,7 +21,6 @@ package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.event.shared.EventIdentifier;
 import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.List;
@@ -30,19 +29,13 @@ import java.util.stream.Collectors;
 /**
  * This event is used in response to a {@link ReadAssetsEvent}.
  */
-public class AssetsEvent extends SharedEvent implements EventIdentifier {
+public class AssetsEvent extends SharedEvent {
 
-    protected String messageId;
     protected List<Asset> assets;
 
     @JsonCreator
-    public AssetsEvent(@JsonProperty("messageId") String messageId, @JsonProperty("assets") List<Asset> assets) {
-        this.messageId = messageId;
+    public AssetsEvent(@JsonProperty("assets") List<Asset> assets) {
         this.assets = assets;
-    }
-
-    public String getMessageId() {
-        return messageId;
     }
 
     public List<Asset> getAssets() {
@@ -52,7 +45,6 @@ public class AssetsEvent extends SharedEvent implements EventIdentifier {
     @Override
     public String toString() {
         return AssetsEvent.class.getSimpleName() + "{" +
-            "messageId='" + messageId + '\'' +
             ", assets=" + (assets == null ? "null" : assets.stream().map(Asset::getId).collect(Collectors.joining())) +
             '}';
     }

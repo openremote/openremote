@@ -41,6 +41,8 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.event.shared.EventRequestResponseWrapper;
+import org.openremote.model.event.shared.RenewEventSubscriptions;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.query.AssetQuery;
@@ -62,8 +64,7 @@ import java.util.stream.Collectors;
 import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
-import static org.openremote.manager.event.ClientEventService.getClientId;
-import static org.openremote.manager.event.ClientEventService.getSessionKey;
+import static org.openremote.manager.event.ClientEventService.*;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 public class GatewayService extends RouteBuilder implements ContainerService, AssetUpdateProcessor {
@@ -223,9 +224,17 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                     .stop()
                 .when(body().isInstanceOf(SharedEvent.class))
                     .process(exchange -> {
-                        String gatewayId = getGatewayIdFromClientId(getClientId(exchange));
-                        onGatewayEventReceived(gatewayId, exchange.getIn().getBody(SharedEvent.class));
+                        String clientId = getClientId(exchange);
+                        if (clientId != null) {
+                            String gatewayId = getGatewayIdFromClientId(clientId);
+                            onGatewayEventReceived(gatewayId, exchange.getIn().getHeader(HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class), exchange.getIn().getBody(SharedEvent.class));
+                        }
                     })
+                .stop()
+                .otherwise()
+                .process(exchange -> {
+                    LOG.warning("UNKOWN EVENT: " + exchange.getIn().getBody());
+                })
                     .end();
         }
     }
@@ -562,10 +571,10 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         };
     }
 
-    protected void onGatewayEventReceived(String gatewayId, SharedEvent event) {
+    protected void onGatewayEventReceived(String gatewayId, String messageId, SharedEvent event) {
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
         if (connector != null) {
-            connector.onGatewayEvent(event);
+            connector.onGatewayEvent(messageId, event);
         }
     }
 }

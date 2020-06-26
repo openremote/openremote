@@ -19,47 +19,43 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.Arrays;
 
 /**
- * A client sends this event to the server to refresh its attribute state, expecting
- * the server to answer "soon" with {@link AttributeEvent}s. If the server
- * decides that the client doesn't have the right permissions, or if anything
- * else is not in order (e.g. the asset doesn't exist), the server might not react
- * at all.
- * <p>
- * If no attribute names and only an asset identifier are provided, all attributes
- * of the asset, accessible by the client, will be read/returned.
+ * A client sends this event to the server to refresh the value of the specified attribute, expecting the server to
+ * answer "soon" with an {@link AttributeEvent}. If the server decides that the client doesn't have the right
+ * permissions, or if anything else is not in order (e.g. the asset doesn't exist), the server might not react at all.
  */
-public class ReadAssetAttributesEvent extends ReadAssetEvent {
+public class ReadAssetAttributeEvent extends SharedEvent {
 
-    protected String[] attributeNames;
+    protected AttributeRef attributeRef;
 
-    protected ReadAssetAttributesEvent() {
+    @JsonCreator
+    public ReadAssetAttributeEvent(AttributeRef attributeRef) {
+        this.attributeRef = attributeRef;
     }
 
-    public ReadAssetAttributesEvent(String assetId, String... attributeNames) {
-        super(assetId);
-        this.attributeNames = attributeNames;
+    public ReadAssetAttributeEvent(String assetId, String attributeName) {
+        this.attributeRef = new AttributeRef(assetId, attributeName);
     }
 
-    public String[] getAttributeNames() {
-        return attributeNames;
+    public AttributeRef getAttributeRef() {
+        return attributeRef;
     }
 
-    public void setAttributeNames(String[] attributeNames) {
-        this.attributeNames = attributeNames;
+    public void setAttributeRef(AttributeRef attributeRef) {
+        this.attributeRef = attributeRef;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "assetId='" + assetId + '\'' +
-            ", attributeNames=" + Arrays.toString(attributeNames) +
-            ", subscriptionId='" + subscriptionId + '\'' +
+            "attributeRef='" + attributeRef + '\'' +
             '}';
     }
 }
