@@ -41,7 +41,6 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
             // Keycloak is not managed by persistence service so need separate clean task
             addTask(new KeycloakCleanSetup(container));
             addTask(new KeycloakInitSetup(container));
-            addTask(new ArtNetDemoSetup());
             if (isImportDemoUsers(container)) {
                 addTask(new KeycloakDemoSetup(container));
             }
