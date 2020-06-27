@@ -106,6 +106,10 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 bottom: 0;
                 opacity: 0.5;
             }
+
+            #attr-input-btn { 
+                flex: 0;
+            }
         `;
     }
 
@@ -138,6 +142,12 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
     @property()
     public inputType?: InputType;
+
+    @property({type: String})
+    public helperText?: string;
+
+    @property({type: Boolean})
+    public hasButton?: boolean;
 
     @property({type: Boolean})
     public disableSubscribe: boolean = false;
@@ -374,16 +384,37 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                     value = this._valueFormatter(value);
                 }
 
-                content = html`<or-input id="input" .type="${this._inputType}" .label="${this._label}" .value="${value}" .allowedValues="${this._options}" .min="${this._min}" .max="${this._max}" .options="${this._options}" .readonly="${this._readonly}" .disabled="${this._disabled}" @or-input-changed="${(e: OrInputChangedEvent) => {
-                    this._onValueChange(e.detail.value);
-                    e.stopPropagation()
-                }}"></or-input>`;
+                // todo: this always overrides the !this._inputType check above
+                content = html`<or-input 
+                    id="input" .type="${this._inputType}" .label="${this._label}" .value="${value}" 
+                    .allowedValues="${this._options}" .min="${this._min}" .max="${this._max}"
+                    .options="${this._options}" .readonly="${this._readonly}" .disabled="${this._disabled}" 
+                    .helperText="${this.helperText}" .helperPersistent="${helperPersistent}"
+                    @or-input-changed="${(e: OrInputChangedEvent) => {
+                        if (!hasButton) {
+                            this._onValueChange(e.detail.value);
+                            e.stopPropagation()
+                        }
+                    }}"></or-input>`;
             }
         }
+
+        const clickHandler = (e: any) => {
+            const inputEl = this.shadowRoot!.getElementById("input") as OrInput;
+            if (inputEl) {
+                const value = inputEl.value;
+            }
+        };
 
         return html`
             <div id="wrapper">
                 ${content}
+                ${hasButton
+                    ? html`<or-input 
+                            id="attr-input-btn"
+                            icon="send" type="button"
+                            @click="${(e: any) => clickHandler(e)}"></or-input>`
+                    : ``}
                 ${loading || this._writeTimeoutHandler 
                     ? html`<div id="scrim"><progress class="pure-material-progress-circular"></progress></div>` 
                     : ``}                
