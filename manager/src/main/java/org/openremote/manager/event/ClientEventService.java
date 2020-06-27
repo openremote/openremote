@@ -108,6 +108,7 @@ public class ClientEventService implements ContainerService {
     public static final String HEADER_CONNECTION_TYPE = ClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE";
     public static final String HEADER_CONNECTION_TYPE_WEBSOCKET = ClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE_WEBSOCKET";
     public static final String HEADER_CONNECTION_TYPE_MQTT = ClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE_MQTT";
+    public static final String HEADER_REQUEST_RESPONSE_MESSAGE_ID = ClientEventService.class.getName() + ".HEADER_REQUEST_RESPONSE_MESSAGE_ID";
 
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
     protected Map<String, String> sessionKeyConnectionTypeMap;
@@ -179,11 +180,26 @@ public class ClientEventService implements ContainerService {
                             .to(GatewayService.GATEWAY_EVENT_TOPIC)
                         .endChoice()
                         .stop()
+                    .end()
+                    .process(exchange -> {
+                        EventRequestResponseWrapper<?> requestResponse = null;
+                        if (exchange.getIn().getBody() instanceof EventRequestResponseWrapper) {
+                            requestResponse = exchange.getIn().getBody(EventRequestResponseWrapper.class);
+                        } else if (exchange.getIn().getBody() instanceof String && exchange.getIn().getBody(String.class).startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)) {
+                            requestResponse = exchange.getIn().getBody(EventRequestResponseWrapper.class);
+                        }
+                        if (requestResponse != null) {
+                            SharedEvent event = requestResponse.getEvent();
+                            exchange.getIn().setHeader(HEADER_REQUEST_RESPONSE_MESSAGE_ID, requestResponse.getMessageId());
+                            exchange.getIn().setBody(event);
+                        }
+                    })
+                    .choice()
                     .when(bodyAs(String.class).startsWith(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX))
                         .convertBodyTo(EventSubscription.class)
                         .process(exchange -> {
                             String sessionKey = getSessionKey(exchange);
-                            EventSubscription subscription = exchange.getIn().getBody(EventSubscription.class);
+                            EventSubscription<?> subscription = exchange.getIn().getBody(EventSubscription.class);
                             AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
                             if (authorizeEventSubscription(authContext, subscription)) {
                                 boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId());
@@ -195,7 +211,7 @@ public class ClientEventService implements ContainerService {
                                         + authContext.getUsername() + "' in realm '" + authContext.getAuthenticatedRealm()
                                         + "': " + subscription
                                 );
-                                sendToSession(sessionKey, new UnauthorizedEventSubscription(subscription));
+                                sendToSession(sessionKey, new UnauthorizedEventSubscription<>(subscription));
                             }
                         })
                         .stop()

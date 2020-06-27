@@ -219,7 +219,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         Values.convertToValue(
                             [
                                 new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(
-                                    new ReadAssetAttributesEvent(managerDemoSetup.apartment1LivingroomId, "targetTemperature")
+                                    new ReadAssetAttributeEvent(managerDemoSetup.apartment1LivingroomId, "targetTemperature")
                                 ))
                             ], Container.JSON.writer()).orElse(null))
                 ),
@@ -247,7 +247,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         Values.convertToValue(
                             [
                                 new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(
-                                    new ReadAssetAttributesEvent(managerDemoSetup.apartment1LivingroomId, "co2Level")
+                                    new ReadAssetAttributeEvent(managerDemoSetup.apartment1LivingroomId, "co2Level")
                                 ))
                             ]
                             , Container.JSON.writer()).orElse(null))

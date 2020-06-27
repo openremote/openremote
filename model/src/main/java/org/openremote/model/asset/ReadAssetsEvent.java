@@ -21,7 +21,7 @@ package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.event.shared.EventIdentifier;
+import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.query.AssetQuery;
 
@@ -29,18 +29,12 @@ import org.openremote.model.query.AssetQuery;
  * A client sends this event to the server to query assets, expecting
  * the server to answer "soon" with an {@link AssetsEvent} with the results.
  */
-public class ReadAssetsEvent extends SharedEvent implements EventIdentifier {
+public class ReadAssetsEvent extends SharedEvent {
 
-    protected String messageId;
     protected AssetQuery assetQuery;
 
     @JsonCreator
-    public ReadAssetsEvent(@JsonProperty("messageId") String messageId, @JsonProperty("assetQuery") AssetQuery assetQuery) {
-        this.messageId = messageId;
-        this.assetQuery = assetQuery;
-    }
-
-    public ReadAssetsEvent(AssetQuery assetQuery) {
+    public ReadAssetsEvent(@JsonProperty("assetQuery") AssetQuery assetQuery) {
         this.assetQuery = assetQuery;
     }
 
@@ -48,14 +42,9 @@ public class ReadAssetsEvent extends SharedEvent implements EventIdentifier {
         return assetQuery;
     }
 
-    public String getMessageId() {
-        return messageId;
-    }
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "messageId='" + messageId + '\'' +
             "query='" + assetQuery + '\'' +
             '}';
     }

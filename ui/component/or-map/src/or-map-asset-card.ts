@@ -29,7 +29,7 @@ import {mapAssetCardStyle} from "./style";
 
 orAttributeTemplateProvider.setTemplate((attribute:Attribute) => {
     let template;
-    const value = Util.getAttributeValue(attribute, undefined)
+    const value = Util.getAttributeValueFormatted(attribute, undefined, undefined);
     switch (attribute.type) {
         case AttributeValueType.SWITCH_TOGGLE.name:
             template = html`<or-translate value="${value ? "On" : "Off"}"></or-translate>`;

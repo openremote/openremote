@@ -32,32 +32,28 @@ import java.util.List;
  */
 public class DeleteAssetsResponseEvent extends SharedEvent {
 
-    protected String name;
     protected boolean deleted;
+    protected List<String> assetIds;
 
     @JsonCreator
-    public DeleteAssetsResponseEvent(@JsonProperty("name") String name, @JsonProperty("deleted") boolean deleted) {
-        this.name = name;
+    public DeleteAssetsResponseEvent(@JsonProperty("deleted") boolean deleted, @JsonProperty("assetIds") List<String> assetIds) {
         this.deleted = deleted;
-    }
-
-    public DeleteAssetsResponseEvent(boolean deleted) {
-        this.deleted = deleted;
+        this.assetIds = assetIds;
     }
 
     public boolean isDeleted() {
         return deleted;
     }
 
-    public String getName() {
-        return name;
+    public List<String> getAssetIds() {
+        return assetIds;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "name='" + name + '\'' +
             "deleted='" + deleted + '\'' +
+            "ids='" + Arrays.toString(assetIds.toArray()) + '\'' +
             '}';
     }
 }

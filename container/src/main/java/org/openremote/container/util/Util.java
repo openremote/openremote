@@ -111,6 +111,7 @@ public class Util {
                 return;
             }
 
+            running = false;
             future.cancel(mayInterrupt);
         }
 
@@ -123,6 +124,10 @@ public class Util {
                 success = task.get();
             } catch (Exception e) {
                 log(Level.INFO, name + ": threw an exception", e);
+            }
+
+            if (!running) {
+                return;
             }
 
             if (success) {

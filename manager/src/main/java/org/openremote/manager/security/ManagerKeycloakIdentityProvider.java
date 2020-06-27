@@ -334,8 +334,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         RealmsResource realmsResource = getRealms();
         RealmRepresentation realmRepresentation = convert(Container.JSON, RealmRepresentation.class, tenant);
         realmsResource.create(realmRepresentation);
-        realmRepresentation = realmsResource.realm(tenant.getRealm()).toRepresentation();
+        RealmResource realmResource = realmsResource.realm(tenant.getRealm());
+
+        realmRepresentation = realmResource.toRepresentation();
+        // Need a committed realmRepresentation to update the security
         configureRealm(realmRepresentation);
+        realmResource.update(realmRepresentation);
         createOpenRemoteClientApplication(realmRepresentation.getRealm());
         publishModification(PersistenceEvent.Cause.CREATE, tenant);
         return convert(Container.JSON, Tenant.class, realmRepresentation);

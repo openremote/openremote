@@ -5,6 +5,25 @@ import {subscribe} from "@openremote/core";
 import manager, {AssetModelUtil} from "@openremote/core";
 import {Util} from "@openremote/core";
 
+export function getMarkerIconAndColorFromAssetType(type: string | undefined): {icon: string, color: string | undefined} | undefined {
+    if (!type) {
+        return;
+    }
+
+    const descriptor = AssetModelUtil.getAssetDescriptor(type);
+    const icon = descriptor && descriptor.icon ? descriptor.icon : AssetType.THING.icon!;
+    let color: string | undefined;
+
+    if (descriptor && descriptor.color) {
+        color = descriptor.color;
+    }
+
+    return {
+        color: color,
+        icon: icon
+    };
+}
+
 @customElement("or-map-marker-asset")
 export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
 
@@ -24,22 +43,19 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
     protected markerColor?: string;
 
     protected set type(type: string | undefined) {
-        if (!type) {
+        const iconAndColor = getMarkerIconAndColorFromAssetType(type);
+
+        if (!iconAndColor) {
             this.visible = false;
             return;
         }
 
-        const descriptor = AssetModelUtil.getAssetDescriptor(type);
-
         if (this.assetTypeAsIcon) {
-            const icon = descriptor ? descriptor.icon : AssetType.THING.icon;
-            this.icon = icon;
+            this.icon = iconAndColor.icon;
         }
 
-        if (descriptor && descriptor.color) {
-            this.markerColor = descriptor.color;
-            this.updateColor(this.markerContainer);
-        }
+        this.markerColor = iconAndColor.color;
+        this.updateColor(this.markerContainer);
         this.visible = true;
     }
 

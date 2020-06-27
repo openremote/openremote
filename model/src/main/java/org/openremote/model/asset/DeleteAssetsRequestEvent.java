@@ -33,16 +33,10 @@ import java.util.List;
  */
 public class DeleteAssetsRequestEvent extends SharedEvent {
 
-    protected String name;
     protected List<String> assetIds;
 
     @JsonCreator
-    public DeleteAssetsRequestEvent(@JsonProperty("name") String name, @JsonProperty("assetIds") List<String> assetIds) {
-        this.name = name;
-        this.assetIds = assetIds;
-    }
-
-    public DeleteAssetsRequestEvent(List<String> assetIds) {
+    public DeleteAssetsRequestEvent(@JsonProperty("assetIds") List<String> assetIds) {
         this.assetIds = assetIds;
     }
 
@@ -50,14 +44,9 @@ public class DeleteAssetsRequestEvent extends SharedEvent {
         return assetIds;
     }
 
-    public String getName() {
-        return name;
-    }
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "name='" + name + '\'' +
             "ids='" + Arrays.toString(assetIds.toArray()) + '\'' +
             '}';
     }

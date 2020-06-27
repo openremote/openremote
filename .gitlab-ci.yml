@@ -5,6 +5,13 @@ default:
     - docker:dind
   timeout: 1h 30m
 
+stages:
+  - build
+  - build_fail
+  - test
+  - deploy
+  - dast
+
 lint-Dockerfile:
   stage: build
   script:
@@ -60,6 +67,27 @@ build-master:
     # - docker push openremote/postgresql:arm64
   only:
     - master
+
+# This step is executed when build fails. The purpose is to e-mail a git commiter about the problem.
+email failed pipeline:
+  stage: build_fail
+  image: docker:latest
+  script:
+    - docker pull registry.gitlab.com/openremote/openremote:master
+    - export WHO=$(docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master git log --pretty="%ce" -1)
+    - export WHEN=$(docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master git log --pretty="%ad %ar" -1)
+    - export WHAT=$(docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master git log --pretty="%h %s" -1)
+    - export REPO=$(docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master git remote get-url origin|xargs basename)
+    - echo $REPO
+    - docker run -v $(pwd):/usr/src/myapp -w /usr/src/myapp
+      -e "WHO=$WHO"
+      -e "WHAT=$WHAT"
+      -e "WHEN=$WHEN"
+      -e "REPO=$REPO"
+      -e "SMTP_USERNAME=$SMTP_USERNAME"
+      -e "SMTP_PASSWORD=$SMTP_PASSWORD"
+      --rm python:3 python deployment/aws-mail.py
+  when: on_failure
 
 test-master:
   before_script:

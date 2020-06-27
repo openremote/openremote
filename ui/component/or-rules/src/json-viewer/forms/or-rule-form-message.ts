@@ -3,7 +3,8 @@ import "@openremote/or-input";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 import "@openremote/or-input";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";import {
+import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import {
     RuleActionNotification,
     EmailNotificationMessage
 } from "@openremote/model";

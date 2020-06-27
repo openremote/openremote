@@ -21,7 +21,6 @@
     "@openremote/or-translate": "^1.1.0",
     "@openremote/or-panel": "^1.1.0",
     "@openremote/or-table": "^1.1.0",
-    "@openremote/or-map": "^1.1.0",
     "@openremote/or-chart": "^1.1.0",
     "@openremote/rest": "^1.1.0",
     "@openremote/or-mwc-components": "^1.1.0",

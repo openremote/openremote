@@ -1,7 +1,7 @@
 import {customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
 import "@openremote/or-input";
 import "@openremote/or-icon";
-import {Asset, AssetQuery, AssetTreeNode, ClientRole, SharedEvent, EventIdentifier, AssetsEvent, AssetEvent, ReadAssetsEvent, AssetEventCause} from "@openremote/model";
+import {Asset, AssetQuery, AssetTreeNode, ClientRole, SharedEvent, AssetsEvent, AssetEvent, AssetEventCause} from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
 import manager, {AssetModelUtil, OREvent, EventCallback, subscribe} from "@openremote/core";
@@ -480,10 +480,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }
 
             this._sendEventWithReply({
-                eventType: "read-assets",
-                assetQuery: query
-            } as ReadAssetsEvent)
-                .then((ev: SharedEvent & EventIdentifier) =>
+                event: {
+                    eventType: "read-assets",
+                    assetQuery: query
+                }
+            })
+                .then((ev) =>
                     this._buildTreeNodes((ev as AssetsEvent).assets!, sortFunction));
         } else {
             this._buildTreeNodes(this.assets, sortFunction);

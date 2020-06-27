@@ -69,7 +69,7 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         // Tenants
         masterTenant = identityService.getIdentityProvider().getTenant(Constants.MASTER_REALM);
         tenantBuilding = createTenant("building", "Building");
-        tenantCity = createTenant("smaercity", "Smart City");
+        tenantCity = createTenant("smartcity", "Smart City");
 
         // Users
         User testuser1 = createUser(MASTER_REALM, "testuser1", "testuser1", "DemoMaster", "DemoLast", null, true, REGULAR_USER_ROLES);

@@ -3,6 +3,7 @@ import { Node, PickerType, AssetAttributeInternalValue, AssetState, MetaItemType
 import { nodeConverter } from "../converters/node-converter";
 import { OrInputChangedEvent } from "@openremote/or-input";
 import rest from "@openremote/rest";
+import "@openremote/or-asset-tree";
 import { OrAssetTreeRequestSelectEvent } from "@openremote/or-asset-tree";
 import { ResizeObserver } from "resize-observer";
 import { project, modal } from "./flow-editor";

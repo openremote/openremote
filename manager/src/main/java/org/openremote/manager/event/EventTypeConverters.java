@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2020, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -110,5 +110,18 @@ public class EventTypeConverters implements TypeConverters {
             return null;
         string = string.substring(RenewEventSubscriptions.MESSAGE_PREFIX.length());
         return Container.JSON.readValue(string, RenewEventSubscriptions.class);
+    }
+
+    @Converter
+    public EventRequestResponseWrapper readRequestResponse(String string, Exchange exchange) throws Exception {
+        if (!string.startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX))
+            return null;
+        string = string.substring(EventRequestResponseWrapper.MESSAGE_PREFIX.length());
+        return Container.JSON.readValue(string, EventRequestResponseWrapper.class);
+    }
+
+    @Converter
+    public String writeRequestResponse(EventRequestResponseWrapper requestResponseWrapper, Exchange exchange) throws Exception {
+        return EventRequestResponseWrapper.MESSAGE_PREFIX + Container.JSON.writeValueAsString(requestResponseWrapper);
     }
 }

@@ -1,8 +1,10 @@
-import manager from "@openremote/core";
+// tslint:disable-next-line:no-reference
+///<reference path="../@types/mapbox.js/index.d.ts" />
+import manager, {MapType} from "@openremote/core";
 import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL, Style as StyleGL, LngLat,
     MapMouseEvent} from "mapbox-gl";
 import L, {Map as MapJS, MapOptions as OptionsJS, Marker as MarkerJS} from "mapbox.js";
-import {OrMapClickedEvent, OrMapLoadedEvent, Type, ViewSettings} from "./index";
+import {OrMapClickedEvent, OrMapLoadedEvent, ViewSettings} from "./index";
 import {
     OrMapMarker
 } from "./markers/or-map-marker";
@@ -18,7 +20,7 @@ const metersToPixelsAtMaxZoom = (meters:number, latitude:number) =>
 export class MapWidget {
     protected _mapJs?: MapJS;
     protected _mapGl?: MapGL;
-    protected _type: Type;
+    protected _type: MapType;
     protected _styleParent: Node;
     protected _mapContainer: HTMLElement;
     protected _loaded: boolean = false;
@@ -29,7 +31,7 @@ export class MapWidget {
     protected _zoom?: number;
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
 
-    constructor(type: Type, styleParent: Node, mapContainer: HTMLElement) {
+    constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement) {
         this._type = type;
         this._styleParent = styleParent;
         this._mapContainer = mapContainer;
@@ -40,7 +42,7 @@ export class MapWidget {
         this._center = getLngLat(center);
 
         switch (this._type) {
-            case Type.RASTER:
+            case MapType.RASTER:
                 if (this._mapJs) {
                     const latLng = getLatLng(this._center) || (this._viewSettings ? getLatLng(this._viewSettings.center) : undefined);
                     if (latLng) {
@@ -48,7 +50,7 @@ export class MapWidget {
                     }
                 }
                 break;
-            case Type.VECTOR:
+            case MapType.VECTOR:
                 if (this._mapGl && this._center) {
                     this._mapGl.setCenter(this._center);
                 }
@@ -60,23 +62,21 @@ export class MapWidget {
 
     public flyTo(coordinates?:LngLatLike, zoom?: number): this {
         switch (this._type) {
-            case Type.RASTER:
+            case MapType.RASTER:
                 if (this._mapJs) {
-                    //TODO implement fylTo
+                    // TODO implement fylTo
                 }
                 break;
-            case Type.VECTOR:
+            case MapType.VECTOR:
+                if (!coordinates) {
+                    coordinates = this._center ? this._center : this._viewSettings ? this._viewSettings.center : undefined;
+                }
+
+                if (!zoom) {
+                    zoom = this._zoom ? this._zoom : this._viewSettings && this._viewSettings.zoom ? this._viewSettings.zoom : undefined;
+                }
+
                 if (this._mapGl) {
-                    if(this._viewSettings) {
-                        if (!coordinates) {
-                            coordinates = this._center ? this._center : this._viewSettings.center;
-                        }
-
-                        if (!zoom) {
-                            zoom = this._zoom ? this._zoom : this._viewSettings.zoom ? this._viewSettings.zoom : 18;
-                        }
-                    }
-
                     // Only do flyTo if it has valid LngLat value
                     if(coordinates) {
                         this._mapGl.flyTo({
@@ -84,7 +84,9 @@ export class MapWidget {
                             zoom: zoom
                         });
                     }
-
+                } else {
+                    this._center = coordinates;
+                    this._zoom = zoom;
                 }
                 break;
         }
@@ -97,12 +99,12 @@ export class MapWidget {
         this._zoom = zoom;
 
         switch (this._type) {
-            case Type.RASTER:
+            case MapType.RASTER:
                 if (this._mapJs && this._zoom) {
                     this._mapJs.setZoom(this._zoom, {animate: false});
                 }
                 break;
-            case Type.VECTOR:
+            case MapType.VECTOR:
                 if (this._mapGl && this._zoom) {
                     this._mapGl.setZoom(this._zoom);
                 }
@@ -114,7 +116,7 @@ export class MapWidget {
 
     public async loadViewSettings() {
         let settingsResponse;
-        if (this._type === Type.RASTER) {
+        if (this._type === MapType.RASTER) {
             settingsResponse = await manager.rest.api.MapResource.getSettingsJs();
         } else {
             settingsResponse = await manager.rest.api.MapResource.getSettings();
@@ -133,7 +135,7 @@ export class MapWidget {
             return;
         }
 
-        if (this._type === Type.RASTER) {
+        if (this._type === MapType.RASTER) {
 
             // Add style to shadow root
             const style = document.createElement("style");
@@ -247,7 +249,7 @@ export class MapWidget {
         });
     }
 
-    protected _onMapClick(lngLat: LngLatLike) {
+    protected _onMapClick(lngLat: LngLat) {
         this._mapContainer.dispatchEvent(new OrMapClickedEvent(lngLat));
     }
 
@@ -287,13 +289,13 @@ export class MapWidget {
 
     protected _updateMarkerPosition(marker: OrMapMarker) {
         switch (this._type) {
-            case Type.RASTER:
+            case MapType.RASTER:
                 const m: MarkerJS | undefined = this._markersJs.get(marker);
                 if (m) {
                     m.setLatLng([marker.lat!, marker.lng!]);
                 }
                 break;
-            case Type.VECTOR:
+            case MapType.VECTOR:
                 const mGl: MarkerGL | undefined = this._markersGl.get(marker);
                 if (mGl) {
                     mGl.setLngLat([marker.lng!, marker.lat!]);
@@ -306,7 +308,7 @@ export class MapWidget {
     protected _updateMarkerElement(marker: OrMapMarker, doAdd: boolean) {
 
         switch (this._type) {
-            case Type.RASTER:
+            case MapType.RASTER:
                 let m = this._markersJs.get(marker);
                 if (m) {
                     this._removeMarkerClickHandler(marker, marker.markerContainer as HTMLElement);
@@ -334,7 +336,7 @@ export class MapWidget {
                 }
 
                 break;
-            case Type.VECTOR:
+            case MapType.VECTOR:
                 let mGl = this._markersGl.get(marker);
                 if (mGl) {
                     marker._actualMarkerElement = undefined;

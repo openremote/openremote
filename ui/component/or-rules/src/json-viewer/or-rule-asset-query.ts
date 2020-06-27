@@ -27,12 +27,13 @@ import {
 import {OrSelectChangedEvent} from "@openremote/or-select";
 import "@openremote/or-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
-import {getAttributeValueTemplate} from "@openremote/or-attribute-input";
+import "@openremote/or-attribute-input";
 import manager, {AssetModelUtil, Util} from "@openremote/core";
 import i18next from "i18next";
 import {buttonStyle} from "../style";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {translate} from "@openremote/or-translate";
+import { OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
 
 // language=CSS
 const style = css`
@@ -163,9 +164,9 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const operators = this.getOperators(assetDescriptor, attribute, attributeName);
 
         return html`
-            <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${attributes}" .value="${attributeName}" .label="${i18next.t("attribute")}"></or-input>
+            <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${attributes}" .value="${attributeName}" .label="${i18next.t("attribute")}"></or-input>
             
-            ${attributeName ? html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" ?readonly="${this.readonly}" .options="${operators}" .value="${operator}" .label="${i18next.t("operator")}"></or-input>` : ``}
+            ${attributeName ? html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${operators}" .value="${operator}" .label="${i18next.t("operator")}"></or-input>` : ``}
             
             ${attributePredicate ? this.attributePredicateValueEditorTemplate(assetDescriptor, attributePredicate) : ``}
         `;
@@ -181,27 +182,28 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
         const attributeName = this.getAttributeName(attributePredicate);
         const assetType = getAssetTypeFromQuery(this.query);
+        const attributeDescriptor = AssetModelUtil.getAssetAttributeDescriptor(assetDescriptor, attributeName);
+        const attributeValueDescriptor = attributeDescriptor && attributeDescriptor.valueDescriptor ? typeof attributeDescriptor.valueDescriptor === "string" ? AssetModelUtil.getAttributeValueDescriptor(attributeDescriptor.valueDescriptor as string) : attributeDescriptor.valueDescriptor : undefined;
+
         // @ts-ignore
         const value = valuePredicate ? valuePredicate.value : undefined;
 
         switch (valuePredicate.predicateType) {
             case "string":
-                return getAttributeValueTemplate(assetType, { name: attributeName!, type: AttributeValueType.STRING }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("string"))(value);
+                return html`<or-attribute-input @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${i18next.t("string")}" .assetType="${assetType}" .attributeDescriptor="${attributeDescriptor}" .attributeValueDescriptor="${attributeValueDescriptor}" .value="${value}" .readonly="${this.readonly || false}"></or-attribute-input>`;
             case "boolean":
                 return html ``; // Handled by the operator IS_TRUE or IS_FALSE
             case "datetime":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "number":
                 if (valuePredicate.operator === AQO.BETWEEN) {
-                    const inputTemplate1 = getAttributeValueTemplate(assetType, { name: attributeName!, type: AttributeValueType.NUMBER }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("between"));
-                    const inputTemplate2 = getAttributeValueTemplate(assetType, { name: attributeName!, type: AttributeValueType.NUMBER }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "rangeValue", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("and"));
                     return html`
-                        ${inputTemplate1(value)}
+                        <or-attribute-input .inputType="${InputType.NUMBER}" @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${i18next.t("between")}" .assetType="${assetType}" .attributeDescriptor="${attributeDescriptor}" .attributeValueDescriptor="${attributeValueDescriptor}" .value="${value}" .readonly="${this.readonly || false}"></or-attribute-input>
                         <span style="display: inline-flex; align-items: center;">&</span>
-                        ${inputTemplate2(valuePredicate.rangeValue)}
+                        <or-attribute-input .inputType="${InputType.NUMBER}" @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "rangeValue", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${i18next.t("and")}" .assetType="${assetType}" .attributeDescriptor="${attributeDescriptor}" .attributeValueDescriptor="${attributeValueDescriptor}" .value="${valuePredicate.rangeValue}" .readonly="${this.readonly || false}"></or-attribute-input>
                     `;
                 }
-                return getAttributeValueTemplate(assetType, { name: attributeName!, type: AttributeValueType.NUMBER }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, undefined, i18next.t("number"))(value);
+                return html`<or-attribute-input @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${i18next.t("number")}" .assetType="${assetType}" .attributeDescriptor="${attributeDescriptor}" .attributeValueDescriptor="${attributeValueDescriptor}" .value="${value}" .readonly="${this.readonly || false}"></or-attribute-input>`;
             case "string-array":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "radial":
@@ -217,7 +219,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             case "array":
                 // TODO: Update once we can determine inner type of array
                 // Assume string array
-                return getAttributeValueTemplate(assetType, {name: attributeName!, type: AttributeValueType.ARRAY }, this.readonly || false, false, (v: any) => this.setValuePredicateProperty(valuePredicate, "value", v), this.config ? this.config.inputProvider : undefined, InputType.TEXT, undefined)(value);
+                return html`<or-attribute-input @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${i18next.t("array")}" .assetType="${assetType}" .attributeDescriptor="${attributeDescriptor}" .attributeValueDescriptor="${attributeValueDescriptor}" .value="${value}" .readonly="${this.readonly || false}"></or-attribute-input>`;
             default:
                 return html `<span>NOT IMPLEMENTED</span>`;
         }
@@ -280,7 +282,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         return html`
             <div class="attribute-group">
             
-                <or-input id="idSelect" type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" ?readonly="${this.readonly}" .options="${idOptions}" .value="${idValue}" .label="${i18next.t("asset")}"></or-input>
+                <or-input id="idSelect" type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" .readonly="${this.readonly || false}" .options="${idOptions}" .value="${idValue}" .label="${i18next.t("asset")}"></or-input>
             
                 ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate) => {
                     

@@ -45,10 +45,7 @@ import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
-import org.openremote.model.event.shared.AssetInfo;
-import org.openremote.model.event.shared.EventSubscription;
-import org.openremote.model.event.shared.SharedEvent;
-import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.event.shared.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.*;
@@ -80,8 +77,7 @@ import static java.util.stream.Collectors.joining;
 import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
-import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
-import static org.openremote.manager.event.ClientEventService.getSessionKey;
+import static org.openremote.manager.event.ClientEventService.*;
 import static org.openremote.manager.rules.AssetQueryPredicate.asPredicate;
 import static org.openremote.model.asset.AssetAttribute.*;
 import static org.openremote.model.attribute.MetaItemType.ACCESS_RESTRICTED_READ;
@@ -358,17 +354,28 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         from(CLIENT_EVENT_TOPIC)
             .routeId("FromClientReadRequests")
             .filter(
-                or(body().isInstanceOf(ReadAssetsEvent.class), body().isInstanceOf(ReadAssetEvent.class)))
+                or(body().isInstanceOf(ReadAssetsEvent.class), body().isInstanceOf(ReadAssetEvent.class), body().isInstanceOf(ReadAssetAttributeEvent.class)))
             .choice()
                 .when(body().isInstanceOf(ReadAssetEvent.class))
                     .process(exchange -> {
-                        ReadAssetEvent event = exchange.getIn().getBody(ReadAssetEvent.class);
-                        LOG.fine("Handling from client: " + event);
-                        boolean isAttributeRead = event instanceof ReadAssetAttributesEvent;
+                        LOG.fine("Handling from client: " + exchange.getIn().getBody());
 
-                        if (event.getAssetId() == null || event.getAssetId().isEmpty())
+                        String assetId = null;
+                        String attribute = null;
+
+                        if (exchange.getIn().getBody() instanceof ReadAssetEvent) {
+                            assetId = exchange.getIn().getBody(ReadAssetEvent.class).getAssetId();
+                        } else {
+                            ReadAssetAttributeEvent assetAttributeEvent = exchange.getIn().getBody(ReadAssetAttributeEvent.class);
+                            assetId = assetAttributeEvent.getAttributeRef().getEntityId();
+                            attribute = assetAttributeEvent.getAttributeRef().getAttributeName();
+                        }
+
+                        if (TextUtil.isNullOrEmpty(assetId)) {
                             return;
+                        }
 
+                        boolean isAttributeRead = !TextUtil.isNullOrEmpty(attribute);
                         String sessionKey = getSessionKey(exchange);
                         AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
 
@@ -381,14 +388,28 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                         Asset asset = find(
                             new AssetQuery()
-                                .ids(event.getAssetId())
+                                .ids(assetId)
+                                .select(new Select().excludePath(true).excludeParentInfo(true))
                                 .access(access));
 
                         if (asset != null) {
+                            String messageId = exchange.getIn().getHeader(HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
+                            Object response = null;
+
                             if (isAttributeRead) {
-                                replyWithAttributeEvents(sessionKey, event.getSubscriptionId(), asset, ((ReadAssetAttributesEvent) event).getAttributeNames());
+                                AssetAttribute assetAttribute = asset.getAttribute(attribute).orElse(null);
+                                if (assetAttribute != null) {
+                                    response = new AttributeEvent(assetId, attribute, assetAttribute.getValue().orElse(null), assetAttribute.getValueTimestamp().orElse(0L));
+                                }
                             } else {
-                                replyWithAssetEvent(sessionKey, event.getSubscriptionId(), asset);
+                                response = new AssetEvent(AssetEvent.Cause.READ, asset, null);
+                            }
+
+                            if (response != null) {
+                                if (!isNullOrEmpty(messageId)) {
+                                    response = new EventRequestResponseWrapper<>(messageId, (SharedEvent)response);
+                                }
+                                clientEventService.sendToSession(sessionKey, response);
                             }
                         }
                     })
@@ -416,8 +437,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         query.access(access);
 
                         List<Asset> assets = findAll(query);
-                        clientEventService.sendToSession(sessionKey, new AssetsEvent(readAssets.getMessageId(), assets));
+
+                        String messageId = exchange.getIn().getHeader(HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
+
+                        if (isNullOrEmpty(messageId)) {
+                            clientEventService.sendToSession(sessionKey, new AssetsEvent(assets));
+                        } else {
+                            clientEventService.sendToSession(sessionKey, new EventRequestResponseWrapper<>(messageId, new AssetsEvent(assets)));
+                        }
                     })
+                    .stop()
             .endChoice()
             .end();
     }
@@ -2103,12 +2132,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             .map(Optional::get)
             .collect(Collectors.toList());
         TriggeredEventSubscription<?> triggeredEventSubscription = new TriggeredEventSubscription<>(events, subscriptionId);
-        clientEventService.sendToSession(sessionKey, triggeredEventSubscription);
-    }
-
-    protected void replyWithAssetEvent(String sessionKey, String subscriptionId, Asset asset) {
-        AssetEvent event = new AssetEvent(AssetEvent.Cause.READ, asset, null);
-        TriggeredEventSubscription<?> triggeredEventSubscription = new TriggeredEventSubscription<>(Collections.singletonList(event), subscriptionId);
         clientEventService.sendToSession(sessionKey, triggeredEventSubscription);
     }
 

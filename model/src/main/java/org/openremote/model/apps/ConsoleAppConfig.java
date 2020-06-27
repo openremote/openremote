@@ -21,6 +21,17 @@ public class ConsoleAppConfig {
     public ConsoleAppConfig() {
     }
 
+    public ConsoleAppConfig(String realm, String url, Boolean menuEnabled, MenuPosition menuPosition, String menuImage, String primaryColor, String secondaryColor, ObjectValue links) {
+        this.realm = realm;
+        this.url = url;
+        this.menuEnabled = menuEnabled;
+        this.menuPosition = menuPosition;
+        this.menuImage = menuImage;
+        this.primaryColor = primaryColor;
+        this.secondaryColor = secondaryColor;
+        this.links = links;
+    }
+
     @Id
     @Column(name = "ID")
     @GeneratedValue(generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)

@@ -69,6 +69,10 @@ public abstract class AbstractKeycloakSetup implements Setup {
         return tenant;
     }
 
+    protected Tenant createTenant(Tenant tenant) {
+        return keycloakProvider.createTenant(tenant);
+    }
+
     protected User createUser(String realm, String username, String password, String firstName, String lastName, String email, boolean enabled, ClientRole[] roles) {
         User user = new User();
         user.setUsername(username);

@@ -37,6 +37,7 @@ public class GatewayDisconnectEvent extends SharedEvent {
         DISABLED,
         ALREADY_CONNECTED,
         UNRECOGNISED,
+        PERMANENT_ERROR
     }
 
     protected Reason reason;

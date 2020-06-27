@@ -26,7 +26,9 @@ import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.Values;
@@ -61,7 +63,7 @@ public class GatewayConnector {
     protected final ManagerExecutorService executorService;
     protected final AssetProcessingService assetProcessingService;
     protected final Map<String, Asset> pendingAssetMerges = new HashMap<>();
-    protected final AtomicReference<DeleteAssetsRequestEvent> pendingAssetDelete = new AtomicReference<>();
+    protected final AtomicReference<EventRequestResponseWrapper<DeleteAssetsRequestEvent>> pendingAssetDelete = new AtomicReference<>();
     protected List<AssetEvent> cachedAssetEvents;
     protected List<AttributeEvent> cachedAttributeEvents;
     protected Consumer<Object> gatewayMessageConsumer;
@@ -188,14 +190,14 @@ public class GatewayConnector {
         }
     }
 
-    synchronized protected void onGatewayEvent(SharedEvent e) {
+    synchronized protected void onGatewayEvent(String messageId, SharedEvent e) {
         if (!isConnected()) {
             return;
         }
 
         if (initialSyncInProgress) {
             if (e instanceof AssetsEvent) {
-                onSyncAssetsResponse((AssetsEvent) e);
+                onSyncAssetsResponse(messageId, (AssetsEvent) e);
             } else if (e instanceof AttributeEvent) {
                 cachedAttributeEvents.add((AttributeEvent) e);
             } else if (e instanceof AssetEvent) {
@@ -207,7 +209,7 @@ public class GatewayConnector {
             } else if (e instanceof AttributeEvent) {
                 onAttributeEvent((AttributeEvent) e);
             } else if (e instanceof DeleteAssetsResponseEvent) {
-                onAssetDeleteResponseEvent((DeleteAssetsResponseEvent) e);
+                onAssetDeleteResponseEvent(messageId, (DeleteAssetsResponseEvent) e);
             }
         }
     }
@@ -222,9 +224,9 @@ public class GatewayConnector {
         }
 
         expectedSyncResponseName = ASSET_READ_EVENT_NAME_INITIAL;
-        sendMessageToGateway(new ReadAssetsEvent(
-            ASSET_READ_EVENT_NAME_INITIAL, new AssetQuery().select(selectExcludeAll()).recursive(true)
-        ));
+        sendMessageToGateway(new EventRequestResponseWrapper<>(
+            ASSET_READ_EVENT_NAME_INITIAL,
+            new ReadAssetsEvent(new AssetQuery().select(selectExcludeAll()).recursive(true))));
         syncProcessorFuture = executorService.schedule(this::onSyncAssetsTimeout, SYNC_TIMEOUT_MILLIS);
     }
 
@@ -253,8 +255,9 @@ public class GatewayConnector {
 
     protected boolean syncAborted() {
         if (syncErrors == MAX_SYNC_RETRIES) {
-            LOG.warning("Gateway sync max retries reached so disabling the gateway: Gateway ID=" + gatewayId);
-            setDisabled(true);
+            LOG.warning("Gateway sync max retries reached so disconnecting the gateway: Gateway ID=" + gatewayId);
+            sendMessageToGateway(new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.PERMANENT_ERROR));
+            disconnect();
             return true;
         }
 
@@ -276,29 +279,31 @@ public class GatewayConnector {
         LOG.fine("Synchronising gateway assets " + syncIndex+1 + "-" + syncIndex + requestAssetIds.length + " of " + syncAssetIds.size());
 
         sendMessageToGateway(
-            new ReadAssetsEvent(
+            new EventRequestResponseWrapper<>(
                 expectedSyncResponseName,
-                new AssetQuery()
-                    .select(new AssetQuery.Select().excludeParentInfo(true).excludePath(true))
-                    .ids(requestAssetIds)
+                new ReadAssetsEvent(
+                    new AssetQuery()
+                        .select(new AssetQuery.Select().excludeParentInfo(true).excludePath(true))
+                        .ids(requestAssetIds)
+                )
             )
         );
         syncProcessorFuture = executorService.schedule(this::requestAssets, SYNC_TIMEOUT_MILLIS);
     }
 
-    synchronized protected void onSyncAssetsResponse(AssetsEvent e) {
+    synchronized protected void onSyncAssetsResponse(String messageId, AssetsEvent e) {
         if (!isConnected()) {
             return;
         }
 
-        if (!expectedSyncResponseName.equalsIgnoreCase(e.getMessageId())) {
-            LOG.info("Unexpected response from gateway so ignoring (expected=" + expectedSyncResponseName + ", actual =" + e.getMessageId() + "): " + e);
+        if (!expectedSyncResponseName.equalsIgnoreCase(messageId)) {
+            LOG.info("Unexpected response from gateway so ignoring (expected=" + expectedSyncResponseName + ", actual =" + messageId + "): " + e);
             return;
         }
 
         syncProcessorFuture.cancel(true);
         syncProcessorFuture = null;
-        boolean isInitialResponse = ASSET_READ_EVENT_NAME_INITIAL.equalsIgnoreCase(e.getMessageId());
+        boolean isInitialResponse = ASSET_READ_EVENT_NAME_INITIAL.equalsIgnoreCase(messageId);
 
         if (isInitialResponse) {
 
@@ -401,12 +406,13 @@ public class GatewayConnector {
                 onInitialSyncComplete();
 
                 // Refresh attributes that have changed
-                cachedAttributeEvents.stream().filter(attributeEvent -> syncAssetIds.contains(attributeEvent.getEntityId())).collect(Collectors.groupingBy(AttributeEvent::getEntityId)).forEach(
-                    (assetId, attributeEvents) -> {
-                        LOG.info("1 or more gateway asset attribute values have changed so requesting latest values (Gateway ID=" + gatewayId + ", Asset ID=" + assetId);
-                        sendMessageToGateway(new ReadAssetAttributesEvent(assetId, attributeEvents.stream().map(AttributeEvent::getAttributeName).toArray(String[]::new)));
+                cachedAttributeEvents.forEach(attributeEvent -> {
+                    String assetId = attributeEvent.getEntityId();
+                    if (!refreshAssets.contains(assetId)) {
+                        LOG.info("1 or more gateway asset attribute values have changed so requesting the asset again (Gateway ID=" + gatewayId + ", Asset ID=" + assetId);
+                        refreshAssets.add(assetId);
                     }
-                );
+                });
 
                 // Refresh assets that have changed
                 refreshAssets.forEach(id -> sendMessageToGateway(new ReadAssetEvent(id)));
@@ -524,7 +530,10 @@ public class GatewayConnector {
                 throw new IllegalStateException(msg);
             }
 
-            pendingAssetDelete.set(new DeleteAssetsRequestEvent(UniqueIdentifierGenerator.generateId(), new ArrayList<>(assetIds)));
+            pendingAssetDelete.set(new EventRequestResponseWrapper<>(
+                UniqueIdentifierGenerator.generateId(),
+                new DeleteAssetsRequestEvent(new ArrayList<>(assetIds))
+            ));
 
             try {
                 sendMessageToGateway(pendingAssetDelete.get());
@@ -543,14 +552,14 @@ public class GatewayConnector {
         }
     }
 
-    protected void onAssetDeleteResponseEvent(DeleteAssetsResponseEvent e) {
+    protected void onAssetDeleteResponseEvent(String messageId, DeleteAssetsResponseEvent e) {
 
         synchronized (pendingAssetDelete) {
             if (pendingAssetDelete.get() == null) {
                 return;
             }
 
-            if (!pendingAssetDelete.get().getName().equals(e.getName())) {
+            if (!pendingAssetDelete.get().getMessageId().equals(messageId)) {
                 LOG.info("Gateway asset delete response name does not match request so ignoring");
                 return;
             }

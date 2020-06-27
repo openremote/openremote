@@ -11,13 +11,11 @@
   "references": [
     { "path": "../core" },
     { "path": "../or-translate" },
-    { "path": "../or-input" },
-    { "path": "../or-map" },
-    { "path": "../or-attribute-input" },
     { "path": "../or-icon" },
     { "path": "../or-panel" },
-    { "path": "../or-asset-viewer" },
-    { "path": "../or-asset-tree" },
-    { "path": "../or-mwc-components" }
+    { "path": "../or-mwc-components" },
+    { "path": "../or-input" },
+    { "path": "../or-attribute-input" },
+    { "path": "../or-asset-tree" }
   ]
 }

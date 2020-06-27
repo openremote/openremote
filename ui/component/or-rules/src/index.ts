@@ -41,6 +41,7 @@ import "./flow-viewer/flow-viewer";
 import {OrRuleList} from "./or-rule-list";
 import {OrRuleViewer} from "./or-rule-viewer";
 import {RecurrenceOption} from "./json-viewer/or-rule-then-otherwise";
+import { AttributeInputCustomProvider } from "@openremote/or-attribute-input";
 
 export const enum ConditionType {
     ASSET_QUERY = "assetQuery",
@@ -113,7 +114,7 @@ export interface RulesConfig {
         hideWhenAddAttribute?: boolean;
         hideWhenAddGroup?: boolean;
     };
-    inputProvider?: (assetType: string | undefined, attribute: Attribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean | undefined, disabled: boolean | undefined) => ((value: any) => TemplateResult) | undefined;
+    inputProvider?: AttributeInputCustomProvider;
     descriptors?: {
         all?: RulesDescriptorSection;
         when?: RulesDescriptorSection;

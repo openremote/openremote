@@ -120,7 +120,6 @@ public class WebsocketIoClient<T> extends AbstractNettyIoClient<T, InetSocketAdd
             } else if (frame instanceof PongWebSocketFrame) {
                 LOG.finest("Websocket client pong received");
             } else if (frame instanceof CloseWebSocketFrame) {
-                System.out.println("WebSocket Client received closing");
                 ch.close();
             }
         }

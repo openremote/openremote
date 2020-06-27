@@ -1,4 +1,4 @@
-import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult, unsafeCSS, query} from "lit-element";
+import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult, unsafeCSS} from "lit-element";
 import {classMap} from "lit-html/directives/class-map";
 import {ifDefined} from "lit-html/directives/if-defined";
 import {MDCTextField} from "@material/textfield";
@@ -242,7 +242,7 @@ export class OrInput extends LitElement {
     public max?: any;
 
     @property()
-    public min?: HTMLInputElement;
+    public min?: any;
 
     @property({type: Number})
     public step?: number;
@@ -547,44 +547,47 @@ export class OrInput extends LitElement {
                 case InputType.TEXT:
                 case InputType.TEXTAREA:
                 case InputType.JSON: {
-                    let val = this.value;
+                    const valMinMax: [any, any, any] = [this.value, this.min, this.max];
 
-                    if (typeof(val) !== "string") {
+                    if (valMinMax.find((v) => v !== undefined && v !== null && typeof(v) !== "string") !== undefined) {
+
+                        let format: string | undefined;
+
                         switch (this.type) {
                             case InputType.TIME:
-                                if (val instanceof Date) {
-                                   val = moment(val).format("HH:mm");
-                                }
+                                format = "HH:mm";
                                break;
                             case InputType.DATE:
-                                 if (val instanceof Date) {
-                                    val = moment(val).format("YYYY-MM-DD");
-                                }
+                                format = "YYYY-MM-DD";
                                 break;
                             case InputType.WEEK:
-                                     if (val instanceof Date) {
-                                        val = moment(val).format("YYYY-")+"W"+moment(val).format("WW");
-                                    }
-                                    break;
+                                format = "YYYY-Www";
+                                break;
                             case InputType.MONTH:
-                                 if (val instanceof Date) {
-                                    val = moment(val).format("YYYY-MM");
-                                }
+                                format = "YYYY-MM";
                                 break;
                             case InputType.DATETIME:
-                                if (val instanceof Date) {
-                                    val = moment(val).format("YYYY-MM-DDTHH:mm");
-                                } else if (typeof(val) === "number") {
-                                    const offset = (new Date()).getTimezoneOffset() * 60000;
-                                    val = moment(new Date(val - offset)).format("YYYY-MM-DDTHH:mm");
-                                }
+                                format = "YYYY-MM-DDTHH:mm";
                                 break;
                             case InputType.JSON:
-                                val = val !== undefined && val !== null ? JSON.stringify(val, null, 2) : "";
+                                valMinMax[0] = valMinMax[0] !== undefined && valMinMax[0] !== null ? (typeof valMinMax[0] === "string" ? valMinMax[0] : JSON.stringify(valMinMax[0], null, 2)) : "";
                                 break;
                             default:
-                                val = val !== undefined && val !== null ? val : "";
+                                valMinMax[0] = valMinMax[0] !== undefined && valMinMax[0] !== null ? valMinMax[0] : "";
                                 break;
+                        }
+
+                        if (format) {
+                            valMinMax.forEach((val, i) => {
+                                if (typeof(val) === "number") {
+                                    const offset = (new Date()).getTimezoneOffset() * 60000;
+                                    val = new Date(val - offset);
+                                }
+                                if (val instanceof Date) {
+                                    val = moment(val).format(format);
+                                }
+                                valMinMax[i] = val;
+                            });
                         }
                     }
 
@@ -616,7 +619,7 @@ export class OrInput extends LitElement {
                                     maxlength="${ifDefined(this.maxLength)}"
                                     rows="${this.rows ? this.rows : 5}" 
                                     cols="${ifDefined(this.cols)}"
-                                    aria-label="${ifDefined(this.label)}">${val ? val : ""}</textarea>
+                                    aria-label="${ifDefined(this.label)}">${valMinMax[0] ? valMinMax[0] : ""}</textarea>
                                 ${this.renderOutlined(labelTemplate)}
                                 ` :
                                 html`<input type="${this.type}" id="elem" class="mdc-text-field__input"
@@ -624,9 +627,9 @@ export class OrInput extends LitElement {
                                     ?readonly="${this.readonly}"
                                     ?disabled="${this.disabled}"
                                     @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}"
-                                    .value="${val !== null && val !== undefined ? val : ""}"
-                                    min="${ifDefined(this.min)}"
-                                    max="${ifDefined(this.max)}"
+                                    .value="${valMinMax[0] !== null && valMinMax[0] !== undefined ? valMinMax[0] : ""}"
+                                    min="${ifDefined(valMinMax[1])}"
+                                    max="${ifDefined(valMinMax[2])}"
                                     step="${this.step ? this.step : "any"}"
                                     aria-label="${ifDefined(this.label)}"
                                     minlength="${ifDefined(this.minLength)}"
