@@ -148,6 +148,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
     @property({type: Boolean})
     public hasButton?: boolean;
+    @property({type: String})
+    public buttonIcon?: string = "send";
 
     @property({type: Boolean})
     public disableSubscribe: boolean = false;
@@ -367,6 +369,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
         // Check if attribute hasn't been loaded yet or pending write
         const loading = this.attributeRefs && !this._attributeEvent;
+        const hasButton = (this._label === "Light 1 Dimmer");
+        const helperPersistent = (this._label === "Light 1 Dimmer");
         let content: TemplateResult | string | undefined = "";
 
         if (!loading) {
@@ -399,21 +403,14 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             }
         }
 
-        const clickHandler = (e: any) => {
-            const inputEl = this.shadowRoot!.getElementById("input") as OrInput;
-            if (inputEl) {
-                const value = inputEl.value;
-            }
-        };
-
         return html`
             <div id="wrapper">
                 ${content}
                 ${hasButton
                     ? html`<or-input 
                             id="attr-input-btn"
-                            icon="send" type="button"
-                            @click="${(e: any) => clickHandler(e)}"></or-input>`
+                            icon="${this.buttonIcon}" type="button"
+                            @click="${() => this.onClickSendButton()}"></or-input>`
                     : ``}
                 ${loading || this._writeTimeoutHandler 
                     ? html`<div id="scrim"><progress class="pure-material-progress-circular"></progress></div>` 
@@ -424,6 +421,20 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
     protected getValue(): any {
         return this._attributeEvent ? this._attributeEvent.attributeState!.value : this.value;
+    }
+
+    protected onClickSendButton() {
+        const inputEl = this.shadowRoot!.getElementById("input") as OrInput;
+        if (inputEl) {
+            this.buttonIcon = "send-clock";
+            inputEl.helperText = i18next.t("Sending");
+            const value = inputEl.value;
+            this._onValueChange(value);
+            const response = manager.rest.api.AssetResource.writeAttributeValue(this.attribute!.assetId!, this.attribute!.name!, value)
+                .then(() => inputEl.helperText = i18next.t("updatedWithDate", { date: new Date().toLocaleString() } as i18next.TOptions<i18next.InitOptions>))
+                .catch(() => inputEl.helperText = i18next.t("errorOccurred"))
+                .finally(() => this.buttonIcon = "send");
+        }
     }
 
     public _onEvent(event: SharedEvent) {
