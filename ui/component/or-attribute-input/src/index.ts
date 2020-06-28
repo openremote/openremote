@@ -430,10 +430,13 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             inputEl.helperText = i18next.t("Sending");
             const value = inputEl.value;
             this._onValueChange(value);
-            const response = manager.rest.api.AssetResource.writeAttributeValue(this.attribute!.assetId!, this.attribute!.name!, value)
-                .then(() => inputEl.helperText = i18next.t("updatedWithDate", { date: new Date().toLocaleString() } as i18next.TOptions<i18next.InitOptions>))
-                .catch(() => inputEl.helperText = i18next.t("errorOccurred"))
-                .finally(() => this.buttonIcon = "send");
+
+            if (this.attribute) {
+                const response = manager.rest.api.AssetResource.writeAttributeValue(this.attribute.assetId!, this.attribute.name!, value)
+                    .then(() => inputEl.helperText = i18next.t("updatedWithDate", {date: new Date().toLocaleString()} as i18next.TOptions<i18next.InitOptions>))
+                    .catch(() => inputEl.helperText = i18next.t("errorOccurred"))
+                    .finally(() => this.buttonIcon = "send");
+            }
         }
     }
 
