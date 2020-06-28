@@ -369,8 +369,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
         // Check if attribute hasn't been loaded yet or pending write
         const loading = this.attributeRefs && !this._attributeEvent;
-        const hasButton = (this._label === "Light 1 Dimmer");
-        const helperPersistent = (this._label === "Light 1 Dimmer");
+        const helperPersistent = !!this.helperText;
         let content: TemplateResult | string | undefined = "";
 
         if (!loading) {
@@ -395,7 +394,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                     .options="${this._options}" .readonly="${this._readonly}" .disabled="${this._disabled}" 
                     .helperText="${this.helperText}" .helperPersistent="${helperPersistent}"
                     @or-input-changed="${(e: OrInputChangedEvent) => {
-                        if (!hasButton) {
+                        if (!this.hasButton) {
                             this._onValueChange(e.detail.value);
                             e.stopPropagation()
                         }
@@ -406,7 +405,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         return html`
             <div id="wrapper">
                 ${content}
-                ${hasButton
+                ${this.hasButton
                     ? html`<or-input 
                             id="attr-input-btn"
                             icon="${this.buttonIcon}" type="button"
