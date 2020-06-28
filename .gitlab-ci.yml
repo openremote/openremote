@@ -88,6 +88,8 @@ email failed pipeline:
       -e "SMTP_PASSWORD=$SMTP_PASSWORD"
       --rm python:3 python deployment/aws-mail.py
   when: on_failure
+  only:
+    - master
 
 test-master:
   before_script:
