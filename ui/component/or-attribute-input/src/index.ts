@@ -143,6 +143,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     @property()
     public inputType?: InputType;
 
+    @property({type: Boolean})
+    public hasHelperText?: boolean;
     @property({type: String})
     public helperText?: string;
 
@@ -369,7 +371,10 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
         // Check if attribute hasn't been loaded yet or pending write
         const loading = this.attributeRefs && !this._attributeEvent;
-        const helperPersistent = !!this.helperText;
+        const helperPersistent = !!this.hasHelperText;
+        if (!!this.hasHelperText && this.attribute) {
+            this.helperText = i18next.t("updatedWithDate", { date: new Date(this.attribute.valueTimestamp!).toLocaleString() } as i18next.TOptions<i18next.InitOptions>);
+        }
         let content: TemplateResult | string | undefined = "";
 
         if (!loading) {
