@@ -84,6 +84,7 @@
   "cancel": "Cancel",
   "createdOn": "Created on",
   "createdOnWithDate": "Created on: {{-date, LLLL}}",
+  "updatedWithDate": "Updated on: {{-date, LLLL}}",
   "accessPublicRead": "Public read",
   "type": "Type",
   "path": "Path",
@@ -225,6 +226,8 @@
     "TRANSLATION_ERROR": "Translations error (see console logs)"
   },
   "couldNotRetrieveAttribute": "Could not retrieve attribute information",
+  "pressEnterToSend": "Press Enter to send",
+  "sending": "Sending",
   "submit": "Submit",
   "password": "Password",
   "units": {
