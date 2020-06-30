@@ -4,7 +4,7 @@ import "@openremote/or-icon";
 import {Asset, AssetQuery, AssetTreeNode, ClientRole, SharedEvent, AssetsEvent, AssetEvent, AssetEventCause} from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
-import manager, {AssetModelUtil, OREvent, EventCallback, subscribe} from "@openremote/core";
+import manager, {Util, AssetModelUtil, OREvent, EventCallback, subscribe} from "@openremote/core";
 import {InputType} from "@openremote/or-input";
 import Qs from "qs";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
@@ -262,7 +262,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         if (_changedProperties.has("selectedIds")) {
-            this._updateSelectedNodes();
+            if (!Util.objectsEqual(_changedProperties.get("selectedIds"), this.selectedIds)) {
+                this._updateSelectedNodes();
+            }
         }
 
         if (_changedProperties.has("sortBy")) {

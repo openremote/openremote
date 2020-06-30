@@ -672,7 +672,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
     protected _doSendWithReply<T extends SharedEvent, U extends SharedEvent>(event: EventRequestResponseWrapper<T>): Promise<U> {
 
         if (!event.messageId) {
-            event.messageId = new Date().getTime().toString(10);
+            event.messageId = (new Date().getTime() + (Math.random() * 10)).toString(10);
         }
 
         if (this._repliesDeferred.has(event.messageId)) {
