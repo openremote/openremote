@@ -32,8 +32,11 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.attribute.MetaItemDescriptor;
+import org.openremote.model.security.ClientRole;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.value.StringValue;
 import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -44,6 +47,7 @@ import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.agent.protocol.ProtocolClientEventService.*;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
+import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemArray;
 import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemString;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY;
@@ -66,6 +70,12 @@ public class ClientEventProtocol extends AbstractProtocol {
         true,
         REGEXP_PATTERN_STRING_NON_EMPTY,
         MetaItemDescriptor.PatternFailure.STRING_EMPTY);
+
+    public static final MetaItemDescriptor META_PROTOCOL_CLIENT_ROLES = metaItemArray(
+            PROTOCOL_NAME + ":clientRoles",
+            ACCESS_PRIVATE,
+            false,
+            null);
 
     protected Map<String, AssetAttribute> clientIdProtocolConfigMap = new HashMap<>();
 
@@ -98,16 +108,28 @@ public class ClientEventProtocol extends AbstractProtocol {
 
         LOG.info("Creating client credentials for: " + protocolConfiguration);
         AttributeRef attributeRef = protocolConfiguration.getReferenceOrThrow();
-        String clientId = CLIENT_ID_PREFIX + attributeRef.getEntityId() + ":" + attributeRef.getAttributeName();
+        String clientId = CLIENT_ID_PREFIX + attributeRef.getEntityId();
 
         String clientSecret = protocolConfiguration.getMetaItem(META_PROTOCOL_CLIENT_SECRET.getUrn())
             .flatMap(AbstractValueHolder::getValueAsString)
             .orElse(UUID.randomUUID().toString());
 
+        ClientRole[] roles = protocolConfiguration.getMetaItem(META_PROTOCOL_CLIENT_ROLES.getUrn())
+            .flatMap(AbstractValueHolder::getValueAsArray)
+            .flatMap(arrayValue ->
+                Values.getArrayElements(
+                        arrayValue,
+                        StringValue.class,
+                        true,
+                        false,
+                        StringValue::getString))
+            .map(list -> list.stream().map(ClientRole::valueOf).toArray(ClientRole[]::new))
+            .orElse(null);
+
         ProtocolClientEventService.ClientCredentials clientCredentials =
             new ProtocolClientEventService.ClientCredentials(
                 agent.getRealm(),
-                null,
+                roles,
                 clientId,
                 clientSecret
             );
@@ -198,6 +220,7 @@ public class ClientEventProtocol extends AbstractProtocol {
 
                 // TODO: Can do some processing of the incoming value here
                 updateLinkedAttribute(new AttributeState(attributeEvent.getAttributeRef(), attributeEvent.getValue().orElse(null)));
+                stopMessage(exchange);
             }
         }
     }

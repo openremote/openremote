@@ -36,6 +36,7 @@ import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.event.shared.*;
+import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.TextUtil;
 
@@ -327,6 +328,9 @@ public class ClientEventService implements ProtocolClientEventService {
         clientRepresentation.setSecret(clientCredentials.getSecret());
         LOG.info("Creating/updating client event service client credentials: " + clientCredentials);
         keycloakIdentityProvider.createClient(clientCredentials.getRealm(), clientRepresentation);
+
+        User serviceUser = keycloakIdentityProvider.getClientServiceUser(clientCredentials.getRealm(), clientCredentials.getClientId());
+        keycloakIdentityProvider.updateRoles(clientCredentials.getRealm(), serviceUser.getId(), clientCredentials.getRoles());
     }
 
     @Override
