@@ -22,6 +22,7 @@ package org.openremote.manager.asset;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
+import org.openremote.agent.protocol.ProtocolClientEventService;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
@@ -376,7 +377,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         }
 
                         boolean isAttributeRead = !TextUtil.isNullOrEmpty(attribute);
-                        String sessionKey = getSessionKey(exchange);
+                        String sessionKey = ProtocolClientEventService.getSessionKey(exchange);
                         AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
 
                         // Superuser can get all, User must have role
@@ -418,7 +419,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         ReadAssetsEvent readAssets = exchange.getIn().getBody(ReadAssetsEvent.class);
                         AssetQuery query = readAssets.getAssetQuery();
 
-                        String sessionKey = getSessionKey(exchange);
+                        String sessionKey = ProtocolClientEventService.getSessionKey(exchange);
                         AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
 
                         // Superuser can get all, User must have role

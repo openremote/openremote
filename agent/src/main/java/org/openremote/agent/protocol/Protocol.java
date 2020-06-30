@@ -450,14 +450,14 @@ public interface Protocol extends ContainerService {
      * {@link ConnectionStatus#ERROR} or {@link ConnectionStatus#ERROR_CONFIGURATION} or this method throws an exception
      * then attribute linking will be skipped for this {@link ProtocolConfiguration}.
      */
-    void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<ConnectionStatus> statusConsumer)
+    void linkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration, Consumer<ConnectionStatus> statusConsumer)
         throws Exception;
 
     /**
      * Un-links the protocol configuration from the protocol; called whenever a protocolConfiguration is modified
      * or removed.
      */
-    void unlinkProtocolConfiguration(AssetAttribute protocolConfiguration);
+    void unlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration);
 
     /**
      * Get a {@link ProtocolDescriptor} for this protocol.

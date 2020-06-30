@@ -35,6 +35,7 @@ import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
@@ -658,7 +659,7 @@ public class HttpClientProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
         String baseUri = protocolConfiguration.getMetaItem(META_PROTOCOL_BASE_URI)
@@ -827,7 +828,7 @@ public class HttpClientProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         AttributeRef protocolConfigurationRef = protocolConfiguration.getReferenceOrThrow();
         clientMap.remove(protocolConfigurationRef);
         requestMap.remove(protocolConfigurationRef);
