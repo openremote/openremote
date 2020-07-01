@@ -608,7 +608,6 @@ export class OrAttributeCard extends LitElement {
             <div class="panel" id="attribute-card">
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
-                        <span>${this.deltaFormat}</span>
                         <span class="panel-title-text">${this.asset ? (this.asset.name + " - " + i18next.t(this.attributeName)) : ""}</span>
                         ${getContentWithMenuTemplate(html`
                             <or-input icon="dots-vertical" type="button"></or-input>
