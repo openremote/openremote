@@ -119,7 +119,6 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
 
         AuthContext authContext = new AccessTokenAuthContext(connection.realm, accessToken);
         if (Arrays.asList(roles).contains(ClientRole.WRITE_ASSETS)) { //write
-
             return identityProvider.canSubscribeWith(authContext, new TenantFilter(connection.realm), roles);
         } else { // read
             String[] topicParts = topic.getTokens().stream().map(Token::toString).toArray(String[]::new);

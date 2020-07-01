@@ -21,31 +21,39 @@ package org.openremote.manager.event;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.openremote.agent.protocol.ProtocolClientEventService;
 import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ConnectionConstants;
-import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.mqtt.MqttBrokerService;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.event.shared.*;
+import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogEvent;
+import org.openremote.model.util.TextUtil;
 
+import javax.websocket.CloseReason;
+import javax.websocket.Session;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Consumer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.apache.camel.builder.PredicateBuilder.*;
-import static org.openremote.manager.gateway.GatewayService.isGatewayClientId;
-
+import static org.apache.camel.builder.PredicateBuilder.or;
+import static org.openremote.container.web.ConnectionConstants.SESSION;
+import static org.openremote.agent.protocol.ProtocolClientEventService.getSessionKey;
 /**
  * Receives and publishes messages, handles the client/server event bus.
  * <p>
@@ -93,7 +101,17 @@ import static org.openremote.manager.gateway.GatewayService.isGatewayClientId;
  * </p></dd>
  * </dl>
  */
-public class ClientEventService implements ContainerService {
+public class ClientEventService implements ProtocolClientEventService {
+
+    protected static class SessionInfo {
+        String connectionType;
+        Runnable closeRunnable;
+
+        public SessionInfo(String connectionType, Runnable closeRunnable) {
+            this.connectionType = connectionType;
+            this.closeRunnable = closeRunnable;
+        }
+    }
 
     public static final int PRIORITY = ManagerWebService.PRIORITY - 200;
     private static final Logger LOG = Logger.getLogger(ClientEventService.class.getName());
@@ -104,14 +122,9 @@ public class ClientEventService implements ContainerService {
 
     public static final String CLIENT_EVENT_QUEUE = "seda://ClientEventQueue?multipleConsumers=false&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=25000";
 
-    public static final String HEADER_ACCESS_RESTRICTED = ClientEventService.class.getName() + ".HEADER_ACCESS_RESTRICTED";
-    public static final String HEADER_CONNECTION_TYPE = ClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE";
-    public static final String HEADER_CONNECTION_TYPE_WEBSOCKET = ClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE_WEBSOCKET";
-    public static final String HEADER_CONNECTION_TYPE_MQTT = ClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE_MQTT";
-    public static final String HEADER_REQUEST_RESPONSE_MESSAGE_ID = ClientEventService.class.getName() + ".HEADER_REQUEST_RESPONSE_MESSAGE_ID";
-
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
-    protected Map<String, String> sessionKeyConnectionTypeMap;
+    final protected Collection<Consumer<Exchange>> exchangeInterceptors = new CopyOnWriteArraySet<>();
+    protected Map<String, SessionInfo> sessionKeyInfoMap = new HashMap<>();
     protected TimerService timerService;
     protected MessageBrokerService messageBrokerService;
     protected ManagerIdentityService identityService;
@@ -130,8 +143,6 @@ public class ClientEventService implements ContainerService {
         messageBrokerService = container.getService(MessageBrokerService.class);
         identityService = container.getService(ManagerIdentityService.class);
         gatewayService = container.getService(GatewayService.class);
-
-        sessionKeyConnectionTypeMap = new HashMap<>();
 
         eventSubscriptions = new EventSubscriptions(
             container.getService(TimerService.class),
@@ -159,12 +170,9 @@ public class ClientEventService implements ContainerService {
                     .when(header(ConnectionConstants.SESSION_OPEN))
                         .process(exchange -> {
                             String sessionKey = getSessionKey(exchange);
-                            sessionKeyConnectionTypeMap.put(sessionKey, (String) exchange.getIn().getHeader(HEADER_CONNECTION_TYPE));
+                            sessionKeyInfoMap.put(sessionKey, createSessionInfo(sessionKey, exchange));
+                            passToInterceptors(exchange);
                         })
-                        .choice()
-                        .when(exchange -> isGatewayClientId(getClientId(exchange)))
-                            .to(GatewayService.GATEWAY_EVENT_TOPIC)
-                        .endChoice()
                         .stop()
                     .when(or(
                         header(ConnectionConstants.SESSION_CLOSE),
@@ -172,16 +180,15 @@ public class ClientEventService implements ContainerService {
                     ))
                         .process(exchange -> {
                             String sessionKey = getSessionKey(exchange);
-                            sessionKeyConnectionTypeMap.remove(sessionKey);
+                            sessionKeyInfoMap.remove(sessionKey);
                             eventSubscriptions.cancelAll(sessionKey);
+                            passToInterceptors(exchange);
                         })
-                        .choice()
-                        .when(exchange -> isGatewayClientId(getClientId(exchange)))
-                            .to(GatewayService.GATEWAY_EVENT_TOPIC)
-                        .endChoice()
                         .stop()
                     .end()
                     .process(exchange -> {
+
+                        // Do basic formatting of exchange
                         EventRequestResponseWrapper<?> requestResponse = null;
                         if (exchange.getIn().getBody() instanceof EventRequestResponseWrapper) {
                             requestResponse = exchange.getIn().getBody(EventRequestResponseWrapper.class);
@@ -193,10 +200,31 @@ public class ClientEventService implements ContainerService {
                             exchange.getIn().setHeader(HEADER_REQUEST_RESPONSE_MESSAGE_ID, requestResponse.getMessageId());
                             exchange.getIn().setBody(event);
                         }
+
+                        if (exchange.getIn().getBody() instanceof String) {
+                            String bodyStr = exchange.getIn().getBody(String.class);
+                            if (bodyStr.startsWith(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX)) {
+                                exchange.getIn().setBody(exchange.getIn().getBody(EventSubscription.class));
+                            } else if (bodyStr.startsWith(CancelEventSubscription.MESSAGE_PREFIX)) {
+                                exchange.getIn().setBody(exchange.getIn().getBody(CancelEventSubscription.class));
+                            } else if (bodyStr.startsWith(RenewEventSubscriptions.MESSAGE_PREFIX)) {
+                                exchange.getIn().setBody(exchange.getIn().getBody(RenewEventSubscriptions.class));
+                            } else if (bodyStr.startsWith(SharedEvent.MESSAGE_PREFIX)) {
+                                exchange.getIn().setBody(exchange.getIn().getBody(SharedEvent.class));
+                            }
+                        }
+
+                        if (exchange.getIn().getBody() instanceof SharedEvent) {
+                            SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
+                            // If there is no timestamp in event, set to system time
+                            if (event.getTimestamp() <= 0) {
+                                event.setTimestamp(timerService.getCurrentTimeMillis());
+                            }
+                        }
                     })
+                    .process(exchange -> passToInterceptors(exchange))
                     .choice()
-                    .when(bodyAs(String.class).startsWith(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX))
-                        .convertBodyTo(EventSubscription.class)
+                    .when(body().isInstanceOf(EventSubscription.class))
                         .process(exchange -> {
                             String sessionKey = getSessionKey(exchange);
                             EventSubscription<?> subscription = exchange.getIn().getBody(EventSubscription.class);
@@ -215,27 +243,13 @@ public class ClientEventService implements ContainerService {
                             }
                         })
                         .stop()
-                    .when(or(
-                            body().isInstanceOf(CancelEventSubscription.class),
-                            bodyAs(String.class).startsWith(CancelEventSubscription.MESSAGE_PREFIX)
-                    ))
-                        .choice()
-                        .when(bodyAs(String.class).startsWith(CancelEventSubscription.MESSAGE_PREFIX))
-                            .convertBodyTo(CancelEventSubscription.class)
-                        .endChoice()
+                    .when(body().isInstanceOf(CancelEventSubscription.class))
                         .process(exchange -> {
                             String sessionKey = getSessionKey(exchange);
                             eventSubscriptions.cancel(sessionKey, exchange.getIn().getBody(CancelEventSubscription.class));
                         })
                         .stop()
-                    .when(or(
-                            body().isInstanceOf(RenewEventSubscriptions.class),
-                            bodyAs(String.class).startsWith(RenewEventSubscriptions.MESSAGE_PREFIX)
-                    ))
-                        .choice()
-                            .when(bodyAs(String.class).startsWith(RenewEventSubscriptions.MESSAGE_PREFIX))
-                            .convertBodyTo(RenewEventSubscriptions.class)
-                        .endChoice()
+                    .when(body().isInstanceOf(RenewEventSubscriptions.class))
                         .process(exchange -> {
                             String sessionKey = getSessionKey(exchange);
                             AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
@@ -243,37 +257,19 @@ public class ClientEventService implements ContainerService {
                             eventSubscriptions.update(sessionKey, restrictedUser,exchange.getIn().getBody(RenewEventSubscriptions.class).getSubscriptionIds());
                         })
                         .stop()
-                    .when(or(
-                        body().isInstanceOf(SharedEvent.class),
-                        bodyAs(String.class).startsWith(SharedEvent.MESSAGE_PREFIX)
-                    ))
+                    .when(body().isInstanceOf(SharedEvent.class))
                         .choice()
-                            .when(bodyAs(String.class).startsWith(SharedEvent.MESSAGE_PREFIX))
-                            .convertBodyTo(SharedEvent.class)
-                        .endChoice()
-                        .process(exchange -> {
-                            SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
-                            // If there is no timestamp in event, set to system time
-                            if (event.getTimestamp() <= 0) {
-                                event.setTimestamp(timerService.getCurrentTimeMillis());
-                            }
-                        })
-                        .choice()
-                            .when(header(HEADER_CONNECTION_TYPE).isNotNull())
-                            .choice()
-                                .when(exchange -> isGatewayClientId(getClientId(exchange)))
-                                    .to(GatewayService.GATEWAY_EVENT_TOPIC)
-                                .otherwise()
-                                    .to(ClientEventService.CLIENT_EVENT_TOPIC)
-                            .endChoice()
+                            .when(header(HEADER_CONNECTION_TYPE).isNotNull()) // Inbound messages from clients
+                                .to(ClientEventService.CLIENT_EVENT_TOPIC)
+                                .stop()
                             .when(header(HEADER_CONNECTION_TYPE).isNull()) // Outbound message to clients
                                 .split(method(eventSubscriptions, "splitForSubscribers"))
                                 .process(exchange -> {
                                     String sessionKey = getSessionKey(exchange);
                                     sendToSession(sessionKey, exchange.getIn().getBody());
                                 })
+                                .stop()
                         .endChoice()
-                        .stop()
                     .otherwise()
                         .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
                     .end();
@@ -291,11 +287,73 @@ public class ClientEventService implements ContainerService {
         stopped = true;
     }
 
+    @Override
+    public void addExchangeInterceptor(Consumer<Exchange> exchangeInterceptor) throws RuntimeException {
+        exchangeInterceptors.add(exchangeInterceptor);
+    }
+
+    @Override
+    public void removeExchangeInterceptor(Consumer<Exchange> exchangeInterceptor) {
+        exchangeInterceptors.remove(exchangeInterceptor);
+    }
+
+    @Override
+    public void addClientCredentials(ClientCredentials clientCredentials) throws RuntimeException {
+        if (!(identityService.getIdentityProvider() instanceof ManagerKeycloakIdentityProvider)) {
+            throw new IllegalStateException("Cannot add client credentials if not using Keycloak identity provider");
+        }
+
+        if (TextUtil.isNullOrEmpty(clientCredentials.getRealm())
+            || TextUtil.isNullOrEmpty(clientCredentials.getClientId())
+            || TextUtil.isNullOrEmpty(clientCredentials.getSecret())) {
+            throw new IllegalArgumentException("Invalid client credentials realm, client ID and secret must be specified");
+        }
+
+        ManagerKeycloakIdentityProvider keycloakIdentityProvider = (ManagerKeycloakIdentityProvider)identityService.getIdentityProvider();
+
+        // Check if exists already
+        ClientRepresentation clientRepresentation = keycloakIdentityProvider.getClient(clientCredentials.getRealm(), clientCredentials.getClientId());
+
+        if (clientRepresentation == null) {
+            clientRepresentation = new ClientRepresentation();
+            clientRepresentation.setId(UUID.nameUUIDFromBytes(clientCredentials.getClientId().getBytes()).toString());
+            clientRepresentation.setStandardFlowEnabled(false);
+            clientRepresentation.setImplicitFlowEnabled(false);
+            clientRepresentation.setDirectAccessGrantsEnabled(false);
+            clientRepresentation.setServiceAccountsEnabled(true);
+            clientRepresentation.setClientAuthenticatorType("client-secret");
+            clientRepresentation.setClientId(clientCredentials.getClientId());
+        }
+
+        clientRepresentation.setSecret(clientCredentials.getSecret());
+        LOG.info("Creating/updating client event service client credentials: " + clientCredentials);
+        keycloakIdentityProvider.createClient(clientCredentials.getRealm(), clientRepresentation);
+
+        User serviceUser = keycloakIdentityProvider.getClientServiceUser(clientCredentials.getRealm(), clientCredentials.getClientId());
+        keycloakIdentityProvider.updateRoles(clientCredentials.getRealm(), serviceUser.getId(), clientCredentials.getRoles());
+    }
+
+    @Override
+    public void removeClientCredentials(String realm, String clientId) throws RuntimeException {
+        if (!(identityService.getIdentityProvider() instanceof ManagerKeycloakIdentityProvider)) {
+            throw new IllegalStateException("Cannot remove client credentials if not using Keycloak identity provider");
+        }
+
+        if (TextUtil.isNullOrEmpty(realm)
+            || TextUtil.isNullOrEmpty(clientId)) {
+            throw new IllegalArgumentException("Invalid client credentials realm and client ID must be specified");
+        }
+
+        ManagerKeycloakIdentityProvider keycloakIdentityProvider = (ManagerKeycloakIdentityProvider)identityService.getIdentityProvider();
+        LOG.info("Deleting client event service client: realm=" + realm + ", client ID=" + clientId);
+        keycloakIdentityProvider.deleteClient(realm, clientId);
+    }
+
     public void addSubscriptionAuthorizer(EventSubscriptionAuthorizer authorizer) {
         this.eventSubscriptionAuthorizers.add(authorizer);
     }
 
-    public boolean authorizeEventSubscription(AuthContext authContext, EventSubscription subscription) {
+    public boolean authorizeEventSubscription(AuthContext authContext, EventSubscription<?> subscription) {
         return eventSubscriptionAuthorizers.stream()
                 .anyMatch(authorizer -> authorizer.apply(authContext, subscription));
     }
@@ -326,14 +384,14 @@ public class ClientEventService implements ContainerService {
     public void sendToSession(String sessionKey, Object data) {
         if (messageBrokerService != null && messageBrokerService.getProducerTemplate() != null) {
             LOG.fine("Sending to session '" + sessionKey + "': " + data);
-            String sessionConnectionType = sessionKeyConnectionTypeMap.get(sessionKey);
-            if (sessionConnectionType.equals(HEADER_CONNECTION_TYPE_WEBSOCKET)) {
+            SessionInfo sessionInfo = sessionKeyInfoMap.get(sessionKey);
+            if (sessionInfo.connectionType.equals(HEADER_CONNECTION_TYPE_WEBSOCKET)) {
                 messageBrokerService.getProducerTemplate().sendBodyAndHeader(
                         "websocket://" + WEBSOCKET_EVENTS,
                         data,
                         ConnectionConstants.SESSION_KEY, sessionKey
                 );
-            } else if (sessionConnectionType.equals(HEADER_CONNECTION_TYPE_MQTT)) {
+            } else if (sessionInfo.connectionType.equals(HEADER_CONNECTION_TYPE_MQTT)) {
                 messageBrokerService.getProducerTemplate().sendBodyAndHeader(
                         MqttBrokerService.MQTT_CLIENT_QUEUE,
                         data,
@@ -343,12 +401,31 @@ public class ClientEventService implements ContainerService {
         }
     }
 
-    public static String getSessionKey(Exchange exchange) {
-        return exchange.getIn().getHeader(ConnectionConstants.SESSION_KEY, String.class);
+    public void closeSession(String sessionKey) {
+        SessionInfo sessionInfo = sessionKeyInfoMap.get(sessionKey);
+
+        if (sessionInfo == null || sessionInfo.closeRunnable == null) {
+            return;
+        }
+
+        LOG.fine("Closing session: " + sessionKey);
+        sessionInfo.closeRunnable.run();
     }
 
     public EventSubscriptions getEventSubscriptions() {
         return eventSubscriptions;
+    }
+
+    protected void passToInterceptors(Exchange exchange) {
+        // Pass to each interceptor and stop if any interceptor marks the exchange as stop routing
+        if (exchangeInterceptors.stream().anyMatch(interceptor -> {
+            interceptor.accept(exchange);
+            boolean stop = exchange.getProperty(Exchange.ROUTE_STOP, false, Boolean.class);
+            if (stop) {
+                LOG.fine("Client event interceptor marked exchange as `stop routing`");
+            }
+            return stop;
+        }));
     }
 
     @Override
@@ -357,11 +434,23 @@ public class ClientEventService implements ContainerService {
             '}';
     }
 
-    public static String getClientId(Exchange exchange) {
-        AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-        if(authContext != null) {
-            return authContext.getClientId();
+    // TODO: Implement MQTT close once supported by Moquette (https://github.com/moquette-io/moquette/issues/469)
+    protected static SessionInfo createSessionInfo(String sessionKey, Exchange exchange) {
+
+        String connectionType = (String) exchange.getIn().getHeader(HEADER_CONNECTION_TYPE);
+        Runnable closeRunnable = null;
+
+        if (HEADER_CONNECTION_TYPE_WEBSOCKET.equals(connectionType)) {
+            Session session = exchange.getIn().getHeader(SESSION, Session.class);
+            closeRunnable = () -> {
+                try {
+                    session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, ""));
+                } catch (Exception e) {
+                    LOG.log(Level.INFO, "Failed to close client session: " + sessionKey);
+                }
+            };
         }
-        return null;
+
+        return new SessionInfo(connectionType, closeRunnable);
     }
 }

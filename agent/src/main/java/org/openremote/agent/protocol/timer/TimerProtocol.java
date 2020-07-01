@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.timer;
 
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -162,7 +163,7 @@ public class TimerProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
         // Verify that this is a valid Timer Configuration
@@ -207,7 +208,7 @@ public class TimerProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         AttributeRef protocolConfigRef = protocolConfiguration.getReferenceOrThrow();
 
         if (cronExpressionMap.remove(protocolConfigRef) != null) {

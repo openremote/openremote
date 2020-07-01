@@ -47,7 +47,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.manager.event.ClientEventService.getSessionKey;
+import static org.openremote.agent.protocol.ProtocolClientEventService.getSessionKey;
 
 public class MqttBrokerService implements ContainerService {
 

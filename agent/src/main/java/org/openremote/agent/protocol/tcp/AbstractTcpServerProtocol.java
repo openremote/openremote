@@ -21,6 +21,7 @@ package org.openremote.agent.protocol.tcp;
 
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
@@ -68,7 +69,7 @@ public abstract class AbstractTcpServerProtocol<T extends AbstractTcpServer<U>, 
     protected final Map<AttributeRef, T> tcpServerMap = new HashMap<>();
 
     @Override
-    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
         int port = protocolConfiguration.getMetaItem(META_PROTOCOL_BIND_PORT)
@@ -98,7 +99,7 @@ public abstract class AbstractTcpServerProtocol<T extends AbstractTcpServer<U>, 
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
         T tcpServer = tcpServerMap.remove(protocolRef);

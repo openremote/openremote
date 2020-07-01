@@ -11,7 +11,7 @@ import {
 } from "lit-element";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
-import {Asset, AssetAttribute, AttributeRef, DatapointInterval, MetaItemType, Attribute} from "@openremote/model";
+import {Asset, AssetAttribute, AttributeRef, DatapointInterval, MetaItemType, Attribute, ReadAssetEvent, AssetEvent} from "@openremote/model";
 import manager, {
     AssetModelUtil,
     DefaultColor2,
@@ -398,12 +398,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     protected _style!: CSSStyleDeclaration;
 
     firstUpdated() {
-        if(this.shadowRoot) {
-            const assetTreeElement = this.shadowRoot.getElementById('chart-asset-tree');
-            if(assetTreeElement){
-                assetTreeElement.addEventListener(OrAssetTreeSelectionChangedEvent.NAME, (evt) => this._onTreeSelectionChanged(evt));
-            }
-            
+        if (this._dialogElem) {
             this._dialog = new MDCDialog(this._dialogElem);
             if(!this.activeAssetId) {
                 this.getSettings();
@@ -411,30 +406,42 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    
     protected _onTreeSelectionChanged(event: OrAssetTreeSelectionChangedEvent) {
-        const nodes = event.detail;
-        if(nodes[0] && nodes[0].asset){
-           this.activeAsset = nodes[0].asset;
+        // Need to fully load the asset
+        if (!manager.events) {
+            return;
+        }
+
+        const selectedNode = event.detail && event.detail.length > 0 ? event.detail[0] : undefined;
+
+        if (!selectedNode) {
+            this.activeAsset = undefined;
+        } else {
+            // fully load the asset
+            manager.events.sendEventWithReply({
+                event: {
+                    eventType: "read-asset",
+                    assetId: selectedNode.asset!.id
+                } as ReadAssetEvent
+            }).then((ev) => {
+                this.activeAsset = (ev as AssetEvent).asset;
+            }).catch(() => this.activeAsset = undefined);
         }
     }
     
     connectedCallback() {
         super.connectedCallback();
         this._style = window.getComputedStyle(this);
+        this.addEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
         this._cleanup();
+        this.removeEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
     }
 
-    shouldUpdate(_changedProperties: PropertyValues): boolean {
-   return super.shouldUpdate(_changedProperties);
-    }
-   
     render() {
-
         const disabled = this._loading;
         const endDateInputType = this.getInputType();
         return html`
@@ -523,7 +530,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     <div class="mdc-dialog__surface">
                     <h2 class="mdc-dialog__title" id="my-dialog-title">${i18next.t("addAttribute")}</h2>
                     <div class="dialog-container mdc-dialog__content" id="my-dialog-content">
-                        <or-asset-tree id="chart-asset-tree" .selectedIds="${this.activeAsset ? [this.activeAsset.id] : null}]"></or-asset-tree>
+                        <or-asset-tree id="chart-asset-tree" .selectedIds="${this.activeAsset ? [this.activeAsset.id] : undefined}"></or-asset-tree>
                             ${this.activeAsset && this.activeAsset.attributes ? html`
                                 <or-input id="chart-attribute-picker" 
                                         style="display:flex;"
@@ -821,6 +828,9 @@ export class OrChart extends translate(i18next)(LitElement) {
         if (this._chart) {
             this._chart.destroy();
             this._chart = undefined;
+        }
+        if (this._dialog) {
+            this._dialog.destroy();
         }
     }
 

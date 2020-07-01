@@ -90,7 +90,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
             }
 
             @Override
-            protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+            protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
                 protocolMethodCalls.add("LINK_PROTOCOL")
                 protocolLinkedConfigurations.add(protocolConfiguration)
                 if (!protocolConfiguration.getMetaItem("MOCK_REQUIRED_META").isPresent()) {
@@ -103,7 +103,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
             }
 
             @Override
-            protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+            protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
                 protocolMethodCalls.add("UNLINK_PROTOCOL")
                 protocolLinkedConfigurations.removeAll { (it.getReferenceOrThrow() == protocolConfiguration.getReferenceOrThrow())
                 }

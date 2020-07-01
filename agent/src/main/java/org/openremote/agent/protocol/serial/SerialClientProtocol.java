@@ -23,6 +23,7 @@ import io.netty.channel.ChannelHandler;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
 import org.openremote.agent.protocol.tcp.TcpIoClient;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.*;
@@ -116,11 +117,11 @@ public class SerialClientProtocol extends AbstractSerialClientProtocol<String> {
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         synchronized (protocolMessageConsumers) {
             protocolMessageConsumers.remove(protocolConfiguration.getReferenceOrThrow());
         }
-        super.doUnlinkProtocolConfiguration(protocolConfiguration);
+        super.doUnlinkProtocolConfiguration(agent, protocolConfiguration);
     }
 
     @Override

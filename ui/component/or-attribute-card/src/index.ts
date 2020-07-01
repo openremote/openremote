@@ -1,19 +1,17 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, unsafeCSS} from "lit-element";
 import {classMap} from "lit-html/directives/class-map";
 import i18next from "i18next";
-import {Asset, AssetAttribute, Attribute, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
+import {Asset, AssetAttribute, Attribute, DatapointInterval, MetaItemType, ValueDatapoint, AssetEvent} from "@openremote/model";
 import {manager, DefaultColor3, DefaultColor4, Util, AssetModelUtil} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
 import {getContentWithMenuTemplate, OrChartConfig} from "@openremote/or-chart";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import {InputType} from "@openremote/or-input";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {getMetaValue} from "@openremote/core/dist/util";
 import moment from "moment";
-import {OrAssetTreeRequestSelectEvent} from "@openremote/or-asset-tree";
+import {OrAssetTreeRequestSelectEvent, OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
 import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
-
-export type ContextMenuOptions = "editAttribute" | "editDelta" | "editCurrentValue";
 
 const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
 
@@ -108,22 +106,6 @@ const style = css`
         margin-left: 5px;
     }
     
-    .main-number.xs, .main-number-unit.xs {
-        font-size: 18px;
-    }
-    .main-number.s, .main-number-unit.s {
-        font-size: 24px;
-    }
-    .main-number.m, .main-number-unit.m {
-        font-size: 30px;
-    }
-    .main-number.l, .main-number-unit.l {
-        font-size: 36px;
-    }
-    .main-number.xl, .main-number-unit.xl {
-        font-size: 42px;
-    }
-    
     .chart-wrapper {
         flex: 1;
         width: 65%;
@@ -197,15 +179,9 @@ export class OrAttributeCard extends LitElement {
     @property()
     private mainValue?: number;
     @property()
-    private mainValueDecimals: number = 2;
-    @property()
-    private mainValueSize: "xs" | "s" | "m" | "l" | "xl" = "m";
-    @property()
     private delta: {val?: number, unit?: string} = {};
     @property()
     private deltaPlus: string = "";
-    @property()
-    private deltaFormat: string = "absolute";
 
     private error: boolean = false;
 
@@ -213,15 +189,15 @@ export class OrAttributeCard extends LitElement {
     private now: Date = new Date();
     private currentPeriod?: { start: number; end: number };
 
-    private asset: Asset = {};
-    private formattedMainValue: {value: number|undefined, unit: string} = {
-        value: undefined,
-        unit: ""
-    };
+    private asset?: Asset;
+    private formattedMainValue?: {value: number|undefined, unit: string};
 
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
     private _chart?: Chart;
+
+    @query("#mdc-dialog")
+    private _dialog!: OrMwcDialog;
 
     static get styles() {
         return [
@@ -230,55 +206,34 @@ export class OrAttributeCard extends LitElement {
         ];
     }
 
-    constructor(){
+    constructor() {
         super();
         this.addEventListener(OrAttributeCardAddAttributeEvent.NAME, this._setAttribute)
     }
 
     connectedCallback() {
         super.connectedCallback();
-
+        this.addEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
         this._style = window.getComputedStyle(this);
         this.getData();
     }
 
-    renderEditAttributeDialogHTML() {
-        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog-editattribute") as OrMwcDialog;
-        if(!this.shadowRoot) return
-
-        if (dialog) {
-            dialog.dialogContent =html`
-                <or-asset-tree id="chart-asset-tree" 
-                    .selectedIds="${this.asset ? [this.asset.id] : null}]"
-                    @or-asset-tree-request-select="${(e: OrAssetTreeRequestSelectEvent) => {
-                this.asset = {...e.detail.detail.node.asset!}
-                this._getAttributeOptions();
-                let attributes = [...Util.getAssetAttributes(this.asset)];
-                this.assetAttributes = [...attributes];
-            }}">
-                </or-asset-tree>
-                ${this.asset && this.asset.attributes ? html`
-                    <or-input id="attribute-picker" 
-                        style="display:flex;"
-                        .label="${i18next.t("attribute")}" 
-                        .type="${InputType.LIST}"
-                        .options="${this._getAttributeOptions()}"
-                        .value="${this.attributeName}"></or-input>
-                ` : ``}
-            `;
-            this.requestUpdate();
-        }
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        this._cleanup();
+        this.removeEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
     }
 
     updated(changedProperties: PropertyValues) {
-        if (changedProperties.has("assetAttributes")) {
-            this.renderEditAttributeDialogHTML();
+        if (changedProperties.has("asset") || changedProperties.has("assetAttributes")) {
+            if (this._dialog && this._dialog.isOpen) {
+                this._refreshDialog();
+            }
         }
 
         if (changedProperties.has("assetId") && this.assetId && changedProperties.get("assetId") !== this.assetId) {
             this.getSettings();
         }
-
 
         if (!this.data || !this.data.length) {
             return;
@@ -335,42 +290,24 @@ export class OrAttributeCard extends LitElement {
                 this._chart.data.datasets![0].data = this.data;
                 this._chart.update();
                 this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data));
+                this.deltaPlus = (this.delta.val && this.delta.val > 0) ? "+" : "";
             }
         }
 
-        if (changedProperties.has("mainValue") || changedProperties.has("mainValueDecimals")) {
+        if (changedProperties.has("mainValue")) {
             this.formattedMainValue = this.getFormattedValue(this.mainValue!);
         }
-
-        if (changedProperties.has("delta")) {
-            this.deltaPlus = (this.delta.val && this.delta.val > 0) ? "+" : "";
-        }
-
     }
 
     async onCompleted() {
         await this.updateComplete;
     }
 
-    disconnectedCallback(): void {
-        super.disconnectedCallback();
-        this._cleanup();
-    }
-
-    protected _openEditAttributeDialog() {
-        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog-editattribute") as OrMwcDialog;
-
-        if (dialog) {
-            dialog.dialogContent = html`
+    protected _refreshDialog() {
+        if (this._dialog) {
+            this._dialog.dialogContent = html`
                 <or-asset-tree id="chart-asset-tree" 
-                    .selectedIds="${this.asset ? [this.asset.id] : null}]"
-                    @or-asset-tree-request-select="${(e: OrAssetTreeRequestSelectEvent) => {
-                this.asset = {...e.detail.detail.node.asset!};
-                let attributes = [...Util.getAssetAttributes(this.asset)];
-                this.assetAttributes = [...attributes];
-                this._getAttributeOptions();
-            }}">
-                </or-asset-tree>
+                    .selectedIds="${this.asset ? [this.asset.id] : null}"></or-asset-tree>
                 ${this.asset && this.asset.attributes ? html`
                     <or-input id="attribute-picker" 
                         style="display:flex;"
@@ -380,34 +317,38 @@ export class OrAttributeCard extends LitElement {
                         .value="${this.attributeName}"></or-input>
                 ` : ``}
             `;
-            dialog.open();
         }
     }
 
-    protected _openEditCurrentValueDialog() {
-        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog-editcurrentvalue") as OrMwcDialog;
-
-        if (dialog) {
-            dialog.dialogContent = html`
-                <or-input id="current-value-decimals" .label="${i18next.t("decimals")}" value="${this.mainValueDecimals}" .type="${InputType.TEXT}"></or-input>
-            `;
-            dialog.open();
+    protected _openDialog() {
+        if (this._dialog) {
+            this._refreshDialog();
+            this._dialog.open();
         }
     }
 
-    protected _openEditDeltaDialog() {
-        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog-editdelta") as OrMwcDialog;
+    protected _onTreeSelectionChanged(event: OrAssetTreeSelectionChangedEvent) {
+        // Need to fully load the asset
+        if (!manager.events) {
+            return;
+        }
 
-        const options = [
-            ["percentage", "Percentage"],
-            ["absolute", "Absolute"]
-        ];
+        const selectedNode = event.detail && event.detail.length > 0 ? event.detail[0] : undefined;
 
-        if (dialog) {
-            dialog.dialogContent = html`
-                <or-input id="delta-mode-picker" value="${this.deltaFormat}" @or-input-changed="${(evt: OrInputChangedEvent) => this.deltaFormat = evt.detail.value}" .type="${InputType.LIST}" .options="${options}"></or-input>
-            `;
-            dialog.open();
+        if (!selectedNode) {
+            this.asset = undefined;
+        } else {
+            // fully load the asset
+            manager.events.sendEventWithReply({
+                event: {
+                    eventType: "read-asset",
+                    assetId: selectedNode.asset!.id
+                }
+            }).then((ev) => {
+                this.asset = (ev as AssetEvent).asset;
+                const attributes = [...Util.getAssetAttributes(this.asset!)];
+                this.assetAttributes = [...attributes];
+            }).catch(() => this.asset = undefined);
         }
     }
 
@@ -462,7 +403,7 @@ export class OrAttributeCard extends LitElement {
         const query = {
             ids: view.assetIds
         }
-        if(view.assetIds === this.assetAttributes.map(attr => attr.assetId)) return
+        if(view.assetIds === this.assetAttributes.map(attr => attr.assetId)) return 
 
         manager.rest.api.AssetResource.queryAssets(query).then((response) => {
             const assets = response.data;
@@ -499,7 +440,7 @@ export class OrAttributeCard extends LitElement {
                     }
                 }
             }
-        }
+        }   
 
         config.views[viewSelector][this.panelName] = {
             assetIds: assetIds,
@@ -518,7 +459,7 @@ export class OrAttributeCard extends LitElement {
 
     protected render() {
 
-        const dialogEditAttributeActions: DialogAction[] = [
+        const dialogActions: DialogAction[] = [
             {
                 actionName: "cancel",
                 content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
@@ -531,55 +472,11 @@ export class OrAttributeCard extends LitElement {
                 default: true,
                 content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" data-mdc-dialog-action="yes"></or-input>`,
                 action: () => {
-                    const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog-editattribute") as OrMwcDialog;
+                    const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
                     if (dialog.shadowRoot && dialog.shadowRoot.getElementById("attribute-picker")) {
                         const elm = dialog.shadowRoot.getElementById("attribute-picker") as HTMLInputElement;
                         this.dispatchEvent(new OrAttributeCardAddAttributeEvent(elm.value));
                     }
-                }
-            }
-        ];
-
-        const dialogEditCurrentValueActions: DialogAction[] = [
-            {
-                actionName: "cancel",
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
-                action: () => {
-                    // Nothing to do here
-                }
-            },
-            {
-                actionName: "yes",
-                default: true,
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("ok")}" data-mdc-dialog-action="yes"></or-input>`,
-                action: () => {
-                    const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog-editcurrentvalue") as OrMwcDialog;
-                    if (dialog.shadowRoot && dialog.shadowRoot.getElementById("current-value-decimals")) {
-                        const elm = dialog.shadowRoot.getElementById("current-value-decimals") as HTMLInputElement;
-                        const input = parseInt(elm.value);
-                        if (input < 0) {this.mainValueDecimals = 0;}
-                        else if (input > 10) {this.mainValueDecimals = 10;}
-                        else {this.mainValueDecimals = input;}
-                        this.formattedMainValue = this.getFormattedValue(this.mainValue!);
-                    }
-                }
-            }
-        ];
-
-        const dialogEditDeltaActions: DialogAction[] = [
-            {
-                actionName: "cancel",
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
-                action: () => {
-                    // Nothing to do here
-                }
-            },
-            {
-                actionName: "yes",
-                default: true,
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("ok")}" data-mdc-dialog-action="yes"></or-input>`,
-                action: () => {
-                    this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data), this.deltaFormat);
                 }
             }
         ];
@@ -589,11 +486,11 @@ export class OrAttributeCard extends LitElement {
                 <div class="panel panel-empty">
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
-                            <or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openEditAttributeDialog()}"></or-input>
+                            <or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-input>
                         </div>
                     </div>
                 </div>
-                <or-mwc-dialog id="mdc-dialog-editattribute" dialogTitle="addAttribute" .dialogActions="${dialogEditAttributeActions}"></or-mwc-dialog>
+                <or-mwc-dialog id="mdc-dialog" dialogTitle="addAttribute" .dialogActions="${dialogActions}"></or-mwc-dialog>
             `;
         }
 
@@ -603,11 +500,11 @@ export class OrAttributeCard extends LitElement {
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
                             <span>${i18next.t("couldNotRetrieveAttribute")}</span>
-                            <or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openEditAttributeDialog()}"></or-input>
+                            <or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-input>
                         </div>
                     </div>
                 </div>
-                <or-mwc-dialog id="mdc-dialog-editattribute" dialogTitle="addAttribute" .dialogActions="${dialogEditAttributeActions}"></or-mwc-dialog>
+                <or-mwc-dialog id="mdc-dialog" dialogTitle="addAttribute" .dialogActions="${dialogActions}"></or-mwc-dialog>
             `;
         }
 
@@ -615,32 +512,14 @@ export class OrAttributeCard extends LitElement {
             <div class="panel" id="attribute-card">
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
-                        <span class="panel-title-text">${this.asset.name} - ${i18next.t(this.attributeName)}</span>
-                        ${getContentWithMenuTemplate(html`
-                            <or-input icon="dots-vertical" type="button"></or-input>
-                        `,
-            [
-                {
-                    text: i18next.t("editAttribute"),
-                    value: "editAttribute"
-                },
-                {
-                    text: i18next.t("editDelta"),
-                    value: "editDelta"
-                },
-                {
-                    text: i18next.t("editCurrentValue"),
-                    value: "editCurrentValue"
-                }
-            ],
-            undefined,
-            (values: string | string[]) => this.handleMenuSelect(values as ContextMenuOptions))}
+                        <span class="panel-title-text">${this.asset ? (this.asset.name + " - " + i18next.t(this.attributeName)) : ""}</span>
+                        <or-input icon="pencil" type="button" @click="${() => this._openDialog()}"></or-input>
                     </div>
                     <div class="panel-content">
                         <div class="mainvalue-wrapper">
                             <span class="main-number-icon">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.asset!.type!))}</span>
-                            <span class="main-number ${this.mainValueSize}">${this.formattedMainValue!.value}</span>
-                            <span class="main-number-unit ${this.mainValueSize}">${this.formattedMainValue!.unit}</span>
+                            <span class="main-number">${this.formattedMainValue!.value}</span>
+                            <span class="main-number-unit">${this.formattedMainValue!.unit}</span>
                         </div>
                         <div class="graph-wrapper">
                             <div class="chart-wrapper">
@@ -665,9 +544,7 @@ export class OrAttributeCard extends LitElement {
                     </div>
                 </div>
             </div>
-            <or-mwc-dialog id="mdc-dialog-editattribute" dialogTitle="addAttribute" .dialogActions="${dialogEditAttributeActions}"></or-mwc-dialog>
-            <or-mwc-dialog id="mdc-dialog-editcurrentvalue" dialogTitle="editCurrentValue" .dialogActions="${dialogEditCurrentValueActions}"></or-mwc-dialog>
-            <or-mwc-dialog id="mdc-dialog-editdelta" dialogTitle="editDelta" .dialogActions="${dialogEditDeltaActions}"></or-mwc-dialog>
+            <or-mwc-dialog id="mdc-dialog" dialogTitle="addAttribute" .dialogActions="${dialogActions}"></or-mwc-dialog>
         `;
     }
 
@@ -743,9 +620,9 @@ export class OrAttributeCard extends LitElement {
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
                 this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data));
-                this.deltaPlus = (this.delta.val && this.delta.val > 0) ? "+" : "";
 
                 this.error = false;
+
             })
             .catch((err) => {
                 this.error = true;
@@ -764,15 +641,17 @@ export class OrAttributeCard extends LitElement {
         return Math.max.apply(Math, data.map((e: ValueDatapoint<any>) => e.y || false ));
     }
 
-    protected getFormattedValue(value: number): {value: number, unit: string} {
+    protected getFormattedValue(value: number): {value: number, unit: string} | undefined {
+        if (!this.asset) {
+            return;
+        }
+
         const attr = this.asset.attributes![this.attributeName!];
-        const roundedVal = +value.toFixed(this.mainValueDecimals); // + operator prevents str return
+        const roundedVal = +value.toFixed(1); // + operator prevents str return
 
         const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(this.attributeName!);
         const unitKey = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
         const unit = i18next.t("units." + unitKey);
-
-        this.setMainValueSize(roundedVal.toString());
 
         if (!unitKey) { return {value: roundedVal, unit: "" }; }
 
@@ -798,43 +677,19 @@ export class OrAttributeCard extends LitElement {
         return 0;
     }
 
-    protected getFormattedDelta(firstVal: number, lastVal: number, mode?: string): {val?: number, unit?: string} {
-        if (mode === "percentage") {
-            if (firstVal && lastVal) {
-                if (lastVal === 0 && firstVal === 0) {
-                    return {val: 0, unit: "%"};
-                } else if (lastVal === 0 && firstVal !== 0) {
-                    return {val: 100, unit: "%"};
-                } else {
-                    const math = Math.round((lastVal - firstVal) / firstVal * 100);
-                    return {val: math, unit: "%"};
-                }
-            } else {
+    protected getFormattedDelta(firstVal: number, lastVal: number): {val?: number, unit?: string} {
+        if (firstVal && lastVal) {
+            if (lastVal === 0 && firstVal === 0) {
                 return {val: 0, unit: "%"};
+            } else if (lastVal === 0 && firstVal !== 0) {
+                return {val: 100, unit: "%"};
+            } else {
+                const math = Math.round((lastVal - firstVal) / firstVal * 100);
+                return {val: math, unit: "%"};
             }
+        } else {
+            return {val: 0, unit: "%"};
         }
-
-        return {val: Math.round(lastVal - firstVal), unit: ""};
-    }
-
-    protected handleMenuSelect(value: ContextMenuOptions) {
-        if (value === "editAttribute") {
-            this._openEditAttributeDialog()
-        }
-        else if (value === "editDelta") {
-            this._openEditDeltaDialog()
-        }
-        else if (value === "editCurrentValue") {
-            this._openEditCurrentValueDialog()
-        }
-    }
-
-    protected setMainValueSize(value: string) {
-        if (value.length >= 20) { this.mainValueSize = "xs" }
-        if (value.length < 20) { this.mainValueSize = "s" }
-        if (value.length < 15) { this.mainValueSize = "m" }
-        if (value.length < 10) { this.mainValueSize = "l" }
-        if (value.length < 5) { this.mainValueSize = "xl" }
     }
 
     protected _getInterval() {

@@ -184,7 +184,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         /// For all agents, go through their protocol configurations and find
         // assets that are linked to them, to create the binding on startup
         for (Asset agent : agents) {
-            linkProtocolConfigurations(agent.getAttributesStream()
+            linkProtocolConfigurations(agent, agent.getAttributesStream()
                 .filter(ProtocolConfiguration::isProtocolConfiguration)
                 .collect(Collectors.toList())
             );
@@ -352,6 +352,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                     return;
                 }
                 linkProtocolConfigurations(
+                    agent,
                     agent.getAttributesStream()
                         .filter(ProtocolConfiguration::isProtocolConfiguration)
                         .collect(Collectors.toList())
@@ -388,7 +389,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
                 // Compare protocol configurations by JSON value
                 // Unlink protocols that are in oldConfigs but not in newConfigs
-                unlinkProtocolConfigurations(oldProtocolConfigurations
+                unlinkProtocolConfigurations(agent, oldProtocolConfigurations
                     .stream()
                     .filter(oldProtocolAttribute -> newProtocolConfigurations
                         .stream()
@@ -398,7 +399,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 );
 
                 // Link protocols that are in newConfigs but not in oldConfigs
-                linkProtocolConfigurations(newProtocolConfigurations
+                linkProtocolConfigurations(agent, newProtocolConfigurations
                     .stream()
                     .filter(newProtocolAttribute -> oldProtocolConfigurations
                         .stream()
@@ -414,7 +415,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                     return;
                 }
                 // Unlink any attributes that have an agent link to this agent
-                unlinkProtocolConfigurations(agent.getAttributesStream()
+                unlinkProtocolConfigurations(agent, agent.getAttributesStream()
                     .filter(ProtocolConfiguration::isProtocolConfiguration)
                     .collect(Collectors.toList())
                 );
@@ -561,7 +562,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 .orElse(null);
     }
 
-    protected void linkProtocolConfigurations(List<AssetAttribute> configurations) {
+    protected void linkProtocolConfigurations(Asset agent, List<AssetAttribute> configurations) {
         withLock(getClass().getSimpleName() + "::linkProtocolConfigurations", () -> configurations.forEach(configuration -> {
             AttributeRef protocolAttributeRef = configuration.getReferenceOrThrow();
             Protocol protocol = getProtocol(configuration);
@@ -583,7 +584,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
             // Link the protocol configuration to the protocol
             try {
-                protocol.linkProtocolConfiguration(configuration, deploymentStatusConsumer);
+                protocol.linkProtocolConfiguration(agent, configuration, deploymentStatusConsumer);
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Protocol threw an exception during protocol configuration linking", e);
                 // Set status to error
@@ -622,7 +623,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         }));
     }
 
-    protected void unlinkProtocolConfigurations(List<AssetAttribute> configurations) {
+    protected void unlinkProtocolConfigurations(Asset agent, List<AssetAttribute> configurations) {
         withLock(getClass().getSimpleName() + "::unlinkProtocolConfigurations", () -> configurations.forEach(configuration -> {
             AttributeRef protocolAttributeRef = configuration.getReferenceOrThrow();
 
@@ -652,7 +653,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
             // Unlink the protocol configuration from the protocol
             try {
-                protocol.unlinkProtocolConfiguration(configuration);
+                protocol.unlinkProtocolConfiguration(agent, configuration);
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Protocol threw an exception during protocol configuration unlinking", e);
             }
