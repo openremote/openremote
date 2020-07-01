@@ -31,6 +31,7 @@ import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
 import org.openremote.container.Container;
 import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
@@ -144,8 +145,8 @@ public abstract class AbstractWebsocketClientProtocol<T> extends AbstractIoClien
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        super.doUnlinkProtocolConfiguration(protocolConfiguration);
+    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
+        super.doUnlinkProtocolConfiguration(agent, protocolConfiguration);
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
         clientHeaders.remove(protocolRef);
         synchronized (protocolConnectedTasks) {

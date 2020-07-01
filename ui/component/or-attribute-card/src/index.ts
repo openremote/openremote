@@ -1,7 +1,7 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, unsafeCSS} from "lit-element";
 import {classMap} from "lit-html/directives/class-map";
 import i18next from "i18next";
-import {Asset, AssetAttribute, Attribute, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
+import {Asset, AssetAttribute, Attribute, DatapointInterval, MetaItemType, ValueDatapoint, AssetEvent} from "@openremote/model";
 import {manager, DefaultColor3, DefaultColor4, Util, AssetModelUtil} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
 import {getContentWithMenuTemplate, OrChartConfig} from "@openremote/or-chart";
@@ -10,7 +10,7 @@ import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {getMetaValue} from "@openremote/core/dist/util";
 import moment from "moment";
-import {OrAssetTreeRequestSelectEvent} from "@openremote/or-asset-tree";
+import {OrAssetTreeRequestSelectEvent, OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
 import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 
 const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
@@ -189,15 +189,15 @@ export class OrAttributeCard extends LitElement {
     private now: Date = new Date();
     private currentPeriod?: { start: number; end: number };
 
-    private asset: Asset = {};
-    private formattedMainValue: {value: number|undefined, unit: string} = {
-        value: undefined,
-        unit: ""
-    };
+    private asset?: Asset;
+    private formattedMainValue?: {value: number|undefined, unit: string};
 
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
     private _chart?: Chart;
+
+    @query("#mdc-dialog")
+    private _dialog!: OrMwcDialog;
 
     static get styles() {
         return [
@@ -206,55 +206,34 @@ export class OrAttributeCard extends LitElement {
         ];
     }
 
-    constructor(){
+    constructor() {
         super();
         this.addEventListener(OrAttributeCardAddAttributeEvent.NAME, this._setAttribute)
     }
 
     connectedCallback() {
         super.connectedCallback();
-
+        this.addEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
         this._style = window.getComputedStyle(this);
         this.getData();
     }
-    
-    renderDialogHTML() {
-        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
-        if(!this.shadowRoot) return
 
-        if (dialog) {
-            dialog.dialogContent =html`
-                <or-asset-tree id="chart-asset-tree" 
-                    .selectedIds="${this.asset ? [this.asset.id] : null}]"
-                    @or-asset-tree-request-select="${(e: OrAssetTreeRequestSelectEvent) => {
-                        this.asset = {...e.detail.detail.node.asset!}
-                        this._getAttributeOptions();
-                        let attributes = [...Util.getAssetAttributes(this.asset)];
-                        this.assetAttributes = [...attributes];
-                    }}">
-                </or-asset-tree>
-                ${this.asset && this.asset.attributes ? html`
-                    <or-input id="attribute-picker" 
-                        style="display:flex;"
-                        .label="${i18next.t("attribute")}" 
-                        .type="${InputType.LIST}"
-                        .options="${this._getAttributeOptions()}"
-                        .value="${this.attributeName}"></or-input>
-                ` : ``}
-            `;
-            this.requestUpdate();
-        }
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        this._cleanup();
+        this.removeEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
     }
 
     updated(changedProperties: PropertyValues) {
-        if (changedProperties.has("assetAttributes")) {
-            this.renderDialogHTML();
+        if (changedProperties.has("asset") || changedProperties.has("assetAttributes")) {
+            if (this._dialog && this._dialog.isOpen) {
+                this._refreshDialog();
+            }
         }
 
         if (changedProperties.has("assetId") && this.assetId && changedProperties.get("assetId") !== this.assetId) {
             this.getSettings();
         }
-
 
         if (!this.data || !this.data.length) {
             return;
@@ -318,32 +297,17 @@ export class OrAttributeCard extends LitElement {
         if (changedProperties.has("mainValue")) {
             this.formattedMainValue = this.getFormattedValue(this.mainValue!);
         }
-      
     }
 
     async onCompleted() {
         await this.updateComplete;
     }
 
-    disconnectedCallback(): void {
-        super.disconnectedCallback();
-        this._cleanup();
-    }
-
-    protected _openDialog() {
-        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
-
-        if (dialog) {
-            dialog.dialogContent = html`
+    protected _refreshDialog() {
+        if (this._dialog) {
+            this._dialog.dialogContent = html`
                 <or-asset-tree id="chart-asset-tree" 
-                    .selectedIds="${this.asset ? [this.asset.id] : null}]"
-                    @or-asset-tree-request-select="${(e: OrAssetTreeRequestSelectEvent) => {
-                        this.asset = {...e.detail.detail.node.asset!};
-                        let attributes = [...Util.getAssetAttributes(this.asset)];
-                        this.assetAttributes = [...attributes];
-                        this._getAttributeOptions();
-                    }}">
-                </or-asset-tree>
+                    .selectedIds="${this.asset ? [this.asset.id] : null}"></or-asset-tree>
                 ${this.asset && this.asset.attributes ? html`
                     <or-input id="attribute-picker" 
                         style="display:flex;"
@@ -353,7 +317,38 @@ export class OrAttributeCard extends LitElement {
                         .value="${this.attributeName}"></or-input>
                 ` : ``}
             `;
-            dialog.open();
+        }
+    }
+
+    protected _openDialog() {
+        if (this._dialog) {
+            this._refreshDialog();
+            this._dialog.open();
+        }
+    }
+
+    protected _onTreeSelectionChanged(event: OrAssetTreeSelectionChangedEvent) {
+        // Need to fully load the asset
+        if (!manager.events) {
+            return;
+        }
+
+        const selectedNode = event.detail && event.detail.length > 0 ? event.detail[0] : undefined;
+
+        if (!selectedNode) {
+            this.asset = undefined;
+        } else {
+            // fully load the asset
+            manager.events.sendEventWithReply({
+                event: {
+                    eventType: "read-asset",
+                    assetId: selectedNode.asset!.id
+                }
+            }).then((ev) => {
+                this.asset = (ev as AssetEvent).asset;
+                const attributes = [...Util.getAssetAttributes(this.asset!)];
+                this.assetAttributes = [...attributes];
+            }).catch(() => this.asset = undefined);
         }
     }
 
@@ -517,7 +512,7 @@ export class OrAttributeCard extends LitElement {
             <div class="panel" id="attribute-card">
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
-                        <span class="panel-title-text">${this.asset.name} - ${i18next.t(this.attributeName)}</span>
+                        <span class="panel-title-text">${this.asset ? (this.asset.name + " - " + i18next.t(this.attributeName)) : ""}</span>
                         <or-input icon="pencil" type="button" @click="${() => this._openDialog()}"></or-input>
                     </div>
                     <div class="panel-content">
@@ -646,7 +641,11 @@ export class OrAttributeCard extends LitElement {
         return Math.max.apply(Math, data.map((e: ValueDatapoint<any>) => e.y || false ));
     }
 
-    protected getFormattedValue(value: number): {value: number, unit: string} {
+    protected getFormattedValue(value: number): {value: number, unit: string} | undefined {
+        if (!this.asset) {
+            return;
+        }
+
         const attr = this.asset.attributes![this.attributeName!];
         const roundedVal = +value.toFixed(1); // + operator prevents str return
 

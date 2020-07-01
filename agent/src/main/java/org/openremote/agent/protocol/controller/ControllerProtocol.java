@@ -30,6 +30,7 @@ import org.openremote.agent.protocol.http.HttpClientProtocol;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.container.Container;
 import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
@@ -203,7 +204,7 @@ public class ControllerProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         LOG.fine("### Adding new protocol " + protocolConfiguration.getReferenceOrThrow() + " (" + protocolConfiguration.getNameOrThrow() + ")");
 
         String baseURL = protocolConfiguration.getMetaItem(META_PROTOCOL_BASE_URI).flatMap(AbstractValueHolder::getValueAsString)
@@ -235,7 +236,7 @@ public class ControllerProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         controllersMap.remove(protocolConfiguration.getReferenceOrThrow());
         controllersTargetMap.remove(protocolConfiguration.getReferenceOrThrow());
         controllerHeartbeat.remove(protocolConfiguration.getReferenceOrThrow());

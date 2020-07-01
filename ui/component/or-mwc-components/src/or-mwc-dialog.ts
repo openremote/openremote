@@ -125,6 +125,10 @@ export class OrMwcDialog extends LitElement {
 
     protected _mdcComponent?: MDCDialog;
 
+    public get isOpen() {
+        return this._mdcComponent ? this._mdcComponent.isOpen : false;
+    }
+
     public open() {
         if (this._mdcElem && !this._mdcComponent) {
             this._mdcComponent = new MDCDialog(this._mdcElem);

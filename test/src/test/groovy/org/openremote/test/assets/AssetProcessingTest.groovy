@@ -13,7 +13,6 @@ import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ProtocolConfiguration
 import org.openremote.model.attribute.*
-import org.openremote.model.datapoint.Datapoint
 import org.openremote.model.value.Value
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
@@ -55,12 +54,12 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             }
 
             @Override
-            protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+            protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
                 LOG.info("Mock Protocol: linkProtocol")
             }
 
             @Override
-            protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+            protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
                 LOG.info("Mock Protocol: unlinkProtocol")
             }
 

@@ -74,6 +74,7 @@ public class GatewayConnector {
     List<String> syncAssetIds;
     int syncIndex;
     int syncErrors;
+    Asset gateway;
     String expectedSyncResponseName;
 
     public GatewayConnector(
@@ -89,6 +90,7 @@ public class GatewayConnector {
         this.realm = gateway.getRealm();
         this.gatewayId = gateway.getId();
         this.disabled = disabled;
+        this.gateway = gateway;
     }
 
     public void sendMessageToGateway(Object message) {
