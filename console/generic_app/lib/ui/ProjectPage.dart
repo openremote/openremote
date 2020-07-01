@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:generic_app/config/CurrentConsoleAppConfig.dart';
 import 'package:generic_app/models/ConsoleAppConfig.dart';
 import 'package:generic_app/network/ApiManager.dart';
+import 'package:generic_app/ui/WebViewPage.dart';
 
 class ProjectPage extends StatefulWidget {
   ProjectPage({Key key}) : super(key: key);
@@ -46,8 +48,16 @@ class _ProjectPageState extends State<ProjectPage> {
                           children: <Widget>[
                             Container(
                               child: TextField(
+                                cursorColor: CurrentConsoleAppConfig.instance.primaryColor,
                                   decoration:
-                                      InputDecoration(labelText: 'Project'),
+                                      InputDecoration(labelText: 'Project',
+                                          labelStyle: TextStyle(
+                                              color: CurrentConsoleAppConfig.instance.primaryColor
+                                          ),
+                                        focusedBorder: UnderlineInputBorder(
+                                          borderSide: BorderSide(color: CurrentConsoleAppConfig.instance.primaryColor),
+                                        ),
+                                      ),
                                   textInputAction: TextInputAction.next,
                                   onChanged: (inputText) {
                                     _projectName = inputText;
@@ -59,8 +69,16 @@ class _ProjectPageState extends State<ProjectPage> {
                             ),
                             Container(
                               child: TextField(
+                                  cursorColor: CurrentConsoleAppConfig.instance.primaryColor,
                                   decoration:
-                                      InputDecoration(labelText: 'Realm'),
+                                      InputDecoration(labelText: 'Realm',
+                                        labelStyle: TextStyle(
+                                          color: CurrentConsoleAppConfig.instance.primaryColor
+                                        ),
+                                        focusedBorder: UnderlineInputBorder(
+                                          borderSide: BorderSide(color: CurrentConsoleAppConfig.instance.primaryColor),
+                                        )
+                                      ),
                                   textInputAction: TextInputAction.done,
                                   onChanged: (inputText) {
                                     _realmName = inputText;
@@ -75,6 +93,9 @@ class _ProjectPageState extends State<ProjectPage> {
                               child: Align(
                                 alignment: Alignment.centerRight,
                                 child: RaisedButton(
+                                  color: CurrentConsoleAppConfig.instance.primaryColor,
+                                    focusColor: CurrentConsoleAppConfig.instance.secondaryColor,
+                                    textColor: Colors.white,
                                     onPressed: () {
                                       _getConsoleAppConfig();
                                     },
@@ -89,9 +110,13 @@ class _ProjectPageState extends State<ProjectPage> {
   }
 
   void _getConsoleAppConfig() {
-    var apiManager = new ApiManager("http://localhost:8080/api/${_realmName}");
+    var apiManager = new ApiManager("http://10.0.2.2:8080/api/${_realmName}");
 //        new ApiManager("https://${_projectName}.openremote.io/${_realmName}");
     apiManager.get(["app", "config"], ConsoleAppConfig.fromJson).then(
-        (value) => print(value));
+        (value)  {
+          print(value);
+          CurrentConsoleAppConfig.instance.updateConfig(value);
+          Navigator.push(context, MaterialPageRoute(builder: (context)=>WebViewPage(initialUrl: CurrentConsoleAppConfig.instance.url,)));
+        });
   }
 }
