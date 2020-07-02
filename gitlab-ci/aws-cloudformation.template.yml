@@ -1,0 +1,63 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Template to install OpenRemote 3 stack on AWS environment including CloudWatchAgent memory on ubuntu'
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: openremote
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    # AWS Compute Optimizer reports that this instance type is under-provisioned and advise to use
+    # more than double the price instance. However, it works in our test setup.
+    Default: t3a.medium
+    ConstraintDescription: must be a valid EC2 instance type.
+  InstanceAMI:
+    Description: Managed AMI ID for EC2 Instance
+    Type : String
+    Default: ami-021696e054a27b3e8
+Outputs:
+    InstanceIP:
+      Description: The Instance public IP
+      Value: !GetAtt EC2Instance.PublicIp
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType:
+        Ref: InstanceType
+      KeyName:
+        Ref: KeyName
+      ImageId:
+        Ref: InstanceAMI
+      SecurityGroups:
+        - Ref: InstanceSecurityGroup
+      Tags:
+        - Key: "Name"
+          Value: "Openremote v3"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          wget https://github.com/openremote/openremote/raw/master/swarm/swarm-docker-compose.yml
+          docker swarm init
+          docker stack deploy --compose-file swarm-docker-compose.yml openremote
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: OR manager ports + SSH
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '80'
+        ToPort: '80'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '443'
+        ToPort: '443'
+        CidrIp: 0.0.0.0/0

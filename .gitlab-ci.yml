@@ -11,6 +11,7 @@ stages:
   - test
   - deploy
   - dast
+  - cleanup
 
 lint-Dockerfile:
   stage: build
@@ -86,7 +87,7 @@ email failed pipeline:
       -e "REPO=$REPO"
       -e "SMTP_USERNAME=$SMTP_USERNAME"
       -e "SMTP_PASSWORD=$SMTP_PASSWORD"
-      --rm python:3 python deployment/aws-mail.py
+      --rm python:3 python gitlab-ci/aws-mail.py
   when: on_failure
   only:
     - master
@@ -108,8 +109,26 @@ test-master:
     - master
 
 deploy-master:
+  image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
   stage: deploy
   script:
-    - echo Continous deploy TODO
+    - aws cloudformation create-stack --stack-name $AWS_STACK_NAME --template-body file://gitlab-ci/aws-cloudformation.template.yml
+  after_script:
+    - aws cloudformation wait stack-create-complete --stack-name $AWS_STACK_NAME
+    - aws cloudformation describe-stacks --stack-name $AWS_STACK_NAME
+  allow_failure: true # set when:manual optional and not blocking
+  when: manual
   only:
     - master
+
+delete aws cloudformation stack:
+  image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
+  stage: cleanup
+  script:
+    - aws cloudformation delete-stack --stack-name $AWS_STACK_NAME
+    - aws cloudformation wait stack-delete-complete --stack-name $AWS_STACK_NAME
+  allow_failure: true # set when:manual optional and not blocking
+  rules:
+    - when: delayed
+      start_in: '8 hours'
+    - when: manual
