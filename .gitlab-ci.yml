@@ -124,12 +124,28 @@ deploy-master:
 delete aws cloudformation stack:
   image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
   stage: cleanup
+  before_script:
+    - |-
+      PAYLOAD=$(cat << JSON
+      {
+        "select":{"include":"ALL_EXCEPT_PATH"},
+        "type":{"predicateType":"string","value":"urn:openremote:asset:flight"}
+      }
+      JSON
+      )
+    - echo $PAYLOAD
+    - export OR_ENDPOINT=$(aws cloudformation describe-stacks --stack-name openremote
+      --query "Stacks[0].Outputs[?OutputKey=='InstanceIP'].OutputValue" --output text)
+    - >
+      curl -X POST --insecure https://$OR_ENDPOINT/api/master/asset/query 
+      --header 'Content-Type: application/json; charset=utf-8'
+      --data-binary "$PAYLOAD"
   script:
     - aws cloudformation delete-stack --stack-name $AWS_STACK_NAME
     - aws cloudformation wait stack-delete-complete --stack-name $AWS_STACK_NAME
   allow_failure: true # set when:manual optional and not blocking
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
-    - when: delayed
+      when: delayed
       start_in: '8 hours'
     - when: manual
