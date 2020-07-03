@@ -122,7 +122,19 @@ deploy-master:
   only:
     - master
 
-delete aws cloudformation stack:
+auto delete aws cloudformation stack:
+  image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
+  stage: cleanup
+  script:
+    - aws cloudformation delete-stack --stack-name $AWS_STACK_NAME
+    - aws cloudformation wait stack-delete-complete --stack-name $AWS_STACK_NAME
+  allow_failure: true # set when:manual optional and not blocking
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      when: delayed
+      start_in: '8 hours'
+
+manual delete aws cloudformation stack:
   image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
   stage: cleanup
   before_script:
@@ -146,8 +158,5 @@ delete aws cloudformation stack:
     - aws cloudformation wait stack-delete-complete --stack-name $AWS_STACK_NAME
   allow_failure: true # set when:manual optional and not blocking
   rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-      when: delayed
-      start_in: '8 hours'
     - if: $CI_COMMIT_BRANCH == "master"
       when: manual
