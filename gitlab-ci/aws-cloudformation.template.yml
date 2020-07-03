@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Template to install OpenRemote 3 stack on AWS environment including CloudWatchAgent memory on ubuntu'
+Description: 'Template to install OpenRemote 3 stack on AWS environment on ubuntu'
 Parameters:
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
