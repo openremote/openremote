@@ -18,10 +18,12 @@ Parameters:
     Description: Managed AMI ID for EC2 Instance
     Type : String
     Default: ami-021696e054a27b3e8
+
 Outputs:
     InstanceIP:
       Description: The Instance public IP
       Value: !GetAtt EC2Instance.PublicIp
+
 Resources:
   EC2Instance:
     Type: AWS::EC2::Instance
@@ -42,7 +44,7 @@ Resources:
           #!/bin/bash
           wget https://github.com/openremote/openremote/raw/master/swarm/swarm-docker-compose.yml
           docker swarm init
-          docker stack deploy --compose-file swarm-docker-compose.yml openremote
+          IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4) docker stack deploy --compose-file swarm-docker-compose.yml openremote
 
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
