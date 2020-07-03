@@ -129,8 +129,7 @@ delete aws cloudformation stack:
     - aws cloudformation wait stack-delete-complete --stack-name $AWS_STACK_NAME
   allow_failure: true # set when:manual optional and not blocking
   rules:
+    - if: $CI_COMMIT_BRANCH == "master"
     - when: delayed
       start_in: '8 hours'
     - when: manual
-  only:
-    - master
