@@ -1,15 +1,18 @@
 package org.openremote.manager.datapoint;
 
 import org.hibernate.Session;
+import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
+import org.openremote.container.util.MapAccess;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.AssetUpdateProcessor;
 import org.openremote.manager.concurrent.ManagerExecutorService;
+import org.openremote.manager.notification.NotificationProcessingException;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.asset.Asset;
@@ -26,8 +29,10 @@ import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 import org.postgresql.util.PGInterval;
+import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceException;
 import javax.persistence.TypedQuery;
 import java.sql.*;
 import java.time.Duration;
@@ -44,6 +49,7 @@ import java.util.stream.Collectors;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
+import static org.openremote.container.util.MapAccess.getInteger;
 
 /**
  * Store and retrieve datapoints for asset attributes and periodically purge data points based on
@@ -54,7 +60,7 @@ import static java.util.stream.Collectors.toList;
 public class AssetDatapointService implements ContainerService, AssetUpdateProcessor {
 
     public static final String DATA_POINTS_MAX_AGE_DAYS = "DATA_POINTS_MAX_AGE_DAYS";
-    public static final String DATA_POINTS_MAX_AGE_DAYS_DEFAULT = "31";
+    public static final int DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
     public static final int PRIORITY = AssetStorageService.PRIORITY + 100;
     protected PersistenceService persistenceService;
@@ -85,9 +91,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                 )
         );
 
-        maxDatapointAgeDays = Integer.parseInt(
-                container.getConfig().getOrDefault(DATA_POINTS_MAX_AGE_DAYS, DATA_POINTS_MAX_AGE_DAYS_DEFAULT)
-        );
+        maxDatapointAgeDays = getInteger(container.getConfig(), DATA_POINTS_MAX_AGE_DAYS, DATA_POINTS_MAX_AGE_DAYS_DEFAULT);
 
         if (maxDatapointAgeDays <= 0) {
             LOG.warning(DATA_POINTS_MAX_AGE_DAYS + " value is not a valid value so data points won't be auto purged");
@@ -117,12 +121,34 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                                       Asset asset,
                                       AssetAttribute attribute,
                                       Source source) throws AssetProcessingException {
+
         if (attribute.isStoreDatapoints()
                 && attribute.getStateEvent().isPresent()
                 && attribute.getStateEvent().get().getValue().isPresent()) { // Don't store datapoints with null value
+
+            // Perform upsert on datapoint (datapoint isn't immutable then really and tied to postgresql but prevents entire attribute event from failing)
             LOG.finest("Storing datapoint for: " + attribute);
-            AssetDatapoint assetDatapoint = new AssetDatapoint(attribute.getStateEvent().get());
-            em.persist(assetDatapoint);
+
+            PGobject pgJsonValue = new PGobject();
+            pgJsonValue.setType("jsonb");
+            try {
+                pgJsonValue.setValue(attribute.getValue().map(Value::toJson).orElse(null));
+            } catch (SQLException e) {
+                throw new AssetProcessingException(AssetProcessingException.Reason.STATE_STORAGE_FAILED, "Failed to insert or update asset data point for attribute: " + attribute);
+            }
+
+            em.unwrap(Session.class).doWork(connection -> {
+                PreparedStatement st = connection.prepareStatement("INSERT INTO asset_datapoint (entity_id, attribute_name, value, timestamp) \n" +
+                    "VALUES (?, ?, ?, ?)\n" +
+                    "ON CONFLICT (entity_id, attribute_name, timestamp) DO UPDATE \n" +
+                    "  SET value = excluded.value");
+
+                st.setString(1, asset.getId());
+                st.setString(2, attribute.name);
+                st.setObject(3, pgJsonValue);
+                st.setTimestamp(4, attribute.getValueTimestamp().map(java.sql.Timestamp::new).orElse(null));
+                st.executeUpdate();
+            });
         }
         return false;
     }

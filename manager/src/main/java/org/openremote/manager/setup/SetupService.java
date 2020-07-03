@@ -114,16 +114,12 @@ public class SetupService implements ContainerService {
         } catch (Exception ex) {
             throw new RuntimeException("Error setting up application", ex);
         }
-
-        // When setup is complete, initialize the clock again - effectively set the PSEUDO clock to
-        // wall clock time. If the PSEUDO clock is enabled in tests, we must advance time after setup
-        // imports asset data. The protocols which are started after setup can trigger asset attribute
-        // events, and event source time must be later than asset state time.
-        container.getService(TimerService.class).getClock().init();
     }
 
     @Override
     public void stop(Container container) {
+        setupTasks = null;
+        setupList.clear();
     }
 
     public <S extends Setup> S getTaskOfType(Class<S> setupType) {

@@ -20,8 +20,8 @@
 package org.openremote.manager.security;
 
 import org.apache.camel.ExchangePattern;
-import org.keycloak.admin.client.resource.*;
 import org.keycloak.admin.client.resource.UserResource;
+import org.keycloak.admin.client.resource.*;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.representations.idm.*;
 import org.openremote.container.Container;
@@ -35,7 +35,6 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.apps.ConsoleAppService;
-import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
@@ -53,8 +52,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_HOST;
-import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_HOST_DEFAULT;
 import static org.openremote.container.util.JsonUtil.convert;
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getString;
@@ -75,32 +72,38 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String DEFAULT_REALM_KEYCLOAK_THEME = "DEFAULT_REALM_KEYCLOAK_THEME";
     public static final String DEFAULT_REALM_KEYCLOAK_THEME_DEFAULT = "openremote";
 
-    final boolean devMode;
-    final protected PersistenceService persistenceService;
-    final protected TimerService timerService;
-    final protected MessageBrokerService messageBrokerService;
-    final protected ClientEventService clientEventService;
-    final protected ConsoleAppService consoleAppService;
-    final protected String keycloakAdminPassword;
-    final protected Container container;
+    protected PersistenceService persistenceService;
+    protected TimerService timerService;
+    protected MessageBrokerService messageBrokerService;
+    protected ClientEventService clientEventService;
+    protected ConsoleAppService consoleAppService;
+    protected String keycloakAdminPassword;
+    protected Container container;
 
-    public ManagerKeycloakIdentityProvider(UriBuilder externalServerUri, Container container) {
-        super(KEYCLOAK_CLIENT_ID, externalServerUri, container.getService(ManagerExecutorService.class), container);
+    public ManagerKeycloakIdentityProvider() {
+        super(KEYCLOAK_CLIENT_ID);
+    }
 
+    @Override
+    public void init(Container container) {
+        super.init(container);
         this.container = container;
         this.keycloakAdminPassword = container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT);
-        this.devMode = container.isDevMode();
         this.timerService = container.getService(TimerService.class);
         this.persistenceService = container.getService(PersistenceService.class);
         this.messageBrokerService = container.getService(MessageBrokerService.class);
         this.clientEventService = container.getService(ClientEventService.class);
         this.consoleAppService = container.getService(ConsoleAppService.class);
+    }
 
+    @Override
+    public void start(Container container) {
+        super.start(container);
         enableAuthProxy(container.getService(WebService.class));
     }
 
     @Override
-    protected void addClientRedirectUris(String client, List<String> redirectUrls) {
+    protected void addClientRedirectUris(String client, List<String> redirectUrls, boolean devMode) {
         if (devMode) {
             // Allow any redirect URIs in dev mode
             redirectUrls.add("*");
@@ -159,6 +162,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         Response response = realmResource.users().create(
                 convert(Container.JSON, UserRepresentation.class, user)
             );
+        response.close();
         if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
             throw new WebApplicationException(
                 Response.status(response.getStatus())
@@ -166,7 +170,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     .build()
             );
         } else {
-            response.close();
             user = getUserByUsername(realm, user.getUsername().toLowerCase());//Username is stored in lowercase in Keycloak
             if (user != null && !TextUtil.isNullOrEmpty(password)) {
                 CredentialRepresentation credentials = new CredentialRepresentation();
@@ -253,13 +256,13 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         List<RoleRepresentation> availableRoles = roleMappingResource.clientLevel(client.getId()).listAvailable();
 
         // Get newly defined roles
-        List<RoleRepresentation> addRoles = Arrays.stream(roles)
+        List<RoleRepresentation> addRoles = roles == null ? Collections.emptyList() : Arrays.stream(roles)
             .filter(cr -> clientMappedRoles.stream().noneMatch(r -> r.getName().equals(cr.getValue())))
             .map(cr -> availableRoles.stream().filter(r -> r.getName().equals(cr.getValue())).findFirst().orElse(null))
             .collect(Collectors.toList());
 
         // Remove obsolete roles
-        List<RoleRepresentation> removeRoles = clientMappedRoles.stream()
+        List<RoleRepresentation> removeRoles = roles == null ? clientMappedRoles : clientMappedRoles.stream()
             .filter(r -> Arrays.stream(roles).noneMatch(cr -> cr.getValue().equals(r.getName())))
             .collect(Collectors.toList());
 
@@ -547,7 +550,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     public void createOpenRemoteClientApplication(String realm) {
-        createClient(realm, createDefaultClientRepresentation(realm, KEYCLOAK_CLIENT_ID, "OpenRemote", devMode));
+        createClient(realm, createDefaultClientRepresentation(realm, KEYCLOAK_CLIENT_ID, "OpenRemote", container.isDevMode()));
     }
 
     /**
@@ -579,11 +582,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             List<String> redirectUris = new ArrayList<>();
             try {
                 for (String consoleName : consoleAppService.getInstalled()) {
-                    addClientRedirectUris(consoleName, redirectUris);
+                    addClientRedirectUris(consoleName, redirectUris, devMode);
                 }
             } catch (Exception exception) {
                 LOG.log(Level.WARNING, exception.getMessage(), exception);
-                addClientRedirectUris(realm, redirectUris);
+                addClientRedirectUris(realm, redirectUris, devMode);
             }
 
             client.setRedirectUris(redirectUris);

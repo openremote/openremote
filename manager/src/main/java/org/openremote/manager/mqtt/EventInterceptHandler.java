@@ -38,7 +38,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
-import org.openremote.model.event.shared.RenewEventSubscriptions;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
@@ -147,32 +147,26 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                     subscriptionId = connection.assetAttributeSubscriptions.remove(attributeRef);
                 }
             }
-            if (subscriptionId != null) { //renew subscription
-                RenewEventSubscriptions renewEventSubscriptions = new RenewEventSubscriptions(new String[]{subscriptionId});
-                Map<String, Object> headers = prepareHeaders(connection);
-                messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, renewEventSubscriptions, headers);
+
+            AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId);
+            EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
+                    AttributeEvent.class,
+                    attributeAssetFilter,
+                    TextUtil.isNullOrEmpty(subscriptionId) ? String.valueOf(connection.getNextSubscriptionId()) : subscriptionId);
+
+            if (attributeRef == null) { //attribute specific
+                connection.assetSubscriptions.put(assetId, subscription.getSubscriptionId());
             } else {
-                AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId);
-                EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
-                        AttributeEvent.class,
-                        attributeAssetFilter,
-                        String.valueOf(connection.getNextSubscriptionId())
-                );
-
-                if (attributeRef == null) { //attribute specific
-                    connection.assetSubscriptions.put(assetId, subscription.getSubscriptionId());
+                attributeAssetFilter.setAttributeNames(attributeRef.getAttributeName());
+                if (isValueSubscription) {
+                    connection.assetAttributeValueSubscriptions.put(attributeRef, subscription.getSubscriptionId());
                 } else {
-                    attributeAssetFilter.setAttributeNames(attributeRef.getAttributeName());
-                    if (isValueSubscription) {
-                        connection.assetAttributeValueSubscriptions.put(attributeRef, subscription.getSubscriptionId());
-                    } else {
-                        connection.assetAttributeSubscriptions.put(attributeRef, subscription.getSubscriptionId());
-                    }
+                    connection.assetAttributeSubscriptions.put(attributeRef, subscription.getSubscriptionId());
                 }
-
-                Map<String, Object> headers = prepareHeaders(connection);
-                messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
             }
+
+            Map<String, Object> headers = prepareHeaders(connection);
+            messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
         } else {
             throw new IllegalStateException("Connection with clientId " + interceptSubscribeMessage.getClientID() + " not found.");
         }
@@ -197,7 +191,7 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
             }
             if (subscriptionId != null) {
                 Map<String, Object> headers = prepareHeaders(connection);
-                CancelEventSubscription<AttributeEvent> cancelEventSubscription = new CancelEventSubscription<>(AttributeEvent.class, subscriptionId);
+                CancelEventSubscription cancelEventSubscription = new CancelEventSubscription(AttributeEvent.class, subscriptionId);
                 messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, headers);
             }
         }

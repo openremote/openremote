@@ -24,7 +24,6 @@ import org.openremote.container.Container;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.basic.BasicIdentityProvider;
 import org.openremote.container.security.basic.PasswordStorage;
-import org.openremote.manager.persistence.ManagerPersistenceService;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.TenantPredicate;
@@ -44,18 +43,19 @@ import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
 public class ManagerBasicIdentityProvider extends BasicIdentityProvider implements ManagerIdentityProvider {
 
     private static final Logger LOG = Logger.getLogger(ManagerBasicIdentityProvider.class.getName());
-    final protected ManagerIdentityService identityService;
-    final protected String adminPassword;
+    protected ManagerIdentityService identityService;
+    protected String adminPassword;
 
-    public ManagerBasicIdentityProvider(Container container) {
-        super(container.getService(ManagerPersistenceService.class));
+    @Override
+    public void init(Container container) {
+        super.init(container);
         this.identityService = container.getService(ManagerIdentityService.class);
         adminPassword = container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT);
     }
 
     @Override
-    public void start() {
-        super.start();
+    public void start(Container container) {
+        super.start(container);
 
         // Create master tenant and admin user
         if (!tenantExists(MASTER_REALM)) {

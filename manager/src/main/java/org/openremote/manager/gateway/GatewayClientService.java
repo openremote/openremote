@@ -227,27 +227,19 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             client.addMessageConsumer(message -> onCentralManagerMessage(connection, message));
 
             // Subscribe to Asset and attribute events of local realm and pass through to connected manager
-            clientEventService.getEventSubscriptions().createOrUpdate(
-                getClientSessionKey(connection),
-                false,
-                new EventSubscription<>(
-                    AssetEvent.class,
-                    new AssetFilter<AssetEvent>().setRealm(connection.getLocalRealm()),
-                    triggeredEventSubscription ->
-                        triggeredEventSubscription.getEvents()
-                            .forEach(event ->
-                                sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, event)))));
+            clientEventService.addInternalSubscription(
+                getClientSessionKey(connection)+"Asset",
+                AssetEvent.class,
+                new AssetFilter<AssetEvent>().setRealm(connection.getLocalRealm()),
+                assetEvent ->
+                    sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, assetEvent)));
 
-            clientEventService.getEventSubscriptions().createOrUpdate(
-                getClientSessionKey(connection),
-                false,
-                new EventSubscription<>(
-                    AttributeEvent.class,
-                    new AssetFilter<AttributeEvent>().setRealm(connection.getLocalRealm()),
-                    triggeredEventSubscription ->
-                        triggeredEventSubscription.getEvents()
-                            .forEach(event ->
-                                sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, event)))));
+            clientEventService.addInternalSubscription(
+                getClientSessionKey(connection)+"Attribute",
+                AttributeEvent.class,
+                new AssetFilter<AttributeEvent>().setRealm(connection.getLocalRealm()),
+                attributeEvent ->
+                    sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, attributeEvent)));
 
             client.connect();
             return client;
@@ -275,7 +267,8 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         }
 
         if (connection != null) {
-            clientEventService.getEventSubscriptions().cancelAll(getClientSessionKey(connection));
+            clientEventService.cancelInternalSubscription(getClientSessionKey(connection)+"Asset");
+            clientEventService.cancelInternalSubscription(getClientSessionKey(connection)+"Attribute");
         }
     }
 

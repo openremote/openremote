@@ -6,6 +6,7 @@ import org.openremote.model.value.Value;
 
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -110,7 +111,7 @@ public class VelbusDevice {
             }
 
             LOG.info("Initialisation starting: " + getBaseAddress());
-            initialisationTask = velbusNetwork.getExecutorService().scheduleWithFixedDelay(this::doInitialisation, 0, INITIALISATION_TIMEOUT_SECONDS * 1000);
+            initialisationTask = velbusNetwork.getExecutorService().scheduleWithFixedDelay(this::doInitialisation, 0, INITIALISATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         }
     }
 

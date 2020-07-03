@@ -209,7 +209,6 @@ public abstract class AbstractProtocol implements Protocol {
             if (protocolInfo != null && protocolInfo.currentConnectionStatus != ConnectionStatus.DISABLED) {
                 LOG.finer("Unlinking protocol configuration from protocol '" + getProtocolName() + "': " + protocolConfiguration);
                 doUnlinkProtocolConfiguration(agent, protocolConfiguration);
-                updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.DISCONNECTED);
             }
             linkedProtocolConfigurations.remove(protocolConfiguration.getReferenceOrThrow());
         });
@@ -254,7 +253,7 @@ public abstract class AbstractProtocol implements Protocol {
         withLock(getProtocolName() + "::unlinkAttributes", () -> {
 
             LinkedProtocolInfo protocolInfo = linkedProtocolConfigurations.get(protocolConfiguration.getReferenceOrThrow());
-            if (protocolInfo.currentConnectionStatus == ConnectionStatus.DISABLED) {
+            if (protocolInfo != null && protocolInfo.currentConnectionStatus == ConnectionStatus.DISABLED) {
                 LOG.info("Protocol configuration is disabled so not unlinking attributes '" + getProtocolName() + "': " + protocolConfiguration);
                 return;
             }

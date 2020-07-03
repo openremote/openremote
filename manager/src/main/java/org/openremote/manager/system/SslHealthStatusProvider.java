@@ -36,7 +36,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.time.temporal.ChronoUnit.DAYS;
-import static org.openremote.container.security.IdentityService.*;
+import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.*;
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getInteger;
 

@@ -47,7 +47,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,8 +54,7 @@ import java.util.logging.Logger;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static javax.ws.rs.core.Response.Status.Family.REDIRECTION;
 import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.util.MapAccess.*;
 import static org.openremote.container.web.WebClient.getTarget;
 import static org.openremote.container.web.WebService.pathStartsWithHandler;
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
@@ -143,19 +141,25 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final int IDENTITY_SESSION_MAX_MINUTES_DEFAULT = 60 * 24; // 1 day
     public static final String IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES = "IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES";
     public static final int IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES_DEFAULT = 60 * 24 * 14; // 14 days
+    public static final String IDENTITY_NETWORK_SECURE = "IDENTITY_NETWORK_SECURE";
+    public static final boolean IDENTITY_NETWORK_SECURE_DEFAULT = false;
+    public static final String IDENTITY_NETWORK_HOST = "IDENTITY_NETWORK_HOST";
+    public static final String IDENTITY_NETWORK_HOST_DEFAULT = "localhost";
+    public static final String IDENTITY_NETWORK_WEBSERVER_PORT = "IDENTITY_NETWORK_WEBSERVER_PORT";
+    public static final int IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT = 8080;
     private static final Logger LOG = Logger.getLogger(KeycloakIdentityProvider.class.getName());
     // Each realm in Keycloak has a client application with this identifier
     final protected String clientId;
 
     // The externally visible address of this installation
-    final protected UriBuilder externalServerUri;
+    protected UriBuilder externalServerUri;
 
     // The (internal) URI where Keycloak can be found
-    final protected UriBuilder keycloakServiceUri;
+    protected UriBuilder keycloakServiceUri;
     // Configuration options for new realms
-    final protected int sessionTimeoutSeconds;
-    final protected int sessionMaxSeconds;
-    final protected int sessionOfflineTimeoutSeconds;
+    protected int sessionTimeoutSeconds;
+    protected int sessionMaxSeconds;
+    protected int sessionOfflineTimeoutSeconds;
     // This will pass authentication ("NOT ATTEMPTED" state), but later fail any role authorization
     final protected KeycloakDeployment notAuthenticatedKeycloakDeployment = new KeycloakDeployment();
     // The client we use to access Keycloak
@@ -168,10 +172,26 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     // Optional reverse proxy that listens to AUTH_PATH and forwards requests to Keycloak
     protected HttpHandler authProxyHandler;
 
-    @SuppressWarnings("deprecation")
-    protected KeycloakIdentityProvider(String clientId, UriBuilder externalServerUri, ExecutorService executorService, Container container) {
+    protected KeycloakIdentityProvider(String clientId) {
         this.clientId = clientId;
-        this.externalServerUri = externalServerUri;
+    }
+
+    @Override
+    public void init(Container container) {
+        boolean identityNetworkSecure = getBoolean(container.getConfig(), IDENTITY_NETWORK_SECURE, IDENTITY_NETWORK_SECURE_DEFAULT);
+        String identityNetworkHost = getString(container.getConfig(), IDENTITY_NETWORK_HOST, IDENTITY_NETWORK_HOST_DEFAULT);
+        int identityNetworkPort = getInteger(container.getConfig(), IDENTITY_NETWORK_WEBSERVER_PORT, IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT);
+
+        externalServerUri = UriBuilder.fromUri("")
+            .scheme(identityNetworkSecure ? "https" : "http")
+            .host(identityNetworkHost);
+
+        // Only set the port if it's not the default protocol port
+        if (identityNetworkPort != 80 && identityNetworkPort != 443) {
+            externalServerUri = externalServerUri.port(identityNetworkPort);
+        }
+
+        LOG.info("External system base URL: " + externalServerUri.build());
 
         sessionMaxSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_MAX_MINUTES, IDENTITY_SESSION_MAX_MINUTES_DEFAULT) * 60;
         if (sessionMaxSeconds < 60) {
@@ -194,6 +214,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 .path(KeycloakResource.KEYCLOAK_CONTEXT_PATH);
 
         LOG.info("Keycloak service URL: " + keycloakServiceUri.build());
+
 
         // This client sets a custom Host header on outgoing requests, acting like a reverse proxy that "preserves"
         // the Host header. Keycloak will verify token issuer name based on this, so it must match the external host
@@ -254,21 +275,17 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             }
         };
 
-    }
-
-    @Override
-    public void init() {
         // TODO Not a great way to block startup while we wait for other services (Hystrix?)
         waitForKeycloak();
         LOG.info("Keycloak identity provider available: " + keycloakServiceUri.build());
     }
 
     @Override
-    public void start() {
+    public void start(Container container) {
     }
 
     @Override
-    public void stop() {
+    public void stop(Container container) {
         if (httpClient != null)
             httpClient.close();
     }
@@ -419,6 +436,5 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     /**
      * There must be _some_ valid redirect URIs for the application or authentication will not be possible.
      */
-    abstract protected void addClientRedirectUris(String client, List<String> redirectUrls);
-
+    abstract protected void addClientRedirectUris(String client, List<String> redirectUrls, boolean devMode);
 }

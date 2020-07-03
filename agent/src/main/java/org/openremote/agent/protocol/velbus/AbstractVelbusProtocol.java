@@ -163,7 +163,6 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
         Pair<VelbusNetwork, Consumer<ConnectionStatus>> velbusNetworkAndConsumer = networkConfigurationMap.remove(protocolRef);
-        updateStatus(protocolRef, ConnectionStatus.DISCONNECTED);
 
         if (velbusNetworkAndConsumer != null) {
             velbusNetworkAndConsumer.key.removeConnectionStatusConsumer(velbusNetworkAndConsumer.value);

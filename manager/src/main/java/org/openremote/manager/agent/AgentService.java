@@ -105,10 +105,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     protected final Map<AttributeRef, Pair<AssetAttribute, ConnectionStatus>> protocolConfigurations = new HashMap<>();
     protected final Map<String, List<Consumer<PersistenceEvent<Asset>>>> childAssetSubscriptions = new HashMap<>();
     protected final Map<String, Protocol> protocols = new HashMap<>();
-    protected final Map<AttributeRef, List<AttributeRef>> linkedAttributes = new HashMap<>();
+    protected final Map<AttributeRef, List<AssetAttribute>> linkedAttributes = new HashMap<>();
     protected LocalAgentConnector localAgentConnector;
     protected Map<String, Asset> agentMap;
     protected ParseContext jsonPathParser;
+    protected boolean initDone;
 
     /**
      * It's important that {@link Protocol}s have a lower priority than this service so they are fully initialized
@@ -129,6 +130,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
         localAgentConnector = new LocalAgentConnector(this);
+
+        if (initDone) {
+            return;
+        }
 
         clientEventService.addSubscriptionAuthorizer((auth, subscription) ->
             subscription.isEventType(AgentStatusEvent.class)
@@ -152,6 +157,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 .build()
                 .addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL)
         );
+
+        initDone = true;
     }
 
     @Override
@@ -193,6 +200,14 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
     @Override
     public void stop(Container container) throws Exception {
+        agentMap.values().forEach(agent ->
+            unlinkProtocolConfigurations(
+                agent,
+                agent.getAttributesStream()
+                    .filter(ProtocolConfiguration::isProtocolConfiguration)
+                    .collect(Collectors.toList())));
+        agentMap.clear();
+        protocols.clear();
     }
 
     @Override
@@ -627,27 +642,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         withLock(getClass().getSimpleName() + "::unlinkProtocolConfigurations", () -> configurations.forEach(configuration -> {
             AttributeRef protocolAttributeRef = configuration.getReferenceOrThrow();
 
-            // Get all assets that have attributes that use this protocol configuration
-            List<Asset> assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .attributeMeta(
-                        new RefPredicate(
-                            MetaItemType.AGENT_LINK,
-                            protocolAttributeRef.getEntityId(),
-                            protocolAttributeRef.getAttributeName()
-                        )
-                    )
-            );
+            // Unlink all linked attributes for this protocol configuration
+            List<AssetAttribute> protocolLinkedAttributes = linkedAttributes.remove(protocolAttributeRef);
 
-            assets.forEach(
-                asset ->
-                    getGroupedAgentLinkAttributes(
-                        asset.getAttributesStream(),
-                        assetAttribute -> getAgentLink(assetAttribute)
-                            .map(attributeRef -> attributeRef.equals(protocolAttributeRef))
-                            .orElse(false)
-                    ).forEach(this::unlinkAttributes)
-            );
+            if (protocolLinkedAttributes != null && !protocolLinkedAttributes.isEmpty()) {
+                unlinkAttributes(configuration, protocolLinkedAttributes);
+            }
 
             Protocol protocol = getProtocol(configuration);
 
@@ -658,8 +658,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 LOG.log(Level.SEVERE, "Protocol threw an exception during protocol configuration unlinking", e);
             }
 
-            // Set status to disconnected
-            publishProtocolConnectionStatus(protocolAttributeRef, DISCONNECTED);
             protocolConfigurations.remove(protocolAttributeRef);
 
             // Check if there are any remaining configs for the agent
@@ -676,6 +674,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             if (protocolDeploymentInfo != null && protocolDeploymentInfo.value != connectionStatus) {
                 LOG.info("Agent protocol status updated to " + connectionStatus + ": " + protocolRef);
                 protocolDeploymentInfo.value = connectionStatus;
+
+                if (!agentMap.containsKey(protocolRef.getEntityId())) {
+                    return;
+                }
 
                 // Notify clients
                 clientEventService.publishEvent(
@@ -711,17 +713,13 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 return;
             }
 
-            attributes.removeIf(attr ->
-                linkedAttributes.values().stream()
-                    .anyMatch(linkedAttributes -> linkedAttributes.contains(attr.getReferenceOrThrow())));
-
             linkedAttributes.compute(
                 protocolConfiguration.getReferenceOrThrow(),
                 (protocolRef, linkedAttrs) -> {
                     if (linkedAttrs == null) {
                         linkedAttrs = new ArrayList<>(attributes.size());
                     }
-                    linkedAttrs.addAll(attributes.stream().map(AssetAttribute::getReferenceOrThrow).collect(Collectors.toList()));
+                    linkedAttrs.addAll(attributes);
                     return linkedAttrs;
                 });
 
@@ -738,7 +736,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
     protected void unlinkAttributes(AssetAttribute protocolConfiguration, Collection<AssetAttribute> attributes) {
         withLock(getClass().getSimpleName() + "::unlinkAttributes", () -> {
-            LOG.fine("Unlinking all attributes that use protocol attribute: " + protocolConfiguration);
+            LOG.fine("Unlinking attributes that use protocol attribute: " + protocolConfiguration);
             Protocol protocol = getProtocol(protocolConfiguration);
 
             if (protocol == null) {
@@ -749,7 +747,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             linkedAttributes.computeIfPresent(
                 protocolConfiguration.getReferenceOrThrow(),
                 (protocolRef, linkedAttrs) -> {
-                    linkedAttrs.removeAll(attributes.stream().map(AssetAttribute::getReferenceOrThrow).collect(Collectors.toList()));
+                    linkedAttrs.removeIf(attr -> attributes.stream().anyMatch(a -> a.getReferenceOrThrow().equals(attr.getReferenceOrThrow())));
                     return linkedAttrs.isEmpty() ? null : linkedAttrs;
                 }
             );

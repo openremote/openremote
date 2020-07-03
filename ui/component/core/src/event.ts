@@ -644,7 +644,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
         if (!this._webSocket) {
             return;
         }
-        const cancelSubscription: CancelEventSubscription<SharedEvent> = {
+        const cancelSubscription: CancelEventSubscription = {
             subscriptionId: subscriptionId
         };
         this._webSocket.send(UNSUBSCRIBE_MESSAGE_PREFIX + JSON.stringify(cancelSubscription));

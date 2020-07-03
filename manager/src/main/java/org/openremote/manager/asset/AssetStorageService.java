@@ -327,7 +327,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         container.getService(ManagerWebService.class).getApiSingletons().add(
             new ConsoleResourceImpl(container.getService(TimerService.class),
                 identityService,
-                this)
+                this,
+                clientEventService)
         );
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
@@ -700,6 +701,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             // Update all empty attribute timestamps with server-time (a caller which doesn't have a
             // reliable time source such as a browser should clear the timestamp when setting an attribute
             // value).
+
             asset.getAttributesStream().forEach(attribute -> {
                 Optional<Long> timestamp = attribute.getValueTimestamp();
                 if (!timestamp.isPresent() || timestamp.get() <= 0) {

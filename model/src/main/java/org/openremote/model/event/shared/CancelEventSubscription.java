@@ -26,7 +26,7 @@ import org.openremote.model.event.Event;
  * type of event it doesn't want to receive anymore or the subscription ID to remove
  * a specific subscriber.
  */
-public class CancelEventSubscription<E extends SharedEvent> {
+public class CancelEventSubscription {
 
     public static final String MESSAGE_PREFIX = "UNSUBSCRIBE:";
 
@@ -37,17 +37,21 @@ public class CancelEventSubscription<E extends SharedEvent> {
     protected CancelEventSubscription() {
     }
 
+    public <E extends SharedEvent> CancelEventSubscription(Class<E> eventClass) {
+        this(Event.getEventType(eventClass), null);
+    }
+
+    public <E extends SharedEvent> CancelEventSubscription(Class<E> eventClass, String subscriptionId) {
+        this(Event.getEventType(eventClass), subscriptionId);
+    }
+
     public CancelEventSubscription(String eventType, String subscriptionId) {
         this.eventType = eventType;
         this.subscriptionId = subscriptionId;
     }
 
-    public CancelEventSubscription(Class<E> eventClass) {
-        this(Event.getEventType(eventClass), null);
-    }
-
-    public CancelEventSubscription(Class<E> eventClass, String subscriptionId) {
-        this(Event.getEventType(eventClass), subscriptionId);
+    public CancelEventSubscription(String subscriptionId) {
+        this.subscriptionId = subscriptionId;
     }
 
     public String getEventType() {

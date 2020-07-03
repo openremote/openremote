@@ -46,6 +46,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.openremote.manager.datapoint.AssetDatapointService.DATA_POINTS_MAX_AGE_DAYS_DEFAULT;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 import static org.openremote.model.attribute.AttributeValueType.*;
@@ -61,12 +62,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static final int DEMO_RULE_STATES_SMART_OFFICE = 1;
     public static final int DEMO_RULE_STATES_SMART_BUILDING = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
     public static final int DEMO_RULE_STATES_SMART_CITY = 47;
-    public static final int DEMO_RULE_STATES_CUSTOMER_A = DEMO_RULE_STATES_SMART_BUILDING;
-    public static final int DEMO_RULE_STATES_GLOBAL = DEMO_RULE_STATES_CUSTOMER_A + DEMO_RULE_STATES_SMART_OFFICE + DEMO_RULE_STATES_SMART_CITY;
+    public static final int DEMO_RULE_STATES_GLOBAL = DEMO_RULE_STATES_SMART_BUILDING + DEMO_RULE_STATES_SMART_OFFICE + DEMO_RULE_STATES_SMART_CITY;
     public static final int DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1 + 28;
-    public static final int DEMO_RULE_STATES_SMART_HOME_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
-    public static final int DEMO_RULE_STATES_CUSTOMER_A_WITH_SCENES = DEMO_RULE_STATES_SMART_HOME_WITH_SCENES;
-    public static final int DEMO_RULE_STATES_GLOBAL_WITH_SCENES = DEMO_RULE_STATES_CUSTOMER_A_WITH_SCENES;
+    public static final int DEMO_RULE_STATES_SMART_BUILDING_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
     public static GeoJSONPoint SMART_OFFICE_LOCATION = new GeoJSONPoint(5.460315214821094, 51.44541688237109);
     public static GeoJSONPoint SMART_BUILDING_LOCATION = new GeoJSONPoint(5.454027, 51.446308);
     public static GeoJSONPoint SMART_CITY_LOCATION = new GeoJSONPoint(5.3814711, 51.4484647);
@@ -75,6 +73,12 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static GeoJSONPoint AREA_3_LOCATION = new GeoJSONPoint(5.487478, 51.446979);
     public static final String agentProtocolConfigName = "simulator123";
     public static final String thingLightToggleAttributeName = "light1Toggle";
+    public static final Scene[] DEMO_APARTMENT_SCENES = new Scene[] {
+        new Scene("morningScene", "Morning scene", "MORNING", "0 0 7 ? *", false, 21d),
+        new Scene("dayScene", "Day scene", "DAY", "0 30 8 ? *", true, 15d),
+        new Scene("eveningScene", "Evening scene", "EVENING", "0 30 17 ? *", false, 22d),
+        new Scene("nightScene", "Night scene", "NIGHT", "0 0 22 ? *", true, 19d)
+    };
     final protected boolean importDemoScenes;
     public String smartOfficeId;
     public String groundFloorId;
@@ -83,6 +87,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String thingId;
     public String smartBuildingId;
     public String apartment1Id;
+    public String apartment1SceneAgentId;
     public String apartment1ServiceAgentId;
     public String apartment1LivingroomId = UniqueIdentifierGenerator.generateId("apartment1LivingroomId");
     public String apartment1KitchenId;
@@ -187,7 +192,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         Values.create(true)),
                     new MetaItem(
                         DATA_POINTS_MAX_AGE_DAYS,
-                        Values.create(7)
+                        Values.create(DATA_POINTS_MAX_AGE_DAYS_DEFAULT*7)
                     ),
                     new MetaItem(
                         AGENT_LINK,
@@ -261,112 +266,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         );
         thing = assetStorageService.merge(thing);
         thingId = thing.getId();
-
-        // Some sample datapoints
-        final Asset finalThing = assetStorageService.find(thingId, true);
-        ZonedDateTime now = LocalDateTime.now().atZone(ZoneId.systemDefault());
-
-        AssetAttribute light1PowerConsumptionAttribute = thing.getAttribute("light1PowerConsumption")
-            .orElseThrow(() -> new RuntimeException("Invalid test data"));
-
-        persistenceService.doTransaction(em -> {
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(0.11), now.minusDays(80).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(1.22), now.minusDays(40).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(2.33), now.minusDays(20).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(3.44), now.minusDays(10).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(4.55), now.minusDays(8).toEpochSecond() * 1000);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(5.66), now.minusDays(6).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(6.77), now.minusDays(3).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(7.88), now.minusDays(1).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(8.99), now.minusHours(10).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(9.11), now.minusHours(5).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(10.22), now.minusHours(2).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(11.33), now.minusHours(1).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(11.44), now.minusMinutes(30).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(12.00), now.minusMinutes(5).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(12.11), now.minusSeconds(5).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-
-            light1PowerConsumptionAttribute.setValue(Values.create(12.22), now.minusSeconds(1).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em,
-                                                     finalThing,
-                                                     light1PowerConsumptionAttribute,
-                                                     AttributeEvent.Source.SENSOR);
-        });
 
         // ################################ Demo assets for 'building' realm ###################################
 
@@ -566,21 +465,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Id = apartment1.getId();
 
         if (importDemoScenes) {
-            Scene[] scenes = new Scene[]{
-                new Scene("morningScene", "Morning scene", "MORNING", "0 0 7 ? *", false, 21d),
-                new Scene("dayScene", "Day scene", "DAY", "0 30 8 ? *", true, 15d),
-                new Scene("eveningScene", "Evening scene", "EVENING", "0 30 17 ? *", false, 22d),
-                new Scene("nightScene", "Night scene", "NIGHT", "0 0 22 ? *", true, 19d)
-            };
-
-            Asset demoApartmentSceneAgent = createDemoApartmentSceneAgent(
-                apartment1, scenes, apartment1Livingroom, apartment1Kitchen, apartment1Hallway
-            );
-
-            demoApartmentSceneAgent = assetStorageService.merge(demoApartmentSceneAgent);
-
-            linkDemoApartmentWithSceneAgent(apartment1, demoApartmentSceneAgent, scenes);
-            apartment1 = assetStorageService.merge(apartment1);
+            Asset demoApartment1SceneAgent = createDemoApartmentScenes(
+                assetStorageService, apartment1, DEMO_APARTMENT_SCENES, apartment1Livingroom, apartment1Kitchen, apartment1Hallway);
+            apartment1SceneAgentId = demoApartment1SceneAgent.getId();
         }
 
         Asset apartment2 = new Asset("Apartment 2", RESIDENCE, smartBuilding);
@@ -859,11 +746,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         });
         peopleCounter3Asset = assetStorageService.merge(peopleCounter3Asset);
         peopleCounter3AssetId = peopleCounter3Asset.getId();
-
-        AssetRuleset peopleCounter3Rules = new AssetRuleset(
-            peopleCounter3Asset.getId(), "PeopleCounter 3 Rules", GROOVY, IOUtils.toString(getClass().getResource("/demo/rules/DemoSmartCityCamera.groovy"), StandardCharsets.UTF_8)
-        );
-        peopleCounter3Rules = rulesetStorageService.merge(peopleCounter3Rules);
 
         Asset lightController_3Asset = createDemoLightControllerAsset("LightController 3", assetArea3, new GeoJSONPoint(5.487478, 51.446979));
         lightController_3Asset = assetStorageService.merge(lightController_3Asset);

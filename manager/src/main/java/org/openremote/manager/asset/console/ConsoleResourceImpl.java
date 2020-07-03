@@ -22,10 +22,12 @@ package org.openremote.manager.asset.console;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.console.ConsoleConfiguration;
@@ -50,9 +52,22 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
     protected Map<String, String> realmConsoleParentMap = new HashMap<>();
     protected AssetStorageService assetStorageService;
 
-    public ConsoleResourceImpl(TimerService timerService, ManagerIdentityService identityService, AssetStorageService assetStorageService) {
+    public ConsoleResourceImpl(TimerService timerService, ManagerIdentityService identityService, AssetStorageService assetStorageService, ClientEventService clientEventService) {
         super(timerService, identityService);
         this.assetStorageService = assetStorageService;
+
+        // Subscribe for asset events
+        clientEventService.addInternalSubscription(
+            AssetEvent.class,
+            null,
+            this::onAssetChange);
+    }
+
+    protected void onAssetChange(AssetEvent event) {
+        // Remove any parent console asset mapping if the asset gets deleted
+        if (event.getCause() == AssetEvent.Cause.DELETE) {
+            realmConsoleParentMap.values().remove(event.getEntityId());
+        }
     }
 
     @Override

@@ -33,6 +33,7 @@ import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.servlet.api.AuthMethodConfig;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
+import org.openremote.container.Container;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityProvider;
 import org.openremote.model.Constants;
@@ -124,9 +125,10 @@ public abstract class BasicIdentityProvider implements IdentityProvider {
     }
 
     private static final Logger LOG = Logger.getLogger(BasicIdentityProvider.class.getName());
-    final protected PersistenceService persistenceService;
+    protected PersistenceService persistenceService;
 
-    public BasicIdentityProvider(PersistenceService persistenceService) {
+    @Override
+    public void init(Container container) {
         this.persistenceService = persistenceService;
         // Add schema and scripts for the PUBLIC realm to replicate keycloak user tables
         this.persistenceService.getDefaultSchemaLocations().add(
@@ -136,17 +138,12 @@ public abstract class BasicIdentityProvider implements IdentityProvider {
     }
 
     @Override
-    public void init() {
+    public void start(Container container) {
 
     }
 
     @Override
-    public void start() {
-
-    }
-
-    @Override
-    public void stop() {
+    public void stop(Container container) {
 
     }
 
