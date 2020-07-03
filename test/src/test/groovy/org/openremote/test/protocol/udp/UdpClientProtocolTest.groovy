@@ -71,7 +71,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         when: "a simple UDP echo server is started"
         def echoServerPort = findEphemeralPort()
         def clientPort = findEphemeralPort()
-        AbstractUdpServer echoServer = new UdpStringServer(protocolExecutorService, new InetSocketAddress(echoServerPort), ";", Integer.MAX_VALUE, true)
+        AbstractUdpServer echoServer = new UdpStringServer(protocolExecutorService, new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
         def echoSkipCount = 0
         def clientActualPort = null
         def lastCommand = null
@@ -107,7 +107,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
                 .addMeta(
                     new MetaItem(
                         UdpClientProtocol.META_PROTOCOL_HOST,
-                        Values.create("255.255.255.255")
+                        Values.create("127.0.0.1")
                     ),
                     new MetaItem(
                         UdpClientProtocol.META_PROTOCOL_PORT,

@@ -53,9 +53,10 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
 
         and: "a simple UDP echo server"
         def echoServerPort = findEphemeralPort()
-        def echoServer = new UdpStringServer(protocolExecutorService, new InetSocketAddress(echoServerPort), ";", Integer.MAX_VALUE, true)
+        def echoServer = new UdpStringServer(protocolExecutorService, new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
         echoServer.addMessageConsumer({
-            message, channel, sender -> echoServer.sendMessage(message, sender)
+            message, channel, sender ->
+                echoServer.sendMessage(message, sender)
         })
 
         and: "we add callback consumers on the server"
@@ -66,7 +67,7 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
         
         and: "a simple UDP broadcast client"
         UdpIoClient<String> client = new UdpIoClient<String>(
-                "255.255.255.255",
+                "127.0.0.1",
                 echoServerPort,
                 clientPort,
                 protocolExecutorService)
@@ -82,7 +83,8 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
         def connectionStatus = client.getConnectionStatus()
         String lastMessage
         client.addMessageConsumer({
-            message -> lastMessage = message
+            message ->
+                lastMessage = message
         })
         client.addConnectionStatusConsumer({
             status -> connectionStatus = status
@@ -140,8 +142,8 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
             assert connectionStatus == ConnectionStatus.CONNECTED
         }
 
-        when: "the server sends a broadcast message"
-        echoServer.sendMessage("Is there anyone there?", SocketUtils.socketAddress("255.255.255.255", clientPort))
+        when: "the server sends a message to the loopback interface"
+        echoServer.sendMessage("Is there anyone there?", SocketUtils.socketAddress("127.0.0.1", clientPort))
 
         then: "we should receive the message"
         conditions.eventually {

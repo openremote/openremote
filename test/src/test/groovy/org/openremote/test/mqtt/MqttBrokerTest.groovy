@@ -10,6 +10,7 @@ import org.openremote.manager.mqtt.MqttBrokerService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.RawClient
@@ -295,7 +296,12 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
                 .write(0x01) // QoS level 1
                 .flush()
 
-        and: "time advances"
+        then: "the subscription should be established"
+        conditions.eventually {
+            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetAttributeSubscriptions.containsKey(new AttributeRef(managerDemoSetup.apartment1HallwayId, "motionSensor"))
+        }
+
+        when: "time advances"
         advancePseudoClock(1, TimeUnit.SECONDS, container)
 
         and: "that attribute changed"
@@ -353,7 +359,12 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
                 .write(0x01) // QoS level 1
                 .flush()
 
-        and: "time advances"
+        then: "the subscription should be established"
+        conditions.eventually {
+            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetAttributeValueSubscriptions.containsKey(new AttributeRef(managerDemoSetup.apartment1HallwayId, "motionSensor"))
+        }
+
+        when: "time advances"
         advancePseudoClock(1, TimeUnit.SECONDS, container)
 
         and: "that attribute changed"

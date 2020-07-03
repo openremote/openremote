@@ -17,6 +17,7 @@ import static org.openremote.container.timer.TimerService.Clock.PSEUDO
 import static org.openremote.container.timer.TimerService.Clock.REAL
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.container.web.WebService.WEBSERVER_LISTEN_PORT
+import static org.openremote.manager.mqtt.MqttBrokerService.MQTT_SERVER_LISTEN_HOST
 import static org.openremote.manager.setup.SetupTasks.*
 
 trait ManagerContainerTrait extends ContainerTrait {
@@ -32,6 +33,7 @@ trait ManagerContainerTrait extends ContainerTrait {
                 (SETUP_IMPORT_DEMO_USERS)        : "true",
                 (SETUP_IMPORT_DEMO_SCENES)       : "false",
                 (SETUP_IMPORT_DEMO_RULES)        : "false",
+                (MQTT_SERVER_LISTEN_HOST)        : "127.0.0.1", // Works best for cross platform test running
                 (TIMER_CLOCK_TYPE)               : PSEUDO.name()
         ]
     }
