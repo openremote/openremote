@@ -105,8 +105,9 @@ test-master:
       /bin/sh -c "./gradlew clean build installDist"
   # Still has 3 errors, therefore allow it to fail
   allow_failure: true
-  only:
-    - master
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      when: manual
 
 deploy-master:
   image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
@@ -148,4 +149,5 @@ delete aws cloudformation stack:
     - if: $CI_COMMIT_BRANCH == "master"
       when: delayed
       start_in: '8 hours'
-    - when: manual
+    - if: $CI_COMMIT_BRANCH == "master"
+      when: manual
