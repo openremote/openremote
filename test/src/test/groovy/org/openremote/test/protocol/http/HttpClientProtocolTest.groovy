@@ -284,18 +284,12 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         HttpClientProtocol.MIN_POLLING_MILLIS = 10
         HttpClientProtocol.MIN_PING_MILLIS = 10
 
-        when: "the container starts"
-        def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices())
+        and: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
         def httpClientProtocol = container.getService(HttpClientProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
-
-        then: "the container should be running"
-        conditions.eventually {
-            assert container.isRunning()
-        }
 
         when: "the web target builder is configured to use the mock server"
         if (!httpClientProtocol.client.configuration.isRegistered(mockServer)) {
@@ -808,8 +802,5 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         conditions.eventually {
             assert mockServer.successFailureCount == count + 1
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

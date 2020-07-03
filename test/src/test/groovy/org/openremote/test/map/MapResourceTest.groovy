@@ -13,8 +13,7 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
 
     def "Retrieve map settings"() {
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
 
         and: "an authenticated user"
         def realm = MASTER_REALM
@@ -46,8 +45,5 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
         json.options.default.bounds.size() == 4
         json.sources != null
         json.layers.size() > 0
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

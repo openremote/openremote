@@ -26,9 +26,8 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
     def "Auto ventilation with CO2 detection"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 20, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -186,9 +185,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
             def apartment = assetStorageService.find(managerDemoSetup.apartment1Id, true)
             assert apartment.getAttribute("ventilationLevel").get().getValueAsNumber().get() == 64d
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 
 }

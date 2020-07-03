@@ -1,5 +1,6 @@
 package org.openremote.test.rules
 
+import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.rules.RulesEngine
@@ -24,6 +25,8 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.TimeUnit
+
 import static org.openremote.model.rules.RulesetStatus.*
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.*
 import static org.openremote.test.rules.BasicRulesImport.assertRulesFired
@@ -32,11 +35,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
     def "Check firing when deploying a new ruleset"() {
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.5, delay: 0.5)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -56,7 +58,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
         }
@@ -114,18 +116,14 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assertRulesFired(smartHomeEngine, 8)
             assertRulesFired(smartHomeEngine, ["Living Room All", "Kitchen All", "Kitchen Number Attributes", "Parent Type Residence", "Asset Type Room", "Boolean Attributes", "String attributes", "Number value types"])
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 
     def "Handle attribute event with no meta, asset create, update, delete"() {
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 15, initialDelay: 0.5, delay: 0.5)
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
 
         and: "the container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -170,7 +168,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 1
+            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 1
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2 + 1
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
@@ -184,7 +182,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assertRulesFired(rulesImport.apartment3Engine, 0)
         }
 
-        when: "an attribute event is pushed into the system for an attribute with no RULE_STATE meta"
+        when: "time advances"
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+
+        and: "an attribute event is pushed into the system for an attribute with no RULE_STATE meta"
         def globalLastFireTimestamp = rulesImport.globalEngine.lastFireTimestamp
         def masterLastFireTimestamp = rulesImport.masterEngine.lastFireTimestamp
         def tenantALastFireTimestamp = rulesImport.tenantBuildingEngine.lastFireTimestamp
@@ -210,7 +211,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesImport.apartment3Engine.lastFireTimestamp == apartment3LastFireTimestamp
         }
 
-        when: "the Kitchen room asset is modified to add a new attribute but RULE_STATE = true meta is not changed"
+        when: "time advances"
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+
+        and: "the Kitchen room asset is modified to add a new attribute but RULE_STATE = true meta is not changed"
         globalLastFireTimestamp = rulesImport.globalEngine.lastFireTimestamp
         masterLastFireTimestamp = rulesImport.masterEngine.lastFireTimestamp
         tenantALastFireTimestamp = rulesImport.tenantBuildingEngine.lastFireTimestamp
@@ -240,7 +244,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 1
+            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 1
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2 + 1
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
@@ -267,7 +271,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
@@ -299,7 +303,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 2
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 2
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 2
+            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 2
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2 + 2
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
@@ -320,7 +324,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
@@ -331,18 +335,14 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 
     def "Stop processing when engine in error state"() {
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 0.5)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -397,8 +397,5 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesImport.apartment2Engine.lastFireTimestamp > apartment2LastFireTimestamp
             assert rulesImport.apartment3Engine.lastFireTimestamp > apartment3LastFireTimestamp
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

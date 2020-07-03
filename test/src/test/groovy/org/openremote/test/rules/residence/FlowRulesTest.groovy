@@ -1,39 +1,44 @@
 package org.openremote.test.rules.residence
 
+import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.rules.FlowRulesBuilder
+import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
+import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
+import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.rules.flow.NodeCollection
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.TimeUnit
+
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 
 class FlowRulesTest extends Specification implements ManagerContainerTrait {
-    private FlowRulesBuilder builder;
+    private FlowRulesBuilder builder
 
     def "Execute flow rules"() {
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 15)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
-        def startTemperature = 25;
+        def startTemperature = 25
 
         and: "relevant attributes have been populated"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
@@ -41,6 +46,7 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
                 "targetTemperature",
                 Values.create(startTemperature)
         ))
+
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
                 managerDemoSetup.apartment1Bedroom1Id,
                 "targetTemperature",
@@ -51,7 +57,6 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
         String json = getClass().getResource("/org/openremote/test/rules/BasicFlowRules.json").text
         json = json.replaceAll("%LIVING ROOM ID%", managerDemoSetup.apartment1LivingroomId)
         json = json.replaceAll("%BEDROOM ID%", managerDemoSetup.apartment1Bedroom1Id)
-        println(json);
         NodeCollection realCollection = container.JSON.readValue(json, NodeCollection.class)
         def ruleset = (new GlobalRuleset(
                 realCollection.name,
@@ -59,6 +64,7 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
                 json
         ))
         rulesetStorageService.merge(ruleset)
+
         then: "the flow should be deployed"
         conditions.eventually {
             assert rulesService.globalEngine != null
@@ -66,19 +72,12 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
             assert rulesService.globalEngine.deployments.values().any({ it.name == realCollection.name && it.status == DEPLOYED})
         }
 
-        println(assetStorageService.
-                find(managerDemoSetup.apartment1Bedroom1Id).getAttribute("targetTemperature").get().getValue().present);
-
         and: "the flow should be executed correctly"
         conditions.eventually {
             def bedroomTargetTemp = assetStorageService.
                     find(managerDemoSetup.apartment1Bedroom1Id).
                     getAttribute("targetTemperature").get().getValueAsNumber().get()
-            println(bedroomTargetTemp)
             assert bedroomTargetTemp.intValue() == (startTemperature.intValue() + 10) : ("it was actually " +  bedroomTargetTemp.intValue())//convert to int considering floating point inaccuracy
         }
-
-        cleanup: "the container is stopped"
-        container.stop()
     }
 }

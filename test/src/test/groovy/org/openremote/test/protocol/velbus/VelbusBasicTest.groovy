@@ -19,27 +19,23 @@
  */
 package org.openremote.test.protocol.velbus
 
-import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.agent.protocol.velbus.VelbusNetwork
 import org.openremote.agent.protocol.velbus.VelbusPacket
 import org.openremote.agent.protocol.velbus.device.*
-import org.openremote.container.Container
+import org.openremote.container.concurrent.ContainerScheduledExecutor
 import org.openremote.manager.concurrent.ManagerExecutorService
+import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.value.ValueType
 import org.openremote.model.value.Values
-import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.MockVelbusClient
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import static org.openremote.container.util.MapAccess.getInteger
 import static spock.util.matcher.HamcrestMatchers.closeTo
 
-class VelbusBasicTest extends Specification implements ManagerContainerTrait {
-
-    @Shared
-    def static Container container
-
+class VelbusBasicTest extends Specification {
     @Shared
     def static VelbusNetwork network
 
@@ -47,7 +43,7 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
     def static MockVelbusClient messageProcessor = new MockVelbusClient()
 
     @Shared
-    def static PollingConditions conditions = new PollingConditions(timeout: 15)
+    def static PollingConditions conditions = new PollingConditions(timeout: 15, delay: 0.2)
 
     static loadDevicePackets(MockVelbusClient messageProcessor) {
         messageProcessor.mockPackets = [
@@ -805,9 +801,6 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
     }
 
     def setupSpec() {
-        def serverPort = findEphemeralPort()
-        container = startContainer(defaultConfig(serverPort), Collections.singletonList(new ManagerExecutorService()))
-        def protocolExecutorService = container.getService(ManagerExecutorService.class)
         VelbusNetwork.DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS = 1; // Minimal delay for simulated network
 
         // Uncomment and configure the below lines to communicate with an actual VELBUS network
@@ -816,7 +809,8 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
 //        def client = new VelbusSerialMessageProcessor("COM6", 38400, protocolExecutorService);
 //        VelbusNetwork.DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS = 100;
 
-        network = new VelbusNetwork(messageProcessor,  protocolExecutorService, null)
+        def scheduledTasksExecutor = new ContainerScheduledExecutor("Scheduled task", ManagerExecutorService.SCHEDULED_TASKS_THREADS_MAX_DEFAULT)
+        network = new VelbusNetwork(messageProcessor,  scheduledTasksExecutor, null)
 
         loadDevicePackets(VelbusBasicTest.messageProcessor)
     }
@@ -825,7 +819,6 @@ class VelbusBasicTest extends Specification implements ManagerContainerTrait {
         if (network != null) {
             network.close()
         }
-        stopContainer(container)
     }
 
     def setup() {

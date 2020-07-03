@@ -44,12 +44,11 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
     def "Check client"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the container is started"
-        def serverPort = findEphemeralPort()
         def clientPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), Collections.singletonList(new ManagerExecutorService()))
+        def container = startContainer(defaultConfig(), Collections.singletonList(new ManagerExecutorService()))
         def protocolExecutorService = container.getService(ProtocolExecutorService.class)
 
         and: "a simple UDP echo server"
@@ -169,6 +168,5 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
         cleanup: "the server should be stopped"
         client.disconnect()
         echoServer.stop()
-        stopContainer(container)
     }
 }

@@ -26,8 +26,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
     def "Access rules as superuser"() {
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -49,7 +48,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RulesResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(initialDelay: 2, timeout: 10, delay: 1).eventually {
+        new PollingConditions(timeout: 10, delay: 0.2).eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
@@ -293,16 +292,12 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         assetRuleset.name == "Test asset definition"
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerDemoSetup.apartment2Id
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 
     def "Access rules as testuser1"() {
 
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -324,7 +319,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RulesResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(initialDelay: 3, timeout: 20, delay: 1).eventually {
+        new PollingConditions(timeout: 10, delay: 0.2).eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
@@ -523,16 +518,12 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 
     def "Access rules as testuser2"() {
 
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -554,7 +545,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(RulesResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(initialDelay: 3, timeout: 20, delay: 1).eventually {
+        new PollingConditions(timeout: 10, delay: 0.2).eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
@@ -669,16 +660,12 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 
     def "Access rules as testuser3"() {
 
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -700,7 +687,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(RulesResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(initialDelay: 3, timeout: 20, delay: 1).eventually {
+        new PollingConditions(timeout: 10, delay: 0.2).eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
@@ -885,8 +872,5 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

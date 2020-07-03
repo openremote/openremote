@@ -30,8 +30,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 10, initialDelay: 0)
 
         when: "the container starts"
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithDemoScenesAndRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithDemoScenesAndRules(defaultConfig(), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
@@ -194,8 +193,5 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
             assert jobDetail == null
             assert triggers.isEmpty()
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

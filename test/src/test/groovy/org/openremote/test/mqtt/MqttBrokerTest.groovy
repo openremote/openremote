@@ -2,6 +2,7 @@ package org.openremote.test.mqtt
 
 import com.google.common.collect.Lists
 import io.moquette.BrokerConstants
+import org.openremote.container.timer.TimerService
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -15,12 +16,14 @@ import org.openremote.test.RawClient
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.TimeUnit
+
 import static org.openremote.container.util.MapAccess.*
 import static org.openremote.manager.mqtt.KeycloakAuthenticator.MQTT_CLIENT_ID_SEPARATOR
 import static org.openremote.manager.mqtt.MqttBrokerService.MQTT_SERVER_LISTEN_HOST
 import static org.openremote.manager.mqtt.MqttBrokerService.MQTT_SERVER_LISTEN_PORT
 
-class MqttTest extends Specification implements ManagerContainerTrait {
+class MqttBrokerTest extends Specification implements ManagerContainerTrait {
     def "Mqtt broker test"() {
 
         given: "the container environment is started"
@@ -39,11 +42,10 @@ class MqttTest extends Specification implements ManagerContainerTrait {
             }
         }
 
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
-        def serverPort = findEphemeralPort()
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         def services = Lists.newArrayList(defaultServices())
         services.replaceAll { it instanceof MqttBrokerService ? spyMqttBrokerService : it }
-        def container = startContainer(defaultConfig(serverPort), services)
+        def container = startContainer(defaultConfig(), services)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def mqttBrokerService = container.getService(MqttBrokerService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
@@ -54,11 +56,6 @@ class MqttTest extends Specification implements ManagerContainerTrait {
 
         def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, BrokerConstants.HOST);
         def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, BrokerConstants.PORT);
-
-        expect: "the container should be running and initialised"
-        conditions.eventually {
-            assert container.isRunning()
-        }
 
         when: "a mqtt client connects with wrong credentials"
         def payloadLength = "client1".size() + clientId.size() + clientSecret.size()
@@ -298,6 +295,9 @@ class MqttTest extends Specification implements ManagerContainerTrait {
                 .write(0x01) // QoS level 1
                 .flush()
 
+        and: "time advances"
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+
         and: "that attribute changed"
         attributeEvent = new AttributeEvent(managerDemoSetup.apartment1HallwayId, "motionSensor", Values.create(30))
         assetProcessingService.sendAttributeEvent(attributeEvent)
@@ -353,6 +353,9 @@ class MqttTest extends Specification implements ManagerContainerTrait {
                 .write(0x01) // QoS level 1
                 .flush()
 
+        and: "time advances"
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+
         and: "that attribute changed"
         attributeEvent = new AttributeEvent(managerDemoSetup.apartment1HallwayId, "motionSensor", Values.create(40))
         assetProcessingService.sendAttributeEvent(attributeEvent)
@@ -391,8 +394,5 @@ class MqttTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetAttributeValueSubscriptions.size() == 0
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

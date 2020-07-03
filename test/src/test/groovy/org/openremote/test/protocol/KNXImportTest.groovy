@@ -55,11 +55,10 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
     def "Check KNX protocol import"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, initialDelay: 1, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
@@ -91,9 +90,6 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
         
         and: "the agent resource"
         def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
-
-        and: "the container is running"
-        container.isRunning()
 
         then: "the container should settle down and the agent should be deployed"
         conditions.eventually {
@@ -141,10 +137,5 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
         def metaItem3 = attribute.getMetaItem(KNXProtocol.META_KNX_DPT).get()
         metaItem3 != null
         metaItem3.getValueAsString().get() == "9.001"
-        
-        
-        cleanup: "the server should be stopped"
-        stopContainer(container)
-
     }
 }

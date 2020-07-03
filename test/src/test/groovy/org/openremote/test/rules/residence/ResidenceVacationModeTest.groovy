@@ -20,7 +20,6 @@ import java.time.DayOfWeek
 
 import static java.util.concurrent.TimeUnit.DAYS
 import static java.util.concurrent.TimeUnit.HOURS
-import static org.openremote.manager.setup.SetupTasks.SETUP_IMPORT_DEMO_SCENES
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
 
 class ResidenceVacationModeTest extends Specification implements ManagerContainerTrait {
@@ -28,15 +27,25 @@ class ResidenceVacationModeTest extends Specification implements ManagerContaine
     def "Start and end vacation mode"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 20, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort) << [(SETUP_IMPORT_DEMO_SCENES): "true"], defaultServices())
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         RulesEngine apartment1Engine
+
+        and: "scenes are added to apartment1 rooms"
+        def apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id)
+        def apartment1Livingroom = assetStorageService.find(managerDemoSetup.apartment1LivingroomId)
+        def apartment1Kitchen = assetStorageService.find(managerDemoSetup.apartment1KitchenId)
+        def apartment1Hallway = assetStorageService.find(managerDemoSetup.apartment1HallwayId)
+        ManagerDemoSetup.createDemoApartmentScenes(
+            assetStorageService,
+            apartment1,
+            ManagerDemoSetup.DEMO_APARTMENT_SCENES,
+            apartment1Livingroom, apartment1Kitchen, apartment1Hallway)
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
@@ -114,8 +123,5 @@ class ResidenceVacationModeTest extends Specification implements ManagerContaine
                 assert asset.getAttribute("nightSceneEnabled" + it.name()).get().getValueAsBoolean().get()
             }
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

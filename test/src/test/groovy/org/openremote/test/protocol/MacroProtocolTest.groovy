@@ -1,5 +1,6 @@
 package org.openremote.test.protocol
 
+import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
@@ -11,6 +12,8 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.TimeUnit
+
 class MacroProtocolTest extends Specification implements ManagerContainerTrait {
     def "Check macro agent and device asset deployment"() {
 
@@ -18,8 +21,7 @@ class MacroProtocolTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 15, initialDelay: 0)
 
         when: "the container starts"
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithDemoScenesAndRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithDemoScenesAndRules(defaultConfig(), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
@@ -56,7 +58,10 @@ class MacroProtocolTest extends Specification implements ManagerContainerTrait {
             assert apartment1.getAttribute("morningScene").get().getValueAsString().orElse("") == AttributeExecuteStatus.COMPLETED.toString()
         }
 
-        when: "Apartment 1 away scene is executed"
+        when: "time advances"
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+
+        and: "Apartment 1 away scene is executed"
         macroExecute = new AttributeEvent(managerDemoSetup.apartment1Id, "dayScene", AttributeExecuteStatus.REQUEST_START.asValue())
         assetProcessingService.sendAttributeEvent(macroExecute)
 
@@ -75,7 +80,10 @@ class MacroProtocolTest extends Specification implements ManagerContainerTrait {
             assert apartment1.getAttribute("dayScene").get().getValueAsString().orElse("") == AttributeExecuteStatus.COMPLETED.toString()
         }
 
-        when: "The target temperature of the home scene is modified via the apartment attribute"
+        when: "time advances"
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+
+        and: "The target temperature of the home scene is modified via the apartment attribute"
         def updateTargetTemp = new AttributeEvent(managerDemoSetup.apartment1Id, "morningSceneTargetTemperature", Values.create(10d))
         assetProcessingService.sendAttributeEvent(updateTargetTemp)
 
@@ -87,7 +95,10 @@ class MacroProtocolTest extends Specification implements ManagerContainerTrait {
             assert !apartment1.getAttribute("morningSceneAlarmEnabled").get().getValueAsBoolean().orElse(true)
         }
 
-        when: "Apartment 1 home scene is executed"
+        when: "time advances"
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+
+        and: "Apartment 1 home scene is executed"
         macroExecute = new AttributeEvent(managerDemoSetup.apartment1Id, "morningScene", AttributeExecuteStatus.REQUEST_START.asValue())
         assetProcessingService.sendAttributeEvent(macroExecute)
 
@@ -105,8 +116,5 @@ class MacroProtocolTest extends Specification implements ManagerContainerTrait {
             def apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id, true)
             assert apartment1.getAttribute("morningScene").get().getValueAsString().orElse("") == AttributeExecuteStatus.COMPLETED.toString()
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

@@ -90,11 +90,10 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
     def "Check VELBUS agent and device asset deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 20, initialDelay: 1, delay: 1)
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
 
         when: "the container starts"
-        def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices(velbusProtocol))
+        def container = startContainer(defaultConfig(), defaultServices(velbusProtocol))
         def assetStorageService = container.getService(AssetStorageService.class)
 
         and: "a VELBUS agent is created"
@@ -138,16 +137,17 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
             assert asset.getAttribute("ch1State").flatMap { it.getValueAsString() }.orElse(null) == "RELEASED"
         }
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
+        cleanup: "remove agent"
+        if (agent != null) {
+            assetStorageService.delete(Collections.singletonList(agent.id))
+        }
     }
 
     def "Check linked attribute import"() {
 
         given: "the server container is started"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
@@ -183,13 +183,10 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
         and: "the agent resource"
         def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
 
-        when: "the container is running"
-        container.isRunning()
-
-        then: "the container should settle down and the agent should be deployed"
+        expect: "the system should settle down"
         conditions.eventually {
             assert agentService.getAgents().containsKey(agent.id)
-            assert noEventProcessedIn(assetProcessingService, 500)
+            assert noEventProcessedIn(assetProcessingService, 300)
         }
 
         when: "discovery is requested with a VELBUS project file"
@@ -219,7 +216,9 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
         assert memoTextAttribute != null
         assert VelbusConfiguration.getVelbusDeviceAddress(memoTextAttribute) == 24
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
+        cleanup: "remove agent"
+        if (agent != null) {
+            assetStorageService.delete(Collections.singletonList(agent.id))
+        }
     }
 }

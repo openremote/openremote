@@ -106,22 +106,16 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
     def "Check websocket client protocol configuration and linked attribute deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
-        when: "the container starts"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        and: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
         def websocketClientProtocol = container.getService(WebsocketClientProtocol.class)
         def simulatorProtocol = container.getService(SimulatorProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-
-        then: "the container should be running"
-        conditions.eventually {
-            assert container.isRunning()
-        }
 
         when: "the web target builder is configured to use the mock HTTP server (to test subscriptions)"
         if (!websocketClientProtocol.client.configuration.isRegistered(mockServer)) {
@@ -287,8 +281,5 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
             asset = assetStorageService.find(asset.getId(), true)
             assert asset.getAttribute("readCo2Level").flatMap{it.getValueAsNumber()}.orElse(null) == 600d
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

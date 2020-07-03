@@ -170,18 +170,12 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
         and: "expected conditions"
         def conditions = new PollingConditions(timeout: 20, initialDelay: 1)
 
-        when: "the container starts"
-        def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices())
+        and: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
         def controllerProtocol = container.getService(ControllerProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
-
-        then: "the container should be running"
-        conditions.eventually {
-            assert container.isRunning()
-        }
 
         when: "the web target builder is configured to use the mock server"
         if (!controllerProtocol.client.configuration.isRegistered(mockController)) {
@@ -347,8 +341,5 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
             assert mockController.commandCount == 2
             assert true
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

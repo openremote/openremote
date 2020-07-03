@@ -23,9 +23,8 @@ class ResidenceAllLightsOffTest extends Specification implements ManagerContaine
     def "Turn all lights off"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
@@ -86,14 +85,11 @@ class ResidenceAllLightsOffTest extends Specification implements ManagerContaine
         )
 
         then: "the light should still be on after a few seconds (the all lights off event expires after 3 seconds)"
-        new PollingConditions(initialDelay: 3).eventually {
+        new PollingConditions(timeout: 5, initialDelay: 3).eventually {
             assert apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
             assert apartment2Engine.assetEvents.size() == 0
             def livingroomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
             assert livingroomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
         }
-
-        cleanup: "stop the container"
-        stopContainer(container)
     }
 }

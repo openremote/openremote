@@ -21,8 +21,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
 
     def "Link assets and users as superuser"() {
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def timerService = container.getService(TimerService.class)
         def identityService = container.getService(ManagerIdentityService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
@@ -171,7 +170,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
                     it.assetName == "Apartment 2" &&
                     it.parentAssetName == "Smart Building" &&
                     it.userFullName == "testuser2 (DemoA2 DemoLast)" &&
-                    it.createdOn.time < timerService.currentTimeMillis
+                    it.createdOn.time <= timerService.currentTimeMillis
         }
 
         when: "an asset link is deleted"
@@ -180,9 +179,6 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
 
         then: "result should match"
         userAssets.length == 0
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 
 }

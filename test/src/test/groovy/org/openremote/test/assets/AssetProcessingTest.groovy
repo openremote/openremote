@@ -29,7 +29,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
     def "Check processing of asset updates through the processing chain"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "a mock protocol"
         def mockProtocolName = "urn:myCustom:mockProtocol"
@@ -144,8 +144,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         }
 
         when: "the container is started with the mock protocol and consumers"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices(mockProtocol))
+        def container = startContainer(defaultConfig(), defaultServices(mockProtocol))
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
@@ -302,7 +301,5 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert sendToActuatorEvents.size() == 0
         }
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

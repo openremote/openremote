@@ -15,9 +15,11 @@ import spock.util.concurrent.PollingConditions
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
+import static java.util.concurrent.TimeUnit.DAYS
 import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.manager.datapoint.AssetDatapointService.DATA_POINTS_MAX_AGE_DAYS
+import static org.openremote.manager.datapoint.AssetDatapointService.DATA_POINTS_MAX_AGE_DAYS_DEFAULT
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.thingLightToggleAttributeName
 
 class AssetDatapointTest extends Specification implements ManagerContainerTrait {
@@ -25,11 +27,11 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
     def "Test number and toggle attribute storage, retrieval and purging"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, initialDelay: 1, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
-        when: "the demo agent and thing have been deployed with a DATA_POINTS_MAX_AGE_DAYS value of 1"
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock defaultConfig(serverPort) << [(DATA_POINTS_MAX_AGE_DAYS): "1"], defaultServices()
+        when: "the demo agent and thing have been deployed"
+        def datapointPurgeDays = DATA_POINTS_MAX_AGE_DAYS_DEFAULT
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def simulatorProtocol = container.getService(SimulatorProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -41,8 +43,16 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             assert Values.getNumber(state.orElse(null)).orElse(null) == 12.345d
         }
 
-        when: "a simulated sensor receives a new value"
+        when: "a simulated sensor receives some values"
         advancePseudoClock(10, SECONDS, container)
+        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(13.3d))
+        advancePseudoClock(10, SECONDS, container)
+        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(13.3d))
+        advancePseudoClock(10, SECONDS, container)
+        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(13.3d))
+
+        and: "we move forward in time more than purge days and a simulated sensor receives a new value"
+        advancePseudoClock(datapointPurgeDays, DAYS, container)
         def datapoint1ExpectedTimestamp = getClockTimeOf(container)
         simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(13.3d))
 
@@ -87,7 +97,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         expect: "the datapoints to be stored"
         conditions.eventually {
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, "light1PowerConsumption"))
-            assert datapoints.size() > 3
+            assert datapoints.size() == 3
 
             // Note that the "No value" sensor update should not have created a datapoint, the first
             // datapoint is the last sensor update with an actual value
@@ -182,8 +192,8 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         // Test purging of data points
         // ------------------------------------
 
-        when: "time moves forward by more than a day"
-        advancePseudoClock(26, HOURS, container)
+        when: "time moves forward by more than purge days"
+        advancePseudoClock(datapointPurgeDays + 1, DAYS, container)
 
         and: "the power sensor with default max age receives a new value"
         def datapoint4ExpectedTimestamp = getClockTimeOf(container)
@@ -197,7 +207,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             def powerDatapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, "light1PowerConsumption"))
             def toggleDatapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, thingLightToggleAttributeName))
 
-            assert powerDatapoints.size() > 4
+            assert powerDatapoints.size() == 4
             assert Values.getNumber(powerDatapoints.get(0).value).orElse(null) == 17.5d
             assert powerDatapoints.get(0).timestamp == datapoint4ExpectedTimestamp
 
@@ -206,12 +216,13 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             assert toggleDatapoints.get(0).timestamp == datapoint4ExpectedTimestamp
         }
 
-        when: "the daily data point purge routine executes the next day"
-        // Move clock to next days purge runtime
+        when: "the clock advances to the next days purge routine execution time"
         advancePseudoClock(assetDatapointService.getFirstRunMillis(Instant.ofEpochMilli(getClockTimeOf(container))), TimeUnit.MILLISECONDS, container)
+
+        and: "the purge routine runs"
         assetDatapointService.purgeDataPoints()
 
-        then: "data points older than 1 day should be purged for the power sensor"
+        then: "data points older than purge days should be purged for the power sensor"
         conditions.eventually {
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, "light1PowerConsumption"))
             assert datapoints.size() == 1
@@ -227,8 +238,10 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             assert datapoints.get(0).timestamp == datapoint4ExpectedTimestamp
         }
 
-        when: "the daily data point purge routine executes 3 days later"
-        advancePseudoClock(3, TimeUnit.DAYS, container)
+        when: "the clock advances 3 times the purge duration"
+        advancePseudoClock(3*datapointPurgeDays, DAYS, container)
+
+        and: "the purge routine runs"
         assetDatapointService.purgeDataPoints()
 
         then: "all data points should be purged for power sensor"
@@ -245,8 +258,10 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             assert datapoints.get(0).timestamp == datapoint4ExpectedTimestamp
         }
 
-        when: "the daily data point purge routine executes 3 days later"
-        advancePseudoClock(3, TimeUnit.DAYS, container)
+        when: "the clock advances 3 times the purge duration"
+        advancePseudoClock(3*datapointPurgeDays, DAYS, container)
+
+        and: "the purge routine runs"
         assetDatapointService.purgeDataPoints()
 
         then: "data points older than 7 days should have been purged for the toggle sensor"
@@ -257,8 +272,10 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             assert datapoints.get(0).timestamp == datapoint4ExpectedTimestamp
         }
 
-        when: "the daily data point purge routine executes 1 day later"
-        advancePseudoClock(1, TimeUnit.DAYS, container)
+        when: "the clock advances by the purge duration"
+        advancePseudoClock(datapointPurgeDays, DAYS, container)
+
+        and: "the purge routine runs"
         assetDatapointService.purgeDataPoints()
 
         then: "all data points should have been purged for the toggle sensor"
@@ -266,8 +283,5 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, thingLightToggleAttributeName))
             assert datapoints.isEmpty()
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

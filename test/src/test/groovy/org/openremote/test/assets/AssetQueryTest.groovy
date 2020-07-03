@@ -1,6 +1,6 @@
 package org.openremote.test.assets
 
-import org.openremote.container.Container
+
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -45,8 +45,6 @@ import static org.openremote.model.query.AssetQuery.Select.selectExcludePathAndA
 class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
     @Shared
-    static Container container
-    @Shared
     static ManagerDemoSetup managerDemoSetup
     @Shared
     static KeycloakDemoSetup keycloakDemoSetup
@@ -59,18 +57,12 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
     def setupSpec() {
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         assetStorageService = container.getService(AssetStorageService.class)
         assetProcessingService = container.getService(AssetProcessingService.class)
         persistenceService = container.getService(PersistenceService.class)
-    }
-
-    def cleanupSpec() {
-        given: "the server should be stopped"
-        stopContainer(container)
     }
 
     def "Query assets 1"() {
@@ -172,37 +164,36 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should contain only basic info and attribute names"
         assets.size() == 13
-        assets[0].id == managerDemoSetup.smartBuildingId
-        assets[0].name == "Smart Building"
-        assets[1].id == managerDemoSetup.apartment1Id
-        assets[1].name == "Apartment 1"
-        assets[1].type == AssetType.RESIDENCE.getType()
-        assets[1].createdOn != null
-        assets[1].parentId == managerDemoSetup.smartBuildingId
-        assets[1].parentName == null
-        assets[1].parentType == null
-        assets[1].realm == managerDemoSetup.realmBuildingTenant
-        assets[1].path == null
-        assets[1].getAttributesList().size() == 7
-        assets[1].getAttribute("ventilationAuto").isPresent()
-        assets[1].getAttribute("ventilationLevel").isPresent()
-        assets[1].getAttribute("alarmEnabled").isPresent()
-        assets[1].getAttribute("vacationUntil").isPresent()
-        assets[1].getAttribute("lastExecutedScene").isPresent()
-        assets[1].getAttribute("presenceDetected").isPresent()
-        assets[1].getAttribute("location").isPresent()
-        assets[1].getAttribute("alarmEnabled").get().meta.size() == 0
-        assets[2].id == managerDemoSetup.apartment1ServiceAgentId
-        assets[3].id == managerDemoSetup.apartment1LivingroomId
-        assets[4].id == managerDemoSetup.apartment1KitchenId
-        assets[5].id == managerDemoSetup.apartment1HallwayId
-        assets[6].id == managerDemoSetup.apartment1Bedroom1Id
-        assets[7].id == managerDemoSetup.apartment1BathroomId
-        assets[8].id == managerDemoSetup.apartment2Id
-        assets[9].id == managerDemoSetup.apartment2LivingroomId
-        assets[10].id == managerDemoSetup.apartment2BathroomId
-        assets[11].id == managerDemoSetup.apartment3Id
-        assets[12].id == managerDemoSetup.apartment3LivingroomId
+        assets.find {it.id == managerDemoSetup.smartBuildingId}.name == "Smart Building"
+        def apartment1 = assets.find {it.id == managerDemoSetup.apartment1Id}
+        apartment1.name == "Apartment 1"
+        apartment1.type == AssetType.RESIDENCE.getType()
+        apartment1.createdOn != null
+        apartment1.parentId == managerDemoSetup.smartBuildingId
+        apartment1.parentName == null
+        apartment1.parentType == null
+        apartment1.realm == managerDemoSetup.realmBuildingTenant
+        apartment1.path == null
+        apartment1.getAttributesList().size() == 7
+        apartment1.getAttribute("ventilationAuto").isPresent()
+        apartment1.getAttribute("ventilationLevel").isPresent()
+        apartment1.getAttribute("alarmEnabled").isPresent()
+        apartment1.getAttribute("vacationUntil").isPresent()
+        apartment1.getAttribute("lastExecutedScene").isPresent()
+        apartment1.getAttribute("presenceDetected").isPresent()
+        apartment1.getAttribute("location").isPresent()
+        apartment1.getAttribute("alarmEnabled").get().meta.size() == 0
+        assets.find {it.id == managerDemoSetup.apartment1ServiceAgentId} != null
+        assets.find {it.id == managerDemoSetup.apartment1LivingroomId} != null
+        assets.find {it.id == managerDemoSetup.apartment1KitchenId} != null
+        assets.find {it.id == managerDemoSetup.apartment1HallwayId} != null
+        assets.find {it.id == managerDemoSetup.apartment1Bedroom1Id} != null
+        assets.find {it.id == managerDemoSetup.apartment1BathroomId} != null
+        assets.find {it.id == managerDemoSetup.apartment2Id} != null
+        assets.find {it.id == managerDemoSetup.apartment2LivingroomId} != null
+        assets.find {it.id == managerDemoSetup.apartment2BathroomId} != null
+        assets.find {it.id == managerDemoSetup.apartment3Id} != null
+        assets.find {it.id == managerDemoSetup.apartment3LivingroomId} != null
 
         when: "an asset is loaded by identifier through JPA"
         def asset = persistenceService.doReturningTransaction(new Function<EntityManager, Asset>() {
@@ -214,7 +205,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match (and some values should be empty because we need an AssetQuery to get them)"
         asset.id == managerDemoSetup.apartment1Id
-        asset.version == 1
         asset.createdOn.time < System.currentTimeMillis()
         asset.name == "Apartment 1"
         asset.wellKnownType == AssetType.RESIDENCE
@@ -236,7 +226,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match"
         asset.id == managerDemoSetup.smartOfficeId
-        asset.version == 0
         asset.createdOn.time < System.currentTimeMillis()
         asset.name == "Smart Office"
         asset.wellKnownType == AssetType.BUILDING
@@ -255,7 +244,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match"
         asset.id == managerDemoSetup.smartOfficeId
-        asset.version == 0
         asset.createdOn.time < System.currentTimeMillis()
         asset.name == "Smart Office"
         asset.wellKnownType == AssetType.BUILDING
@@ -278,7 +266,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         then: "result should match"
         assets.size() == 1
         assets.get(0).id == managerDemoSetup.smartOfficeId
-        assets.get(0).version == 0
         assets.get(0).createdOn.time < System.currentTimeMillis()
         assets.get(0).name == "Smart Office"
         assets.get(0).wellKnownType == AssetType.BUILDING
@@ -299,7 +286,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         then: "result should match"
         assets.size() == 1
         assets.get(0).id == managerDemoSetup.smartOfficeId
-        assets.get(0).version == 0
         assets.get(0).createdOn.time < System.currentTimeMillis()
         assets.get(0).name == "Smart Office"
         assets.get(0).wellKnownType == AssetType.BUILDING
@@ -382,13 +368,13 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match"
         assets.size() == 7
-        assets.get(0).id == managerDemoSetup.apartment1Id
-        assets.get(1).id == managerDemoSetup.apartment1ServiceAgentId
-        assets.get(2).id == managerDemoSetup.apartment1LivingroomId
-        assets.get(3).id == managerDemoSetup.apartment1KitchenId
-        assets.get(4).id == managerDemoSetup.apartment1HallwayId
-        assets.get(5).id == managerDemoSetup.apartment1Bedroom1Id
-        assets.get(6).id == managerDemoSetup.apartment1BathroomId
+        assets.find {it.id == managerDemoSetup.apartment1Id} != null
+        assets.find {it.id == managerDemoSetup.apartment1ServiceAgentId} != null
+        assets.find {it.id == managerDemoSetup.apartment1LivingroomId} != null
+        assets.find {it.id == managerDemoSetup.apartment1KitchenId} != null
+        assets.find {it.id == managerDemoSetup.apartment1HallwayId} != null
+        assets.find {it.id == managerDemoSetup.apartment1Bedroom1Id} != null
+        assets.find {it.id == managerDemoSetup.apartment1BathroomId} != null
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -400,11 +386,11 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match"
         assets.size() == 5
-        assets.get(0).id == managerDemoSetup.apartment1LivingroomId
-        assets.get(1).id == managerDemoSetup.apartment1KitchenId
-        assets.get(2).id == managerDemoSetup.apartment1HallwayId
-        assets.get(3).id == managerDemoSetup.apartment1Bedroom1Id
-        assets.get(4).id == managerDemoSetup.apartment1BathroomId
+        assets.find {it.id == managerDemoSetup.apartment1LivingroomId} != null
+        assets.find {it.id == managerDemoSetup.apartment1KitchenId} != null
+        assets.find {it.id == managerDemoSetup.apartment1HallwayId} != null
+        assets.find {it.id == managerDemoSetup.apartment1Bedroom1Id} != null
+        assets.find {it.id == managerDemoSetup.apartment1BathroomId} != null
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -415,17 +401,18 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match"
         assets.size() == 6
-        assets.get(0).id == managerDemoSetup.apartment1Id
-        assets.get(1).id == managerDemoSetup.apartment1LivingroomId
-        assets.get(1).getAttributesList().size() == 7
-        !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
-        assets.get(1).getAttribute("currentTemperature").get().meta.size() == 7
-        !assets.get(1).getAttribute("targetTemperature").get().getValue().isPresent()
-        assets.get(1).getAttribute("targetTemperature").get().meta.size() == 6
-        assets.get(2).id == managerDemoSetup.apartment1KitchenId
-        assets.get(3).id == managerDemoSetup.apartment1HallwayId
-        assets.get(4).id == managerDemoSetup.apartment1Bedroom1Id
-        assets.get(5).id == managerDemoSetup.apartment1BathroomId
+        assets.find {it.id == managerDemoSetup.apartment1Id} != null
+        def livingroom = assets.find {it.id == managerDemoSetup.apartment1LivingroomId}
+        livingroom != null
+        livingroom.getAttributesList().size() == 7
+        !livingroom.getAttribute("currentTemperature").get().getValue().isPresent()
+        livingroom.getAttribute("currentTemperature").get().meta.size() == 7
+        !livingroom.getAttribute("targetTemperature").get().getValue().isPresent()
+        livingroom.getAttribute("targetTemperature").get().meta.size() == 6
+        assets.find {it.id == managerDemoSetup.apartment1KitchenId} != null
+        assets.find {it.id == managerDemoSetup.apartment1HallwayId} != null
+        assets.find {it.id == managerDemoSetup.apartment1Bedroom1Id} != null
+        assets.find {it.id == managerDemoSetup.apartment1BathroomId} != null
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -461,9 +448,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match"
         assets.size() == 3
-        assets.get(0).id == managerDemoSetup.agentId
-        assets.get(1).id == managerDemoSetup.apartment1ServiceAgentId
-        assets.get(2).id == managerDemoSetup.smartCityServiceAgentId
+        assets.find {it.id == managerDemoSetup.agentId} != null
+        assets.find {it.id == managerDemoSetup.apartment1ServiceAgentId} != null
+        assets.find {it.id == managerDemoSetup.smartCityServiceAgentId} != null
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -627,7 +614,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match"
         asset.id == managerDemoSetup.apartment1LivingroomId
-        asset.version == 0
         asset.createdOn.time < System.currentTimeMillis()
         asset.name == "Living Room 1"
         asset.wellKnownType == AssetType.ROOM
@@ -654,7 +640,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should contain only matches that are protected"
         asset.id == managerDemoSetup.apartment1LivingroomId
-        asset.version == 0
         asset.createdOn.time < System.currentTimeMillis()
         asset.name == "Living Room 1"
         asset.wellKnownType == AssetType.ROOM
@@ -757,7 +742,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
     def "Location queries"() {
 
         given: "polling conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         when: "a location filtering query is executed"
         def assets = assetStorageService.findAll(
@@ -770,16 +755,11 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "assets in the queried region should be retrieved"
         assets.size() == 5
-        assets[0].id == managerDemoSetup.agentId
-        assets[0].name == "Demo Agent"
-        assets[1].id == managerDemoSetup.thingId
-        assets[1].name == "Demo Thing"
-        assets[2].id == managerDemoSetup.groundFloorId
-        assets[2].name == "Ground Floor"
-        assets[3].id == managerDemoSetup.lobbyId
-        assets[3].name == "Lobby"
-        assets[4].id == managerDemoSetup.smartOfficeId
-        assets[4].name == "Smart Office"
+        assets.find {it.id == managerDemoSetup.agentId}.name == "Demo Agent"
+        assets.find {it.id == managerDemoSetup.thingId}.name == "Demo Thing"
+        assets.find {it.id == managerDemoSetup.groundFloorId}.name == "Ground Floor"
+        assets.find {it.id == managerDemoSetup.lobbyId}.name == "Lobby"
+        assets.find {it.id == managerDemoSetup.smartOfficeId}.name == "Smart Office"
 
         when: "one of the assets in the region is moved"
         def lobby = assetStorageService.find(managerDemoSetup.lobbyId, true)
@@ -815,16 +795,11 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "all 5 assets should be returned"
         assets.size() == 5
-        assets[0].id == managerDemoSetup.agentId
-        assets[0].name == "Demo Agent"
-        assets[1].id == managerDemoSetup.thingId
-        assets[1].name == "Demo Thing"
-        assets[2].id == managerDemoSetup.groundFloorId
-        assets[2].name == "Ground Floor"
-        assets[3].id == managerDemoSetup.lobbyId
-        assets[3].name == "Lobby"
-        assets[4].id == managerDemoSetup.smartOfficeId
-        assets[4].name == "Smart Office"
+        assets.find {it.id == managerDemoSetup.agentId}.name == "Demo Agent"
+        assets.find {it.id == managerDemoSetup.thingId}.name == "Demo Thing"
+        assets.find {it.id == managerDemoSetup.groundFloorId}.name == "Ground Floor"
+        assets.find {it.id == managerDemoSetup.lobbyId}.name == "Lobby"
+        assets.find {it.id == managerDemoSetup.smartOfficeId}.name == "Smart Office"
 
         when: "a rectangular region is used that doesn't cover any assets"
         assets = assetStorageService.findAll(
@@ -849,21 +824,16 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "all 5 realm assets should be returned"
         assets.size() == 5
-        assets[0].id == managerDemoSetup.agentId
-        assets[0].name == "Demo Agent"
-        assets[1].id == managerDemoSetup.thingId
-        assets[1].name == "Demo Thing"
-        assets[2].id == managerDemoSetup.groundFloorId
-        assets[2].name == "Ground Floor"
-        assets[3].id == managerDemoSetup.lobbyId
-        assets[3].name == "Lobby"
-        assets[4].id == managerDemoSetup.smartOfficeId
-        assets[4].name == "Smart Office"
+        assets.find {it.id == managerDemoSetup.agentId}.name == "Demo Agent"
+        assets.find {it.id == managerDemoSetup.thingId}.name == "Demo Thing"
+        assets.find {it.id == managerDemoSetup.groundFloorId}.name == "Ground Floor"
+        assets.find {it.id == managerDemoSetup.lobbyId}.name == "Lobby"
+        assets.find {it.id == managerDemoSetup.smartOfficeId}.name == "Smart Office"
     }
 
     def "Calendar queries"() {
         given: "polling conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         when: "an asset is given a calendar event configuration attribute"
         def lobby = assetStorageService.find(managerDemoSetup.lobbyId, true)

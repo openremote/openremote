@@ -271,9 +271,8 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         def conditions = new PollingConditions(timeout: 10, initialDelay: 1)
 
         and: "the container starts with the test http server protocol"
-        def serverPort = findEphemeralPort()
         def testServerProtocol = new TestHttpServerProtocol()
-        def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices(testServerProtocol))
+        def container = startContainer(defaultConfig(), defaultServices(testServerProtocol))
         def httpClientProtocol = container.getService(HttpClientProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
@@ -430,11 +429,8 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         }
 
         then: "the asset should not have been posted"
-        new PollingConditions(initialDelay: 3).eventually {
+        new PollingConditions(timeout: 5, initialDelay: 3).eventually {
             assert testServerProtocol.resource1.postedAssets.size() == 2
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

@@ -35,22 +35,23 @@ import org.openremote.model.value.RegexValueFilter
 import org.openremote.model.value.SubStringValueFilter
 import org.openremote.model.value.Value
 import org.openremote.model.value.Values
-import org.openremote.test.GwtClientTrait
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
+
+import java.util.concurrent.TimeUnit
 
 import static org.openremote.model.Constants.MASTER_REALM
 
 /**
  * This tests the basic protocol interface and abstract protocol implementation.
  */
-class BasicProtocolTest extends Specification implements ManagerContainerTrait, GwtClientTrait {
+class BasicProtocolTest extends Specification implements ManagerContainerTrait {
 
     def "Check abstract protocol linking/un-linking"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "a mock protocol"
         def mockProtocolName = "urn:myCustom:mockProtocol"
@@ -72,10 +73,12 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                 // Assume we've pushed the update to the actual device and it responded with OK
                 // so now we want to cause a sensor update that will go through the processing
                 // chain.
+                advancePseudoClock(1, TimeUnit.SECONDS, container)
                 updateLinkedAttribute(state)
             }
 
             protected void updateAttribute(AttributeState state) {
+                advancePseudoClock(1, TimeUnit.SECONDS, container)
                 sendAttributeEvent(state)
             }
 
@@ -167,8 +170,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         }
 
         and: "the container is started with the mock protocol"
-        def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices(mockProtocol))
+        def container = startContainer(defaultConfig(), defaultServices(mockProtocol))
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
@@ -522,8 +524,5 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
             assert protocolMethodCalls[1] == "LINK_ATTRIBUTE"
             assert protocolMethodCalls[2] == "LINK_ATTRIBUTE"
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

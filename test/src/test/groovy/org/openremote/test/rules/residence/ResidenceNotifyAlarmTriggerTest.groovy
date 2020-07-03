@@ -1,9 +1,10 @@
 package org.openremote.test.rules.residence
 
-import com.google.common.collect.Lists
+
 import com.google.firebase.messaging.Message
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
@@ -45,36 +46,34 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         def targetIds = []
         def messages = []
 
-        given: "a mock push notification handler"
-        PushNotificationHandler mockPushNotificationHandler = Spy(PushNotificationHandler) {
-            isValid() >> true
-
-            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
-                id, source, sourceId, target, message ->
-                    notificationIds << id
-                    targetTypes << target.type
-                    targetIds << target.id
-                    messages << message
-                    callRealMethod()
-            }
-
-            // Assume sent to FCM
-            sendMessage(_ as Message) >> {
-                message -> return NotificationSendResult.success()
-            }
-        }
-
-        and: "the container environment is started with the mock handler"
-        def conditions = new PollingConditions(timeout: 20, delay: 1)
-        def serverPort = findEphemeralPort()
-        def services = Lists.newArrayList(defaultServices())
-        services.replaceAll{it instanceof PushNotificationHandler ? mockPushNotificationHandler : it}
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), services)
+        given: "the container environment is started with the mock handler"
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
+        def notificationService = container.getService(NotificationService.class)
+        def pushNotificationHandler = container.getService(PushNotificationHandler.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
+
+        and: "a mock push notification handler is injected"
+        PushNotificationHandler mockPushNotificationHandler = Spy(pushNotificationHandler)
+        mockPushNotificationHandler.isValid() >> true
+        mockPushNotificationHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+            id, source, sourceId, target, message ->
+                notificationIds << id
+                targetTypes << target.type
+                targetIds << target.id
+                messages << message
+                callRealMethod()
+        }
+        // Assume sent to FCM
+        mockPushNotificationHandler.sendMessage(_ as Message) >> {
+            message -> return NotificationSendResult.success()
+        }
+        notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), mockPushNotificationHandler)
+
         RulesEngine apartment1Engine
 
         and: "some rules"
@@ -231,8 +230,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
             assert notificationIds.size() == 2
         }
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
+        cleanup: "the mock is removed"
+        notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
     }
-
 }
