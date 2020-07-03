@@ -132,3 +132,5 @@ delete aws cloudformation stack:
     - when: delayed
       start_in: '8 hours'
     - when: manual
+  only:
+    - master
