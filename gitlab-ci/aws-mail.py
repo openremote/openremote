@@ -5,7 +5,7 @@ import os
 
 sender    = 'no-reply@openremote.io'
 receivers = [os.environ['WHO']]
-subject   = 'Gitlab pipeline FAILED: '+os.environ['WHAT']
+subject   = 'Gitlab pipeline FAILED on ' + os.environ['STAGE'] + ': ' + os.environ['WHAT']
 
 print(sender,receivers, subject)
 message = '\r\n'.join(['From: %s' % sender,
@@ -13,6 +13,9 @@ message = '\r\n'.join(['From: %s' % sender,
                        'Subject: %s' % subject,
                       """
 The GitLab CI/CD pipeline FAILED for {repo}
+
+To skip testing and run complete pipeline without errors please include
+'skip-tests' in the git commit message.
 
 {what} 
 {when} 

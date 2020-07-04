@@ -9,6 +9,7 @@ stages:
   - build
   - build_fail
   - test
+  - tests_fail
   - deploy
   - dast
   - cleanup
@@ -69,9 +70,7 @@ build-master:
   only:
     - master
 
-# This step is executed when build fails. The purpose is to e-mail a git commiter about the problem.
-email failed pipeline:
-  stage: build_fail
+.email_template: &email_definition
   image: docker:latest
   script:
     - docker pull registry.gitlab.com/openremote/openremote:master
@@ -81,6 +80,7 @@ email failed pipeline:
     - export REPO=$(docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master git remote get-url origin|xargs basename)
     - echo $REPO
     - docker run -v $(pwd):/usr/src/myapp -w /usr/src/myapp
+      -e "STAGE=$STAGE"
       -e "WHO=$WHO"
       -e "WHAT=$WHAT"
       -e "WHEN=$WHEN"
@@ -91,6 +91,13 @@ email failed pipeline:
   when: on_failure
   only:
     - master
+
+# This step is executed when build fails. The purpose is to e-mail a git commiter about the problem.
+email failed build:
+  stage: build_fail
+  before_script:
+    - export STAGE='docker images build'
+  <<: *email_definition
 
 test-master:
   before_script:
@@ -103,11 +110,16 @@ test-master:
   script:
     - docker run --network host -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "./gradlew clean build installDist"
-  # Still has 3 errors, therefore allow it to fail
-  allow_failure: true
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
-      when: manual
+      if: $CI_COMMIT_MESSAGE !~ /skip-tests/
+      when: on_success
+
+email failed tests:
+  stage: tests_fail
+  before_script:
+    - export STAGE='tests'
+  <<: *email_definition
 
 deploy-master:
   image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
@@ -122,7 +134,7 @@ deploy-master:
   only:
     - master
 
-auto delete aws cloudformation stack:
+auto delete aws cloudformation stack after 8 hours:
   image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
   stage: cleanup
   script:
