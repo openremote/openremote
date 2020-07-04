@@ -20,16 +20,18 @@ lint-Dockerfile:
     - docker pull hadolint/hadolint
     - docker run --rm -i hadolint/hadolint < Dockerfile
   allow_failure: true
-  only:
-    - master
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      if: $CI_COMMIT_MESSAGE !~ /skip-build/
 
 lint-swarm-Dockerfile:
   stage: build
   script:
     - docker pull hadolint/hadolint
     - docker run --rm -i hadolint/hadolint < ./manager/swarm.Dockerfile
-  only:
-    - master
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      if: $CI_COMMIT_MESSAGE !~ /skip-build/
 
 build-master:
   stage: build
@@ -67,8 +69,9 @@ build-master:
     # - docker push openremote/proxy:arm64
     # - docker push openremote/keycloak:arm64
     # - docker push openremote/postgresql:arm64
-  only:
-    - master
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      if: $CI_COMMIT_MESSAGE !~ /skip-build/
 
 .email_template: &email_definition
   image: docker:latest
@@ -88,9 +91,6 @@ build-master:
       -e "SMTP_USERNAME=$SMTP_USERNAME"
       -e "SMTP_PASSWORD=$SMTP_PASSWORD"
       --rm python:3 python gitlab-ci/aws-mail.py
-  when: on_failure
-  only:
-    - master
 
 # This step is executed when build fails. The purpose is to e-mail a git commiter about the problem.
 email failed build:
@@ -98,6 +98,10 @@ email failed build:
   before_script:
     - export STAGE='docker images build'
   <<: *email_definition
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      if: $CI_COMMIT_MESSAGE !~ /skip-build/
+      when: on_failure
 
 test-master:
   before_script:
@@ -112,7 +116,7 @@ test-master:
       /bin/sh -c "./gradlew clean build installDist"
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-tests/
+      if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: on_success
 
 email failed tests:
@@ -120,6 +124,10 @@ email failed tests:
   before_script:
     - export STAGE='tests'
   <<: *email_definition
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      if: $CI_COMMIT_MESSAGE !~ /skip-test/
+      when: on_failure
 
 deploy-master:
   image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
