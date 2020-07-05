@@ -118,6 +118,10 @@ test-master:
     - if: $CI_COMMIT_BRANCH == "master"
       if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: on_success
+  artifacts:
+    paths:
+      - /or/test/build/reports/tests/test/index.html
+    expire_in: 2 months
 
 email failed tests:
   stage: tests_fail
@@ -138,9 +142,10 @@ deploy-master:
     - aws cloudformation wait stack-create-complete --stack-name $AWS_STACK_NAME
     - aws cloudformation describe-stacks --stack-name $AWS_STACK_NAME
   allow_failure: true # set when:manual optional and not blocking
-  when: manual
-  only:
-    - master
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
+      when: manual
 
 auto delete aws cloudformation stack after 8 hours:
   image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
@@ -151,6 +156,7 @@ auto delete aws cloudformation stack after 8 hours:
   allow_failure: true # set when:manual optional and not blocking
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
+      if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
       when: delayed
       start_in: '8 hours'
 
@@ -179,4 +185,5 @@ manual delete aws cloudformation stack:
   allow_failure: true # set when:manual optional and not blocking
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
+      if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
       when: manual
