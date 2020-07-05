@@ -1,4 +1,26 @@
-# Deploing OpenRemote stack
+# GitLab CI/CD pipeline
+
+There is .gitlab-ci.yml configuration file which is used to build/test and deploy stack in the GitLab enviroment.
+If one imports main repo the pipeline can be started.
+
+## Build docker images
+
+You can skip this stage by adding skip-build in the git commit message.
+
+## Test the stack
+
+You can skip this stage by adding skip-test in the git commit message.
+
+### Inspect failed test report output
+
+After running a failed pipleine the test report is stored as artifacts. On the right side of the failed pipleine there is a link
+where reports can be downloaded. 
+
+## Deploy
+
+You can skip this stage by adding skip-deploy in the git commit message.
+
+# Deploing OpenRemote stack in the cloud
 
 ## Deployment on AWS
 

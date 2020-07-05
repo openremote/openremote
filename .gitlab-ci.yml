@@ -119,9 +119,10 @@ test-master:
       if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: on_success
   artifacts:
+    when: on_failure
     paths:
-      - /or/test/build/reports/tests/test/index.html
-    expire_in: 2 months
+      - /or/test/build/reports/tests/test/
+    expire_in: 2 weeks
 
 email failed tests:
   stage: tests_fail
