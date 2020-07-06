@@ -1,6 +1,6 @@
 package org.openremote.test.rules
 
-import org.openremote.container.timer.TimerService
+
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.rules.RulesEngine
@@ -11,14 +11,11 @@ import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.attribute.MetaItemType
 import org.openremote.model.asset.AssetType
-import org.openremote.model.attribute.AttributeEvent
-import org.openremote.model.attribute.AttributeValueType
-import org.openremote.model.attribute.Meta
-import org.openremote.model.attribute.MetaItem
+import org.openremote.model.attribute.*
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
+import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.rules.TenantRuleset
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
@@ -27,8 +24,8 @@ import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.TimeUnit
 
-import static org.openremote.model.rules.RulesetStatus.*
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.*
+import static org.openremote.model.rules.RulesetStatus.*
 import static org.openremote.test.rules.BasicRulesImport.assertRulesFired
 
 class BasicRulesProcessingTest extends Specification implements ManagerContainerTrait {
@@ -38,6 +35,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the container is started"
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -116,6 +115,9 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assertRulesFired(smartHomeEngine, 8)
             assertRulesFired(smartHomeEngine, ["Living Room All", "Kitchen All", "Kitchen Number Attributes", "Parent Type Residence", "Asset Type Room", "Boolean Attributes", "String attributes", "Number value types"])
         }
+
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
     def "Handle attribute event with no meta, asset create, update, delete"() {
@@ -123,6 +125,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
 
         and: "the container is started"
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -335,6 +339,9 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
         }
+
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
     def "Stop processing when engine in error state"() {
@@ -342,13 +349,14 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the container is started"
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
-        def assetStorageService = container.getService(AssetStorageService.class)
 
         and: "some test rulesets have been imported"
         def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
@@ -397,5 +405,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesImport.apartment2Engine.lastFireTimestamp > apartment2LastFireTimestamp
             assert rulesImport.apartment3Engine.lastFireTimestamp > apartment3LastFireTimestamp
         }
+
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 }

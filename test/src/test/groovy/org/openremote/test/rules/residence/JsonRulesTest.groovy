@@ -63,8 +63,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = 100
 
         and: "the rule firing delay time is set to a small value for testing"
-        def originalExpirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 100
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
 
         and: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
@@ -466,7 +466,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         RulesEngine.PAUSE_SCHEDULER = originalPause
         RulesEngine.UNPAUSE_SCHEDULER = originalUnpause
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = originalDebounceMillis
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = originalExpirationMillis
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
         notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
         notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
     }

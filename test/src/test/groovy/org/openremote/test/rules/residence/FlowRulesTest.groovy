@@ -1,13 +1,11 @@
 package org.openremote.test.rules.residence
 
-import org.openremote.container.timer.TimerService
+
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.rules.FlowRulesBuilder
-import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
-import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.attribute.AttributeEvent
@@ -20,18 +18,17 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import java.util.concurrent.TimeUnit
-
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 
 class FlowRulesTest extends Specification implements ManagerContainerTrait {
-    private FlowRulesBuilder builder
 
     def "Execute flow rules"() {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the container is started"
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -79,5 +76,8 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
                     getAttribute("targetTemperature").get().getValueAsNumber().get()
             assert bedroomTargetTemp.intValue() == (startTemperature.intValue() + 10) : ("it was actually " +  bedroomTargetTemp.intValue())//convert to int considering floating point inaccuracy
         }
+
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 }

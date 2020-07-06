@@ -8,6 +8,7 @@ import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.RulesResource
+import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.rules.TenantRuleset
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
@@ -27,6 +28,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
     def "Access rules as superuser"() {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -292,11 +295,16 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         assetRuleset.name == "Test asset definition"
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerDemoSetup.apartment2Id
+
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
     def "Access rules as testuser1"() {
 
         given: "the server container is started"
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def container = startContainer(defaultConfig(), defaultServices())
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
@@ -518,12 +526,17 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
+
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
     def "Access rules as testuser2"() {
 
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -660,12 +673,17 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
+
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
     def "Access rules as testuser3"() {
 
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -872,5 +890,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
+
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 }
