@@ -9,7 +9,7 @@ import Flutter
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
 
-    [UNUserNotificationCenter currentNotificationCenter].delegate = (id) self;
+    UNUserNotificationCenter.current().delegate = self;
     
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

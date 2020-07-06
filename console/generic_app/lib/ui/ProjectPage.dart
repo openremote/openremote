@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:generic_app/config/CurrentConsoleAppConfig.dart';
+import 'package:generic_app/generated/l10n.dart';
 import 'package:generic_app/models/ConsoleAppConfig.dart';
 import 'package:generic_app/network/ApiManager.dart';
 import 'package:generic_app/ui/WebViewPage.dart';
@@ -12,16 +13,9 @@ class ProjectPage extends StatefulWidget {
 }
 
 class _ProjectPageState extends State<ProjectPage> {
-  bool _isLoading;
   String _projectName;
   String _realmName;
   BuildContext _innerContext;
-
-  @override
-  void initState() {
-    super.initState();
-    _isLoading = false;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,34 +28,42 @@ class _ProjectPageState extends State<ProjectPage> {
                   alignment: Alignment.center,
                   child: Column(children: <Widget>[
                     Container(
-                        padding: EdgeInsets.only(top: 25, left: 20, right: 20),
-                        height: MediaQuery.of(context).size.height / 2,
-                        child: Column(children: <Widget>[
-                          Expanded(
-                              child: Image.asset(
-                                  'assets/images/logo-mobile.png',
-                                  fit: BoxFit.contain)),
-                          Expanded(
-                              child: Image.asset('assets/images/logo.png',
-                                  fit: BoxFit.contain))
-                        ])),
+                      padding: EdgeInsets.only(top: 25, left: 20, right: 20),
+                      height: MediaQuery.of(context).size.height / 2,
+                      child: Expanded(
+                          child: Image.asset('assets/images/or_logo.png',
+                              fit: BoxFit.contain)),
+                    ),
                     Container(
+                      color: Colors.white,
+                      height: MediaQuery.of(context).size.height / 2,
                       child: Column(
                         children: <Widget>[
+                          Align(
+                              alignment: Alignment.centerLeft,
+                              child: Container(
+                                padding: EdgeInsets.only(
+                                    top: 25, left: 25, right: 25),
+                                child: Text(
+                                  S.of(context).connectToYourApplication,
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                      color: Colors.black54),
+                                ),
+                              )),
                           Container(
                             child: TextField(
                                 cursorColor: CurrentConsoleAppConfig
                                     .instance.primaryColor,
                                 decoration: InputDecoration(
-                                  labelText: 'Project',
-                                  labelStyle: TextStyle(
-                                      color: CurrentConsoleAppConfig
-                                          .instance.primaryColor),
-                                  focusedBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                        color: CurrentConsoleAppConfig
-                                            .instance.primaryColor),
-                                  ),
+                                  labelText: S.of(context).project,
+                                  filled: true,
+                                  fillColor: Colors.grey.shade100,
+                                  focusedBorder: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  errorBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
                                 ),
                                 textInputAction: TextInputAction.next,
                                 onChanged: (inputText) {
@@ -77,15 +79,14 @@ class _ProjectPageState extends State<ProjectPage> {
                                 cursorColor: CurrentConsoleAppConfig
                                     .instance.primaryColor,
                                 decoration: InputDecoration(
-                                    labelText: 'Realm',
-                                    labelStyle: TextStyle(
-                                        color: CurrentConsoleAppConfig
-                                            .instance.primaryColor),
-                                    focusedBorder: UnderlineInputBorder(
-                                      borderSide: BorderSide(
-                                          color: CurrentConsoleAppConfig
-                                              .instance.primaryColor),
-                                    )),
+                                  labelText: S.of(context).realm,
+                                  filled: true,
+                                  fillColor: Colors.grey.shade100,
+                                  focusedBorder: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  errorBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
+                                ),
                                 textInputAction: TextInputAction.done,
                                 onChanged: (inputText) {
                                   _realmName = inputText;
@@ -108,25 +109,20 @@ class _ProjectPageState extends State<ProjectPage> {
                                   onPressed: () {
                                     _getConsoleAppConfig();
                                   },
-                                  child: Text("Press")),
+                                  child: Text(S.of(context).connect)),
                             ),
                             padding: EdgeInsets.all(25),
                           )
                         ],
                       ),
                     )
-                  ])
-              )
-          )
-      );
-    })
-    );
+                  ]))));
+    }));
   }
 
   void _getConsoleAppConfig() {
     var apiManager =
-        new ApiManager("http://192.168.2.10:8080/api/${_realmName}");
-//        new ApiManager("https://${_projectName}.openremote.io/${_realmName}");
+        new ApiManager("https://$_projectName.openremote.io/$_realmName");
     apiManager.get(["app", "config"], ConsoleAppConfig.fromJson).then((value) {
       print(value);
       CurrentConsoleAppConfig.instance.updateConfig(value, _projectName);
@@ -137,7 +133,9 @@ class _ProjectPageState extends State<ProjectPage> {
                     initialUrl: CurrentConsoleAppConfig.instance.url,
                   )));
     }).catchError((onError) => Scaffold.of(_innerContext).showSnackBar(
-          SnackBar(content: Text("error")),
+          SnackBar(
+              content: Text(
+                  "Error occurred getting app config. Check your input and try again")),
         ));
   }
 }
