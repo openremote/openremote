@@ -1,6 +1,4 @@
-import 'dart:collection';
 import 'dart:convert';
-import 'dart:html';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_geofence/Geolocation.dart';
@@ -11,7 +9,7 @@ import 'package:generic_app/network/ApiManager.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-typedef GeofenceCallback = Function(Map<String, dynamic>);
+import 'ProviderConstants.dart';
 
 class GeofenceProvider {
   static const String baseUrlKey = "baseUrl";
@@ -24,8 +22,8 @@ class GeofenceProvider {
   final SharedPreferences _sharedPreferences;
   final ApiManager _apiManager;
 
-  GeofenceCallback _enableCallback;
-  GeofenceCallback _getLocationCallback;
+  ProviderCallback _enableCallback;
+  ProviderCallback _getLocationCallback;
 
   String _baseURL;
   String _consoleId;
@@ -72,7 +70,7 @@ class GeofenceProvider {
     };
   }
 
-  enable(String baseUrl, String consoleId, GeofenceCallback callback) async {
+  enable(String baseUrl, String consoleId, ProviderCallback callback) async {
     this._baseURL = baseUrl;
     this._consoleId = consoleId;
     this._apiManager.baseUrl = baseUrl;
@@ -83,31 +81,28 @@ class GeofenceProvider {
     this._enableCallback = callback;
 
     if (await Permission.locationAlways.isGranted) {
-      Geofence.initialize();
-      Geofence.startListening(GeolocationEvent.entry, (geolocation) {
-        _queueSendLocation(geofences.firstWhere((element) => element.id == geolocation.id), {"type": "Point", "coordinates": [geolocation.longitude, geolocation.latitude]});
-      });
-      Geofence.startListening(GeolocationEvent.exit, (geolocation) {
-        _queueSendLocation(geofences.firstWhere((element) => element.id == geolocation.id), null);
-      });
+      _startGeofenceProvider();
       _enableCallback?.call({
         "action": "PROVIDER_ENABLE",
         "provider": "geofence",
         "hasPermission": await Permission.locationAlways.isGranted,
         "success": true
       });
+      Future.delayed(Duration(seconds: 5)).then((value) => refreshGeofences());
     } else {
       if (await Permission.locationAlways.isUndetermined) {
         Permission.locationAlways.request().then((value) {
+          if (value.isGranted) {
+            _startGeofenceProvider();
+            Future.delayed(Duration(seconds: 5))
+                .then((value) => refreshGeofences());
+          }
           _enableCallback?.call({
             "action": "PROVIDER_ENABLE",
             "provider": "geofence",
             "hasPermission": value.isGranted,
             "success": true
           });
-          if (value.isGranted) {
-            Geofence.initialize();
-          }
         });
       } else {
         _enableCallback?.call({
@@ -130,7 +125,6 @@ class GeofenceProvider {
 
     await _sharedPreferences.setBool(geoDisabledKey, true);
     await _sharedPreferences.remove(baseUrlKey);
-    await _sharedPreferences.remove(consoleIdKey);
     return {
       "action": "PROVIDER_DISABLE",
       "provider": "geofence",
@@ -145,6 +139,22 @@ class GeofenceProvider {
         radius: geofenceDefinition.radius);
     Geofence.addGeolocation(geolocation, GeolocationEvent.entry);
     Geofence.addGeolocation(geolocation, GeolocationEvent.exit);
+  }
+
+  _startGeofenceProvider() {
+    Geofence.initialize();
+    Geofence.startListening(GeolocationEvent.entry, (geolocation) {
+      _queueSendLocation(
+          geofences.firstWhere((element) => element.id == geolocation.id), {
+        "type": "Point",
+        "coordinates": [geolocation.longitude, geolocation.latitude]
+      });
+    });
+    Geofence.startListening(GeolocationEvent.exit, (geolocation) {
+      _queueSendLocation(
+          geofences.firstWhere((element) => element.id == geolocation.id),
+          null);
+    });
   }
 
   removeGeofence(String id) {
@@ -239,12 +249,16 @@ class GeofenceProvider {
   _sendLocation(GeofenceDefinition geofenceDefinition,
       Map<String, dynamic> locationData) {
     return _apiManager
-        .post(overrideUrl: geofenceDefinition.url, rawModel: locationData != null ? jsonEncode(locationData) : null.toString())
+        .post(
+            overrideUrl: geofenceDefinition.url,
+            rawModel: locationData != null
+                ? jsonEncode(locationData)
+                : null.toString())
         .then((value) => true)
         .catchError((error) => false);
   }
 
-  getLocation(GeofenceCallback callback, BuildContext context) async {
+  getLocation(ProviderCallback callback, BuildContext context) async {
     _getLocationCallback = callback;
 
     if (await Permission.locationAlways.isGranted) {

@@ -44,9 +44,7 @@ class ApiManager {
       headers.addAll(additionalHeaders);
     }
 
-    T returnValue;
-
-    await http.get(urlBuffer.toString(), headers: headers).then((response) {
+    return http.get(urlBuffer.toString(), headers: headers).then((response) {
       if (response.statusCode == 200) {
         try {
           Map<String, dynamic> json = jsonDecode(response.body);
@@ -57,7 +55,7 @@ class ApiManager {
           if (jsonData is List) {
             throw new Exception("Expected json object");
           } else {
-            returnValue = responseParser(jsonData) as T;
+            return responseParser(jsonData) as T;
           }
         } catch (e) {
           print(e);
@@ -68,8 +66,6 @@ class ApiManager {
             "Response error: ${response.statusCode} - ${response.body}");
       }
     });
-
-    return returnValue;
   }
 
   Future<List<T>> getAll<T>(
@@ -98,9 +94,7 @@ class ApiManager {
       headers.addAll(additionalHeaders);
     }
 
-    List<T> returnValue;
-
-    await http.get(urlBuffer.toString(), headers: headers).then((response) {
+    return http.get(urlBuffer.toString(), headers: headers).then((response) {
       if (response.statusCode == 200) {
         try {
           var json = jsonDecode(response.body);
@@ -109,8 +103,7 @@ class ApiManager {
             jsonData = json[responseBodyDataKey];
           }
           if (jsonData is List) {
-            returnValue =
-                List<T>.from(jsonData.map((item) => responseParser(item)));
+           return List<T>.from(jsonData.map((item) => responseParser(item)));
           } else {
             throw new Exception("Expected array in body");
           }
@@ -123,8 +116,6 @@ class ApiManager {
             "Response error: ${response.statusCode} - ${response.body}");
       }
     });
-
-    return returnValue;
   }
 
   Future<T> post<T extends BaseModel>({ResponseParser responseParser,
@@ -140,9 +131,7 @@ class ApiManager {
       headers.addAll(additionalHeaders);
     }
 
-    T returnValue;
-
-    await http
+    return http
         .post(overrideUrl ?? urlBuffer.toString(),
             headers: headers, body: model?.toJson() ?? rawModel)
         .then((response) {
@@ -156,20 +145,18 @@ class ApiManager {
           if (jsonData is List) {
             throw new Exception("Expected json object");
           } else {
-            returnValue = responseParser(jsonData) as T;
+            return responseParser(jsonData) as T;
           }
         } catch (e) {
           print(e);
           rethrow;
         }
       } else if (response.statusCode >= 200 && response.statusCode <= 299) {
-        returnValue = null;
+        return null;
       } else {
         throw new Exception(
             "Response error: ${response.statusCode} - ${response.body}");
       }
     });
-
-    return returnValue;
   }
 }

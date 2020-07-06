@@ -8,6 +8,9 @@ import Flutter
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
+
+    [UNUserNotificationCenter currentNotificationCenter].delegate = (id) self;
+    
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 }

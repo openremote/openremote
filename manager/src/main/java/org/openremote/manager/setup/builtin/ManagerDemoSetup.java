@@ -759,7 +759,12 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     null,
                     "#FAFAFA",
                     "#AFAFAF",
-                    Values.createObject().put("Map", "https://maps.google.com")
+                    Values.createArray().add(
+                            Values.createObject()
+                                    .put("displayText","Map")
+                                    .put("pageLink","https://maps.google.com")
+                                    .put("queryParams", Values.createObject().put("test", "hello"))
+                    )
             ));
         });
     }

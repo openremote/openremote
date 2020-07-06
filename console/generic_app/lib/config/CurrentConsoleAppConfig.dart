@@ -10,7 +10,7 @@ class CurrentConsoleAppConfig {
 
   CurrentConsoleAppConfig._privateConstructor();
 
-  updateConfig(ConsoleAppConfig appConfig) {
+  updateConfig(ConsoleAppConfig appConfig, String project) {
     this._realm = appConfig.realm;
     this._url = appConfig.url;
     this._menuEnabled = appConfig.menuEnabled;
@@ -18,6 +18,8 @@ class CurrentConsoleAppConfig {
     this._primaryColor = appConfig.primaryColor;
     this._secondaryColor = appConfig.secondaryColor;
     this._links = appConfig.links;
+    this._project;
+    this._realm;
   }
 
   String _realm;
@@ -35,6 +37,9 @@ class CurrentConsoleAppConfig {
   String _secondaryColor;
 
   List<LinkConfig> _links;
+
+  String _project;
+
 
   String get realm {
     return _realm;
@@ -66,5 +71,9 @@ class CurrentConsoleAppConfig {
 
   List<LinkConfig> get links {
     return _links;
+  }
+
+  String get baseUrl {
+    return "https://$_project.openremote.io/api/$_realm";
   }
 }
