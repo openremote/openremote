@@ -5,20 +5,27 @@ If one imports main repo the pipeline can be started.
 
 ## Build docker images
 
-You can skip this stage by adding skip-build in the git commit message.
+You can skip this stage by adding **skip-build** in the git commit message.
 
 ## Test the stack
 
-You can skip this stage by adding skip-test in the git commit message.
+The second major step in the CI/CD pipeline are functional tests. When extending
+the functionality, e.g. by adding a new protocol, tests covering its behaviour should
+be included to the main branch and executed during each commit and check whether no
+legacy functionality is broken. Sometimes this is intended and in this case rgresssion
+tests should be adjusted to the new situation.
+
+In case that no functionaity is changed, e.g. in case of documentation updates, this stage can
+be skipped by adding **skip-test** in the git commit message.
 
 ### Inspect failed test report output
 
-After running a failed pipleine the test report is stored as artifacts. On the right side of the failed pipleine there is a link
-where reports can be downloaded. 
+When tests fail and break the pipeline, test reports are stored as artifacts. On the right side of the failed pipleine there is a link
+where the reports can be downloaded.
 
 ## Deploy
 
-You can skip this stage by adding skip-deploy in the git commit message.
+You can skip this stage by adding **skip-deploy** in the git commit message.
 
 # Deploing OpenRemote stack in the cloud
 

@@ -23,6 +23,7 @@ lint-Dockerfile:
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
       if: $CI_COMMIT_MESSAGE !~ /skip-build/
+      when: manual
 
 lint-swarm-Dockerfile:
   stage: build
@@ -121,7 +122,6 @@ test-master:
   artifacts:
     when: on_failure
     paths:
-      - /or/test/build/reports/tests/test/index.html
       - "test/build/reports/tests/test/*"
       - "test/build/reports/tests/test/*/*"
     expire_in: 2 weeks
