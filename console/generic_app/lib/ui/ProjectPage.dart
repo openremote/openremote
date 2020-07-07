@@ -29,14 +29,13 @@ class _ProjectPageState extends State<ProjectPage> {
                   child: Column(children: <Widget>[
                     Container(
                       padding: EdgeInsets.only(top: 25, left: 20, right: 20),
-                      height: MediaQuery.of(context).size.height / 2,
-                      child: Expanded(
-                          child: Image.asset('assets/images/or_logo.png',
-                              fit: BoxFit.contain)),
+                      height: MediaQuery.of(context).size.height * 0.4,
+                      child: Image.asset('assets/images/or_logo.png',
+                          fit: BoxFit.contain),
                     ),
                     Container(
                       color: Colors.white,
-                      height: MediaQuery.of(context).size.height / 2,
+                      height: MediaQuery.of(context).size.height * 0.6,
                       child: Column(
                         children: <Widget>[
                           Align(
@@ -122,7 +121,7 @@ class _ProjectPageState extends State<ProjectPage> {
 
   void _getConsoleAppConfig() {
     var apiManager =
-        new ApiManager("https://$_projectName.openremote.io/$_realmName");
+        new ApiManager("https://$_projectName.openremote.io/api/$_realmName");
     apiManager.get(["app", "config"], ConsoleAppConfig.fromJson).then((value) {
       print(value);
       CurrentConsoleAppConfig.instance.updateConfig(value, _projectName);
@@ -132,10 +131,13 @@ class _ProjectPageState extends State<ProjectPage> {
               builder: (context) => WebViewPage(
                     initialUrl: CurrentConsoleAppConfig.instance.url,
                   )));
-    }).catchError((onError) => Scaffold.of(_innerContext).showSnackBar(
+    }).catchError((onError) {
+      print(onError);
+      Scaffold.of(_innerContext).showSnackBar(
           SnackBar(
               content: Text(
                   "Error occurred getting app config. Check your input and try again")),
-        ));
+        );
+    });
   }
 }
