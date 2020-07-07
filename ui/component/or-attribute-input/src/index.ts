@@ -168,10 +168,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
     public disconnectedCallback() {
         super.disconnectedCallback();
-        if (this._writeTimeoutHandler) {
-            window.clearTimeout(this._writeTimeoutHandler);
-            this._writeTimeoutHandler = undefined;
-        }
+        this._clearWriteTimeout();
     }
 
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
@@ -190,7 +187,33 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             updateDescriptors = true;
         }
 
-        if (_changedProperties.has("attribute") || _changedProperties.has("attributeRef")) {
+        if (_changedProperties.has("attribute")) {
+            const oldAttr = _changedProperties.get("attribute") as AssetAttribute;
+            const attr = this.attribute;
+
+            if (oldAttr && attr) {
+                const oldValue = oldAttr.value;
+                const oldTimestamp = oldAttr.valueTimestamp;
+
+                // Compare attributes ignoring the timestamp and value
+                oldAttr.value = attr.value;
+                oldAttr.valueTimestamp = attr.valueTimestamp;
+                if (Util.objectsEqual(oldAttr, attr)) {
+                    // Compare value and timestamp
+                    if (!Util.objectsEqual(oldValue, attr.value) || oldTimestamp !== attr.valueTimestamp) {
+                        this._onAttributeValueChanged(oldValue, attr.value, attr.valueTimestamp);
+                    } else if (_changedProperties.size === 1) {
+                        // Only the attribute has 'changed' and we've handled it so don't perform update
+                        return false;
+                    }
+                } else {
+                    updateSubscribedRefs = true;
+                    updateDescriptors = true;
+                }
+            }
+        }
+
+        if (_changedProperties.has("attributeRef") && !Util.objectsEqual(_changedProperties.get("attributeRef"), this.attributeRef)) {
             updateSubscribedRefs = true;
             updateDescriptors = true;
         }
@@ -219,8 +242,20 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         if (this.disableSubscribe) {
             this.attributeRefs = undefined;
         } else {
-            const attributeRef = this.attribute ? {entityId: this.attribute.assetId!, attributeName: this.attribute.name!} : this.attributeRef;
+            const attributeRef = this._getAttributeRef();
             this.attributeRefs = attributeRef ? [attributeRef] : undefined;
+        }
+    }
+
+    protected _getAttributeRef(): AttributeRef | undefined {
+        if (this.attributeRef) {
+            return this.attributeRef;
+        }
+        if (this.attribute) {
+            return {
+                entityId: this.attribute.assetId!,
+                attributeName: this.attribute.name!
+            }
         }
     }
 
@@ -262,7 +297,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         this._valueFormatter = undefined;
 
         if (this.customProvider) {
-            this._template = this.customProvider(this.assetType, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor, (v) => this._onValueChange(v), this.readonly, this.disabled, this.label);
+            this._template = this.customProvider(this.assetType, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor, (v) => this._updateValue(v), this.readonly, this.disabled, this.label);
         }
 
         if (this._template) {
@@ -274,7 +309,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         } else if (this._attributeValueDescriptor) {
             switch (this._attributeValueDescriptor.name) {
                 case AttributeValueType.GEO_JSON_POINT.name:
-                    this._template = GeoJsonPointInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor, (v) => this._onValueChange(v), this.readonly, this.disabled, this.label);
+                    this._template = GeoJsonPointInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor, (v) => this._updateValue(v), this.readonly, this.disabled, this.label);
                     return;
                 case AttributeValueType.BOOLEAN.name:
                 case AttributeValueType.SWITCH_TOGGLE.name:
@@ -375,7 +410,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 }
 
                 content = html`<or-input id="input" .type="${this._inputType}" .label="${this._label}" .value="${value}" .allowedValues="${this._options}" .min="${this._min}" .max="${this._max}" .options="${this._options}" .readonly="${this._readonly}" .disabled="${this._disabled}" @or-input-changed="${(e: OrInputChangedEvent) => {
-                    this._onValueChange(e.detail.value);
+                    this._updateValue(e.detail.value);
                     e.stopPropagation()
                 }}"></or-input>`;
             }
@@ -392,36 +427,46 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     }
 
     protected getValue(): any {
-        return this._attributeEvent ? this._attributeEvent.attributeState!.value : this.value;
+        return this._attributeEvent ? this._attributeEvent.attributeState!.value : this.attribute ? this.attribute.value : this.value;
     }
 
+    /**
+     * This is called by asset-mixin
+     */
     public _onEvent(event: SharedEvent) {
         if (event.eventType !== "attribute") {
             return;
         }
 
+        const oldValue = this.getValue();
         this._attributeEvent = event as AttributeEvent;
 
-        const oldValue = this.attribute ? this.attribute.value : undefined;
-        if (this.attribute) {
-            this.attribute.value = this._attributeEvent.attributeState!.value;
-            this.attribute.valueTimestamp = event.timestamp;
-            super.requestUpdate();
-        }
-        this.dispatchEvent(new OrAttributeInputChangedEvent(this._attributeEvent.attributeState!.value, oldValue));
+        this._onAttributeValueChanged(oldValue, this._attributeEvent.attributeState!.value, event.timestamp);
     }
 
-    protected _onValueChange(newValue: any) {
+    protected _onAttributeValueChanged(oldValue: any, newValue: any, timestamp?: number) {
+        if (this.attribute) {
+            this.attribute.value = newValue;
+            this.attribute.valueTimestamp = timestamp;
+        }
+
+        this._clearWriteTimeout();
+        this.value = newValue;
+        this.dispatchEvent(new OrAttributeInputChangedEvent(newValue, oldValue));
+    }
+
+    protected _updateValue(newValue: any) {
         const oldValue = this.getValue();
 
         if (this.readonly || this._readonly) {
             return;
         }
 
-        // Check if this control is linked to the backend via asset-mixin; if so send an update and wait for the
-        // updated attribute event to come back through the system or timeout and reset the value
-        if (this.attributeRefs) {
-            const attributeRef = this.attributeRefs[0];
+        // If we have an attributeRef then send an update and wait for the updated attribute event to come back through
+        // the system or for the attribute property to be updated by a parent control or timeout and reset the value
+        const attributeRef = this._getAttributeRef();
+
+        if (attributeRef) {
 
             super._sendEvent({
                 eventType: "attribute",
@@ -431,10 +476,17 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 }
             } as AttributeEvent);
 
-            // Clear the last attribute event which will cause loading state on render
             this._writeTimeoutHandler = window.setTimeout(() => this._onWriteTimeout(), this.writeTimeout);
         } else {
+            this.value = newValue;
             this.dispatchEvent(new OrAttributeInputChangedEvent(newValue, oldValue));
+        }
+    }
+
+    protected _clearWriteTimeout() {
+        if (this._writeTimeoutHandler) {
+            window.clearTimeout(this._writeTimeoutHandler);
+            this._writeTimeoutHandler = undefined;
         }
     }
 
