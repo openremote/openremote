@@ -561,7 +561,7 @@ export class OrInput extends LitElement {
                                 format = "YYYY-MM-DD";
                                 break;
                             case InputType.WEEK:
-                                format = "YYYY-Www";
+                                format = "YYYY-[W]WW";
                                 break;
                             case InputType.MONTH:
                                 format = "YYYY-MM";
