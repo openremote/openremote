@@ -35,6 +35,7 @@ public enum ClientRole {
 
     READ_ADMIN(Constants.READ_ADMIN_ROLE, "Read system settings, tenants, and users"),
     READ_LOGS(Constants.READ_LOGS_ROLE, "Read logs and log settings"),
+    READ_USERS(Constants.READ_USERS_ROLE, "Read limited set of user details for use in rules etc."),
     READ_MAP(Constants.READ_MAP_ROLE, "View map"),
     READ_ASSETS(Constants.READ_ASSETS_ROLE, "Read asset data"),
     READ_RULES(Constants.READ_RULES_ROLE, "Read rulesets"),
@@ -49,6 +50,7 @@ public enum ClientRole {
     READ("read", "Read all data", new ClientRole[]{
         READ_ADMIN,
         READ_LOGS,
+        READ_USERS,
         READ_MAP,
         READ_ASSETS,
         READ_RULES,

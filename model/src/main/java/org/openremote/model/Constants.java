@@ -26,6 +26,7 @@ public interface Constants {
     String MASTER_REALM_ADMIN_USER = "admin";
     String REALM_ADMIN_ROLE = "admin";
     String READ_LOGS_ROLE = "read:logs";
+    String READ_USERS_ROLE = "read:users";
     String READ_ADMIN_ROLE = "read:admin";
     String READ_MAP_ROLE = "read:map";
     String READ_ASSETS_ROLE = "read:assets";

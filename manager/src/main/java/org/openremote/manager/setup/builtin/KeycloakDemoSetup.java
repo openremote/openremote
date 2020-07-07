@@ -84,7 +84,7 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         this.testuser3Id = testuser3.getId();
         User buildingUser = createUser(tenantBuilding.getRealm(), "building", "building", "Building", "User", "building@openremote.local", true, REGULAR_USER_ROLES);
         this.buildingUserId = buildingUser.getId();
-        User smartCityUser = createUser(tenantCity.getRealm(), "smartcity", "smartycity", "Smart", "City", null, true, REGULAR_USER_ROLES);
+        User smartCityUser = createUser(tenantCity.getRealm(), "smartcity", "smartcity", "Smart", "City", null, true, REGULAR_USER_ROLES);
         this.smartCityUserId = smartCityUser.getId();
 
         /*

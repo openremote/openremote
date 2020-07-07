@@ -22,6 +22,7 @@ package org.openremote.manager.security;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.i18n.I18NService;
 import org.openremote.manager.web.ManagerWebResource;
+import org.openremote.model.Constants;
 import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.http.ConstraintViolationReport;
 import org.openremote.model.http.RequestParams;
@@ -46,10 +47,30 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public User[] getAll(RequestParams requestParams, String realm) {
+        boolean isAdmin = getAuthContext().hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
+        boolean isBasicRead = getAuthContext().hasResourceRole(ClientRole.READ_USERS.getValue(), Constants.KEYCLOAK_CLIENT_ID);
+
+        if (!isAdmin && !isBasicRead) {
+             throw new ForbiddenException("Insufficient permissions to read users");
+        }
+
         try {
-            return identityService.getIdentityProvider().getUsers(
+            User[] users = identityService.getIdentityProvider().getUsers(
                 realm
             );
+
+            if (isAdmin) {
+                return users;
+            } else {
+                return Arrays.stream(users)
+                    .map(user ->
+                        new User()
+                            .setUsername(user.getUsername())
+                            .setId(user.getId())
+                            .setFirstName(user.getFirstName())
+                            .setLastName(user.getLastName()))
+                    .toArray(User[]::new);
+            }
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
