@@ -397,7 +397,7 @@ class OrHeader extends LitElement {
             ${getContentWithMenuTemplate(
                 html`
                     <div id="realm-picker">
-                        <span style="margin-left: 10px;">${manager.displayRealm}</span>
+                        <span style="margin-left: 10px;">${tenants.find((t) => t.realm ===  manager.displayRealm).displayName}</span>
                         <or-icon icon="chevron-down"></or-icon>
                     </div>
                 `,
