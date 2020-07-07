@@ -31,6 +31,7 @@ import org.openremote.model.security.User;
 
 import java.util.logging.Logger;
 
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.Constants.MASTER_REALM;
 
 /**
@@ -74,18 +75,23 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         // Users
         User testuser1 = createUser(MASTER_REALM, "testuser1", "testuser1", "DemoMaster", "DemoLast", null, true, REGULAR_USER_ROLES);
         this.testuser1Id = testuser1.getId();
+        keycloakProvider.updateRoles(MASTER_REALM, testuser1Id, "account"); // Remove all roles for account client
         User testuser2 = createUser(tenantBuilding.getRealm(), "testuser2", "testuser2", "DemoA2", "DemoLast", "testuser2@openremote.local", true, new ClientRole[] {
             ClientRole.WRITE_USER,
             ClientRole.READ_MAP,
             ClientRole.READ_ASSETS
         });
         this.testuser2Id = testuser2.getId();
+        keycloakProvider.updateRoles(tenantBuilding.getRealm(), testuser2Id, "account"); // Remove all roles for account client
         User testuser3 = createUser(tenantBuilding.getRealm(), "testuser3", "testuser3", "DemoA3", "DemoLast", "testuser3@openremote.local", true, REGULAR_USER_ROLES);
         this.testuser3Id = testuser3.getId();
+        keycloakProvider.updateRoles(tenantBuilding.getRealm(), testuser3Id, "account"); // Remove all roles for account client
         User buildingUser = createUser(tenantBuilding.getRealm(), "building", "building", "Building", "User", "building@openremote.local", true, REGULAR_USER_ROLES);
         this.buildingUserId = buildingUser.getId();
+        keycloakProvider.updateRoles(tenantBuilding.getRealm(), buildingUserId, "account"); // Remove all roles for account client
         User smartCityUser = createUser(tenantCity.getRealm(), "smartcity", "smartcity", "Smart", "City", null, true, REGULAR_USER_ROLES);
         this.smartCityUserId = smartCityUser.getId();
+        keycloakProvider.updateRoles(tenantCity.getRealm(), smartCityUserId, "account"); // Remove all roles for account client
 
         /*
          * MQTT Client
@@ -103,6 +109,6 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
 
         // Add asset RW roles to service user
         User serviceUser = keycloakProvider.getClientServiceUser(tenantBuilding.getRealm(), mqttClient.getClientId());
-        keycloakProvider.updateRoles(tenantBuilding.getRealm(), serviceUser.getId(), new ClientRole[] {ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS});
+        keycloakProvider.updateRoles(tenantBuilding.getRealm(), serviceUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ_ASSETS.getValue(), ClientRole.WRITE_ASSETS.getValue());
     }
 }

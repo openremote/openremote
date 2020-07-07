@@ -171,7 +171,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public void updateRoles(String realm, String username, ClientRole[] roles) {
+    public void updateRoles(String realm, String username, String client, String... roles) {
         throw new UnsupportedOperationException("This provider does not support updating roles");
     }
 

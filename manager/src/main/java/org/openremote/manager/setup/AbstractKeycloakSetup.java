@@ -26,6 +26,10 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
 
+import java.util.Arrays;
+
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+
 public abstract class AbstractKeycloakSetup implements Setup {
 
     public static final String SETUP_EMAIL_FROM_KEYCLOAK = "SETUP_EMAIL_FROM_KEYCLOAK";
@@ -86,7 +90,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
             return null;
         }
         if (roles != null && roles.length > 0) {
-            keycloakProvider.updateRoles(realm, user.getId(), roles);
+            keycloakProvider.updateRoles(realm, user.getId(), KEYCLOAK_CLIENT_ID, Arrays.stream(roles).map(ClientRole::getValue).toArray(String[]::new));
         }
         return user;
     }

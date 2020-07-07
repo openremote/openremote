@@ -35,6 +35,7 @@ import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.event.shared.*;
+import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.TextUtil;
@@ -50,6 +51,8 @@ import java.util.logging.Logger;
 import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.web.ConnectionConstants.SESSION;
 import static org.openremote.agent.protocol.ProtocolClientEventService.getSessionKey;
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+
 /**
  * Receives and publishes messages, handles the client/server event bus.
  * <p>
@@ -350,7 +353,7 @@ public class ClientEventService implements ProtocolClientEventService {
 
         User serviceUser = keycloakIdentityProvider.getClientServiceUser(clientCredentials.getRealm(), clientCredentials.getClientId());
         if (clientCredentials.getRoles() != null && clientCredentials.getRoles().length > 0) {
-            keycloakIdentityProvider.updateRoles(clientCredentials.getRealm(), serviceUser.getId(), clientCredentials.getRoles());
+            keycloakIdentityProvider.updateRoles(clientCredentials.getRealm(), serviceUser.getId(), KEYCLOAK_CLIENT_ID, Arrays.stream(clientCredentials.getRoles()).map(ClientRole::getValue).toArray(String[]::new));
         }
     }
 

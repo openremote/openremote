@@ -36,6 +36,7 @@ import javax.ws.rs.core.Response;
 import java.util.*;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.Constants.MASTER_REALM;
 import static org.openremote.model.http.BadRequestError.VIOLATION_EXCEPTION_HEADER;
 
@@ -208,11 +209,11 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             identityService.getIdentityProvider().updateRoles(
                 realm,
                 userId,
+                KEYCLOAK_CLIENT_ID,
                 Arrays.stream(roles)
                     .filter(Role::isAssigned)
-                    .map(r -> Arrays.stream(ClientRole.values()).filter(cr -> cr.getValue().equals(r.getName())).findFirst().orElse(null))
-                    .toArray(ClientRole[]::new)
-            );
+                    .map(Role::getName)
+                    .toArray(String[]::new));
         } catch (ClientErrorException ex) {
             ex.printStackTrace(System.out);
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
