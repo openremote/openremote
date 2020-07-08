@@ -752,8 +752,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         persistenceService.doTransaction(entityManager -> {
             entityManager.merge(new ConsoleAppConfig(
-                    tenantBuilding.getRealm(),
-                    "https://demo.openremote.io/main/?realm=building",
+                    realmCityTenant,
+                    "https://demo.openremote.io/main/?realm=smartcity",
                     true,
                     ConsoleAppConfig.MenuPosition.BOTTOM_LEFT,
                     null,
