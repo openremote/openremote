@@ -277,8 +277,8 @@ export class AssetModelUtil {
     }
 
     public static getAttributeValueDescriptorFromAsset(name: string | undefined, assetType?: string, attributeName?: string): AttributeValueDescriptor | undefined {
-        if (!name) {
-            return;
+        if (name) {
+            return this.getAttributeValueDescriptor(name);
         }
 
         if (attributeName) {
@@ -287,8 +287,6 @@ export class AssetModelUtil {
                 return attributeDescriptor.valueDescriptor;
             }
         }
-
-        return this.getAttributeValueDescriptor(name);
     }
 
     public static getMetaItemDescriptor(urn?: string): MetaItemDescriptor | undefined {
