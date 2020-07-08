@@ -561,7 +561,7 @@ export class OrInput extends LitElement {
                                 format = "YYYY-MM-DD";
                                 break;
                             case InputType.WEEK:
-                                format = "YYYY-Www";
+                                format = "YYYY-[W]WW";
                                 break;
                             case InputType.MONTH:
                                 format = "YYYY-MM";
@@ -770,7 +770,7 @@ export class OrInput extends LitElement {
             newValue = undefined;
         }
 
-        if (typeof(newValue) === "string" && typeof(previousValue) !== "string") {
+        if (typeof(newValue) === "string") {
             switch (this.type) {
                 case InputType.CHECKBOX:
                 case InputType.SWITCH:

@@ -240,7 +240,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void updateRoles(String realm, String userId, ClientRole[] roles) {
+    public void updateRoles(String realm, String userId, String client, String... roles) {
         RealmResource realmResource = getRealms().realm(realm);
         UserRepresentation user = realmResource.users().get(userId).toRepresentation();
 
@@ -249,28 +249,28 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         }
 
         RoleMappingResource roleMappingResource = realmResource.users().get(user.getId()).roles();
-        ClientRepresentation client = getClient(realm, KEYCLOAK_CLIENT_ID);
+        ClientRepresentation clientRepresentation = getClient(realm, client);
 
         // Get all role mappings for user on this client and remove any no longer in the roles
-        List<RoleRepresentation> clientMappedRoles = roleMappingResource.clientLevel(client.getId()).listAll();
-        List<RoleRepresentation> availableRoles = roleMappingResource.clientLevel(client.getId()).listAvailable();
+        List<RoleRepresentation> clientMappedRoles = roleMappingResource.clientLevel(clientRepresentation.getId()).listAll();
+        List<RoleRepresentation> availableRoles = roleMappingResource.clientLevel(clientRepresentation.getId()).listAvailable();
 
         // Get newly defined roles
         List<RoleRepresentation> addRoles = roles == null ? Collections.emptyList() : Arrays.stream(roles)
-            .filter(cr -> clientMappedRoles.stream().noneMatch(r -> r.getName().equals(cr.getValue())))
-            .map(cr -> availableRoles.stream().filter(r -> r.getName().equals(cr.getValue())).findFirst().orElse(null))
+            .filter(cr -> clientMappedRoles.stream().noneMatch(r -> r.getName().equals(cr)))
+            .map(cr -> availableRoles.stream().filter(r -> r.getName().equals(cr)).findFirst().orElse(null))
             .collect(Collectors.toList());
 
         // Remove obsolete roles
         List<RoleRepresentation> removeRoles = roles == null ? clientMappedRoles : clientMappedRoles.stream()
-            .filter(r -> Arrays.stream(roles).noneMatch(cr -> cr.getValue().equals(r.getName())))
+            .filter(r -> Arrays.stream(roles).noneMatch(cr -> cr.equals(r.getName())))
             .collect(Collectors.toList());
 
         if (!removeRoles.isEmpty()) {
-            roleMappingResource.clientLevel(client.getId()).remove(removeRoles);
+            roleMappingResource.clientLevel(clientRepresentation.getId()).remove(removeRoles);
         }
         if (!addRoles.isEmpty()) {
-            roleMappingResource.clientLevel(client.getId()).add(addRoles);
+            roleMappingResource.clientLevel(clientRepresentation.getId()).add(addRoles);
         }
     }
 

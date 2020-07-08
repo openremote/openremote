@@ -374,22 +374,23 @@ export class Manager implements EventProviderFactory {
         return this._config;
     }
 
-    get roles(): string[] {
+    get roles(): Map<string, string[]> {
+        const roleMap = new Map<string, string[]>();
+
         if (this._keycloak) {
             if (this._keycloak.resourceAccess) {
-                let roles: string[];
-                if (this._config.clientId && this._keycloak!.resourceAccess.hasOwnProperty(this._config.clientId)) {
-                    roles = this._keycloak!.resourceAccess[this._config.clientId].roles;
-                } else {
-                    roles = this._keycloak!.resourceAccess.account.roles;
+                if (this._config.clientId && this._keycloak!.resourceAccess) {
+                    Object.entries(this._keycloak!.resourceAccess).forEach(([client, resourceObj]) => {
+                        const roles = (resourceObj as any).roles as string[];
+                        roleMap.set(client, roles);
+                    })
                 }
-                return roles || [];
             }
         } else if (this._basicIdentity && this._basicIdentity.roles) {
-            return this._basicIdentity.roles.map((r) => r.name!);
+            roleMap.set(this._config.clientId!, this._basicIdentity.roles.map((r) => r.name!));
         }
 
-        return [];
+        return roleMap;
     }
 
     get managerVersion() {
@@ -963,8 +964,9 @@ export class Manager implements EventProviderFactory {
         return this._keycloak && this._keycloak.hasRealmRole(role);
     }
 
-    public hasRole(role: string) {
-        return this.roles && this.roles.indexOf(role) >= 0;
+    public hasRole(role: string, client: string = this._config.clientId!) {
+        const roles = this.roles;
+        return roles && roles.has(client) && roles.get(client)!.indexOf(role) >= 0;
     }
 
     public getAuthorizationHeader(): string | undefined {

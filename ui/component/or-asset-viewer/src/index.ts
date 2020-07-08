@@ -298,13 +298,13 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
         if (!childAssetTypeAttribute || typeof childAssetTypeAttribute.value !== "string") {
             return;
         }
-        let childAssetType = childAssetTypeAttribute.value as string;
+        const childAssetType = childAssetTypeAttribute.value as string;
         let childAssets: Asset[] = [];
 
         // Determine available and selected attributes for the child asset type
         let availableAttributes: string[] = [];
         let selectedAttributes: string[] = [];
-        let newlySelectedAttributes: string[] = []; // Updated when the dialog is open
+        const newlySelectedAttributes: string[] = []; // Updated when the dialog is open
 
         if (groupConfig.childAssetTypes && groupConfig.childAssetTypes[childAssetType]) {
             availableAttributes = groupConfig.childAssetTypes[childAssetType].availableAttributes ? groupConfig.childAssetTypes[childAssetType].availableAttributes! : [];
@@ -315,7 +315,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
         if (availableAttributes.length === 0) {
             const descriptor = AssetModelUtil.getAssetDescriptor(childAssetType);
             if (descriptor && descriptor.attributeDescriptors) {
-                availableAttributes = descriptor.attributeDescriptors.map((descriptor) => descriptor.attributeName!);
+                availableAttributes = descriptor.attributeDescriptors.map((desc) => desc.attributeName!);
             }
         }
         if ((!selectedAttributes || selectedAttributes.length === 0) && availableAttributes) {
@@ -354,7 +354,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
                             ${availableAttributes.sort().map((attribute) =>
                     html`<div style="grid-column: 1 / -1;">
                                         <or-input .type="${InputType.CHECKBOX}" .label="${i18next.t(attribute)}" .value="${!!newlySelectedAttributes.find((selected) => selected === attribute)}"
-                                            @or-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s == attribute), 1)}"></or-input>
+                                            @or-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"></or-input>
                                     </div>`)}
                         </div>
                     `;
@@ -363,7 +363,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
         };
 
         // Function to update the table and message when assets or config changes
-        let updateTable = () => {
+        const updateTable = () => {
 
             const loadingMsg: OrTranslate = hostElement.shadowRoot!.getElementById(panelName + "-attribute-table-msg") as OrTranslate;
             const attributeTable: OrTable = hostElement.shadowRoot!.getElementById(panelName + "-attribute-table") as OrTable;
@@ -388,13 +388,13 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
             const headers = [...selectedAttributes].sort();
             attributeTable.headers = headers.map((header) => i18next.t(header));
             attributeTable.headers.unshift(i18next.t("groupAssetName"));
-            attributeTable.rows = childAssets.map((asset) => {
+            attributeTable.rows = childAssets.map((childAsset) => {
                 // todo: it's only processing including selected headers here...
                 // move this to the columnFilter option of the table
                 const arr = headers.map((attributeName) => {
-                    return asset.attributes![attributeName] ? asset.attributes![attributeName].value! as string : "";
+                    return childAsset.attributes![attributeName] ? childAsset.attributes![attributeName].value! as string : "";
                 });
-                arr.unshift(asset.name!);
+                arr.unshift(childAsset.name!);
                 return arr;
             });
             window.setTimeout(() => OrAssetViewer.generateGrid(hostElement.shadowRoot), 0);
@@ -432,10 +432,9 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
 
         content = html`
                 ${attrs.sort((attr1, attr2) => attr1.name! < attr2.name! ? -1 : attr1.name! > attr2.name! ? 1 : 0).map((attr) => {
-            let style = styles ? styles[attr.name!] : undefined;
-            return getField(attr.name!, false, style, getAttributeTemplate(asset, attr, hostElement, viewerConfig, panelConfig));
-        })}
-            `;
+            const attrStyle = styles ? styles[attr.name!] : undefined;
+            return getField(attr.name!, false, attrStyle, getAttributeTemplate(asset, attr, hostElement, viewerConfig, panelConfig));
+        })}`;
     }
 
     return content;
@@ -690,8 +689,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         if (shadowRoot) {
             const grid = shadowRoot.querySelector('#container');
             if (grid) {
-                const rowHeight = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-auto-rows'));
-                const rowGap = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-row-gap'));
+                const rowHeight = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-auto-rows'), 10);
+                const rowGap = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-row-gap'), 10);
                 const items = shadowRoot.querySelectorAll('.panel');
                 if (items) {
                     items.forEach((item) => {

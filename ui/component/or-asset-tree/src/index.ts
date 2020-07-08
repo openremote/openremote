@@ -651,11 +651,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     /* Subscribe mixin overrides */
 
-    public async _addEventSubscriptions(): Promise<string[]> {
+    public async _addEventSubscriptions(): Promise<void> {
         // Subscribe to asset events for all assets in the realm
-        const subscriptions = [];
-        subscriptions.push(await manager.getEventProvider()!.subscribeAssetEvents(null, false, (event) => this._onEvent(event)));
-        return subscriptions;
+        this._subscriptionIds = [await manager.getEventProvider()!.subscribeAssetEvents(null, false, (event) => this._onEvent(event))];
     }
 
     public onEventsConnect() {

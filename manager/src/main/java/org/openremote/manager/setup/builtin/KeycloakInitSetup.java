@@ -27,8 +27,7 @@ import org.openremote.model.security.User;
 
 import java.util.logging.Logger;
 
-import static org.openremote.model.Constants.MASTER_REALM;
-import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
+import static org.openremote.model.Constants.*;
 
 public class KeycloakInitSetup extends AbstractKeycloakSetup {
 
@@ -59,6 +58,6 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         keycloakProvider.updateUser(MASTER_REALM, adminUser);
 
         // Give admin all roles on application client level
-        keycloakProvider.updateRoles(MASTER_REALM, adminUser.getId(), new ClientRole[] {ClientRole.READ, ClientRole.WRITE});
+        keycloakProvider.updateRoles(MASTER_REALM, adminUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ.getValue(), ClientRole.WRITE.getValue());
     }
 }

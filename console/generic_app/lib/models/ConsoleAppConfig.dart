@@ -1,4 +1,5 @@
 
+import 'package:generic_app/models/LinkConfig.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 import 'BaseModel.dart';
@@ -23,7 +24,7 @@ class ConsoleAppConfig implements BaseModel {
 
   final String secondaryColor;
 
-  final Map<String, dynamic> links;
+  final List<LinkConfig> links;
 
   ConsoleAppConfig({
      this.id,
