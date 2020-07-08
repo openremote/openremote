@@ -546,16 +546,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 type: "history",
                 panelStyles: {
                 }
-            },
-            survey: {
-                type: "survey",
-                panelStyles: {
-                }
-            },
-            surveyResults: {
-                type: "survey-results",
-                panelStyles: {
-                }
             }
         }
     };
