@@ -173,7 +173,7 @@ public enum AssetType implements AssetDescriptor {
             RULE_STATE,
             STORE_DATA_POINTS
         ),
-        new AttributeDescriptorImpl("groupNumber", STRING, Values.create(""),
+        new AttributeDescriptorImpl("groupNumber", NUMBER, null,
             LABEL.withInitialValue(Values.create("Group number")),
             DESCRIPTION.withInitialValue(Values.create("Which group this light belongs to")),
             READ_ONLY,
