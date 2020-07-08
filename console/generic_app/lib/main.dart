@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:generic_app/ui/SplashPage.dart';
 import 'generated/l10n.dart';
-
-import 'package:generic_app/ui/ProjectPage.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +27,7 @@ class ORApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: S.delegate.supportedLocales,
-      home: ProjectPage(),
+      home: SplashPage(),
     );
   }
 }

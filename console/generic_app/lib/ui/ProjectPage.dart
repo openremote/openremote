@@ -4,6 +4,7 @@ import 'package:generic_app/generated/l10n.dart';
 import 'package:generic_app/models/ConsoleAppConfig.dart';
 import 'package:generic_app/network/ApiManager.dart';
 import 'package:generic_app/ui/WebViewPage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProjectPage extends StatefulWidget {
   ProjectPage({Key key}) : super(key: key);
@@ -13,12 +14,22 @@ class ProjectPage extends StatefulWidget {
 }
 
 class _ProjectPageState extends State<ProjectPage> {
+  SharedPreferences _sharedPreferences;
   String _projectName;
   String _realmName;
   BuildContext _innerContext;
 
   @override
+  void initState() {
+    SharedPreferences.getInstance().then((value) {
+      _sharedPreferences = value;
+    });
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
+
     return Scaffold(body: Builder(builder: (BuildContext innerContext) {
       _innerContext = innerContext;
       return SafeArea(
@@ -123,7 +134,8 @@ class _ProjectPageState extends State<ProjectPage> {
     var apiManager =
         new ApiManager("https://$_projectName.openremote.io/api/$_realmName");
     apiManager.get(["app", "config"], ConsoleAppConfig.fromJson).then((value) {
-      print(value);
+      _sharedPreferences.setString("project", _projectName);
+      _sharedPreferences.setString("realm", _realmName);
       CurrentConsoleAppConfig.instance.updateConfig(value, _projectName);
       Navigator.push(
           context,
