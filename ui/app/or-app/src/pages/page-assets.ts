@@ -2,13 +2,14 @@ import {css, customElement, html, property, TemplateResult, unsafeCSS} from "lit
 import "@openremote/or-asset-tree";
 import "@openremote/or-asset-viewer";
 import {ViewerConfig} from "@openremote/or-asset-viewer";
-import {OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
+import {OrAssetTreeSelectionChangedEvent, AssetTreeConfig} from "@openremote/or-asset-tree";
 import {DefaultBoxShadow} from "@openremote/core";
 import {AppStateKeyed, Page, router} from "../index";
 import {EnhancedStore} from "@reduxjs/toolkit";
 
 export interface PageAssetsConfig {
     viewer: ViewerConfig;
+    tree?: AssetTreeConfig;
 }
 
 export function pageAssetsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config: PageAssetsConfig = PAGE_ASSETS_DEFAULT_CONFIG) {
@@ -509,7 +510,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
     protected render(): TemplateResult | void {
         const selectedIds = [this._assetId];
         return html`
-              <or-asset-tree id="pageAssetTree" class="${this._assetId ? "hideMobile" : ""}" .selectedIds="${selectedIds}"></or-asset-tree>
+              <or-asset-tree .config="${this.config && this.config.tree ? this.config.tree : null}" id="pageAssetTree" class="${this._assetId ? "hideMobile" : ""}" .selectedIds="${selectedIds}"></or-asset-tree>
               <or-asset-viewer class="${!this._assetId ? "hideMobile" : ""}" .config="${this.config && this.config.viewer ? this.config.viewer : PAGE_ASSETS_DEFAULT_CONFIG}" .assetId="${this._assetId}"></or-asset-viewer>
         `;
     }

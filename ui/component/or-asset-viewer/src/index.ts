@@ -4,6 +4,8 @@ import "@openremote/or-input";
 import "@openremote/or-attribute-input";
 import "@openremote/or-attribute-history";
 import "@openremote/or-chart";
+import "@openremote/or-survey";
+import "@openremote/or-survey-results";
 import "@openremote/or-table";
 import "@openremote/or-panel";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
@@ -32,7 +34,7 @@ import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-m
 import { GenericAxiosResponse } from "axios";
 import { OrIcon } from "@openremote/or-icon";
 
-export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group";
+export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group" | "survey" | "survey-results";
 
 export interface PanelConfig {
     type?: PanelType;
@@ -91,6 +93,22 @@ class EventHandler {
         this._callbacks.push(callback);
     }
 }
+
+export interface OrComputeGridEventDetail {
+}
+
+export class OrComputeGridEvent extends CustomEvent<OrComputeGridEventDetail> {
+
+    public static readonly NAME = "or-compute-grid-event";
+
+    constructor() {
+        super(OrComputeGridEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
 const onRenderComplete = new EventHandler();
 
 function getPanel(name: string, panelConfig: PanelConfig, content: TemplateResult | undefined) {
@@ -150,7 +168,17 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
     //     })}
     //     `;
     // } else
-    if (panelConfig && panelConfig.type === "history") {
+    if (panelConfig && panelConfig.type === "survey") {
+        content = html`      
+             <or-survey id="survey" .surveyId="${asset.id}"></or-survey>
+        `;
+    }
+    else  if (panelConfig && panelConfig.type === "survey-results") {
+        content = html`     
+                    <or-survey-results id="survey-results" .survey="${asset}"></or-survey-results>
+        `;
+    }
+    else if (panelConfig && panelConfig.type === "history") {
         // Special handling for history panel which shows an attribute selector and a graph/data table of historical values
         const historyAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
         if (historyAttrs.length > 0) {
@@ -259,7 +287,6 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
             `;
         }
     } else if (panelConfig && panelConfig.type === "group") {
-
         if (asset.type !== "urn:openremote:asset:group") {
             return;
         }
@@ -520,6 +547,16 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 type: "history",
                 panelStyles: {
                 }
+            },
+            survey: {
+                type: "survey",
+                panelStyles: {
+                }
+            },
+            surveyResults: {
+                type: "survey-results",
+                panelStyles: {
+                }
             }
         }
     };
@@ -557,6 +594,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         super();
         window.addEventListener("resize", () => OrAssetViewer.generateGrid(this.shadowRoot));
         
+        this.addEventListener(OrComputeGridEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrChartEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
     }
