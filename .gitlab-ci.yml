@@ -5,6 +5,13 @@ default:
     - docker:dind
   timeout: 1h 30m
 
+variables:
+  PROJECT_NAME: demo
+  GIT_SUBMODULE_STRATEGY: normal
+  DEPLOYMENT_HOST_USER: root
+  DEPLOYMENT_PORT: 2222
+  DAST_WEBSITE: https://staging.${PROJECT_NAME}.openremote.io
+
 stages:
   - build
   - build_fail
@@ -57,6 +64,9 @@ build-master:
     - docker push openremote/deployment:${CACHE_TAG:-latest}
     - docker push openremote/manager:${CACHE_TAG:-latest}
     - docker push openremote/manager-swarm:${CACHE_TAG:-latest}
+    - docker push openremote/proxy:${CACHE_TAG:-latest}
+    - docker push openremote/keycloak:${CACHE_TAG:-latest}
+    - docker push openremote/postgresql:${CACHE_TAG:-latest}
     ## TODO dind does not support arm64 archieture for now, therefore the code below breaks the build
     # # Build ARM images
     # - docker buildx build --platform linux/arm64 -t openremote/manager:arm64 manager/build/install/manager
@@ -136,7 +146,57 @@ email failed tests:
       if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: on_failure
 
-deploy-master:
+.ssh_config: &ssh_config
+- mkdir -p ~/.ssh
+- chmod 600 "$GITLAB_SSH_PRIVATE_KEY"
+- eval "$(ssh-agent -s)"
+- ssh-add "$GITLAB_SSH_PRIVATE_KEY"
+- ssh-keyscan -H -p $DEPLOYMENT_PORT $DEPLOYMENT_HOST >> ~/.ssh/known_hosts
+- alias SSH="ssh -p $DEPLOYMENT_PORT ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}"
+- alias SCP="scp -p -r -P $DEPLOYMENT_PORT"
+
+.deploy_template: &deploy_definition
+  stage: deploy
+  before_script:
+    - *ssh_config
+  script:
+    - echo "Deploy to $CI_ENVIRONMENT_SLUG server"
+    - echo "export CI_REGISTRY_IMAGE=openremote" >> deploy.sh
+    - if [ ! $DOCKER_IMAGE_TAG ]; then echo "export CI_ENVIRONMENT=$CI_ENVIRONMENT_SLUG" >> deploy.sh; fi
+    - if [ $DOCKER_IMAGE_TAG ]; then echo "export CI_ENVIRONMENT=$DOCKER_IMAGE_TAG" >> deploy.sh; fi
+    - echo "export SETUP_WIPE_CLEAN_INSTALL=$SETUP_WIPE_CLEAN_INSTALL" >> deploy.sh
+    - if [ $SETUP_ADMIN_PASSWORD ]; then echo "export SETUP_ADMIN_PASSWORD=$SETUP_ADMIN_PASSWORD" >> deploy.sh; fi
+    - echo "echo ${OR_PASSWORD} | docker login -u openremote --password-stdin $CI_REGISTRY || exit 666" >> deploy.sh
+    - echo "docker pull $CI_REGISTRY_IMAGE/manager:\$CI_ENVIRONMENT"   >> deploy.sh
+    - echo "docker pull $CI_REGISTRY_IMAGE/deployment:\$CI_ENVIRONMENT">> deploy.sh
+    - echo "docker pull $CI_REGISTRY_IMAGE/proxy:\$CI_ENVIRONMENT"     >> deploy.sh
+    - echo "docker pull $CI_REGISTRY_IMAGE/postgresql:\$CI_ENVIRONMENT">> deploy.sh
+    - echo "docker pull $CI_REGISTRY_IMAGE/keycloak:\$CI_ENVIRONMENT"  >> deploy.sh
+    - echo "docker-compose -p $PROJECT_NAME -f profile/demo-openremote.yml down || exit 666" >> deploy.sh
+    - echo "docker volume rm ${PROJECT_NAME}_deployment-data" >> deploy.sh
+    - echo "docker-compose -p $PROJECT_NAME -f profile/demo-openremote.yml up --no-build -d || exit 666" >> deploy.sh
+    - chmod +x deploy.sh
+    - SSH mkdir -p profile openremote/profile deployment openremote/proxy openremote/manager/build/install/manager openremote/postgresql openremote/keycloak
+    - SCP ./profile/ deploy.sh ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/
+    - SSH ./deploy.sh
+    - SSH "docker system prune -f; docker images -q --filter dangling=true | xargs docker rmi; rm -rf openremote/ profile/ deployment/ deploy.sh .docker/config.json"
+  after_script:
+    - *ssh_config
+    - SSH "docker logs ${PROJECT_NAME}_proxy_1 &> proxy_${CI_ENVIRONMENT_SLUG}.log"
+    - SSH "docker logs ${PROJECT_NAME}_manager_1 &> manager_${CI_ENVIRONMENT_SLUG}.log"
+    - SSH "docker logs ${PROJECT_NAME}_keycloak_1 &> keycloak_${CI_ENVIRONMENT_SLUG}.log"
+    - SSH "docker logs ${PROJECT_NAME}_postgresql_1 &> postgresql_${CI_ENVIRONMENT_SLUG}.log"
+    - SCP ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/*.log .
+    - SSH "rm ~/*.log"
+  artifacts:
+    paths:
+    - proxy_${CI_ENVIRONMENT_SLUG}.log
+    - manager_${CI_ENVIRONMENT_SLUG}.log
+    - keycloak_${CI_ENVIRONMENT_SLUG}.log
+    - postgresql_${CI_ENVIRONMENT_SLUG}.log
+    expire_in: 1 week
+
+deploy masterdemo on AWS:
   image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
   stage: deploy
   script:
@@ -149,6 +209,22 @@ deploy-master:
     - if: $CI_COMMIT_BRANCH == "master"
       if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
       when: manual
+
+deploy demo on OVH:
+  stage: deploy
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
+      when: manual
+  variables:
+    DEPLOYMENT_HOST: ${PROJECT_NAME}.openremote.io
+    SETUP_WIPE_CLEAN_INSTALL: 'true'
+    DOCKER_IMAGE_TAG: latest
+  environment:
+    name: demo
+    url: https://${PROJECT_NAME}.openremote.io
+  <<: *deploy_definition
 
 auto delete aws cloudformation stack after 8 hours:
   image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
