@@ -282,6 +282,18 @@ public enum MetaItemType implements MetaItemDescriptor {
         false),
 
     /**
+     * Indicates that any input should support multiline text entry
+     */
+    MULTILINE(
+        ASSET_META_NAMESPACE + ":multiline",
+        new Access(true, false, true),
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true),
+
+    /**
      * Should attribute values be stored in time series database
      */
     STORE_DATA_POINTS(

@@ -278,18 +278,24 @@ export function getMetaValue(metaItemUrn: string | MetaItemDescriptor, attribute
     const urn = typeof metaItemUrn === "string" ? metaItemUrn : (metaItemUrn as MetaItemDescriptor).urn;
 
     if (attribute && attribute.meta) {
-        const metaItem = attribute.meta.find((mi) => mi.name === urn);  
-        return metaItem ? metaItem.value : undefined;
+        const metaItem = attribute.meta.find((mi) => mi.name === urn);
+        if (metaItem) {
+            return metaItem.value;
+        }
     }
 
     if (descriptor && descriptor.metaItemDescriptors) {
         const metaItemDescriptor = descriptor.metaItemDescriptors.find((mid) => mid.urn === urn);
-        return metaItemDescriptor ? metaItemDescriptor.initialValue : undefined;
+        if (metaItemDescriptor) {
+            return metaItemDescriptor.initialValue;
+        }
     }
 
     if (valueDescriptor && valueDescriptor.metaItemDescriptors) {
         const metaItemDescriptor = valueDescriptor.metaItemDescriptors.find((mid) => mid.urn === urn);
-        return metaItemDescriptor ? metaItemDescriptor.initialValue : undefined;
+        if (metaItemDescriptor) {
+            return metaItemDescriptor.initialValue;
+        }
     }
 }
 
@@ -303,8 +309,7 @@ export function getAttributeLabel(attribute: Attribute | undefined, descriptor: 
     return i18next.t([name, fallback || labelMetaValue || name]);
 }
 
-export function getAttributeValueFormatter(attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined): ((value: any) => string) {
-
+export function getAttributeValueFormat(attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined): string | undefined {
     let format = getMetaValue(MetaItemType.FORMAT, attribute, descriptor, valueDescriptor) as string;
     if (!format) {
         let valueType: string | undefined;
@@ -326,8 +331,11 @@ export function getAttributeValueFormatter(attribute: Attribute | undefined, des
             format = i18next.t("attributeValueType." + valueType);
         }
     }
+    return format;
+}
 
-    return (value: any) => {
+export function getAttributeValueFormatter(): ((value: any, format: string | undefined) => string) {
+    return (value, format) => {
         return value === undefined || value === null ? "" : i18next.t((format ? [format, "%s"] : "%s"), { postProcess: "sprintf", sprintf: [value] });
     };
 }
@@ -342,7 +350,8 @@ export function getAttributeValueFormatted(attribute: Attribute, descriptor: Att
         return "";
     }
 
-    return getAttributeValueFormatter(attribute, descriptor, valueDescriptor)(attribute.value);
+    const format = getAttributeValueFormat(attribute, descriptor, valueDescriptor);
+    return getAttributeValueFormatter()(attribute.value, format);
 }
 
 /**

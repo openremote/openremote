@@ -56,6 +56,10 @@ const style = css`
         color: var(--internal-or-asset-tree-header-text-color);
     }
     
+    #header-btns {
+        --or-input-color: var(--internal-or-rules-text-color);
+    }
+    
     .header-ruleset-type p {
         margin: 0 15px;
     }

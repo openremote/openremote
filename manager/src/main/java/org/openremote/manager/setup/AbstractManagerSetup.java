@@ -730,7 +730,7 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Color RGBW")),
                     new MetaItem(DESCRIPTION, Values.create("The RGBW color of the light")),
-                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(RULE_STATE),
                     new MetaItem(STORE_DATA_POINTS)
                 ),
             new AssetAttribute("groupNumber", NUMBER)
@@ -743,8 +743,7 @@ public abstract class AbstractManagerSetup implements Setup {
             new AssetAttribute("scenario", STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Scenario")),
-                    new MetaItem(DESCRIPTION, Values.create("The scenario this light is setup to")),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(DESCRIPTION, Values.create("The scenario this light is setup to"))
                 )
         );
 
