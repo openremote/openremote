@@ -33,7 +33,7 @@ dependencies {
     compile "org.eclipse.californium:californium-core:$californiumCoreVersion"
     compile "org.eclipse.californium:scandium:$californiumScandiumVersion"
     
-    compile "org.openremote:or-zwave:3.4-SNAPSHOT"                        
+    compile "org.openremote:or-zwave:$zwaveVersion"                        
 }
 
 jar {
