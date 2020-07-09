@@ -24,6 +24,7 @@ import org.openremote.agent.protocol.ProtocolConfigurationDiscovery;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeDiscovery;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
 import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -192,7 +193,7 @@ public class ZWProtocol extends AbstractProtocol implements ProtocolLinkedAttrib
     }
 
     @Override
-    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
         Optional<String> networkId = getUniqueNetworkIdentifier(protocolConfiguration);
 
@@ -227,7 +228,7 @@ public class ZWProtocol extends AbstractProtocol implements ProtocolLinkedAttrib
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
         String networkId = getUniqueNetworkIdentifier(protocolConfiguration).orElse("");
 
