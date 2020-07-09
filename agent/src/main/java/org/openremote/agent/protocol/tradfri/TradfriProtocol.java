@@ -192,7 +192,7 @@ public class TradfriProtocol extends AbstractProtocol {
      * @param protocolConfiguration the protocol configuration.
      */
     @Override
-    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         Optional<String> gatewayIpParam = protocolConfiguration.getMetaItem(META_TRADFRI_GATEWAY_HOST).flatMap(AbstractValueHolder::getValueAsString);
         if (!gatewayIpParam.isPresent()) {
             LOG.severe("No Tradfri gateway IP address provided for protocol configuration: " + protocolConfiguration);
@@ -254,7 +254,7 @@ public class TradfriProtocol extends AbstractProtocol {
      * @param protocolConfiguration the protocol configuration.
      */
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         Consumer<ConnectionStatus> statusConsumer;
         synchronized (statusConsumerMap) {
             statusConsumer = statusConsumerMap.get(protocolConfiguration.getReferenceOrThrow());
