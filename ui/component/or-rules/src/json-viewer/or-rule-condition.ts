@@ -1,23 +1,16 @@
-import {customElement, html, css, LitElement, property, TemplateResult, query, PropertyValues} from "lit-element";
-import {AssetDescriptor, AssetQueryMatch, RuleCondition, AssetType} from "@openremote/model";
-import {
-    ActionType,
-    ConditionType,
-    getAssetTypeFromQuery,
-    RulesConfig
-} from "../index";
+import {css, customElement, html, LitElement, property, query, TemplateResult} from "lit-element";
+import {AssetDescriptor, AssetQueryMatch, AssetType, RuleCondition} from "@openremote/model";
+import {ConditionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "./or-rule-asset-query";
 import "@openremote/or-mwc-components/dist/or-mwc-menu";
-import {MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import "@openremote/or-icon";
 import "@openremote/or-translate";
-import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {InputType} from "@openremote/or-input";
 import {AssetModelUtil} from "@openremote/core";
 import {i18next, translate} from "@openremote/or-translate";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
-import { OrRuleAssetQuery } from "./or-rule-asset-query";
+import {OrRuleAssetQuery} from "./or-rule-asset-query";
 
 const TIMER_COLOR = "4b87ea";
 const DATE_TIME_COLOR = "6AEAA4";
@@ -164,7 +157,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                 `;
             } else {
                 typeTemplate = html`
-                <div id="type" style="color: #${buttonColor}">
+                <div id="type" style="--or-input-color: #${buttonColor}">
                     ${getContentWithMenuTemplate(
                         html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
                         getWhenTypesMenu(this.config, this.assetDescriptors),

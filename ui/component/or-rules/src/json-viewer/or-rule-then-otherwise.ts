@@ -232,7 +232,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             `;
         } else {
         recurrenceTemplate = html`
-                <div style="color: #${buttonColor}; margin-right: 6px;">
+                <div style="--or-input-color: #${buttonColor}; margin-right: 6px;">
                     ${getContentWithMenuTemplate(
                         html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-input>`,
                         getRecurrenceMenu(this.config),
@@ -296,7 +296,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 `;
             } else {
                 typeTemplate = html`
-                    <div id="type" style="color: #${buttonColor}">
+                    <div id="type" style="--or-input-color: #${buttonColor}">
                         ${getContentWithMenuTemplate(
                             html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
                             getActionTypesMenu(this.config, this.assetDescriptors),

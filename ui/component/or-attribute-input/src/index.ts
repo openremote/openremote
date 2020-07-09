@@ -71,7 +71,7 @@ export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (
             }
         </style>                    
         <or-map class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => clickHandler(ev.detail)}" .center="${center}">
-            <or-map-marker active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .color="${iconAndColor ? iconAndColor.color : undefined}"></or-map-marker>
+            <or-map-marker active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .color="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
         </or-map>
     `;
 }
@@ -118,6 +118,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
             /* Copy of mdc text field helper text styles */
             #helper-text {
+                min-width: 255px;
                 margin-top: 3px;
                 color: rgba(0, 0, 0, 0.6);
                 font-family: Roboto, sans-serif;
@@ -541,7 +542,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             }
 
             this._valueFormat = Util.getAttributeValueFormat(this.attribute, this._attributeDescriptor, this._attributeValueDescriptor);
-            this._showButton = !this.disableButton && this.inputTypeSupportsButton() && !!this._getAttributeRef();
+            this._showButton = !this._readonly && !this._disabled && !this.disableButton && this.inputTypeSupportsButton() && !!this._getAttributeRef();
         }
     }
 
@@ -575,7 +576,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 .helperText="${helperText}" .helperPersistent="${true}"
                 @keyup="${(e: KeyboardEvent) => {
                     if (e.code === "Enter" && this._inputType !== InputType.JSON && this._inputType !== InputType.TEXTAREA) {
-                        this._updateValue(this._attrInput.value)
+                        this._updateValue(this._attrInput.value);
                     }
                 }}" @or-input-changed="${(e: OrInputChangedEvent) => {
                     e.stopPropagation();
@@ -609,7 +610,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         }
 
         return html`
-            <div id="wrapper" class="${this._showButton ? "" : "right-padding"}">
+            <div id="wrapper" class="${this._showButton || this.disableButton ? "no-padding" : "right-padding"}">
                 ${content}
                 ${loading 
                     ? html`<div id="scrim"><progress class="pure-material-progress-circular"></progress></div>` 

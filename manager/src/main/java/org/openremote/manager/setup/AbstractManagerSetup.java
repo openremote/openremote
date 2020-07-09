@@ -671,9 +671,9 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(agentLinker.get()),
-            new AssetAttribute("ozon", NUMBER)
+            new AssetAttribute("ozone", NUMBER)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("Ozon Level")),
+                    new MetaItem(LABEL, Values.create("Ozone Level")),
                     new MetaItem(DESCRIPTION, Values.create("µg/m3")),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),

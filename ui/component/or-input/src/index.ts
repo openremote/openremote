@@ -7,13 +7,14 @@ import {MDCRipple} from "@material/ripple";
 import {MDCCheckbox} from "@material/checkbox";
 import {MDCSwitch} from "@material/switch";
 import {MDCSlider} from "@material/slider";
-import {MDCSelect, MDCSelectEvent } from "@material/select";
+import {MDCSelect, MDCSelectEvent} from "@material/select";
 import {MDCList, MDCListActionEvent} from "@material/list";
 
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
 import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
 import {DefaultColor4, DefaultColor8, Util} from "@openremote/core";
 import i18next from "i18next";
+import moment from "moment";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("!!raw-loader!@material/button/dist/mdc.button.css");
@@ -193,6 +194,11 @@ const style = css`
     .mdc-icon-button {
         padding: 0;
         color: var(--internal-or-input-color);
+    }
+    
+    /* Give slider min width like select etc. */
+    .mdc-slider {
+        min-width: 200px;
     }
     
     #field {
@@ -474,8 +480,8 @@ export class OrInput extends LitElement {
                                 ${hasHelper ? html`
                                     <p id="component-helper-text" class="mdc-select-helper-text ${classMap(helperClasses)}" aria-hidden="true">
                                         ${showValidationMessage ? this.validationMessage : this.helperText}
-                                    </p>` : ``}
                         </div>
+                                    </p>` : ``}
                     `;
                 case InputType.BUTTON_TOGGLE:
                     return html`
@@ -597,9 +603,11 @@ export class OrInput extends LitElement {
                                             const offset = (new Date()).getTimezoneOffset() * 60000;
                                             val = new Date(val - offset);
                                         }
-                                        if (val) {
-                                            val = formatter(val, format);
+                                        if (val instanceof Date) {
+                                            val = moment(val).format(format);
                                         }
+                                    } else if (val) {
+                                        val = formatter(val, format);
                                     }
                                     valMinMax[i] = val;
                                 });
@@ -611,7 +619,9 @@ export class OrInput extends LitElement {
                         return html`
                             <div id="component" class="mdc-slider mdc-slider--discrete" tabindex="0" role="slider" 
                             aria-valuemin="${ifDefined(valMinMax[1])}" aria-valuemax="${ifDefined(valMinMax[2])}"
-                            aria-valuenow="${ifDefined(valMinMax[0])}" aria-label="${ifDefined(this.label)}">
+                            aria-valuenow="${ifDefined(valMinMax[0])}" aria-label="${ifDefined(this.label)}"
+                            ?aria-disabled="${this.readonly || this.disabled}"
+                            @MDCSlider:change="${() => this.onValueChange(undefined, (this._mdcComponent as MDCSlider).value)}">
                                 <div class="mdc-slider__track-container">
                                     <div class="mdc-slider__track"></div>
                                 </div>
@@ -749,8 +759,17 @@ export class OrInput extends LitElement {
                         break;
                 }
             }
-        } else if (this.type === InputType.SELECT && this._mdcComponent) {
-            (this._mdcComponent as MDCSelect).selectedIndex = this._selectedIndex;
+        } else {
+            if (this.type === InputType.SELECT && this._mdcComponent) {
+                (this._mdcComponent as MDCSelect).selectedIndex = this._selectedIndex;
+            }
+            if (this.type === InputType.RANGE && this._mdcComponent) {
+                const slider = this._mdcComponent as MDCSlider;
+                slider.disabled = this.disabled;
+                slider.min = this.min;
+                slider.max = this.max;
+                slider.value = this.value;
+            }
         }
 
         if (!this.type && this.value) {

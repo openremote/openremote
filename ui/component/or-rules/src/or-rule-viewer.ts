@@ -172,7 +172,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                             <or-input .type="${InputType.SWITCH}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${!this.ruleset.id}" @or-input-changed="${this._toggleEnabled}"></or-input>
                         </span>
            
-                        <or-input .type="${InputType.BUTTON}" id="save-btn" .label="${i18next.t("save")}" raised ?disabled="${this._cannotSave()}" @click="${this._doSave}" @or-input-changed="${this._doSave}"></or-input>
+                        <or-input .type="${InputType.BUTTON}" id="save-btn" .label="${i18next.t("save")}" raised ?disabled="${this._cannotSave()}" @or-input-changed="${this._doSave}"></or-input>
                     </div>                        
                 </div>
 

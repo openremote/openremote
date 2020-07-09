@@ -124,8 +124,8 @@ public enum AssetType implements AssetDescriptor {
             RULE_STATE,
             STORE_DATA_POINTS
         ),
-        new AttributeDescriptorImpl("ozon", NUMBER, Values.create(0),
-            LABEL.withInitialValue(Values.create("Ozon Level")),
+        new AttributeDescriptorImpl("ozone", NUMBER, Values.create(0),
+            LABEL.withInitialValue(Values.create("Ozone Level")),
             DESCRIPTION.withInitialValue(Values.create("µg/m3")),
             READ_ONLY,
             RULE_STATE,
@@ -155,34 +155,29 @@ public enum AssetType implements AssetDescriptor {
         new AttributeDescriptorImpl("lightStatus", BOOLEAN, Values.create(false),
             LABEL.withInitialValue(Values.create("Light status")),
             DESCRIPTION.withInitialValue(Values.create("Indicates if the light is on or off")),
-            READ_ONLY,
             RULE_STATE,
             STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("lightDimLevel", PERCENTAGE, Values.create(0),
             LABEL.withInitialValue(Values.create("Light Dim Level")),
             DESCRIPTION.withInitialValue(Values.create("The level of dimming of the light")),
-            READ_ONLY,
             RULE_STATE,
             STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("colorGBW", OBJECT, Values.createObject(),
             LABEL.withInitialValue(Values.create("Color RGBW")),
             DESCRIPTION.withInitialValue(Values.create("The RGBW color of the light")),
-            READ_ONLY,
             RULE_STATE,
             STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("groupNumber", NUMBER, null,
             LABEL.withInitialValue(Values.create("Group number")),
             DESCRIPTION.withInitialValue(Values.create("Which group this light belongs to")),
-            READ_ONLY,
             RULE_STATE
         ),
         new AttributeDescriptorImpl("Scenario", NUMBER, Values.create(0),
             LABEL.withInitialValue(Values.create("Scenario")),
             DESCRIPTION.withInitialValue(Values.create("The scenario the light are setup to")),
-            READ_ONLY,
             RULE_STATE
         )
     ),
