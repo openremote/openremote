@@ -90,7 +90,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public <E extends SharedEvent> void unsubscribe(Class<E> eventClass) {
-        CancelEventSubscription<E> cancellation = new CancelEventSubscription<>(eventClass);
+        CancelEventSubscription cancellation = new CancelEventSubscription(eventClass);
         final String key = cancellation.getEventType();
         if (activeSubscriptions.containsKey(key)) {
             DomGlobal.clearInterval(activeSubscriptions.get(key));

@@ -8,6 +8,7 @@ import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.RulesResource
+import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.rules.TenantRuleset
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
@@ -26,8 +27,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
     def "Access rules as superuser"() {
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -49,7 +51,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RulesResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(initialDelay: 2, timeout: 10, delay: 1).eventually {
+        new PollingConditions(timeout: 10, delay: 0.2).eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
@@ -294,15 +296,16 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerDemoSetup.apartment2Id
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
     def "Access rules as testuser1"() {
 
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
+        def container = startContainer(defaultConfig(), defaultServices())
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -324,7 +327,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RulesResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(initialDelay: 3, timeout: 20, delay: 1).eventually {
+        new PollingConditions(timeout: 10, delay: 0.2).eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
@@ -524,15 +527,16 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.status == 403
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
     def "Access rules as testuser2"() {
 
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -554,7 +558,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(RulesResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(initialDelay: 3, timeout: 20, delay: 1).eventually {
+        new PollingConditions(timeout: 10, delay: 0.2).eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
@@ -670,15 +674,16 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.status == 403
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
     def "Access rules as testuser3"() {
 
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -700,7 +705,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(RulesResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(initialDelay: 3, timeout: 20, delay: 1).eventually {
+        new PollingConditions(timeout: 10, delay: 0.2).eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
@@ -886,7 +891,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.status == 403
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 }

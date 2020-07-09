@@ -38,14 +38,13 @@ class ApiManager {
       }
     }
 
-    Map<String, String> headers = baseHeaders != null ? new HashMap.from(baseHeaders) : new HashMap();
+    Map<String, String> headers =
+        baseHeaders != null ? new HashMap.from(baseHeaders) : new HashMap();
     if (additionalHeaders != null) {
       headers.addAll(additionalHeaders);
     }
 
-    T returnValue;
-
-    await http.get(urlBuffer.toString(), headers: headers).then((response) {
+    return http.get(urlBuffer.toString(), headers: headers).then((response) {
       if (response.statusCode == 200) {
         try {
           Map<String, dynamic> json = jsonDecode(response.body);
@@ -56,7 +55,7 @@ class ApiManager {
           if (jsonData is List) {
             throw new Exception("Expected json object");
           } else {
-            returnValue = responseParser(jsonData) as T;
+            return responseParser(jsonData) as T;
           }
         } catch (e) {
           print(e);
@@ -67,8 +66,6 @@ class ApiManager {
             "Response error: ${response.statusCode} - ${response.body}");
       }
     });
-
-    return returnValue;
   }
 
   Future<List<T>> getAll<T>(
@@ -91,14 +88,13 @@ class ApiManager {
       }
     }
 
-    Map<String, String> headers = baseHeaders != null ? new HashMap.from(baseHeaders) : new HashMap();
+    Map<String, String> headers =
+        baseHeaders != null ? new HashMap.from(baseHeaders) : new HashMap();
     if (additionalHeaders != null) {
       headers.addAll(additionalHeaders);
     }
 
-    List<T> returnValue;
-
-    await http.get(urlBuffer.toString(), headers: headers).then((response) {
+    return http.get(urlBuffer.toString(), headers: headers).then((response) {
       if (response.statusCode == 200) {
         try {
           var json = jsonDecode(response.body);
@@ -107,8 +103,7 @@ class ApiManager {
             jsonData = json[responseBodyDataKey];
           }
           if (jsonData is List) {
-            returnValue =
-                List<T>.from(jsonData.map((item) => responseParser(item)));
+           return List<T>.from(jsonData.map((item) => responseParser(item)));
           } else {
             throw new Exception("Expected array in body");
           }
@@ -121,7 +116,47 @@ class ApiManager {
             "Response error: ${response.statusCode} - ${response.body}");
       }
     });
+  }
 
-    return returnValue;
+  Future<T> post<T extends BaseModel>({ResponseParser responseParser,
+      List<String> pathComponents, T model, String rawModel,
+        Map<String, String> additionalHeaders, String overrideUrl}) async {
+    StringBuffer urlBuffer = new StringBuffer(baseUrl);
+
+    pathComponents?.forEach((pathComponent) => urlBuffer.write("/" + pathComponent));
+
+    Map<String, String> headers =
+        baseHeaders != null ? new HashMap.from(baseHeaders) : new HashMap();
+    if (additionalHeaders != null) {
+      headers.addAll(additionalHeaders);
+    }
+
+    return http
+        .post(overrideUrl ?? urlBuffer.toString(),
+            headers: headers, body: model?.toJson() ?? rawModel)
+        .then((response) {
+      if (response.statusCode == 201) {
+        try {
+          var json = jsonDecode(response.body);
+          var jsonData = json;
+          if (responseBodyDataKey != null && responseBodyDataKey != "") {
+            jsonData = json[responseBodyDataKey];
+          }
+          if (jsonData is List) {
+            throw new Exception("Expected json object");
+          } else {
+            return responseParser(jsonData) as T;
+          }
+        } catch (e) {
+          print(e);
+          rethrow;
+        }
+      } else if (response.statusCode >= 200 && response.statusCode <= 299) {
+        return null;
+      } else {
+        throw new Exception(
+            "Response error: ${response.statusCode} - ${response.body}");
+      }
+    });
   }
 }

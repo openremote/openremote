@@ -26,8 +26,6 @@ import static org.openremote.model.query.AssetQuery.Select
 class AssetPublicQueryTest extends Specification implements ManagerContainerTrait {
 
     @Shared
-    static Container container
-    @Shared
     static ManagerDemoSetup managerDemoSetup
     @Shared
     static KeycloakDemoSetup keycloakDemoSetup
@@ -42,8 +40,7 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
 
     def setupSpec() {
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         assetStorageService = container.getService(AssetStorageService.class)
@@ -68,11 +65,6 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
 
             returnedAssets.add(assetStorageService.merge(somePublicAsset))
         }
-    }
-
-    def cleanupSpec() {
-        given: "the server should be stopped"
-        stopContainer(container)
     }
 
     def "Query public assets"() {

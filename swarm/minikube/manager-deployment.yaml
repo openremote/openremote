@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose -f ../kube-docker-compose.yml convert
+    kompose.version: 1.21.0 ()
+  creationTimestamp: null
+  labels:
+    io.kompose.service: manager
+  name: manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: manager
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose -f ../kube-docker-compose.yml convert
+        kompose.version: 1.21.0 ()
+      creationTimestamp: null
+      labels:
+        io.kompose.service: manager
+    spec:
+      containers:
+      - env:
+        - name: APP_DEFAULT
+          value: manager
+        - name: DATABASE_CONNECTION_TIMEOUT_SECONDS
+          value: "300"
+        - name: DATABASE_CONNECTION_URL
+          value: jdbc:postgresql://postgresql/openremote
+        - name: DATABASE_MAX_POOL_SIZE
+          value: "20"
+        - name: DATABASE_MIN_POOL_SIZE
+          value: "5"
+        - name: DATABASE_PASSWORD
+          value: CHANGE_ME_DB_USER_PASSWORD
+        - name: DATABASE_USERNAME
+          value: openremote
+        - name: DEV_MODE
+          value: "false"
+        - name: IDENTITY_NETWORK_HOST
+          value: localhost
+        - name: IDENTITY_NETWORK_SECURE
+          value: "true"
+        - name: IDENTITY_NETWORK_WEBSERVER_PORT
+          value: "443"
+        - name: JAVA_OPTS
+          value: -Xms400m -Xmx400m -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
+            -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m -XX:MaxDirectMemorySize=25m
+            -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof
+        - name: KEYCLOAK_HOST
+          value: keycloak
+        - name: KEYCLOAK_PORT
+          value: "8080"
+        - name: MASTER_REALM_KEYCLOAK_THEME
+          value: openremote
+        - name: SETUP_ADMIN_PASSWORD
+          value: secret
+        - name: SETUP_IMPORT_DEMO_AGENT
+          value: "true"
+        - name: SETUP_IMPORT_DEMO_AGENT_KNX
+          value: "false"
+        - name: SETUP_IMPORT_DEMO_AGENT_VELBUS
+          value: "false"
+        - name: SETUP_IMPORT_DEMO_ASSETS
+          value: "true"
+        - name: SETUP_IMPORT_DEMO_RULES
+          value: "true"
+        - name: SETUP_IMPORT_DEMO_SCENES
+          value: "true"
+        - name: SETUP_IMPORT_DEMO_USERS
+          value: "true"
+        - name: SETUP_WIPE_CLEAN_INSTALL
+          value: "true"
+        - name: TZ
+          value: Europe/Amsterdam
+        - name: WEBSERVER_LISTEN_HOST
+          value: 0.0.0.0
+        image: openremote/manager-swarm:latest
+        imagePullPolicy: ""
+        name: manager
+        resources: {}
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes: null
+status: {}

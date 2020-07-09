@@ -24,8 +24,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
     def "Test asset changes as superuser"() {
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
@@ -80,7 +79,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         assetResource.writeAttributeValue(null, testAsset.getId(), "foo", "\"bar2\"")
 
         then: "the attribute value should match"
-        new PollingConditions(delay: 1, timeout: 5).eventually {
+        new PollingConditions(timeout: 5, delay: 0.2).eventually {
             def asset = assetResource.get(null, testAsset.getId())
             assert asset.getAttribute("foo").get().getValueAsString().get() == "bar2"
         }
@@ -89,7 +88,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         assetResource.writeAttributeValue(null, testAsset.getId(), "foo", "null")
 
         then: "the attribute value should match"
-        new PollingConditions(delay: 1, timeout: 5).eventually {
+        new PollingConditions(timeout: 5, delay: 0.2).eventually {
             def asset = assetResource.get(null, testAsset.getId())
             assert !asset.getAttribute("foo").get().getValue().isPresent()
         }
@@ -144,8 +143,5 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         then: "the request should be bad"
         ex = thrown()
         ex.response.status == 400
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

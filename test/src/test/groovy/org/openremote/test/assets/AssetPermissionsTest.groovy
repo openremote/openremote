@@ -34,11 +34,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
     def "Access assets as superuser"() {
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
-        def conditions = new PollingConditions(delay: 1, timeout: 5)
+        def conditions = new PollingConditions(delay: 0.2, timeout: 5)
 
         and: "an authenticated admin user"
         def accessToken = authenticate(
@@ -215,19 +214,15 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             assert asset.getAttribute(AttributeType.GEO_STREET).get().getValue().isPresent()
             assert asset.getAttribute(AttributeType.GEO_STREET).get().getValue().get().toJson() == Values.create("Teststreet 456").toJson()
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 
     def "Access assets as testuser1"() {
 
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
-        def conditions = new PollingConditions(delay: 1, timeout: 10)
+        def conditions = new PollingConditions(delay: 0.2, timeout: 10)
 
         and: "an authenticated test user"
         def accessToken = authenticate(
@@ -386,15 +381,11 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 
     def "Access assets as testuser2"() {
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
@@ -529,18 +520,14 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 
     def "Access assets as testuser3"() {
         given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
-        def conditions = new PollingConditions(delay: 1, timeout: 5)
+        def conditions = new PollingConditions(delay: 0.2, timeout: 5)
 
         and: "an authenticated test user"
         def accessToken = authenticate(
@@ -895,8 +882,5 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assert testAsset.getAttribute("myCustomAttribute").get().getMetaItems(LABEL.getUrn())[0].getValue().get() == Values.create("Label1")
         assert testAsset.getAttribute("myCustomAttribute").get().getMetaItems(LABEL.getUrn())[1].getValue().get() == Values.create("Label2")
         assert testAsset.getAttribute("myCustomAttribute").get().getMetaItems(LABEL.getUrn())[2].getValue().get() == Values.create("Label3")
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

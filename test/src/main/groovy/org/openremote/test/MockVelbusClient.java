@@ -53,7 +53,7 @@ public class MockVelbusClient implements IoClient<VelbusPacket> {
     public void sendMessage(VelbusPacket message) {
         sentMessages.add(message);
 
-        // If a mcck packet mapping exists for this then return the result
+        // If a mock packet mapping exists for this then return the result
         if (mockPackets != null) {
             List<String> mappings = mockPackets.get(message.toString());
             if (mappings != null) {

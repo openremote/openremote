@@ -23,7 +23,8 @@ class PageAccount<S extends AppStateKeyed> extends Page<S>  {
         // language=CSS
         return css`
             iframe {
-                width: 100%;    
+                width: 100%;
+                border: none;
             }
         `;
     }

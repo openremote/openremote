@@ -11,6 +11,7 @@ import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
+import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -25,9 +26,10 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
     def "Presence detection with motion sensor"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 30, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
+        def conditions = new PollingConditions(timeout: 30, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -150,16 +152,17 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
             assert hallway.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
         }
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
     def "Presence detection with motion sensor and confirmation with CO2 level"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 20, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
@@ -280,17 +283,16 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
             assert roomAsset.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
         }
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
         /* TODO Migrate to JS, didn't compile even with Drools
         def "Presence prediction rules compilation"() {
 
             given: "the container environment is started"
-            def conditions = new PollingConditions(timeout: 100, delay: 1)
-            def serverPort = findEphemeralPort()
-            def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+            def conditions = new PollingConditions(timeout: 100, delay: 0.2)
+            def container = startContainer(defaultConfig(), defaultServices())
             def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
             def rulesService = container.getService(RulesService.class)
             def assetStorageService = container.getService(AssetStorageService.class)
@@ -313,9 +315,6 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
                 assert apartment1Engine.isRunning()
     //            assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1
             }
-
-            cleanup: "the server should be stopped"
-            stopContainer(container)
         }
         */
 

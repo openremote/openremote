@@ -45,7 +45,6 @@ public class ArtnetClientProtocol extends AbstractIoClientProtocol<ArtnetPacket,
     public static final String PROTOCOL_DISPLAY_NAME = "Artnet Client";
     public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = joinCollections(ArtnetClientProtocol.PROTOCOL_META_ITEM_DESCRIPTORS, AbstractIoClientProtocol.PROTOCOL_GENERIC_META_ITEM_DESCRIPTORS);
     public static final String agentProtocolConfigName = "ArtnetProtocolAgent";
-    public static final String ARTNET_DEFAULT_LIGHT_STATE = "{'r': 0, 'g': 0, 'b': 0, 'w': 0}";
     public static final MetaItemDescriptor META_ARTNET_LIGHT_ID = metaItemInteger(
             "lightId",
             ACCESS_PRIVATE,
@@ -435,13 +434,16 @@ public class ArtnetClientProtocol extends AbstractIoClientProtocol<ArtnetPacket,
                         if(lights.stream().anyMatch(l -> l.getLightId() == lightId)) {
                             ArtnetLight updatedLight = lights.stream().filter(l -> l.getLightId() == lightId).findFirst().orElse(null);
                             if(updatedLight != null) {
+                                Map<String, Integer> values = new HashMap<>();
+                                for(String key : updatedLight.getRequiredValues())
+                                    values.put(key, 0);
                                 List<AssetAttribute> artNetLightAttributes = Arrays.asList(
                                         new AssetAttribute("Id", NUMBER, Values.create(updatedLight.getLightId())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
                                         new AssetAttribute("GroupId", NUMBER, Values.create(updatedLight.getGroupId())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
                                         new AssetAttribute("Universe", NUMBER, Values.create(updatedLight.getUniverse())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
                                         new AssetAttribute("AmountOfLeds", NUMBER, Values.create(updatedLight.getAmountOfLeds())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
                                         new AssetAttribute("RequiredValues", STRING, Values.create(String.join(",", updatedLight.getRequiredValues()))).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
-                                        new AssetAttribute("Values", OBJECT, Values.parseOrNull(ARTNET_DEFAULT_LIGHT_STATE)).addMeta(
+                                        new AssetAttribute("Values", OBJECT, Values.parseOrNull(Container.JSON.writeValueAsString(values))).addMeta(
                                                 new MetaItem(AGENT_LINK, new AttributeRef(parentAgent.getId(), agentProtocolConfigName).toArrayValue())
                                         ),
                                         new AssetAttribute("Switch", BOOLEAN, Values.create(true)).addMeta(
@@ -494,19 +496,22 @@ public class ArtnetClientProtocol extends AbstractIoClientProtocol<ArtnetPacket,
         return null;
     }
 
-    protected AssetTreeNode formLightAsset(ArtnetLight light, Asset parentAgent) {
+    protected AssetTreeNode formLightAsset(ArtnetLight light, Asset parentAgent) throws JsonProcessingException {
         Asset asset = new Asset();
         asset.setId(UniqueIdentifierGenerator.generateId());
         asset.setParent(parentAgent);
         asset.setName("ArtNet Light " + light.getLightId());
         asset.setType(THING);
+        Map<String, Integer> values = new HashMap<>();
+        for(String key : light.getRequiredValues())
+            values.put(key, 0);
         List<AssetAttribute> artNetLightAttributes = Arrays.asList(
                 new AssetAttribute("Id", NUMBER, Values.create(light.getLightId())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
                 new AssetAttribute("GroupId", NUMBER, Values.create(light.getGroupId())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
                 new AssetAttribute("Universe", NUMBER, Values.create(light.getUniverse())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
                 new AssetAttribute("AmountOfLeds", NUMBER, Values.create(light.getAmountOfLeds())).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
                 new AssetAttribute("RequiredValues", STRING, Values.create(String.join(",", light.getRequiredValues()))).setMeta(new Meta(new MetaItem(READ_ONLY, Values.create(true)))),
-                new AssetAttribute("Values", OBJECT, Values.parseOrNull(ARTNET_DEFAULT_LIGHT_STATE)).addMeta(
+                new AssetAttribute("Values", OBJECT, Values.parseOrNull(Container.JSON.writeValueAsString(values))).addMeta(
                         new MetaItem(AGENT_LINK, new AttributeRef(parentAgent.getId(), agentProtocolConfigName).toArrayValue())
                 ),
                 new AssetAttribute("Switch", BOOLEAN, Values.create(true)).addMeta(

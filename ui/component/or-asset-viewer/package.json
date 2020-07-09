@@ -18,6 +18,8 @@
     "@openremote/or-input": "^1.1.0",
     "@openremote/or-attribute-input": "^1.1.0",
     "@openremote/or-attribute-history": "^1.1.0",
+    "@openremote/or-survey": "^1.1.0",
+    "@openremote/or-survey-results": "^1.1.0",
     "@openremote/or-translate": "^1.1.0",
     "@openremote/or-panel": "^1.1.0",
     "@openremote/or-table": "^1.1.0",

@@ -1,9 +1,10 @@
 package org.openremote.test.console
 
-import com.google.common.collect.Lists
+
 import com.google.firebase.messaging.Message
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
@@ -36,9 +37,10 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import javax.ws.rs.WebApplicationException
+import java.util.concurrent.TimeUnit
 import java.util.stream.IntStream
 
-import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_CUSTOMER_A
+import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_SMART_BUILDING
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.SMART_BUILDING_LOCATION
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD
@@ -57,11 +59,23 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def targetIds = []
         def messages = []
 
-        given: "a mock push notification handler"
-        PushNotificationHandler mockPushNotificationHandler = Spy(PushNotificationHandler) {
-            isValid() >> true
+        given: "the container environment is started"
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
+        ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = 100
+        ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_BATCH_MILLIS = 200
+        def container = startContainer(defaultConfig(), defaultServices())
+        def pushNotificationHandler = container.getService(PushNotificationHandler.class)
+        def notificationService = container.getService(NotificationService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def rulesService = container.getService(RulesService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
 
-            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+        and: "a mock push notification handler is injected"
+        PushNotificationHandler mockPushNotificationHandler = Spy(pushNotificationHandler)
+        mockPushNotificationHandler.isValid() >> true
+        mockPushNotificationHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
                 id, source, sourceId, target, message ->
                     notificationIds << id
                     targetTypes << target.type
@@ -69,26 +83,12 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                     messages << message
                     callRealMethod()
             }
-
-            // Assume sent to FCM
-            sendMessage(_ as Message) >> {
+        // Assume sent to FCM
+        mockPushNotificationHandler.sendMessage(_ as Message) >> {
                 message -> return NotificationSendResult.success()
             }
-        }
+        notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), mockPushNotificationHandler)
 
-        and: "the container environment is started with the mock handler"
-        def conditions = new PollingConditions(timeout: 20, delay: 1)
-        def serverPort = findEphemeralPort()
-        ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = 100
-        ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_BATCH_MILLIS = 200
-        def services = Lists.newArrayList(defaultServices())
-        services.replaceAll{it instanceof PushNotificationHandler ? mockPushNotificationHandler : it}
-        def container = startContainer(defaultConfig(serverPort), services)
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def rulesService = container.getService(RulesService.class)
-        def rulesetStorageService = container.getService(RulesetStorageService.class)
         def geofenceAdapter = (ORConsoleGeofenceAssetAdapter) rulesService.geofenceAssetAdapters.find {
             it.name == "ORConsole"
         }
@@ -107,7 +107,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             def tenantBuildingEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantBuilding.realm)
             assert tenantBuildingEngine != null
             assert tenantBuildingEngine.isRunning()
-            assert tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
         }
 
         and: "an authenticated user"
@@ -389,7 +389,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             timestamp = asset.getAttribute(LOCATION.attributeName).flatMap { it.valueTimestamp }.orElse(Long.MAX_VALUE)
         }
 
-        when: "a console's location is updated to be at the Smart Building again"
+        when: "time advances"
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+
+        and: "a console's location is updated to be at the Smart Building again"
         authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, LOCATION.attributeName, SMART_BUILDING_LOCATION.toValue().toJson())
 
         then: "no more alerts should have been sent"
@@ -401,7 +404,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             assert notificationIds.size() == 1
         }
 
-        when: "a console's location is updated to be null"
+        when: "time advances"
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+
+        and: "a console's location is updated to be null"
         authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, LOCATION.attributeName, "null")
 
         then: "no more alerts should have been sent and the welcome reset rule should have fired on the tenant rule engine"
@@ -416,7 +422,11 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             assert !tenantBuildingEngine.facts.getOptional("welcomeHome_${testUser3Console2.id}").isPresent()
         }
 
-        when: "a console's location is updated to be at the Smart Building again"
+
+        when: "time advances"
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+
+        and: "a console's location is updated to be at the Smart Building again"
         authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, LOCATION.attributeName, SMART_BUILDING_LOCATION.toValue().toJson())
 
         then: "another alert should have been sent"
@@ -671,7 +681,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             assert geofences.size() == 0
         }
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
+        cleanup: "the mock is removed"
+        notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
     }
 }

@@ -520,7 +520,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 } else {
                     config.columns.push({
                         type: "prop",
-                        stringify: true,
+                        header: "value",
+                        stringify: typeof(dp.y) === "object",
                         numeric: typeof(dp.y) === "number"
                     });
                 }

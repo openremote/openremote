@@ -6,13 +6,13 @@ import {MDCComponent} from "@material/base";
 import {MDCRipple} from "@material/ripple";
 import {MDCCheckbox} from "@material/checkbox";
 import {MDCSwitch} from "@material/switch";
+import {MDCSlider} from "@material/slider";
 import {MDCSelect, MDCSelectEvent } from "@material/select";
 import {MDCList, MDCListActionEvent} from "@material/list";
 
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
 import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
-import moment from "moment";
-import {DefaultColor4, DefaultColor8} from "@openremote/core";
+import {DefaultColor4, DefaultColor8, Util} from "@openremote/core";
 import i18next from "i18next";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
@@ -30,6 +30,7 @@ const selectStyle = require("!!raw-loader!@material/select/dist/mdc.select.css")
 const listStyle = require("!!raw-loader!@material/list/dist/mdc.list.css");
 const menuSurfaceStyle = require("!!raw-loader!@material/menu-surface/dist/mdc.menu-surface.css");
 const menuStyle = require("!!raw-loader!@material/menu/dist/mdc.menu.css");
+const sliderStyle = require("!!raw-loader!@material/slider/dist/mdc.slider.css");
 
 export class OrInputChangedEvent extends CustomEvent<OrInputChangedEventDetail> {
 
@@ -106,13 +107,14 @@ const style = css`
         height: 56px;
     }
      
-    #wrapper {
+    #switch-wrapper {
         display: flex;
         align-items: center;
-    }
+        height: 100%;
+    }   
     
-    #wrapper > label {
-        margin-left: 10px;
+    #switch-wrapper > label {
+        margin-right: 20px;
     }
     
     #component {
@@ -190,6 +192,7 @@ const style = css`
     
     .mdc-icon-button {
         padding: 0;
+        color: var(--internal-or-input-color);
     }
     
     #field {
@@ -216,6 +219,7 @@ export class OrInput extends LitElement {
             css`${unsafeCSS(listStyle)}`,
             css`${unsafeCSS(menuStyle)}`,
             css`${unsafeCSS(menuSurfaceStyle)}`,
+            css`${unsafeCSS(sliderStyle)}`,
             style
         ];
     }
@@ -308,6 +312,9 @@ export class OrInput extends LitElement {
     @property({type: Boolean})
     public rounded: boolean = false;
 
+    @property({type: String})
+    public format?: string;
+
     /* BUTTON STYLES END */
 
     /* TEXT INPUT STYLES START */
@@ -356,6 +363,10 @@ export class OrInput extends LitElement {
             const outlined = !this.fullWidth && this.outlined;
             const hasHelper = !!this.helperText;
             const showValidationMessage = this.validationMessage;
+            const helperClasses = {
+                "mdc-text-field-helper-text--persistent": this.helperPersistent,
+                "mdc-text-field-helper-text--validation-msg": showValidationMessage,
+            };
             const hasValue = this.value || this.value === false;
             const labelTemplate = showLabel ? html`<label class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""}" for="elem">${this.label}</label>` : ``;
 
@@ -364,7 +375,8 @@ export class OrInput extends LitElement {
                     return html`<span>RADIO</span>`;
                 case InputType.SWITCH:
                     return html`
-                        <span id="wrapper">
+                        <span id="switch-wrapper">
+                            ${this.label ? html`<label for="elem" class="${this.disabled ? "mdc-switch--disabled" : ""}">${this.label}</label>` : ``}
                             <div id="component" class="mdc-switch ${this.disabled || this.readonly ? "mdc-switch--disabled" : ""} ${this.value ? "mdc-switch--checked" : ""}">
                                 <div class="mdc-switch__track"></div>
                                 <div class="mdc-switch__thumb-underlay">
@@ -378,10 +390,9 @@ export class OrInput extends LitElement {
                                     </div>
                                 </div>
                             </div>
-                            <label for="elem">${this.label}</label>
                         </span>
                     `;
-                    case InputType.LIST:
+                case InputType.LIST:
                         const classesList = {
                             "mdc-select--outlined": outlined,
                             "mdc-select--disabled": this.disabled,
@@ -390,11 +401,7 @@ export class OrInput extends LitElement {
                             "mdc-select--no-label": !this.label,
                             "mdc-select--with-leading-icon": !!this.icon
                         };
-                        const helperClassesList = {
-                            "mdc-select-helper-text--persistent": this.helperPersistent,
-                            "mdc-select-helper-text--validation-msg": showValidationMessage,
-                        };
-    
+
                         let optsList: [string, string][] | undefined;
                         if (this.options && this.options.length > 0) {
                             if (Array.isArray(this.options[0])) {
@@ -427,10 +434,6 @@ export class OrInput extends LitElement {
                         "mdc-select--no-label": !this.label,
                         "mdc-select--with-leading-icon": !!this.icon
                     };
-                    const helperClasses = {
-                        "mdc-select-helper-text--persistent": this.helperPersistent,
-                        "mdc-select-helper-text--validation-msg": showValidationMessage,
-                    };
 
                     let opts: [string, string][] | undefined;
                     if (this.options && this.options.length > 0) {
@@ -441,7 +444,7 @@ export class OrInput extends LitElement {
                         }
                     }
                     const value = opts && opts.find(([optValue, optDisplay], index) => this.value === optValue);
-                    const valueLabel = value ? value[1] : this.value;
+                    const valueLabel = value ? value[1] : typeof this.value === "string" ? this.value : "";
                     this._selectedIndex = -1;
 
                     return html`
@@ -450,7 +453,7 @@ export class OrInput extends LitElement {
                             @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
                                 <div id="menu-anchor" class="mdc-select__anchor select-class">
                                     <or-icon class="mdc-select__dropdown-icon" icon="menu-down"></or-icon>
-                                    <input id="elem" readonly class="mdc-select__selected-text" role="button" value="${i18next.t(valueLabel)}" aria-haspopup="listbox" aria-controls="component-helper-text" aria-describedby="component-helper-text" aria-labelledby="component-label component"/>
+                                    <input id="elem" readonly class="mdc-select__selected-text" role="button" value="${valueLabel ? i18next.t(valueLabel) : ""}" aria-haspopup="listbox" aria-controls="component-helper-text" aria-describedby="component-helper-text" aria-labelledby="component-label component"/>
                                     ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
                                     ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
                                 </div>   
@@ -504,7 +507,7 @@ export class OrInput extends LitElement {
                         <button id="component" class="${classMap(classes)}"
                             ?readonly="${this.readonly}"
                             ?disabled="${this.disabled}"
-                            @onmousedown="${() => {if (isMomentary) this.onValueChange(undefined, true)}}" @onmouseup="${() => isMomentary ? this.onValueChange(undefined, false) : this.onValueChange(undefined, true)}">
+                            @mousedown="${() => {if (isMomentary) this.dispatchEvent(new OrInputChangedEvent(true, null))}}" @mouseup="${() => isMomentary ? this.dispatchEvent(new OrInputChangedEvent(false, true)) : this.dispatchEvent(new OrInputChangedEvent(true, null))}">
                             ${!isIconButton ? html`<div class="mdc-button__ripple"></div>` : ``}
                             ${this.icon ? html`<or-icon class="${isIconButton ? "" : this.action ? "mdc-fab__icon" : "mdc-button__icon"}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
                             ${this.label ? html`<span class="${this.action ? "mdc-fab__label" : "mdc-button__label"}">${this.label}</span>` : ``}
@@ -547,48 +550,82 @@ export class OrInput extends LitElement {
                 case InputType.TEXT:
                 case InputType.TEXTAREA:
                 case InputType.JSON: {
-                    const valMinMax: [any, any, any] = [this.value, this.min, this.max];
+                    // The following HTML input types require the values as specially formatted strings
+                    const valMinMax: [any, any, any] = [this.value || "", this.min, this.max];
 
-                    if (valMinMax.find((v) => v !== undefined && v !== null && typeof(v) !== "string") !== undefined) {
+                    if (valMinMax.some((v) => v !== undefined && v !== null && typeof (v) !== "string")) {
 
-                        let format: string | undefined;
+                        if (this.type === InputType.JSON) {
+                            valMinMax[0] = valMinMax[0] !== undefined && valMinMax[0] !== null ? (typeof valMinMax[0] === "string" ? valMinMax[0] : JSON.stringify(valMinMax[0], null, 2)) : "";
+                        } else {
+                            let format: string | undefined;
+                            let requiresDate = false;
 
-                        switch (this.type) {
-                            case InputType.TIME:
-                                format = "HH:mm";
-                               break;
-                            case InputType.DATE:
-                                format = "YYYY-MM-DD";
-                                break;
-                            case InputType.WEEK:
-                                format = "YYYY-Www";
-                                break;
-                            case InputType.MONTH:
-                                format = "YYYY-MM";
-                                break;
-                            case InputType.DATETIME:
-                                format = "YYYY-MM-DDTHH:mm";
-                                break;
-                            case InputType.JSON:
-                                valMinMax[0] = valMinMax[0] !== undefined && valMinMax[0] !== null ? (typeof valMinMax[0] === "string" ? valMinMax[0] : JSON.stringify(valMinMax[0], null, 2)) : "";
-                                break;
-                            default:
-                                valMinMax[0] = valMinMax[0] !== undefined && valMinMax[0] !== null ? valMinMax[0] : "";
-                                break;
+                            switch (this.type) {
+                                case InputType.TIME:
+                                    requiresDate = true;
+                                    format = "HH:mm";
+                                    break;
+                                case InputType.DATE:
+                                    requiresDate = true;
+                                    format = "YYYY-MM-DD";
+                                    break;
+                                case InputType.WEEK:
+                                    requiresDate = true;
+                                    format = "YYYY-[W]WW";
+                                    break;
+                                case InputType.MONTH:
+                                    requiresDate = true;
+                                    format = "YYYY-MM";
+                                    break;
+                                case InputType.DATETIME:
+                                    requiresDate = true;
+                                    format = "YYYY-MM-DDTHH:mm";
+                                    break;
+                                default:
+                                    // Allow custom formats to be used for other input types
+                                    format = this.format;
+                            }
+
+                            if (format) {
+                                const formatter = Util.getAttributeValueFormatter();
+
+                                valMinMax.forEach((val, i) => {
+                                    if (requiresDate) {
+                                        if (typeof (val) === "number") {
+                                            // Assume UNIX timestamp in ms
+                                            const offset = (new Date()).getTimezoneOffset() * 60000;
+                                            val = new Date(val - offset);
+                                        }
+                                        if (val) {
+                                            val = formatter(val, format);
+                                        }
+                                    }
+                                    valMinMax[i] = val;
+                                });
+                            }
                         }
+                    }
 
-                        if (format) {
-                            valMinMax.forEach((val, i) => {
-                                if (typeof(val) === "number") {
-                                    const offset = (new Date()).getTimezoneOffset() * 60000;
-                                    val = new Date(val - offset);
-                                }
-                                if (val instanceof Date) {
-                                    val = moment(val).format(format);
-                                }
-                                valMinMax[i] = val;
-                            });
-                        }
+                    if (this.type === InputType.RANGE) {
+                        return html`
+                            <div id="component" class="mdc-slider mdc-slider--discrete" tabindex="0" role="slider" 
+                            aria-valuemin="${ifDefined(valMinMax[1])}" aria-valuemax="${ifDefined(valMinMax[2])}"
+                            aria-valuenow="${ifDefined(valMinMax[0])}" aria-label="${ifDefined(this.label)}">
+                                <div class="mdc-slider__track-container">
+                                    <div class="mdc-slider__track"></div>
+                                </div>
+                                <div class="mdc-slider__thumb-container">
+                                    <div class="mdc-slider__pin">
+                                        <span class="mdc-slider__pin-value-marker"></span>
+                                    </div>
+                                    <svg class="mdc-slider__thumb" width="21" height="21">
+                                        <circle cx="10.5" cy="10.5" r="7.875"></circle>
+                                    </svg>
+                                    <div class="mdc-slider__focus-ring"></div>
+                                </div>
+                            </div>
+                        `;
                     }
 
                     const classes = {
@@ -601,15 +638,11 @@ export class OrInput extends LitElement {
                         "mdc-text-field--with-leading-icon": !!this.icon,
                         "mdc-text-field--with-trailing-icon": !!this.iconTrailing
                     };
-                    const helperClasses = {
-                        "mdc-text-field-helper-text--persistent": this.helperPersistent,
-                        "mdc-text-field-helper-text--validation-msg": showValidationMessage,
-                    };
 
                     return html`
                             <div id="component" class="mdc-text-field ${classMap(classes)}">
                             ${this.icon ? html`<or-icon class="mdc-text-field__icon" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
-                            ${this.type === InputType.TEXTAREA  || this.type === InputType.JSON ? html`
+                            ${this.type === InputType.TEXTAREA || this.type === InputType.JSON ? html`
                                 <textarea id="elem" class="mdc-text-field__input"
                                     ?required="${this.required}"
                                     ?readonly="${this.readonly}"
@@ -622,7 +655,7 @@ export class OrInput extends LitElement {
                                     aria-label="${ifDefined(this.label)}">${valMinMax[0] ? valMinMax[0] : ""}</textarea>
                                 ${this.renderOutlined(labelTemplate)}
                                 ` :
-                                html`<input type="${this.type}" id="elem" class="mdc-text-field__input"
+                        html`<input type="${this.type}" id="elem" class="mdc-text-field__input"
                                     ?required="${this.required}"
                                     ?readonly="${this.readonly}"
                                     ?disabled="${this.disabled}"
@@ -645,7 +678,7 @@ export class OrInput extends LitElement {
                                     <div class="mdc-text-field-helper-text ${classMap(helperClasses)}">${showValidationMessage ? this.validationMessage : this.helperText}</div>
                                     ${this.charCounter && !this.readonly ? html`<div class="mdc-text-field-character-counter"></div>` : ``}
                                 </div>
-                        ` : ``}
+                            ` : ``}
                     `;
                 }
             }
@@ -705,6 +738,9 @@ export class OrInput extends LitElement {
                         break;
                     case InputType.SWITCH:
                         this._mdcComponent = new MDCSwitch(component);
+                        break;
+                    case InputType.RANGE:
+                        this._mdcComponent = new MDCSlider(component);
                         break;
                     default:
                         const textField = new MDCTextField(component);
@@ -770,7 +806,7 @@ export class OrInput extends LitElement {
             newValue = undefined;
         }
 
-        if (typeof(newValue) === "string" && typeof(previousValue) !== "string") {
+        if (typeof(newValue) === "string") {
             switch (this.type) {
                 case InputType.CHECKBOX:
                 case InputType.SWITCH:

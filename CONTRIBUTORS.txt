@@ -2,3 +2,5 @@ Christian Bauer <christian@openremote.io>
 Richard Turner <richard@openremote.io>
 Michael Rademaker <michael@openremote.io>
 Robin Dekkers <robin@openremote.io>
+Rens van der Linden
+Stijn Groenen

@@ -28,7 +28,6 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ConnectionConstants;
-import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.mqtt.MqttBrokerService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -36,16 +35,14 @@ import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.event.shared.*;
+import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.TextUtil;
 
 import javax.websocket.CloseReason;
 import javax.websocket.Session;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -54,6 +51,8 @@ import java.util.logging.Logger;
 import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.web.ConnectionConstants.SESSION;
 import static org.openremote.agent.protocol.ProtocolClientEventService.getSessionKey;
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+
 /**
  * Receives and publishes messages, handles the client/server event bus.
  * <p>
@@ -116,6 +115,7 @@ public class ClientEventService implements ProtocolClientEventService {
     public static final int PRIORITY = ManagerWebService.PRIORITY - 200;
     private static final Logger LOG = Logger.getLogger(ClientEventService.class.getName());
     public static final String WEBSOCKET_EVENTS = "events";
+    protected static final String INTERNAL_SESSION_KEY = "ClientEventServiceInternal";
 
     // TODO: Some of these options should be configurable depending on expected load etc.
     public static final String CLIENT_EVENT_TOPIC = "seda://ClientEventTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
@@ -130,6 +130,7 @@ public class ClientEventService implements ProtocolClientEventService {
     protected ManagerIdentityService identityService;
     protected EventSubscriptions eventSubscriptions;
     protected GatewayService gatewayService;
+    protected Set<EventSubscription<?>> pendingInternalSubscriptions;
     protected boolean stopped;
 
     @Override
@@ -145,8 +146,7 @@ public class ClientEventService implements ProtocolClientEventService {
         gatewayService = container.getService(GatewayService.class);
 
         eventSubscriptions = new EventSubscriptions(
-            container.getService(TimerService.class),
-            container.getService(ManagerExecutorService.class)
+            container.getService(TimerService.class)
         );
 
         messageBrokerService.getContext().getTypeConverterRegistry().addTypeConverters(
@@ -207,8 +207,6 @@ public class ClientEventService implements ProtocolClientEventService {
                                 exchange.getIn().setBody(exchange.getIn().getBody(EventSubscription.class));
                             } else if (bodyStr.startsWith(CancelEventSubscription.MESSAGE_PREFIX)) {
                                 exchange.getIn().setBody(exchange.getIn().getBody(CancelEventSubscription.class));
-                            } else if (bodyStr.startsWith(RenewEventSubscriptions.MESSAGE_PREFIX)) {
-                                exchange.getIn().setBody(exchange.getIn().getBody(RenewEventSubscriptions.class));
                             } else if (bodyStr.startsWith(SharedEvent.MESSAGE_PREFIX)) {
                                 exchange.getIn().setBody(exchange.getIn().getBody(SharedEvent.class));
                             }
@@ -249,14 +247,6 @@ public class ClientEventService implements ProtocolClientEventService {
                             eventSubscriptions.cancel(sessionKey, exchange.getIn().getBody(CancelEventSubscription.class));
                         })
                         .stop()
-                    .when(body().isInstanceOf(RenewEventSubscriptions.class))
-                        .process(exchange -> {
-                            String sessionKey = getSessionKey(exchange);
-                            AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-                            boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId());
-                            eventSubscriptions.update(sessionKey, restrictedUser,exchange.getIn().getBody(RenewEventSubscriptions.class).getSubscriptionIds());
-                        })
-                        .stop()
                     .when(body().isInstanceOf(SharedEvent.class))
                         .choice()
                             .when(header(HEADER_CONNECTION_TYPE).isNotNull()) // Inbound messages from clients
@@ -275,6 +265,38 @@ public class ClientEventService implements ProtocolClientEventService {
                     .end();
             }
         });
+
+        // Add pending internal subscriptions
+        if (!pendingInternalSubscriptions.isEmpty()) {
+            pendingInternalSubscriptions.forEach(subscription ->
+                eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, false, subscription));
+        }
+
+        pendingInternalSubscriptions = null;
+    }
+
+    /**
+     * Make an internal subscription to {@link SharedEvent}s sent on the client event bus
+     */
+    public <T extends SharedEvent> String addInternalSubscription(Class<T> eventClass, EventFilter<T> filter, Consumer<T> eventConsumer) {
+        return addInternalSubscription(Integer.toString(Objects.hash(eventClass, filter, eventConsumer)), eventClass, filter, eventConsumer);
+    }
+    public <T extends SharedEvent> String addInternalSubscription(String subscriptionId, Class<T> eventClass, EventFilter<T> filter, Consumer<T> eventConsumer) {
+        EventSubscription<T> subscription = new EventSubscription<T>(eventClass, filter, subscriptionId, eventConsumer);
+        if (eventSubscriptions == null) {
+            // Not initialised yet
+            if (pendingInternalSubscriptions == null) {
+                pendingInternalSubscriptions = new HashSet<>();
+            }
+            pendingInternalSubscriptions.add(subscription);
+        } else {
+            eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, false, subscription);
+        }
+        return subscriptionId;
+    }
+
+    public void cancelInternalSubscription(String subscriptionId) {
+        eventSubscriptions.cancel(INTERNAL_SESSION_KEY, new CancelEventSubscription(subscriptionId));
     }
 
     @Override
@@ -330,7 +352,9 @@ public class ClientEventService implements ProtocolClientEventService {
         keycloakIdentityProvider.createClient(clientCredentials.getRealm(), clientRepresentation);
 
         User serviceUser = keycloakIdentityProvider.getClientServiceUser(clientCredentials.getRealm(), clientCredentials.getClientId());
-        keycloakIdentityProvider.updateRoles(clientCredentials.getRealm(), serviceUser.getId(), clientCredentials.getRoles());
+        if (clientCredentials.getRoles() != null && clientCredentials.getRoles().length > 0) {
+            keycloakIdentityProvider.updateRoles(clientCredentials.getRealm(), serviceUser.getId(), KEYCLOAK_CLIENT_ID, Arrays.stream(clientCredentials.getRoles()).map(ClientRole::getValue).toArray(String[]::new));
+        }
     }
 
     @Override
@@ -358,14 +382,14 @@ public class ClientEventService implements ProtocolClientEventService {
                 .anyMatch(authorizer -> authorizer.apply(authContext, subscription));
     }
 
-    public void publishEvent(SharedEvent event) {
+    public <T extends SharedEvent> void publishEvent(T event) {
         publishEvent(true, event);
     }
 
     /**
      * @param accessRestricted <code>true</code> if this event can be received by restricted user sessions.
      */
-    public void publishEvent(boolean accessRestricted, SharedEvent event) {
+    public <T extends SharedEvent> void publishEvent(boolean accessRestricted, T event) {
         // Only publish if service is not stopped
         if (stopped) {
             return;
@@ -385,6 +409,10 @@ public class ClientEventService implements ProtocolClientEventService {
         if (messageBrokerService != null && messageBrokerService.getProducerTemplate() != null) {
             LOG.fine("Sending to session '" + sessionKey + "': " + data);
             SessionInfo sessionInfo = sessionKeyInfoMap.get(sessionKey);
+            if (sessionInfo == null) {
+                LOG.info("Cannot send to requested session it doesn't exist or is disconnected");
+                return;
+            }
             if (sessionInfo.connectionType.equals(HEADER_CONNECTION_TYPE_WEBSOCKET)) {
                 messageBrokerService.getProducerTemplate().sendBodyAndHeader(
                         "websocket://" + WEBSOCKET_EVENTS,
@@ -410,10 +438,6 @@ public class ClientEventService implements ProtocolClientEventService {
 
         LOG.fine("Closing session: " + sessionKey);
         sessionInfo.closeRunnable.run();
-    }
-
-    public EventSubscriptions getEventSubscriptions() {
-        return eventSubscriptions;
     }
 
     protected void passToInterceptors(Exchange exchange) {

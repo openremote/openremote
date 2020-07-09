@@ -1,0 +1,1 @@
+typedef ProviderCallback = Function(Map<String, dynamic>);

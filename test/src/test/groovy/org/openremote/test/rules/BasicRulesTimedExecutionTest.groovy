@@ -5,6 +5,7 @@ import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
+import org.openremote.model.rules.TemporaryFact
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Ignore
 import spock.lang.Specification
@@ -26,11 +27,12 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
 
     def "Check firing of timer rules with realtime clock"() {
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 30)
+        def conditions = new PollingConditions(timeout: 30, delay: 0.2)
 
         and: "the container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
+        def container = startContainer(defaultConfig(), defaultServices())
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
 
@@ -63,16 +65,17 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
             assert globalEngineFiredRules.containsAll(expectedFiredRules)
         }
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
     def "Check firing of timer rules with pseudo clock"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 30, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
+        def conditions = new PollingConditions(timeout: 30, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
 
@@ -99,24 +102,24 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         }
 
         and: "after a few seconds the rule engines should not have fired any rules"
-        new PollingConditions(initialDelay: 3).eventually {
+        new PollingConditions(timeout: 5, initialDelay: 3).eventually {
             assert globalEngineFiredRules.size() == 0
         }
 
         when: "the clock is advanced by a few seconds"
-        advancePseudoClock(100, SECONDS, container, globalEngine)
+        advancePseudoClock(100, SECONDS, container)
         // TODO Weird behavior of timer rules, pseudo clock, and active mode: More than 5 seconds is needed to fire rule twice
         // even more strange it stops at 2 even when advanced for more time. The same problems are with timer(cron: )
         // realtime clock seems to be OK
 
         then: "the rule engines should have fired the timed execution rule in the background"
-        new PollingConditions(initialDelay: 3).eventually {
+        new PollingConditions(timeout: 5,initialDelay: 3).eventually {
             def expectedFiredRules = ["Log something every 2 seconds"]
             assert globalEngineFiredRules.size() > 1
             assert globalEngineFiredRules.containsAll(expectedFiredRules)
         }
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 }

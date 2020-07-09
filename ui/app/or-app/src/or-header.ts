@@ -13,6 +13,7 @@ import "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import "@openremote/or-icon";
 import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import {Tenant} from "@openremote/model";
+import {router} from "./index";
 
 export interface HeaderConfig {
     mainMenu: HeaderItem[];
@@ -26,7 +27,7 @@ export interface HeaderItem {
    href?: string;
    action?: () => void;
    hideMobile?: boolean;
-   roles?: string[];
+   roles?: string[] | {[client: string]: string[]};
 }
 
 export interface Languages {
@@ -42,7 +43,7 @@ export const DEFAULT_LANGUAGES: Languages = {
 };
 
 function getHeaderMenuItems(items: HeaderItem[]): MenuItem[] {
-    return items.filter((option) => !option.roles || option.roles.some((r) => manager.hasRole(r))).map((option) => {
+    return items.filter(hasRequiredRole).map((option) => {
         return {
             text: option.text,
             value: option.value ? option.value : "",
@@ -50,6 +51,17 @@ function getHeaderMenuItems(items: HeaderItem[]): MenuItem[] {
             href: option.href
         };
     });
+}
+
+function hasRequiredRole(option: HeaderItem): boolean {
+    if (!option.roles) {
+        return true;
+    }
+    if (Array.isArray(option.roles)) {
+        return option.roles.some((r) => manager.hasRole(r));
+    }
+
+    return Object.entries(option.roles).some(([client, roles]) => roles.some((r) => manager.hasRole(r, client)));
 }
 
 @customElement("or-header")
@@ -333,7 +345,7 @@ class OrHeader extends LitElement {
                     <!-- This gets hidden on a small screen-->
                     <nav id="toolbar-list">
                         <div id="desktop-left">
-                            ${mainItems ? mainItems.filter((option) => !option.roles || option.roles.some((r) => manager.hasRole(r))).map((headerItem) => {
+                            ${mainItems ? mainItems.filter(hasRequiredRole).map((headerItem) => {
                                 return html`
                                     <a class="menu-item" href="${headerItem.href}" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
                                 `;
@@ -358,7 +370,7 @@ class OrHeader extends LitElement {
                 <div>                    
                     <div id="mobile-top">
                         <nav id="drawer-list">
-                            ${mainItems ? mainItems.filter((option) => !option.hideMobile && (!option.roles || option.roles.some((r) => manager.hasRole(r)))).map((headerItem) => {
+                            ${mainItems ? mainItems.filter((option) => !option.hideMobile && hasRequiredRole(option)).map((headerItem) => {
                                 return html`
                                     <a class="menu-item" href="${headerItem.href}" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
                                 `;
@@ -368,7 +380,7 @@ class OrHeader extends LitElement {
                     
                     ${secondaryItems ? html`
                         <div id="mobile-bottom">
-                                ${secondaryItems.filter((option) => !option.hideMobile && (!option.roles || option.roles.some((r) => manager.hasRole(r)))).map((headerItem) => {
+                                ${secondaryItems.filter((option) => !option.hideMobile && hasRequiredRole(option)).map((headerItem) => {
                                     return html`
                                         <a class="menu-item" href="${ifDefined(headerItem.href)}" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
                                     `;
@@ -397,7 +409,7 @@ class OrHeader extends LitElement {
             ${getContentWithMenuTemplate(
                 html`
                     <div id="realm-picker">
-                        <span style="margin-left: 10px;">${manager.displayRealm}</span>
+                        <span style="margin-left: 10px;">${tenants.find((t) => t.realm ===  manager.displayRealm).displayName}</span>
                         <or-icon icon="chevron-down"></or-icon>
                     </div>
                 `,

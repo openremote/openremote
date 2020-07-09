@@ -19,13 +19,12 @@
  */
 package org.openremote.manager.gateway;
 
-import org.openremote.agent.protocol.websocket.WebsocketIoClient;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.gateway.GatewayClientResource;
+import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.http.RequestParams;
 
 import javax.ws.rs.WebApplicationException;

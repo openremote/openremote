@@ -99,19 +99,19 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
          * custom subscriptions.
          * Returns the subscription IDs of any created subscriptions
          */
-        public async _addEventSubscriptions(): Promise<string[]> {
+        public async _addEventSubscriptions(): Promise<void> {
             const isAttributes = !!this._attributeRefs;
             const ids: string[] | AttributeRef[] | undefined = this._attributeRefs ? this._attributeRefs : this._assetIds;
-            const subscriptions = [];
+            this._subscriptionIds = [];
 
             if (ids && ids.length > 0) {
                 if (!isAttributes) {
-                    subscriptions.push(await eventProviderFactory.getEventProvider()!.subscribeAssetEvents(ids, true, (event) => this._onEvent(event)));
+                    const assetSubscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAssetEvents(ids, true, (event) => this._onEvent(event));
+                    this._subscriptionIds.push(assetSubscriptionId);
                 }
-                subscriptions.push(await eventProviderFactory.getEventProvider()!.subscribeAttributeEvents(ids, isAttributes, (event) => this._onEvent(event)));
+                const subscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAttributeEvents(ids, isAttributes, (event) => this._onEvent(event));
+                this._subscriptionIds.push(subscriptionId);
             }
-
-            return subscriptions;
         }
 
         public _removeEventSubscriptions() {
@@ -151,6 +151,10 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
 
             this._attributeRefs = attributes;
             this._refreshEventSubscriptions();
+        }
+
+        public get attributeRefs(): AttributeRef[] | undefined {
+            return this._attributeRefs;
         }
 
         public _sendEvent(event: SharedEvent) {

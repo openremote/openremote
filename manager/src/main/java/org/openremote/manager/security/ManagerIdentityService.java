@@ -47,7 +47,6 @@ public class ManagerIdentityService extends IdentityService {
         container.getService(ManagerWebService.class).getApiSingletons().add(
             new UserResourceImpl(container.getService(TimerService.class), this)
         );
-
     }
 
     public ManagerIdentityProvider getIdentityProvider() {
@@ -60,11 +59,11 @@ public class ManagerIdentityService extends IdentityService {
             switch (identityProviderType.toLowerCase(Locale.ROOT)) {
                 case "keycloak":
                     LOG.info("Enabling Keycloak identity provider");
-                    this.identityProvider = new ManagerKeycloakIdentityProvider(getExternalServerUri(), container);
+                    this.identityProvider = new ManagerKeycloakIdentityProvider();
                     break;
                 case "basic":
                     LOG.info("Enabling basic identity provider");
-                    this.identityProvider = new ManagerBasicIdentityProvider(container);
+                    this.identityProvider = new ManagerBasicIdentityProvider();
                     break;
                 default:
                     throw new UnsupportedOperationException("Unknown identity provider: " + identityProviderType);

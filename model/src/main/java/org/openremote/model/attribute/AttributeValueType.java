@@ -68,6 +68,7 @@ public enum AttributeValueType implements AttributeValueDescriptor {
                     .map(number -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_PERCENTAGE_OUT_OF_RANGE)),
             RANGE_MIN.withInitialValue(Values.create(0)),
             RANGE_MAX.withInitialValue(Values.create(100)),
+            STEP.withInitialValue(Values.create(1)),
             FORMAT.withInitialValue(Values.create("%3d %%"))
     ),
 
@@ -122,7 +123,8 @@ public enum AttributeValueType implements AttributeValueDescriptor {
 
     RAINFALL("water", ValueType.NUMBER),
 
-    BRIGHTNESS("lightbulb", ValueType.NUMBER),
+    BRIGHTNESS("lightbulb", ValueType.NUMBER,
+        STEP.withInitialValue(Values.create(1))),
 
     DISTANCE("ruler", ValueType.NUMBER),
 
@@ -160,6 +162,8 @@ public enum AttributeValueType implements AttributeValueDescriptor {
     ASSET_STATUS("heart-pulse", ValueType.STRING),
 
     CALENDAR_EVENT("calendar", ValueType.OBJECT),
+
+    EXECUTION_STATUS("play-circle", ValueType.STRING, new MetaItemDescriptorImpl(ALLOWED_VALUES, Values.createArray(Arrays.stream(AttributeExecuteStatus.values()).map(executeStatus -> Values.create(executeStatus.name())).toArray(Value[]::new)))),
 
     CONNECTION_STATUS("lan-connect", ValueType.STRING, new MetaItemDescriptorImpl(ALLOWED_VALUES, Values.createArray(Arrays.stream(ConnectionStatus.values()).map(connectionStatus -> Values.create(connectionStatus.name())).toArray(Value[]::new))));
 

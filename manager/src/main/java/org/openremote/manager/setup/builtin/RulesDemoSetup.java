@@ -30,6 +30,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 
+import static org.openremote.model.rules.Ruleset.Lang.GROOVY;
+
 public class RulesDemoSetup extends AbstractManagerSetup {
 
     private static final Logger LOG = Logger.getLogger(RulesDemoSetup.class.getName());
@@ -104,6 +106,15 @@ public class RulesDemoSetup extends AbstractManagerSetup {
                 keycloakDemoSetup.tenantBuilding.getRealm(), "Demo Console Location", Ruleset.Lang.GROOVY, rules
             ).setAccessPublicRead(true);
             tenantBuildingRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        // People counter
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoSmartCityCamera.groovy")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new AssetRuleset(
+                managerDemoSetup.peopleCounter3AssetId, "PeopleCounter 3 Rules", GROOVY, rules
+            );
+            rulesetStorageService.merge(ruleset);
         }
     }
 }

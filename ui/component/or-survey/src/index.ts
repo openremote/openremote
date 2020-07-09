@@ -1,7 +1,6 @@
 import {customElement, html, LitElement, property, PropertyValues} from "lit-element";
 import { Asset, AssetQuery, AssetQueryMatch} from "@openremote/model";
 import {surveySectionStyle, surveyLayoutStyle} from "./style";
-
 import set from "lodash-es/set";
 import get from "lodash-es/get";
 import orderBy from "lodash-es/orderBy";
@@ -12,6 +11,20 @@ import filter from "lodash-es/filter";
 import "@openremote/or-translate";
 declare var MANAGER_URL: string;
 
+export interface OrComputeGridEventDetail {
+}
+
+export class OrComputeGridEvent extends CustomEvent<OrComputeGridEventDetail> {
+
+    public static readonly NAME = "or-compute-grid-event";
+
+    constructor() {
+        super(OrComputeGridEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
 export interface AnswerOption {
     value: string
 }
@@ -212,9 +225,11 @@ class OrSurvey extends LitElement {
 
     protected updated(_changedProperties: PropertyValues): void {
         super.updated(_changedProperties);
-        if(_changedProperties.has('survey')) {
+        if(_changedProperties.has('survey') || _changedProperties.has('surveyId')) {
             this.resetSurvey();
         }
+
+        this.dispatchEvent(new OrComputeGridEvent())
     }
 
     checkAssetPeriode(asset:Asset) {
@@ -401,10 +416,9 @@ class OrSurvey extends LitElement {
     }
 
     getSurvey() {
-
         let surveyId: string;
         if (location.hash.indexOf('survey') != -1) {
-            surveyId = location.hash.split(':')[1];
+            surveyId = location.hash.split('/')[1];
             if(!surveyId) {
                 this.checkButtons();
                 return;
@@ -416,7 +430,6 @@ class OrSurvey extends LitElement {
             return;
         }
 
-
         const surveyQuery: AssetQuery = {
             select: {
                 excludeAttributeMeta: false,
@@ -426,9 +439,8 @@ class OrSurvey extends LitElement {
                 excludeAttributeType: false
             },
             ids: [surveyId],
-            types: [{predicateType: "string", value: "urn:openremote:asset:eindhoven:survey"}]
+            types: [{predicateType: "string", value: "urn:openremote:asset:"+manager.getRealm()+":survey"}]
         };
-
         manager.rest.api.AssetResource.queryPublicAssets(surveyQuery).then((response) => {
             if (response && response.data) {
                 this.survey = response.data[0];
@@ -451,7 +463,7 @@ class OrSurvey extends LitElement {
                 excludeAttributeTimestamp: false,
                 excludeAttributeType: false
             },
-            types: [{predicateType: "string", value: "urn:openremote:asset:eindhoven:survey:question", match: AssetQueryMatch.CONTAINS}]
+            types: [{predicateType: "string", value: "urn:openremote:asset:"+manager.getRealm()+":survey:question", match: AssetQueryMatch.CONTAINS}]
         };
 
         manager.rest.api.AssetResource.queryPublicAssets(questionQuery).then((response) => {
@@ -466,6 +478,7 @@ class OrSurvey extends LitElement {
                     
                 this.checkButtons();
                 this.requestUpdate();
+
             }
         }).catch((reason) => {
             console.error("Error: " + reason);

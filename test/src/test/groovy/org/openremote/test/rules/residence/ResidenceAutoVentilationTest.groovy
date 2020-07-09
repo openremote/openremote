@@ -11,6 +11,7 @@ import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
+import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -26,9 +27,10 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
     def "Auto ventilation with CO2 detection"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 20, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -187,8 +189,8 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
             assert apartment.getAttribute("ventilationLevel").get().getValueAsNumber().get() == 64d
         }
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
 }

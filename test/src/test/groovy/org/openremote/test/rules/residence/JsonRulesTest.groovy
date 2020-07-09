@@ -1,12 +1,13 @@
 package org.openremote.test.rules.residence
 
-import com.google.common.collect.Lists
+
 import com.google.firebase.messaging.Message
 import org.openremote.container.Container
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.EmailNotificationHandler
+import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
@@ -41,8 +42,9 @@ import spock.util.concurrent.PollingConditions
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-import static java.util.concurrent.TimeUnit.*
-import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_CUSTOMER_A
+import static java.util.concurrent.TimeUnit.HOURS
+import static java.util.concurrent.TimeUnit.MILLISECONDS
+import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_SMART_BUILDING
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.attribute.AttributeType.LOCATION
 import static org.openremote.model.value.Values.parse
@@ -56,56 +58,20 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         List<Notification.Target> targets = []
         List<Notification.Target> emailTargets = []
 
-        given: "a mock push notification handler"
-        PushNotificationHandler mockPushNotificationHandler = Spy(PushNotificationHandler) {
-            isValid() >> true
-
-            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
-                id, source, sourceId, target, message ->
-                    notificationMessages << message
-                    targets << target
-                    callRealMethod()
-            }
-
-            // Assume sent to FCM
-            sendMessage(_ as Message) >> {
-                message -> return NotificationSendResult.success()
-            }
-        }
-
-        and: "a mock email notification handler"
-        EmailNotificationHandler mockEmailNotificationHandler = Spy(EmailNotificationHandler) {
-            isValid() >> true
-
-            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
-                id, source, sourceId, target, message ->
-                    emailTargets << target
-                    callRealMethod()
-            }
-
-            // Assume sent to FCM
-            sendMessage(_ as Email) >> {
-                email ->
-                    emailMessages << email.get(0)
-                    return NotificationSendResult.success()
-            }
-        }
-
-        and: "the geofence notifier debounce is set to a small value for testing"
+        given: "the geofence notifier debounce is set to a small value for testing"
         def originalDebounceMillis = ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = 100
 
         and: "the rule firing delay time is set to a small value for testing"
-        def originalExpirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 100
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
 
         and: "the container environment is started with the mock handler"
-        def conditions = new PollingConditions(timeout: 15, delay: 1)
-        def serverPort = findEphemeralPort()
-        def services = Lists.newArrayList(defaultServices())
-        services.replaceAll{it instanceof PushNotificationHandler ? mockPushNotificationHandler : it}
-        services.replaceAll{it instanceof EmailNotificationHandler ? mockEmailNotificationHandler : it}
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), services)
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def pushNotificationHandler = container.getService(PushNotificationHandler.class)
+        def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
+        def notificationService = container.getService(NotificationService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -114,6 +80,38 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         RulesEngine tenantBuildingEngine
+
+        and: "a mock push notification handler"
+        PushNotificationHandler mockPushNotificationHandler = Spy(pushNotificationHandler)
+        mockPushNotificationHandler.isValid() >> true
+        mockPushNotificationHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+            id, source, sourceId, target, message ->
+                notificationMessages << message
+                targets << target
+                callRealMethod()
+        }
+        // Assume sent to FCM
+        mockPushNotificationHandler.sendMessage(_ as Message) >> {
+            message -> return NotificationSendResult.success()
+        }
+        notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), mockPushNotificationHandler)
+
+        and: "a mock email notification handler"
+        EmailNotificationHandler mockEmailNotificationHandler = Spy(emailNotificationHandler)
+        mockEmailNotificationHandler.isValid() >> true
+        mockEmailNotificationHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+            id, source, sourceId, target, message ->
+                emailTargets << target
+                callRealMethod()
+        }
+
+        // Assume sent to FCM
+        mockEmailNotificationHandler.sendMessage(_ as Email) >> {
+            email ->
+                emailMessages << email.get(0)
+                return NotificationSendResult.success()
+        }
+        notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), mockEmailNotificationHandler)
 
         and: "some rules"
         Ruleset ruleset = new TenantRuleset(
@@ -128,7 +126,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             tenantBuildingEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantBuilding.realm)
             assert tenantBuildingEngine != null
             assert tenantBuildingEngine.isRunning()
-            assert tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assert !tenantBuildingEngine.trackLocationPredicates
         }
 
@@ -243,7 +241,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         and: "after a few seconds the rule should not have fired again"
-        new PollingConditions(initialDelay: 1).eventually {
+        new PollingConditions(timeout: 5, initialDelay: 1).eventually {
             assert notificationMessages.findAll {it.title == "Test title"}.size() == 1
         }
 
@@ -271,7 +269,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
 
         then: "after a few seconds the rule should not have fired again"
-        new PollingConditions(initialDelay: 1).eventually {
+        new PollingConditions(timeout: 5, initialDelay: 1).eventually {
             assert notificationMessages.findAll {it.title == "Test title"}.size() == 2
         }
 
@@ -308,7 +306,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
 
         then: "after a few seconds the rule should not have fired again"
-        new PollingConditions(initialDelay: 1).eventually {
+        new PollingConditions(timeout: 5, initialDelay: 1).eventually {
             assert notificationMessages.findAll {it.title == "Test title"}.size() == 3
         }
 
@@ -464,11 +462,12 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert tenantBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.EXPIRED
         }
 
-        cleanup: "stop the container"
+        cleanup: "static variables are reset and the mock is removed"
         RulesEngine.PAUSE_SCHEDULER = originalPause
         RulesEngine.UNPAUSE_SCHEDULER = originalUnpause
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = originalDebounceMillis
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = originalExpirationMillis
-        stopContainer(container)
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
+        notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
+        notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
     }
 }
