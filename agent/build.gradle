@@ -28,6 +28,11 @@ dependencies {
     }
 
     compile "net.sf.saxon:Saxon-HE:$saxonHEVersion"
+
+    //IKEA Tradfri agent dependencies
+    compile "org.eclipse.californium:californium-core:$californiumCoreVersion"
+    compile "org.eclipse.californium:scandium:$californiumScandiumVersion"
+
 }
 
 jar {
