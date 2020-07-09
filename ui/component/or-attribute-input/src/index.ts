@@ -1,4 +1,4 @@
-import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
+import {css, customElement, unsafeCSS, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
 import {i18next, translate} from "@openremote/or-translate";
 import {
     AssetAttribute,
@@ -11,7 +11,7 @@ import {
     ValueType,
     SharedEvent
 } from "@openremote/model";
-import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
+import manager, {AssetModelUtil, subscribe, Util, DefaultColor4} from "@openremote/core";
 import "@openremote/or-input";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 import "@openremote/or-map";
@@ -89,7 +89,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 display: inline-block;
             }
             
-            or-input {
+            #wrapper > or-input {
                 width: 100%;
             }
             
@@ -98,13 +98,168 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 position: relative;
             }
             
+            #wrapper.right-padding {
+                padding-right: 48px;
+            }
+            
+            #wrapper-helper {
+                display: flex;
+                flex: 1;
+            }
+            
+            #wrapper-helper > or-input {
+                flex: 1;
+                margin-top: -15px;
+            }
+            
+            #wrapper-helper-inner {
+                margin-right: 20px;
+            }
+
+            /* Copy of mdc text field helper text styles */
+            #helper-text {
+                margin-top: 3px;
+                color: rgba(0, 0, 0, 0.6);
+                font-family: Roboto, sans-serif;
+                -webkit-font-smoothing: antialiased;
+                font-size: 0.75rem;
+                font-weight: 400;
+                letter-spacing: 0.0333333em;
+            }
+            
             #scrim {
                 position: absolute;
                 left: 0;
                 top: 0;
                 right: 0;
                 bottom: 0;
-                opacity: 0.5;
+                background: transparent;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #send-btn { 
+                flex: 0;
+            }
+            
+            /*  https://codepen.io/finnhvman/pen/bmNdNr  */
+            .pure-material-progress-circular {
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+                box-sizing: border-box;
+                border: none;
+                border-radius: 50%;
+                padding: 0.25em;
+                width: 3em;
+                height: 3em;
+                color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
+                background-color: transparent;
+                font-size: 16px;
+                overflow: hidden;
+            }
+
+            .pure-material-progress-circular::-webkit-progress-bar {
+                background-color: transparent;
+            }
+
+            /* Indeterminate */
+            .pure-material-progress-circular:indeterminate {
+                -webkit-mask-image: linear-gradient(transparent 50%, black 50%), linear-gradient(to right, transparent 50%, black 50%);
+                mask-image: linear-gradient(transparent 50%, black 50%), linear-gradient(to right, transparent 50%, black 50%);
+                animation: pure-material-progress-circular 6s infinite cubic-bezier(0.3, 0.6, 1, 1);
+            }
+
+            :-ms-lang(x), .pure-material-progress-circular:indeterminate {
+                animation: none;
+            }
+
+            .pure-material-progress-circular:indeterminate::before,
+            .pure-material-progress-circular:indeterminate::-webkit-progress-value {
+                content: "";
+                display: block;
+                box-sizing: border-box;
+                margin-bottom: 0.25em;
+                border: solid 0.25em transparent;
+                border-top-color: currentColor;
+                border-radius: 50%;
+                width: 100% !important;
+                height: 100%;
+                background-color: transparent;
+                animation: pure-material-progress-circular-pseudo 0.75s infinite linear alternate;
+            }
+
+            .pure-material-progress-circular:indeterminate::-moz-progress-bar {
+                box-sizing: border-box;
+                border: solid 0.25em transparent;
+                border-top-color: currentColor;
+                border-radius: 50%;
+                width: 100%;
+                height: 100%;
+                background-color: transparent;
+                animation: pure-material-progress-circular-pseudo 0.75s infinite linear alternate;
+            }
+
+            .pure-material-progress-circular:indeterminate::-ms-fill {
+                animation-name: -ms-ring;
+            }
+
+            @keyframes pure-material-progress-circular {
+                0% {
+                    transform: rotate(0deg);
+                }
+                12.5% {
+                    transform: rotate(180deg);
+                    animation-timing-function: linear;
+                }
+                25% {
+                    transform: rotate(630deg);
+                }
+                37.5% {
+                    transform: rotate(810deg);
+                    animation-timing-function: linear;
+                }
+                50% {
+                    transform: rotate(1260deg);
+                }
+                62.5% {
+                    transform: rotate(1440deg);
+                    animation-timing-function: linear;
+                }
+                75% {
+                    transform: rotate(1890deg);
+                }
+                87.5% {
+                    transform: rotate(2070deg);
+                    animation-timing-function: linear;
+                }
+                100% {
+                    transform: rotate(2520deg);
+                }
+            }
+
+            @keyframes pure-material-progress-circular-pseudo {
+                0% {
+                    transform: rotate(-30deg);
+                }
+                29.4% {
+                    border-left-color: transparent;
+                }
+                29.41% {
+                    border-left-color: currentColor;
+                }
+                64.7% {
+                    border-bottom-color: transparent;
+                }
+                64.71% {
+                    border-bottom-color: currentColor;
+                }
+                100% {
+                    border-left-color: currentColor;
+                    border-bottom-color: currentColor;
+                    transform: rotate(225deg);
+                }
             }
         `;
     }
@@ -140,10 +295,18 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     public inputType?: InputType;
 
     @property({type: Boolean})
+    public hasHelperText?: boolean;
+
+    @property({type: Boolean})
+    public disableButton?: boolean;
+
+    @property({type: Boolean})
     public disableSubscribe: boolean = false;
 
-    @query("#loading")
-    protected _orInput!: OrInput;
+    @query("#input")
+    protected _attrInput!: OrInput;
+    @query("#send-btn")
+    protected _sendButton!: OrInput;
 
     @property()
     protected _attributeEvent?: AttributeEvent;
@@ -163,7 +326,11 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     protected _options?: any;
     protected _readonly?: boolean;
     protected _disabled?: boolean;
-    protected _valueFormatter?: (value: any) => any;
+    protected _showButton?: boolean;
+    protected _valueFormat?: string;
+    protected _sendError = false;
+
+    @property({attribute: false})
     protected _writeTimeoutHandler?: number;
 
     public disconnectedCallback() {
@@ -271,12 +438,12 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             this._attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attrName, this.assetType);
         }
 
-        if (this.attributeValueDescriptor) {
+        if (this.attribute) {
+            this._attributeValueDescriptor = AssetModelUtil.getAttributeValueDescriptorFromAsset(this.attribute ? this.attribute.type as string : undefined, this.assetType, this._attributeDescriptor ? this._attributeDescriptor!.attributeName : undefined);
+        } else if (this.attributeValueDescriptor) {
             this._attributeValueDescriptor = this.attributeValueDescriptor;
         } else if (this._attributeDescriptor) {
             this._attributeValueDescriptor = this._attributeDescriptor.valueDescriptor;
-        } else if (this.attribute) {
-            this._attributeValueDescriptor = AssetModelUtil.getAttributeValueDescriptorFromAsset(this.attribute ? this.attribute.type as string : undefined, this.assetType, this._attributeDescriptor ? this._attributeDescriptor!.attributeName : undefined);
         }
 
         this._updateTemplate();
@@ -293,8 +460,9 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         this._options = undefined;
         this._disabled = undefined;
         this._readonly = undefined;
+        this._showButton = undefined;
         this._inputType = undefined;
-        this._valueFormatter = undefined;
+        this._valueFormat = undefined;
 
         if (this.customProvider) {
             this._template = this.customProvider(this.assetType, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor, (v) => this._updateValue(v), this.readonly, this.disabled, this.label);
@@ -311,23 +479,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 case AttributeValueType.GEO_JSON_POINT.name:
                     this._template = GeoJsonPointInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor, (v) => this._updateValue(v), this.readonly, this.disabled, this.label);
                     return;
-                case AttributeValueType.BOOLEAN.name:
-                case AttributeValueType.SWITCH_TOGGLE.name:
-                    this._inputType = InputType.SWITCH;
-                    break;
-                case AttributeValueType.NUMBER.name:
-                    this._inputType = InputType.NUMBER;
-                    break;
-                case AttributeValueType.STRING.name:
-                    this._inputType = InputType.TEXT;
-                    break;
-                case AttributeValueType.OBJECT.name:
-                case AttributeValueType.ARRAY.name:
-                    this._inputType = InputType.JSON;
-                    break;
-                case AttributeValueType.BRIGHTNESS.name:
-                    this._inputType = InputType.NUMBER;
-                    this._step = 1;
+                case AttributeValueType.SWITCH_MOMENTARY.name:
+                    this._inputType = InputType.BUTTON_MOMENTARY;
                     break;
                 default:
                     // Use value type
@@ -368,7 +521,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         if (this._inputType) {
             this._min = Util.getMetaValue(MetaItemType.RANGE_MIN, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as number;
             this._max = Util.getMetaValue(MetaItemType.RANGE_MAX, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as number;
-            this._unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor);
+            this._unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as string;
+            this._step = Util.getMetaValue(MetaItemType.STEP, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as number;
             this._label = this.label !== undefined ? this.label :  Util.getAttributeLabel(this.attribute, this._attributeDescriptor) + (this._unit ? " (" + i18next.t(this._unit) + ")" : "");
             this._readonly = this.readonly !== undefined ? this.readonly : Util.getMetaValue(MetaItemType.READ_ONLY, this.attribute, this._attributeDescriptor);
             this._disabled = this.disabled;
@@ -378,48 +532,86 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 this._inputType = InputType.SELECT;
             }
 
-            switch (this._inputType) {
-                case InputType.NUMBER:
-                case InputType.TEXT:
-                case InputType.COLOUR:
-                case InputType.TELEPHONE:
-                    this._valueFormatter = Util.getAttributeValueFormatter(this.attribute, this._attributeDescriptor, this._attributeValueDescriptor);
+            if (!this.inputType && this._inputType === InputType.TEXT && Util.getMetaValue(MetaItemType.MULTILINE, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor)) {
+                this._inputType = InputType.TEXTAREA;
             }
+
+            if (!this.inputType && this._inputType === InputType.NUMBER && this._min !== undefined && this._max) {
+                this._inputType = InputType.RANGE;
+            }
+
+            this._valueFormat = Util.getAttributeValueFormat(this.attribute, this._attributeDescriptor, this._attributeValueDescriptor);
+            this._showButton = !this.disableButton && this.inputTypeSupportsButton() && !!this._getAttributeRef();
         }
     }
 
     public render() {
 
         // Check if attribute hasn't been loaded yet or pending write
-        const loading = this.attributeRefs && !this._attributeEvent;
+        const loading = (this.attributeRefs && !this._attributeEvent) || this._writeTimeoutHandler;
         let content: TemplateResult | string | undefined = "";
 
-        if (!loading) {
-            let value = this.getValue();
+        const value = this.getValue();
 
-            if (this._template) {
-                content = this._template(value);
-            } else {
+        if (this._template) {
+            content = this._template(value);
+        } else {
 
-                if (!this._inputType) {
-                    content = html`<div>INVALID</div>`;
-                }
+            if (!this._inputType) {
+                content = html`<div><or-translate .value="attributeUnsupported"></or-translate></div>`;
+            }
 
-                if (this._valueFormatter) {
-                    value = this._valueFormatter(value);
-                }
+            const helperText = this.getHelperText();
+            const buttonIcon = this._writeTimeoutHandler ? "send-clock" : "send";
+            let label = this._label;
 
-                content = html`<or-input id="input" .type="${this._inputType}" .label="${this._label}" .value="${value}" .allowedValues="${this._options}" .min="${this._min}" .max="${this._max}" .options="${this._options}" .readonly="${this._readonly}" .disabled="${this._disabled}" @or-input-changed="${(e: OrInputChangedEvent) => {
-                    this._updateValue(e.detail.value);
-                    e.stopPropagation()
+            if (helperText && !this.inputTypeSupportsHelperText()) {
+                label = undefined;
+            }
+
+            content = html`<or-input id="input" .type="${this._inputType}" .label="${label}" .value="${value}" 
+                .allowedValues="${this._options}" .min="${this._min}" .max="${this._max}" .format="${this._valueFormat}"
+                .options="${this._options}" .readonly="${this._readonly}" .disabled="${this._disabled || loading}" 
+                .helperText="${helperText}" .helperPersistent="${true}"
+                @keyup="${(e: KeyboardEvent) => {
+                    if (e.code === "Enter" && this._inputType !== InputType.JSON && this._inputType !== InputType.TEXTAREA) {
+                        this._updateValue(this._attrInput.value)
+                    }
+                }}" @or-input-changed="${(e: OrInputChangedEvent) => {
+                    e.stopPropagation();
+                    if (!this._showButton) {
+                        this._updateValue(e.detail.value);
+                    }
                 }}"></or-input>`;
+
+            if (helperText && !this.inputTypeSupportsHelperText()) {
+                // Manually provide helper text outside of or-input
+                content = html`
+                    <div id="wrapper-helper">
+                        <div id="wrapper-helper-inner">
+                            <div>${this._label}</div>
+                            <div id="helper-text">${helperText}</div>
+                        </div>
+                        ${content}
+                    </div>
+                `;
+            }
+
+            if (this._showButton) {
+                content = html`
+                    ${content}
+                    <or-input id="send-btn" icon="${buttonIcon}" type="button" .disabled="${this._disabled || loading}" @or-input-changed="${(e: OrInputChangedEvent) => {
+                        e.stopPropagation();
+                        this._updateValue(this._attrInput.value);
+                }}"></or-input>
+                `;
             }
         }
 
         return html`
-            <div id="wrapper">
+            <div id="wrapper" class="${this._showButton ? "" : "right-padding"}">
                 ${content}
-                ${loading || this._writeTimeoutHandler 
+                ${loading 
                     ? html`<div id="scrim"><progress class="pure-material-progress-circular"></progress></div>` 
                     : ``}                
             </div>
@@ -428,6 +620,53 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
     protected getValue(): any {
         return this._attributeEvent ? this._attributeEvent.attributeState!.value : this.attribute ? this.attribute.value : this.value;
+    }
+
+    protected getTimestamp(): number | undefined {
+        return this._attributeEvent ? this._attributeEvent.timestamp : this.attribute ? this.attribute.valueTimestamp : undefined;
+    }
+
+    protected getHelperText(): string | undefined {
+        if (!this.hasHelperText) {
+            return;
+        }
+
+        if (this._writeTimeoutHandler) {
+            return i18next.t("sending");
+        }
+
+        if (this._sendError) {
+            return i18next.t("sendFailed");
+        }
+
+        const timestamp = this.getTimestamp();
+
+        if (!timestamp) {
+            return;
+        }
+
+        return i18next.t("updatedWithDate", { date: new Date(timestamp) });
+    }
+
+    protected inputTypeSupportsButton() {
+        return this._inputType === InputType.NUMBER
+            || this._inputType === InputType.TELEPHONE
+            || this._inputType === InputType.TEXT
+            || this._inputType === InputType.PASSWORD
+            || this._inputType === InputType.DATE
+            || this._inputType === InputType.DATETIME
+            || this._inputType === InputType.EMAIL
+            || this._inputType === InputType.JSON
+            || this._inputType === InputType.MONTH
+            || this._inputType === InputType.TEXTAREA
+            || this._inputType === InputType.TIME
+            || this._inputType === InputType.URL
+            || this._inputType === InputType.WEEK;
+    }
+
+    protected inputTypeSupportsHelperText() {
+        return this.inputTypeSupportsButton()
+            || this._inputType === InputType.SELECT;
     }
 
     /**
@@ -440,7 +679,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
         const oldValue = this.getValue();
         this._attributeEvent = event as AttributeEvent;
-
         this._onAttributeValueChanged(oldValue, this._attributeEvent.attributeState!.value, event.timestamp);
     }
 
@@ -452,6 +690,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
         this._clearWriteTimeout();
         this.value = newValue;
+        this._sendError = false;
         this.dispatchEvent(new OrAttributeInputChangedEvent(newValue, oldValue));
     }
 
@@ -491,6 +730,14 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     }
 
     protected _onWriteTimeout() {
-        this._writeTimeoutHandler = undefined;
+        this._sendError = true;
+        if (!this.inputTypeSupportsButton()) {
+            // Put the old value back
+            this._attrInput.value = this.getValue();
+        }
+        if (this.hasHelperText) {
+            this.requestUpdate();
+        }
+        this._clearWriteTimeout();
     }
 }

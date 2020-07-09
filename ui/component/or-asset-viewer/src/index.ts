@@ -448,7 +448,7 @@ export function getAttributeTemplate(asset: Asset, attribute: AssetAttribute, ho
         }
     }
     return html`
-        <or-attribute-input dense .assetType="${asset!.type}" .attribute="${attribute}"}"></or-attribute-input>
+        <or-attribute-input dense .assetType="${asset!.type}" .attribute="${attribute}" hasHelperText></or-attribute-input>
     `;
 }
 
