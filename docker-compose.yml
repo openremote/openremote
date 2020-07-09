@@ -87,7 +87,7 @@ services:
       - deployment-data:/deployment
       - zwave-data:/zwave
     # devices:
-    #   - /dev/ttyACM0:/dev/ttyS0
+    #   - /dev/ttyACM0
 
   keycloak:
     extends:
