@@ -28,6 +28,8 @@ dependencies {
     }
 
     compile "net.sf.saxon:Saxon-HE:$saxonHEVersion"
+    
+    compile "org.openremote:or-zwave:3.4-SNAPSHOT"                        
 }
 
 jar {
