@@ -22,13 +22,13 @@ package org.openremote.agent.protocol;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
 import org.openremote.container.concurrent.GlobalLock;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -41,7 +41,6 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -119,6 +118,7 @@ public abstract class AbstractProtocol implements Protocol {
     protected ProtocolExecutorService executorService;
     protected ProtocolAssetService assetService;
     protected ProtocolPredictedAssetService predictedAssetService;
+    protected ProtocolClientEventService protocolClientEventService;
 
     @Override
     public int getPriority() {
@@ -132,6 +132,7 @@ public abstract class AbstractProtocol implements Protocol {
         executorService = container.getService(ProtocolExecutorService.class);
         assetService = container.getService(ProtocolAssetService.class);
         predictedAssetService = container.getService(ProtocolPredictedAssetService.class);
+        protocolClientEventService = container.getService(ProtocolClientEventService.class);
         messageBrokerContext = container.getService(MessageBrokerService.class).getContext();
 
         withLock(getProtocolName() + "::start", () -> {
@@ -181,7 +182,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
-    final public void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<ConnectionStatus> statusConsumer) {
+    final public void linkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration, Consumer<ConnectionStatus> statusConsumer) {
         withLock(getProtocolName() + "::linkProtocolConfiguration", () -> {
             LOG.finer("Linking protocol configuration to protocol '" + getProtocolName() + "': " + protocolConfiguration);
 
@@ -193,7 +194,7 @@ public abstract class AbstractProtocol implements Protocol {
             );
             statusConsumer.accept(currentStatus);
             if (currentStatus == ConnectionStatus.CONNECTING) {
-                doLinkProtocolConfiguration(protocolConfiguration);
+                doLinkProtocolConfiguration(agent, protocolConfiguration);
             } else {
                 LOG.info("Protocol configuration is disabled so not linking '" + getProtocolName() + "': " + protocolConfiguration);
             }
@@ -201,14 +202,13 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
-    final public void unlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    final public void unlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         withLock(getProtocolName() + "::unlinkProtocolConfiguration", () -> {
 
             LinkedProtocolInfo protocolInfo = linkedProtocolConfigurations.get(protocolConfiguration.getReferenceOrThrow());
             if (protocolInfo != null && protocolInfo.currentConnectionStatus != ConnectionStatus.DISABLED) {
                 LOG.finer("Unlinking protocol configuration from protocol '" + getProtocolName() + "': " + protocolConfiguration);
-                doUnlinkProtocolConfiguration(protocolConfiguration);
-                updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.DISCONNECTED);
+                doUnlinkProtocolConfiguration(agent, protocolConfiguration);
             }
             linkedProtocolConfigurations.remove(protocolConfiguration.getReferenceOrThrow());
         });
@@ -253,7 +253,7 @@ public abstract class AbstractProtocol implements Protocol {
         withLock(getProtocolName() + "::unlinkAttributes", () -> {
 
             LinkedProtocolInfo protocolInfo = linkedProtocolConfigurations.get(protocolConfiguration.getReferenceOrThrow());
-            if (protocolInfo.currentConnectionStatus == ConnectionStatus.DISABLED) {
+            if (protocolInfo != null && protocolInfo.currentConnectionStatus == ConnectionStatus.DISABLED) {
                 LOG.info("Protocol configuration is disabled so not unlinking attributes '" + getProtocolName() + "': " + protocolConfiguration);
                 return;
             }
@@ -499,12 +499,12 @@ public abstract class AbstractProtocol implements Protocol {
     /**
      * Link the protocol configuration.
      */
-    abstract protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration);
+    abstract protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration);
 
     /**
      * Unlink the protocol configuration.
      */
-    abstract protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration);
+    abstract protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration);
 
     /**
      * Link an attribute to its linked protocol configuration.

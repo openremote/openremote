@@ -125,6 +125,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     // here means we can quickly insert facts into newly started engines
     protected Set<AssetState> assetStates = new HashSet<>();
     protected String configEventExpires;
+    protected boolean initDone;
 
     @Override
     public int getPriority() {
@@ -144,6 +145,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         assetDatapointService = container.getService(AssetDatapointService.class);
         assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
         clientEventService = container.getService(ClientEventService.class);
+
+        if (initDone) {
+            return;
+        }
 
         clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
 
@@ -182,6 +187,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         container.getService(ManagerIdentityService.class)
                 )
         );
+
+        initDone = true;
     }
 
     @Override
@@ -191,7 +198,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             .routeId("RulesetPersistenceChanges")
             .filter(isPersistenceEventForEntityType(Ruleset.class))
             .process(exchange -> {
-                PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
+                PersistenceEvent<?> persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
                 processRulesetChange((Ruleset) persistenceEvent.getEntity(), persistenceEvent.getCause());
             });
 
@@ -201,7 +208,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             .routeId("RuleEngineTenantChanges")
             .filter(isPersistenceEventForEntityType(Tenant.class))
             .process(exchange -> {
-                PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
+                PersistenceEvent<?> persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
                 Tenant tenant = (Tenant) persistenceEvent.getEntity();
                 processTenantChange(tenant, persistenceEvent.getCause());
             });
@@ -293,7 +300,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 }
             }
 
-            // TODO: Do rule engines need to be stopped on shutdown
             assetEngines.forEach((assetId, rulesEngine) -> rulesEngine.stop(true));
             assetEngines.clear();
             tenantEngines.forEach((realm, rulesEngine) -> rulesEngine.stop(true));
@@ -303,7 +309,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 globalEngine.stop(true);
                 globalEngine = null;
             }
+
+            assetStates.clear();
         });
+
+        for (GeofenceAssetAdapter geofenceAssetAdapter : geofenceAssetAdapters) {
+            geofenceAssetAdapter.stop(container);
+        }
     }
 
     @Override

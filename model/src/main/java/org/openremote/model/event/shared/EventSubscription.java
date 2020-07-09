@@ -52,7 +52,7 @@ public class EventSubscription<E extends SharedEvent> {
      * Optional only set when an internal subscription is made
      */
     @JsonIgnore
-    protected Consumer<TriggeredEventSubscription<E>> internalConsumer;
+    protected Consumer<E> internalConsumer;
 
     protected EventSubscription() {
     }
@@ -74,7 +74,7 @@ public class EventSubscription<E extends SharedEvent> {
         this.filter = filter;
     }
 
-    public EventSubscription(Class<E> eventClass, EventFilter<E> filter, Consumer<TriggeredEventSubscription<E>> internalConsumer) {
+    public EventSubscription(Class<E> eventClass, EventFilter<E> filter, Consumer<E> internalConsumer) {
         this.eventType = Event.getEventType(eventClass);
         this.filter = filter;
         this.internalConsumer = internalConsumer;
@@ -86,7 +86,7 @@ public class EventSubscription<E extends SharedEvent> {
         this.subscriptionId = subscriptionId;
     }
 
-    public EventSubscription(Class<E> eventClass, EventFilter<E> filter, String subscriptionId, Consumer<TriggeredEventSubscription<E>> internalConsumer) {
+    public EventSubscription(Class<E> eventClass, EventFilter<E> filter, String subscriptionId, Consumer<E> internalConsumer) {
         this.eventType = Event.getEventType(eventClass);
         this.filter = filter;
         this.subscriptionId = subscriptionId;
@@ -113,11 +113,11 @@ public class EventSubscription<E extends SharedEvent> {
         return Event.getEventType(eventClass).equals(getEventType());
     }
 
-    public Consumer<TriggeredEventSubscription<E>> getInternalConsumer() {
+    public Consumer<E> getInternalConsumer() {
         return internalConsumer;
     }
 
-    public void setInternalConsumer(Consumer<TriggeredEventSubscription<E>> internalConsumer) {
+    public void setInternalConsumer(Consumer<E> internalConsumer) {
         this.internalConsumer = internalConsumer;
     }
 

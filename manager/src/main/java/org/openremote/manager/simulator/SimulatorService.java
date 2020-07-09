@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
-import static org.openremote.manager.event.ClientEventService.getSessionKey;
+import static org.openremote.agent.protocol.ProtocolClientEventService.getSessionKey;
 
 /**
  * Connects the client/UI to the {@link SimulatorProtocol}.

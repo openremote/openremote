@@ -138,5 +138,4 @@ class AssetModelTest extends Specification {
         then: "they should be the same"
         addedOrModifiedAttributes.size() == 0
     }
-
 }

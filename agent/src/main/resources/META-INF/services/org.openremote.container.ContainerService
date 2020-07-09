@@ -10,4 +10,5 @@ org.openremote.agent.protocol.websocket.WebsocketClientProtocol
 org.openremote.agent.protocol.artnet.ArtnetClientProtocol
 org.openremote.agent.protocol.tcp.TcpClientProtocol
 org.openremote.agent.protocol.serial.SerialClientProtocol
+org.openremote.agent.protocol.event.ClientEventProtocol
 org.openremote.agent.protocol.tradfri.TradfriProtocol

@@ -5,8 +5,7 @@
     "strict": true
   },
   "include": [
-    "./src",
-    "../../component/or-map/@types"
+    "./src"
   ],
   "references": [
     { "path": "../or-app" }

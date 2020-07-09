@@ -44,18 +44,10 @@ public abstract class IdentityService implements ContainerService {
 
     public static final int PRIORITY = PersistenceService.PRIORITY - 10;
     private static final Logger LOG = Logger.getLogger(IdentityService.class.getName());
-
-    public static final String IDENTITY_NETWORK_SECURE = "IDENTITY_NETWORK_SECURE";
-    public static final boolean IDENTITY_NETWORK_SECURE_DEFAULT = false;
-    public static final String IDENTITY_NETWORK_HOST = "IDENTITY_NETWORK_HOST";
-    public static final String IDENTITY_NETWORK_HOST_DEFAULT = "localhost";
-    public static final String IDENTITY_NETWORK_WEBSERVER_PORT = "IDENTITY_NETWORK_WEBSERVER_PORT";
-    public static final int IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT = 8080;
     public static final String IDENTITY_PROVIDER = "IDENTITY_PROVIDER";
     public static final String IDENTITY_PROVIDER_DEFAULT = "keycloak";
 
     // The externally visible address of this installation
-    protected UriBuilder externalServerUri;
     protected IdentityProvider identityProvider;
     protected boolean devMode;
 
@@ -66,39 +58,21 @@ public abstract class IdentityService implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-        boolean identityNetworkSecure = getBoolean(container.getConfig(), IDENTITY_NETWORK_SECURE, IDENTITY_NETWORK_SECURE_DEFAULT);
-        String identityNetworkHost = getString(container.getConfig(), IDENTITY_NETWORK_HOST, IDENTITY_NETWORK_HOST_DEFAULT);
-        int identityNetworkPort = getInteger(container.getConfig(), IDENTITY_NETWORK_WEBSERVER_PORT, IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT);
         devMode = container.isDevMode();
-
-        externalServerUri = UriBuilder.fromUri("")
-            .scheme(identityNetworkSecure ? "https" : "http")
-            .host(identityNetworkHost);
-
-        // Only set the port if it's not the default protocol port
-        if (identityNetworkPort != 80 && identityNetworkPort != 443) {
-            externalServerUri = externalServerUri.port(identityNetworkPort);
-        }
-
-        LOG.info("External system base URL: " + externalServerUri.build());
 
         String identityProviderType = getString(container.getConfig(), IDENTITY_PROVIDER, IDENTITY_PROVIDER_DEFAULT);
         identityProvider = createIdentityProvider(container, identityProviderType);
-        identityProvider.init();
+        identityProvider.init(container);
     }
 
     @Override
     public void start(Container container) throws Exception {
-        identityProvider.start();
+        identityProvider.start(container);
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        identityProvider.stop();
-    }
-
-    public UriBuilder getExternalServerUri() {
-        return externalServerUri.clone();
+        identityProvider.stop(container);
     }
 
     public void secureDeployment(DeploymentInfo deploymentInfo) {

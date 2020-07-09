@@ -22,7 +22,6 @@ package org.openremote.manager.security;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.IdentityProvider;
-import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.security.*;
@@ -35,39 +34,36 @@ import java.util.stream.IntStream;
 
 import static org.openremote.model.Constants.MASTER_REALM;
 
-// TODO: Remove use of ClientRequestInfo and normalise interface for Basic and Keycloak providers
+// TODO: Normalise interface for Basic and Keycloak providers and add client CRUD
 /**
  * SPI for implementations used by {@link ManagerIdentityService}, provides CRUD of
  * {@link User} and {@link Tenant}.
  */
 public interface ManagerIdentityProvider extends IdentityProvider {
 
-    String SETUP_ADMIN_PASSWORD = "SETUP_ADMIN_PASSWORD";
-    String SETUP_ADMIN_PASSWORD_DEFAULT = "secret";
-
-    User[] getUsers(ClientRequestInfo clientRequestInfo, String realm);
+    User[] getUsers(String realm);
 
     User[] getUsers(List<String> userIds);
 
     User[] getUsers(UserQuery userQuery);
 
-    User getUser(ClientRequestInfo clientRequestInfo, String realm, String userId);
+    User getUser(String realm, String userId);
 
-    User getUser(String realm, String username);
+    User getUserByUsername(String realm, String username);
 
-    void updateUser(ClientRequestInfo clientRequestInfo, String realm, String userId, User user);
+    void updateUser(String realm, User user);
 
-    void createUser(ClientRequestInfo clientRequestInfo, String realm, User user, String password);
+    User createUser(String realm, User user, String password);
 
-    void deleteUser(ClientRequestInfo clientRequestInfo, String realm, String userId);
+    void deleteUser(String realm, String userId);
 
-    void resetPassword(ClientRequestInfo clientRequestInfo, String realm, String userId, Credential credential);
+    void resetPassword(String realm, String userId, Credential credential);
 
-    Role[] getRoles(ClientRequestInfo clientRequestInfo, String realm, String userId);
+    Role[] getRoles(String realm, String userId);
 
-    void updateRoles(ClientRequestInfo clientRequestInfo, String realm, String userId, Role[] roles);
+    void updateRoles(String realm, String username, String client, String...roles);
 
-    boolean isMasterRealmAdmin(ClientRequestInfo clientRequestInfo, String userId);
+    boolean isMasterRealmAdmin(String userId);
 
     boolean isRestrictedUser(String userId);
 
@@ -77,13 +73,11 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     Tenant getTenant(String realm);
 
-    void updateTenant(ClientRequestInfo clientRequestInfo, String realm, Tenant tenant);
+    void updateTenant(Tenant tenant);
 
-    void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant);
+    Tenant createTenant(Tenant tenant);
 
-    void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, TenantEmailConfig emailConfig);
-
-    void deleteTenant(ClientRequestInfo clientRequestInfo, String realm);
+    void deleteTenant(String realm);
 
     boolean isTenantActiveAndAccessible(AuthContext authContext, Tenant tenant);
 

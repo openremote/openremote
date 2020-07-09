@@ -1,6 +1,6 @@
 package org.openremote.test.rules
 
-import org.openremote.container.web.ClientRequestInfo
+
 import org.openremote.manager.rules.RulesFacts
 import org.openremote.manager.rules.RulesLoopException
 import org.openremote.manager.rules.RulesService
@@ -31,11 +31,10 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
     def "Check basic rules engine deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -55,7 +54,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         ).token
 
         expect: "the rules engines to be ready"
-        new PollingConditions(initialDelay: 3, timeout: 10, delay: 1).eventually {
+        new PollingConditions(timeout: 10, delay: 0.2).eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
@@ -147,16 +146,12 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the apartment rules engine should be removed"
         conditions.eventually {
-            assert rulesService.assetEngines.size() == 2
+            assert rulesService.assetEngines.size() == 1
             def apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
             def apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
-            def peopleCounter3Engine = rulesService.assetEngines.get(managerDemoSetup.peopleCounter3AssetId)
             assert apartment2Engine == null
             assert apartment3Engine != null
             assert apartment3Engine.isRunning()
-            assert peopleCounter3Engine != null
-            assert peopleCounter3Engine.isRunning()
-
         }
 
         when: "a broken rule definition is added to the global rules engine"
@@ -194,7 +189,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         def apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
         def tenantBuildingTenant = keycloakDemoSetup.tenantBuilding
         tenantBuildingTenant.setEnabled(false)
-        identityService.getIdentityProvider().updateTenant(new ClientRequestInfo(null, accessToken), tenantBuildingTenant.getRealm(), tenantBuildingTenant)
+        identityService.getIdentityProvider().updateTenant(tenantBuildingTenant)
 
         then: "the tenants rule engine should stop and all asset rule engines in this realm should also stop"
         conditions.eventually {
@@ -209,28 +204,25 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         and: "other rule engines should be unaffected"
         conditions.eventually {
             assert rulesService.tenantEngines.size() == 2
-            assert rulesService.assetEngines.size() == 1
+            assert rulesService.assetEngines.size() == 0
             def masterEngine = rulesService.tenantEngines.get(keycloakDemoSetup.masterTenant.realm)
             def cityEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantCity.realm)
-            def peopleCounter3Engine = rulesService.assetEngines.get(managerDemoSetup.peopleCounter3AssetId)
             assert masterEngine != null
             assert masterEngine.isRunning()
             assert cityEngine != null
             assert cityEngine.isRunning()
-            assert peopleCounter3Engine != null
-            assert peopleCounter3Engine.isRunning()
         }
 
         when: "the disabled tenant is re-enabled"
         tenantBuildingTenant.setEnabled(true)
-        identityService.getIdentityProvider().updateTenant(new ClientRequestInfo(null, accessToken), tenantBuildingTenant.getRealm(), tenantBuildingTenant)
+        identityService.getIdentityProvider().updateTenant(tenantBuildingTenant)
 
         then: "the tenants rule engine should start and all asset rule engines from this realm should also start"
         conditions.eventually {
             tenantBuildingEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantBuilding.realm)
             apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
             assert rulesService.tenantEngines.size() == 3
-            assert rulesService.assetEngines.size() == 2
+            assert rulesService.assetEngines.size() == 1
             assert tenantBuildingEngine != null
             assert tenantBuildingEngine.isRunning()
             assert tenantBuildingEngine.deployments.size() == 2
@@ -309,8 +301,5 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 //            assert tenantCity != null
 //            assert tenantCity.isRunning()
 //        }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

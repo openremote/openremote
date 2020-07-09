@@ -15,6 +15,7 @@
     "@openremote/core": "^1.1.0",
     "@openremote/or-input": "^1.1.0",
     "@openremote/or-translate": "^1.1.0",
+    "@openremote/or-map": "^1.1.0",
     "lit-element": "^2.2.1"
   },
   "devDependencies": {

@@ -6,11 +6,13 @@
     "rootDir": "src"
   },
   "include": [
-    "./src"
+    "./src",
+    "../or-map/@types"
   ],
   "references": [
     { "path": "../core" },
     { "path": "../or-translate" },
+    { "path": "../or-map" },
     { "path": "../or-input" }
   ]
 }

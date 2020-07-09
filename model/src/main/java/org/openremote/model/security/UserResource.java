@@ -42,7 +42,6 @@ public interface UserResource {
     @Produces(APPLICATION_JSON)
     @Path("{realm}")
     @SuccessStatusCode(200)
-    @RolesAllowed(Constants.READ_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
     User[] getAll(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 

@@ -26,11 +26,12 @@ import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.util.BasicAuthHelper;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.http.HttpClientProtocol;
-import org.openremote.agent.protocol.http.OAuthGrant;
-import org.openremote.agent.protocol.http.WebTargetBuilder;
+import org.openremote.container.web.OAuthGrant;
+import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
 import org.openremote.container.Container;
 import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
@@ -54,7 +55,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.agent.protocol.http.HttpClientProtocol.*;
-import static org.openremote.agent.protocol.http.WebTargetBuilder.createClient;
+import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
 import static org.openremote.model.attribute.MetaItemDescriptorImpl.*;
@@ -144,8 +145,8 @@ public abstract class AbstractWebsocketClientProtocol<T> extends AbstractIoClien
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        super.doUnlinkProtocolConfiguration(protocolConfiguration);
+    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
+        super.doUnlinkProtocolConfiguration(agent, protocolConfiguration);
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
         clientHeaders.remove(protocolRef);
         synchronized (protocolConnectedTasks) {

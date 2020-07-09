@@ -1,7 +1,7 @@
 /* tslint:disable:no-empty */
 import {EventProviderFactory, EventProviderStatus} from "./event";
-import {arraysEqual} from "./util";
-import {AssetEvent, AttributeEvent, AttributeRef} from "@openremote/model";
+import {objectsEqual} from "./util";
+import {AttributeRef, SharedEvent, EventRequestResponseWrapper} from "@openremote/model";
 
 declare type Constructor<T = {}> = new (...args: any[]) => T;
 
@@ -16,10 +16,10 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
     class extends base {
 
         public _connectRequested = false;
-        public _assetSubscriptionId?: string;
-        public _attributeSubscriptionId?: string;
+        public _subscriptionIds?: string[];
         public _assetIds?: string[];
         public _attributeRefs?: AttributeRef[];
+        public _status: EventProviderStatus = EventProviderStatus.DISCONNECTED;
         public _statusCallback = (status: EventProviderStatus) => this._onEventProviderStatusChanged(status);
 
         connectedCallback() {
@@ -27,18 +27,18 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
                 super.connectedCallback();
             }
 
-            this.connect();
+            this.connectEvents();
         }
 
         disconnectedCallback() {
-            this.disconnect();
+            this.disconnectEvents();
 
             if (super.disconnectedCallback) {
                 super.disconnectedCallback();
             }
         }
 
-        public connect() {
+        public connectEvents() {
             if (!eventProviderFactory.getEventProvider()) {
                 console.log("No event provider available so cannot subscribe");
                 return;
@@ -52,72 +52,31 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
             this._doConnect();
         }
 
-        public async _doConnect() {
-            if (!this._connectRequested || this._attributeSubscriptionId) {
-                return;
-            }
-
-            if (eventProviderFactory.getEventProvider()!.status !== EventProviderStatus.CONNECTED) {
-                return;
-            }
-
-            const isAttributes = !!this._attributeRefs;
-            const ids: string[] | AttributeRef[] | undefined = this._attributeRefs ? this._attributeRefs : this._assetIds;
-
-            if (ids && ids.length > 0) {
-                if (!isAttributes) {
-                    this._assetSubscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAssetEvents(ids, true, (event) => this._onAssetEvent(event));
-                }
-                this._attributeSubscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAttributeEvents(ids, isAttributes, (event) => this._onAttributeEvent(event));
-            }
-            this.onStatusChange(EventProviderStatus.CONNECTED);
-        }
-
-        public disconnect() {
+        public disconnectEvents() {
             if (!this._connectRequested) {
                 return;
             }
             this._connectRequested = false;
             eventProviderFactory.getEventProvider()!.unsubscribeStatusChange(this._statusCallback);
-            this._doDisconnect();
+            this._onEventsDisconnect();
         }
 
-        public _doDisconnect() {
-            if (!this._assetSubscriptionId) {
+        public async _doConnect() {
+            if (!this.eventsConnected) {
                 return;
             }
 
-            eventProviderFactory.getEventProvider()!.unsubscribe(this._assetSubscriptionId);
-            eventProviderFactory.getEventProvider()!.unsubscribe(this._attributeSubscriptionId!);
-            this._assetSubscriptionId = undefined;
-            this._attributeSubscriptionId = undefined;
-            this.onStatusChange(EventProviderStatus.DISCONNECTED);
+            this._onEventsConnect();
         }
 
-        public set assetIds(assetIds: string[] | undefined) {
-            if (arraysEqual(this._assetIds, assetIds)) {
-                return;
-            }
-
-            this._assetIds = assetIds;
-            this._doDisconnect();
-            this._doConnect();
-        }
-
-        public set attributeRefs(attributes: AttributeRef[] | undefined) {
-            if (arraysEqual(this._attributeRefs, attributes)) {
-                return;
-            }
-
-            this._attributeRefs = attributes;
-            this._doDisconnect();
-            this._doConnect();
+        public get eventsConnected() {
+            return this._connectRequested && eventProviderFactory.getEventProvider()!.status === EventProviderStatus.CONNECTED;
         }
 
         public _onEventProviderStatusChanged(status: EventProviderStatus) {
             switch (status) {
                 case EventProviderStatus.DISCONNECTED:
-                    this._doDisconnect();
+                    this._onEventsDisconnect();
                     break;
                 case EventProviderStatus.CONNECTED:
                     this._doConnect();
@@ -125,34 +84,93 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
             }
         }
 
-        public _onAttributeEvent(event: AttributeEvent) {
-            if (!this._connectRequested || !this._attributeSubscriptionId) {
+        public _onEventsConnect() {
+            this._addEventSubscriptions();
+            this.onEventsConnect();
+        }
+
+        public _onEventsDisconnect() {
+            this._removeEventSubscriptions();
+            this.onEventsDisconnect();
+        }
+
+        /**
+         * Defaults to subscribe to attribute events and optionally asset events, override in subclasses to do
+         * custom subscriptions.
+         * Returns the subscription IDs of any created subscriptions
+         */
+        public async _addEventSubscriptions(): Promise<void> {
+            const isAttributes = !!this._attributeRefs;
+            const ids: string[] | AttributeRef[] | undefined = this._attributeRefs ? this._attributeRefs : this._assetIds;
+            this._subscriptionIds = [];
+
+            if (ids && ids.length > 0) {
+                if (!isAttributes) {
+                    const assetSubscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAssetEvents(ids, true, (event) => this._onEvent(event));
+                    this._subscriptionIds.push(assetSubscriptionId);
+                }
+                const subscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAttributeEvents(ids, isAttributes, (event) => this._onEvent(event));
+                this._subscriptionIds.push(subscriptionId);
+            }
+        }
+
+        public _removeEventSubscriptions() {
+            if (!this._subscriptionIds) {
                 return;
             }
 
-            this.onAttributeEvent(event);
+            this._subscriptionIds.forEach((subscriptionId) => {
+                eventProviderFactory.getEventProvider()!.unsubscribe(subscriptionId);
+            });
+
+            this._subscriptionIds = undefined;
         }
 
-        public _onAssetEvent(event: AssetEvent) {
-            if (!this._connectRequested || !this._assetSubscriptionId) {
+        public _refreshEventSubscriptions() {
+            this._removeEventSubscriptions();
+            this._addEventSubscriptions();
+        }
+
+        public set assetIds(assetIds: string[] | undefined) {
+            if (objectsEqual(this._assetIds, assetIds)) {
                 return;
             }
 
-            this.onAssetEvent(event);
+            this._assetIds = assetIds;
+            this._refreshEventSubscriptions();
         }
 
-        public _sendEvent(event: AttributeEvent) {
-            if (eventProviderFactory.getEventProvider()!.status === EventProviderStatus.CONNECTED) {
-                eventProviderFactory.getEventProvider()!.sendEvent(event);
+        public get assetIds() {
+            return this._assetIds;
+        }
+
+        public set attributeRefs(attributes: AttributeRef[] | undefined) {
+            if (objectsEqual(this._attributeRefs, attributes)) {
+                return;
             }
+
+            this._attributeRefs = attributes;
+            this._refreshEventSubscriptions();
+        }
+
+        public get attributeRefs(): AttributeRef[] | undefined {
+            return this._attributeRefs;
+        }
+
+        public _sendEvent(event: SharedEvent) {
+            eventProviderFactory.getEventProvider()!.sendEvent(event);
+        }
+
+        public _sendEventWithReply<U extends SharedEvent, V extends SharedEvent>(event: EventRequestResponseWrapper<U>): Promise<V> {
+            return eventProviderFactory.getEventProvider()!.sendEventWithReply(event);
         }
 
         // noinspection JSUnusedLocalSymbols
-        public onStatusChange(status: EventProviderStatus) {}
+        public onEventsConnect() {}
 
         // noinspection JSUnusedLocalSymbols
-        public onAttributeEvent(event: AttributeEvent) {}
+        public onEventsDisconnect() {}
 
         // noinspection JSUnusedLocalSymbols
-        public onAssetEvent(event: AssetEvent) {}
+        public _onEvent(event: SharedEvent) {}
     };

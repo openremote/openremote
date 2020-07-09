@@ -23,6 +23,7 @@
         <class>org.openremote.model.rules.AssetRuleset</class>
         <class>org.openremote.model.syslog.SyslogEvent</class>
         <class>org.openremote.model.gateway.GatewayConnection</class>
+        <class>org.openremote.model.apps.ConsoleAppConfig</class>
 
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 

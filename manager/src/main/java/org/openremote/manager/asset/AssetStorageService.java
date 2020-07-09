@@ -22,6 +22,7 @@ package org.openremote.manager.asset;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
+import org.openremote.agent.protocol.ProtocolClientEventService;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
@@ -31,6 +32,7 @@ import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.console.ConsoleResourceImpl;
 import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.event.EventSubscriptionAuthorizer;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.rules.AssetQueryPredicate;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -44,7 +46,7 @@ import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
-import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.event.shared.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.*;
@@ -61,7 +63,6 @@ import org.postgresql.util.PGobject;
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.TypedQuery;
-import javax.ws.rs.WebApplicationException;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
@@ -74,11 +75,10 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
-import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
-import static org.openremote.manager.event.ClientEventService.getSessionKey;
+import static org.openremote.manager.event.ClientEventService.*;
 import static org.openremote.manager.rules.AssetQueryPredicate.asPredicate;
 import static org.openremote.model.asset.AssetAttribute.*;
 import static org.openremote.model.attribute.MetaItemType.ACCESS_RESTRICTED_READ;
@@ -124,6 +124,76 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public static final int PRIORITY = MED_PRIORITY;
     protected static String META_ITEM_RESTRICTED_READ_SQL_FRAGMENT;
     protected static String META_ITEM_PUBLIC_READ_SQL_FRAGMENT;
+
+    public static <T extends SharedEvent & AssetInfo> EventSubscriptionAuthorizer assetInfoAuthorizer(ManagerIdentityService identityService, AssetStorageService assetStorageService) {
+
+         return (auth, sub) -> {
+
+             @SuppressWarnings("unchecked")
+             EventSubscription<T> subscription = (EventSubscription<T>)sub;
+
+             // Only Asset filters allowed
+             if (subscription.getFilter() != null && !(subscription.getFilter() instanceof AssetFilter)) {
+                 return false;
+             }
+
+             AssetFilter<T> filter = (AssetFilter<T>) subscription.getFilter();
+
+             // Superuser can get events for any asset
+             if (auth.isSuperUser())
+                 return true;
+
+             // Regular user must have role
+             if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                 return false;
+             }
+
+             boolean isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(auth.getUserId());
+
+             if (filter == null) {
+                 filter = new AssetFilter<>();
+                 subscription.setFilter(filter);
+             }
+
+             // Regular and restricted users can only subscribe to assets in their realm
+             filter.setRealm(auth.getAuthenticatedRealm());
+
+             // Restricted user can only subscribe to assets they are linked to
+             boolean skipAssetIdCheck = false;
+             if (isRestrictedUser && (filter.getAssetIds() == null || filter.getAssetIds().length == 0)) {
+                 filter.setAssetIds(
+                     assetStorageService.findUserAssets(auth.getAuthenticatedRealm(), auth.getUserId(), null)
+                         .stream()
+                         .map(userAsset -> userAsset.getId().getAssetId())
+                         .toArray(String[]::new)
+                 );
+                 skipAssetIdCheck = true;
+             }
+
+             if (!skipAssetIdCheck && filter.getAssetIds() != null) {
+                 // Client can subscribe to several assets
+                 for (String assetId : filter.getAssetIds()) {
+                     Asset asset = assetStorageService.find(assetId, false);
+                     // If the asset doesn't exist, subscription must fail
+                     if (asset == null)
+                         return false;
+                     if (isRestrictedUser) {
+                         // Restricted users can only get events for their linked assets
+                         if (!assetStorageService.isUserAsset(auth.getUserId(), assetId))
+                             return false;
+                         // TODO Restricted clients should only receive events for PROTECTED attributes!
+                     } else {
+                         // Regular users can only get events for assets in their realm
+                         if (!asset.getRealm().equals(auth.getAuthenticatedRealm()))
+                             return false;
+                     }
+                 }
+             }
+
+             return true;
+         };
+    };
+
     protected TimerService timerService;
     protected PersistenceService persistenceService;
     protected ManagerIdentityService identityService;
@@ -214,6 +284,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         identityService = container.getService(ManagerIdentityService.class);
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
+        EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, this);
 
         META_ITEM_RESTRICTED_READ_SQL_FRAGMENT =
             " ('" + Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).filter(i -> i.getAccess().restrictedRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
@@ -228,6 +299,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 subscription.getFilter() instanceof TenantFilter ? ((TenantFilter) subscription.getFilter()) : null,
                 ClientRole.READ_ASSETS)
         );
+
+        clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
+             if (!subscription.isEventType(AssetEvent.class)) {
+                 return false;
+             }
+
+            return assetEventAuthorizer.apply(auth, subscription);
+        });
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
             new AssetModelResourceImpl(
@@ -248,7 +327,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         container.getService(ManagerWebService.class).getApiSingletons().add(
             new ConsoleResourceImpl(container.getService(TimerService.class),
                 identityService,
-                this)
+                this,
+                clientEventService)
         );
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
@@ -275,40 +355,102 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         // React if a client wants to read assets and attributes
         from(CLIENT_EVENT_TOPIC)
             .routeId("FromClientReadRequests")
-            .filter(exchange ->
-                (exchange.getIn().getBody() instanceof ReadAssetAttributesEvent) || (exchange.getIn().getBody() instanceof ReadAssetEvent))
-            .process(exchange -> {
-                ReadAssetEvent event = exchange.getIn().getBody(ReadAssetEvent.class);
-                LOG.fine("Handling from client: " + event);
-                boolean isAttributeRead = event instanceof ReadAssetAttributesEvent;
+            .filter(
+                or(body().isInstanceOf(ReadAssetsEvent.class), body().isInstanceOf(ReadAssetEvent.class), body().isInstanceOf(ReadAssetAttributeEvent.class)))
+            .choice()
+                .when(body().isInstanceOf(ReadAssetEvent.class))
+                    .process(exchange -> {
+                        LOG.fine("Handling from client: " + exchange.getIn().getBody());
 
-                if (event.getAssetId() == null || event.getAssetId().isEmpty())
-                    return;
+                        String assetId = null;
+                        String attribute = null;
 
-                String sessionKey = getSessionKey(exchange);
-                AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+                        if (exchange.getIn().getBody() instanceof ReadAssetEvent) {
+                            assetId = exchange.getIn().getBody(ReadAssetEvent.class).getAssetId();
+                        } else {
+                            ReadAssetAttributeEvent assetAttributeEvent = exchange.getIn().getBody(ReadAssetAttributeEvent.class);
+                            assetId = assetAttributeEvent.getAttributeRef().getEntityId();
+                            attribute = assetAttributeEvent.getAttributeRef().getAttributeName();
+                        }
 
+                        if (TextUtil.isNullOrEmpty(assetId)) {
+                            return;
+                        }
 
-                // Superuser can get all, User must have role
-                if (!authContext.isSuperUser() && !authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
-                    return;
-                }
+                        boolean isAttributeRead = !TextUtil.isNullOrEmpty(attribute);
+                        String sessionKey = ProtocolClientEventService.getSessionKey(exchange);
+                        AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
 
-                Access access = authContext.isSuperUser() || !identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId()) ? PRIVATE : PROTECTED;
+                        // Superuser can get all, User must have role
+                        if (!authContext.isSuperUser() && !authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                            return;
+                        }
 
-                Asset asset = find(
-                    new AssetQuery()
-                        .ids(event.getAssetId())
-                        .access(access));
+                        Access access = authContext.isSuperUser() || !identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId()) ? PRIVATE : PROTECTED;
 
-                if (asset != null) {
-                    if (isAttributeRead) {
-                        replyWithAttributeEvents(sessionKey, event.getSubscriptionId(), asset, ((ReadAssetAttributesEvent) event).getAttributeNames());
-                    } else {
-                        replyWithAssetEvent(sessionKey, event.getSubscriptionId(), asset);
-                    }
-                }
-            });
+                        Asset asset = find(
+                            new AssetQuery()
+                                .ids(assetId)
+                                .select(new Select().excludePath(true).excludeParentInfo(true))
+                                .access(access));
+
+                        if (asset != null) {
+                            String messageId = exchange.getIn().getHeader(HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
+                            Object response = null;
+
+                            if (isAttributeRead) {
+                                AssetAttribute assetAttribute = asset.getAttribute(attribute).orElse(null);
+                                if (assetAttribute != null) {
+                                    response = new AttributeEvent(assetId, attribute, assetAttribute.getValue().orElse(null), assetAttribute.getValueTimestamp().orElse(0L));
+                                }
+                            } else {
+                                response = new AssetEvent(AssetEvent.Cause.READ, asset, null);
+                            }
+
+                            if (response != null) {
+                                if (!isNullOrEmpty(messageId)) {
+                                    response = new EventRequestResponseWrapper<>(messageId, (SharedEvent)response);
+                                }
+                                clientEventService.sendToSession(sessionKey, response);
+                            }
+                        }
+                    })
+                .when(body().isInstanceOf(ReadAssetsEvent.class))
+                    .process(exchange -> {
+                        ReadAssetsEvent readAssets = exchange.getIn().getBody(ReadAssetsEvent.class);
+                        AssetQuery query = readAssets.getAssetQuery();
+
+                        String sessionKey = ProtocolClientEventService.getSessionKey(exchange);
+                        AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+
+                        // Superuser can get all, User must have role
+                        if (!authContext.isSuperUser() && !authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                            return;
+                        }
+
+                        Access access = authContext.isSuperUser() || !identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId()) ? PRIVATE : PROTECTED;
+
+                        if (!authContext.isSuperUser()) {
+                            // Force realm to match users
+                            query.tenant(new TenantPredicate(authContext.getAuthenticatedRealm()));
+                        }
+
+                        // Set access requirements
+                        query.access(access);
+
+                        List<Asset> assets = findAll(query);
+
+                        String messageId = exchange.getIn().getHeader(HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
+
+                        if (isNullOrEmpty(messageId)) {
+                            clientEventService.sendToSession(sessionKey, new AssetsEvent(assets));
+                        } else {
+                            clientEventService.sendToSession(sessionKey, new EventRequestResponseWrapper<>(messageId, new AssetsEvent(assets)));
+                        }
+                    })
+                    .stop()
+            .endChoice()
+            .end();
     }
 
     public Asset find(String assetId) {
@@ -323,7 +465,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public Asset find(String assetId, boolean loadComplete) {
         if (assetId == null)
             throw new IllegalArgumentException("Can't query null asset identifier");
-        return find(new AssetQuery().select(loadComplete ? null : Select.selectExcludePathAndAttributes()).ids(assetId));
+        return find(new AssetQuery().select(loadComplete ? null : Select.selectExcludeAll()).ids(assetId));
     }
 
     /**
@@ -559,6 +701,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             // Update all empty attribute timestamps with server-time (a caller which doesn't have a
             // reliable time source such as a browser should clear the timestamp when setting an attribute
             // value).
+
             asset.getAttributesStream().forEach(attribute -> {
                 Optional<Long> timestamp = attribute.getValueTimestamp();
                 if (!timestamp.isPresent() || timestamp.get() <= 0) {
@@ -569,7 +712,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             // If username present
             User user = null;
             if (!TextUtil.isNullOrEmpty(userName)) {
-                user = identityService.getIdentityProvider().getUser(asset.getRealm(), userName);
+                user = identityService.getIdentityProvider().getUserByUsername(asset.getRealm(), userName);
                 if (user == null) {
                     String msg = "User not found: " + userName;
                     LOG.info(msg);
@@ -1992,12 +2135,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             .map(Optional::get)
             .collect(Collectors.toList());
         TriggeredEventSubscription<?> triggeredEventSubscription = new TriggeredEventSubscription<>(events, subscriptionId);
-        clientEventService.sendToSession(sessionKey, triggeredEventSubscription);
-    }
-
-    protected void replyWithAssetEvent(String sessionKey, String subscriptionId, Asset asset) {
-        AssetEvent event = new AssetEvent(AssetEvent.Cause.READ, asset, null);
-        TriggeredEventSubscription<?> triggeredEventSubscription = new TriggeredEventSubscription<>(Collections.singletonList(event), subscriptionId);
         clientEventService.sendToSession(sessionKey, triggeredEventSubscription);
     }
 

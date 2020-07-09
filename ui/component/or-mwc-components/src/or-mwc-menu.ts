@@ -126,6 +126,9 @@ export class OrMwcMenu extends LitElement {
     public visible?: boolean;
 
     @property({type: Boolean, attribute: true})
+    public noSurface?: boolean = false;
+    
+    @property({type: Boolean, attribute: true})
     public twoLine?: boolean;
 
     public anchorElem?: HTMLElement;
@@ -158,7 +161,7 @@ export class OrMwcMenu extends LitElement {
 
         return html`
             <div id="wrapper" class="mdc-menu-surface--anchor">
-                <div class="mdc-menu mdc-menu-surface" id="menu" @MDCMenuSurface:closed="${this._onMenuClosed}">
+                <div class="mdc-menu ${this.noSurface ? "" : "mdc-menu-surface"}" id="menu" @MDCMenuSurface:closed="${this._onMenuClosed}">
                     <ul class="mdc-list ${this.twoLine ? "mdc-list--two-line" : ""}" role="menu" aria-hidden="true" aria-orientation="vertical" tabindex="-1">
                         ${this.getItemsTemplate(this.menuItems)}
                     </ul>
@@ -262,7 +265,9 @@ export class OrMwcMenu extends LitElement {
 
         if (!this.multiSelect) {
             this.values = value;
-            this._mdcComponent!.open = false;
+            if(!this.noSurface){
+                this._mdcComponent!.open = false;
+            }
         } else {
             if (!Array.isArray(this.values)) {
                 this.values = this.values ? [this.values] : [];

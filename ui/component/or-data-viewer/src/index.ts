@@ -2,20 +2,9 @@ import {customElement, html, LitElement, property, PropertyValues, TemplateResul
 import "@openremote/or-chart";
 import "@openremote/or-translate";
 import {translate} from "@openremote/or-translate";
-import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import "@openremote/or-panel";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
-import {
-    Asset,
-    AssetAttribute,
-    AssetEvent,
-    AssetType,
-    Attribute,
-    AttributeEvent,
-    AttributeType,
-    MetaItemType,
-    MetaItem
-} from "@openremote/model";
+import {Asset, AssetAttribute, Attribute} from "@openremote/model";
 import {style} from "./style";
 import i18next from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
@@ -50,32 +39,37 @@ export interface DataViewerConfig {
     chartConfig?: OrChartConfig;
 }
 
-
 class EventHandler {
-    _callbacks: Function[];
+    public _callbacks: Function[];
 
     constructor() {
         this._callbacks = [];
     }
 
-    startCallbacks() {
+    public startCallbacks() {
         return new Promise((resolve, reject) => {
             if (this._callbacks && this._callbacks.length > 0) {
-                this._callbacks.forEach(cb => cb());
+                this._callbacks.forEach((cb) => cb());
             }
             resolve();
-        })
+        });
 
     }
 
-    addCallback(callback: Function) {
+    public addCallback(callback: Function) {
         this._callbacks.push(callback);
     }
 }
 const onRenderComplete = new EventHandler();
 
 @customElement("or-data-viewer")
-export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitElement)) {
+export class OrDataViewer extends translate(i18next)(LitElement) {
+
+    static get styles() {
+        return [
+            style
+        ];
+    }
 
     public static DEFAULT_PANEL_TYPE: PanelType = "chart";
 
@@ -84,7 +78,7 @@ export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitEleme
 
         },
         panels: {
-            "chart": {
+            chart: {
                 type: "chart",
                 hideOnMobile: true,
                 panelStyles: {
@@ -95,74 +89,16 @@ export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitEleme
         }
     };
 
-    static get styles() {
-        return [
-            style
-        ];
-    }
-
-    @property({type: Array, attribute: false})
-    protected _assets?: Asset[];
-
-    @property()
-    protected _loading: boolean = false;
-
-    config?: DataViewerConfig;
-
-
-    constructor() {
-        super();
-        window.addEventListener('resize', () => OrDataViewer.generateGrid(this.shadowRoot));
-        
-        this.addEventListener(OrChartEvent.NAME,() => OrDataViewer.generateGrid(this.shadowRoot));
-    }
-
-    protected render() {
-
-        if (this._loading) {
-            return html`
-                <div class="msg"><or-translate value="loading"></or-translate></div>
-            `;
-        }
-
-        if (!this.config) {
-            return html``;
-        }
-
-        return html`
-            <div id="wrapper">
-                <div id="container" style="${this.config.viewerStyles ? styleMap(this.config.viewerStyles) : ""}">
-                    ${Object.entries(this.config.panels).map(([name, panelConfig]) => this.getPanel(name,  panelConfig))}
-                </div>
-            </div>
-        `;
-    }
-
-    protected updated(_changedProperties: PropertyValues) {
-        super.updated(_changedProperties);
-
-        this.onCompleted().then(() => {
-            onRenderComplete.startCallbacks().then(() => {
-                OrDataViewer.generateGrid(this.shadowRoot);
-            });
-        });
-
-    }
-
-    async onCompleted() {
-        await this.updateComplete;
-    }
-
     public static generateGrid(shadowRoot: ShadowRoot | null) {
         if (shadowRoot) {
-            const grid = shadowRoot.querySelector('#container');
+            const grid = shadowRoot.querySelector("#container");
             if (grid) {
-                const rowHeight = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-auto-rows'));
-                const rowGap = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-row-gap'));
-                const items = shadowRoot.querySelectorAll('.panel');
+                const rowHeight = parseInt(window.getComputedStyle(grid).getPropertyValue("grid-auto-rows"), 10);
+                const rowGap = parseInt(window.getComputedStyle(grid).getPropertyValue("grid-row-gap"), 10);
+                const items = shadowRoot.querySelectorAll(".panel");
                 if (items) {
                     items.forEach((item) => {
-                        const content = item.querySelector('.panel-content-wrapper');
+                        const content = item.querySelector(".panel-content-wrapper");
                         if (content) {
                             const rowSpan = Math.ceil((content.getBoundingClientRect().height + rowGap) / (rowHeight + rowGap));
                             (item as HTMLElement).style.gridRowEnd = "span " + rowSpan;
@@ -173,6 +109,24 @@ export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitEleme
         }
     }
 
+    public config?: DataViewerConfig;
+
+    @property({type: Array, attribute: false})
+    protected _assets?: Asset[];
+
+    @property()
+    protected _loading: boolean = false;
+
+    constructor() {
+        super();
+        window.addEventListener("resize", () => OrDataViewer.generateGrid(this.shadowRoot));
+        this.addEventListener(OrChartEvent.NAME, () => OrDataViewer.generateGrid(this.shadowRoot));
+    }
+
+    public async onCompleted() {
+        await this.updateComplete;
+    }
+
     public getPanel(name: string, panelConfig: PanelConfig) {
         const content = this.getPanelContent(name, panelConfig);
 
@@ -180,9 +134,8 @@ export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitEleme
             return;
         }
 
-
         return html`
-            <div class=${classMap({"panel": true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
+            <div class=${classMap({panel: true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
                 <div class="panel-content-wrapper">
                     ${(panelConfig && panelConfig.type === "chart") ? html`
                         <div class="panel-title">
@@ -215,5 +168,36 @@ export class OrDataViewer extends subscribe(manager)(translate(i18next)(LitEleme
             `;
         }
         return content;
+    }
+
+    protected render() {
+
+        if (this._loading) {
+            return html`
+                <div class="msg"><or-translate value="loading"></or-translate></div>
+            `;
+        }
+
+        if (!this.config) {
+            return html``;
+        }
+
+        return html`
+            <div id="wrapper">
+                <div id="container" style="${this.config.viewerStyles ? styleMap(this.config.viewerStyles) : ""}">
+                    ${Object.entries(this.config.panels).map(([name, panelConfig]) => this.getPanel(name,  panelConfig))}
+                </div>
+            </div>
+        `;
+    }
+
+    protected updated(_changedProperties: PropertyValues) {
+        super.updated(_changedProperties);
+
+        this.onCompleted().then(() => {
+            onRenderComplete.startCallbacks().then(() => {
+                OrDataViewer.generateGrid(this.shadowRoot);
+            });
+        });
     }
 }

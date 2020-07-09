@@ -20,12 +20,11 @@
 package org.openremote.manager.agent;
 
 import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
 import org.openremote.container.ContainerHealthStatusProvider;
+import org.openremote.container.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
-import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -141,8 +140,10 @@ public class AgentHealthStatusProvider implements ContainerHealthStatusProvider 
                         "status",
                         protocolConfigInfo.getValue().value == null ? null : protocolConfigInfo.getValue().value.name());
 
-                    List<AttributeRef> linkedAttributes = agentService.linkedAttributes.get(protocolConfigInfo.getKey());
-                    protocol.put("linkedAttributes", linkedAttributes != null ? linkedAttributes.size() : 0);
+                    long attributeCount = !agentService.linkedAttributes.containsKey(protocolConfigInfo.getKey())
+                        ? 0
+                        : agentService.linkedAttributes.get(protocolConfigInfo.getKey()).size();
+                    protocol.put("linkedAttributes", attributeCount);
                     agentValue.put(protocolConfigInfo.getKey().getAttributeName(), protocol);
                 });
 

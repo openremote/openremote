@@ -19,27 +19,22 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.event.shared.SharedEvent;
 
 /**
- * A client sends this event to the server to refresh its asset state, expecting
- * the server to answer "soon" with an {@link AssetEvent}, the client must have an
- * {@link org.openremote.model.event.shared.EventSubscription}&lt;{@link AssetEvent}&gt;
- * in place in order to receive the response. If the server
- * decides that the client doesn't have the right permissions, or if anything
- * else is not in order (e.g. the asset doesn't exist), the server might not react
+ * A client sends this event to the server to read the specified asset, optionally restricting which attributes
+ * expecting the server to answer "soon" with an {@link AssetEvent}. If the server decides that the client doesn't have
+ * the right permissions, or if anything else is not in order (e.g. the asset doesn't exist), the server might not react
  * at all.
  */
 public class ReadAssetEvent extends SharedEvent {
 
     protected String assetId;
 
-    protected String subscriptionId;
-
-    protected ReadAssetEvent() {
-    }
-
-    public ReadAssetEvent(String assetId) {
+    @JsonCreator
+    public ReadAssetEvent(@JsonProperty("assetId") String assetId) {
         this.assetId = assetId;
     }
 
@@ -51,19 +46,10 @@ public class ReadAssetEvent extends SharedEvent {
         this.assetId = assetId;
     }
 
-    public String getSubscriptionId() {
-        return subscriptionId;
-    }
-
-    public void setSubscriptionId(String subscriptionId) {
-        this.subscriptionId = subscriptionId;
-    }
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "assetId='" + assetId + '\'' +
-            ", subscriptionId='" + subscriptionId + '\'' +
             '}';
     }
 }

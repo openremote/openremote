@@ -20,7 +20,7 @@
 package org.openremote.test.protocol.websocket
 
 import org.openremote.agent.protocol.Protocol
-import org.openremote.agent.protocol.http.OAuthPasswordGrant
+import org.openremote.container.web.OAuthPasswordGrant
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.agent.protocol.websocket.WebsocketClientProtocol
 import org.openremote.agent.protocol.websocket.WebsocketHttpSubscription
@@ -35,6 +35,7 @@ import org.openremote.model.Constants
 import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.*
+import org.openremote.model.event.TriggeredEventSubscription
 import org.openremote.model.event.shared.EventSubscription
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.query.AssetQuery
@@ -105,22 +106,16 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
     def "Check websocket client protocol configuration and linked attribute deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
-        when: "the container starts"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        and: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
         def websocketClientProtocol = container.getService(WebsocketClientProtocol.class)
         def simulatorProtocol = container.getService(SimulatorProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-
-        then: "the container should be running"
-        conditions.eventually {
-            assert container.isRunning()
-        }
 
         when: "the web target builder is configured to use the mock HTTP server (to test subscriptions)"
         if (!websocketClientProtocol.client.configuration.isRegistered(mockServer)) {
@@ -201,7 +196,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_FILTERS,
                         Values.convertToValue(
                             [
-                                new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
+                                new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false, false)
                             ] as ValueFilter[]
                             , Container.JSON.writer()).orElse(null)),
@@ -210,7 +205,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
                         Values.convertToValue(
                             [
-                                new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
+                                new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"targetTemperature\")].attributeState.value", true, false)
                             ] as ValueFilter[]
                             , Container.JSON.writer()).orElse(null)),
@@ -218,7 +213,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         Values.convertToValue(
                             [
                                 new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(
-                                    new ReadAssetAttributesEvent(managerDemoSetup.apartment1LivingroomId, "targetTemperature")
+                                    new ReadAssetAttributeEvent(managerDemoSetup.apartment1LivingroomId, "targetTemperature")
                                 ))
                             ], Container.JSON.writer()).orElse(null))
                 ),
@@ -229,7 +224,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_FILTERS,
                         Values.convertToValue(
                             [
-                                new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
+                                new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false, false)
                             ] as ValueFilter[]
                             , Container.JSON.writer()).orElse(null)),
@@ -238,7 +233,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
                         Values.convertToValue(
                             [
-                                new SubStringValueFilter(SharedEvent.MESSAGE_PREFIX.length()),
+                                new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
                                 new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"co2Level\")].attributeState.value", true, false),
                             ] as ValueFilter[]
                             , Container.JSON.writer()).orElse(null)),
@@ -246,7 +241,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         Values.convertToValue(
                             [
                                 new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(
-                                    new ReadAssetAttributesEvent(managerDemoSetup.apartment1LivingroomId, "co2Level")
+                                    new ReadAssetAttributeEvent(managerDemoSetup.apartment1LivingroomId, "co2Level")
                                 ))
                             ]
                             , Container.JSON.writer()).orElse(null))
@@ -269,7 +264,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
             Values.create(19.5))
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
-        then: "the linked targetTemperature attribute should contain this written value"
+        then: "the linked targetTemperature attribute should contain this written value (it should have been written to the target temp attribute and then read back again)"
         conditions.eventually {
             asset = assetStorageService.find(asset.getId(), true)
             assert asset.getAttribute("readWriteTargetTemp").flatMap{it.getValueAsNumber()}.orElse(null) == 19.5d
@@ -286,8 +281,5 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
             asset = assetStorageService.find(asset.getId(), true)
             assert asset.getAttribute("readCo2Level").flatMap{it.getValueAsNumber()}.orElse(null) == 600d
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

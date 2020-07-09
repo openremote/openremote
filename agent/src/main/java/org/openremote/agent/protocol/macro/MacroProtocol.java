@@ -20,11 +20,11 @@
 package org.openremote.agent.protocol.macro;
 
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
@@ -179,7 +179,7 @@ public class MacroProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         // Protocol configuration is actually a Macro Configuration
         AttributeRef macroRef = protocolConfiguration.getReferenceOrThrow();
 
@@ -197,7 +197,7 @@ public class MacroProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         AttributeRef macroRef = protocolConfiguration.getReferenceOrThrow();
         macroMap.remove(macroRef);
     }

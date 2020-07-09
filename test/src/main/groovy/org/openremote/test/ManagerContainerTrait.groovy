@@ -1,5 +1,6 @@
 package org.openremote.test
 
+import com.google.common.collect.Lists
 import org.apache.camel.spi.BrowsableEndpoint
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
@@ -11,89 +12,59 @@ import spock.util.concurrent.PollingConditions
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 
-import static java.util.stream.StreamSupport.stream
-import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_WEBSERVER_PORT
+import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.IDENTITY_NETWORK_WEBSERVER_PORT
 import static org.openremote.container.timer.TimerService.Clock.PSEUDO
+import static org.openremote.container.timer.TimerService.Clock.REAL
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.container.web.WebService.WEBSERVER_LISTEN_PORT
+import static org.openremote.manager.mqtt.MqttBrokerService.MQTT_SERVER_LISTEN_HOST
 import static org.openremote.manager.setup.SetupTasks.*
 
 trait ManagerContainerTrait extends ContainerTrait {
 
-    static Map<String, String> defaultConfig(int serverPort) {
+    Map<String, String> defaultConfig(Integer serverPort) {
+        if (serverPort == null) {
+            serverPort = findEphemeralPort()
+        }
         [
                 (WEBSERVER_LISTEN_PORT)          : Integer.toString(serverPort),
                 (IDENTITY_NETWORK_WEBSERVER_PORT): Integer.toString(serverPort),
+                (SETUP_IMPORT_DEMO_ASSETS)       : "true",
+                (SETUP_IMPORT_DEMO_USERS)        : "true",
                 (SETUP_IMPORT_DEMO_SCENES)       : "false",
-                (SETUP_IMPORT_DEMO_RULES)        : "false"
+                (SETUP_IMPORT_DEMO_RULES)        : "false",
+                (MQTT_SERVER_LISTEN_HOST)        : "127.0.0.1", // Works best for cross platform test running
+                (TIMER_CLOCK_TYPE)               : PSEUDO.name()
         ]
     }
 
-    static Iterable<ContainerService> defaultServices(Iterable<ContainerService> additionalServices) {
+    Iterable<ContainerService> defaultServices(Iterable<ContainerService> additionalServices) {
         [
-                *stream(ServiceLoader.load(ContainerService.class).spliterator(), false)
-                        .sorted(Comparator.comparingInt{it.getPriority()})
-                        .collect(Collectors.toList()),
-                *additionalServices
-        ] as Iterable<ContainerService>
-//        [
-//                new TimerService(),
-//                new ManagerExecutorService(),
-//                new I18NService(),
-//                new ManagerPersistenceService(),
-//                new MessageBrokerSetupService(),
-//                new ManagerIdentityService(),
-//                new SetupService(),
-//                new ClientEventService(),
-//                new RulesetStorageService(),
-//                new RulesService(),
-//                new AssetStorageService(),
-//                new AssetDatapointService(),
-//                new AssetAttributeLinkingService(),
-//                new AssetProcessingService(),
-//                new MessageBrokerService(),
-//                *Lists.newArrayList(ServiceLoader.load(Protocol.class)),
-//                new AgentService(),
-//                new SimulatorService(),
-//                new MapService(),
-//                new NotificationService(),
-//                new ConsoleAppService(),
-//                new ManagerWebService(),
-//                new HealthStatusService(),
-//                *additionalServices
-//
-//        ] as Iterable<ContainerService>
+            *Lists.newArrayList(ServiceLoader.load(ContainerService.class)),
+            *additionalServices
+        ].stream()
+            .sorted(Comparator.comparingInt{it.getPriority()})
+            .collect(Collectors.toList()) as Iterable<ContainerService>
     }
 
-    static Iterable<ContainerService> defaultServices(ContainerService... additionalServices) {
+    Iterable<ContainerService> defaultServices(ContainerService... additionalServices) {
         defaultServices(Arrays.asList(additionalServices))
     }
 
-    static Container startContainerNoDemoAssets(Map<String, String> config, Iterable<ContainerService> services) {
-        config << [(SETUP_IMPORT_DEMO_ASSETS): "false"]
-        startContainer(config, services)
-    }
-
-    static Container startContainerWithDemoScenesAndRules(Map<String, String> config, Iterable<ContainerService> services) {
+    Container startContainerWithDemoScenesAndRules(Map<String, String> config, Iterable<ContainerService> services) {
         config << [(SETUP_IMPORT_DEMO_SCENES): "true"]
         config << [(SETUP_IMPORT_DEMO_RULES): "true"]
         startContainer(config, services)
     }
 
-    static Container startContainerNoDemoImport(Map<String, String> config, Iterable<ContainerService> services) {
-        config << [(SETUP_IMPORT_DEMO_ASSETS): "false"]
-        config << [(SETUP_IMPORT_DEMO_USERS): "false"]
-        startContainer(config, services)
-    }
-
     /**
-     * Use pseudo clock instead of wall clock.
+     * Use wall clock instead of pseudo clock.
      */
-    static Container startContainerWithPseudoClock(Map<String, String> config, Iterable<ContainerService> services) {
-        startContainer(config << [(TIMER_CLOCK_TYPE): PSEUDO.name()], services)
+    Container startContainerWithoutPseudoClock(Map<String, String> config, Iterable<ContainerService> services) {
+        startContainer(config << [(TIMER_CLOCK_TYPE): REAL.name()], services)
     }
 
-    static boolean noEventProcessedIn(AssetProcessingService assetProcessingService, int milliseconds) {
+    boolean noEventProcessedIn(AssetProcessingService assetProcessingService, int milliseconds) {
         return (assetProcessingService.lastProcessedEventTimestamp > 0
                 && assetProcessingService.lastProcessedEventTimestamp + milliseconds < System.currentTimeMillis())
     }
@@ -101,19 +72,19 @@ trait ManagerContainerTrait extends ContainerTrait {
     /**
      * Execute pseudo clock operations in Container.
      */
-    static void withClockOf(Container container, Closure<TimerService.Clock> clockConsumer) {
+    void withClockOf(Container container, Closure<TimerService.Clock> clockConsumer) {
         clockConsumer.call(container.getService(TimerService.class).getClock())
     }
 
-    static long getClockTimeOf(Container container) {
+    long getClockTimeOf(Container container) {
         container.getService(TimerService.class).getClock().getCurrentTimeMillis()
     }
 
-    static void advancePseudoClock(long amount, TimeUnit unit, Container container) {
+    void advancePseudoClock(long amount, TimeUnit unit, Container container) {
         withClockOf(container) { it.advanceTime(amount, unit) }
     }
 
-    static void noPendingExchangesOnMessageEndpoint(Container container, String... endpointName) {
+    void noPendingExchangesOnMessageEndpoint(Container container, String... endpointName) {
         for (String name : endpointName) {
             def endpoint = container.getService(MessageBrokerService.class).getContext().getEndpoint(name)
             if (!endpoint) {

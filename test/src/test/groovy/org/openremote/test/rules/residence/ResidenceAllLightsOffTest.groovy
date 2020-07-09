@@ -10,6 +10,7 @@ import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
+import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -23,9 +24,10 @@ class ResidenceAllLightsOffTest extends Specification implements ManagerContaine
     def "Turn all lights off"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
@@ -86,14 +88,14 @@ class ResidenceAllLightsOffTest extends Specification implements ManagerContaine
         )
 
         then: "the light should still be on after a few seconds (the all lights off event expires after 3 seconds)"
-        new PollingConditions(initialDelay: 3).eventually {
+        new PollingConditions(timeout: 5, initialDelay: 3).eventually {
             assert apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
             assert apartment2Engine.assetEvents.size() == 0
             def livingroomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
             assert livingroomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
         }
 
-        cleanup: "stop the container"
-        stopContainer(container)
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 }

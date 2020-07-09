@@ -10,7 +10,7 @@ import {
     TemplateResult,
     unsafeCSS
 } from "lit-element";
-import {Asset,Attribute, AssetEvent, AssetEventCause, AttributeEvent, AttributeType, AttributeValueType, MetaItemType, AttributeDescriptor} from "@openremote/model";
+import {Asset,Attribute, AssetEvent, AssetEventCause, AttributeEvent, AttributeType, AttributeValueType, MetaItemType, AttributeDescriptor, SharedEvent} from "@openremote/model";
 import manager, {
     AssetModelUtil,
     DefaultColor1,
@@ -29,7 +29,7 @@ import {mapAssetCardStyle} from "./style";
 
 orAttributeTemplateProvider.setTemplate((attribute:Attribute) => {
     let template;
-    const value = Util.getAttributeValue(attribute, undefined)
+    const value = Util.getAttributeValueFormatted(attribute, undefined, undefined);
     switch (attribute.type) {
         case AttributeValueType.SWITCH_TOGGLE.name:
             template = html`<or-translate value="${value ? "On" : "Off"}"></or-translate>`;
@@ -100,33 +100,36 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
         return super.shouldUpdate(_changedProperties);
     }
 
-    public onAttributeEvent(event: AttributeEvent) {
+    public _onEvent(event: SharedEvent) {
 
-        if (this.asset) {
-            this.asset = Util.updateAsset(this.asset, event);
-            this.requestUpdate();
+        if (event.eventType === "asset") {
+            const assetEvent = event as AssetEvent;
+            
+            switch (assetEvent.cause) {
+                case AssetEventCause.READ:
+                case AssetEventCause.CREATE:
+                case AssetEventCause.UPDATE:
+                    this.asset = assetEvent.asset;
+                    break;
+                case AssetEventCause.DELETE:
+                    this.asset = undefined;
+                    break;
+            }
         }
-    }
-
-    public onAssetEvent(event: AssetEvent) {
-        switch (event.cause) {
-            case AssetEventCause.READ:
-            case AssetEventCause.CREATE:
-            case AssetEventCause.UPDATE:
-                this.asset = event.asset;
-                break;
-            case AssetEventCause.DELETE:
-                this.asset = undefined;
-                break;
+        
+        if (event.eventType === "attribute") {
+            if (this.asset) {
+                this.asset = Util.updateAsset(this.asset, event as AttributeEvent);
+                this.requestUpdate();
+            }
         }
     }
     
     getCardConfig() {
-        if(!this.config) return;
-        if(!this.asset) return this.config.default;
+        if (!this.config) { return; }
+        if (!this.asset) { return this.config.default; }
 
         const config = this.config.assetTypes && this.config.assetTypes.hasOwnProperty(this.asset.type!) ? this.config.assetTypes[this.asset.type!] : this.config.default;
-
         return config;
     }
 
@@ -156,13 +159,14 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                 <div id="attribute-list">
                     <ul>
                         ${attrs.map((attr) => {
-                             let attributeDescriptor: AttributeDescriptor | undefined = AssetModelUtil.getAttributeDescriptorFromAsset(attr.name!);
+                             const attributeDescriptor: AttributeDescriptor | undefined = AssetModelUtil.getAttributeDescriptorFromAsset(attr.name!);
                              let label = Util.getAttributeLabel(attr, attributeDescriptor);
                              const unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
                              
-                             if(unit) 
-                                 label = label + " ("+i18next.t(unit)+")";
-                            return html`<li><span class="attribute-name">${label}</span><span class="attribute-value"><or-attribute-field .attribute="${attr}"></or-attribute-field></span></li>`; 
+                             if (unit) { 
+                                 label = label + " (" + i18next.t(unit) + ")";
+                             }
+                             return html`<li><span class="attribute-name">${label}</span><span class="attribute-value"><or-attribute-field .attribute="${attr}"></or-attribute-field></span></li>`; 
                         })}
                     </ul>
                 </div>

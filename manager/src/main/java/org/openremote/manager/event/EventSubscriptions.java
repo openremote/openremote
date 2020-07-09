@@ -24,7 +24,6 @@ import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ConnectionConstants;
-import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
@@ -58,7 +57,7 @@ public class EventSubscriptions {
             );
         }
 
-        public void createOrUpdate(boolean restrictedUser, EventSubscription eventSubscription) {
+        public void createOrUpdate(boolean restrictedUser, EventSubscription<?> eventSubscription) {
 
             if (TextUtil.isNullOrEmpty(eventSubscription.getSubscriptionId())) {
                 cancelByType(eventSubscription.getEventType());
@@ -114,22 +113,12 @@ public class EventSubscriptions {
         }
     }
 
-    public EventSubscriptions(TimerService timerService, ManagerExecutorService executorService) {
+    public EventSubscriptions(TimerService timerService) {
         LOG.info("Starting background task checking for expired event subscriptions from clients");
         this.timerService = timerService;
-        // This puts a burden on clients and generates noise; subscriptions are removed when the socket is closed
-        // so clients should actively add/remove subscriptions as they require rather than let them expire and/or
-        // have to renew them continually
-//        executorService.scheduleAtFixedRate(() -> {
-//            synchronized (this.sessionSubscriptionIdMap) {
-//                for (SessionSubscriptions subscriptions : sessionSubscriptionIdMap.values()) {
-//                    subscriptions.removeExpired();
-//                }
-//            }
-//        }, 5000, 1000);
     }
 
-    public void createOrUpdate(String sessionKey, boolean restrictedUser, EventSubscription subscription) {
+    public void createOrUpdate(String sessionKey, boolean restrictedUser, EventSubscription<?> subscription) {
         synchronized (this.sessionSubscriptionIdMap) {
             // TODO Check if the user can actually subscribe to the events it wants, how do we do that?
             LOG.fine("For session '" + sessionKey + "', creating/updating: " + subscription);
@@ -151,14 +140,18 @@ public class EventSubscriptions {
 
     public void cancel(String sessionKey, CancelEventSubscription subscription) {
         synchronized (this.sessionSubscriptionIdMap) {
-            if (!this.sessionSubscriptionIdMap.containsKey(sessionKey))
+            if (!this.sessionSubscriptionIdMap.containsKey(sessionKey)) {
                 return;
+            }
+            if (subscription.getEventType() == null && subscription.getSubscriptionId() == null) {
+                return;
+            }
             LOG.fine("For session '" + sessionKey + "', cancelling: " + subscription);
             SessionSubscriptions sessionSubscriptions = this.sessionSubscriptionIdMap.get(sessionKey);
-            if (TextUtil.isNullOrEmpty(subscription.getSubscriptionId())) {
-                sessionSubscriptions.cancelByType(subscription.getEventType());
-            } else {
+            if (!TextUtil.isNullOrEmpty(subscription.getSubscriptionId())) {
                 sessionSubscriptions.cancelById(subscription.getSubscriptionId());
+            } else {
+                sessionSubscriptions.cancelByType(subscription.getEventType());
             }
         }
     }
@@ -208,7 +201,10 @@ public class EventSubscriptions {
                         msg.setHeader(ConnectionConstants.SESSION_KEY, sessionKey);
                         messageList.add(msg);
                     } else {
-                        sessionSubscription.subscription.getInternalConsumer().accept(triggeredEventSubscription);
+                        if (triggeredEventSubscription.getEvents() != null) {
+                            triggeredEventSubscription.getEvents().forEach(ev ->
+                                sessionSubscription.subscription.getInternalConsumer().accept(ev));
+                        }
                     }
                 }
             }

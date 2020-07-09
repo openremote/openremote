@@ -52,7 +52,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
     def "Check KNX protocol"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, initialDelay: 1, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the KNX emulation server is started"
         def configFile = SystemUtils.IS_OS_MAC ? "/org/openremote/test/protocol/knx/knx-server-config-mac.xml" : "/org/openremote/test/protocol/knx/knx-server-config.xml"
@@ -80,8 +80,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         def knxTestingNetwork = KNXTestingNetworkLink.getInstance()
 
         and: "the container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
@@ -161,8 +160,5 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         if (knxEmulationServer != null) {
             knxEmulationServer.quit()
         }
-        stopContainer(container)
-
-
     }
 }

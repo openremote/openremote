@@ -165,7 +165,7 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         Application application = createApplication(protocolConfiguration);
         ResteasyDeployment deployment = createDeployment(application, protocolConfiguration);
         DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, protocolConfiguration);
@@ -174,7 +174,7 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         undeploy(protocolConfiguration);
     }
 

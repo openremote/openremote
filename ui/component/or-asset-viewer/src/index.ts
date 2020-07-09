@@ -4,8 +4,9 @@ import "@openremote/or-input";
 import "@openremote/or-attribute-input";
 import "@openremote/or-attribute-history";
 import "@openremote/or-chart";
+import "@openremote/or-survey";
+import "@openremote/or-survey-results";
 import "@openremote/or-table";
-import "@openremote/or-map";
 import "@openremote/or-panel";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {OrTranslate, translate} from "@openremote/or-translate";
@@ -14,7 +15,6 @@ import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import {OrTable} from "@openremote/or-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
-import {Type as MapType, Util as MapUtil} from "@openremote/or-map";
 import {
     Asset,
     AssetAttribute,
@@ -23,8 +23,8 @@ import {
     Attribute,
     AttributeEvent,
     AttributeType,
-    MetaItem,
-    MetaItemType
+    MetaItemType,
+    SharedEvent
 } from "@openremote/model";
 import {style} from "./style";
 import i18next from "i18next";
@@ -34,7 +34,7 @@ import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-m
 import { GenericAxiosResponse } from "axios";
 import { OrIcon } from "@openremote/or-icon";
 
-export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group";
+export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group" | "survey" | "survey-results";
 
 export interface PanelConfig {
     type?: PanelType;
@@ -62,7 +62,6 @@ export interface AssetViewerConfig {
     propertyViewProvider?: (asset: Asset, property: string, value: any, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     attributeViewProvider?: (asset: Asset, attribute: Attribute, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     panelViewProvider?: (asset: Asset, attributes: Attribute[], panelName: string, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
-    mapType?: MapType;
     historyConfig?: HistoryConfig;
     chartConfig?: OrChartConfig;
 }
@@ -70,7 +69,6 @@ export interface AssetViewerConfig {
 export interface ViewerConfig {
     default?: AssetViewerConfig;
     assetTypes?: { [assetType: string]: AssetViewerConfig };
-    mapType?: MapType;
     historyConfig?: HistoryConfig;
 }
 
@@ -95,6 +93,22 @@ class EventHandler {
         this._callbacks.push(callback);
     }
 }
+
+export interface OrComputeGridEventDetail {
+}
+
+export class OrComputeGridEvent extends CustomEvent<OrComputeGridEventDetail> {
+
+    public static readonly NAME = "or-compute-grid-event";
+
+    constructor() {
+        super(OrComputeGridEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
 const onRenderComplete = new EventHandler();
 
 function getPanel(name: string, panelConfig: PanelConfig, content: TemplateResult | undefined) {
@@ -154,7 +168,17 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
     //     })}
     //     `;
     // } else
-    if (panelConfig && panelConfig.type === "history") {
+    if (panelConfig && panelConfig.type === "survey") {
+        content = html`      
+             <or-survey id="survey" .surveyId="${asset.id}"></or-survey>
+        `;
+    }
+    else  if (panelConfig && panelConfig.type === "survey-results") {
+        content = html`     
+                    <or-survey-results id="survey-results" .survey="${asset}"></or-survey-results>
+        `;
+    }
+    else if (panelConfig && panelConfig.type === "history") {
         // Special handling for history panel which shows an attribute selector and a graph/data table of historical values
         const historyAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
         if (historyAttrs.length > 0) {
@@ -179,7 +203,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
             const options = historyAttrs.map((attr) => {
                 const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attr.name!);
                 let label = Util.getAttributeLabel(attr, attributeDescriptor);
-                let unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
+                const unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
                 if(unit) {
                     label = label + " ("+i18next.t(unit)+")";
                 }
@@ -256,63 +280,13 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
 
         const attribute = attrs.find((attr) => attr.name === AttributeType.LOCATION.attributeName);
         if (attribute) {
-            // Special handling for location panel which shows an attribute selector and a map showing the location of the attribute
-            const mapType = viewerConfig.mapType || OrAssetViewer.DEFAULT_MAP_TYPE;
-            const lngLat = MapUtil.getLngLat(attribute);
-            const center = lngLat ? lngLat.toArray() : undefined;
-            const showOnMapMeta = Util.getFirstMetaItem(attribute, MetaItemType.SHOW_ON_DASHBOARD.urn!);
-            const attributeMetaChanged = async (value: string) => {
-                if (hostElement.shadowRoot) {
-
-                    if (attribute) {
-
-                        if(asset.id && asset.attributes && asset.attributes.location){
-
-                            const showOnMapMeta = Util.getFirstMetaItem(attribute, MetaItemType.SHOW_ON_DASHBOARD.urn!);
-                            if(showOnMapMeta) {
-                                showOnMapMeta.value = value;
-                            } else {
-                                const meta:MetaItem = {
-                                    name: MetaItemType.SHOW_ON_DASHBOARD.urn,
-                                    value: value
-                                }
-
-                                if(attribute.meta){
-                                    attribute.meta.push(meta);
-                                }
-                            }
-                            asset.attributes.location = {...attribute};
-                            const response = await manager.rest.api.AssetResource.update(asset.id, asset);
-
-                            if (response.status !== 200) {
-                            }
-                        }
-
-
-                    }
-                }
-            };
-
             content = html`
-                    <style>
-                        or-map {
-                            border: #e5e5e5 1px solid;
-                        }
-                        
-                        #location-map-input {
-                            padding: 20px 0 0 0;
-                        }
-                    </style>
-                    <or-map id="location-map" class="or-map" .center="${center}" type="${mapType}">
-                         <or-map-marker-asset active .asset="${asset}"></or-map-marker-asset>
-                    </or-map>
-                    ${attribute.name === AttributeType.LOCATION.attributeName ? html`
-                        <or-input id="location-map-input" type="${InputType.SWITCH}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeMetaChanged(evt.detail.value)}" dense .value="${showOnMapMeta ? showOnMapMeta.value : undefined}" label="${i18next.t("showOnMap")}"></or-input>
-                    ` : ``}                    
-                `;
+                <div class="field">
+                    <or-attribute-input .assetType="${asset.type}" .attribute="${attribute}"></or-attribute-input>
+                </div>
+            `;
         }
     } else if (panelConfig && panelConfig.type === "group") {
-
         if (asset.type !== "urn:openremote:asset:group") {
             return;
         }
@@ -324,13 +298,13 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
         if (!childAssetTypeAttribute || typeof childAssetTypeAttribute.value !== "string") {
             return;
         }
-        let childAssetType = childAssetTypeAttribute.value as string;
+        const childAssetType = childAssetTypeAttribute.value as string;
         let childAssets: Asset[] = [];
 
         // Determine available and selected attributes for the child asset type
         let availableAttributes: string[] = [];
         let selectedAttributes: string[] = [];
-        let newlySelectedAttributes: string[] = []; // Updated when the dialog is open
+        const newlySelectedAttributes: string[] = []; // Updated when the dialog is open
 
         if (groupConfig.childAssetTypes && groupConfig.childAssetTypes[childAssetType]) {
             availableAttributes = groupConfig.childAssetTypes[childAssetType].availableAttributes ? groupConfig.childAssetTypes[childAssetType].availableAttributes! : [];
@@ -341,7 +315,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
         if (availableAttributes.length === 0) {
             const descriptor = AssetModelUtil.getAssetDescriptor(childAssetType);
             if (descriptor && descriptor.attributeDescriptors) {
-                availableAttributes = descriptor.attributeDescriptors.map((descriptor) => descriptor.attributeName!);
+                availableAttributes = descriptor.attributeDescriptors.map((desc) => desc.attributeName!);
             }
         }
         if ((!selectedAttributes || selectedAttributes.length === 0) && availableAttributes) {
@@ -380,7 +354,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
                             ${availableAttributes.sort().map((attribute) =>
                     html`<div style="grid-column: 1 / -1;">
                                         <or-input .type="${InputType.CHECKBOX}" .label="${i18next.t(attribute)}" .value="${!!newlySelectedAttributes.find((selected) => selected === attribute)}"
-                                            @or-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s == attribute), 1)}"></or-input>
+                                            @or-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"></or-input>
                                     </div>`)}
                         </div>
                     `;
@@ -389,7 +363,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
         };
 
         // Function to update the table and message when assets or config changes
-        let updateTable = () => {
+        const updateTable = () => {
 
             const loadingMsg: OrTranslate = hostElement.shadowRoot!.getElementById(panelName + "-attribute-table-msg") as OrTranslate;
             const attributeTable: OrTable = hostElement.shadowRoot!.getElementById(panelName + "-attribute-table") as OrTable;
@@ -414,13 +388,13 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
             const headers = [...selectedAttributes].sort();
             attributeTable.headers = headers.map((header) => i18next.t(header));
             attributeTable.headers.unshift(i18next.t("groupAssetName"));
-            attributeTable.rows = childAssets.map((asset) => {
+            attributeTable.rows = childAssets.map((childAsset) => {
                 // todo: it's only processing including selected headers here...
                 // move this to the columnFilter option of the table
                 const arr = headers.map((attributeName) => {
-                    return asset.attributes![attributeName] ? asset.attributes![attributeName].value! as string : "";
+                    return childAsset.attributes![attributeName] ? childAsset.attributes![attributeName].value! as string : "";
                 });
-                arr.unshift(asset.name!);
+                arr.unshift(childAsset.name!);
                 return arr;
             });
             window.setTimeout(() => OrAssetViewer.generateGrid(hostElement.shadowRoot), 0);
@@ -458,10 +432,9 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
 
         content = html`
                 ${attrs.sort((attr1, attr2) => attr1.name! < attr2.name! ? -1 : attr1.name! > attr2.name! ? 1 : 0).map((attr) => {
-            let style = styles ? styles[attr.name!] : undefined;
-            return getField(attr.name!, false, style, getAttributeTemplate(asset, attr, hostElement, viewerConfig, panelConfig));
-        })}
-            `;
+            const attrStyle = styles ? styles[attr.name!] : undefined;
+            return getField(attr.name!, false, attrStyle, getAttributeTemplate(asset, attr, hostElement, viewerConfig, panelConfig));
+        })}`;
     }
 
     return content;
@@ -475,7 +448,7 @@ export function getAttributeTemplate(asset: Asset, attribute: AssetAttribute, ho
         }
     }
     return html`
-        <or-attribute-input dense .assetType="${asset!.type}" .attribute="${attribute}" .label="${i18next.t(attribute.name!)}"></or-attribute-input>
+        <or-attribute-input dense .assetType="${asset!.type}" .attribute="${attribute}" hasHelperText></or-attribute-input>
     `;
 }
 
@@ -520,7 +493,6 @@ async function getAssetChildren(id: string, childAssetType: string): Promise<Ass
 @customElement("or-asset-viewer")
 export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElement)) {
 
-    public static DEFAULT_MAP_TYPE = MapType.VECTOR;
     public static DEFAULT_PANEL_TYPE: PanelType = "attribute";
 
     public static DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
@@ -611,6 +583,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         super();
         window.addEventListener("resize", () => OrAssetViewer.generateGrid(this.shadowRoot));
         
+        this.addEventListener(OrComputeGridEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrChartEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
     }
@@ -706,8 +679,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         if (shadowRoot) {
             const grid = shadowRoot.querySelector('#container');
             if (grid) {
-                const rowHeight = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-auto-rows'));
-                const rowGap = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-row-gap'));
+                const rowHeight = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-auto-rows'), 10);
+                const rowGap = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-row-gap'), 10);
                 const items = shadowRoot.querySelectorAll('.panel');
                 if (items) {
                     items.forEach((item) => {
@@ -778,22 +751,25 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     //     return html`<or-input id="property-${property}" type="${type}" .minLength="${minLength}" .maxLength="${maxLength}" dense .value="${value}" readonly label="${i18next.t(property)}"></or-input>`;
     // }
 
-
     // TODO: Add debounce in here to minimise render calls
-    onAttributeEvent(event: AttributeEvent) {
-        const attrName = event.attributeState!.attributeRef!.attributeName!;
+    _onEvent(event: SharedEvent) {
+        if (event.eventType === "asset") {
+            this.asset = (event as AssetEvent).asset;
+            this._loading = false;
+            return;
+        }
 
-        if (this.asset && this.asset.attributes && this.asset.attributes.hasOwnProperty(attrName)) {
-            if (event.attributeState!.deleted) {
-                delete this.asset.attributes[attrName];
-                this.asset = {...this.asset}
+        if (event.eventType === "attribute") {
+            const attributeEvent = event as AttributeEvent;
+            const attrName = attributeEvent.attributeState!.attributeRef!.attributeName!;
+
+            if (this.asset && this.asset.attributes && this.asset.attributes.hasOwnProperty(attrName)) {
+                if (attributeEvent.attributeState!.deleted) {
+                    delete this.asset.attributes[attrName];
+                    this.asset = {...this.asset};
+                }
             }
         }
-    }
-
-    onAssetEvent(event: AssetEvent) {
-        this.asset = event.asset;
-        this._loading = false;
     }
 
     protected _getPanelConfig(asset: Asset): AssetViewerConfig {
@@ -828,7 +804,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 config.attributeViewProvider = assetConfig.attributeViewProvider || (this.config.default ? this.config.default.attributeViewProvider : undefined);
                 config.panelViewProvider = assetConfig.panelViewProvider || (this.config.default ? this.config.default.panelViewProvider : undefined);
                 config.propertyViewProvider = assetConfig.propertyViewProvider || (this.config.default ? this.config.default.propertyViewProvider : undefined);
-                config.mapType = assetConfig.mapType || this.config.mapType;
                 config.historyConfig = assetConfig.historyConfig || this.config.historyConfig;
             }
         }

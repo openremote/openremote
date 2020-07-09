@@ -176,7 +176,19 @@ export function headerItemLogs<S extends AppStateKeyed, A extends AnyAction>(orA
     };
 }
 
-function getRealm(): string {
+export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: "account",
+        value: "account",
+        href: "#!account",
+        text: "account",
+        roles: {
+            account: ["manage-account"]
+        }
+    };
+}
+
+function getRealmQueryParameter(): string {
     return Util.getQueryParameter(location.search, "realm");
 }
 
@@ -184,7 +196,7 @@ const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
     managerUrl: MANAGER_URL,
     auth: Auth.KEYCLOAK,
     autoLogin: true,
-    realm: getRealm(),
+    realm: getRealmQueryParameter(),
     consoleAutoEnable: true,
     loadTranslations: ["app", "or"]
 };
@@ -298,26 +310,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             return;
         }
 
-        Object.entries(this.appConfig.pages).map(([pageName, provider]) => {
-            if (provider.routes) {
-                provider.routes.forEach((route) => {
-                    router.on(
-                        route, (params, query) => {
-                            this._store.dispatch(updatePage(pageName));
-                            this._store.dispatch(updateParams(params));
-                        }
-                    )
-                });
-            }
-        });
-
-        if (this.appConfig.pages.default) {
-            router.on("*", (params, query) => {
-                this._store.dispatch(updatePage("default"));
-            })
-        }
-
-        const realm = getRealm();
+        const realm = getRealmQueryParameter();
         const config = this._getConfig(realm);
 
         if (!config) {
@@ -335,6 +328,26 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         manager.init(managerConfig).then((success) => {
             if (success) {
                 this._initialised = true;
+
+                Object.entries(this.appConfig.pages).map(([pageName, provider]) => {
+                    if (provider.routes) {
+                        provider.routes.forEach((route) => {
+                            router.on(
+                                route, (params, query) => {
+                                    this._store.dispatch(updatePage(pageName));
+                                    this._store.dispatch(updateParams(params));
+                                }
+                            )
+                        });
+                    }
+                });
+
+                if (this.appConfig.pages.default) {
+                    router.on("*", (params, query) => {
+                        this._store.dispatch(updatePage("default"));
+                    })
+                }
+
                 router.resolve();
             } else {
                 this.showErrorModal(manager.isError ? "managerError." + manager.error : "");

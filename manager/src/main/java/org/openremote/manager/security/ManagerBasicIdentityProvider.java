@@ -24,8 +24,6 @@ import org.openremote.container.Container;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.basic.BasicIdentityProvider;
 import org.openremote.container.security.basic.PasswordStorage;
-import org.openremote.container.web.ClientRequestInfo;
-import org.openremote.manager.persistence.ManagerPersistenceService;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.TenantPredicate;
@@ -45,18 +43,19 @@ import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
 public class ManagerBasicIdentityProvider extends BasicIdentityProvider implements ManagerIdentityProvider {
 
     private static final Logger LOG = Logger.getLogger(ManagerBasicIdentityProvider.class.getName());
-    final protected ManagerIdentityService identityService;
-    final protected String adminPassword;
+    protected ManagerIdentityService identityService;
+    protected String adminPassword;
 
-    public ManagerBasicIdentityProvider(Container container) {
-        super(container.getService(ManagerPersistenceService.class));
+    @Override
+    public void init(Container container) {
+        super.init(container);
         this.identityService = container.getService(ManagerIdentityService.class);
         adminPassword = container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT);
     }
 
     @Override
-    public void start() {
-        super.start();
+    public void start(Container container) {
+        super.start(container);
 
         // Create master tenant and admin user
         if (!tenantExists(MASTER_REALM)) {
@@ -77,7 +76,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
 
             User adminUser = new User();
             adminUser.setUsername(MASTER_REALM_ADMIN_USER);
-            createUser(null, MASTER_REALM, adminUser, adminPassword);
+            createUser(MASTER_REALM, adminUser, adminPassword);
         }
     }
 
@@ -87,7 +86,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public User[] getUsers(ClientRequestInfo clientRequestInfo, String realm) {
+    public User[] getUsers(String realm) {
         return getUsers(new UserQuery().tenant(new TenantPredicate(realm)));
     }
 
@@ -102,23 +101,23 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public User getUser(ClientRequestInfo clientRequestInfo, String realm, String userId) {
+    public User getUser(String realm, String userId) {
         return ManagerIdentityProvider.getUserByIdFromDb(persistenceService, realm, userId);
     }
 
     @Override
-    public User getUser(String realm, String username) {
+    public User getUserByUsername(String realm, String username) {
         return ManagerIdentityProvider.getUserByUsernameFromDb(persistenceService, realm, username);
     }
 
     @Override
-    public void updateUser(ClientRequestInfo clientRequestInfo, String realm, String userId, User user) {
+    public void updateUser(String realm, User user) {
         LOG.info("Updating user: " + user);
         persistenceService.doTransaction(em -> em.merge(user));
     }
 
     @Override
-    public void createUser(ClientRequestInfo clientRequestInfo, String realm, User user, String password) {
+    public User createUser(String realm, User user, String password) {
         if (!realm.equals(MASTER_REALM)) {
             throw new UnsupportedOperationException("This provider does not support realms other than master");
         }
@@ -128,6 +127,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
         }
 
         LOG.info("Creating user: " + user);
+        user.setId(UUID.randomUUID().toString());
         persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
             String sql = "insert into PUBLIC.USER_ENTITY(ID, REALM_ID, USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, EMAIL, ENABLED) values (?, ?, ?, ?, ?, ?, ?, ?)";
             try (PreparedStatement st = connection.prepareStatement(sql)) {
@@ -142,10 +142,11 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
                 st.executeUpdate();
             }
         }));
+        return user;
     }
 
     @Override
-    public void deleteUser(ClientRequestInfo clientRequestInfo, String realm, String userId) {
+    public void deleteUser(String realm, String userId) {
         LOG.info("Deleting user: " + userId);
         persistenceService.doTransaction(em -> {
             User user = em.find(User.class, userId);
@@ -158,24 +159,24 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public void resetPassword(ClientRequestInfo clientRequestInfo, String realm, String userId, Credential credential) {
+    public void resetPassword(String realm, String userId, Credential credential) {
         throw new UnsupportedOperationException("This provider does not support password reset");
     }
 
     @Override
-    public Role[] getRoles(ClientRequestInfo clientRequestInfo, String realm, String userId) {
+    public Role[] getRoles(String realm, String userId) {
         return ClientRole.ALL_ROLES.stream()
             .map(role -> new Role(UUID.randomUUID().toString(), role, false, true))
             .toArray(Role[]::new);
     }
 
     @Override
-    public void updateRoles(ClientRequestInfo clientRequestInfo, String realm, String userId, Role[] roles) {
+    public void updateRoles(String realm, String username, String client, String... roles) {
         throw new UnsupportedOperationException("This provider does not support updating roles");
     }
 
     @Override
-    public boolean isMasterRealmAdmin(ClientRequestInfo clientRequestInfo, String userId) {
+    public boolean isMasterRealmAdmin(String userId) {
         return true;
     }
 
@@ -200,22 +201,17 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public void updateTenant(ClientRequestInfo clientRequestInfo, String realm, Tenant tenant) {
+    public void updateTenant(Tenant tenant) {
         throw new UnsupportedOperationException("This provider does not support modifying tenants");
     }
 
     @Override
-    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant) {
+    public Tenant createTenant(Tenant tenant) {
         throw new UnsupportedOperationException("This provider does not support multiple tenants");
     }
 
     @Override
-    public void createTenant(ClientRequestInfo clientRequestInfo, Tenant tenant, TenantEmailConfig emailConfig) {
-        throw new UnsupportedOperationException("This provider does not support multiple tenants");
-    }
-
-    @Override
-    public void deleteTenant(ClientRequestInfo clientRequestInfo, String realm) {
+    public void deleteTenant(String realm) {
         throw new UnsupportedOperationException("This provider does not support multiple tenants");
     }
 

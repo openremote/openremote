@@ -84,6 +84,7 @@
   "cancel": "Cancel",
   "createdOn": "Created on",
   "createdOnWithDate": "Created on: {{-date, LLLL}}",
+  "updatedWithDate": "Updated on: {{-date, LLLL}}",
   "accessPublicRead": "Public read",
   "type": "Type",
   "path": "Path",
@@ -216,6 +217,7 @@
   "port": "Port",
   "host": "Hostname",
   "errorOccurred": "An error has occurred",
+  "sendFailed": "Send failed",
   "managerError": {
     "MANAGER_FAILED_TO_LOAD": "Manager failed to load (see console logs)",
     "AUTH_FAILED": "Auth failed to load (see console logs)",
@@ -225,6 +227,8 @@
     "TRANSLATION_ERROR": "Translations error (see console logs)"
   },
   "couldNotRetrieveAttribute": "Could not retrieve attribute information",
+  "pressEnterToSend": "Press Enter to send",
+  "sending": "Sending",
   "submit": "Submit",
   "password": "Password",
   "units": {
@@ -250,5 +254,6 @@
     "GBP_PER_KILOWATT_HOUR": "£/kWh",
     "GBP_PER_MONTH": "£/month"
   },
-  "noChildAssets": "No child assets"
+  "noChildAssets": "No child assets",
+  "account": "Account"
 }

@@ -20,17 +20,21 @@
 package org.openremote.container.security;
 
 import io.undertow.servlet.api.DeploymentInfo;
+import org.openremote.container.Container;
 
 /**
  * SPI for implementations used by {@link IdentityService}.
  */
 public interface IdentityProvider {
 
-    void init();
+    String SETUP_ADMIN_PASSWORD = "SETUP_ADMIN_PASSWORD";
+    String SETUP_ADMIN_PASSWORD_DEFAULT = "secret";
 
-    void start();
+    void init(Container container) throws Exception;
 
-    void stop();
+    void start(Container container) throws Exception;
+
+    void stop(Container container) throws Exception;
 
     void secureDeployment(DeploymentInfo deploymentInfo);
 }

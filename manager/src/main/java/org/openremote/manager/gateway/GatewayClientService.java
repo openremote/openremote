@@ -22,7 +22,7 @@ package org.openremote.manager.gateway;
 import io.netty.channel.ChannelHandler;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
-import org.openremote.agent.protocol.http.OAuthClientCredentialsGrant;
+import org.openremote.container.web.OAuthClientCredentialsGrant;
 import org.openremote.agent.protocol.io.AbstractNettyIoClient;
 import org.openremote.agent.protocol.websocket.WebsocketIoClient;
 import org.openremote.container.Container;
@@ -40,15 +40,16 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.gateway.GatewayConnectionStatusEvent;
+import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.syslog.SyslogEvent;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -226,27 +227,19 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             client.addMessageConsumer(message -> onCentralManagerMessage(connection, message));
 
             // Subscribe to Asset and attribute events of local realm and pass through to connected manager
-            clientEventService.getEventSubscriptions().createOrUpdate(
-                getClientSessionKey(connection),
-                false,
-                new EventSubscription<>(
-                    AssetEvent.class,
-                    new AssetFilter<AssetEvent>().setRealm(connection.getLocalRealm()),
-                    triggeredEventSubscription ->
-                        triggeredEventSubscription.getEvents()
-                            .forEach(event ->
-                                sendCentralManagerMessage(connection.getLocalRealm(), messageFromSharedEvent(event)))));
+            clientEventService.addInternalSubscription(
+                getClientSessionKey(connection)+"Asset",
+                AssetEvent.class,
+                new AssetFilter<AssetEvent>().setRealm(connection.getLocalRealm()),
+                assetEvent ->
+                    sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, assetEvent)));
 
-            clientEventService.getEventSubscriptions().createOrUpdate(
-                getClientSessionKey(connection),
-                false,
-                new EventSubscription<>(
-                    AttributeEvent.class,
-                    new AssetFilter<AttributeEvent>().setRealm(connection.getLocalRealm()),
-                    triggeredEventSubscription ->
-                        triggeredEventSubscription.getEvents()
-                            .forEach(event ->
-                                sendCentralManagerMessage(connection.getLocalRealm(), messageFromSharedEvent(event)))));
+            clientEventService.addInternalSubscription(
+                getClientSessionKey(connection)+"Attribute",
+                AttributeEvent.class,
+                new AssetFilter<AttributeEvent>().setRealm(connection.getLocalRealm()),
+                attributeEvent ->
+                    sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, attributeEvent)));
 
             client.connect();
             return client;
@@ -261,6 +254,9 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     }
 
     protected void destroyGatewayClient(GatewayConnection connection, WebsocketIoClient<String> client) {
+        if (client == null) {
+            return;
+        }
         LOG.info("Destroying gateway IO client: " + connection);
         try {
             client.disconnect();
@@ -269,7 +265,11 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         } catch (Exception e) {
             LOG.log(Level.WARNING, "An exception occurred whilst trying to disconnect the gateway IO client", e);
         }
-        clientEventService.getEventSubscriptions().cancelAll(getClientSessionKey(connection));
+
+        if (connection != null) {
+            clientEventService.cancelInternalSubscription(getClientSessionKey(connection)+"Asset");
+            clientEventService.cancelInternalSubscription(getClientSessionKey(connection)+"Attribute");
+        }
     }
 
     protected void onGatewayClientConnectionStatusChanged(GatewayConnection connection, ConnectionStatus connectionStatus) {
@@ -278,10 +278,30 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     }
 
     protected void onCentralManagerMessage(GatewayConnection connection, String message) {
-        if (message.startsWith(SharedEvent.MESSAGE_PREFIX)) {
-            SharedEvent event = messageToSharedEvent(message);
+        String messageId = null;
+        SharedEvent event = null;
 
-            if (event instanceof AttributeEvent) {
+        if (message.startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)) {
+            EventRequestResponseWrapper<?> wrapper = messageFromString(
+                message,
+                EventRequestResponseWrapper.MESSAGE_PREFIX,
+                EventRequestResponseWrapper.class);
+            messageId = wrapper.getMessageId();
+            event = wrapper.getEvent();
+        }
+
+        if (message.startsWith(SharedEvent.MESSAGE_PREFIX)) {
+            event = messageFromString(message, SharedEvent.MESSAGE_PREFIX, SharedEvent.class);
+        }
+
+        if (event != null) {
+            if (event instanceof GatewayDisconnectEvent) {
+                if (((GatewayDisconnectEvent)event).getReason() == GatewayDisconnectEvent.Reason.PERMANENT_ERROR) {
+                    LOG.info("Central manager requested disconnect due to permanent error (likely this version of the edge gateway software is not compatible with that manager version)");
+                    destroyGatewayClient(connection, clientRealmMap.get(connection.getLocalRealm()));
+                    clientRealmMap.put(connection.getLocalRealm(), null);
+                }
+            } else if (event instanceof AttributeEvent) {
                 assetProcessingService.sendAttributeEvent((AttributeEvent)event, AttributeEvent.Source.INTERNAL);
             } else if (event instanceof AssetEvent) {
                 AssetEvent assetEvent = (AssetEvent)event;
@@ -304,7 +324,15 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 } catch (Exception e) {
                     LOG.log(Level.INFO, "Request from central manager to create/update an asset failed: Realm=" + connection.getLocalRealm() + ", Asset IDs=" + Arrays.toString(deleteRequest.getAssetIds().toArray()), e);
                 } finally {
-                    sendCentralManagerMessage(connection.getLocalRealm(), messageFromSharedEvent(new DeleteAssetsResponseEvent(deleteRequest.getName(), success)));
+                    sendCentralManagerMessage(
+                        connection.getLocalRealm(),
+                        messageToString(
+                            EventRequestResponseWrapper.MESSAGE_PREFIX,
+                            new EventRequestResponseWrapper<>(
+                                messageId,
+                                new DeleteAssetsResponseEvent(success, deleteRequest.getAssetIds())
+                            )
+                    ));
                 }
             } else if (event instanceof ReadAssetsEvent) {
                 ReadAssetsEvent readAssets = (ReadAssetsEvent)event;
@@ -312,7 +340,15 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 // Force realm to be the one that this client is associated with
                 query.tenant(new TenantPredicate(connection.getLocalRealm()));
                 List<Asset> assets = assetStorageService.findAll(readAssets.getAssetQuery());
-                sendCentralManagerMessage(connection.getLocalRealm(), messageFromSharedEvent(new AssetsEvent(readAssets.getName(), assets)));
+
+                sendCentralManagerMessage(
+                    connection.getLocalRealm(),
+                    messageToString(
+                        EventRequestResponseWrapper.MESSAGE_PREFIX,
+                        new EventRequestResponseWrapper<>(
+                            messageId,
+                            new AssetsEvent(assets)
+                        )));
             }
         }
     }
@@ -333,21 +369,21 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         return CLIENT_EVENT_SESSION_PREFIX + connection.getLocalRealm();
     }
 
-    protected SharedEvent messageToSharedEvent(String message) {
+    protected <T> T messageFromString(String message, String prefix, Class<T> clazz) {
         try {
-            message = message.substring(SharedEvent.MESSAGE_PREFIX.length());
-            return Container.JSON.readValue(message, SharedEvent.class);
+            message = message.substring(prefix.length());
+            return Container.JSON.readValue(message, clazz);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Unable to parse SharedEvent message");
+            throw new IllegalArgumentException("Unable to parse message");
         }
     }
 
-    protected String messageFromSharedEvent(SharedEvent event) {
+    protected String messageToString(String prefix, Object message) {
         try {
-            String message = Container.JSON.writeValueAsString(event);
-            return SharedEvent.MESSAGE_PREFIX + message;
+            String str = Container.JSON.writeValueAsString(message);
+            return prefix + str;
         } catch (Exception e) {
-            throw new IllegalArgumentException("Unable to parse SharedEvent message");
+            throw new IllegalArgumentException("Unable to serialise message");
         }
     }
 

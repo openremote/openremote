@@ -68,24 +68,27 @@ public class User {
         return realm;
     }
 
-    public void setRealm(String realm) {
+    public User setRealm(String realm) {
         this.realm = realm;
+        return this;
     }
 
     public String getRealmId() {
         return realmId;
     }
 
-    public void setRealmId(String realmId) {
+    public User setRealmId(String realmId) {
         this.realmId = realmId;
+        return this;
     }
 
     public String getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public User setId(String id) {
         this.id = id;
+        return this;
     }
 
     @NotNull(message = "{User.username.NotNull}")
@@ -95,8 +98,9 @@ public class User {
         return username;
     }
 
-    public void setUsername(String username) {
+    public User setUsername(String username) {
         this.username = username;
+        return this;
     }
 
     @Size(min = 0, max = 127, message = "{User.firstName.Size}")
@@ -104,8 +108,9 @@ public class User {
         return firstName;
     }
 
-    public void setFirstName(String firstName) {
+    public User setFirstName(String firstName) {
         this.firstName = firstName;
+        return this;
     }
 
     @Size(min = 0, max = 127, message = "{User.lastName.Size}")
@@ -113,8 +118,9 @@ public class User {
         return lastName;
     }
 
-    public void setLastName(String lastName) {
+    public User setLastName(String lastName) {
         this.lastName = lastName;
+        return this;
     }
 
     @Email(message = "{User.email.Email}")
@@ -122,16 +128,18 @@ public class User {
         return email;
     }
 
-    public void setEmail(String email) {
+    public User setEmail(String email) {
         this.email = email;
+        return this;
     }
 
     public Boolean getEnabled() {
         return enabled;
     }
 
-    public void setEnabled(Boolean enabled) {
+    public User setEnabled(Boolean enabled) {
         this.enabled = enabled;
+        return this;
     }
 
     public String getFullName() {

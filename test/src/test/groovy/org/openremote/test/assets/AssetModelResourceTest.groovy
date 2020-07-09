@@ -19,7 +19,6 @@
  */
 package org.openremote.test.assets
 
-import org.openremote.container.Container
 import org.openremote.model.asset.AssetModelResource
 import org.openremote.model.asset.AssetType
 import org.openremote.model.attribute.AttributeType
@@ -50,26 +49,16 @@ import static org.openremote.model.asset.AssetType.THING
 class AssetModelResourceTest extends Specification implements ManagerContainerTrait {
 
     @Shared
-    static Container container
-    @Shared
     static AssetModelResource assetModelResource
 
     def setupSpec() {
-        given: "the server container is started"
-        def serverPort = findEphemeralPort()
-        container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         assetModelResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AssetModelResource.class)
-    }
-
-    def cleanupSpec() {
-        given: "the server should be stopped"
-        stopContainer(container)
     }
 
     def "Request types"() {
 
         when: "a request for Asset types is made"
-
         def assetDescriptors = assetModelResource.getAssetDescriptors(null)
 
         then: "the default asset types should be present"
@@ -92,7 +81,6 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
         assetDescriptors.any{it.name == THING.name}
 
         when: "a request for Attribute types is made"
-
         def attributeTypeDescriptors = assetModelResource.getAttributeDescriptors(null)
 
         then: "the default types should be present"

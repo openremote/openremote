@@ -19,82 +19,45 @@
  */
 package org.openremote.manager.setup.builtin;
 
-import org.keycloak.admin.client.resource.ClientResource;
-import org.keycloak.admin.client.resource.RolesResource;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
 import org.openremote.container.Container;
-import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.manager.setup.AbstractKeycloakSetup;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.security.Tenant;
+import org.openremote.model.security.User;
 
-import java.util.Arrays;
 import java.util.logging.Logger;
 
-import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
-import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
+import static org.openremote.model.Constants.*;
 
 public class KeycloakInitSetup extends AbstractKeycloakSetup {
 
     private static final Logger LOG = Logger.getLogger(KeycloakInitSetup.class.getName());
 
-    protected static final String MASTER_REALM_KEYCLOAK_THEME = "MASTER_REALM_KEYCLOAK_THEME";
-
-    protected String masterRealmKeycloakTheme;
-
-
     public KeycloakInitSetup(Container container) {
         super(container);
-
-        masterRealmKeycloakTheme = container.getConfig().getOrDefault(MASTER_REALM_KEYCLOAK_THEME, "openremote");
     }
 
     @Override
     public void onStart() throws Exception {
         super.onStart();
 
-        // Configure the master realm
-        RealmRepresentation masterRealm = masterRealmResource.toRepresentation();
-
+        // Update the master realm which is auto created by Keycloak itself
+        // This will cause the keycloak provider to configure it appropriately
+        // e.g. Set SMTP server, theme, timeouts, etc.
+        Tenant masterRealm = keycloakProvider.getTenant(MASTER_REALM);
         masterRealm.setDisplayName("Master");
-        masterRealm.setAccountTheme(masterRealmKeycloakTheme);
-        masterRealm.setEmailTheme(masterRealmKeycloakTheme);
-        masterRealm.setLoginTheme(masterRealmKeycloakTheme);
-
-        // Set SMTP server, theme, timeouts, etc.
-        keycloakProvider.configureRealm(masterRealm, emailConfig);
-
-        masterRealmResource.update(masterRealm);
+        keycloakProvider.updateTenant(masterRealm);
 
         // Create our client application with its default roles
-        keycloakProvider.createClientApplication(new ClientRequestInfo(null, accessToken), masterRealm.getRealm());
+        keycloakProvider.createOpenRemoteClientApplication(masterRealm.getRealm());
 
-        // Get the client application ID so we can assign roles to users at the client
-        // level (we can only check realm _or_ client application roles in @RolesAllowed!)
-        String clientObjectId = getClientObjectId(masterClientsResource, KEYCLOAK_CLIENT_ID);
-
-        ClientResource clientResource = masterClientsResource.get(clientObjectId);
-        RolesResource rolesResource = clientResource.roles();
+        // Update master user name
+        User adminUser = keycloakProvider.getUserByUsername(MASTER_REALM, MASTER_REALM_ADMIN_USER);
+        adminUser.setFirstName("System");
+        adminUser.setLastName("Administrator");
+        keycloakProvider.updateUser(MASTER_REALM, adminUser);
 
         // Give admin all roles on application client level
-        RoleRepresentation readRole = rolesResource.get(ClientRole.READ.getValue()).toRepresentation();
-        RoleRepresentation writeRole = rolesResource.get(ClientRole.WRITE.getValue()).toRepresentation();
-
-        masterUsersResource.search(MASTER_REALM_ADMIN_USER, null, null, null, null, null)
-            .stream()
-            .map(userRepresentation -> masterUsersResource.get(userRepresentation.getId()))
-            .forEach(adminUser -> {
-                    adminUser.roles().clientLevel(clientObjectId).add(Arrays.asList(
-                        readRole,
-                        writeRole
-                    ));
-                    LOG.info("Assigned all application roles to 'admin' user");
-                    UserRepresentation adminRep = adminUser.toRepresentation();
-                    adminRep.setFirstName("System");
-                    adminRep.setLastName("Administrator");
-                    adminUser.update(adminRep);
-                }
-            );
+        keycloakProvider.updateRoles(MASTER_REALM, adminUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ.getValue(), ClientRole.WRITE.getValue());
     }
 }

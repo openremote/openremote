@@ -1,4 +1,4 @@
-<#import "template.ftl" as layout>
+    <#import "template.ftl" as layout>
 <@layout.mainLayout active='account'; section>
 
     <h4>${msg("editAccountHtmlTitle")}</h4>

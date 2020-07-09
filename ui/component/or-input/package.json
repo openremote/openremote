@@ -22,6 +22,7 @@
     "@material/line-ripple": "^4.0.0",
     "@material/ripple": "^4.0.0",
     "@material/select": "^4.0.0",
+    "@material/slider": "^7.0.0",
     "@material/switch": "^4.0.0",
     "@material/textfield": "^4.0.0",
     "lit-element": "^2.2.1"

@@ -12,11 +12,12 @@ import {
     ValueType
 } from "@openremote/model";
 import manager, {AssetModelUtil, Util} from "@openremote/core";
-import {getAttributeValueTemplate} from "@openremote/or-attribute-input";
+import "@openremote/or-attribute-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import i18next from "i18next";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import { translate } from "@openremote/or-translate";
+import { OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
 
 // language=CSS
 const style = css`
@@ -108,7 +109,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         const showUpdateOptions = !this.config || !this.config.controls || !this.config.controls.hideActionUpdateOptions;
         const attributeDescriptor = AssetModelUtil.getAssetAttributeDescriptor(assetDescriptor, this.action.attributeName);
         let attribute: Attribute | undefined = asset && this.action.attributeName ? Util.getAssetAttribute(asset, this.action.attributeName) : undefined;
-        let inputTemplate: ((value: any) => TemplateResult) | undefined = undefined;
+        const attributeValueDescriptor = attributeDescriptor && attributeDescriptor.valueDescriptor ? typeof attributeDescriptor.valueDescriptor === "string" ? AssetModelUtil.getAttributeValueDescriptor(attributeDescriptor.valueDescriptor as string) : attributeDescriptor.valueDescriptor : attribute ? AssetModelUtil.getAttributeValueDescriptor(attribute.type as string) : undefined;
 
         // Only RW attributes can be used in actions
         let attributes: [string, string][];
@@ -124,24 +125,18 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                     .map((ad) => [ad.attributeName!, Util.getAttributeLabel(undefined, ad)]);
         }
 
-        // A dummy attribute if we don't have a real one (to allow us to re-use the following function)
-        if (this.action.attributeName) {
-            if (!attribute) {
-                attribute = {
-                    name: this.action.attributeName,
-                    type: attributeDescriptor ? attributeDescriptor.valueDescriptor : undefined
-                };
-            }
+        let attributeInput: TemplateResult | undefined;
 
-            inputTemplate = getAttributeValueTemplate(assetType, attribute, this.readonly || false, false, (v: any) => this.setActionAttributeValue(v), this.config ? this.config.inputProvider : undefined, undefined,
-                (attribute.type && (attribute.type.valueType === ValueType.BOOLEAN || attribute.type === AttributeValueType.BOOLEAN.name || attribute.type === AttributeValueType.SWITCH_TOGGLE.name)) ? "" : i18next.t("value"));
+        if (this.action.attributeName) {
+            const label = (attributeValueDescriptor && (attributeValueDescriptor.valueType === ValueType.BOOLEAN || attributeValueDescriptor.name === AttributeValueType.BOOLEAN.name || attributeValueDescriptor.name === AttributeValueType.SWITCH_TOGGLE.name)) ? "" : i18next.t("value");
+            attributeInput = html`<or-attribute-input @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setActionAttributeValue(ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${label}" .assetType="${assetType}" .attributeDescriptor="${attributeDescriptor}" .attributeValueDescriptor="${attributeValueDescriptor}" .value="${this.action.value}" .readonly="${this.readonly || false}"></or-attribute-input>`;
         }
 
         return html`
-            <or-input id="matchSelect" .label="${i18next.t("asset")}" .type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" ?readonly="${this.readonly}" .options="${idOptions}" .value="${idValue}"></or-input>
+            <or-input id="matchSelect" .label="${i18next.t("asset")}" .type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" .readonly="${this.readonly || false}" .options="${idOptions}" .value="${idValue}"></or-input>
             ${attributes.length > 0 ? html`
-                <or-input id="attributeSelect" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" ?readonly="${this.readonly}" .options="${attributes}" .value="${this.action.attributeName}"></or-input>
-                ${inputTemplate ? inputTemplate(this.action.value) : ``}
+                <or-input id="attributeSelect" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" .readonly="${this.readonly || false}" .options="${attributes}" .value="${this.action.attributeName}"></or-input>
+                ${attributeInput}
             ` : html`
                 <or-translate value="No attributes with write permission"></or-translate>
             `}

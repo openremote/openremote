@@ -17,7 +17,6 @@ import {
 } from "@openremote/model";
 import * as Util from "./util";
 import orIconSet from "./or-icon-set";
-import { Deferred } from "./util";
 
 // Re-exports
 export {Util};
@@ -99,6 +98,11 @@ export interface BasicLoginResult {
     closeCallback: undefined | ((authenticated: boolean) => void);
 }
 
+export enum MapType {
+    VECTOR = "VECTOR",
+    RASTER = "RASTER"
+}
+
 export interface ManagerConfig {
     managerUrl: string;
     keycloakUrl?: string;
@@ -113,6 +117,7 @@ export interface ManagerConfig {
     pollingIntervalMillis?: number;
     loadIcons?: boolean;
     loadDescriptors?: boolean;
+    mapType?: MapType;
     loadTranslations?: string[];
     translationsLoadPath?: string;
     configureTranslationsOptions?: (i18next: i18next.InitOptions) => void;
@@ -272,8 +277,8 @@ export class AssetModelUtil {
     }
 
     public static getAttributeValueDescriptorFromAsset(name: string | undefined, assetType?: string, attributeName?: string): AttributeValueDescriptor | undefined {
-        if (!name) {
-            return;
+        if (name) {
+            return this.getAttributeValueDescriptor(name);
         }
 
         if (attributeName) {
@@ -282,8 +287,6 @@ export class AssetModelUtil {
                 return attributeDescriptor.valueDescriptor;
             }
         }
-
-        return this.getAttributeValueDescriptor(name);
     }
 
     public static getMetaItemDescriptor(urn?: string): MetaItemDescriptor | undefined {
@@ -369,22 +372,23 @@ export class Manager implements EventProviderFactory {
         return this._config;
     }
 
-    get roles(): string[] {
+    get roles(): Map<string, string[]> {
+        const roleMap = new Map<string, string[]>();
+
         if (this._keycloak) {
             if (this._keycloak.resourceAccess) {
-                let roles: string[];
-                if (this._config.clientId && this._keycloak!.resourceAccess.hasOwnProperty(this._config.clientId)) {
-                    roles = this._keycloak!.resourceAccess[this._config.clientId].roles;
-                } else {
-                    roles = this._keycloak!.resourceAccess.account.roles;
+                if (this._config.clientId && this._keycloak!.resourceAccess) {
+                    Object.entries(this._keycloak!.resourceAccess).forEach(([client, resourceObj]) => {
+                        const roles = (resourceObj as any).roles as string[];
+                        roleMap.set(client, roles);
+                    })
                 }
-                return roles || [];
             }
         } else if (this._basicIdentity && this._basicIdentity.roles) {
-            return this._basicIdentity.roles.map((r) => r.name!);
+            roleMap.set(this._config.clientId!, this._basicIdentity.roles.map((r) => r.name!));
         }
 
-        return [];
+        return roleMap;
     }
 
     get managerVersion() {
@@ -393,6 +397,14 @@ export class Manager implements EventProviderFactory {
 
     get isManagerAvailable() {
         return this._managerVersion && this._managerVersion !== "";
+    }
+
+    get managerUrl() {
+        return this._config.managerUrl;
+    }
+
+    get keycloakUrl() {
+        return this._config.keycloakUrl;
     }
 
     get isError() {
@@ -438,6 +450,10 @@ export class Manager implements EventProviderFactory {
 
     getEventProvider(): EventProvider | undefined {
         return this.events;
+    }
+
+    get mapType() {
+        return this._config.mapType || MapType.VECTOR;
     }
 
     protected static normaliseConfig(config: ManagerConfig): ManagerConfig {
@@ -946,8 +962,9 @@ export class Manager implements EventProviderFactory {
         return this._keycloak && this._keycloak.hasRealmRole(role);
     }
 
-    public hasRole(role: string) {
-        return this.roles && this.roles.indexOf(role) >= 0;
+    public hasRole(role: string, client: string = this._config.clientId!) {
+        const roles = this.roles;
+        return roles && roles.has(client) && roles.get(client)!.indexOf(role) >= 0;
     }
 
     public getAuthorizationHeader(): string | undefined {
@@ -982,6 +999,10 @@ export class Manager implements EventProviderFactory {
 
     protected isMobile(): boolean {
         return this.console && this.console.isMobile;
+    }
+
+    public isKeycloak(): boolean {
+        return !!this._keycloak;
     }
 
     protected _onAuthenticated() {

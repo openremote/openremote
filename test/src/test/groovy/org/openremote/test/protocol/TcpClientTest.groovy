@@ -41,23 +41,22 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
     def "Check client"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), Collections.singletonList(new ManagerExecutorService()))
+        def container = startContainer(defaultConfig(), Collections.singletonList(new ManagerExecutorService()))
         def protocolExecutorService = container.getService(ManagerExecutorService.class)
 
         and: "a simple TCP echo server"
         def echoServerPort = findEphemeralPort()
-        def echoServer = new TcpStringServer(protocolExecutorService, new InetSocketAddress(echoServerPort), ";", Integer.MAX_VALUE, true)
+        def echoServer = new TcpStringServer(protocolExecutorService, new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
         echoServer.addMessageConsumer({
             message, channel, sender -> echoServer.sendMessage(message)
         })
 
         and: "a simple TCP client"
         TcpIoClient<String> client = new TcpIoClient<String>(
-                "localhost",
+                "127.0.0.1",
                 echoServerPort,
                 protocolExecutorService)
         client.setEncoderDecoderProvider({
@@ -191,6 +190,5 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
         cleanup: "the server should be stopped"
         client.disconnect()
         echoServer.stop()
-        stopContainer(container)
     }
 }

@@ -1,0 +1,26 @@
+workspace 'GenericApp'
+platform :ios, '13.0'
+
+use_frameworks!
+
+def shared_pods
+  pod 'Firebase/Messaging'
+  pod 'Firebase/Crashlytics'
+  pod 'Firebase/Analytics'
+end
+
+
+target 'GenericApp' do
+  project 'GenericApp'
+  shared_pods
+end
+
+target 'NotificationService' do
+  project 'GenericApp'
+  shared_pods
+end
+
+target 'ORLib' do
+  project '../ORLib/ORLib'
+  shared_pods
+end

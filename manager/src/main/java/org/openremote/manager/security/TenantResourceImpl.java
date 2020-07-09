@@ -19,8 +19,9 @@
  */
 package org.openremote.manager.security;
 
+import org.apache.http.HttpStatus;
+import org.openremote.container.Container;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.manager.i18n.I18NService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.security.Tenant;
@@ -45,9 +46,11 @@ import static org.openremote.model.http.BadRequestError.VIOLATION_EXCEPTION_HEAD
 public class TenantResourceImpl extends ManagerWebResource implements TenantResource {
 
     private static final Logger LOG = Logger.getLogger(TenantResourceImpl.class.getName());
+    protected Container container;
 
-    public TenantResourceImpl(TimerService timerService, ManagerIdentityService identityService) {
+    public TenantResourceImpl(TimerService timerService, ManagerIdentityService identityService, Container container) {
         super(timerService, identityService);
+        this.container = container;
     }
 
     @Override
@@ -92,10 +95,12 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
         }
         try {
             identityService.getIdentityProvider().updateTenant(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, tenant
+                tenant
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
+        } catch (IllegalArgumentException ex) {
+            throw new WebApplicationException(ex.getCause(), HttpStatus.SC_CONFLICT);
         } catch (Exception ex) {
             throw new WebApplicationException(ex);
         }
@@ -108,7 +113,7 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
         }
         try {
             identityService.getIdentityProvider().createTenant(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), tenant
+                tenant
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -134,7 +139,7 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
         }
         try {
             identityService.getIdentityProvider().deleteTenant(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm
+                realm
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());

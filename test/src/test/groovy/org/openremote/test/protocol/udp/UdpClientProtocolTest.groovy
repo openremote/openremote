@@ -53,26 +53,25 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
     def "Check UDP client protocol configuration and linked attribute deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
-        when: "the container starts"
-        def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices())
+        and: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
         def protocolExecutorService = container.getService(ProtocolExecutorService.class)
         def udpClientProtocol = container.getService(UdpClientProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
 
-        then: "the container should be running"
+        expect: "the system settles down"
         conditions.eventually {
-            assert container.isRunning()
+            noEventProcessedIn(assetProcessingService, 300)
         }
 
         when: "a simple UDP echo server is started"
         def echoServerPort = findEphemeralPort()
         def clientPort = findEphemeralPort()
-        AbstractUdpServer echoServer = new UdpStringServer(protocolExecutorService, new InetSocketAddress(echoServerPort), ";", Integer.MAX_VALUE, true)
+        AbstractUdpServer echoServer = new UdpStringServer(protocolExecutorService, new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
         def echoSkipCount = 0
         def clientActualPort = null
         def lastCommand = null
@@ -108,7 +107,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
                 .addMeta(
                     new MetaItem(
                         UdpClientProtocol.META_PROTOCOL_HOST,
-                        Values.create("255.255.255.255")
+                        Values.create("127.0.0.1")
                     ),
                     new MetaItem(
                         UdpClientProtocol.META_PROTOCOL_PORT,
@@ -200,7 +199,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         receivedMessages.clear()
 
         then: "after a while no more messages should be received by the server"
-        new PollingConditions(initialDelay: 1, timeout: 2).eventually {
+        new PollingConditions(timeout: 5, initialDelay: 1).eventually {
             assert receivedMessages.isEmpty()
         }
 
@@ -258,12 +257,11 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         then: "the protocol should be relinked"
         conditions.eventually {
             assert udpClientProtocol.protocolIoClientMap.size() == 1
-            assert udpClientProtocol.protocolIoClientMap.get(new AttributeRef(agent.id, "protocolConfig")) != client
+            assert !udpClientProtocol.protocolIoClientMap.get(new AttributeRef(agent.id, "protocolConfig")).is(client)
             assert udpClientProtocol.protocolMessageConsumers.size() == 1
         }
 
         when: "the linked attributes are also updated to work with hex server"
-        def consumer = udpClientProtocol.protocolMessageConsumers.get(new AttributeRef(agent.id, "protocolConfig")).stream().filter({it.key.equals(new AttributeRef(asset.id, "echoHello"))})
         asset.getAttribute("echoHello").ifPresent({it.meta.replaceAll{it.name.get() == UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE.urn ? new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create('"abcdef"')) : it}})
         asset.getAttribute("echoWorld").ifPresent({it.meta.replaceAll{it.name.get() == UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE.urn ? new MetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE, Values.create('"123456"')) : it}})
         asset = assetStorageService.merge(asset)
@@ -272,7 +270,13 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         conditions.eventually {
             assert udpClientProtocol.protocolMessageConsumers.size() == 1
             assert udpClientProtocol.protocolMessageConsumers.get(new AttributeRef(agent.id, "protocolConfig")).size() == 2
-            assert udpClientProtocol.protocolMessageConsumers.get(new AttributeRef(agent.id, "protocolConfig")).stream().filter({it.key.equals(new AttributeRef(asset.id, "echoHello"))}) != consumer
+            assert udpClientProtocol.linkedAttributes.get(new AttributeRef(asset.getId(), "echoHello")).getMetaItem(UdpClientProtocol.META_ATTRIBUTE_WRITE_VALUE).flatMap{it.getValueAsString()}.orElse(null) == '"abcdef"'
+        }
+
+        and: "the protocol should become CONNECTED"
+        conditions.eventually {
+            def status = agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig"))
+            assert status == ConnectionStatus.CONNECTED
         }
 
         when: "the hello linked attribute is executed"
@@ -294,6 +298,5 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         if (echoServer != null) {
             echoServer.stop()
         }
-        stopContainer(container)
     }
 }

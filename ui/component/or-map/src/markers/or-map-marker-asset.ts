@@ -1,9 +1,28 @@
 import {customElement, property, PropertyValues} from "lit-element";
 import {OrMapMarker} from "./or-map-marker";
-import {AttributeEvent, AttributeType, GeoJSONPoint, AssetType, AssetEvent, AssetEventCause, Asset, MetaItemType} from "@openremote/model";
+import {AttributeEvent, AttributeType, GeoJSONPoint, AssetType, AssetEvent, AssetEventCause, Asset, MetaItemType, SharedEvent} from "@openremote/model";
 import {subscribe} from "@openremote/core";
 import manager, {AssetModelUtil} from "@openremote/core";
 import {Util} from "@openremote/core";
+
+export function getMarkerIconAndColorFromAssetType(type: string | undefined): {icon: string, color: string | undefined} | undefined {
+    if (!type) {
+        return;
+    }
+
+    const descriptor = AssetModelUtil.getAssetDescriptor(type);
+    const icon = descriptor && descriptor.icon ? descriptor.icon : AssetType.THING.icon!;
+    let color: string | undefined;
+
+    if (descriptor && descriptor.color) {
+        color = descriptor.color;
+    }
+
+    return {
+        color: color,
+        icon: icon
+    };
+}
 
 @customElement("or-map-marker-asset")
 export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
@@ -24,22 +43,19 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
     protected markerColor?: string;
 
     protected set type(type: string | undefined) {
-        if (!type) {
+        const iconAndColor = getMarkerIconAndColorFromAssetType(type);
+
+        if (!iconAndColor) {
             this.visible = false;
             return;
         }
 
-        const descriptor = AssetModelUtil.getAssetDescriptor(type);
-
         if (this.assetTypeAsIcon) {
-            const icon = descriptor ? descriptor.icon : AssetType.THING.icon;
-            this.icon = icon;
+            this.icon = iconAndColor.icon;
         }
 
-        if (descriptor && descriptor.color) {
-            this.markerColor = descriptor.color;
-            this.updateColor(this.markerContainer);
-        }
+        this.markerColor = iconAndColor.color;
+        this.updateColor(this.markerContainer);
         this.visible = true;
     }
 
@@ -63,22 +79,31 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
         return super.shouldUpdate(_changedProperties);
     }
 
-    public onAttributeEvent(event: AttributeEvent) {
-        if (event.attributeState!.attributeRef!.attributeName === AttributeType.LOCATION.attributeName) {
-            this._updateLocation(event.attributeState!.value as GeoJSONPoint);
-        }
-    }
+    public _onEvent(event: SharedEvent) {
+        if (event.eventType === "attribute") {
+            const attributeEvent = event as AttributeEvent;
 
-    public onAssetEvent(event: AssetEvent) {
-        switch (event.cause) {
-            case AssetEventCause.READ:
-            case AssetEventCause.CREATE:
-            case AssetEventCause.UPDATE:
-                this.onAssetChanged(event.asset);
-                break;
-            case AssetEventCause.DELETE:
-                this.onAssetChanged(undefined);
-                break;
+            if (attributeEvent.attributeState!.attributeRef!.attributeName === AttributeType.LOCATION.attributeName) {
+                this._updateLocation(attributeEvent.attributeState!.value as GeoJSONPoint);
+                return;
+            }
+
+            return;
+        }
+
+        if (event.eventType === "asset") {
+            const assetEvent = event as AssetEvent;
+
+            switch (assetEvent.cause) {
+                case AssetEventCause.READ:
+                case AssetEventCause.CREATE:
+                case AssetEventCause.UPDATE:
+                    this.onAssetChanged(assetEvent.asset);
+                    break;
+                case AssetEventCause.DELETE:
+                    this.onAssetChanged(undefined);
+                    break;
+            }
         }
     }
 

@@ -123,7 +123,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
     }
 
     @Override
-    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
         // Look for existing network
@@ -159,11 +159,10 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
         Pair<VelbusNetwork, Consumer<ConnectionStatus>> velbusNetworkAndConsumer = networkConfigurationMap.remove(protocolRef);
-        updateStatus(protocolRef, ConnectionStatus.DISCONNECTED);
 
         if (velbusNetworkAndConsumer != null) {
             velbusNetworkAndConsumer.key.removeConnectionStatusConsumer(velbusNetworkAndConsumer.value);

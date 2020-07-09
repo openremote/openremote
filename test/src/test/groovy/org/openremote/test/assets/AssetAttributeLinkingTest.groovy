@@ -15,23 +15,23 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.TimeUnit
+
 class AssetAttributeLinkingTest extends Specification implements ManagerContainerTrait {
 
     def "Check processing of asset attributes that are linked to other attributes"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         when: "the container is started"
-        def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
 
-        then: "the container should be running and initialised"
+        then: "the system should settle down"
         conditions.eventually {
-            container.isRunning()
-            assert noEventProcessedIn(assetProcessingService, 500)
+            assert noEventProcessedIn(assetProcessingService, 300)
         }
 
         when: "assets are created"
@@ -81,7 +81,7 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
                 new AttributeState(new AttributeRef(asset1.id, "button"), Values.create("PRESSED"))
         )
         assetProcessingService.sendAttributeEvent(buttonPressed)
-        Thread.sleep(10)
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
         def buttonReleased = new AttributeEvent(
                 new AttributeState(new AttributeRef(asset1.id, "button"), Values.create("RELEASED"))
         )
@@ -98,7 +98,7 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
                 new AttributeState(new AttributeRef(asset1.id, "button"), Values.create("PRESSED"))
         )
         assetProcessingService.sendAttributeEvent(buttonPressed)
-        Thread.sleep(10)
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
         buttonReleased = new AttributeEvent(
                 new AttributeState(new AttributeRef(asset1.id, "button"), Values.create("RELEASED"))
         )
@@ -114,7 +114,7 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
                 new AttributeState(new AttributeRef(asset1.id, "button"), Values.create("LONG_PRESSED"))
         )
         assetProcessingService.sendAttributeEvent(buttonLongPressed)
-        Thread.sleep(10)
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
         buttonReleased = new AttributeEvent(
                 new AttributeState(new AttributeRef(asset1.id, "button"), Values.create("RELEASED"))
         )
@@ -124,7 +124,7 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
         conditions.eventually {
             asset2 = assetStorageService.find(asset2.id, true)
             assert !asset2.getAttribute("lightOnOff").get().getValueAsBoolean().get()
-            assert noEventProcessedIn(assetProcessingService, 1000)
+            assert noEventProcessedIn(assetProcessingService, 500)
         }
 
         // Need to reset counter due to synchronisation issues (ideally counter would still be at 0 as
@@ -201,8 +201,5 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
             asset2 = assetStorageService.find(asset2.id, true)
             assert !asset2.getAttribute("item2Prop1").get().getValueAsBoolean().orElse(true)
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

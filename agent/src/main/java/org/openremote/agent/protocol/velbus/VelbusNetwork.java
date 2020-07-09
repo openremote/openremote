@@ -28,7 +28,9 @@ import org.openremote.model.value.Value;
 
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
@@ -44,10 +46,10 @@ public class VelbusNetwork {
     protected VelbusDevice[] devices = new VelbusDevice[254];
     protected VelbusDevice[] subAddressDevices = new VelbusDevice[254];
     protected ScheduledFuture queueProcessingTask;
-    protected ProtocolExecutorService executorService;
+    protected ScheduledExecutorService executorService;
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
 
-    public VelbusNetwork(IoClient<VelbusPacket> client, ProtocolExecutorService executorService, Integer timeInjectionIntervalSeconds) {
+    public VelbusNetwork(IoClient<VelbusPacket> client, ScheduledExecutorService executorService, Integer timeInjectionIntervalSeconds) {
         this.client = client;
         this.executorService = executorService;
         this.timeInjectionIntervalSeconds = timeInjectionIntervalSeconds;
@@ -55,7 +57,7 @@ public class VelbusNetwork {
         client.addMessageConsumer(this::onPacketReceived);
         onConnectionStatusChanged(getConnectionStatus());
         if (timeInjectionIntervalSeconds != null) {
-            timeInjector = getExecutorService().scheduleWithFixedDelay(this::doTimeInjection, timeInjectionIntervalSeconds * 1000, timeInjectionIntervalSeconds * 1000);
+            timeInjector = getExecutorService().scheduleWithFixedDelay(this::doTimeInjection, timeInjectionIntervalSeconds, timeInjectionIntervalSeconds, TimeUnit.SECONDS);
         }
     }
 
@@ -71,7 +73,7 @@ public class VelbusNetwork {
         }
     }
 
-    public ProtocolExecutorService getExecutorService() {
+    public ScheduledExecutorService getExecutorService() {
         return this.executorService;
     }
 
@@ -264,7 +266,8 @@ public class VelbusNetwork {
         queueProcessingTask = getExecutorService().scheduleWithFixedDelay(
             this::doSendPacket,
             0,
-            DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS
+            DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS,
+            TimeUnit.MILLISECONDS
         );
     }
 
@@ -287,7 +290,7 @@ public class VelbusNetwork {
         scheduledTasks.removeIf(Future::isDone);
 
         if (getConnectionStatus() == ConnectionStatus.CONNECTED) {
-            ScheduledFuture future = getExecutorService().schedule(runnable, delayMillis);
+            ScheduledFuture future = getExecutorService().schedule(runnable, delayMillis, TimeUnit.MILLISECONDS);
             scheduledTasks.add(future);
             return future;
         }

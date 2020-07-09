@@ -2,13 +2,14 @@ import {css, customElement, html, property, TemplateResult, unsafeCSS} from "lit
 import "@openremote/or-asset-tree";
 import "@openremote/or-asset-viewer";
 import {ViewerConfig} from "@openremote/or-asset-viewer";
-import {OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
+import {OrAssetTreeSelectionChangedEvent, AssetTreeConfig} from "@openremote/or-asset-tree";
 import {DefaultBoxShadow} from "@openremote/core";
 import {AppStateKeyed, Page, router} from "../index";
 import {EnhancedStore} from "@reduxjs/toolkit";
 
 export interface PageAssetsConfig {
     viewer: ViewerConfig;
+    tree?: AssetTreeConfig;
 }
 
 export function pageAssetsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config: PageAssetsConfig = PAGE_ASSETS_DEFAULT_CONFIG) {
@@ -496,14 +497,20 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         super(store);
     }
 
-    firstUpdated() {
-        this.shadowRoot.getElementById('pageAssetTree').addEventListener(OrAssetTreeSelectionChangedEvent.NAME, (evt) => this._onTreeSelectionChanged(evt));
+    connectedCallback() {
+        super.connectedCallback();
+        this.addEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
     }
 
     protected render(): TemplateResult | void {
         const selectedIds = [this._assetId];
         return html`
-              <or-asset-tree id="pageAssetTree" class="${this._assetId ? "hideMobile" : ""}" .selectedIds="${selectedIds}"></or-asset-tree>
+              <or-asset-tree .config="${this.config && this.config.tree ? this.config.tree : null}" id="pageAssetTree" class="${this._assetId ? "hideMobile" : ""}" .selectedIds="${selectedIds}"></or-asset-tree>
               <or-asset-viewer class="${!this._assetId ? "hideMobile" : ""}" .config="${this.config && this.config.viewer ? this.config.viewer : PAGE_ASSETS_DEFAULT_CONFIG}" .assetId="${this._assetId}"></or-asset-viewer>
         `;
     }
@@ -514,8 +521,10 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
 
     protected _onTreeSelectionChanged(event: OrAssetTreeSelectionChangedEvent) {
         const nodes = event.detail;
-        if(nodes[0]){
-            router.navigate('assets/'+nodes[0].asset.id);
+        if (nodes[0]) {
+            router.navigate("assets/" + nodes[0].asset.id);
+        } else {
+            router.navigate("assets/");
         }
     }
 }

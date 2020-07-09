@@ -30,6 +30,7 @@ import io.netty.util.CharsetUtil;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.container.Container;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeEvent;
@@ -222,7 +223,7 @@ public abstract class AbstractIoClientProtocol<T, U extends IoClient<T>> extends
     }
 
     @Override
-    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
         ProtocolIoClient<T, U> protocolIoClient = null;
@@ -242,7 +243,7 @@ public abstract class AbstractIoClientProtocol<T, U extends IoClient<T>> extends
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
         ProtocolIoClient<T, U> protocolIoClient = protocolIoClientMap.remove(protocolRef);
 

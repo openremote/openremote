@@ -21,6 +21,7 @@ package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.query.AssetQuery;
 
@@ -30,16 +31,10 @@ import org.openremote.model.query.AssetQuery;
  */
 public class ReadAssetsEvent extends SharedEvent {
 
-    protected String name;
     protected AssetQuery assetQuery;
 
     @JsonCreator
-    public ReadAssetsEvent(@JsonProperty("name") String name, @JsonProperty("assetQuery") AssetQuery assetQuery) {
-        this.name = name;
-        this.assetQuery = assetQuery;
-    }
-
-    public ReadAssetsEvent(AssetQuery assetQuery) {
+    public ReadAssetsEvent(@JsonProperty("assetQuery") AssetQuery assetQuery) {
         this.assetQuery = assetQuery;
     }
 
@@ -47,14 +42,9 @@ public class ReadAssetsEvent extends SharedEvent {
         return assetQuery;
     }
 
-    public String getName() {
-        return name;
-    }
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "name='" + name + '\'' +
             "query='" + assetQuery + '\'' +
             '}';
     }

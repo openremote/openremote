@@ -31,15 +31,14 @@ import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
-import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
 
 import java.nio.charset.Charset;
 import java.util.*;
@@ -48,7 +47,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.manager.event.ClientEventService.getSessionKey;
+import static org.openremote.agent.protocol.ProtocolClientEventService.getSessionKey;
 
 public class MqttBrokerService implements ContainerService {
 
@@ -139,7 +138,9 @@ public class MqttBrokerService implements ContainerService {
         properties.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(port));
         properties.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, String.valueOf(false));
         List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new EventInterceptHandler(identityProvider, messageBrokerService, mqttConnectionMap));
-        mqttBroker.startServer(new MemoryConfig(properties), interceptHandlers, null, new KeycloakAuthenticator(identityProvider), new KeycloakAuthorizatorPolicy(identityProvider, clientEventService, mqttConnectionMap));
+
+        AssetStorageService assetStorageService = container.getService(AssetStorageService.class);
+        mqttBroker.startServer(new MemoryConfig(properties), interceptHandlers, null, new KeycloakAuthenticator(identityProvider), new KeycloakAuthorizatorPolicy(identityProvider, assetStorageService, clientEventService, mqttConnectionMap));
         LOG.fine("Started MQTT broker");
     }
 

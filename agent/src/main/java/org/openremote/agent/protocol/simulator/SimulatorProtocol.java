@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
@@ -223,7 +224,7 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
         instances.computeIfAbsent(
@@ -256,7 +257,7 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         AttributeRef configRef = protocolConfiguration.getReferenceOrThrow();
         instances.remove(configRef);
     }

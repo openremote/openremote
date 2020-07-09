@@ -11,6 +11,7 @@ import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RulesetStatus
+import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -21,9 +22,10 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
     def "Rule condition invalid return"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 20, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
@@ -49,16 +51,17 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
             assert apartment2Engine.deployments[ruleset.id].error.message == "Error evaluating condition of rule 'The when condition is illegal, it's returning an Optional instead of a boolean': result is not boolean but Optional.empty"
         }
 
-        cleanup: "stop the container"
-        stopContainer(container)
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
     def "Rule condition throws exception"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 20, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
@@ -84,16 +87,17 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
             assert apartment2Engine.getError().message.startsWith("Ruleset deployments have errors, failed compilation: 0, failed execution: 1")
         }
 
-        cleanup: "stop the container"
-        stopContainer(container)
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
     def "Rule action throws exception"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 20, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
@@ -119,16 +123,17 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
             assert apartment2Engine.getError().message.startsWith("Ruleset deployments have errors, failed compilation: 0, failed execution: 1")
         }
 
-        cleanup: "stop the container"
-        stopContainer(container)
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
     def "Rule condition loops"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 20, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
@@ -156,7 +161,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
             assert apartment2Engine.facts.triggerCount == 0 // Ensure trigger count is reset after execution
         }
 
-        cleanup: "stop the container"
-        stopContainer(container)
+        cleanup: "the static rules time variable is reset"
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 }

@@ -35,7 +35,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import java.io.*;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Consumer;
@@ -206,7 +205,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
     }
 
     @Override
-    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
         String connectionType = protocolConfiguration.getMetaItem(META_KNX_IP_CONNECTION_TYPE).flatMap(AbstractValueHolder::getValueAsString).orElse("TUNNELLING");
         if (!connectionType.equals("TUNNELLING") && !connectionType.equals("ROUTING")) {
             LOG.severe("KNX connectionType can either be 'TUNNELLING' or 'ROUTING' for protocol configuration: " + protocolConfiguration);
@@ -246,7 +245,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
 
         Consumer<ConnectionStatus> statusConsumer;
         synchronized (statusConsumerMap) {

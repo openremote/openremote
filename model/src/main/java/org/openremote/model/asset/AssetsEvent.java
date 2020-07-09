@@ -31,17 +31,11 @@ import java.util.stream.Collectors;
  */
 public class AssetsEvent extends SharedEvent {
 
-    protected String name;
     protected List<Asset> assets;
 
     @JsonCreator
-    public AssetsEvent(@JsonProperty("name") String name, @JsonProperty("assets") List<Asset> assets) {
-        this.name = name;
+    public AssetsEvent(@JsonProperty("assets") List<Asset> assets) {
         this.assets = assets;
-    }
-
-    public String getName() {
-        return name;
     }
 
     public List<Asset> getAssets() {
@@ -51,7 +45,6 @@ public class AssetsEvent extends SharedEvent {
     @Override
     public String toString() {
         return AssetsEvent.class.getSimpleName() + "{" +
-            "name='" + name + '\'' +
             ", assets=" + (assets == null ? "null" : assets.stream().map(Asset::getId).collect(Collectors.joining())) +
             '}';
     }

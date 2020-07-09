@@ -283,11 +283,13 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
 
         // Add closed callback
         channel.closeFuture().addListener(future -> {
-            if (connectionStatus == ConnectionStatus.CONNECTED) {
-                LOG.info("Connection closed un-expectedly: " + getClientUri());
-                onConnectionStatusChanged(ConnectionStatus.CONNECTING);
-                doDisconnect();
-                scheduleDoConnect();
+            synchronized (this) {
+                if (connectionStatus == ConnectionStatus.CONNECTED) {
+                    LOG.info("Connection closed un-expectedly: " + getClientUri());
+                    onConnectionStatusChanged(ConnectionStatus.CONNECTING);
+                    doDisconnect();
+                    scheduleDoConnect();
+                }
             }
         });
 

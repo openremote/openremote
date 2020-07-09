@@ -335,7 +335,7 @@ public abstract class AbstractManagerSetup implements Setup {
         );
     }
 
-    public class Scene {
+    public static class Scene {
 
         final String attributeName;
         final String attributeLabel;
@@ -394,7 +394,8 @@ public abstract class AbstractManagerSetup implements Setup {
         }
     }
 
-    protected Asset createDemoApartmentSceneAgent(Asset apartment, Scene[] scenes, Asset... rooms) {
+    public static Asset createDemoApartmentScenes(AssetStorageService assetStorageService, Asset apartment, Scene[] scenes, Asset... rooms) {
+
         Asset agent = new Asset("Scene Agent", AGENT, apartment);
         for (Scene scene : scenes) {
             agent.addAttributes(scene.createMacroAttribute(apartment, rooms));
@@ -404,11 +405,13 @@ public abstract class AbstractManagerSetup implements Setup {
         }
 
         addDemoApartmentSceneEnableDisableTimer(apartment, agent, scenes);
-
+        agent = assetStorageService.merge(agent);
+        linkDemoApartmentWithSceneAgent(apartment, agent, scenes);
+        apartment = assetStorageService.merge(apartment);
         return agent;
     }
 
-    protected void addDemoApartmentSceneEnableDisableTimer(Asset apartment, Asset agent, Scene[] scenes) {
+    protected static void addDemoApartmentSceneEnableDisableTimer(Asset apartment, Asset agent, Scene[] scenes) {
         AssetAttribute enableAllMacro = initProtocolConfiguration(new AssetAttribute("enableSceneTimer"), MacroProtocol.PROTOCOL_NAME)
             .addMeta(new MetaItem(LABEL, Values.create("Enable scene timer")));
         for (Scene scene : scenes) {
@@ -440,7 +443,7 @@ public abstract class AbstractManagerSetup implements Setup {
         agent.addAttributes(disableAllMacro);
     }
 
-    protected void linkDemoApartmentWithSceneAgent(Asset apartment, Asset agent, Scene[] scenes) {
+    protected static void linkDemoApartmentWithSceneAgent(Asset apartment, Asset agent, Scene[] scenes) {
         for (Scene scene : scenes) {
             apartment.addAttributes(
                 new AssetAttribute(scene.attributeName, AttributeValueType.STRING, Values.create(AttributeExecuteStatus.READY.name()))
@@ -727,7 +730,7 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Color RGBW")),
                     new MetaItem(DESCRIPTION, Values.create("The RGBW color of the light")),
-                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(RULE_STATE),
                     new MetaItem(STORE_DATA_POINTS)
                 ),
             new AssetAttribute("groupNumber", NUMBER)
@@ -740,8 +743,7 @@ public abstract class AbstractManagerSetup implements Setup {
             new AssetAttribute("scenario", STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Scenario")),
-                    new MetaItem(DESCRIPTION, Values.create("The scenario this light is setup to")),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(DESCRIPTION, Values.create("The scenario this light is setup to"))
                 )
         );
 

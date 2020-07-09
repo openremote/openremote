@@ -23,8 +23,15 @@ import org.apache.http.client.utils.URIBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
 import org.jboss.resteasy.spi.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
-import org.openremote.agent.protocol.http.*
 import org.openremote.container.Container
+import org.openremote.container.web.HeaderInjectorFilter
+import org.openremote.container.web.OAuthClientCredentialsGrant
+import org.openremote.container.web.OAuthGrant
+import org.openremote.container.web.OAuthPasswordGrant
+import org.openremote.container.web.OAuthRefreshTokenGrant
+import org.openremote.container.web.OAuthServerResponse
+import org.openremote.container.web.QueryParameterInjectorFilter
+import org.openremote.container.web.WebTargetBuilder
 import spock.lang.Shared
 import spock.lang.Specification
 

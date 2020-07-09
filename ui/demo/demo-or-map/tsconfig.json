@@ -4,8 +4,7 @@
     "tsBuildInfoFile": "./.tsbuildinfo"
   },
   "include": [
-    "./src",
-    "../../component/or-map/@types"
+    "./src"
   ],
   "references": [
     { "path": "../../demo/demo-core" },
