@@ -157,7 +157,7 @@ export class OrMwcDialog extends LitElement {
 
         return html`
             
-            ${typeof(this.styles) === "string" ?  html`<style></style>${this.styles}<style>` : this.styles}
+            ${typeof(this.styles) === "string" ?  html`<style>${this.styles}</style>` : this.styles}
 
             <div id="dialog"
                 class="mdc-dialog"

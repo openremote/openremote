@@ -255,5 +255,9 @@
     "GBP_PER_MONTH": "£/month"
   },
   "noChildAssets": "No child assets",
-  "account": "Account"
+  "account": "Account",
+  "editAttribute": "Edit attribute",
+  "editDelta": "Edit delta",
+  "editCurrentValue": "Edit current value",
+  "decimals": "Decimals"
 }

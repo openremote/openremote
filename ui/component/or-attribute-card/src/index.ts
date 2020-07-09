@@ -5,13 +5,15 @@ import {Asset, AssetAttribute, Attribute, DatapointInterval, MetaItemType, Value
 import {manager, DefaultColor3, DefaultColor4, Util, AssetModelUtil} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
 import {getContentWithMenuTemplate, OrChartConfig} from "@openremote/or-chart";
-import {InputType} from "@openremote/or-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {getMetaValue} from "@openremote/core/dist/util";
 import moment from "moment";
 import {OrAssetTreeRequestSelectEvent, OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
 import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+
+export type ContextMenuOptions = "editAttribute" | "editDelta" | "editCurrentValue";
 
 const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
 
@@ -106,6 +108,22 @@ const style = css`
         margin-left: 5px;
     }
     
+    .main-number.xs, .main-number-unit.xs {
+        font-size: 18px;
+    }
+    .main-number.s, .main-number-unit.s {
+        font-size: 24px;
+    }
+    .main-number.m, .main-number-unit.m {
+        font-size: 30px;
+    }
+    .main-number.l, .main-number-unit.l {
+        font-size: 36px;
+    }
+    .main-number.xl, .main-number-unit.xl {
+        font-size: 42px;
+    }
+    
     .chart-wrapper {
         flex: 1;
         width: 65%;
@@ -179,9 +197,15 @@ export class OrAttributeCard extends LitElement {
     @property()
     private mainValue?: number;
     @property()
+    private mainValueDecimals: number = 2;
+    @property()
+    private mainValueSize: "xs" | "s" | "m" | "l" | "xl" = "m";
+    @property()
     private delta: {val?: number, unit?: string} = {};
     @property()
     private deltaPlus: string = "";
+    @property()
+    private deltaFormat: string = "absolute";
 
     private error: boolean = false;
 
@@ -290,12 +314,15 @@ export class OrAttributeCard extends LitElement {
                 this._chart.data.datasets![0].data = this.data;
                 this._chart.update();
                 this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data));
-                this.deltaPlus = (this.delta.val && this.delta.val > 0) ? "+" : "";
             }
         }
 
-        if (changedProperties.has("mainValue")) {
+        if (changedProperties.has("mainValue") || changedProperties.has("mainValueDecimals")) {
             this.formattedMainValue = this.getFormattedValue(this.mainValue!);
+        }
+
+        if (changedProperties.has("delta")) {
+            this.deltaPlus = (this.delta.val && this.delta.val > 0) ? "+" : "";
         }
     }
 
@@ -303,26 +330,117 @@ export class OrAttributeCard extends LitElement {
         await this.updateComplete;
     }
 
-    protected _refreshDialog() {
+    protected _refreshDialog(dialogContent?: ContextMenuOptions) {
         if (this._dialog) {
-            this._dialog.dialogContent = html`
-                <or-asset-tree id="chart-asset-tree" 
-                    .selectedIds="${this.asset ? [this.asset.id] : null}"></or-asset-tree>
-                ${this.asset && this.asset.attributes ? html`
-                    <or-input id="attribute-picker" 
-                        style="display:flex;"
-                        .label="${i18next.t("attribute")}" 
-                        .type="${InputType.LIST}"
-                        .options="${this._getAttributeOptions()}"
-                        .value="${this.attributeName}"></or-input>
-                ` : ``}
-            `;
+            if (dialogContent === "editDelta") {
+                const options = [
+                    ["percentage", "Percentage"],
+                    ["absolute", "Absolute"]
+                ];
+
+                this._dialog.dialogTitle= i18next.t("editDelta");
+
+                this._dialog.dialogActions = [
+                    {
+                        actionName: "cancel",
+                        content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
+                        action: () => {
+                            // Nothing to do here
+                        }
+                    },
+                    {
+                        actionName: "yes",
+                        default: true,
+                        content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("ok")}" data-mdc-dialog-action="yes"></or-input>`,
+                        action: () => {
+                            this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data));
+                        }
+                    }
+                ];
+
+                this._dialog.dialogContent = html`
+                    <or-input id="delta-mode-picker" value="${this.deltaFormat}" @or-input-changed="${(evt: OrInputChangedEvent) => this.deltaFormat = evt.detail.value}" .type="${InputType.LIST}" .options="${options}"></or-input>                
+                `;
+            }
+            else if (dialogContent === "editCurrentValue") {
+
+                this._dialog.dialogTitle= i18next.t("editCurrentValue");
+
+                this._dialog.dialogActions = [
+                    {
+                        actionName: "cancel",
+                        content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
+                        action: () => {
+                            // Nothing to do here
+                        }
+                    },
+                    {
+                        actionName: "yes",
+                        default: true,
+                        content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("ok")}" data-mdc-dialog-action="yes"></or-input>`,
+                        action: () => {
+                            const dialog: OrMwcDialog = this._dialog as OrMwcDialog;
+                            if (dialog.shadowRoot && dialog.shadowRoot.getElementById("current-value-decimals")) {
+                                const elm = dialog.shadowRoot.getElementById("current-value-decimals") as HTMLInputElement;
+                                const input = parseInt(elm.value);
+                                if (input < 0) {this.mainValueDecimals = 0;}
+                                else if (input > 10) {this.mainValueDecimals = 10;}
+                                else {this.mainValueDecimals = input;}
+                                this.formattedMainValue = this.getFormattedValue(this.mainValue!);
+                            }
+                        }
+                    }
+                ];
+
+                this._dialog.dialogContent = html`
+                    <or-input id="current-value-decimals" .label="${i18next.t("decimals")}" value="${this.mainValueDecimals}" .type="${InputType.TEXT}"></or-input>
+                `;
+            }
+            else {
+
+                this._dialog.dialogTitle= i18next.t("addAttribute");
+
+                this._dialog.dialogActions = [
+                    {
+                        actionName: "cancel",
+                        content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
+                        action: () => {
+                            // Nothing to do here
+                        }
+                    },
+                    {
+                        actionName: "yes",
+                        default: true,
+                        content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" data-mdc-dialog-action="yes"></or-input>`,
+                        action: () => {
+                            const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
+                            if (dialog.shadowRoot && dialog.shadowRoot.getElementById("attribute-picker")) {
+                                const elm = dialog.shadowRoot.getElementById("attribute-picker") as HTMLInputElement;
+                                this.dispatchEvent(new OrAttributeCardAddAttributeEvent(elm.value));
+                            }
+                        }
+                    }
+                ];
+
+                this._dialog.dialogContent = html`
+                    <or-asset-tree id="chart-asset-tree" 
+                        .selectedIds="${this.asset ? [this.asset.id] : null}"></or-asset-tree>
+                    ${this.asset && this.asset.attributes ? html`
+                        <or-input id="attribute-picker" 
+                            style="display:flex;"
+                            .label="${i18next.t("attribute")}" 
+                            .type="${InputType.LIST}"
+                            .options="${this._getAttributeOptions()}"
+                            .value="${this.attributeName}"></or-input>
+                    ` : ``}
+                `;
+            }
         }
     }
 
-    protected _openDialog() {
+    protected _openDialog(dialogContent?: ContextMenuOptions) {
         if (this._dialog) {
-            this._refreshDialog();
+            this._refreshDialog(dialogContent);
             this._dialog.open();
         }
     }
@@ -459,28 +577,6 @@ export class OrAttributeCard extends LitElement {
 
     protected render() {
 
-        const dialogActions: DialogAction[] = [
-            {
-                actionName: "cancel",
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
-                action: () => {
-                    // Nothing to do here
-                }
-            },
-            {
-                actionName: "yes",
-                default: true,
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" data-mdc-dialog-action="yes"></or-input>`,
-                action: () => {
-                    const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
-                    if (dialog.shadowRoot && dialog.shadowRoot.getElementById("attribute-picker")) {
-                        const elm = dialog.shadowRoot.getElementById("attribute-picker") as HTMLInputElement;
-                        this.dispatchEvent(new OrAttributeCardAddAttributeEvent(elm.value));
-                    }
-                }
-            }
-        ];
-
         if (!this.assetId || !this.attributeName) {
             return html`
                 <div class="panel panel-empty">
@@ -490,7 +586,7 @@ export class OrAttributeCard extends LitElement {
                         </div>
                     </div>
                 </div>
-                <or-mwc-dialog id="mdc-dialog" dialogTitle="addAttribute" .dialogActions="${dialogActions}"></or-mwc-dialog>
+                <or-mwc-dialog id="mdc-dialog"></or-mwc-dialog>
             `;
         }
 
@@ -504,7 +600,7 @@ export class OrAttributeCard extends LitElement {
                         </div>
                     </div>
                 </div>
-                <or-mwc-dialog id="mdc-dialog" dialogTitle="addAttribute" .dialogActions="${dialogActions}"></or-mwc-dialog>
+                <or-mwc-dialog id="mdc-dialog"><or-mwc-dialog>
             `;
         }
 
@@ -513,13 +609,31 @@ export class OrAttributeCard extends LitElement {
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
                         <span class="panel-title-text">${this.asset ? (this.asset.name + " - " + i18next.t(this.attributeName)) : ""}</span>
-                        <or-input icon="pencil" type="button" @click="${() => this._openDialog()}"></or-input>
+                        ${getContentWithMenuTemplate(html`
+                            <or-input icon="dots-vertical" type="button"></or-input>
+                        `,
+                        [
+                            {
+                                text: i18next.t("editAttribute"),
+                                value: "editAttribute"
+                            },
+                            {
+                                text: i18next.t("editDelta"),
+                                value: "editDelta"
+                            },
+                            {
+                                text: i18next.t("editCurrentValue"),
+                                value: "editCurrentValue"
+                            }
+                        ],
+                        undefined,
+                        (values: string | string[]) => this.handleMenuSelect(values as ContextMenuOptions))}
                     </div>
                     <div class="panel-content">
                         <div class="mainvalue-wrapper">
                             <span class="main-number-icon">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.asset!.type!))}</span>
-                            <span class="main-number">${this.formattedMainValue!.value}</span>
-                            <span class="main-number-unit">${this.formattedMainValue!.unit}</span>
+                            <span class="main-number ${this.mainValueSize}">${this.formattedMainValue!.value}</span>
+                            <span class="main-number-unit ${this.mainValueSize}">${this.formattedMainValue!.unit}</span>                        
                         </div>
                         <div class="graph-wrapper">
                             <div class="chart-wrapper">
@@ -544,7 +658,7 @@ export class OrAttributeCard extends LitElement {
                     </div>
                 </div>
             </div>
-            <or-mwc-dialog id="mdc-dialog" dialogTitle="addAttribute" .dialogActions="${dialogActions}"></or-mwc-dialog>
+            <or-mwc-dialog id="mdc-dialog"></or-mwc-dialog>
         `;
     }
 
@@ -620,6 +734,7 @@ export class OrAttributeCard extends LitElement {
             .then((datapoints: ValueDatapoint<any>[]) => {
                 this.data = datapoints || [];
                 this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data));
+                this.deltaPlus = (this.delta.val && this.delta.val > 0) ? "+" : "";
 
                 this.error = false;
 
@@ -647,11 +762,13 @@ export class OrAttributeCard extends LitElement {
         }
 
         const attr = this.asset.attributes![this.attributeName!];
-        const roundedVal = +value.toFixed(1); // + operator prevents str return
+        const roundedVal = +value.toFixed(this.mainValueDecimals); // + operator prevents str return
 
         const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(this.attributeName!);
         const unitKey = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
         const unit = i18next.t("units." + unitKey);
+
+        this.setMainValueSize(roundedVal.toString());
 
         if (!unitKey) { return {value: roundedVal, unit: "" }; }
 
@@ -678,18 +795,22 @@ export class OrAttributeCard extends LitElement {
     }
 
     protected getFormattedDelta(firstVal: number, lastVal: number): {val?: number, unit?: string} {
-        if (firstVal && lastVal) {
-            if (lastVal === 0 && firstVal === 0) {
-                return {val: 0, unit: "%"};
-            } else if (lastVal === 0 && firstVal !== 0) {
-                return {val: 100, unit: "%"};
+        if (this.deltaFormat === "percentage") {
+            if (firstVal && lastVal) {
+                if (lastVal === 0 && firstVal === 0) {
+                    return {val: 0, unit: "%"};
+                } else if (lastVal === 0 && firstVal !== 0) {
+                    return {val: 100, unit: "%"};
+                } else {
+                    const math = Math.round((lastVal - firstVal) / firstVal * 100);
+                    return {val: math, unit: "%"};
+                }
             } else {
-                const math = Math.round((lastVal - firstVal) / firstVal * 100);
-                return {val: math, unit: "%"};
+                return {val: 0, unit: "%"};
             }
-        } else {
-            return {val: 0, unit: "%"};
         }
+
+        return {val: Math.round(lastVal - firstVal), unit: ""};
     }
 
     protected _getInterval() {
@@ -712,6 +833,18 @@ export class OrAttributeCard extends LitElement {
                 break;
         }
         return interval;
+    }
+
+    protected handleMenuSelect(value: ContextMenuOptions) {
+        this._openDialog(value);
+    }
+
+    protected setMainValueSize(value: string) {
+        if (value.length >= 20) { this.mainValueSize = "xs" }
+        if (value.length < 20) { this.mainValueSize = "s" }
+        if (value.length < 15) { this.mainValueSize = "m" }
+        if (value.length < 10) { this.mainValueSize = "l" }
+        if (value.length < 5) { this.mainValueSize = "xl" }
     }
 
     protected _setPeriodOption(value: any) {
