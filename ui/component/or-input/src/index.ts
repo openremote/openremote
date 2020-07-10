@@ -617,10 +617,10 @@ export class OrInput extends LitElement {
 
                     if (this.type === InputType.RANGE) {
                         return html`
-                            <div id="component" class="mdc-slider mdc-slider--discrete" tabindex="0" role="slider" 
+                            <div id="component" class="mdc-slider mdc-slider--discrete" tabindex="10" role="slider" 
                             aria-valuemin="${ifDefined(valMinMax[1])}" aria-valuemax="${ifDefined(valMinMax[2])}"
                             aria-valuenow="${ifDefined(valMinMax[0])}" aria-label="${ifDefined(this.label)}"
-                            ?aria-disabled="${this.readonly || this.disabled}"
+                            aria-disabled="${(this.readonly || this.disabled) ? "true" : "false"}"
                             @MDCSlider:change="${() => this.onValueChange(undefined, (this._mdcComponent as MDCSlider).value)}">
                                 <div class="mdc-slider__track-container">
                                     <div class="mdc-slider__track"></div>
@@ -765,7 +765,7 @@ export class OrInput extends LitElement {
             }
             if (this.type === InputType.RANGE && this._mdcComponent) {
                 const slider = this._mdcComponent as MDCSlider;
-                slider.disabled = this.disabled;
+                slider.disabled = this.disabled || this.readonly;
                 slider.min = this.min;
                 slider.max = this.max;
                 slider.value = this.value;
