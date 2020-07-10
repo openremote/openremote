@@ -83,6 +83,9 @@ build-master:
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
       if: $CI_COMMIT_MESSAGE !~ /skip-build/
+  retry:
+    max: 2
+  timeout: 30m
 
 .email_template: &email_definition
   image: docker:latest
@@ -102,6 +105,8 @@ build-master:
       -e "SMTP_USERNAME=$SMTP_USERNAME"
       -e "SMTP_PASSWORD=$SMTP_PASSWORD"
       --rm python:3 python gitlab-ci/aws-mail.py
+  retry:
+    max: 2
 
 # This step is executed when build fails. The purpose is to e-mail a git commiter about the problem.
 email failed build:
