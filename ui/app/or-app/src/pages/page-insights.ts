@@ -19,23 +19,6 @@ export function pageInsightsProvider<S extends AppStateKeyed>(store: EnhancedSto
     };
 }
 
-const viewerConfig: DataViewerConfig = {
-   panels: {
-    "chart": {
-        type: "chart",
-        hideOnMobile: true,
-        panelStyles: {
-            gridColumn: "1 / -1",
-            gridRowStart: "1"
-        },
-        defaults: [{
-            assetId:"5442Ite2XVp3Ky9X2y647a",
-            attributes: ["UVIndex"]
-        }]
-    }
-   }
-};
-
 @customElement("page-insights")
 class PageInsights<S extends AppStateKeyed> extends Page<S>  {
 
@@ -87,7 +70,7 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
 
     protected render(): TemplateResult | void {
         return html`
-              <or-data-viewer .config="${this.config ? this.config : viewerConfig}"></or-data-viewer>
+              <or-data-viewer></or-data-viewer>
         `;
     }
 

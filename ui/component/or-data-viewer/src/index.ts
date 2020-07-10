@@ -82,8 +82,53 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
                 type: "chart",
                 hideOnMobile: true,
                 panelStyles: {
-                    gridColumn: "1 / -1",
-                    gridRowStart: "1"
+                    gridColumn: "1 / -1"
+                }
+            },
+            kpi1: {
+                type: "kpi",
+                hideOnMobile: false
+            },
+            kpi2: {
+                type: "kpi",
+                hideOnMobile: false
+            },
+            kpi3: {
+                type: "kpi",
+                hideOnMobile: false
+            },
+            kpi4: {
+                type: "kpi",
+                hideOnMobile: false
+            },
+            kpi5: {
+                type: "kpi",
+                hideOnMobile: false
+            },
+            kpi6: {
+                type: "kpi",
+                hideOnMobile: false
+            },
+            kpi7: {
+                type: "kpi",
+                hideOnMobile: false
+            },
+            kpi8: {
+                type: "kpi",
+                hideOnMobile: false
+            },
+            chart2: {
+                type: "chart",
+                hideOnMobile: true,
+                panelStyles: {
+                    gridColumn: "1 / -1"
+                }
+            },
+            chart3: {
+                type: "chart",
+                hideOnMobile: true,
+                panelStyles: {
+                    gridColumn: "1 / -1"
                 }
             }
         }
@@ -109,7 +154,7 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
         }
     }
 
-    public config?: DataViewerConfig;
+    public config?: DataViewerConfig = {...OrDataViewer.DEFAULT_CONFIG};
 
     @property({type: Array, attribute: false})
     protected _assets?: Asset[];
