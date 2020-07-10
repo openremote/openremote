@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.setup.builtin;
 
-import org.apache.commons.io.IOUtils;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.container.util.UniqueIdentifierGenerator;
@@ -31,7 +30,6 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
 import org.openremote.model.simulator.element.NumberSimulatorElement;
@@ -39,10 +37,6 @@ import org.openremote.model.simulator.element.SwitchSimulatorElement;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -51,7 +45,6 @@ import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 import static org.openremote.model.attribute.AttributeValueType.*;
 import static org.openremote.model.attribute.MetaItemType.*;
-import static org.openremote.model.rules.Ruleset.Lang.GROOVY;
 
 public class ManagerDemoSetup extends AbstractManagerSetup {
 
@@ -61,7 +54,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_OFFICE = 1;
     public static final int DEMO_RULE_STATES_SMART_BUILDING = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
-    public static final int DEMO_RULE_STATES_SMART_CITY = 47;
+    public static final int DEMO_RULE_STATES_SMART_CITY = 45;
     public static final int DEMO_RULE_STATES_GLOBAL = DEMO_RULE_STATES_SMART_BUILDING + DEMO_RULE_STATES_SMART_OFFICE + DEMO_RULE_STATES_SMART_CITY;
     public static final int DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1 + 28;
     public static final int DEMO_RULE_STATES_SMART_BUILDING_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;

@@ -105,6 +105,8 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
                 managerDemoSetup.apartment1LivingroomId, "co2Level", Values.create(500)
         )
         simulatorProtocol.putValue(co2LevelDecrement)
+
+        then: "the decreasing CO2 should have been detected in rules"
         conditions.eventually {
             assert apartment1Engine.assetEvents.any() {
                 it.fact.matches(co2LevelDecrement, SENSOR, true)
@@ -112,7 +114,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
             assert noEventProcessedIn(assetProcessingService, 500)
         }
 
-        and: "time advances"
+        when: "time advances"
         advancePseudoClock(35, MINUTES, container)
 
         then: "ventilation level of the apartment should be LOW"
