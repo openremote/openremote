@@ -60,6 +60,7 @@ export const style = css`
         z-index: 1000;
         line-height: var(--internal-or-asset-tree-header-height);
         color: var(--internal-or-asset-tree-header-text-color);
+        --or-icon-fill: var(--internal-or-asset-tree-header-text-color);
     }
    
     #title-container {
