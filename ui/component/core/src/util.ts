@@ -183,41 +183,32 @@ export function isObject(object: any): boolean {
 }
 
 export function objectsEqual(obj1?: any, obj2?: any, deep: boolean = true): boolean {
-    if (obj1 === obj2) {
-        return true;
-    }
+    if (obj1 === null || obj1 === undefined || obj2 === null || obj2 === undefined) { return obj1 === obj2; }
+    // after this just checking type of one would be enough
+    if (obj1.constructor !== obj2.constructor) { return false; }
+    // if they are functions, they should exactly refer to same one (because of closures)
+    if (obj1 instanceof Function) { return obj1 === obj2; }
+    // if they are regexps, they should exactly refer to same one (it is hard to better equality check on current ES)
+    if (obj1 instanceof RegExp) { return obj1 === obj2; }
+    if (obj1 === obj2 || obj1.valueOf() === obj2.valueOf()) { return true; }
+    if (Array.isArray(obj1) && obj1.length !== obj2.length) { return false; }
 
-    if (!obj1 || !obj2) {
-        return false;
-    }
+    // if they are dates, they must had equal valueOf
+    if (obj1 instanceof Date) { return false; }
+
+    // if they are strictly equal, they both need to be object at least
+    if (!(obj1 instanceof Object)) { return false; }
+    if (!(obj2 instanceof Object)) { return false; }
 
     if (deep) {
-        let iterator1: [string, any][] | undefined;
-        let iterator2: [string, any][] | undefined;
-
-        if (Array.isArray(obj1) || typeof obj1 === "object") {
-            if (typeof obj2 !== typeof obj1) {
-                return false;
-            }
-            iterator1 = Object.entries(obj1).sort((a, b) => b[0].localeCompare(a[0]));
-            iterator2 = Object.entries(obj2).sort((a, b) => b[0].localeCompare(a[0]));
-        }
-
-        if (!iterator1 || !iterator2) {
-            return false;
-        }
-
-        if (iterator1.length !== iterator2.length) {
-            return false;
-        }
-
-        for (let i = iterator1.length; i--;) {
-            if (iterator1[i][0] !== iterator2[i][0] || !objectsEqual(iterator1[i][1], iterator2[i][1])) {
-                return false;
-            }
-        }
-
-        return true;
+        // recursive object equality check
+        const p = Object.keys(obj1);
+        return Object.keys(obj2).every((i) => {
+                return p.indexOf(i) !== -1;
+            }) &&
+            p.every((i) => {
+                return objectsEqual(obj1[i], obj2[i]);
+            });
     }
 
     return false;

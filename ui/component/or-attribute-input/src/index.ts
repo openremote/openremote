@@ -1,4 +1,5 @@
 import {css, customElement, unsafeCSS, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
+import {ifDefined} from "lit-html/directives/if-defined";
 import {i18next, translate} from "@openremote/or-translate";
 import {
     AssetAttribute,
@@ -9,8 +10,7 @@ import {
     AttributeValueType,
     MetaItemType,
     ValueType,
-    SharedEvent,
-    Attribute
+    SharedEvent
 } from "@openremote/model";
 import manager, {AssetModelUtil, subscribe, Util, DefaultColor4} from "@openremote/core";
 import "@openremote/or-input";
@@ -106,21 +106,22 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             #wrapper-helper {
                 display: flex;
                 flex: 1;
+                flex-direction: column;
             }
             
-            #wrapper-helper > or-input {
+            #wrapper-input {
                 flex: 1;
-                margin-top: -15px;
+                margin-left: 16px;
             }
             
-            #wrapper-helper-inner {
-                margin-right: 20px;
+            #wrapper-input > or-input {
+                width: 100%;
             }
 
             /* Copy of mdc text field helper text styles */
             #helper-text {
+                margin-left: 16px;
                 min-width: 255px;
-                margin-top: 3px;
                 color: rgba(0, 0, 0, 0.6);
                 font-family: Roboto, sans-serif;
                 -webkit-font-smoothing: antialiased;
@@ -135,10 +136,15 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 top: 0;
                 right: 0;
                 bottom: 0;
-                background: transparent;
+                background: white;
+                opacity: 0.2;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+            }
+            
+            #scrim.hidden {
+                display: none;
             }
 
             #send-btn { 
@@ -305,17 +311,21 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     @property({type: Boolean})
     public disableSubscribe: boolean = false;
 
+    @property()
+    protected _attributeEvent?: AttributeEvent;
+
+    @property()
+    protected _writeTimeoutHandler?: number;
+
     @query("#input")
     protected _attrInput!: OrInput;
     @query("#send-btn")
     protected _sendButton!: OrInput;
-
-    @property()
-    protected _attributeEvent?: AttributeEvent;
+    @query("#scrim")
+    protected _scrimElem!: HTMLDivElement;
 
     public customProvider?: AttributeInputCustomProvider;
     public writeTimeout?: number = DEFAULT_TIMEOUT;
-
     protected _template?: (value: any) => TemplateResult;
     protected _attributeDescriptor?: AttributeDescriptor;
     protected _attributeValueDescriptor?: AttributeValueDescriptor;
@@ -331,9 +341,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     protected _showButton?: boolean;
     protected _valueFormat?: string;
     protected _sendError = false;
-
-    @property({attribute: false})
-    protected _writeTimeoutHandler?: number;
 
     public disconnectedCallback() {
         super.disconnectedCallback();
@@ -556,7 +563,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     public render() {
 
         // Check if attribute hasn't been loaded yet or pending write
-        const loading = (this.attributeRefs && !this._attributeEvent) || this._writeTimeoutHandler;
+        const loading = (this.attributeRefs && !this._attributeEvent) || !!this._writeTimeoutHandler;
         let content: TemplateResult | string | undefined = "";
 
         const value = this.getValue();
@@ -571,6 +578,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
             const helperText = this.getHelperText();
             const buttonIcon = this._writeTimeoutHandler ? "send-clock" : "send";
+            const supportsHelperText = this.inputTypeSupportsHelperText();
             let label = this._label;
 
             if (helperText && !this.inputTypeSupportsHelperText()) {
@@ -580,9 +588,9 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             content = html`<or-input id="input" .type="${this._inputType}" .label="${label}" .value="${value}" 
                 .allowedValues="${this._options}" .min="${this._min}" .max="${this._max}" .format="${this._valueFormat}"
                 .options="${this._options}" .readonly="${this._readonly}" .disabled="${this._disabled || loading}" 
-                .helperText="${helperText}" .helperPersistent="${true}"
+                .helperText="${supportsHelperText ? helperText : undefined}" .helperPersistent="${true}" disableSliderNumberInput="${this._readonly}"
                 @keyup="${(e: KeyboardEvent) => {
-                    if (e.code === "Enter" && this._inputType !== InputType.JSON && this._inputType !== InputType.TEXTAREA) {
+                    if ((e.code === "Enter" || e.code === "NumpadEnter") && this._inputType !== InputType.JSON && this._inputType !== InputType.TEXTAREA) {
                         this._updateValue(this._attrInput.value);
                     }
                 }}" @or-input-changed="${(e: OrInputChangedEvent) => {
@@ -592,15 +600,13 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                     }
                 }}"></or-input>`;
 
-            if (helperText && !this.inputTypeSupportsHelperText()) {
+            if (helperText && !supportsHelperText) {
                 // Manually provide helper text outside of or-input
                 content = html`
                     <div id="wrapper-helper">
-                        <div id="wrapper-helper-inner">
-                            <div>${this._label}</div>
-                            <div id="helper-text">${helperText}</div>
-                        </div>
-                        ${content}
+                        <div>${this._label}</div>
+                        <div id="wrapper-input">${content}</div>
+                        <div id="helper-text">${helperText}</div>
                     </div>
                 `;
             }
@@ -619,11 +625,17 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         return html`
             <div id="wrapper" class="${this._showButton || this.disableButton ? "no-padding" : "right-padding"}">
                 ${content}
-                ${loading 
-                    ? html`<div id="scrim"><progress class="pure-material-progress-circular"></progress></div>` 
-                    : ``}                
+                <div id="scrim" class="${ifDefined(loading ? undefined : "hidden")}"><progress class="pure-material-progress-circular"></progress></div>
             </div>
         `;
+    }
+
+    protected updated(_changedProperties: PropertyValues): void {
+        if (_changedProperties.has("_writeTimeoutHandler") && !this._writeTimeoutHandler) {
+            if (this._attrInput) {
+                this._attrInput.focus();
+            }
+        }
     }
 
     protected getValue(): any {
@@ -709,6 +721,10 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             return;
         }
 
+        if (this._writeTimeoutHandler) {
+            return;
+        }
+
         // If we have an attributeRef then send an update and wait for the updated attribute event to come back through
         // the system or for the attribute property to be updated by a parent control or timeout and reset the value
         const attributeRef = this._getAttributeRef();
@@ -733,8 +749,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     protected _clearWriteTimeout() {
         if (this._writeTimeoutHandler) {
             window.clearTimeout(this._writeTimeoutHandler);
-            this._writeTimeoutHandler = undefined;
         }
+        this._writeTimeoutHandler = undefined;
     }
 
     protected _onWriteTimeout() {

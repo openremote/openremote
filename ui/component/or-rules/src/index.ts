@@ -10,12 +10,10 @@ import manager, {
     DefaultColor6
 } from "@openremote/core";
 import i18next from "i18next";
-import "@openremote/or-select";
 import "@openremote/or-icon";
 import {
     AssetDescriptor,
     AssetQuery,
-    Attribute,
     AttributeDescriptor,
     AttributeValueDescriptor,
     JsonRule,

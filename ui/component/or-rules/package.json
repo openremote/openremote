@@ -19,7 +19,6 @@
     "@openremote/or-input": "^1.1.0",
     "@openremote/or-mwc-components": "^1.1.0",
     "@openremote/or-panel": "^1.1.0",
-    "@openremote/or-select": "^1.1.0",
     "@openremote/or-translate": "^1.1.0",
     "@openremote/rest": "^1.1.0",
     "ace-builds": "^1.4.7",

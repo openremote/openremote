@@ -309,9 +309,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         return html`
             <div id="container">
                 <div id="controls">
-                    <or-input  .type="${InputType.SELECT}" ?disabled="${disabled}" .label="${i18next.t("timeframe")}" @or-input-changed="${(evt: OrInputChangedEvent) => this.period = evt.detail.value}" .value="${this.period}" .options="${this._getPeriodOptions().map(item => item.value)}"></or-input>
+                    <or-input  .type="${InputType.SELECT}" ?disabled="${disabled}" .label="${i18next.t("timeframe")}" @or-input-changed="${(evt: OrInputChangedEvent) => this.period = evt.detail.value}" .value="${this.period}" .options="${this._getPeriodOptions()}"></or-input>
                     <div id="ending-controls">
-                        <or-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.fromTimestamp}" @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
+                        <or-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.fromTimestamp}" @or-input-changed="${(evt: OrInputChangedEvent) =>  this.fromTimestamp = this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
                         <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this.fromTimestamp = this._updateTimestamp(this.fromTimestamp!, false)}"></or-icon>
                         <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this.fromTimestamp = this._updateTimestamp(this.fromTimestamp!, true)}"></or-icon>
                         <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-double-right" @click="${() => this.fromTimestamp = this._updateTimestamp(new Date())}"></or-icon>
@@ -617,26 +617,11 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     }
     protected _getPeriodOptions() {
         return [
-            {
-                text: i18next.t(DatapointInterval.HOUR),
-                value: "hour"
-            },
-            {
-                text: i18next.t(DatapointInterval.DAY),
-                value: "day"
-            },
-            {
-                text: i18next.t(DatapointInterval.WEEK),
-                value: "week"
-            },
-            {
-                text: i18next.t(DatapointInterval.MONTH),
-                value: "month"
-            },
-            {
-                text: i18next.t(DatapointInterval.YEAR),
-                value: "year"
-            }
+            DatapointInterval.HOUR.toLowerCase(),
+            DatapointInterval.DAY.toLowerCase(),
+            DatapointInterval.WEEK.toLowerCase(),
+            DatapointInterval.MONTH.toLowerCase(),
+            DatapointInterval.YEAR.toLowerCase()
         ];
     }
 

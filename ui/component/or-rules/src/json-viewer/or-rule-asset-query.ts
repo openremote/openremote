@@ -24,7 +24,6 @@ import {
     getAssetTypeFromQuery,
     RulesConfig
 } from "../index";
-import {OrSelectChangedEvent} from "@openremote/or-select";
 import "@openremote/or-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import "@openremote/or-attribute-input";
@@ -152,7 +151,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             attributes = Util.getAssetAttributes(asset)
                 .filter((attr) => Util.hasMetaItem(attr, MetaItemType.RULE_STATE.urn!))
                 .map((attr) => {
-                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute);
+                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr);
                     const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
                     return [attr.name!, label];
                 });
@@ -160,7 +159,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             attributes = !assetDescriptor || !assetDescriptor.attributeDescriptors ? []
                 : assetDescriptor.attributeDescriptors
                     .map((ad) => {
-                        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attribute);
+                        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(undefined, ad);
                         const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
                         return [ad.attributeName!, label];
                     });
@@ -169,9 +168,9 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const operators = this.getOperators(assetDescriptor, attribute, attributeName);
 
         return html`
-            <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${attributes}" .value="${attributeName}" .label="${i18next.t("attribute")}"></or-input>
+            <or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${attributes}" .value="${attributeName}" .label="${i18next.t("attribute")}"></or-input>
             
-            ${attributeName ? html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrSelectChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${operators}" .value="${operator}" .label="${i18next.t("operator")}"></or-input>` : ``}
+            ${attributeName ? html`<or-input type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${operators}" .value="${operator}" .label="${i18next.t("operator")}"></or-input>` : ``}
             
             ${attributePredicate ? this.attributePredicateValueEditorTemplate(assetDescriptor, attributePredicate) : ``}
         `;

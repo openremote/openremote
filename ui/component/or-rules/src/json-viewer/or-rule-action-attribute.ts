@@ -116,7 +116,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         if (asset) {
             attributes = Util.getAssetAttributes(asset).filter((attr) => !Util.hasMetaItem(attr, MetaItemType.READ_ONLY.urn!))
                 .map((attr) => {
-                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute);
+                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr);
                     const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
                     return [attr.name!, label];
                 });
@@ -124,7 +124,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
             attributes = !assetDescriptor || !assetDescriptor.attributeDescriptors ? []
                 : assetDescriptor.attributeDescriptors.filter((ad) => !AssetModelUtil.hasMetaItem(ad, MetaItemType.READ_ONLY.urn!))
                     .map((ad) => {
-                        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attribute);
+                        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetType, ad);
                         const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
                         return [ad.attributeName!, label];
                     });

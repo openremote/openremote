@@ -68,13 +68,6 @@ export const style = css`
         flex-direction: row;
         text-transform: capitalize;
         padding-left: 15px;
-        
-        --or-select-text-color: var(--internal-or-asset-tree-header-text-color);
-        --or-select-option-text-color: var(--internal-or-asset-tree-header-menu-text-color);
-        --or-select-option-background-color: var(--internal-or-asset-tree-header-menu-background-color);            
-        --or-select-background-color: none;
-        --or-select-border-color: none;
-        --or-select-padding: 5px 20px 5px 5px;
     }
     
     #title {
