@@ -274,8 +274,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                                     throw new AssetProcessingException(INSUFFICIENT_ACCESS);
                                 }
 
-                                // Regular user must have write assets role
-                                if (!authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ASSETS.getValue(),
+                                // Regular user must have write attributes role
+                                if (!authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ATTRIBUTES.getValue(),
                                                                               Constants.KEYCLOAK_CLIENT_ID)) {
                                     throw new AssetProcessingException(INSUFFICIENT_ACCESS);
                                 }

@@ -45,6 +45,7 @@ public enum ClientRole {
     WRITE_ADMIN(Constants.WRITE_ADMIN_ROLE, "Write system settings, tenants, and users"),
     WRITE_LOGS(Constants.WRITE_LOGS_ROLE, "Write log settings"),
     WRITE_ASSETS(Constants.WRITE_ASSETS_ROLE, "Write asset data"),
+    WRITE_ATTRIBUTES(Constants.WRITE_ATTRIBUTES_ROLE, "Write attribute data"),
     WRITE_RULES(Constants.WRITE_RULES_ROLE, "Write rulesets (NOTE: effectively super-user access!)"),
 
     READ("read", "Read all data", new ClientRole[]{
@@ -62,6 +63,7 @@ public enum ClientRole {
         WRITE_ADMIN,
         WRITE_LOGS,
         WRITE_ASSETS,
+        WRITE_ATTRIBUTES,
         WRITE_RULES
     });
 

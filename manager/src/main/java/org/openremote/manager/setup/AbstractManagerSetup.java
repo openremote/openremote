@@ -528,30 +528,60 @@ public abstract class AbstractManagerSetup implements Setup {
         Asset peopleCounterAsset = new Asset(name, PEOPLE_COUNTER, area).addAttributes(
             new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
         );
-        peopleCounterAsset.getAttribute("peopleCountIn").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ));
-        peopleCounterAsset.getAttribute("peopleCountOut").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ));
-        peopleCounterAsset.getAttribute("peopleCountInMinute").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ));
-        peopleCounterAsset.getAttribute("peopleCountOutMinute").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ));
-        peopleCounterAsset.getAttribute("peopleCountTotal").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ));
-        peopleCounterAsset.getAttribute("peopleCountGrowth").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ));
+        peopleCounterAsset.getAttribute("peopleCountIn").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(
+                new MetaItem(RULE_STATE),
+                new MetaItem(STORE_DATA_POINTS)
+            );
+            if (agentLinker != null) {
+                assetAttribute.addMeta(agentLinker.get());
+            }
+        });
+        peopleCounterAsset.getAttribute("peopleCountOut").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(
+                new MetaItem(RULE_STATE),
+                new MetaItem(STORE_DATA_POINTS)
+            );
+            if (agentLinker != null) {
+                assetAttribute.addMeta(agentLinker.get());
+            }
+        });
+        peopleCounterAsset.getAttribute("peopleCountInMinute").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(
+                new MetaItem(RULE_STATE),
+                new MetaItem(STORE_DATA_POINTS)
+            );
+            if (agentLinker != null) {
+                assetAttribute.addMeta(agentLinker.get());
+            }
+        });
+        peopleCounterAsset.getAttribute("peopleCountOutMinute").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(
+                new MetaItem(RULE_STATE),
+                new MetaItem(STORE_DATA_POINTS)
+            );
+            if (agentLinker != null) {
+                assetAttribute.addMeta(agentLinker.get());
+            }
+        });
+        peopleCounterAsset.getAttribute("peopleCountTotal").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(
+                new MetaItem(RULE_STATE),
+                new MetaItem(STORE_DATA_POINTS)
+            );
+            if (agentLinker != null) {
+                assetAttribute.addMeta(agentLinker.get());
+            }
+        });
+        peopleCounterAsset.getAttribute("peopleCountGrowth").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(
+                new MetaItem(RULE_STATE),
+                new MetaItem(STORE_DATA_POINTS)
+            );
+            if (agentLinker != null) {
+                assetAttribute.addMeta(agentLinker.get());
+            }
+        });
 
         return peopleCounterAsset;
     }
@@ -560,10 +590,16 @@ public abstract class AbstractManagerSetup implements Setup {
         Asset microphoneAsset = new Asset(name, MICROPHONE, area).addAttributes(
             new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
         );
-        microphoneAsset.getAttribute("microphoneLevel").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ));
+        microphoneAsset.getAttribute("microphoneLevel").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(
+                new MetaItem(RULE_STATE),
+                new MetaItem(STORE_DATA_POINTS)
+            );
+            if (agentLinker != null) {
+                assetAttribute.addMeta(agentLinker.get());
+            }
+        });
+
 
         return microphoneAsset;
     }
@@ -572,26 +608,51 @@ public abstract class AbstractManagerSetup implements Setup {
         Asset soundEventAsset = new Asset(name, SOUND_EVENT, area).addAttributes(
             new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
         );
-        soundEventAsset.getAttribute("lastAggressionEvent").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ));
-        soundEventAsset.getAttribute("lastGunshotEvent").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ));
-        soundEventAsset.getAttribute("lastBreakingGlassEvent").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ));
-        soundEventAsset.getAttribute("lastIntensityEvent").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ));
-        soundEventAsset.getAttribute("lastEvent").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ));
+        soundEventAsset.getAttribute("lastAggressionEvent").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(
+                new MetaItem(RULE_STATE),
+                new MetaItem(STORE_DATA_POINTS)
+            );
+            if (agentLinker != null) {
+                assetAttribute.addMeta(agentLinker.get());
+            }
+        });
+        soundEventAsset.getAttribute("lastGunshotEvent").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(
+                new MetaItem(RULE_STATE),
+                new MetaItem(STORE_DATA_POINTS)
+            );
+            if (agentLinker != null) {
+                assetAttribute.addMeta(agentLinker.get());
+            }
+        });
+        soundEventAsset.getAttribute("lastBreakingGlassEvent").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(
+                new MetaItem(RULE_STATE),
+                new MetaItem(STORE_DATA_POINTS)
+            );
+            if (agentLinker != null) {
+                assetAttribute.addMeta(agentLinker.get());
+            }
+        });
+        soundEventAsset.getAttribute("lastIntensityEvent").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(
+                new MetaItem(RULE_STATE),
+                new MetaItem(STORE_DATA_POINTS)
+            );
+            if (agentLinker != null) {
+                assetAttribute.addMeta(agentLinker.get());
+            }
+        });
+        soundEventAsset.getAttribute("lastEvent").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(
+                new MetaItem(RULE_STATE),
+                new MetaItem(STORE_DATA_POINTS)
+            );
+            if (agentLinker != null) {
+                assetAttribute.addMeta(agentLinker.get());
+            }
+        });
 
         return soundEventAsset;
     }

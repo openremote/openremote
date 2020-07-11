@@ -331,6 +331,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }
         ];
         const selectedAssetTypeOption = getAssetTypeOption(this._selectedAssetTypeOption)
+        const hasAssetWriteRole = manager.hasRole("write:assets");
         return html`
             <div id="header">
                 <div id="title-container">
@@ -339,8 +340,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
                 <div id="header-btns">                
                     <or-input style="display: none;" ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-input>
-                    <or-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-input>
-                    <or-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked()}"></or-input>
+                    <or-input ?hidden="${this._isReadonly() || !hasAssetWriteRole || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-input>
+                    <or-input ?hidden="${this._isReadonly() || !hasAssetWriteRole || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked()}"></or-input>
                     <or-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-input>
                     
                     ${getContentWithMenuTemplate(

@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.setup.builtin;
 
+import org.cyclopsgroup.jcli.spi.Cli;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.openremote.container.Container;
 import org.openremote.container.util.UniqueIdentifierGenerator;
@@ -29,6 +30,7 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
 
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
@@ -72,8 +74,14 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         tenantBuilding = createTenant("building", "Building");
         tenantCity = createTenant("smartcity", "Smart City");
 
+        // Don't allow demo users to write assets
+        ClientRole[] demoUserRoles = Arrays.stream(REGULAR_USER_ROLES)
+            .filter(clientRole -> clientRole != ClientRole.WRITE_ASSETS)
+            .toArray(ClientRole[]::new);
+
+
         // Users
-        User testuser1 = createUser(MASTER_REALM, "testuser1", "testuser1", "DemoMaster", "DemoLast", null, true, REGULAR_USER_ROLES);
+        User testuser1 = createUser(MASTER_REALM, "testuser1", "testuser1", "DemoMaster", "DemoLast", null, true, container.isDevMode() ? REGULAR_USER_ROLES : demoUserRoles);
         this.testuser1Id = testuser1.getId();
         keycloakProvider.updateRoles(MASTER_REALM, testuser1Id, "account"); // Remove all roles for account client
         User testuser2 = createUser(tenantBuilding.getRealm(), "testuser2", "testuser2", "DemoA2", "DemoLast", "testuser2@openremote.local", true, new ClientRole[] {
@@ -83,32 +91,34 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         });
         this.testuser2Id = testuser2.getId();
         keycloakProvider.updateRoles(tenantBuilding.getRealm(), testuser2Id, "account"); // Remove all roles for account client
-        User testuser3 = createUser(tenantBuilding.getRealm(), "testuser3", "testuser3", "DemoA3", "DemoLast", "testuser3@openremote.local", true, REGULAR_USER_ROLES);
+        User testuser3 = createUser(tenantBuilding.getRealm(), "testuser3", "testuser3", "DemoA3", "DemoLast", "testuser3@openremote.local", true, container.isDevMode() ? REGULAR_USER_ROLES : demoUserRoles);
         this.testuser3Id = testuser3.getId();
         keycloakProvider.updateRoles(tenantBuilding.getRealm(), testuser3Id, "account"); // Remove all roles for account client
-        User buildingUser = createUser(tenantBuilding.getRealm(), "building", "building", "Building", "User", "building@openremote.local", true, REGULAR_USER_ROLES);
+        User buildingUser = createUser(tenantBuilding.getRealm(), "building", "building", "Building", "User", "building@openremote.local", true, demoUserRoles);
         this.buildingUserId = buildingUser.getId();
         keycloakProvider.updateRoles(tenantBuilding.getRealm(), buildingUserId, "account"); // Remove all roles for account client
-        User smartCityUser = createUser(tenantCity.getRealm(), "smartcity", "smartcity", "Smart", "City", null, true, REGULAR_USER_ROLES);
+        User smartCityUser = createUser(tenantCity.getRealm(), "smartcity", "smartcity", "Smart", "City", null, true, demoUserRoles);
         this.smartCityUserId = smartCityUser.getId();
         keycloakProvider.updateRoles(tenantCity.getRealm(), smartCityUserId, "account"); // Remove all roles for account client
 
-        /*
-         * MQTT Client
-         */
-        ClientRepresentation mqttClient = new ClientRepresentation();
-        String buildingMqttClientId = MqttBrokerService.MQTT_CLIENT_ID_PREFIX + UniqueIdentifierGenerator.generateId(tenantBuilding.getRealm());
-        mqttClient.setClientId(buildingMqttClientId);
-        mqttClient.setName("MQTT");
-        mqttClient.setStandardFlowEnabled(false);
-        mqttClient.setImplicitFlowEnabled(false);
-        mqttClient.setDirectAccessGrantsEnabled(false);
-        mqttClient.setServiceAccountsEnabled(true);
-        mqttClient.setSecret(UniqueIdentifierGenerator.generateId(tenantBuilding.getRealm()));
-        mqttClient = keycloakProvider.createClient(tenantBuilding.getRealm(), mqttClient);
+        if (container.isDevMode()) {
+            /*
+             * MQTT Client
+             */
+            ClientRepresentation mqttClient = new ClientRepresentation();
+            String buildingMqttClientId = MqttBrokerService.MQTT_CLIENT_ID_PREFIX + UniqueIdentifierGenerator.generateId(tenantBuilding.getRealm());
+            mqttClient.setClientId(buildingMqttClientId);
+            mqttClient.setName("MQTT");
+            mqttClient.setStandardFlowEnabled(false);
+            mqttClient.setImplicitFlowEnabled(false);
+            mqttClient.setDirectAccessGrantsEnabled(false);
+            mqttClient.setServiceAccountsEnabled(true);
+            mqttClient.setSecret(UniqueIdentifierGenerator.generateId(tenantBuilding.getRealm()));
+            mqttClient = keycloakProvider.createClient(tenantBuilding.getRealm(), mqttClient);
 
-        // Add asset RW roles to service user
-        User serviceUser = keycloakProvider.getClientServiceUser(tenantBuilding.getRealm(), mqttClient.getClientId());
-        keycloakProvider.updateRoles(tenantBuilding.getRealm(), serviceUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ_ASSETS.getValue(), ClientRole.WRITE_ASSETS.getValue());
+            // Add asset RW roles to service user
+            User serviceUser = keycloakProvider.getClientServiceUser(tenantBuilding.getRealm(), mqttClient.getClientId());
+            keycloakProvider.updateRoles(tenantBuilding.getRealm(), serviceUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ_ASSETS.getValue(), ClientRole.WRITE_ASSETS.getValue(), ClientRole.WRITE_ATTRIBUTES.getValue());
+        }
     }
 }

@@ -36,6 +36,7 @@ public interface Constants {
     String WRITE_ADMIN_ROLE = "write:admin";
     String WRITE_LOGS_ROLE = "write:logs";
     String WRITE_ASSETS_ROLE = "write:assets";
+    String WRITE_ATTRIBUTES_ROLE = "write:attributes";
     String WRITE_RULES_ROLE = "write:rules";
     String AUTH_CONTEXT = "AUTH_CONTEXT";
     int ACCESS_TOKEN_LIFESPAN_SECONDS = 60; // 1 minute
