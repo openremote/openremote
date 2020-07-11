@@ -48,6 +48,8 @@ import java.util.function.Supplier;
 import static org.openremote.agent.protocol.macro.MacroProtocol.META_MACRO_ACTION_INDEX;
 import static org.openremote.agent.protocol.timer.TimerConfiguration.initTimerConfiguration;
 import static org.openremote.agent.protocol.timer.TimerProtocol.META_TIMER_VALUE_LINK;
+import static org.openremote.model.Constants.UNITS_DENSITY_MICROGRAMS_CUBIC_M;
+import static org.openremote.model.Constants.UNITS_TEMPERATURE_CELSIUS;
 import static org.openremote.model.attribute.MetaItemType.*;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
@@ -224,7 +226,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
-                    new MetaItem(UNIT_TYPE, Values.create("CELSIUS")),
+                    new MetaItem(UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_CELSIUS)),
                     new MetaItem(FORMAT, Values.create("%0.1f° C")),
                     new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
@@ -242,7 +244,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
-                    new MetaItem(UNIT_TYPE, Values.create("CELSIUS")),
+                    new MetaItem(UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_CELSIUS)),
                     new MetaItem(FORMAT, Values.create("%0f° C")),
                     new MetaItem(STORE_DATA_POINTS)
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
@@ -523,265 +525,160 @@ public abstract class AbstractManagerSetup implements Setup {
     }
 
     protected Asset createDemoPeopleCounterAsset(String name, Asset area, GeoJSON location, Supplier<MetaItem[]> agentLinker) {
-        Asset peopleCounterAsset = new Asset(name, PEOPLE_COUNTER, area);
-        peopleCounterAsset.setAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD),
-            new AssetAttribute("peopleCountIn", NUMBER)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("People Count In")),
-                    new MetaItem(DESCRIPTION, Values.create("Cumulative number of people going into area")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ).addMeta(agentLinker.get()),
-            new AssetAttribute("peopleCountOut", NUMBER)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("People Count Out")),
-                    new MetaItem(DESCRIPTION, Values.create("Cumulative number of people leaving area")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ).addMeta(agentLinker.get()),
-            new AssetAttribute("peopleCountInMinute", NUMBER)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("People Count In Minute")),
-                    new MetaItem(DESCRIPTION, Values.create("Number of people going into area per minute")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ).addMeta(agentLinker.get()),
-            new AssetAttribute("peopleCountOutMinute", NUMBER)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("People Count Out Minute")),
-                    new MetaItem(DESCRIPTION, Values.create("Number of people leaving area per minute")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ).addMeta(agentLinker.get()),
-            new AssetAttribute("peopleCountTotal", NUMBER)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("People Count Total")),
-                    new MetaItem(DESCRIPTION, Values.create("cameraCountIn - cameraCountOut")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ),
-            new AssetAttribute("peopleCountGrowth", NUMBER)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("People Count Growth")),
-                    new MetaItem(DESCRIPTION, Values.create("cameraCountIn - cameraCountOut")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                )
+        Asset peopleCounterAsset = new Asset(name, PEOPLE_COUNTER, area).addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
         );
+        peopleCounterAsset.getAttribute("peopleCountIn").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        peopleCounterAsset.getAttribute("peopleCountOut").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        peopleCounterAsset.getAttribute("peopleCountInMinute").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        peopleCounterAsset.getAttribute("peopleCountOutMinute").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        peopleCounterAsset.getAttribute("peopleCountTotal").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        peopleCounterAsset.getAttribute("peopleCountGrowth").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
 
         return peopleCounterAsset;
     }
 
     protected Asset createDemoMicrophoneAsset(String name, Asset area, GeoJSON location, Supplier<MetaItem[]> agentLinker) {
-        Asset microphoneAsset = new Asset(name, MICROPHONE, area);
-        microphoneAsset.setAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD),
-            new AssetAttribute("microphoneLevel", SOUND)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Microphone Level")),
-                    new MetaItem(DESCRIPTION, Values.create("dB")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ).addMeta(agentLinker.get())
+        Asset microphoneAsset = new Asset(name, MICROPHONE, area).addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
         );
+        microphoneAsset.getAttribute("microphoneLevel").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+
         return microphoneAsset;
     }
 
     protected Asset createDemoSoundEventAsset(String name, Asset area, GeoJSON location, Supplier<MetaItem[]> agentLinker) {
-        Asset soundEventAsset = new Asset(name, SOUND_EVENT, area);
-        soundEventAsset.setAttributes(
-            new AssetAttribute("lastAgression", OBJECT)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Last Aggression event")),
-                    new MetaItem(DESCRIPTION, Values.create("Input from microphone")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ),
-            new AssetAttribute("lastGunshot", OBJECT)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Last Gunshot event")),
-                    new MetaItem(DESCRIPTION, Values.create("Input from microphone")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ).addMeta(agentLinker.get()),
-            new AssetAttribute("lastBreakingGlass", OBJECT)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Last Breaking Glass event")),
-                    new MetaItem(DESCRIPTION, Values.create("Input from microphone")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ).addMeta(agentLinker.get()),
-            new AssetAttribute("lastIntensity", OBJECT)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Last Intensity event")),
-                    new MetaItem(DESCRIPTION, Values.create("Input from microphone")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ).addMeta(agentLinker.get()),
-            new AssetAttribute("lastEvent", OBJECT)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Last event")),
-                    new MetaItem(DESCRIPTION, Values.create("Input from microphone")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                )
+        Asset soundEventAsset = new Asset(name, SOUND_EVENT, area).addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
         );
+        soundEventAsset.getAttribute("lastAggressionEvent").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        soundEventAsset.getAttribute("lastGunshotEvent").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        soundEventAsset.getAttribute("lastBreakingGlassEvent").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        soundEventAsset.getAttribute("lastIntensityEvent").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        soundEventAsset.getAttribute("lastEvent").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+
         return soundEventAsset;
     }
 
     protected Asset createDemoEnvironmentAsset(String name, Asset area, GeoJSON location, Supplier<MetaItem[]> agentLinker) {
-        Asset environmentAsset = new Asset(name, ENVIRONMENT_SENSOR, area);
-        environmentAsset.setAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD),
-            new AssetAttribute("temperature", TEMPERATURE)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Temperature Level")),
-                    new MetaItem(DESCRIPTION, Values.create("oC")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(UNIT_TYPE, Values.create("CELSIUS")),
-                    new MetaItem(STORE_DATA_POINTS)
-                ).addMeta(agentLinker.get()),
-            new AssetAttribute("nO2", NUMBER)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Nitrogen Level")),
-                    new MetaItem(DESCRIPTION, Values.create("µg/m3")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ).addMeta(agentLinker.get()),
-            new AssetAttribute("relHumidity", PERCENTAGE)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Humidity")),
-                    new MetaItem(DESCRIPTION, Values.create("Humidity in area")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ).addMeta(agentLinker.get()),
-            new AssetAttribute("ozone", NUMBER)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Ozone Level")),
-                    new MetaItem(DESCRIPTION, Values.create("µg/m3")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ).addMeta(agentLinker.get()),
-            new AssetAttribute("particlesPM1", NUMBER)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Particles PM 1")),
-                    new MetaItem(DESCRIPTION, Values.create("Particles PM 1")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ).addMeta(agentLinker.get()),
-            new AssetAttribute("particlesPM2_5", NUMBER)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Particles PM 2.5")),
-                    new MetaItem(DESCRIPTION, Values.create("Particles PM 2.5")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ).addMeta(agentLinker.get()),
-            new AssetAttribute("particlesPM10", NUMBER)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Particles PM 10")),
-                    new MetaItem(DESCRIPTION, Values.create("Particles PM 10")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ).addMeta(agentLinker.get())
+        Asset environmentAsset = new Asset(name, ENVIRONMENT_SENSOR, area).addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
         );
+        environmentAsset.getAttribute("temperature").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ).addMeta(agentLinker.get()));
+        environmentAsset.getAttribute("nO2").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ).addMeta(agentLinker.get()));
+        environmentAsset.getAttribute("relHumidity").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ).addMeta(agentLinker.get()));
+        environmentAsset.getAttribute("ozone").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ).addMeta(agentLinker.get()));
+        environmentAsset.getAttribute("particlesPM1").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ).addMeta(agentLinker.get()));
+        environmentAsset.getAttribute("particlesPM2_5").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ).addMeta(agentLinker.get()));
+        environmentAsset.getAttribute("particlesPM10").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ).addMeta(agentLinker.get()));
 
         return environmentAsset;
     }
 
     protected Asset createDemoLightAsset(String name, Asset area, GeoJSON location) {
-        Asset lightAsset = new Asset(name, LIGHT, area);
-        lightAsset.setAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD),
-            new AssetAttribute("lightStatus", BOOLEAN)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Light Status")),
-                    new MetaItem(DESCRIPTION, Values.create("On or off")),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ),
-            new AssetAttribute("lightDimLevel", PERCENTAGE)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Light Dim Level")),
-                    new MetaItem(DESCRIPTION, Values.create("The level of dimming of the light")),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ),
-            new AssetAttribute("colorRGBW", OBJECT)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Color RGBW")),
-                    new MetaItem(DESCRIPTION, Values.create("The RGBW color of the light")),
-                    new MetaItem(RULE_STATE),
-                    new MetaItem(STORE_DATA_POINTS)
-                ),
-            new AssetAttribute("groupNumber", NUMBER)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Group number")),
-                    new MetaItem(DESCRIPTION, Values.create("Which group this lights belongs to")),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ),
-            new AssetAttribute("scenario", STRING)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Scenario")),
-                    new MetaItem(DESCRIPTION, Values.create("The scenario this light is setup to"))
-                )
+        Asset lightAsset = new Asset(name, LIGHT, area).addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, location.toValue())
+                .addMeta(SHOW_ON_DASHBOARD)
         );
+        lightAsset.getAttribute("lightStatus").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        lightAsset.getAttribute("lightDimLevel").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        lightAsset.getAttribute("colorRGBW").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        lightAsset.getAttribute("groupNumber").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        lightAsset.getAttribute("scenario").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE)
+        ));
 
         return lightAsset;
     }
 
     protected Asset createDemoLightControllerAsset(String name, Asset area, GeoJSON location) {
-        Asset lightAsset = new Asset(name, LIGHT_CONTROLLER, area);
-        lightAsset.setAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()),
-            new AssetAttribute("lightAllStatus", BOOLEAN)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Light Status")),
-                    new MetaItem(DESCRIPTION, Values.create("On or off")),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ),
-            new AssetAttribute("lightAllDimLevel", PERCENTAGE)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Light Dim Level")),
-                    new MetaItem(DESCRIPTION, Values.create("The level of dimming of all the lights")),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ),
-            new AssetAttribute("colorAllRGBW", OBJECT)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Color RGBW")),
-                    new MetaItem(DESCRIPTION, Values.create("The RGBW color of all the lights")),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS)
-                ),
-            new AssetAttribute("scenario", STRING)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Scenario")),
-                    new MetaItem(DESCRIPTION, Values.create("The scenario the lights are setup to")),
-                    new MetaItem(RULE_STATE, Values.create(true))
-                )
+        Asset lightAsset = new Asset(name, LIGHT_CONTROLLER, area).addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, location.toValue())
         );
+        lightAsset.getAttribute("lightAllStatus").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        lightAsset.getAttribute("lightAllDimLevel").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        lightAsset.getAttribute("colorAllRGBW").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE),
+            new MetaItem(STORE_DATA_POINTS)
+        ));
+        lightAsset.getAttribute("scenario").ifPresent(assetAttribute -> assetAttribute.addMeta(
+            new MetaItem(RULE_STATE)
+        ));
 
         return lightAsset;
     }

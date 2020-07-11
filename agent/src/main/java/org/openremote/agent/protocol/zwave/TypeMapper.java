@@ -26,12 +26,11 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaItemType;
 import org.openremote.protocol.zwave.model.commandclasses.channel.ChannelType;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
+
+import static org.openremote.model.Constants.UNITS_TEMPERATURE_CELSIUS;
+import static org.openremote.model.Constants.UNITS_TEMPERATURE_FAHRENHEIT;
 
 public class TypeMapper {
 
@@ -53,8 +52,8 @@ public class TypeMapper {
 
         // COMMAND_CLASS_SENSOR_MULTILEVEL
 
-        typeMap.put(ChannelType.TEMPERATURE_CELSIUS, AttributeValueType.TEMPERATURE);
-        typeMap.put(ChannelType.TEMPERATURE_FAHRENHEIT, AttributeValueType.TEMPERATURE);
+        typeMap.put(ChannelType.TEMPERATURE_CELSIUS, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS));
+        typeMap.put(ChannelType.TEMPERATURE_FAHRENHEIT, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_FAHRENHEIT));
         typeMap.put(ChannelType.PERCENTAGE, AttributeValueType.PERCENTAGE);
         typeMap.put(ChannelType.LUMINANCE_PERCENTAGE, AttributeValueType.PERCENTAGE);
         typeMap.put(ChannelType.LUMINANCE_LUX, AttributeValueType.BRIGHTNESS);
@@ -68,8 +67,8 @@ public class TypeMapper {
         typeMap.put(ChannelType.PRESSURE_KPA, AttributeValueType.NUMBER);
         typeMap.put(ChannelType.PRESSURE_IN_HG, AttributeValueType.NUMBER);
         typeMap.put(ChannelType.SOLAR_RADIATION_WATT_M2, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.DEW_POINT_CELSIUS, AttributeValueType.TEMPERATURE);
-        typeMap.put(ChannelType.DEW_POINT_FAHRENHEIT, AttributeValueType.TEMPERATURE);
+        typeMap.put(ChannelType.DEW_POINT_CELSIUS, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS));
+        typeMap.put(ChannelType.DEW_POINT_FAHRENHEIT, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_FAHRENHEIT));
         typeMap.put(ChannelType.RAINFALL_MMPH, AttributeValueType.RAINFALL);
         typeMap.put(ChannelType.RAINFALL_INPH, AttributeValueType.NUMBER);
         typeMap.put(ChannelType.TIDE_LEVEL_M, AttributeValueType.DISTANCE);
@@ -94,10 +93,10 @@ public class TypeMapper {
         typeMap.put(ChannelType.ANGLE_POSITION_DEGREE_SOUTH_POLE, AttributeValueType.DIRECTION);
         typeMap.put(ChannelType.ROTATION_HZ, AttributeValueType.NUMBER);
         typeMap.put(ChannelType.ROTATION_RPM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.WATER_TEMPERATURE_CELSIUS, AttributeValueType.TEMPERATURE);
-        typeMap.put(ChannelType.WATER_TEMPERATURE_FAHRENHEIT, AttributeValueType.TEMPERATURE);
-        typeMap.put(ChannelType.SOIL_TEMPERATURE_CELSIUS, AttributeValueType.TEMPERATURE);
-        typeMap.put(ChannelType.SOIL_TEMPERATURE_FAHRENHEIT, AttributeValueType.TEMPERATURE);
+        typeMap.put(ChannelType.WATER_TEMPERATURE_CELSIUS, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS));
+        typeMap.put(ChannelType.WATER_TEMPERATURE_FAHRENHEIT, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_FAHRENHEIT));
+        typeMap.put(ChannelType.SOIL_TEMPERATURE_CELSIUS, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS));
+        typeMap.put(ChannelType.SOIL_TEMPERATURE_FAHRENHEIT, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_FAHRENHEIT));
         typeMap.put(ChannelType.SEISMIC_INTENSITY_MERCALLI, AttributeValueType.NUMBER);
         typeMap.put(ChannelType.SEISMIC_INTENSITY_EU_MACROSEISMIC, AttributeValueType.NUMBER);
         typeMap.put(ChannelType.SEISMIC_INTENSITY_LIEDU, AttributeValueType.NUMBER);
@@ -118,8 +117,8 @@ public class TypeMapper {
         typeMap.put(ChannelType.FREQUENCY_HZ, AttributeValueType.NUMBER);
         typeMap.put(ChannelType.FREQUENCY_KHZ, AttributeValueType.NUMBER);
         typeMap.put(ChannelType.TIME_SECONDS, AttributeValueType.TIMESTAMP);
-        typeMap.put(ChannelType.TARGET_TEMPERATUE_CELSIUS, AttributeValueType.TEMPERATURE);
-        typeMap.put(ChannelType.TARGET_TEMPERATUE_FAHRENHEIT, AttributeValueType.TEMPERATURE);
+        typeMap.put(ChannelType.TARGET_TEMPERATUE_CELSIUS, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS));
+        typeMap.put(ChannelType.TARGET_TEMPERATUE_FAHRENHEIT, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_FAHRENHEIT));
         typeMap.put(ChannelType.PARTICULATE_MATTER_2_5_MOLPCM, AttributeValueType.NUMBER);
         typeMap.put(ChannelType.PARTICULATE_MATTER_2_5_MCGPCM, AttributeValueType.NUMBER);
         typeMap.put(ChannelType.FORMALDEHYDE_LEVEL_MOLPCM, AttributeValueType.NUMBER);
@@ -226,7 +225,7 @@ public class TypeMapper {
             ChannelType.TEMPERATURE_CELSIUS,
             Arrays.asList(
                 new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_TEMPERATURE_CELCIUS)),
+                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_CELSIUS)),
                     new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f C"))
                 }
             )
@@ -275,7 +274,7 @@ public class TypeMapper {
             ChannelType.SPEED_MS,
             Arrays.asList(
                 new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_SPEED_MPS)),
+                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_SPEED_METRES_SECOND)),
                     new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.3f m/s"))
                 }
             )
@@ -293,7 +292,7 @@ public class TypeMapper {
             ChannelType.DIRECTION_DECIMAL_DEGREES,
             Arrays.asList(
                 new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_DIRECTION_DEGREES)),
+                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_ANGLE_DEGREES)),
                     new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f deg"))
                 }
             )
@@ -305,7 +304,7 @@ public class TypeMapper {
             ChannelType.DEW_POINT_CELSIUS,
             Arrays.asList(
                 new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_TEMPERATURE_CELCIUS)),
+                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_CELSIUS)),
                     new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f C"))
                 }
             )
@@ -314,7 +313,7 @@ public class TypeMapper {
             ChannelType.DEW_POINT_FAHRENHEIT,
             Arrays.asList(
                 new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("FAHRENHEIT")),
+                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_FAHRENHEIT)),
                     new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f F"))
                 }
             )
@@ -399,7 +398,7 @@ public class TypeMapper {
             ChannelType.ANGLE_POSITION_DEGREE_NORTH_POLE,
             Arrays.asList(
                 new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_DIRECTION_DEGREES)),
+                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_ANGLE_DEGREES)),
                     new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f deg"))
                 }
             )
@@ -408,7 +407,7 @@ public class TypeMapper {
             ChannelType.ANGLE_POSITION_DEGREE_SOUTH_POLE,
             Arrays.asList(
                 new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_DIRECTION_DEGREES)),
+                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_ANGLE_DEGREES)),
                     new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f deg"))
                 }
             )
@@ -419,7 +418,7 @@ public class TypeMapper {
             ChannelType.WATER_TEMPERATURE_CELSIUS,
             Arrays.asList(
                 new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_TEMPERATURE_CELCIUS)),
+                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_CELSIUS)),
                     new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f C"))
                 }
             )
@@ -428,7 +427,7 @@ public class TypeMapper {
             ChannelType.WATER_TEMPERATURE_FAHRENHEIT,
             Arrays.asList(
                 new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("FAHRENHEIT")),
+                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_FAHRENHEIT)),
                     new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f F"))
                 }
             )
@@ -437,7 +436,7 @@ public class TypeMapper {
             ChannelType.SOIL_TEMPERATURE_CELSIUS,
             Arrays.asList(
                 new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_TEMPERATURE_CELCIUS)),
+                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_CELSIUS)),
                     new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f C"))
                 }
             )
@@ -446,7 +445,7 @@ public class TypeMapper {
             ChannelType.SOIL_TEMPERATURE_FAHRENHEIT,
             Arrays.asList(
                 new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("FAHRENHEIT")),
+                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_FAHRENHEIT)),
                     new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f F"))
                 }
             )
@@ -499,7 +498,7 @@ public class TypeMapper {
             ChannelType.TARGET_TEMPERATUE_CELSIUS,
             Arrays.asList(
                 new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_TEMPERATURE_CELCIUS)),
+                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_CELSIUS)),
                     new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f C"))
                 }
             )
@@ -508,7 +507,7 @@ public class TypeMapper {
             ChannelType.TARGET_TEMPERATUE_FAHRENHEIT,
             Arrays.asList(
                 new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("FAHRENHEIT")),
+                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_FAHRENHEIT)),
                     new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f F"))
                 }
             )

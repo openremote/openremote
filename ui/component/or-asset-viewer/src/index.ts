@@ -201,13 +201,9 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
             };
 
             const options = historyAttrs.map((attr) => {
-                const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attr.name!);
-                let label = Util.getAttributeLabel(attr, attributeDescriptor);
-                const unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
-                if(unit) {
-                    label = label + " ("+i18next.t(unit)+")";
-                }
-                return [attr.name, label]
+                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr);
+                const label = Util.getAttributeLabel(attr, descriptors[0], descriptors[1], true);
+                return [attr.name, label];
             });
             const attrName: string = historyAttrs[0].name!;
             onRenderComplete.addCallback(() => attributeChanged(attrName));
@@ -282,7 +278,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
         if (attribute) {
             content = html`
                 <div class="field">
-                    <or-attribute-input .assetType="${asset.type}" .attribute="${attribute}"></or-attribute-input>
+                    <or-attribute-input .assetType="${asset.type}" .attribute="${attribute}" readonly disableButton></or-attribute-input>
                 </div>
             `;
         }

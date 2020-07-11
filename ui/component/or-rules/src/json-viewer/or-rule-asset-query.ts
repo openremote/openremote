@@ -152,13 +152,18 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             attributes = Util.getAssetAttributes(asset)
                 .filter((attr) => Util.hasMetaItem(attr, MetaItemType.RULE_STATE.urn!))
                 .map((attr) => {
-                    const attrDescriptor = AssetModelUtil.getAssetAttributeDescriptor(assetDescriptor, attr.name);
-                    return [attr.name!, Util.getAttributeLabel(attr, attrDescriptor)];
+                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute);
+                    const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
+                    return [attr.name!, label];
                 });
         } else {
             attributes = !assetDescriptor || !assetDescriptor.attributeDescriptors ? []
                 : assetDescriptor.attributeDescriptors
-                    .map((ad) => [ad.attributeName!, Util.getAttributeLabel(undefined, ad)]);
+                    .map((ad) => {
+                        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attribute);
+                        const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
+                        return [ad.attributeName!, label];
+                    });
         }
 
         const operators = this.getOperators(assetDescriptor, attribute, attributeName);

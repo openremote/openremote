@@ -484,7 +484,10 @@ export class OrAttributeCard extends LitElement {
         if (attributes && attributes.length > 0) {
             attributes = attributes
                 .filter((attr: AssetAttribute) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
-            const options = attributes.map((attr: AssetAttribute) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
+            const options = attributes.map((attr: AssetAttribute) => {
+                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.asset!.type, attr);
+                return [attr.name, Util.getAttributeLabel(attr, descriptors[0], descriptors[1], false)];
+            });
             return options;
         }
     }

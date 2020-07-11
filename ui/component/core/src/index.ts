@@ -13,7 +13,8 @@ import {
     AttributeValueDescriptor,
     MetaItemDescriptor,
     User,
-    Role
+    Role,
+    Attribute
 } from "@openremote/model";
 import * as Util from "./util";
 import orIconSet from "./or-icon-set";
@@ -287,6 +288,39 @@ export class AssetModelUtil {
                 return attributeDescriptor.valueDescriptor;
             }
         }
+    }
+
+    public static getAttributeAndValueDescriptors(assetType: string | undefined, attributeOrNameOrDescriptor: Attribute | string | AttributeDescriptor | undefined): [AttributeDescriptor | undefined, AttributeValueDescriptor | undefined] {
+        let attributeDescriptor: AttributeDescriptor | undefined;
+        let attributeValueDescriptor: AttributeValueDescriptor | undefined;
+        let attributeName: string | undefined;
+        let attributeTypeOrDescriptor: string | AttributeValueDescriptor | undefined;
+
+        if (typeof attributeOrNameOrDescriptor === "string") {
+            attributeName = attributeOrNameOrDescriptor;
+            attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attributeOrNameOrDescriptor, assetType);
+            attributeTypeOrDescriptor = attributeDescriptor ? attributeDescriptor.valueDescriptor : undefined;
+        } else if (attributeOrNameOrDescriptor) {
+            if ((attributeOrNameOrDescriptor as Attribute).type) {
+                attributeName = (attributeOrNameOrDescriptor as Attribute).name!;
+                attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attributeName, assetType);
+                attributeTypeOrDescriptor = (attributeOrNameOrDescriptor as Attribute).type;
+            } else {
+                attributeName = (attributeOrNameOrDescriptor as AttributeDescriptor).attributeName!;
+                attributeDescriptor = attributeOrNameOrDescriptor as AttributeDescriptor;
+                attributeTypeOrDescriptor = (attributeOrNameOrDescriptor as AttributeDescriptor).valueDescriptor;
+            }
+        }
+
+        if (attributeTypeOrDescriptor) {
+            if (typeof attributeTypeOrDescriptor === "string") {
+                attributeValueDescriptor = AssetModelUtil.getAttributeValueDescriptorFromAsset(attributeTypeOrDescriptor, assetType, attributeName);
+            } else {
+                attributeValueDescriptor = attributeTypeOrDescriptor;
+            }
+        }
+
+        return [attributeDescriptor, attributeValueDescriptor];
     }
 
     public static getMetaItemDescriptor(urn?: string): MetaItemDescriptor | undefined {

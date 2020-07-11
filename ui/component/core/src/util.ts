@@ -299,14 +299,28 @@ export function getMetaValue(metaItemUrn: string | MetaItemDescriptor, attribute
     }
 }
 
-export function getAttributeLabel(attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined, fallback?: string): string {
+export function getAttributeLabel(attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, showUnits: boolean, fallback?: string): string {
     if (!attribute && !descriptor) {
         return fallback || "";
     }
 
-    const labelMetaValue = getMetaValue(MetaItemType.LABEL, attribute, descriptor);
+    const label = getMetaValue(MetaItemType.LABEL, attribute, descriptor, valueDescriptor) as string;
+    let units = showUnits ? getMetaValue(MetaItemType.UNIT_TYPE, attribute, descriptor, valueDescriptor) as string : undefined;
+    units = units ? i18next.t(["units." + units, units]) : undefined;
     const name = attribute ? attribute.name : descriptor!.attributeName;
-    return i18next.t([name, fallback || labelMetaValue || name]);
+    const keys = [];
+    if (name) {
+        keys.push("attribute." + name);
+        keys.push(name);
+    }
+    if (label) {
+        keys.push(label);
+    }
+    if (fallback) {
+        keys.push(fallback);
+    }
+
+    return i18next.t(keys) + (units ? " (" + units + ")" : "");
 }
 
 export function getAttributeValueFormat(attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined): string | undefined {

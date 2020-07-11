@@ -112,13 +112,15 @@ const subscribeAssets = (): ThunkAction<void, MapStateKeyed, unknown, Action<str
                 asset => asset.id
             );
 
-            await manager.events.subscribeAssetEvents(ids, true, (event) => {
+            const assetSubscriptionId = await manager.events.subscribeAssetEvents(ids, true, (event) => {
                 dispatch(assetEventReceived(event));
             });
+            dispatch(setAssetSubscriptionId(assetSubscriptionId));
 
-            await manager.events.subscribeAttributeEvents(ids, false, (event) => {
+            const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(ids, false, (event) => {
                 dispatch(attributeEventReceived(event));
             });
+            dispatch(setAttributeSubscriptionId(attributeSubscriptionId));
         }
 
     } catch (e) {

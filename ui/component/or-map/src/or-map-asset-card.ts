@@ -159,13 +159,8 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                 <div id="attribute-list">
                     <ul>
                         ${attrs.map((attr) => {
-                             const attributeDescriptor: AttributeDescriptor | undefined = AssetModelUtil.getAttributeDescriptorFromAsset(attr.name!);
-                             let label = Util.getAttributeLabel(attr, attributeDescriptor);
-                             const unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
-                             
-                             if (unit) { 
-                                 label = label + " (" + i18next.t(unit) + ")";
-                             }
+                             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.asset!.type, attr);
+                             const label = Util.getAttributeLabel(attr, descriptors[0], descriptors[1], true);
                              return html`<li><span class="attribute-name">${label}</span><span class="attribute-value"><or-attribute-field .attribute="${attr}"></or-attribute-field></span></li>`; 
                         })}
                     </ul>

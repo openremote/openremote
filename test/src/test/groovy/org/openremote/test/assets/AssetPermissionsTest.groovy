@@ -3,6 +3,7 @@ package org.openremote.test.assets
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.Constants
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
@@ -660,7 +661,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         resultMeta.stream().filter(isMetaNameEqualTo(STORE_DATA_POINTS)).findFirst().get().getValueAsBoolean().get()
         resultMeta.stream().filter(isMetaNameEqualTo(SHOW_ON_DASHBOARD)).findFirst().get().getValueAsBoolean().get()
         resultMeta.stream().filter(isMetaNameEqualTo(FORMAT)).findFirst().get().getValueAsString().get() == "%0.1f° C"
-        resultMeta.stream().filter(isMetaNameEqualTo(UNIT_TYPE)).findFirst().get().getValueAsString().get() == "CELSIUS"
+        resultMeta.stream().filter(isMetaNameEqualTo(UNIT_TYPE)).findFirst().get().getValueAsString().get() == Constants.UNITS_TEMPERATURE_CELSIUS
 
         when: "an asset is retrieved by ID in a foreign realm"
         assetResource.get(null, managerDemoSetup.thingId)

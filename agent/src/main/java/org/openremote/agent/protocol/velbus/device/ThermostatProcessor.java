@@ -29,7 +29,7 @@ import org.openremote.model.value.Values;
 import java.util.*;
 
 import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
-import static org.openremote.model.Constants.UNITS_TEMPERATURE_CELCIUS;
+import static org.openremote.model.Constants.UNITS_TEMPERATURE_CELSIUS;
 import static org.openremote.model.Constants.UNITS_TIME_MINUTES;
 
 public class ThermostatProcessor extends FeatureProcessor {
@@ -153,15 +153,15 @@ public class ThermostatProcessor extends FeatureProcessor {
         new PropertyDescriptor("heatDayMins", "Heat Day (mins)", "TEMP_MODE_HEAT_DAY_MINS", AttributeValueType.DURATION.withUnitType(UNITS_TIME_MINUTES)),
         new PropertyDescriptor("heatNightMins", "Heat Night (mins)", "TEMP_MODE_HEAT_NIGHT_MINS", AttributeValueType.DURATION.withUnitType(UNITS_TIME_MINUTES)),
         new PropertyDescriptor("heatSafeMins", "Heat Safe (mins)", "TEMP_MODE_HEAT_SAFE_MINS", AttributeValueType.DURATION.withUnitType(UNITS_TIME_MINUTES)),
-        new PropertyDescriptor("tempTargetCurrent", "Temp Target Current", "TEMP_TARGET_CURRENT", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELCIUS)),
-        new PropertyDescriptor("tempTargetCoolComfort", "Temp Target Cool Comfort", "TEMP_TARGET_COOL_COMFORT", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELCIUS)),
-        new PropertyDescriptor("tempTargetCoolDay", "Temp Target Cool Day", "TEMP_TARGET_COOL_DAY", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELCIUS)),
-        new PropertyDescriptor("tempTargetCoolNight", "Temp Target Cool Night", "TEMP_TARGET_COOL_NIGHT", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELCIUS)),
-        new PropertyDescriptor("tempTargetCoolSafe", "Temp Target Cool Safe", "TEMP_TARGET_COOL_SAFE", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELCIUS)),
-        new PropertyDescriptor("tempTargetHeatComfort", "Temp Target Heat Comfort", "TEMP_TARGET_HEAT_COMFORT", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELCIUS)),
-        new PropertyDescriptor("tempTargetHeatDay", "Temp Target Heat Day", "TEMP_TARGET_HEAT_DAY", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELCIUS)),
-        new PropertyDescriptor("tempTargetHeatNight", "Temp Target Heat Night", "TEMP_TARGET_HEAT_NIGHT", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELCIUS)),
-        new PropertyDescriptor("tempTargetHeatSafe", "Temp Target Heat Safe", "TEMP_TARGET_HEAT_SAFE", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELCIUS))
+        new PropertyDescriptor("tempTargetCurrent", "Temp Target Current", "TEMP_TARGET_CURRENT", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS)),
+        new PropertyDescriptor("tempTargetCoolComfort", "Temp Target Cool Comfort", "TEMP_TARGET_COOL_COMFORT", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS)),
+        new PropertyDescriptor("tempTargetCoolDay", "Temp Target Cool Day", "TEMP_TARGET_COOL_DAY", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS)),
+        new PropertyDescriptor("tempTargetCoolNight", "Temp Target Cool Night", "TEMP_TARGET_COOL_NIGHT", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS)),
+        new PropertyDescriptor("tempTargetCoolSafe", "Temp Target Cool Safe", "TEMP_TARGET_COOL_SAFE", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS)),
+        new PropertyDescriptor("tempTargetHeatComfort", "Temp Target Heat Comfort", "TEMP_TARGET_HEAT_COMFORT", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS)),
+        new PropertyDescriptor("tempTargetHeatDay", "Temp Target Heat Day", "TEMP_TARGET_HEAT_DAY", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS)),
+        new PropertyDescriptor("tempTargetHeatNight", "Temp Target Heat Night", "TEMP_TARGET_HEAT_NIGHT", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS)),
+        new PropertyDescriptor("tempTargetHeatSafe", "Temp Target Heat Safe", "TEMP_TARGET_HEAT_SAFE", AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS))
     );
 
     @Override

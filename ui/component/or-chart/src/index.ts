@@ -498,11 +498,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                         ${this.assetAttributes && this.assetAttributes.map((attr, index) => {
 
                             const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attr.name!);
-                            let label = Util.getAttributeLabel(attr, attributeDescriptor);
-                            let unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
-                            if(unit) {
-                                 label = label + " ("+i18next.t(unit)+")";
-                            }
+                            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attr);
+                            const label = Util.getAttributeLabel(attr, descriptors[0], descriptors[1], true);
                             const bgColor = Util.getMetaValue('color', attr, undefined) ? Util.getMetaValue('color', attr, undefined) : "";
                             return html`
                                 <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(bgColor)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
@@ -856,7 +853,11 @@ export class OrChart extends translate(i18next)(LitElement) {
             attributes = attributes
                 .filter((attr: AssetAttribute) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
                 .filter((attr: AssetAttribute) => (this.assetAttributes && !this.assetAttributes.some(assetAttr => (assetAttr.name === attr.name) && (assetAttr.assetId === attr.assetId))));
-            const options = attributes.map((attr: AssetAttribute) => [attr.name, Util.getAttributeLabel(attr, undefined)]);
+            const options = attributes.map((attr: AssetAttribute) => {
+                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.activeAsset!.type, attr);
+                const label = Util.getAttributeLabel(attr, descriptors[0], descriptors[1], false);
+                return [attr.name, label];
+            });
             return options
         }
     }
@@ -912,9 +913,11 @@ export class OrChart extends translate(i18next)(LitElement) {
             const dataset = {...datasetBases[index],
                 data: valuepoints
             };
-            if(this.assets[index]) 
-                dataset['label'] = this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined);
-                    
+            if(this.assets[index]) {
+                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attribute);
+                const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
+                dataset["label"] = this.assets[index]!.name + " " + label;
+            }
             return dataset;
         });
 
@@ -923,15 +926,18 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._baseData = [...completed];
         }));
 
-        let predictedData = this.assetAttributes.map(async (attribute, index) => {
+        const predictedData = this.assetAttributes.map(async (attribute, index) => {
             const valuepoints = await this._loadPredictedAttributeData(attribute, this.timestamp);
             const dataset = {...datasetBases[index],
                 data: valuepoints,
                 borderDash: [2, 4]
             };
 
-            if(this.assets[index]) 
-                dataset['label'] = this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("predicted");
+            if(this.assets[index]) {
+                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attribute);
+                const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
+                dataset["label"] = this.assets[index]!.name + " " + label + " " + i18next.t("predicted");
+            }
             return dataset;
         });
         
@@ -945,8 +951,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                     borderDash: [10, 10]
                 };
 
-                if(this.assets[index]) 
-                    dataset['label'] = this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("compare");
+                if(this.assets[index]) {
+                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attribute);
+                    const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
+                    dataset["label"] = this.assets[index]!.name + " " + label + " " + i18next.t("compare");
+                }
 
                 return dataset;
             });
@@ -957,8 +966,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                     data: valuepoints,
                     borderDash: [2, 4]
                 };
-                if(this.assets[index]) 
-                    dataset['label'] = this.assets[index]!.name +" "+ Util.getAttributeLabel(attribute, undefined)+" "+i18next.t("compare")+" "+i18next.t("predicted")
+                if(this.assets[index]) {
+                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attribute);
+                    const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
+                    dataset["label"] = this.assets[index]!.name + " " + label + " " + i18next.t("compare") + " " + i18next.t("predicted");
+                }
                 return dataset;
             });
 

@@ -9,7 +9,8 @@ import {
     AttributeValueType,
     MetaItemType,
     ValueType,
-    SharedEvent
+    SharedEvent,
+    Attribute
 } from "@openremote/model";
 import manager, {AssetModelUtil, subscribe, Util, DefaultColor4} from "@openremote/core";
 import "@openremote/or-input";
@@ -432,19 +433,20 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         this._attributeValueDescriptor = undefined;
         this._attributeDescriptor = undefined;
 
-        if (this.attributeDescriptor) {
+        if (this.attributeDescriptor && this.attributeValueDescriptor) {
             this._attributeDescriptor = this.attributeDescriptor;
-        } else if (this.attribute || this.attributeRef) {
-            const attrName = this.attribute ? this.attribute.name! : this.attributeRef!.attributeName!;
-            this._attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attrName, this.assetType);
-        }
-
-        if (this.attribute) {
-            this._attributeValueDescriptor = AssetModelUtil.getAttributeValueDescriptorFromAsset(this.attribute ? this.attribute.type as string : undefined, this.assetType, this._attributeDescriptor ? this._attributeDescriptor!.attributeName : undefined);
-        } else if (this.attributeValueDescriptor) {
             this._attributeValueDescriptor = this.attributeValueDescriptor;
-        } else if (this._attributeDescriptor) {
-            this._attributeValueDescriptor = this._attributeDescriptor.valueDescriptor;
+        } else {
+            const attributeOrDescriptorOrName = this.attributeDescriptor || this.attribute ? this.attribute : this.attributeRef ? this.attributeRef.attributeName! : undefined;
+
+            if (!attributeOrDescriptorOrName) {
+                this._attributeDescriptor = this.attributeDescriptor;
+                this._attributeValueDescriptor = this.attributeValueDescriptor;
+            } else {
+                const attributeAndValueDescriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType, attributeOrDescriptorOrName);
+                this._attributeDescriptor = attributeAndValueDescriptors[0];
+                this._attributeValueDescriptor = this.attributeValueDescriptor ? this._attributeValueDescriptor : attributeAndValueDescriptors[1];
+            }
         }
 
         this._updateTemplate();
@@ -524,7 +526,12 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             this._max = Util.getMetaValue(MetaItemType.RANGE_MAX, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as number;
             this._unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as string;
             this._step = Util.getMetaValue(MetaItemType.STEP, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as number;
-            this._label = this.label !== undefined ? this.label :  Util.getAttributeLabel(this.attribute, this._attributeDescriptor) + (this._unit ? " (" + i18next.t(this._unit) + ")" : "");
+            if (this.label) {
+                this._label = this.label;
+            } else {
+                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType, this.attribute || this._attributeDescriptor);
+                this._label = Util.getAttributeLabel(this.attribute, descriptors[0], descriptors[1], true);
+            }
             this._readonly = this.readonly !== undefined ? this.readonly : Util.getMetaValue(MetaItemType.READ_ONLY, this.attribute, this._attributeDescriptor);
             this._disabled = this.disabled;
             this._options = Util.getMetaValue(MetaItemType.ALLOWED_VALUES, this.attribute, this._attributeDescriptor);

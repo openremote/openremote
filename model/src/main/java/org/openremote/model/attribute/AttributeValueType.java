@@ -29,10 +29,10 @@ import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static org.openremote.model.Constants.*;
 import static org.openremote.model.attribute.AttributeValueType.AttributeValueTypeFailureReason.ATTRIBUTE_TYPE_VALUE_DOES_NOT_MATCH;
 import static org.openremote.model.attribute.MetaItemType.*;
 
@@ -54,9 +54,9 @@ public enum AttributeValueType implements AttributeValueDescriptor {
 
     BOOLEAN("toggle-on", ValueType.BOOLEAN),
 
-    SWITCH_TOGGLE("toggle-on", ValueType.BOOLEAN),
+    SWITCH_TOGGLE("toggle-on", ValueType.BOOLEAN, UNIT_TYPE.withInitialValue(UNITS_ON_OFF)),
 
-    SWITCH_MOMENTARY("toggle-on", ValueType.BOOLEAN),
+    SWITCH_MOMENTARY("toggle-on", ValueType.BOOLEAN, UNIT_TYPE.withInitialValue(UNITS_PRESSED_RELEASED)),
 
     OBJECT("cube", ValueType.OBJECT),
 
@@ -69,6 +69,7 @@ public enum AttributeValueType implements AttributeValueDescriptor {
             RANGE_MIN.withInitialValue(Values.create(0)),
             RANGE_MAX.withInitialValue(Values.create(100)),
             STEP.withInitialValue(Values.create(1)),
+            UNIT_TYPE.withInitialValue(UNITS_PERCENTAGE),
             FORMAT.withInitialValue(Values.create("%3d %%"))
     ),
 
@@ -94,6 +95,12 @@ public enum AttributeValueType implements AttributeValueDescriptor {
         .map(array -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID_COLOR_FORMAT))
     ),
 
+    COLOR_RGBW("palette", ValueType.ARRAY, value -> Values.getArray(value)
+        .filter(array -> array.length() != 4)
+        .map(array -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID_COLOR_FORMAT)),
+        UNIT_TYPE.withInitialValue("")
+    ),
+
     COLOR_ARGB("palette", ValueType.ARRAY, value -> Values.getArray(value)
         .filter(array -> array.length() != 4)
         .map(array -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID_COLOR_FORMAT))
@@ -114,27 +121,27 @@ public enum AttributeValueType implements AttributeValueDescriptor {
     TEMPERATURE("temperature-high", ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(n -> n < -273.15)
         .map(n -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_TEMPERATURE_OUT_OF_RANGE)),
-        UNIT_TYPE.withInitialValue(Constants.UNITS_TEMPERATURE_CELCIUS),
+        UNIT_TYPE.withInitialValue(Constants.UNITS_TEMPERATURE_CELSIUS),
         FORMAT.withInitialValue(Values.create("%0.1f C")
         )
     ),
 
     CURRENCY("money", ValueType.NUMBER),
 
-    RAINFALL("water", ValueType.NUMBER),
+    RAINFALL("water", ValueType.NUMBER, UNIT_TYPE.withInitialValue(UNITS_DISTANCE_MILLIMETRES)),
 
     BRIGHTNESS("lightbulb", ValueType.NUMBER,
         STEP.withInitialValue(Values.create(1))),
 
-    DISTANCE("ruler", ValueType.NUMBER),
+    DISTANCE("ruler", ValueType.NUMBER, UNIT_TYPE.withInitialValue(UNITS_DISTANCE_METRES)),
 
-    SPEED("circle", ValueType.NUMBER),
+    SPEED("circle", ValueType.NUMBER, UNIT_TYPE.withInitialValue(UNITS_SPEED_METRES_SECOND)),
 
     CO2("leaf", ValueType.NUMBER),
 
     HUMIDITY("water", ValueType.NUMBER),
 
-    POWER("bolt", ValueType.NUMBER),
+    POWER("bolt", ValueType.NUMBER, UNIT_TYPE.withInitialValue(UNITS_POWER_KILOWATT)),
 
     CHARGE("battery-half", ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(number -> number < 0 || number > 100)
@@ -147,7 +154,7 @@ public enum AttributeValueType implements AttributeValueDescriptor {
 
     FLOW("dot-circle", ValueType.NUMBER),
 
-    DIRECTION("compass", ValueType.NUMBER),
+    DIRECTION("compass", ValueType.NUMBER, UNIT_TYPE.withInitialValue(UNITS_ANGLE_DEGREES)),
 
     GEO_JSON_POINT("map-marker-alt", ValueType.OBJECT),
 
@@ -165,7 +172,13 @@ public enum AttributeValueType implements AttributeValueDescriptor {
 
     EXECUTION_STATUS("play-circle", ValueType.STRING, new MetaItemDescriptorImpl(ALLOWED_VALUES, Values.createArray(Arrays.stream(AttributeExecuteStatus.values()).map(executeStatus -> Values.create(executeStatus.name())).toArray(Value[]::new)))),
 
-    CONNECTION_STATUS("lan-connect", ValueType.STRING, new MetaItemDescriptorImpl(ALLOWED_VALUES, Values.createArray(Arrays.stream(ConnectionStatus.values()).map(connectionStatus -> Values.create(connectionStatus.name())).toArray(Value[]::new))));
+    CONNECTION_STATUS("lan-connect", ValueType.STRING, new MetaItemDescriptorImpl(ALLOWED_VALUES, Values.createArray(Arrays.stream(ConnectionStatus.values()).map(connectionStatus -> Values.create(connectionStatus.name())).toArray(Value[]::new)))),
+
+    MASS("weight", ValueType.NUMBER, UNIT_TYPE.withInitialValue(UNITS_MASS_KILOGRAM)),
+
+    DENSITY("cube", ValueType.NUMBER, UNIT_TYPE.withInitialValue(UNITS_DENSITY_KILOGRAMS_CUBIC_M)),
+
+    RATE("guage", ValueType.NUMBER, UNIT_TYPE.withInitialValue(UNITS_COUNT_PER_SECOND));
 
     public enum AttributeValueTypeFailureReason implements ValidationFailure.Reason {
         ATTRIBUTE_TYPE_VALUE_DOES_NOT_MATCH
