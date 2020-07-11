@@ -588,7 +588,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             content = html`<or-input id="input" .type="${this._inputType}" .label="${label}" .value="${value}" 
                 .allowedValues="${this._options}" .min="${this._min}" .max="${this._max}" .format="${this._valueFormat}"
                 .options="${this._options}" .readonly="${this._readonly}" .disabled="${this._disabled || loading}" 
-                .helperText="${supportsHelperText ? helperText : undefined}" .helperPersistent="${true}" disableSliderNumberInput="${this._readonly}"
+                .helperText="${supportsHelperText ? helperText : undefined}" .helperPersistent="${true}" .disableSliderNumberInput="${this._readonly}"
                 @keyup="${(e: KeyboardEvent) => {
                     if ((e.code === "Enter" || e.code === "NumpadEnter") && this._inputType !== InputType.JSON && this._inputType !== InputType.TEXTAREA) {
                         this._updateValue(this._attrInput.value);
