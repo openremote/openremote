@@ -120,6 +120,7 @@ email failed build:
       when: on_failure
 
 test-master:
+  stage: test
   before_script:
     - docker run -v $(pwd):/or
       -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
@@ -216,7 +217,7 @@ deploy masterdemo on AWS:
       when: manual
 
 deploy demo on OVH:
-  stage: deploy
+  stage: test
   allow_failure: true
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
