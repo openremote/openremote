@@ -129,7 +129,7 @@ public abstract class BasicIdentityProvider implements IdentityProvider {
 
     @Override
     public void init(Container container) {
-        this.persistenceService = persistenceService;
+        this.persistenceService = container.getService(PersistenceService.class);
         // Add schema and scripts for the PUBLIC realm to replicate keycloak user tables
         this.persistenceService.getDefaultSchemaLocations().add(
             "classpath:org/openremote/container/persistence/schema/basicidentityprovider"
