@@ -108,50 +108,6 @@ build-master:
   retry:
     max: 2
 
-# This step is executed when build fails. The purpose is to e-mail a git commiter about the problem.
-email failed build:
-  stage: build_fail
-  before_script:
-    - export STAGE='docker images build'
-  <<: *email_definition
-  rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-build/
-      when: on_failure
-
-test-master:
-  stage: test
-  before_script:
-    - docker run -v $(pwd):/or
-      -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-      /bin/sh -c "docker-compose -f profile/dev-testing.yml pull"
-    - docker run -v $(pwd):/or
-      -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-      /bin/sh -c "docker-compose -f profile/dev-testing.yml up --no-build -d"
-  script:
-    - docker run --network host -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-      /bin/sh -c "./gradlew clean build installDist"
-  rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-test/
-      when: on_success
-  artifacts:
-    when: on_failure
-    paths:
-      - "test/build/reports/tests/test/*"
-      - "test/build/reports/tests/test/*/*"
-    expire_in: 2 weeks
-
-email failed tests:
-  stage: tests_fail
-  before_script:
-    - export STAGE='tests'
-  <<: *email_definition
-  rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-test/
-      when: on_failure
-
 .ssh_config: &ssh_config
 - mkdir -p ~/.ssh
 - chmod 600 "$GITLAB_SSH_PRIVATE_KEY"
@@ -160,6 +116,8 @@ email failed tests:
 - ssh-keyscan -H -p $DEPLOYMENT_PORT $DEPLOYMENT_HOST >> ~/.ssh/known_hosts
 - alias SSH="ssh -p $DEPLOYMENT_PORT ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}"
 - alias SCP="scp -p -r -P $DEPLOYMENT_PORT"
+
+# Templates
 
 .deploy_template: &deploy_definition
   stage: deploy
@@ -202,19 +160,39 @@ email failed tests:
     - postgresql_${CI_ENVIRONMENT_SLUG}.log
     expire_in: 1 week
 
-deploy masterdemo on AWS:
-  image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
-  stage: deploy
-  script:
-    - aws cloudformation create-stack --stack-name $AWS_STACK_NAME --template-body file://gitlab-ci/aws-cloudformation.template.yml
-  after_script:
-    - aws cloudformation wait stack-create-complete --stack-name $AWS_STACK_NAME
-    - aws cloudformation describe-stacks --stack-name $AWS_STACK_NAME
-  allow_failure: true # set when:manual optional and not blocking
+# This step is executed when build fails. The purpose is to e-mail a git commiter about the problem.
+email failed build:
+  stage: build_fail
+  before_script:
+    - export STAGE='docker images build'
+  <<: *email_definition
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
-      when: manual
+      if: $CI_COMMIT_MESSAGE !~ /skip-build/
+      when: on_failure
+
+test-master:
+  stage: test
+  before_script:
+    - docker run -v $(pwd):/or
+      -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      /bin/sh -c "docker-compose -f profile/dev-testing.yml pull"
+    - docker run -v $(pwd):/or
+      -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      /bin/sh -c "docker-compose -f profile/dev-testing.yml up --no-build -d"
+  script:
+    - docker run --network host -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      /bin/sh -c "./gradlew clean build installDist"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      if: $CI_COMMIT_MESSAGE !~ /skip-test/
+      when: on_success
+  artifacts:
+    when: on_failure
+    paths:
+      - "test/build/reports/tests/test/*"
+      - "test/build/reports/tests/test/*/*"
+    expire_in: 2 weeks
 
 deploy demo on OVH:
   stage: test
@@ -231,6 +209,30 @@ deploy demo on OVH:
     name: demo
     url: https://${PROJECT_NAME}.openremote.io
   <<: *deploy_definition
+
+email failed tests:
+  stage: tests_fail
+  before_script:
+    - export STAGE='tests'
+  <<: *email_definition
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      if: $CI_COMMIT_MESSAGE !~ /skip-test/
+      when: on_failure
+
+deploy masterdemo on AWS:
+  image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
+  stage: deploy
+  script:
+    - aws cloudformation create-stack --stack-name $AWS_STACK_NAME --template-body file://gitlab-ci/aws-cloudformation.template.yml
+  after_script:
+    - aws cloudformation wait stack-create-complete --stack-name $AWS_STACK_NAME
+    - aws cloudformation describe-stacks --stack-name $AWS_STACK_NAME
+  allow_failure: true # set when:manual optional and not blocking
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
+      when: manual
 
 auto delete aws cloudformation stack after 8 hours:
   image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
