@@ -120,7 +120,6 @@ build-master:
 # Templates
 
 .deploy_template: &deploy_definition
-  stage: deploy
   before_script:
     - *ssh_config
   script:
