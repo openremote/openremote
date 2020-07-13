@@ -1,9 +1,9 @@
 {
   "options": {
     "default": {
-      "center": [ 4.46176, 51.9200 ],
+      "center": [ 4.490445, 51.903955 ],
       "bounds": [ 3.911, 51.737, 4.784, 52.109 ],
-      "zoom": 14,
+      "zoom": 13.45,
       "maxZoom": 19,
       "boxZoom": false
     },
