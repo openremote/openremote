@@ -195,6 +195,9 @@ services:
                   -XX:NativeMemoryTracking=summary
                   -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof'
 
+    volumes:
+      - deployment-data:/deployment
+
     deploy:
       replicas: 1
       # Configure uninterrupted updates with rollback

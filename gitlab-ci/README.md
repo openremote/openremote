@@ -29,7 +29,31 @@ You can skip this stage by adding **skip-deploy** in the git commit message.
 
 # Deploing OpenRemote stack in the cloud
 
-## Deployment on AWS
+## Deployment on AWS through web UI
+
+- Sign in into [AWS web console](https://console.aws.amazon.com/console/home?nc2=h_ct&src=header-signin)
+- Select region to eu-west-1 (Ireland). Currently the cloudformation template supports only this region. *Other regions can be added when
+  necessary*.
+- Go to [EC2 KeyPairs](https://eu-west-1.console.aws.amazon.com/ec2/v2/home?region=eu-west-1#KeyPairs:)
+  + create or import key pair with name **openremote**  
+  if you create a new key pair don't forget to download it after creation
+- Go to [CloudFormation conslole](https://eu-west-1.console.aws.amazon.com/cloudformation/home?region=eu-west-1)
+  + The top right corner -> Create stack -> With new resources (standard)
+  + On the Create stack page select *Upload a template file*
+  + *Chose file* and select the openremote/gitlab-ci/aws-cloudformation.template.yml, press *Next*
+  + Enter *Stack name*, e.g. **openremote3**  
+  On *Parameters* check if KeyName has a correct value, default is **openremote** which we used for key generation, press *Next*
+  + On *Configure stack options* press *Next*
+  + On *Review* page you can check all parameters and press *Create stack*  
+  You should be on a page where the stack is in CREATE_IN_PROGRESS status.
+  In less than a mniute the stack should be in CREATE_COMPLETE state  
+  Press *Outputs* tab where you should find *The instance public IP*. Copy it to web browser. You will need to wait about 7 minutes before the
+  instance initializes itself with OpenRemote containers.
+
+- After you are done with the stack please for to the [Cloudformation](https://eu-west-1.console.aws.amazon.com/cloudformation/home) dashboard and
+delete it. **This will remove all resources and prevent from generating unnecessary costs**.
+
+## Deployment on AWS with CLI (advanced)
 
 We will use the [AWS CLI](https://aws.amazon.com/cli/) to create the necessary resources on AWS side.
 Following commands should be executed from openremote/gitlab-ci subdirectory.
