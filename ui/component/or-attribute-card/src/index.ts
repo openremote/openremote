@@ -55,7 +55,6 @@ const style = css`
         display: flex;
         align-items: center;
         margin: -15px -15px 0 0; /* compensate for the click-space of the plusminus button */
-        text-transform: uppercase;
         font-weight: bolder;
         line-height: 1em;
         color: var(--internal-or-asset-viewer-title-text-color);
@@ -64,6 +63,7 @@ const style = css`
     
     .panel-title-text {
         flex: 1;
+        text-transform: uppercase;
         white-space: nowrap;
         text-overflow: ellipsis;
         overflow: hidden;

@@ -170,8 +170,19 @@ const style = css`
         white-space: nowrap;
     }
     
-    .mdc-select {
+    .mdc-select:not(.mdc-list) {
         white-space: nowrap;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .mdc-select:not(.mdc-select--disabled).mdc-select--focused .mdc-floating-label {
+        color: var(--mdc-theme-primary);
+    }
+
+    .mdc-select-helper-text {
+        white-space: normal;
+        color: rgba(0, 0, 0, 0.6);
     }
 
     .mdc-icon-button {
@@ -526,8 +537,8 @@ export class OrInput extends LitElement {
                                 ${hasHelper ? html`
                                     <p id="component-helper-text" class="mdc-select-helper-text ${classMap(helperClasses)}" aria-hidden="true">
                                         ${showValidationMessage ? this.validationMessage : this.helperText}
-                        </div>
                                     </p>` : ``}
+                        </div>
                     `;
                 case InputType.BUTTON_TOGGLE:
                     return html`

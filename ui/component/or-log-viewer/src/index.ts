@@ -93,6 +93,7 @@ const style = css`
         margin-right: 40px;
     }
     
+/*  min-width of selects is 200px somehow
     #period-select {
         width: 90px;
     }
@@ -104,6 +105,7 @@ const style = css`
     #limit-select {
         width: 80px;
     }
+*/
     
     #log-controls, #ending-controls, #page-controls {
         display: flex;
@@ -298,8 +300,8 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                             true
                         )}
                         <or-input ?hidden="${hideFilter}" .type="${InputType.TEXT}" outlined ?disabled="${disabled}" icontrailing="magnify" .label="${i18next.t("subCategoryFilters")}" .value="${this.filter}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onFilterChanged(evt.detail.value)}"></or-input>
-                        <or-input ?hidden="${hideLevel}" .type="${InputType.SELECT}" id="level-select" outlined ?disabled="${disabled}" .label="${i18next.t("level")}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onLevelChanged(evt.detail.value)}" .value="${this.level}" .options="${this._getLevelOptions()}"></or-input>
-                        <or-input .type="${ InputType.SELECT}" id="limit-select" outlined ?disabled="${disabled}" .label="${i18next.t("limit")}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onLimitChanged(evt.detail.value)}" .value="${this.limit}" .options="${this._getLimitOptions()}"></or-input>
+                        <or-input ?hidden="${hideLevel}" .type="${InputType.SELECT}" id="level-select" ?disabled="${disabled}" .label="${i18next.t("level")}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onLevelChanged(evt.detail.value)}" .value="${this.level}" .options="${this._getLevelOptions()}"></or-input>
+                        <or-input .type="${ InputType.SELECT}" id="limit-select" ?disabled="${disabled}" .label="${i18next.t("limit")}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onLimitChanged(evt.detail.value)}" .value="${this.limit}" .options="${this._getLimitOptions()}"></or-input>
                     </div>
                     <div id="page-controls" ?hidden="${isLive || !this._pageCount || !this._data || this._data.length === 0}">
                         <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive || this._currentPage === 1}" icon="chevron-left" @click="${() => this._updatePage(false)}"></or-input>
@@ -308,10 +310,10 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                     </div>
                     <div id="time-controls">
                         <or-input id="live-button" .type="${InputType.CHECKBOX}" ?disabled="${disabled}" .label="${i18next.t("live")}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onLiveChanged(evt.detail.value)}" .value="${this.live}"></or-input>
-                        <or-input .type="${InputType.SELECT}" id="period-select" outlined ?disabled="${disabled || isLive}" .label="${i18next.t("period")}" @or-input-changed="${(evt: OrInputChangedEvent) => this.interval = evt.detail.value}" .value="${this.interval}" .options="${this._getIntervalOptions()}"></or-input>
+                        <or-input .type="${InputType.SELECT}" id="period-select" ?disabled="${disabled || isLive}" .label="${i18next.t("period")}" @or-input-changed="${(evt: OrInputChangedEvent) => this.interval = evt.detail.value}" .value="${this.interval}" .options="${this._getIntervalOptions()}"></or-input>
                         <div id="ending-controls">
                             <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-left" @click="${() => this.timestamp = this._calculateTimestamp(this.timestamp!, false)}"></or-input>
-                            <or-input id="ending-date" outlined .type="${InputType.DATETIME}" ?disabled="${disabled || isLive}" label="${i18next.t("ending")}" .value="${this.timestamp}" @or-input-changed="${(evt: OrInputChangedEvent) => this.timestamp = this._calculateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
+                            <or-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled || isLive}" label="${i18next.t("ending")}" .value="${this.timestamp}" @or-input-changed="${(evt: OrInputChangedEvent) => this.timestamp = this._calculateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
                             <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-right" @click="${() => this.timestamp = this._calculateTimestamp(this.timestamp!, true)}"></or-input>
                             <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-double-right" @click="${() => this.timestamp = this._calculateTimestamp(new Date())}"></or-input>
                         </div>

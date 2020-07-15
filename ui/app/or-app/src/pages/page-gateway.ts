@@ -33,28 +33,43 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
                 
                 --or-panel-heading-margin: 0 0 5px 10px;
                 --or-panel-background-color: var(--or-app-color1, ${unsafeCSS(DefaultColor1)});
-                --or-panel-heading-font-size: large; 
+                --or-panel-heading-font-size: 14px; 
+                --or-panel-padding: 14px;
             }            
             
-            @media only screen and (max-width: 1080px){
-                or-panel {
-                    margin: 0;
-                }
+            #wrapper {
+                height: 100%;
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                overflow: auto;
+            }
+                
+            #title {
+                margin: 20px auto 0;
+                font-size: 18px;
+                font-weight: bold;
+                max-width: 1000px;
+                min-width: 600px;
+            }
+
+            #title > or-icon {
+                margin-right: 10px;
+                margin-left: 14px;
             }
             
             or-panel {
                 position: relative;
                 max-width: 1000px;
                 min-width: 600px;
-                margin-top: 40px;
+                margin: 20px auto;
             }
             
             #status {
                 position: absolute;
                 top: 15px;
                 right: 25px;
-                font-weight: bold;
-                
+                font-weight: bold;  
             }
             
             #fields {
@@ -74,6 +89,22 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
             
             #buttons > or-input {
                 margin: 10px;                
+            }
+
+            @media only screen and (max-width: 780px){
+                :host { 
+                    --or-panel-border-radius: 0;
+                }
+                or-panel {
+                    width: 100%;
+                    min-width: auto;
+                    margin: 0;
+                }
+
+                #title {
+                    width: 100%;
+                    min-width: auto;
+                }
             }
         `;
     }
@@ -142,25 +173,30 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
         const connection = this._connection;
 
         return html`
-            <or-panel ?disabled="${this._loading}" .heading="${i18next.t("gatewayConnection") + " (" + this.realm + ")"}">
-                <div id="status">
-                    ${this._connectionStatus}
+            <div id="wrapper">
+                <div id="title">
+                    <or-icon icon="cloud"></or-icon>${i18next.t("gatewayConnection")}
                 </div>
-                <div id="fields">
-                    <or-input .label="${i18next.t("host")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.host : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("host", e.detail.value)}"></or-input>
-                    <or-input .label="${i18next.t("port")}" .type="${InputType.NUMBER}" ?disabled="${this._loading || this._readonly}" min="1" max="65536" step="1" .value="${connection ? connection.port : undefined}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("port", e.detail.value)}"></or-input>
-                    <or-input .label="${i18next.t("realm")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.realm : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("realm", e.detail.value)}"></or-input>
-                    <or-input .label="${i18next.t("clientId")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.clientId : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("clientId", e.detail.value)}"></or-input>
-                    <or-input .label="${i18next.t("clientSecret")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.clientSecret : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("clientSecret", e.detail.value)}"></or-input>
-                    <or-input .label="${i18next.t("secured")}" .type="${InputType.SWITCH}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.secured : false}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("secured", e.detail.value)}"></or-input>
-                    <or-input .label="${i18next.t("disabled")}" .type="${InputType.SWITCH}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.disabled : false}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("disabled", e.detail.value)}"></or-input>
-                </div>
-                <div id="buttons">
-                    <or-input .label="${i18next.t("reset")}" ?disabled="${!this._dirty || this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._reset()}"></or-input>                
-                    <or-input .label="${i18next.t("delete")}" ?disabled="${this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._delete()}"></or-input>                
-                    <or-input .label="${i18next.t("save")}" ?disabled="${!this._dirty || this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._save()}"></or-input>                
-                </div>
-            </or-panel>
+                <or-panel ?disabled="${this._loading}" .heading="${i18next.t("connectionDetails")}">
+                    <div id="status">
+                        ${this._connectionStatus}
+                    </div>
+                    <div id="fields">
+                        <or-input .label="${i18next.t("host")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.host : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("host", e.detail.value)}"></or-input>
+                        <or-input .label="${i18next.t("port")}" .type="${InputType.NUMBER}" ?disabled="${this._loading || this._readonly}" min="1" max="65536" step="1" .value="${connection ? connection.port : undefined}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("port", e.detail.value)}"></or-input>
+                        <or-input .label="${i18next.t("realm")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.realm : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("realm", e.detail.value)}"></or-input>
+                        <or-input .label="${i18next.t("clientId")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.clientId : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("clientId", e.detail.value)}"></or-input>
+                        <or-input .label="${i18next.t("clientSecret")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.clientSecret : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("clientSecret", e.detail.value)}"></or-input>
+                        <or-input .label="${i18next.t("secured")}" .type="${InputType.SWITCH}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.secured : false}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("secured", e.detail.value)}"></or-input>
+                        <or-input .label="${i18next.t("disabled")}" .type="${InputType.SWITCH}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.disabled : false}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("disabled", e.detail.value)}"></or-input>
+                    </div>
+                    <div id="buttons">
+                        <or-input .label="${i18next.t("reset")}" ?disabled="${!this._dirty || this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._reset()}"></or-input>                
+                        <or-input .label="${i18next.t("delete")}" ?disabled="${this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._delete()}"></or-input>                
+                        <or-input .label="${i18next.t("save")}" ?disabled="${!this._dirty || this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._save()}"></or-input>                
+                    </div>
+                </or-panel>
+            </div>
         `;
     }
 

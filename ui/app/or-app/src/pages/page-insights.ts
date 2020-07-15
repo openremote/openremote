@@ -4,6 +4,7 @@ import {DataViewerConfig} from "@openremote/or-data-viewer";
 import {DefaultBoxShadow} from "@openremote/core";
 import {AppStateKeyed, Page} from "../index";
 import {EnhancedStore} from "@reduxjs/toolkit";
+import i18next from "i18next";
 
 export function pageInsightsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?:DataViewerConfig) {
     return {
@@ -25,34 +26,45 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
     static get styles() {
         // language=CSS
         return css`            
-            or-asset-tree {
-                align-items: stretch;
-                z-index: 1;
-            }
-            
             .hideMobile {
                 display: none;
             }
+
+            #wrapper {
+                height: 100%;
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                overflow: auto;
+            }
                 
-            or-asset-viewer {
-                align-items: stretch;
-                z-index: 0;
+            #title {
+                margin: 20px auto 0;
+                padding: 0;
+                font-size: 18px;
+                font-weight: bold;
+                width: 100%;
+                max-width: 1360px;
+            }
+
+            or-data-viewer {
+                width: 100%;
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+        
+            #title > or-icon {
+                margin-right: 10px;
+                margin-left: 14px;
             }
             
             @media only screen and (min-width: 768px){
-                or-asset-tree {
-                    width: 300px;
-                    min-width: 300px;
-                    box-shadow: ${unsafeCSS(DefaultBoxShadow)} 
-                }
-                
                 .hideMobile {
                     display: flex;
                 }
-                
-                or-asset-viewer,
-                or-asset-viewer.hideMobile {
-                    display: initial;
+
+                #title {
+                    padding: 0 20px;
                 }
             }
         `;
@@ -70,7 +82,12 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
 
     protected render(): TemplateResult | void {
         return html`
-              <or-data-viewer></or-data-viewer>
+            <div id="wrapper">
+                <div id="title">
+                    <or-icon icon="chart-areaspline"></or-icon>${i18next.t("insights")}
+                </div>
+                <or-data-viewer></or-data-viewer>
+            </div>
         `;
     }
 

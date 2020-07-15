@@ -22,18 +22,8 @@ export const style = css`
         display: none;
     }
     
-    #wrapper {
-        height: 100%;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        
-        overflow: auto;
-    }
-    
     #container {
         width: 100%;
-        max-width: 1400px;
         box-sizing: border-box;
         display: grid;
         margin: auto;

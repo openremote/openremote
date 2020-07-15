@@ -27,7 +27,6 @@ export const style = css`
         width: 100%;
         display: flex;
         flex-direction: column;
-        
         overflow: auto;
     }
     
@@ -54,7 +53,6 @@ export const style = css`
         }
     }
     
-
     @keyframes fadein {
         from { opacity: 0; }
         to   { opacity: 1; }
@@ -147,7 +145,6 @@ export const style = css`
         margin: 10px 0;
         width: 100%;
         flex: 0 0 auto;
-        min-height: 50px;
     }
     
     .field > * {

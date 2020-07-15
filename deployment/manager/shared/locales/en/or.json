@@ -210,6 +210,7 @@
     "HUMIDITY": "%.1f"
   },
   "gatewayConnection": "Manager interconnect",
+  "connectionDetails": "CONNECTION DETAILS",
   "secured": "Secured",
   "clientSecret": "Client secret",
   "clientId": "Client ID",
@@ -275,8 +276,8 @@
   },
   "noChildAssets": "No child assets",
   "account": "Account",
-  "editAttribute": "Edit attribute",
-  "editDelta": "Edit delta",
-  "editCurrentValue": "Edit current value",
+  "editAttribute": "Change attribute",
+  "editDelta": "Delta",
+  "editCurrentValue": "Decimals",
   "decimals": "Decimals"
 }
