@@ -130,11 +130,11 @@ build-master:
     - echo "export SETUP_WIPE_CLEAN_INSTALL=$SETUP_WIPE_CLEAN_INSTALL" >> deploy.sh
     - if [ $SETUP_ADMIN_PASSWORD ]; then echo "export SETUP_ADMIN_PASSWORD=$SETUP_ADMIN_PASSWORD" >> deploy.sh; fi
     - echo "echo ${OR_PASSWORD} | docker login -u openremote --password-stdin $CI_REGISTRY || exit 666" >> deploy.sh
-    - echo "docker pull $CI_REGISTRY_IMAGE/manager:\$CI_ENVIRONMENT"   >> deploy.sh
-    - echo "docker pull $CI_REGISTRY_IMAGE/deployment:\$CI_ENVIRONMENT">> deploy.sh
-    - echo "docker pull $CI_REGISTRY_IMAGE/proxy:\$CI_ENVIRONMENT"     >> deploy.sh
-    - echo "docker pull $CI_REGISTRY_IMAGE/postgresql:\$CI_ENVIRONMENT">> deploy.sh
-    - echo "docker pull $CI_REGISTRY_IMAGE/keycloak:\$CI_ENVIRONMENT"  >> deploy.sh
+    - echo "docker pull \$CI_REGISTRY_IMAGE/manager:\$CI_ENVIRONMENT"   >> deploy.sh
+    - echo "docker pull \$CI_REGISTRY_IMAGE/deployment:\$CI_ENVIRONMENT">> deploy.sh
+    - echo "docker pull \$CI_REGISTRY_IMAGE/proxy:\$CI_ENVIRONMENT"     >> deploy.sh
+    - echo "docker pull \$CI_REGISTRY_IMAGE/postgresql:\$CI_ENVIRONMENT">> deploy.sh
+    - echo "docker pull \$CI_REGISTRY_IMAGE/keycloak:\$CI_ENVIRONMENT"  >> deploy.sh
     - echo "docker-compose -p $PROJECT_NAME -f profile/demo-openremote.yml down || exit 666" >> deploy.sh
     - echo "docker volume rm ${PROJECT_NAME}_deployment-data" >> deploy.sh
     - echo "docker-compose -p $PROJECT_NAME -f profile/demo-openremote.yml up --no-build -d || exit 666" >> deploy.sh
