@@ -139,10 +139,10 @@ build-master:
     - echo "docker volume rm ${PROJECT_NAME}_deployment-data" >> deploy.sh
     - echo "docker-compose -p $PROJECT_NAME -f profile/demo-openremote.yml up --no-build -d || exit 666" >> deploy.sh
     - chmod +x deploy.sh
-    - SSH mkdir -p profile openremote/profile deployment openremote/proxy openremote/manager/build/install/manager openremote/postgresql openremote/keycloak
+    - SSH mkdir -p profile deployment proxy manager/build/install/manager postgresql keycloak
     - SCP ./profile/ deploy.sh ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/
     - SSH ./deploy.sh
-    - SSH "docker system prune -f; docker images -q --filter dangling=true | xargs docker rmi; rm -rf openremote/ profile/ deployment/ deploy.sh .docker/config.json"
+    - SSH "docker system prune -f; docker images -q --filter dangling=true | xargs docker rmi; rm -rf proxy/ manager/ postgresql/ keycloak/ profile/ deployment/ deploy.sh .docker/config.json"
   after_script:
     - *ssh_config
     - SSH "docker logs ${PROJECT_NAME}_proxy_1 &> proxy_${CI_ENVIRONMENT_SLUG}.log"
