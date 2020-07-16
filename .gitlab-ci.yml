@@ -15,6 +15,7 @@ variables:
 stages:
   - build
   - build_fail
+  - deploy_ovh
   - test
   - tests_fail
   - deploy
@@ -194,7 +195,7 @@ test-master:
     expire_in: 2 weeks
 
 deploy demo on OVH:
-  stage: test
+  stage: deploy_ovh
   allow_failure: true
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
