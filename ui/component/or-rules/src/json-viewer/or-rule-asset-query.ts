@@ -152,7 +152,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 .filter((attr) => Util.hasMetaItem(attr, MetaItemType.RULE_STATE.urn!))
                 .map((attr) => {
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr);
-                    const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
+                    const label = Util.getAttributeLabel(attr, descriptors[0], descriptors[1], false);
                     return [attr.name!, label];
                 });
         } else {
