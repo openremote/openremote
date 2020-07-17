@@ -66,9 +66,20 @@ public enum AssetType implements AssetDescriptor {
     CONSOLE(ASSET_NAMESPACE + ":console", "monitor-cellphone", null),
 
     MICROPHONE(ASSET_NAMESPACE + ":microphone", "microphone", "47A5FF",
+        new AttributeDescriptorImpl("manufacturer", STRING, null,
+            LABEL.withInitialValue("Manufacturer")
+        ),
+        new AttributeDescriptorImpl("model", STRING, null,
+            LABEL.withInitialValue("Model")
+        ),
+        new AttributeDescriptorImpl("userNotes", STRING, null,
+            LABEL.withInitialValue("User notes")
+        ),
         new AttributeDescriptorImpl("microphoneLevel", SOUND, null,
             LABEL.withInitialValue(Values.create("Microphone Level")),
-            READ_ONLY
+            READ_ONLY,
+            STORE_DATA_POINTS,
+            RULE_STATE
         )
     ),
 
@@ -90,53 +101,90 @@ public enum AssetType implements AssetDescriptor {
             READ_ONLY),
         new AttributeDescriptorImpl("lastEvent", OBJECT, null,
             LABEL.withInitialValue(Values.create("Last event")),
+            STORE_DATA_POINTS,
+            RULE_STATE,
             READ_ONLY)
     ),
 
     ENVIRONMENT_SENSOR(ASSET_NAMESPACE + ":enviroment", "periodic-table-co2", "f18546",
+        new AttributeDescriptorImpl("manufacturer", STRING, null,
+            LABEL.withInitialValue("Manufacturer")
+        ),
+        new AttributeDescriptorImpl("model", STRING, null,
+            LABEL.withInitialValue("Model")
+        ),
+        new AttributeDescriptorImpl("userNotes", STRING, null,
+            LABEL.withInitialValue("User notes")
+        ),
         new AttributeDescriptorImpl("temperature", TEMPERATURE, null,
             LABEL.withInitialValue(Values.create("Temperature")),
-            READ_ONLY
+            READ_ONLY,
+            STORE_DATA_POINTS,
+            RULE_STATE
         ),
         new AttributeDescriptorImpl("nO2", DENSITY, null,
             LABEL.withInitialValue(Values.create("Nitrogen Level")),
             UNIT_TYPE.withInitialValue(Values.create(UNITS_DENSITY_MICROGRAMS_CUBIC_M)),
-            READ_ONLY
+            READ_ONLY,
+            STORE_DATA_POINTS,
+            RULE_STATE
         ),
         new AttributeDescriptorImpl("relHumidity", PERCENTAGE, null,
             LABEL.withInitialValue(Values.create("Humidity")),
-            READ_ONLY
+            READ_ONLY,
+            STORE_DATA_POINTS,
+            RULE_STATE
         ),
         new AttributeDescriptorImpl("ozone", DENSITY, null,
             LABEL.withInitialValue(Values.create("Ozone Level")),
             UNIT_TYPE.withInitialValue(Values.create(UNITS_DENSITY_MICROGRAMS_CUBIC_M)),
-            READ_ONLY
+            READ_ONLY,
+            STORE_DATA_POINTS,
+            RULE_STATE
         ),
         new AttributeDescriptorImpl("particlesPM1", DENSITY, null,
             LABEL.withInitialValue(Values.create("Particles PM1")),
             UNIT_TYPE.withInitialValue(Values.create(UNITS_DENSITY_MICROGRAMS_CUBIC_M)),
-            READ_ONLY
+            READ_ONLY,
+            STORE_DATA_POINTS,
+            RULE_STATE
         ),
         new AttributeDescriptorImpl("particlesPM2_5", DENSITY, null,
             LABEL.withInitialValue(Values.create("Particles PM2.5")),
             UNIT_TYPE.withInitialValue(Values.create(UNITS_DENSITY_MICROGRAMS_CUBIC_M)),
-            READ_ONLY
+            READ_ONLY,
+            STORE_DATA_POINTS,
+            RULE_STATE
         ),
         new AttributeDescriptorImpl("particlesPM10", DENSITY, null,
             LABEL.withInitialValue(Values.create("Particles PM10")),
             UNIT_TYPE.withInitialValue(Values.create(UNITS_DENSITY_MICROGRAMS_CUBIC_M)),
-            READ_ONLY
+            READ_ONLY,
+            STORE_DATA_POINTS,
+            RULE_STATE
         )
     ),
 
     LIGHT(ASSET_NAMESPACE + ":light", "lightbulb", "e6688a",
+        new AttributeDescriptorImpl("manufacturer", STRING, null,
+            LABEL.withInitialValue("Manufacturer")
+        ),
+        new AttributeDescriptorImpl("model", STRING, null,
+            LABEL.withInitialValue("Model")
+        ),
+        new AttributeDescriptorImpl("userNotes", STRING, null,
+            LABEL.withInitialValue("User notes")
+        ),
         new AttributeDescriptorImpl("lightStatus", SWITCH_TOGGLE, null,
             LABEL.withInitialValue(Values.create("Light status")),
-            DESCRIPTION.withInitialValue(Values.create("Indicates if the light is on or off"))
+            DESCRIPTION.withInitialValue(Values.create("Indicates if the light is on or off")),
+            RULE_STATE
         ),
         new AttributeDescriptorImpl("lightDimLevel", PERCENTAGE, null,
             LABEL.withInitialValue(Values.create("Light Dim Level")),
-            DESCRIPTION.withInitialValue(Values.create("The level of dimming of the light"))
+            DESCRIPTION.withInitialValue(Values.create("The level of dimming of the light")),
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("colorRGBW", COLOR_RGBW, null,
             LABEL.withInitialValue(Values.create("Color RGBW")),
@@ -144,22 +192,37 @@ public enum AssetType implements AssetDescriptor {
         ),
         new AttributeDescriptorImpl("groupNumber", NUMBER, null,
             LABEL.withInitialValue(Values.create("Group number")),
-            DESCRIPTION.withInitialValue(Values.create("Which group this light belongs to"))
+            DESCRIPTION.withInitialValue(Values.create("Which group this light belongs to")),
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("Scenario", STRING, null,
             LABEL.withInitialValue(Values.create("Scenario")),
-            DESCRIPTION.withInitialValue(Values.create("The scenario the light are setup to"))
+            DESCRIPTION.withInitialValue(Values.create("The scenario the light are setup to")),
+            RULE_STATE
         )
     ),
 
     LIGHT_CONTROLLER(ASSET_NAMESPACE + ":lightController", "light-switch", "9e5de2",
+        new AttributeDescriptorImpl("manufacturer", STRING, null,
+            LABEL.withInitialValue("Manufacturer")
+        ),
+        new AttributeDescriptorImpl("model", STRING, null,
+            LABEL.withInitialValue("Model")
+        ),
+        new AttributeDescriptorImpl("userNotes", STRING, null,
+            LABEL.withInitialValue("User notes")
+        ),
         new AttributeDescriptorImpl("lightAllStatus", SWITCH_TOGGLE, null,
             LABEL.withInitialValue(Values.create("Light all status")),
-            DESCRIPTION.withInitialValue(Values.create("Indicates if all lights are on or off"))
+            DESCRIPTION.withInitialValue(Values.create("Indicates if all lights are on or off")),
+            RULE_STATE
         ),
         new AttributeDescriptorImpl("lightAllDimLevel", PERCENTAGE, null,
             LABEL.withInitialValue(Values.create("Light Dim Level")),
-            DESCRIPTION.withInitialValue(Values.create("The level of dimming of all the lights"))
+            DESCRIPTION.withInitialValue(Values.create("The level of dimming of all the lights")),
+            RULE_STATE,
+            STORE_DATA_POINTS
         ),
         new AttributeDescriptorImpl("colorAllRGBW", COLOR_RGBW, null,
             LABEL.withInitialValue(Values.create("Color RGBW")),
@@ -167,7 +230,88 @@ public enum AssetType implements AssetDescriptor {
         ),
         new AttributeDescriptorImpl("Scenario", STRING, null,
             LABEL.withInitialValue(Values.create("Scenario")),
-            DESCRIPTION.withInitialValue(Values.create("The scenario the lights are setup to"))
+            DESCRIPTION.withInitialValue(Values.create("The scenario the lights are setup to")),
+            RULE_STATE
+        )
+    ),
+
+    PARKING(ASSET_NAMESPACE + ":parking", "parking", "0260ae",
+        new AttributeDescriptorImpl("manufacturer", STRING, null,
+            LABEL.withInitialValue("Manufacturer"),
+            DESCRIPTION.withInitialValue(Values.create("Manufacturer of the Parking system"))
+        ),
+        new AttributeDescriptorImpl("model", STRING, null,
+            LABEL.withInitialValue("Model"),
+            DESCRIPTION.withInitialValue(Values.create("Model of the Parking system"))
+        ),
+        new AttributeDescriptorImpl("userNotes", STRING, null,
+            LABEL.withInitialValue("User notes")
+        ),
+        new AttributeDescriptorImpl("totalSpaces", INTEGER, null,
+            LABEL.withInitialValue(Values.create("Total spaces")),
+            DESCRIPTION.withInitialValue(Values.create("Total number of parking spaces")),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("occupiedSpaces", INTEGER, null,
+            LABEL.withInitialValue(Values.create("Occupied spaces")),
+            DESCRIPTION.withInitialValue(Values.create("Occupied spaces in parking")),
+            READ_ONLY,
+            RULE_STATE,
+            STORE_DATA_POINTS
+        ),
+        new AttributeDescriptorImpl("openSpaces", INTEGER, null,
+            LABEL.withInitialValue(Values.create("Open spaces")),
+            DESCRIPTION.withInitialValue(Values.create("Open spaces in the parking")),
+            READ_ONLY,
+            RULE_STATE,
+            STORE_DATA_POINTS
+        ),
+        new AttributeDescriptorImpl("buffer", INTEGER, null,
+            LABEL.withInitialValue(Values.create("Buffer")),
+            DESCRIPTION.withInitialValue(Values.create("Buffer spaces for parking")),
+            READ_ONLY
+        ),
+        new AttributeDescriptorImpl("priceHourly", CURRENCY, null,
+            LABEL.withInitialValue(Values.create("Hourly tariff")),
+            DESCRIPTION.withInitialValue(Values.create("Hourly tariff of parking")),
+            UNIT_TYPE.withInitialValue(Values.create(UNITS_CURRENCY_EUR)),
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("priceDaily", CURRENCY, null,
+            LABEL.withInitialValue(Values.create("Daily tariff")),
+            DESCRIPTION.withInitialValue(Values.create("Daily tariff of parking")),
+            UNIT_TYPE.withInitialValue(Values.create(UNITS_CURRENCY_EUR)),
+            RULE_STATE
+        )
+    ),
+
+    GROUNDWATER(ASSET_NAMESPACE + ":groundwater", "water-outline", "95d0df",
+        new AttributeDescriptorImpl("manufacturer", STRING, null,
+            LABEL.withInitialValue("Manufacturer"),
+            DESCRIPTION.withInitialValue(Values.create("Manufacturer of groundwater sensor"))
+        ),
+        new AttributeDescriptorImpl("model", STRING, null,
+            LABEL.withInitialValue("Model"),
+            DESCRIPTION.withInitialValue(Values.create("Model of groundwater sensor"))
+        ),
+        new AttributeDescriptorImpl("userNotes", STRING, null,
+            LABEL.withInitialValue("User notes")
+        ),
+        new AttributeDescriptorImpl("waterLevel", INTEGER, null,
+            LABEL.withInitialValue(Values.create("Water level")),
+            DESCRIPTION.withInitialValue(Values.create("Level of the groundwater")),
+            STORE_DATA_POINTS,
+            UNIT_TYPE.withInitialValue(Values.create(UNITS_DISTANCE_METRES)),
+            READ_ONLY,
+            RULE_STATE
+        ),
+        new AttributeDescriptorImpl("soilTemperature", TEMPERATURE, null,
+            LABEL.withInitialValue(Values.create("Soil temperature")),
+            DESCRIPTION.withInitialValue(Values.create("Temperature of the soil")),
+            STORE_DATA_POINTS,
+            READ_ONLY,
+            RULE_STATE
         )
     ),
 
@@ -175,34 +319,46 @@ public enum AssetType implements AssetDescriptor {
         new AttributeDescriptorImpl("peopleCountIn", INTEGER, null,
             LABEL.withInitialValue(Values.create("People Count In")),
             DESCRIPTION.withInitialValue(Values.create("Cumulative number of people going into area")),
-            READ_ONLY
-        ),
+            STORE_DATA_POINTS,
+            READ_ONLY,
+            RULE_STATE
+            ),
         new AttributeDescriptorImpl("peopleCountOut", INTEGER, null,
             LABEL.withInitialValue(Values.create("People Count Out")),
             DESCRIPTION.withInitialValue(Values.create("Cumulative number of people leaving area")),
-            READ_ONLY
-        ),
+            STORE_DATA_POINTS,
+            READ_ONLY,
+            RULE_STATE
+            ),
         new AttributeDescriptorImpl("peopleCountInMinute", INTEGER, null,
             LABEL.withInitialValue(Values.create("People Count In Minute")),
             DESCRIPTION.withInitialValue(Values.create("Number of people going into area per minute")),
             UNIT_TYPE.withInitialValue(UNITS_COUNT_PER_MINUTE),
-            READ_ONLY
+            STORE_DATA_POINTS,
+            READ_ONLY,
+            RULE_STATE
         ),
         new AttributeDescriptorImpl("peopleCountOutMinute", INTEGER, null,
             LABEL.withInitialValue(Values.create("People Count Out Minute")),
             DESCRIPTION.withInitialValue(Values.create("Number of people leaving area per minute")),
             UNIT_TYPE.withInitialValue(UNITS_COUNT_PER_MINUTE),
-            READ_ONLY
+            STORE_DATA_POINTS,
+            READ_ONLY,
+            RULE_STATE
         ),
         new AttributeDescriptorImpl("peopleCountTotal", INTEGER, null,
             LABEL.withInitialValue(Values.create("People Count Total")),
             DESCRIPTION.withInitialValue(Values.create("cameraCountIn - cameraCountOut")),
-            READ_ONLY
+            STORE_DATA_POINTS,
+            READ_ONLY,
+            RULE_STATE
         ),
         new AttributeDescriptorImpl("peopleCountGrowth", INTEGER, null,
             LABEL.withInitialValue(Values.create("People Count Growth")),
             DESCRIPTION.withInitialValue(Values.create("cameraCountIn - cameraCountOut")),
-            READ_ONLY
+            STORE_DATA_POINTS,
+            READ_ONLY,
+            RULE_STATE
         )
     ),
 
