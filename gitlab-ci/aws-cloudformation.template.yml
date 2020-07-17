@@ -2,29 +2,56 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Template to install OpenRemote 3 stack on AWS environment on ubuntu'
 Parameters:
+  OpenRemotePassword:
+    Description: Password for OpenRemote admin login
+    Type: String
+    Default: secret
+  DomainName:
+    Description: DNS domain for created stack (clear it is you want the deployment with an insecure SSL certificate)
+    Type: String
+    Default: openremote.in
+  HostName:
+    Description: Hostname of the Openremote manager
+    Type: String
+    Default: localhost
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: AWS::EC2::KeyPair::KeyName
     Default: openremote
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
   InstanceType:
-    Description: EC2 instance type
+    Description: EC2 instance type (don't change it unless you know what you are doing)
     Type: String
     # AWS Compute Optimizer reports that this instance type is under-provisioned and advise to use
     # more than double the price instance. However, it works in our test setup.
     Default: t3a.medium
     ConstraintDescription: must be a valid EC2 instance type.
   InstanceAMI:
-    Description: Managed AMI ID for EC2 Instance
+    Description: Managed AMI ID for EC2 Instance (don't change it unless you know what you are doing)
     Type : String
     Default: ami-021696e054a27b3e8
-
+Conditions:
+  DnsRecordCreate: !Not [ !Equals [!Ref DomainName, ""] ]
+  DomainName: !Not [ !Equals [!Ref DomainName, ""] ]
 Outputs:
+    PublicUrl:
+      Condition: DomainName
+      Description: OpenRemote Instance URL
+      Value: !Join [ ".", [ !Ref HostName, !Ref DomainName ] ]
     InstanceIP:
       Description: The Instance public IP
       Value: !GetAtt EC2Instance.PublicIp
-
 Resources:
+  DNSRecord:
+    Condition: DnsRecordCreate
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Join [ "", [ !Ref DomainName, "." ] ]
+      Name: !Join [ ".", [!Ref HostName, !Ref DomainName ] ]
+      ResourceRecords:
+      - !GetAtt EC2Instance.PublicIp
+      TTL: '60'
+      Type: A
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
@@ -42,17 +69,37 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          # Create volume for deployment
+          # Create volume for deployment (needed for SWARM due to concurency in compose-file)
           docker volume create openremote_deployment-data
           docker run --rm -v openremote_deployment-data:/deployment openremote/deployment:latest
           wget https://github.com/openremote/openremote/raw/master/swarm/swarm-docker-compose.yml
           docker swarm init
-          IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4) docker stack deploy --compose-file swarm-docker-compose.yml openremote
-
+          if [ ${HostName} ] && [ ${DomainName} ]
+          then
+            export DOMAINNAME=${HostName}.${DomainName}
+            export IDENTITY_NETWORK_HOST=$DOMAINNAME
+            echo a $DOMAINNAME $IDENTITY_NETWORK_HOST
+          elif [ ${DomainName} ]
+          then
+            export DOMAINNAME=${DomainName}
+            export IDENTITY_NETWORK_HOST=$DOMAINNAME
+            echo b $DOMAINNAME $IDENTITY_NETWORK_HOST
+          elif [ ${HostName} ]
+          then
+            export DOMAINNAME=${HostName}
+            export IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
+            echo c $DOMAINNAME $IDENTITY_NETWORK_HOST
+          else
+            export DOMAINNAME=localhost
+            export IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
+            echo d $DOMAINNAME $IDENTITY_NETWORK_HOST
+          fi
+          export SETUP_ADMIN_PASSWORD=${OpenRemotePassword}
+          docker-compose -f swarm-docker-compose.yml -p openremote up -d
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: OR manager ports + SSH
+      GroupDescription: SSH + HTTP + HTTPS
       SecurityGroupIngress:
       - IpProtocol: tcp
         FromPort: '22'
