@@ -29,7 +29,9 @@ You can skip this stage by adding **skip-deploy** in the git commit message.
 
 # Deploing OpenRemote stack in the cloud
 
-## Deployment on AWS through web UI
+## Deployment on AWS through the web UI
+
+This is slower prodcedure and meant as en excercise for AWS novice users. Advanced users should use [**aws-cli**](#awscli) method described in the next section.
 
 - Sign in into [AWS web console](https://console.aws.amazon.com/console/home?nc2=h_ct&src=header-signin)
 - Select region to eu-west-1 (Ireland). Currently the cloudformation template supports only this region. *Other regions can be added when
@@ -53,10 +55,15 @@ You can skip this stage by adding **skip-deploy** in the git commit message.
 - After you are done with the stack please for to the [Cloudformation](https://eu-west-1.console.aws.amazon.com/cloudformation/home) dashboard and
 delete it. **This will remove all resources and prevent from generating unnecessary costs**.
 
-## Deployment on AWS with CLI (advanced)
+## <a name="awscli"></a>Deployment on AWS with CLI (advanced)
 
 We will use the [AWS CLI](https://aws.amazon.com/cli/) to create the necessary resources on AWS side.
 Following commands should be executed from openremote/gitlab-ci subdirectory.
+
+We are presenting 3 scenarios:
+1. Deploy OpenRemote stack with domain hosted on AWS
+2. Deploy OpenRemote stack without domain
+3. Deploy OpenRemote stack with domain hosted anywhere
 
 ### Prepare the environment
 
@@ -76,6 +83,215 @@ aws ec2 import-key-pair --key-name openremote --public-key-material fileb://open
 
 ```
 
+### Scenario 1 - Deploy OpenRemote stack with domain hosted on AWS
+
+In this scenario we have an AWS account with Route53 hosted zone equal to DomainName input parameter. This is the fastest way to create a full
+functional OpenRemote stack with valid SSL key. Within less than 10 minutes you can create a full functional deployment with valid URL.
+
+```bash
+# Create stack
+aws cloudformation create-stack --stack-name OpenRemote --template-body file://gitlab-ci/aws-cloudformation.template.yml --parameters  ParameterKey=DomainName,ParameterValue=openremote.in ParameterKey=HostedZone,ParameterValue=true
+
+```
+
+Wait about 7 minutes.
+
+Check the stack:
+```bash
+# Check the stack status. If it is different than CREATE_COMPLETE the you can find more info in the AWS console
+# Services -> CloudFormation -> Stacks -> OpenRemote -> Events tab
+aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].StackStatus" 
+
+# Get the URL of the stack (it should be DomainName.HostName i.e. demo.openremote.in in this example)
+export URL=$(aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].Outputs[1].OutputValue" --output text)
+
+# Check if it gives valid response
+curl -L -I $URL
+
+# The output should look like this:
+HTTP/1.1 302 Found
+content-length: 0
+location: https://demo.openremote.in/
+cache-control: no-cache
+
+HTTP/1.1 302 Found
+location: http://demo.openremote.in/main
+content-length: 0
+date: Sat, 18 Jul 2020 10:41:15 GMT
+
+HTTP/1.1 302 Found
+content-length: 0
+location: https://demo.openremote.in/main
+cache-control: no-cache
+
+HTTP/1.1 302 Found
+location: /main/
+content-type: text/html;charset=UTF-8
+content-length: 64
+date: Sat, 18 Jul 2020 10:41:15 GMT
+
+HTTP/1.1 200 OK
+expires: Sat, 18 Jul 2020 22:41:15 GMT
+cache-control: public,max-age=43200,must-revalidate
+pragma: 
+accept-ranges: bytes
+date: Sat, 18 Jul 2020 10:41:15 GMT
+etag: W/"index.html-1595005800000"
+last-modified: Fri, 17 Jul 2020 17:10:00 GMT
+content-type: text/html
+content-length: 3627
+```
+
+### Scenario 2 - Deploy OpenRemote stack without domain
+
+In  this scenario we are deploing stack without valid domain. It will use public IP dynamically assigned by AWS.
+
+To achieve this we create the stack with empty DomainName and HostName set to localhost.
+
+```bash
+# Create stack
+aws cloudformation create-stack --stack-name OpenRemote --template-body file://gitlab-ci/aws-cloudformation.template.yml --parameters  ParameterKey=DomainName,ParameterValue= ParameterKey=HostName,ParameterValue=localhost 
+```
+
+Wait about 7 minutes.
+
+Check the stack:
+```bash
+# Check the stack status. If it is different than CREATE_COMPLETE the you can find more info in the AWS console
+# Services -> CloudFormation -> Stacks -> OpenRemote -> Events tab
+aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].StackStatus" 
+
+# Get public IP of the stack
+export IP=$(aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].Outputs[0].OutputValue" --output text)
+
+# Check if it gives valid response
+curl -L -I $IP
+
+# The output should look like this:
+HTTP/1.1 302 Found
+content-length: 0
+location: https://3.250.36.158/
+cache-control: no-cache
+
+HTTP/1.1 302 Found
+location: http://3.250.36.158/main
+content-length: 0
+date: Sat, 18 Jul 2020 09:12:44 GMT
+
+HTTP/1.1 302 Found
+content-length: 0
+location: https://3.250.36.158/main
+cache-control: no-cache
+
+HTTP/1.1 302 Found
+location: /main/
+content-type: text/html;charset=UTF-8
+content-length: 64
+date: Sat, 18 Jul 2020 09:12:44 GMT
+
+HTTP/1.1 200 OK
+expires: Sat, 18 Jul 2020 21:12:44 GMT
+cache-control: public,max-age=43200,must-revalidate
+pragma: 
+accept-ranges: bytes
+date: Sat, 18 Jul 2020 09:12:44 GMT
+etag: W/"index.html-1595005800000"
+last-modified: Fri, 17 Jul 2020 17:10:00 GMT
+content-type: text/html
+content-length: 3627
+```
+
+Of course you can point a browser to this endpoint but you have to accept invalid SSL certificate. Sometimes you need to change browser settings to allow for this.
+
+### Scenario 3 - Deploy OpenRemote stack with domain hosted anywhere
+
+In this scenario we are hosting our DNS records outside of AWS, or on AWS but on a different account. It is possible to create a cloudformation template
+which would work automatically with the second case by using IAM roles, however this is beyond this tutorial. Please conntact OpenRemote if this is your case.
+
+This is the most time consuming options as it can take up to 24 hours to propagate the DNS record if you are using a slow provider. [AWS](https://aws.amazon.com/) and [CloudFlare](https://www.cloudflare.com/) do this
+within few seconds, therefore in dynamic environments we advise to use one of them.
+
+```bash
+# Create stack
+aws cloudformation create-stack --stack-name OpenRemote --template-body file://gitlab-ci/aws-cloudformation.template.yml --parameters  ParameterKey=DomainName,ParameterValue=mydomain.com ParameterKey=HostName,ParameterValue=example 
+```
+
+Wait about 7 minutes.
+
+Check the stack:
+```bash
+# Check the stack status. If it is different than CREATE_COMPLETE the you can find more info in the AWS console
+# Services -> CloudFormation -> Stacks -> OpenRemote -> Events tab
+aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].StackStatus" 
+
+# Get public IP and URL of the stack
+export IP=$(aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].Outputs[0].OutputValue" --output text)
+export URL=$(aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].Outputs[1].OutputValue" --output text)
+
+# Show public IP and URL
+# It should produce something like 34.244.50.94 example.mydomain.com
+echo $IP $URL
+```
+
+With the data of the last command go to your DNS dashboard and create an A record example.mydomain.com with coresponding IP address.
+
+Wait up to 24 hours for DNS propagation.
+
+```bash
+# Check if DNS is updated
+ping $URL
+# you should get response like
+PING example.mydomain.com (34.244.50.94): 56 data bytes
+64 bytes from 34.244.50.94: icmp_seq=0 ttl=41 time=29.731 ms
+64 bytes from 34.244.50.94: icmp_seq=1 ttl=41 time=37.164 ms
+
+# Update SSL ceriticate
+ssh -i ~/.ssh/openremote ubuntu@$URL docker start openremote_proxy_1
+
+# Check if it gives valid response
+curl -L -I $URL
+
+HTTP/1.1 302 Found
+content-length: 0
+location: https://example.mydomain.com/
+cache-control: no-cache
+
+HTTP/1.1 302 Found
+location: http://example.mydomain.com/main
+content-length: 0
+date: Sat, 18 Jul 2020 12:20:54 GMT
+
+HTTP/1.1 302 Found
+content-length: 0
+location: https://example.mydomain.com/main
+cache-control: no-cache
+
+HTTP/1.1 302 Found
+location: /main/
+content-type: text/html;charset=UTF-8
+content-length: 64
+date: Sat, 18 Jul 2020 12:20:54 GMT
+
+HTTP/1.1 200 OK
+expires: Sun, 19 Jul 2020 00:20:54 GMT
+cache-control: public,max-age=43200,must-revalidate
+pragma: 
+accept-ranges: bytes
+date: Sat, 18 Jul 2020 12:20:54 GMT
+etag: W/"index.html-1595005800000"
+last-modified: Fri, 17 Jul 2020 17:10:00 GMT
+content-type: text/html
+content-length: 3627
+```
+
+### **IMPORTANT** Delete unused stack
+
+When you are done with the stack don't forget to delete it. Depending on the EC2 instance selected leaving it running incures [costs](https://ec2instances.info/?region=eu-west-1). The default one **t3a.medium** in eu-west-1 region (Ireland) currently costs $0.040800 hourly and when reserved $0.025700 hourly.
+
+```bash
+# Delete unused stack
+aws cloudformation delete-stack --stack-name OpenRemote 
+```
 ### Deploy EC2 instance with Openremote stack
 
 After this command it will take some time till the stack is created and initialized (about 10-30 mins).
