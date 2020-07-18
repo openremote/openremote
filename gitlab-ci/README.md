@@ -103,7 +103,7 @@ Check the stack:
 aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].StackStatus" 
 
 # Get the URL of the stack (it should be DomainName.HostName i.e. demo.openremote.in in this example)
-export URL=$(aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].Outputs[1].OutputValue" --output text)
+export URL=$(aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].Outputs[?OutputKey=='PublicUrl'].OutputValue" --output text)
 
 # Check if it gives valid response
 curl -L -I $URL
@@ -162,7 +162,7 @@ Check the stack:
 aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].StackStatus" 
 
 # Get public IP of the stack
-export IP=$(aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].Outputs[0].OutputValue" --output text)
+export IP=$(aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].Outputs[?OutputKey=='InstanceIP'].OutputValue" --output text)
 
 # Check if it gives valid response
 curl -L -I $IP
@@ -225,8 +225,8 @@ Check the stack:
 aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].StackStatus" 
 
 # Get public IP and URL of the stack
-export IP=$(aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].Outputs[0].OutputValue" --output text)
-export URL=$(aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].Outputs[1].OutputValue" --output text)
+export IP=$(aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].Outputs[?OutputKey=='InstanceIP'].OutputValue" --output text)
+export URL=$(aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].Outputs[?OutputKey=='PublicUrl'].OutputValue" --output text)
 
 # Show public IP and URL
 # It should produce something like 34.244.50.94 example.mydomain.com
@@ -292,20 +292,6 @@ When you are done with the stack don't forget to delete it. Depending on the EC2
 # Delete unused stack
 aws cloudformation delete-stack --stack-name OpenRemote 
 ```
-### Deploy EC2 instance with Openremote stack
-
-After this command it will take some time till the stack is created and initialized (about 10-30 mins).
-
-```bash
-# Create stack
-aws cloudformation create-stack --stack-name openremote --template-body file://aws-cloudformation.template.yml
-
-# Get stack endpoint
-aws cloudformation describe-stacks --stack-name openremote --query "Stacks[0].Outputs[?OutputKey=='InstanceIP'].OutputValue" --output text
-export OR_ENDPOINT=$(aws cloudformation describe-stacks --stack-name openremote --query "Stacks[0].Outputs[?OutputKey=='InstanceIP'].OutputValue" --output text)
-```
-
-Now you should be able to access the openremote v3 server at the URL $OR_ENDPOINT environment variable.
 
 ### Assing custom domain to the endpoint
 
