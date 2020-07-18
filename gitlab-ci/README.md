@@ -284,6 +284,10 @@ content-type: text/html
 content-length: 3627
 ```
 
+### Add/remove assets (optional)
+
+TODO
+
 ### **IMPORTANT** Delete unused stack
 
 When you are done with the stack don't forget to delete it. Depending on the EC2 instance selected leaving it running incures [costs](https://ec2instances.info/?region=eu-west-1). The default one **t3a.medium** in eu-west-1 region (Ireland) currently costs $0.040800 hourly and when reserved $0.025700 hourly.
@@ -291,28 +295,6 @@ When you are done with the stack don't forget to delete it. Depending on the EC2
 ```bash
 # Delete unused stack
 aws cloudformation delete-stack --stack-name OpenRemote 
-```
-
-### Assing custom domain to the endpoint
-
-TODO
-
-### Test the deployment (optional)
-
-```bash
-curl --insecure -L https://$OR_ENDPOINT/api/master/model/asset/descriptors
-```
-
-### Add/remove assets (optional)
-
-TODO
-
-### Delete EC2 instance
-
-The openremote stack costs money. You can delete is with
-
-```bash
-aws cloudformation delete-stack --stack-name openremote
 ```
 
 ## Deployment on Alibaba
