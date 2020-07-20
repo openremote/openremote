@@ -9,7 +9,7 @@ Parameters:
   DomainName:
     Description: DNS domain for created stack (clear it is you want the deployment with an insecure SSL certificate)
     Type: String
-    Default: openremote.in
+    Default: developers.openremote.io
   HostName:
     Description: Hostname of the Openremote manager
     Type: String

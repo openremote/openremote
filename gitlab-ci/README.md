@@ -90,7 +90,7 @@ functional OpenRemote stack with valid SSL key. Within less than 10 minutes you 
 
 ```bash
 # Create stack
-aws cloudformation create-stack --stack-name OpenRemote --template-body file://gitlab-ci/aws-cloudformation.template.yml --parameters  ParameterKey=DomainName,ParameterValue=openremote.in ParameterKey=HostedZone,ParameterValue=true
+aws cloudformation create-stack --stack-name OpenRemote --template-body file://gitlab-ci/aws-cloudformation.template.yml --parameters  ParameterKey=DomainName,ParameterValue=developers.openremote.io ParameterKey=HostedZone,ParameterValue=true
 
 ```
 
@@ -102,7 +102,7 @@ Check the stack:
 # Services -> CloudFormation -> Stacks -> OpenRemote -> Events tab
 aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].StackStatus" 
 
-# Get the URL of the stack (it should be DomainName.HostName i.e. demo.openremote.in in this example)
+# Get the URL of the stack (it should be DomainName.HostName i.e. demo.developers.openremote.io in this example)
 export URL=$(aws cloudformation describe-stacks --stack-name OpenRemote --query "Stacks[0].Outputs[?OutputKey=='PublicUrl'].OutputValue" --output text)
 
 # Check if it gives valid response
@@ -111,17 +111,17 @@ curl -L -I $URL
 # The output should look like this:
 HTTP/1.1 302 Found
 content-length: 0
-location: https://demo.openremote.in/
+location: https://demo.developers.openremote.io/
 cache-control: no-cache
 
 HTTP/1.1 302 Found
-location: http://demo.openremote.in/main
+location: http://demo.developers.openremote.io/main
 content-length: 0
 date: Sat, 18 Jul 2020 10:41:15 GMT
 
 HTTP/1.1 302 Found
 content-length: 0
-location: https://demo.openremote.in/main
+location: https://demo.developers.openremote.io/main
 cache-control: no-cache
 
 HTTP/1.1 302 Found
