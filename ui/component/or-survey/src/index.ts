@@ -163,15 +163,6 @@ class OrSurvey extends LitElement {
                                                                                        `}
                                                                                    `}
                                                                                     <label class="flex-grow" @click="${(e:Event) => this.onAnswer(e, answer)}" for="${question.id}_${index}">
-                                                                                        
-                                                                                       ${this.getType(question.type) === 'singleSelect' ? html`
-                                                                                            <span class="answer-icon">${this.getAlphabetLabel(index)}</span>
-                                                                                       ` : ``}
-                                                                                    
-                                                                                        ${this.getType(question.type) === 'multiSelect' ? html`
-                                                                                            <span class="answer-icon">${this.getAlphabetLabel(index)}</span>
-                                                                                       ` : ``}
-                                                                                        
                                                                                         ${answer.value}
                                                                                     </label>
                                                                                 </div>
@@ -249,11 +240,6 @@ class OrSurvey extends LitElement {
             // after end date
             return 'after';
         }
-    }
-
-    getAlphabetLabel(index:number) {
-        let alphabet = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
-        return alphabet[index];
     }
 
     getInputType(type:string|undefined) {

@@ -345,7 +345,6 @@ export const surveyLayoutStyle =html`
             }
 
             button.previous .icon {
-                background-color: rgba(255, 255, 255, 0.5);
                 width: 2.5rem;
                 fill: var(--internal-or-survey-color-button-color);
                 color: var(--internal-or-survey-color-button-color);
@@ -358,7 +357,6 @@ export const surveyLayoutStyle =html`
             }
 
             button.next .icon {
-                background-color: rgba(255, 255, 255, 0.5);
                 width: 2.5rem;
                 fill: var(--internal-or-survey-color-button-color);
                 color: var(--internal-or-survey-color-button-color);
