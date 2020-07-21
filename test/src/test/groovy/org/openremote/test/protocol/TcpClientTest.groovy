@@ -91,6 +91,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.connectionStatus == ConnectionStatus.CONNECTED
             assert connectionStatus == ConnectionStatus.CONNECTED
+            assert echoServer.allChannels.size() == 1
         }
 
         when: "the server sends a message"
@@ -160,6 +161,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.connectionStatus == ConnectionStatus.CONNECTED
             assert connectionStatus == ConnectionStatus.CONNECTED
+            assert echoServer.allChannels.size() == 1
         }
 
         when: "the server sends a message"
