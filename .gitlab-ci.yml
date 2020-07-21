@@ -182,7 +182,7 @@ test-master:
       /bin/sh -c "docker-compose -f profile/dev-testing.yml up --no-build -d"
   script:
     - docker run --network host -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-      /bin/sh -c "./gradlew clean build installDist"
+      /bin/sh -c "./gradlew clean test"
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
       if: $CI_COMMIT_MESSAGE !~ /skip-test/
