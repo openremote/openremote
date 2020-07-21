@@ -14,6 +14,7 @@ import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -21,6 +22,9 @@ import static java.util.concurrent.TimeUnit.MINUTES
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
 import static org.openremote.model.attribute.AttributeEvent.Source.SENSOR
 
+// Ignore this test as temporary facts (rule events) cause the rule engine to continually fire, need to decide if
+// we support rule events or should it just be something rules do internally
+@Ignore
 class ResidenceAutoVentilationTest extends Specification implements ManagerContainerTrait {
 
     @SuppressWarnings("GroovyAccessibility")
@@ -225,5 +229,4 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
         cleanup: "the static rules time variable is reset"
         TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
-
 }

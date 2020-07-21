@@ -137,7 +137,6 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
             assert ((KNXProtocol) agentService.getProtocol(knxAgent.getAttribute("knxConfig").get())).getAttributeActionMap().get(new AttributeRef(knxThing.id, "light1ToggleOnOff")) != null
         }
         
-        
         when: "change light1ToggleOnOff value to 'true'"
         def switchChange = new AttributeEvent(knxThing.getId(), "light1ToggleOnOff", Values.create(true))
         assetProcessingService.sendAttributeEvent(switchChange)
@@ -157,8 +156,14 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         }
         
         cleanup: "the server should be stopped"
+        if (knxAgent != null) {
+            assetStorageService.delete([knxAgent.id, knxThing.id])
+        }
         if (knxEmulationServer != null) {
             knxEmulationServer.quit()
+        }
+        if (knxTestingNetwork != null) {
+            knxTestingNetwork.close()
         }
     }
 }
