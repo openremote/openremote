@@ -33,6 +33,7 @@ import {buttonStyle} from "../style";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {translate} from "@openremote/or-translate";
 import { OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
+import "./modals/or-rule-radial-modal";
 
 // language=CSS
 const style = css`
@@ -211,7 +212,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             case "string-array":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "radial":
-                return html `<span>NOT IMPLEMENTED</span>`;
+                return html`<or-rule-radial-modal .query="${this.query}" .assetDescriptor="${assetDescriptor}" .attributePredicate="${attributePredicate}"></or-rule-radial-modal>`;
             case "rect":
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "object-value-key":

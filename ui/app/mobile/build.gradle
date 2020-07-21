@@ -1,0 +1,7 @@
+buildDir = "dist"
+
+task installDist(type: Copy) {
+    dependsOn npmClean, npmBuild
+    from project.buildDir
+    into "${project(':deployment').buildDir}/manager/app/${projectDir.name}"
+}

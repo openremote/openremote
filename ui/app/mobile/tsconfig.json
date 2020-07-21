@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./.tsbuildinfo",
+    "strict": true
+  },
+  "include": [
+    "./src"
+  ],
+  "references": [
+    { "path": "../or-app" }
+  ]
+}

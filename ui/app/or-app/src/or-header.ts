@@ -104,9 +104,6 @@ class OrHeader extends LitElement {
                                             
             #header {
                 opacity: 1;
-                position: absolute;
-                top: 0;
-                left: 0;
                 width: 100%;
                 height: var(--internal-or-header-height);
                 text-align: center;

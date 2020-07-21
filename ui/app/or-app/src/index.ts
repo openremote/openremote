@@ -40,7 +40,7 @@ export interface DefaultAppConfig {
     logo: HTMLTemplateElement | string;
     logoMobile: HTMLTemplateElement | string;
     language?: string;
-    header: HeaderConfig;
+    header?: HeaderConfig;
     styles?: TemplateResult;
 }
 
@@ -188,7 +188,7 @@ export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(
     };
 }
 
-function getRealmQueryParameter(): string {
+export function getRealmQueryParameter(): string {
     return Util.getQueryParameter(location.search, "realm");
 }
 
@@ -237,14 +237,19 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 color: ${unsafeCSS(DefaultColor3)};
                 fill: ${unsafeCSS(DefaultColor3)};
                 font-size: 14px;
+
+                height: 100vh;
+                display: flex;
+                flex: 1;
+                flex-direction: column;
             }
                 
             .main-content {
                 display: flex;
-                padding-top: ${unsafeCSS(DefaultHeaderHeight)};
-                height: 100vh;
+                flex: 1;
                 box-sizing: border-box;
                 background-color: var(--or-app-color2);
+                overflow: auto;
             }
             
             main > * {
@@ -439,7 +444,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         }
         return html`
             ${unsafeHTML(this._config.styles ? this._config.styles.strings : ``)}
-            <or-header logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
+            ${this._config.header ? html`
+                <or-header logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
+            ` : ``}
             
             <!-- Main content -->
             <main role="main" class="main-content d-none"></main>

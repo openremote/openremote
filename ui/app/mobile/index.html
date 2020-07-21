@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+    <title>OpenRemote Demo</title>
+    <meta name="application-name" content="OpenRemote Demo">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="apple-mobile-web-app-title" content="OpenRemote Demo">
+
+    <meta name="msapplication-TileImage" content="images/Icon-144.png">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-tap-highlight" content="no">
+
+    <link rel="icon" href="images/favicon.ico">
+    <meta name="theme-color" content="#ffffff">
+
+    <!-- Add to homescreen for Chrome on Android. Fallback for manifest.json -->
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- Add to homescreen for Safari on iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <!-- Homescreen icons -->
+    <link rel="apple-touch-icon" href="images/Icon-48.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="images/Icon-72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="images/Icon-144.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="images/Icon-196.png">
+
+    <!-- Tile icon for Windows 8 (144x144 + tile color) -->
+    <meta name="msapplication-TileImage" content="images/Icon-144.png">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-tap-highlight" content="no">
+
+    <!-- Default twitter cards -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@username">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="my-app">
+    <meta property="og:image" content="images/Icon-144.png" />
+
+    <!--
+    Feature detect Custom Elements support. If the browser DOES support Custom
+    Elements then we need to load the custom-elements-es5-adapter because
+    our project code has been transpiled from ES2015 to ES5 and native Custom
+    Elements expect elements will be registered as classes.
+    -->
+    <script>if (!window.customElements) { document.write('<!--'); }</script>
+    <script src="./modules/@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js"></script>
+    <!--! DO NOT REMOVE THIS COMMENT, WE NEED ITS CLOSING MARKER -->
+
+    <style>
+        html {
+            height: 100%;
+        }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+            line-height: 1.5;
+            height: 100%;
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+        }
+    </style>
+
+
+</head>
+<body>
+<!--
+Use the webcomponents-loader script which will feature detect which Web
+Components features are missing and lazy load the appropriate polyfills.
+When we hear the 'WebComponentsReady' event from the polyfill bundle we can
+insert our 'bundle.js'.
+-->
+<script>
+    (function () {
+        document.addEventListener('WebComponentsReady', function componentsReady() {
+            document.removeEventListener('WebComponentsReady', componentsReady, false);
+            var script = document.createElement('script');
+            script.src = '<%= htmlWebpackPlugin.files.js[0] %>';
+            var refScript = document.getElementsByTagName('script')[0];
+            refScript.parentNode.insertBefore(script, refScript);
+        }, false);
+    })();
+</script>
+<script src="modules/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
+</body>
+</html>

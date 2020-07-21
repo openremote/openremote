@@ -75,7 +75,6 @@ export function getGeoNotificationsFromRulesSet(rulesetDefinition: JsonRulesetDe
             if (geoNotificationMap.size > 0) {
                 rule.then.forEach((ruleAction) => addPushNotificationsFromRuleAction(ruleAction, geoNotificationMap));
             }
-
             for (const geoNotificationsArr of geoNotificationMap.values()) {
                 geoNotificationsArr.forEach((geoNotification) => {
                     if (geoNotification.notification) {
@@ -93,9 +92,25 @@ function addGeofencePredicatesFromRuleConditionCondition(ruleCondition: LogicGro
     if (!ruleCondition) {
         return;
     }
-
+    const items:any = [];
+    if (ruleCondition.groups) {
+        ruleCondition.groups.forEach((ruleGroup) => {
+            if(ruleGroup.items){
+                ruleGroup.items.forEach((ruleTrigger) => {
+                    items.push(ruleTrigger)
+                });
+            }
+        });
+    }
+    
     if (ruleCondition.items) {
         ruleCondition.items.forEach((ruleTrigger) => {
+            items.push(ruleTrigger)
+        });
+        
+    }
+    if (items) {
+        items.forEach((ruleTrigger:any) => {
             if (ruleTrigger.assets && ruleTrigger.assets.attributes) {
                 const geoNotifications: GeoNotification[] = [];
                 addGeoNotificationsFromAttributePredicateCondition(ruleTrigger.assets.attributes, geoNotifications);

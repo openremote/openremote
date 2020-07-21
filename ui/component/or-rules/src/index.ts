@@ -639,7 +639,6 @@ export class OrRules extends translate(i18next)(LitElement) {
             realm: realm,
             rules: undefined // View needs to populate this on load
         };
-        console.log(ruleset)
         this._activeRuleset = ruleset;
     }
 
