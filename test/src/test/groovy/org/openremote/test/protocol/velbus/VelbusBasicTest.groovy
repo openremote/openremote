@@ -800,6 +800,8 @@ class VelbusBasicTest extends Specification {
         ]
     }
 
+    static writeDelayMillis = VelbusNetwork.DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS
+
     def setupSpec() {
         VelbusNetwork.DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS = 1; // Minimal delay for simulated network
 
@@ -816,6 +818,7 @@ class VelbusBasicTest extends Specification {
     }
 
     def cleanupSpec() {
+        VelbusNetwork.DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS = writeDelayMillis
         if (network != null) {
             network.close()
         }
@@ -1025,7 +1028,7 @@ class VelbusBasicTest extends Specification {
 
         then: "the button press packet should have been sent to the message processor"
         conditions.eventually {
-            device.getPropertyValue("CH22").getPropertyValue() == InputProcessor.ChannelState.PRESSED
+            assert device.getPropertyValue("CH22").getPropertyValue() == InputProcessor.ChannelState.PRESSED
         }
         if (network.client == messageProcessor) {
             assert messageProcessor.sentMessages.size() == 1
@@ -1037,7 +1040,7 @@ class VelbusBasicTest extends Specification {
 
         then: "the button release packet should have been sent to the message processor"
         conditions.eventually {
-            device.getPropertyValue("CH22").getPropertyValue() == InputProcessor.ChannelState.RELEASED
+            assert device.getPropertyValue("CH22").getPropertyValue() == InputProcessor.ChannelState.RELEASED
             if (network.client == messageProcessor) {
                 assert messageProcessor.sentMessages.size() == 2
                 assert messageProcessor.sentMessages[1].toString() == "0F F8 32 04 00 00 20 00 A3 04 00 00 00 00"
@@ -1225,7 +1228,7 @@ class VelbusBasicTest extends Specification {
 
         then: "the button press packet should have been sent to the message processor"
         conditions.eventually {
-            device.getPropertyValue("CH3").getPropertyValue() == InputProcessor.ChannelState.PRESSED
+            assert device.getPropertyValue("CH3").getPropertyValue() == InputProcessor.ChannelState.PRESSED
             if (network.client == messageProcessor) {
                 assert messageProcessor.sentMessages.size() == 1
                 assert messageProcessor.sentMessages[0].toString() == "0F F8 0A 04 00 04 00 00 E7 04 00 00 00 00"
@@ -1237,7 +1240,7 @@ class VelbusBasicTest extends Specification {
 
         then: "the button release packet should have been sent to the message processor"
         conditions.eventually {
-            device.getPropertyValue("CH3").getPropertyValue() == InputProcessor.ChannelState.RELEASED
+            assert device.getPropertyValue("CH3").getPropertyValue() == InputProcessor.ChannelState.RELEASED
             if (network.client == messageProcessor) {
                 assert messageProcessor.sentMessages.size() == 2
                 assert messageProcessor.sentMessages[1].toString() == "0F F8 0A 04 00 00 04 00 E7 04 00 00 00 00"
@@ -2033,8 +2036,8 @@ class VelbusBasicTest extends Specification {
 
         then: "the counter should update to match"
         conditions.eventually {
-            device.getPropertyValue("COUNTER1").getPropertyValue() == 0.04
-            device.getPropertyValue("COUNTER1_INSTANT").getPropertyValue() == 0.15
+            assert device.getPropertyValue("COUNTER1").getPropertyValue() == 0.04
+            assert device.getPropertyValue("COUNTER1_INSTANT").getPropertyValue() == 0.15
         }
 
         when: "the counter is reset"
@@ -2042,8 +2045,8 @@ class VelbusBasicTest extends Specification {
 
         then: "the counter should update to match"
         conditions.eventually {
-            device.getPropertyValue("COUNTER1").getPropertyValue() == 0d
-            device.getPropertyValue("COUNTER1_INSTANT").getPropertyValue() == 0.02
+            assert device.getPropertyValue("COUNTER1").getPropertyValue() == 0d
+            assert device.getPropertyValue("COUNTER1_INSTANT").getPropertyValue() == 0.02
         }
     }
 
@@ -2281,7 +2284,6 @@ class VelbusBasicTest extends Specification {
 
         then: "the dimmer should switch on"
         conditions.eventually {
-
             assert device.getPropertyValue("CH2").getPropertyValue() == AnalogOutputProcessor.ChannelState.ON
             assert device.getPropertyValue("CH2_SETTING").getPropertyValue() == OutputChannelProcessor.ChannelSetting.NORMAL
             assert device.getPropertyValue("CH2_LED").getPropertyValue() == FeatureProcessor.LedState.FAST

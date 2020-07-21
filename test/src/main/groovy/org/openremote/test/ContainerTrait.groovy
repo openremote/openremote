@@ -270,7 +270,7 @@ trait ContainerTrait {
 
     UriBuilder serverUri(int serverPort) {
         UriBuilder.fromUri("")
-                .scheme("http").host("localhost").port(serverPort)
+                .scheme("http").host("127.0.0.1").port(serverPort)
     }
 
     void stopContainer() {

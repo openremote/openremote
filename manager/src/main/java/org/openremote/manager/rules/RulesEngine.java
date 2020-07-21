@@ -443,6 +443,8 @@ public class RulesEngine<T extends Ruleset> {
                 fireTimer = executorService.schedule(
                     () -> withLock(RulesEngine.this.toString() + "::fire", () -> {
 
+                        fireTimer = null;
+
                         // Are temporary facts present before rules are fired?
                         boolean hadTemporaryFactsBefore = facts.hasTemporaryFacts();
 

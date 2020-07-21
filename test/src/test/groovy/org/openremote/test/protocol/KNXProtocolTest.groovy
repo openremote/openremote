@@ -93,8 +93,8 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         knxAgent.setAttributes(
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("knxConfig"), KNXProtocol.PROTOCOL_NAME)
                 .addMeta(
-                    new MetaItem(KNXProtocol.META_KNX_GATEWAY_HOST, Values.create("localhost")),
-                    new MetaItem(KNXProtocol.META_KNX_LOCAL_HOST, Values.create("localhost"))
+                    new MetaItem(KNXProtocol.META_KNX_GATEWAY_HOST, Values.create("127.0.0.1")),
+                    new MetaItem(KNXProtocol.META_KNX_LOCAL_HOST, Values.create("127.0.0.1"))
                 ),
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("knxConfigError1"), KNXProtocol.PROTOCOL_NAME),
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("knxConfigError2"), KNXProtocol.PROTOCOL_NAME)
@@ -134,7 +134,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
 
         then: "the living room thing to be fully deployed"
         conditions.eventually {
-            ((KNXProtocol) agentService.getProtocol(knxAgent.getAttribute("knxConfig").get())).getAttributeActionMap().get(knxThing.getAttribute("light1ToggleOnOff")) != null
+            assert ((KNXProtocol) agentService.getProtocol(knxAgent.getAttribute("knxConfig").get())).getAttributeActionMap().get(new AttributeRef(knxThing.id, "light1ToggleOnOff")) != null
         }
         
         
@@ -144,7 +144,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
                 
         then: "the correct data should arrive on KNX bus"
         conditions.eventually {
-           assert knxTestingNetwork.getLastDataReceived().equals("0081") == true
+           assert knxTestingNetwork.getLastDataReceived() == "0081"
         }
 
         when: "change light1ToggleOnOff value to 'false'"
@@ -153,7 +153,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
                 
         then: "the correct data should arrive on KNX bus"
         conditions.eventually {
-            assert knxTestingNetwork.getLastDataReceived().equals("0080") == true
+            assert knxTestingNetwork.getLastDataReceived() == "0080"
         }
         
         cleanup: "the server should be stopped"

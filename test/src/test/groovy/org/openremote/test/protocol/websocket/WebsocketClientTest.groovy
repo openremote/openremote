@@ -95,9 +95,9 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         and: "a simple Websocket client"
         def client = new WebsocketIoClient<String>(
-                new URIBuilder("ws://localhost:$serverPort/websocket/events?Auth-Realm=master").build(),
+                new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Auth-Realm=master").build(),
                 null,
-                new OAuthPasswordGrant("http://localhost:$serverPort/auth/realms/master/protocol/openid-connect/token",
+                new OAuthPasswordGrant("http://127.0.0.1:$serverPort/auth/realms/master/protocol/openid-connect/token",
                     KEYCLOAK_CLIENT_ID,
                     null,
                     null,

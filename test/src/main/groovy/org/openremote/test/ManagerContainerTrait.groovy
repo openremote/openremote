@@ -7,11 +7,13 @@ import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetProcessingService
+import org.openremote.manager.rules.RulesService
 import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 
+import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.IDENTITY_NETWORK_HOST
 import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.IDENTITY_NETWORK_WEBSERVER_PORT
 import static org.openremote.container.timer.TimerService.Clock.PSEUDO
 import static org.openremote.container.timer.TimerService.Clock.REAL
@@ -29,6 +31,7 @@ trait ManagerContainerTrait extends ContainerTrait {
         [
                 (WEBSERVER_LISTEN_PORT)          : Integer.toString(serverPort),
                 (IDENTITY_NETWORK_WEBSERVER_PORT): Integer.toString(serverPort),
+                (IDENTITY_NETWORK_HOST)          : "127.0.0.1",
                 (SETUP_IMPORT_DEMO_ASSETS)       : "true",
                 (SETUP_IMPORT_DEMO_USERS)        : "true",
                 (SETUP_IMPORT_DEMO_SCENES)       : "false",
@@ -67,6 +70,16 @@ trait ManagerContainerTrait extends ContainerTrait {
     boolean noEventProcessedIn(AssetProcessingService assetProcessingService, int milliseconds) {
         return (assetProcessingService.lastProcessedEventTimestamp > 0
                 && assetProcessingService.lastProcessedEventTimestamp + milliseconds < System.currentTimeMillis())
+    }
+
+    boolean noRuleEngineFiringScheduled() {
+        if (!this.container) {
+            return false
+        }
+
+        def rulesService = this.container.getService(RulesService.class)
+
+        return (rulesService.globalEngine == null || rulesService.globalEngine.fireTimer == null) && rulesService.tenantEngines.values().every {it.fireTimer == null} && rulesService.assetEngines.values().every {it.fireTimer == null}
     }
 
     /**

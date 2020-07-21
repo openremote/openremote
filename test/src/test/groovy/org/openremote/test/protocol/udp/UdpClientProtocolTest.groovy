@@ -65,7 +65,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
 
         expect: "the system settles down"
         conditions.eventually {
-            noEventProcessedIn(assetProcessingService, 300)
+            assert noEventProcessedIn(assetProcessingService, 300)
         }
 
         when: "a simple UDP echo server is started"
@@ -94,7 +94,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
 
         then: "the UDP echo server should be connected"
         conditions.eventually {
-            echoServer.connectionStatus == ConnectionStatus.CONNECTED
+            assert echoServer.connectionStatus == ConnectionStatus.CONNECTED
         }
 
         when: "an agent with a UDP client protocol configuration is created"
@@ -245,7 +245,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
 
         then: "the server should be connected"
         conditions.eventually {
-            echoServer.connectionStatus == ConnectionStatus.CONNECTED
+            assert echoServer.connectionStatus == ConnectionStatus.CONNECTED
         }
 
         when: "the protocol configuration is updated to use HEX mode"

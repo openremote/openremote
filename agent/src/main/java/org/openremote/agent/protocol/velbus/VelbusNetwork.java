@@ -19,7 +19,6 @@
  */
 package org.openremote.agent.protocol.velbus;
 
-import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.agent.protocol.velbus.device.DevicePropertyValue;
 import org.openremote.agent.protocol.velbus.device.VelbusDevice;

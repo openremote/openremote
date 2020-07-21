@@ -49,7 +49,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         expect: "the rules engines to be ready"
         conditions.eventually {
-            rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
+            assert rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
+            assert noRuleEngineFiringScheduled()
         }
 
         and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
@@ -140,11 +141,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         expect: "the rules engines to be ready"
         conditions.eventually {
-            rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
+            assert rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
+            assert noRuleEngineFiringScheduled()
         }
 
         when: "a Kitchen room asset is inserted into apartment that contains a RULE_STATE = true meta flag"
-        rulesImport.resetRulesFired()
         def apartment2 = assetStorageService.find(managerDemoSetup.apartment2Id)
         def asset = new Asset("Kitchen", AssetType.ROOM, apartment2)
         asset.setRealm(keycloakDemoSetup.tenantBuilding.getRealm())
@@ -189,6 +190,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "time advances"
         advancePseudoClock(1, TimeUnit.SECONDS, container)
 
+        then: "the rule engines settle down"
+        conditions.eventually {
+            assert noRuleEngineFiringScheduled()
+        }
+
         and: "an attribute event is pushed into the system for an attribute with no RULE_STATE meta"
         def globalLastFireTimestamp = rulesImport.globalEngine.lastFireTimestamp
         def masterLastFireTimestamp = rulesImport.masterEngine.lastFireTimestamp
@@ -206,7 +212,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert apartment2LivingRoom.getAttribute("windowOpen").flatMap{it.getValueAsBoolean()}.orElse(false)
         }
 
-        then: "the rules engines should not have executed"
+        then: "the rules engines should not have fired"
         conditions.eventually {
             assert rulesImport.globalEngine.lastFireTimestamp == globalLastFireTimestamp
             assert rulesImport.masterEngine.lastFireTimestamp == masterLastFireTimestamp
@@ -363,7 +369,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         expect: "the rules engines to be ready"
         conditions.eventually {
-            rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
+            assert rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
+            assert noRuleEngineFiringScheduled()
         }
 
         when: "a broken RHS rule is loaded into the building engine"
@@ -386,6 +393,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             })
         }
 
+        then: "the engines should settle"
+        conditions.eventually {
+            assert noRuleEngineFiringScheduled()
+        }
+
         when: "an attribute event occurs"
         def globalLastFireTimestamp = rulesImport.globalEngine.lastFireTimestamp
         def masterLastFireTimestamp = rulesImport.masterEngine.lastFireTimestamp
@@ -400,10 +412,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         then: "the rules engines should have executed at least one more time"
         conditions.eventually {
             assert rulesImport.globalEngine.lastFireTimestamp > globalLastFireTimestamp
-            assert rulesImport.masterEngine.lastFireTimestamp > masterLastFireTimestamp
+            assert rulesImport.masterEngine.lastFireTimestamp == masterLastFireTimestamp
             assert rulesImport.tenantBuildingEngine.lastFireTimestamp == tenantALastFireTimestamp
             assert rulesImport.apartment2Engine.lastFireTimestamp > apartment2LastFireTimestamp
-            assert rulesImport.apartment3Engine.lastFireTimestamp > apartment3LastFireTimestamp
+            assert rulesImport.apartment3Engine.lastFireTimestamp == apartment3LastFireTimestamp
         }
 
         cleanup: "the static rules time variable is reset"

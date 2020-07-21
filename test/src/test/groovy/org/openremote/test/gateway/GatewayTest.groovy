@@ -93,9 +93,9 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "the Gateway client is created"
         def gatewayClient = new WebsocketIoClient<String>(
-            new URIBuilder("ws://localhost:$serverPort/websocket/events?Auth-Realm=$managerDemoSetup.realmBuildingTenant").build(),
+            new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Auth-Realm=$managerDemoSetup.realmBuildingTenant").build(),
             null,
-            new OAuthClientCredentialsGrant("http://localhost:$serverPort/auth/realms/$managerDemoSetup.realmBuildingTenant/protocol/openid-connect/token",
+            new OAuthClientCredentialsGrant("http://127.0.0.1:$serverPort/auth/realms/$managerDemoSetup.realmBuildingTenant/protocol/openid-connect/token",
                 gateway.getAttribute("clientId").flatMap{it.getValueAsString()}.orElse(""),
                 gateway.getAttribute("clientSecret").flatMap{it.getValueAsString()}.orElse(""),
                 null).setBasicAuthHeader(true),
@@ -886,7 +886,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "a gateway client connection is created to connect the city realm to the gateway"
         def gatewayConnection = new GatewayConnection(
-            "localhost",
+            "127.0.0.1",
             serverPort,
             managerDemoSetup.realmBuildingTenant,
             gateway.getAttribute("clientId").flatMap{it.getValueAsString()}.orElse(""),
@@ -910,7 +910,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         and: "the fake mirrored assets should have been created under the gateway asset"
         conditions.eventually {
             def fakeAssets = assetStorageService.findAll(new AssetQuery().parents(gateway.id).recursive(true))
-            fakeAssets.size() == realIdToFakeIdMap.size()
+            assert fakeAssets.size() == realIdToFakeIdMap.size()
         }
 
         when: "a gateway client asset is modified"

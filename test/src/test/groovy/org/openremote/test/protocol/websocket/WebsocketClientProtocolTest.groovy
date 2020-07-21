@@ -132,11 +132,11 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                 .addMeta(
                     new MetaItem(
                         WebsocketClientProtocol.META_PROTOCOL_CONNECT_URI,
-                        Values.create("ws://localhost:$serverPort/websocket/events?Auth-Realm=master")
+                        Values.create("ws://127.0.0.1:$serverPort/websocket/events?Auth-Realm=master")
                     ),
                     new MetaItem(
                         Protocol.META_PROTOCOL_OAUTH_GRANT,
-                        new OAuthPasswordGrant("http://localhost:$serverPort/auth/realms/master/protocol/openid-connect/token",
+                        new OAuthPasswordGrant("http://127.0.0.1:$serverPort/auth/realms/master/protocol/openid-connect/token",
                             KEYCLOAK_CLIENT_ID,
                             null,
                             null,
