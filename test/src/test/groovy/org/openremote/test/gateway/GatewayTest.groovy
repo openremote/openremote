@@ -479,6 +479,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             }
         }, 100, 100))
         building1Room5Asset = assetStorageService.merge(building1Room5Asset)
+        building1Room5Asset = assetStorageService.find(building1Room5AssetId) // Re-fetch asset as modifying instance returned by merge will cause concurrency issues
 
         then: "the asset should have been added to the gateway and eventually replicated in the local manager"
         assert building1Room5Asset != null
@@ -500,6 +501,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             }
         }, 100, 100))
         building1Room5Asset = assetStorageService.merge(building1Room5Asset)
+        building1Room5Asset = assetStorageService.find(building1Room5AssetId) // Re-fetch asset as modifying instance returned by merge will cause concurrency issues
 
         then: "the asset should also be updated in the local manager"
         assert building1Room5Asset != null
