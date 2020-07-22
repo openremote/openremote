@@ -78,17 +78,23 @@ public class MockVelbusClient implements IoClient<VelbusPacket> {
 
     @Override
     public void addMessageConsumer(Consumer<VelbusPacket> messageConsumer) {
-        messageConsumers.add(messageConsumer);
+        synchronized (messageConsumers) {
+            messageConsumers.add(messageConsumer);
+        }
     }
 
     @Override
     public void removeMessageConsumer(Consumer<VelbusPacket> messageConsumer) {
-        messageConsumers.remove(messageConsumer);
+        synchronized (messageConsumers) {
+            messageConsumers.remove(messageConsumer);
+        }
     }
 
     @Override
     public void removeAllMessageConsumers() {
-        messageConsumers.clear();
+        synchronized (messageConsumers) {
+            messageConsumers.clear();
+        }
     }
 
     @Override

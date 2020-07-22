@@ -77,12 +77,14 @@ public class VelbusNetwork {
     }
 
     public synchronized void sendPackets(VelbusPacket... packets) {
-        if (getConnectionStatus() == ConnectionStatus.CONNECTED) {
-            messageQueue.addAll(Arrays.asList(packets));
+        if (getConnectionStatus() != ConnectionStatus.CONNECTED) {
+            return;
+        }
 
-            if (queueProcessingTask == null) {
-                startSendingPackets();
-            }
+        messageQueue.addAll(Arrays.asList(packets));
+
+        if (queueProcessingTask == null) {
+            startSendingPackets();
         }
     }
 
@@ -133,7 +135,9 @@ public class VelbusNetwork {
 
         if (status == ConnectionStatus.CONNECTED) {
             // Don't process stale messages
-            messageQueue.clear();
+            synchronized (messageQueue) {
+                messageQueue.clear();
+            }
 
             // Initialise the devices
             for (int i=0; i<devices.length; i++) {
@@ -149,8 +153,14 @@ public class VelbusNetwork {
                 }
             }
             // Clear out sub device registrations
-            for (int i=0; i<subAddressDevices.length; i++) {
-                subAddressDevices[i] = null;
+            Arrays.fill(subAddressDevices, null);
+
+            synchronized (messageQueue) {
+                messageQueue.clear();
+                if (queueProcessingTask != null) {
+                    queueProcessingTask.cancel(false);
+                    queueProcessingTask = null;
+                }
             }
         }
     }
@@ -179,28 +189,29 @@ public class VelbusNetwork {
         }
     }
 
-    public void addPropertyValueConsumer(int deviceAddress, String property, Consumer<DevicePropertyValue> propertyValueConsumer) {
+    public void addPropertyValueConsumer(int deviceAddress, String property, Consumer<DevicePropertyValue<?>> propertyValueConsumer) {
         if (deviceAddress < 1 || deviceAddress > 254) {
             LOG.warning("Invalid device address: " + deviceAddress);
             return;
         }
 
         VelbusDevice device = getDevice(deviceAddress);
+        boolean deviceExists = device != null;
 
-        if (device == null) {
+        if (!deviceExists) {
             // Device hasn't been created yet so create it
-           device = new VelbusDevice(deviceAddress, this);
+            device = new VelbusDevice(deviceAddress, this);
             devices[deviceAddress-1] = device;
-
-            if (getConnectionStatus() == ConnectionStatus.CONNECTED) {
-                device.initialise();
-            }
         }
 
         device.addPropertyValueConsumer(property, propertyValueConsumer);
+
+        if (!deviceExists && getConnectionStatus() == ConnectionStatus.CONNECTED) {
+            device.initialise();
+        }
     }
 
-    public void removePropertyValueConsumer(int deviceAddress, String property, Consumer<DevicePropertyValue> propertyValueConsumer) {
+    public void removePropertyValueConsumer(int deviceAddress, String property, Consumer<DevicePropertyValue<?>> propertyValueConsumer) {
         if (deviceAddress < 1 || deviceAddress > 254) {
             LOG.warning("Invalid device address: " + deviceAddress);
             return;
@@ -219,7 +230,6 @@ public class VelbusNetwork {
             if (device != null) {
                 device.removeAllPropertyValueConsumers();
             }
-            //devices[i] = null;
         }
     }
 
@@ -257,11 +267,7 @@ public class VelbusNetwork {
         return devices[address-1];
     }
 
-    protected synchronized void startSendingPackets() {
-        if (queueProcessingTask != null) {
-            return;
-        }
-
+    protected void startSendingPackets() {
         queueProcessingTask = getExecutorService().scheduleWithFixedDelay(
             this::doSendPacket,
             0,
@@ -270,18 +276,22 @@ public class VelbusNetwork {
         );
     }
 
-    protected void doSendPacket() {
-        if (getConnectionStatus() == ConnectionStatus.CONNECTED) {
-            VelbusPacket packet = messageQueue.poll();
-            if (packet != null) {
-                VelbusPacket.OutboundCommand command = VelbusPacket.OutboundCommand.fromCode(packet.getCommand());
-                LOG.finest("Sending packet " + command + " : " + packet);
-                client.sendMessage(packet);
-            } else {
-                queueProcessingTask.cancel(false);
-                queueProcessingTask = null;
-            }
+    protected synchronized void doSendPacket() {
+        if (getConnectionStatus() != ConnectionStatus.CONNECTED) {
+            return;
         }
+
+        VelbusPacket packet = messageQueue.poll();
+
+        if (packet == null) {
+            queueProcessingTask.cancel(false);
+            queueProcessingTask = null;
+            return;
+        }
+
+        VelbusPacket.OutboundCommand command = VelbusPacket.OutboundCommand.fromCode(packet.getCommand());
+        LOG.finest("Sending packet " + command + " : " + packet);
+        client.sendMessage(packet);
     }
 
     public ScheduledFuture scheduleTask(Runnable runnable, int delayMillis) {
@@ -289,7 +299,7 @@ public class VelbusNetwork {
         scheduledTasks.removeIf(Future::isDone);
 
         if (getConnectionStatus() == ConnectionStatus.CONNECTED) {
-            ScheduledFuture future = getExecutorService().schedule(runnable, delayMillis, TimeUnit.MILLISECONDS);
+            ScheduledFuture<?> future = getExecutorService().schedule(runnable, delayMillis, TimeUnit.MILLISECONDS);
             scheduledTasks.add(future);
             return future;
         }

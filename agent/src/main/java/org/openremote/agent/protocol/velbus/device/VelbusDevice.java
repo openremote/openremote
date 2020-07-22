@@ -2,35 +2,32 @@ package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusNetwork;
 import org.openremote.agent.protocol.velbus.VelbusPacket;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
 
 public class VelbusDevice {
 
     public static final int MAX_INITIALISATION_ATTEMPTS = 5;
-    public static final int INITIALISATION_TIMEOUT_SECONDS = 10;
+    public static int INITIALISATION_TIMEOUT_MILLISECONDS = 10000;
     protected int baseAddress;
     protected int[] subAddresses = new int[4]; // Max of 4 sub-addresses
-    protected Map<String, DevicePropertyValue> devicePropertyCache = new HashMap<>();
-    protected final Map<String, List<Consumer<DevicePropertyValue>>> propertyValueConsumers = new HashMap<>();
-    //protected Map<AttributeRef, AssetAttribute> linkedAttribute = new HashMap<>();
-    //protected Map<String, List<AssetAttribute>> propertyAttributeMap = new HashMap<>();
+    protected final Map<String, DevicePropertyValue<?>> devicePropertyCache = new HashMap<>();
+    protected final Map<String, List<Consumer<DevicePropertyValue<?>>>> propertyValueConsumers = new ConcurrentHashMap<>();
     protected VelbusNetwork velbusNetwork;
     protected FeatureProcessor[] featureProcessors;
     protected boolean initialised;
     protected boolean initialisationFailed;
     protected int initialisationAttempts;
     protected VelbusDeviceType deviceType;
-    protected Future initialisationTask;
-    protected final Object initialisationLock = new Object();
-
+    protected Future<?> initialisationTask;
 
     public VelbusDevice(int baseAddress, VelbusNetwork velbusNetwork) {
         this.baseAddress = baseAddress;
@@ -67,7 +64,7 @@ public class VelbusDevice {
         return -1;
     }
 
-    private synchronized void setDeviceType(VelbusDeviceType deviceType) {
+    private void setDeviceType(VelbusDeviceType deviceType) {
         this.deviceType = deviceType;
         featureProcessors = deviceType.getFeatureProcessors();
     }
@@ -79,29 +76,21 @@ public class VelbusDevice {
         }
     }
 
-    public synchronized void reset() {
+    public void reset() {
         cancelInitialisationTask(true);
         devicePropertyCache.clear();
         initialised = false;
         initialisationAttempts = 0;
         deviceType = null;
-
-        for (int i=0; i<subAddresses.length; i++) {
-            subAddresses[i] = 0;
-        }
+        Arrays.fill(subAddresses, 0);
     }
 
     /**
      * Attempt initialisation of this device
      */
     public void initialise() {
-        synchronized (initialisationLock) {
+        synchronized (this) {
             if (isInitialised()) {
-                return;
-            }
-
-            if (initialisationFailed) {
-                LOG.finest("Device initialisation already failed");
                 return;
             }
 
@@ -110,13 +99,19 @@ public class VelbusDevice {
                 return;
             }
 
+            if (initialisationFailed) {
+                initialisationAttempts = 0;
+                initialisationFailed = false;
+                LOG.finest("Re-attempting device initialisation");
+            }
+
             LOG.info("Initialisation starting: " + getBaseAddress());
-            initialisationTask = velbusNetwork.getExecutorService().scheduleWithFixedDelay(this::doInitialisation, 0, INITIALISATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            initialisationTask = velbusNetwork.getExecutorService().scheduleWithFixedDelay(this::doInitialisation, 0, INITIALISATION_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
         }
     }
 
     private void doInitialisation() {
-        synchronized (initialisationLock) {
+        synchronized (this) {
             if (initialisationAttempts >= MAX_INITIALISATION_ATTEMPTS) {
                 LOG.fine("Initialisation failed - Device has reached maximum initialisation attempts: " + getBaseAddress());
                 initialisationFailed = true;
@@ -143,75 +138,72 @@ public class VelbusDevice {
      * Indicates that the device is now initialised and if so it updates the flag and performs post initialisation tasks
      */
     private void onInitialised() {
-        synchronized (initialisationLock) {
+        synchronized (this) {
             if (isInitialised()) {
                 return;
             }
 
             cancelInitialisationTask(true);
-
             LOG.info("Device initialised: " + getBaseAddress());
             this.initialised = true;
+        }
 
-            // Send the status request packets for this device
-            if (isInitialisedAndValid() && featureProcessors != null) {
+        // Send the status request packets for this device
+        if (isInitialisedAndValid() && featureProcessors != null) {
 
-                List<VelbusPacket> statusPackets = Arrays.stream(featureProcessors)
-                    .flatMap(processor -> processor.getStatusRequestPackets(this).stream())
-                    .distinct()
-                    .collect(Collectors.toList());
+            LOG.fine("Sending module status request packets");
+            velbusNetwork.sendPackets(Arrays.stream(featureProcessors)
+                .flatMap(processor -> processor.getStatusRequestPackets(this).stream())
+                .distinct().toArray(VelbusPacket[]::new));
+        }
+    }
 
-                LOG.fine("Sending module status request packets");
-                velbusNetwork.sendPackets(statusPackets.toArray(new VelbusPacket[statusPackets.size()]));
+    public void addPropertyValueConsumer(String property, Consumer<DevicePropertyValue<?>> propertyValueConsumer) {
+        if (property.isEmpty()) {
+            return;
+        }
+
+        List<Consumer<DevicePropertyValue<?>>> consumers = propertyValueConsumers
+            .computeIfAbsent(property, p -> new ArrayList<>());
+
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (consumers) {
+            consumers.add(propertyValueConsumer);
+        }
+
+        // Push the current value of the property to the consumer
+        propertyValueConsumer.accept(getPropertyValue(property));
+    }
+
+    public void removePropertyValueConsumer(String property, Consumer<DevicePropertyValue<?>> propertyValueConsumer) {
+        if (property.isEmpty()) {
+            return;
+        }
+
+        propertyValueConsumers.computeIfPresent(property, (prop, consumers) -> {
+            //noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized (consumers) {
+                consumers.remove(propertyValueConsumer);
             }
-        }
-    }
-
-    public void addPropertyValueConsumer(String property, Consumer<DevicePropertyValue> propertyValueConsumer) {
-        if (property.isEmpty()) {
-            return;
-        }
-
-        synchronized (propertyValueConsumers) {
-            propertyValueConsumers
-                .computeIfAbsent(property, p -> new ArrayList<>())
-                .add(propertyValueConsumer);
-
-            // Push the current value of the property to the consumer
-            propertyValueConsumer.accept(getPropertyValue(property));
-        }
-    }
-
-    public void removePropertyValueConsumer(String property, Consumer<DevicePropertyValue> propertyValueConsumer) {
-        if (property.isEmpty()) {
-            return;
-        }
-
-        synchronized (propertyValueConsumers) {
-            propertyValueConsumers.computeIfPresent(property, (prop, consumers) -> {
-                    consumers.remove(propertyValueConsumer);
-                    return consumers;
-                });
-        }
+            return consumers;
+        });
     }
 
     public void removeAllPropertyValueConsumers() {
-        synchronized (propertyValueConsumers) {
-            propertyValueConsumers.forEach((prop, consumers) -> {
-                consumers.clear();
-            });
+        propertyValueConsumers.forEach((prop, consumers) -> {
+            consumers.clear();
+        });
 
-            propertyValueConsumers.clear();
-        }
+        propertyValueConsumers.clear();
     }
 
-    public synchronized void writeProperty(String property, Value value) {
+    public void writeProperty(String property, Value value) {
         if (!isInitialisedAndValid()) {
             LOG.fine("Ignoring property write as device is not initialised and/or it is invalid");
             return;
         }
 
-        if (property.isEmpty()) {
+        if (TextUtil.isNullOrEmpty(property)) {
             return;
         }
 
@@ -219,14 +211,14 @@ public class VelbusDevice {
             for (FeatureProcessor processor : featureProcessors) {
                 List<VelbusPacket> packets = processor.getPropertyWritePackets(this, property, value);
                 if (packets != null) {
-                    velbusNetwork.sendPackets(packets.toArray(new VelbusPacket[packets.size()]));
+                    velbusNetwork.sendPackets(packets.toArray(new VelbusPacket[0]));
                     break;
                 }
             }
         }
     }
 
-    public synchronized void processReceivedPacket(VelbusPacket velbusPacket) {
+    public void processReceivedPacket(VelbusPacket velbusPacket) {
         VelbusPacket.InboundCommand packetCommand = VelbusPacket.InboundCommand.fromCode(velbusPacket.getCommand());
 
         switch (packetCommand) {
@@ -285,24 +277,26 @@ public class VelbusDevice {
         }
     }
 
-    synchronized void setProperty(String property, DevicePropertyValue value) {
+    void setProperty(String property, DevicePropertyValue<?> value) {
         property = property.toUpperCase();
-        devicePropertyCache.put(property, value);
+        synchronized (devicePropertyCache) {
+            devicePropertyCache.put(property, value);
+        }
 
         // Notify linked consumers
-        synchronized (propertyValueConsumers) {
-            propertyValueConsumers.computeIfPresent(property, (prop, consumers) -> {
+        propertyValueConsumers.computeIfPresent(property, (prop, consumers) -> {
+            synchronized (consumers) {
                 consumers.forEach(consumer -> consumer.accept(value));
-                return consumers;
-            });
-        }
+            }
+            return consumers;
+        });
     }
 
     protected DevicePropertyValue getPropertyValue(String propertyName) {
         return devicePropertyCache.get(propertyName);
     }
 
-        protected synchronized boolean hasPropertyValue(String propertyName) {
+    protected boolean hasPropertyValue(String propertyName) {
         return devicePropertyCache.containsKey(propertyName);
     }
 

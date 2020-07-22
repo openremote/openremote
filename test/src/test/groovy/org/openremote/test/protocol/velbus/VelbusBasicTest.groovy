@@ -32,7 +32,6 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static org.openremote.container.util.MapAccess.getInteger
 import static spock.util.matcher.HamcrestMatchers.closeTo
 
 class VelbusBasicTest extends Specification {
@@ -43,7 +42,7 @@ class VelbusBasicTest extends Specification {
     def static MockVelbusClient messageProcessor = new MockVelbusClient()
 
     @Shared
-    def static PollingConditions conditions = new PollingConditions(timeout: 15, delay: 0.2)
+    def static PollingConditions conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
     static loadDevicePackets(MockVelbusClient messageProcessor) {
         messageProcessor.mockPackets = [
@@ -801,10 +800,12 @@ class VelbusBasicTest extends Specification {
     }
 
     static writeDelayMillis = VelbusNetwork.DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS
+    static timeoutMillis = VelbusDevice.INITIALISATION_TIMEOUT_MILLISECONDS
 
     def setupSpec() {
-        VelbusNetwork.DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS = 1; // Minimal delay for simulated network
-
+        // Minimal delays for simulated network
+        VelbusNetwork.DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS = 10
+        VelbusDevice.INITIALISATION_TIMEOUT_MILLISECONDS = 10
         // Uncomment and configure the below lines to communicate with an actual VELBUS network
 //        def client = new VelbusSocketMessageProcessor("192.168.0.65", 6000, protocolExecutorService);
 //        VelbusNetwork.DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS = 100;
@@ -819,6 +820,7 @@ class VelbusBasicTest extends Specification {
 
     def cleanupSpec() {
         VelbusNetwork.DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS = writeDelayMillis
+        VelbusDevice.INITIALISATION_TIMEOUT_MILLISECONDS = timeoutMillis
         if (network != null) {
             network.close()
         }
@@ -838,8 +840,8 @@ class VelbusBasicTest extends Specification {
             Thread.sleep(20)
             counter++
         }
-        network.removeAllDevices()
         network.disconnect()
+        network.removeAllDevices()
     }
 
     def "Input Button Processor Test"() {
@@ -851,7 +853,7 @@ class VelbusBasicTest extends Specification {
         when: "A device property value consumer is registered for device address 2 (VMB4AN)"
         DevicePropertyValue ioAlarm1;
         network.addPropertyValueConsumer(2, "CH1", {
-            newValue -> ioAlarm1 = newValue;
+            newValue -> ioAlarm1 = newValue
         })
         device = network.getDevice(2)
 

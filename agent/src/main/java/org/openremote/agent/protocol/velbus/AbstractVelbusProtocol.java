@@ -69,7 +69,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
     public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractVelbusProtocol.class);
     protected final Map<String, VelbusNetwork> networkMap = new HashMap<>();
     protected final Map<AttributeRef, Pair<VelbusNetwork, Consumer<ConnectionStatus>>> networkConfigurationMap = new HashMap<>();
-    protected final Map<AttributeRef, Consumer<DevicePropertyValue>> attributePropertyValueConsumers = new HashMap<>();
+    protected final Map<AttributeRef, Consumer<DevicePropertyValue<?>>> attributePropertyValueConsumers = new HashMap<>();
     protected static final String VERSION = "1.0";
     protected static final List<MetaItemDescriptorImpl> META_ITEM_DESCRIPTORS = Collections.singletonList(
         new MetaItemDescriptorImpl(
@@ -205,7 +205,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
         ValueType valueType = attribute.getType().orElse(AttributeValueType.STRING).getValueType();
         LOG.fine("Linking attribute to device '" +deviceAddress + "' and property '" + property + "': " + attributeRef);
 
-        Consumer<DevicePropertyValue> propertyValueConsumer = propertyValue ->
+        Consumer<DevicePropertyValue<?>> propertyValueConsumer = propertyValue ->
             updateLinkedAttribute(new AttributeState(attributeRef, propertyValue != null ? propertyValue.toValue(valueType) : null));
 
         attributePropertyValueConsumers.put(attributeRef, propertyValueConsumer);
@@ -229,7 +229,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
         String property = getVelbusDevicePropertyLink(attribute);
 
         AttributeRef attributeRef = attribute.getReferenceOrThrow();
-        Consumer<DevicePropertyValue> propertyValueConsumer = attributePropertyValueConsumers.remove(attributeRef);
+        Consumer<DevicePropertyValue<?>> propertyValueConsumer = attributePropertyValueConsumers.remove(attributeRef);
         velbusNetwork.removePropertyValueConsumer(deviceAddress, property, propertyValueConsumer);
     }
 
