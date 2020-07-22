@@ -220,33 +220,6 @@ email failed tests:
       if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: on_failure
 
-deploy masterdemo on AWS:
-  image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
-  stage: deploy
-  script:
-    - aws cloudformation create-stack --stack-name $AWS_STACK_NAME --template-body file://gitlab-ci/aws-cloudformation.template.yml
-  after_script:
-    - aws cloudformation wait stack-create-complete --stack-name $AWS_STACK_NAME
-    - aws cloudformation describe-stacks --stack-name $AWS_STACK_NAME
-  allow_failure: true # set when:manual optional and not blocking
-  rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
-      when: manual
-
-auto delete aws cloudformation stack after 8 hours:
-  image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
-  stage: cleanup
-  script:
-    - aws cloudformation delete-stack --stack-name $AWS_STACK_NAME
-    - aws cloudformation wait stack-delete-complete --stack-name $AWS_STACK_NAME
-  allow_failure: true # set when:manual optional and not blocking
-  rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
-      when: delayed
-      start_in: '8 hours'
-
 manual delete aws cloudformation stack:
   image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
   stage: cleanup
@@ -273,4 +246,4 @@ manual delete aws cloudformation stack:
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
       if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
-      when: manual
+      when: never
