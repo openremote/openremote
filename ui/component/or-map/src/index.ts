@@ -23,6 +23,7 @@ export interface ViewSettings {
 
 export interface MapEventDetail {
     lngLat: LngLat;
+    doubleClick: boolean;
 }
 
 export class OrMapLoadedEvent extends CustomEvent<void> {
@@ -41,9 +42,10 @@ export class OrMapClickedEvent extends CustomEvent<MapEventDetail> {
 
     public static readonly NAME = "or-map-clicked";
 
-    constructor(lngLat: LngLat) {
+    constructor(lngLat: LngLat, doubleClick: boolean = false) {
         super(OrMapClickedEvent.NAME, {
             detail: {
+                doubleClick: doubleClick,
                 lngLat: lngLat
             },
             bubbles: true,

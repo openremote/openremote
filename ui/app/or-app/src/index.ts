@@ -17,11 +17,11 @@ import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
 import Navigo from "navigo";
-import manager, {Auth, DefaultColor2, DefaultColor3, DefaultHeaderHeight, ManagerConfig, Util, BasicLoginResult} from "@openremote/core";
+import manager, {Auth, DefaultColor2, DefaultColor3, ManagerConfig, Util, BasicLoginResult} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig, HeaderItem, Languages} from "./or-header";
 import {DialogConfig, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {AnyAction, EnhancedStore, Unsubscribe, Action} from "@reduxjs/toolkit";
-import {AppStateKeyed, updatePage, updateParams} from "./app";
+import {AnyAction, EnhancedStore, Unsubscribe} from "@reduxjs/toolkit";
+import {AppStateKeyed, updatePage} from "./app";
 import {ThunkMiddleware} from "redux-thunk";
 import { translate } from "@openremote/or-translate";
 import { InputType, OrInputChangedEvent } from "@openremote/or-input";
@@ -70,6 +70,8 @@ export interface PageProvider<S extends AppStateKeyed> {
 }
 
 export abstract class Page<S extends AppStateKeyed> extends translate(i18next)(LitElement) {
+
+    abstract get name(): string;
 
     protected _store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>;
 
@@ -339,8 +341,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                         provider.routes.forEach((route) => {
                             router.on(
                                 route, (params, query) => {
-                                    this._store.dispatch(updatePage(pageName));
-                                    this._store.dispatch(updateParams(params));
+                                    this._store.dispatch(updatePage({page: pageName, params: params}));
                                 }
                             )
                         });
@@ -426,7 +427,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 if (this._page && this.appConfig.pages[this._page]) {
                     const pageElem = this.appConfig.pages[this._page].pageCreator();
                     this._mainElem.appendChild(pageElem);
-                    pageTitle += (i18next.isInitialized ? " - " + i18next.t(this._page) : " - " + this._page);
+                    pageTitle += (i18next.isInitialized ? " - " + i18next.t(pageElem.name) : " - " + pageElem.name);
                 }
             }
 

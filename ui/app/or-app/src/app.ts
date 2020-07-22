@@ -22,20 +22,20 @@ const INITIAL_STATE: AppState = {
     scrollTop: 0,
 };
 
+export interface PageAndParams {
+    page: string;
+    params?: {[k in string]: any};
+}
+
 const appSlice = createSlice({
     name: "app",
     initialState: INITIAL_STATE,
     reducers: {
-        updatePage(state, action: PayloadAction<string>) {
+        updatePage(state, action: PayloadAction<PageAndParams | string>) {
             return {
                 ...state,
-                page: action.payload
-            };
-        },
-        updateParams(state, action: PayloadAction<{[k in string]: any}>) {
-            return {
-                ...state,
-                params: action.payload
+                page: typeof action.payload === "string" ? action.payload : action.payload.page,
+                params: typeof action.payload === "string" ? undefined : action.payload.params
             };
         },
         updateDrawer(state, action: PayloadAction<boolean>) {
@@ -53,5 +53,5 @@ const appSlice = createSlice({
     }
 });
 
-export const {updatePage, updateParams, updateDrawer, scrollToTop} = appSlice.actions;
+export const {updatePage, updateDrawer, scrollToTop} = appSlice.actions;
 export const appReducer = appSlice.reducer;

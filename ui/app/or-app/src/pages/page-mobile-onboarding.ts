@@ -81,11 +81,12 @@ class PageMobileOnboarding<S extends AppStateKeyed> extends Page<S> {
         `;
     }
 
+    get name(): string {
+        return "mobile-onboarding";
+    }
+
     constructor(store: EnhancedStore<S>) {
         super(store);
-
-       
-
     }
 
     public connectedCallback() {

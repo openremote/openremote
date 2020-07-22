@@ -45,9 +45,11 @@ declare global {
     }
 }
 
-export type AttributeInputCustomProvider = (assetType: string | undefined, attribute: AssetAttribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean | undefined, disabled: boolean | undefined, label: string | undefined) => ((value: any) => TemplateResult) | undefined;
+export type AttributeInputCustomProviderResult = ((value: any, timestamp: number | undefined, loading: boolean, sending: boolean, error: boolean) => TemplateResult) | undefined;
 
-export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (assetType, attribute, attributeDescriptor, valueDescriptor, valueChangeNotifier, readonly, disabled, label) => (value: any) => {
+export type AttributeInputCustomProvider = (assetType: string | undefined, attribute: AssetAttribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean | undefined, disabled: boolean | undefined, label: string | undefined) => AttributeInputCustomProviderResult;
+
+export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (assetType, attribute, attributeDescriptor, valueDescriptor, valueChangeNotifier, readonly, disabled, label) => (value, timestamp, loading, sending, error) => {
     let pos: LngLat | undefined;
     let center: number[] | undefined;
     if (value) {
@@ -57,7 +59,7 @@ export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (
     const iconAndColor = getMarkerIconAndColorFromAssetType(assetType);
 
     const clickHandler = (mapClickDetail: MapEventDetail) => {
-        if (!readonly && !disabled) {
+        if (!readonly && !disabled && mapClickDetail.doubleClick) {
             const geoJsonPoint = MapUtil.getGeoJSONPoint(mapClickDetail.lngLat);
             if (valueChangeNotifier) {
                 valueChangeNotifier(geoJsonPoint);
@@ -65,16 +67,67 @@ export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (
         }
     };
 
-    return html`
+    const content = html`
         <style>
             or-map {
                 border: #e5e5e5 1px solid;
+                margin: 3px 0;
             }
-        </style>                    
+        </style>
         <or-map class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => clickHandler(ev.detail)}" .center="${center}">
             <or-map-marker active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .color="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
         </or-map>
     `;
+
+    return getAttributeInputWrapper(content, loading, !!disabled, getHelperText(sending, false, timestamp), label, undefined);
+}
+
+export function getAttributeInputWrapper(content: TemplateResult, loading: boolean, disabled: boolean, helperText: string | undefined, label: string | undefined, buttonIcon?: string, valueProvider?: () => any, valueChangeConsumer?: (value: any) => void): TemplateResult {
+
+    if (helperText) {
+        content = html`
+                    <div id="wrapper-helper">
+                        ${label ? html`<div>${label}</div>` : ``}
+                        <div id="wrapper-input">${content}</div>
+                        <div id="helper-text">${helperText}</div>
+                    </div>
+                `;
+    }
+
+    if (buttonIcon) {
+        content = html`
+                ${content}
+                <or-input id="send-btn" icon="${buttonIcon}" type="button" .disabled="${disabled || loading}" @or-input-changed="${(e: OrInputChangedEvent) => {
+            e.stopPropagation();
+            if (valueProvider && valueChangeConsumer) {
+                valueChangeConsumer(valueProvider())
+            }
+        }}"></or-input>
+            `;
+    }
+
+    return html`
+            <div id="wrapper" class="${buttonIcon === undefined || buttonIcon ? "no-padding" : "right-padding"}">
+                ${content}
+                <div id="scrim" class="${ifDefined(loading ? undefined : "hidden")}"><progress class="pure-material-progress-circular"></progress></div>
+            </div>
+        `;
+}
+
+export function getHelperText(sending: boolean, error: boolean, timestamp: number | undefined): string | undefined {
+    if (sending) {
+        return i18next.t("sending");
+    }
+
+    if (error) {
+        return i18next.t("sendFailed");
+    }
+
+    if (!timestamp) {
+        return;
+    }
+
+    return i18next.t("updatedWithDate", { date: new Date(timestamp) });
 }
 
 const DEFAULT_TIMEOUT = 5000;
@@ -90,7 +143,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 display: inline-block;
             }
             
-            #wrapper > or-input {
+            #wrapper or-input, #wrapper or-map {
                 width: 100%;
             }
             
@@ -111,13 +164,13 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             
             #wrapper-input {
                 flex: 1;
-                margin-left: 16px;
+                display: flex;
             }
             
             #wrapper-input > or-input {
-                width: 100%;
+                margin-left: 16px;
             }
-
+            
             /* Copy of mdc text field helper text styles */
             #helper-text {
                 margin-left: 16px;
@@ -326,7 +379,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
     public customProvider?: AttributeInputCustomProvider;
     public writeTimeout?: number = DEFAULT_TIMEOUT;
-    protected _template?: (value: any) => TemplateResult;
+    protected _template?: AttributeInputCustomProviderResult;
     protected _attributeDescriptor?: AttributeDescriptor;
     protected _attributeValueDescriptor?: AttributeValueDescriptor;
     protected _inputType?: InputType;
@@ -474,8 +527,17 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         this._inputType = undefined;
         this._valueFormat = undefined;
 
+        if (this.label) {
+            this._label = this.label;
+        } else if (this.label !== "" && this.label !== null) {
+            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType, this.attribute || this._attributeDescriptor);
+            this._label = Util.getAttributeLabel(this.attribute, descriptors[0], descriptors[1], true);
+        }
+        this._readonly = this.readonly !== undefined ? this.readonly : Util.getMetaValue(MetaItemType.READ_ONLY, this.attribute, this._attributeDescriptor);
+        this._disabled = this.disabled;
+
         if (this.customProvider) {
-            this._template = this.customProvider(this.assetType, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor, (v) => this._updateValue(v), this.readonly, this.disabled, this.label);
+            this._template = this.customProvider(this.assetType, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor, (v) => this._updateValue(v), this._readonly, this._disabled, this._label);
         }
 
         if (this._template) {
@@ -487,7 +549,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         } else if (this._attributeValueDescriptor) {
             switch (this._attributeValueDescriptor.name) {
                 case AttributeValueType.GEO_JSON_POINT.name:
-                    this._template = GeoJsonPointInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor, (v) => this._updateValue(v), this.readonly, this.disabled, this.label);
+                    this._template = GeoJsonPointInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor, (v) => this._updateValue(v), this._readonly, this._disabled, this._label);
                     return;
                 case AttributeValueType.SWITCH_MOMENTARY.name:
                     this._inputType = InputType.BUTTON_MOMENTARY;
@@ -533,14 +595,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             this._max = Util.getMetaValue(MetaItemType.RANGE_MAX, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as number;
             this._unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as string;
             this._step = Util.getMetaValue(MetaItemType.STEP, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as number;
-            if (this.label) {
-                this._label = this.label;
-            } else {
-                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType, this.attribute || this._attributeDescriptor);
-                this._label = Util.getAttributeLabel(this.attribute, descriptors[0], descriptors[1], true);
-            }
-            this._readonly = this.readonly !== undefined ? this.readonly : Util.getMetaValue(MetaItemType.READ_ONLY, this.attribute, this._attributeDescriptor);
-            this._disabled = this.disabled;
             this._options = Util.getMetaValue(MetaItemType.ALLOWED_VALUES, this.attribute, this._attributeDescriptor);
 
             if (!this.inputType && this._inputType === InputType.TEXT && this._options && Array.isArray(this._options) && this._options.length > 0) {
@@ -569,14 +623,14 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         const value = this.getValue();
 
         if (this._template) {
-            content = this._template(value);
+            content = this._template(value, this.getTimestamp(), loading, !!this._writeTimeoutHandler, this._sendError);
         } else {
 
             if (!this._inputType) {
                 content = html`<div><or-translate .value="attributeUnsupported"></or-translate></div>`;
             }
 
-            const helperText = this.getHelperText();
+            const helperText = this.hasHelperText ? getHelperText(!!this._writeTimeoutHandler, this._sendError, this.getTimestamp()) : undefined;
             const buttonIcon = this._writeTimeoutHandler ? "send-clock" : "send";
             const supportsHelperText = this.inputTypeSupportsHelperText();
             let label = this._label;
@@ -600,34 +654,10 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                     }
                 }}"></or-input>`;
 
-            if (helperText && !supportsHelperText) {
-                // Manually provide helper text outside of or-input
-                content = html`
-                    <div id="wrapper-helper">
-                        <div>${this._label}</div>
-                        <div id="wrapper-input">${content}</div>
-                        <div id="helper-text">${helperText}</div>
-                    </div>
-                `;
-            }
-
-            if (this._showButton) {
-                content = html`
-                    ${content}
-                    <or-input id="send-btn" icon="${buttonIcon}" type="button" .disabled="${this._disabled || loading}" @or-input-changed="${(e: OrInputChangedEvent) => {
-                        e.stopPropagation();
-                        this._updateValue(this._attrInput.value);
-                }}"></or-input>
-                `;
-            }
+            content = getAttributeInputWrapper(content, loading, !!this._disabled, !supportsHelperText ? helperText : undefined, this._label, this._showButton ? buttonIcon : this.disableButton ? undefined : "", () => this._attrInput.value, (v) => this._updateValue(v));
         }
 
-        return html`
-            <div id="wrapper" class="${this._showButton || this.disableButton ? "no-padding" : "right-padding"}">
-                ${content}
-                <div id="scrim" class="${ifDefined(loading ? undefined : "hidden")}"><progress class="pure-material-progress-circular"></progress></div>
-            </div>
-        `;
+        return content;
     }
 
     protected updated(_changedProperties: PropertyValues): void {
@@ -644,28 +674,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
     protected getTimestamp(): number | undefined {
         return this._attributeEvent ? this._attributeEvent.timestamp : this.attribute ? this.attribute.valueTimestamp : undefined;
-    }
-
-    protected getHelperText(): string | undefined {
-        if (!this.hasHelperText) {
-            return;
-        }
-
-        if (this._writeTimeoutHandler) {
-            return i18next.t("sending");
-        }
-
-        if (this._sendError) {
-            return i18next.t("sendFailed");
-        }
-
-        const timestamp = this.getTimestamp();
-
-        if (!timestamp) {
-            return;
-        }
-
-        return i18next.t("updatedWithDate", { date: new Date(timestamp) });
     }
 
     protected inputTypeSupportsButton() {

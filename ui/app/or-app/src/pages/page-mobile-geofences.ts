@@ -24,17 +24,7 @@ export function pageMobileGeofencesProvider<S extends AppStateKeyed>(store: Enha
 const QUERY_VIEW = new URLSearchParams(window.location.search).get("view");
 @customElement("page-mobile-geofences")
 class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
-    @property({type: String})
-    view =  QUERY_VIEW ? QUERY_VIEW : "map";
 
-    @property({type: Array})
-    mapItems = [];
-
-    @property({type: Array})
-    listItems = [];
-
-    @property({type: Object})
-    activeItem;
     
     static get styles() {
         // language=CSS
@@ -123,6 +113,22 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
                 --or-map-marker-height: 60px;
             }
         `;
+    }
+
+    @property({type: String})
+    view =  QUERY_VIEW ? QUERY_VIEW : "map";
+
+    @property({type: Array})
+    mapItems = [];
+
+    @property({type: Array})
+    listItems = [];
+
+    @property({type: Object})
+    activeItem;
+
+    get name(): string {
+        return "mobile-geofences";
     }
 
     constructor(store: EnhancedStore<S>) {

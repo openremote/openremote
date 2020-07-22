@@ -29,6 +29,10 @@ class PageAccount<S extends AppStateKeyed> extends Page<S>  {
         `;
     }
 
+    get name(): string {
+        return "account";
+    }
+
     constructor(store: EnhancedStore<S>) {
         super(store);
     }

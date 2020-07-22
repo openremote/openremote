@@ -1,7 +1,6 @@
-import {css, customElement, html, property, TemplateResult, unsafeCSS} from "lit-element";
+import {css, customElement, html, property, TemplateResult} from "lit-element";
 import "@openremote/or-data-viewer";
 import {DataViewerConfig} from "@openremote/or-data-viewer";
-import {DefaultBoxShadow} from "@openremote/core";
 import {AppStateKeyed, Page} from "../index";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import i18next from "i18next";
@@ -75,6 +74,10 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
 
     @property()
     protected _assetId;
+
+    get name(): string {
+        return "insights";
+    }
 
     constructor(store: EnhancedStore<S>) {
         super(store);

@@ -227,11 +227,13 @@ export class MapWidget {
 
             await this.styleLoaded();
 
-            this._mapGl.on("click", (e: MapMouseEvent)=> {
+            this._mapGl.on("click", (e: MapMouseEvent) => {
                 this._onMapClick(e.lngLat);
             });
 
-
+            this._mapGl.on("dblclick", (e: MapMouseEvent) => {
+                this._onMapClick(e.lngLat, true);
+            });
         }
 
         this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
@@ -249,8 +251,8 @@ export class MapWidget {
         });
     }
 
-    protected _onMapClick(lngLat: LngLat) {
-        this._mapContainer.dispatchEvent(new OrMapClickedEvent(lngLat));
+    protected _onMapClick(lngLat: LngLat, doubleClicked: boolean = false) {
+        this._mapContainer.dispatchEvent(new OrMapClickedEvent(lngLat, doubleClicked));
     }
 
     public addMarker(marker: OrMapMarker) {

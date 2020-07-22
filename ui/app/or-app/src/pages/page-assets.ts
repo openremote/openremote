@@ -2,7 +2,7 @@ import {css, customElement, html, property, TemplateResult, unsafeCSS} from "lit
 import "@openremote/or-asset-tree";
 import "@openremote/or-asset-viewer";
 import {ViewerConfig} from "@openremote/or-asset-viewer";
-import {OrAssetTreeSelectionChangedEvent, AssetTreeConfig} from "@openremote/or-asset-tree";
+import {AssetTreeConfig, OrAssetTreeSelectionChangedEvent, OrAssetTreeRequestSelectEvent} from "@openremote/or-asset-tree";
 import {DefaultBoxShadow} from "@openremote/core";
 import {AppStateKeyed, Page, router} from "../index";
 import {EnhancedStore} from "@reduxjs/toolkit";
@@ -491,7 +491,14 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
     public config?: PageAssetsConfig;
     
     @property()
+    protected _selectedId;
+
+    @property()
     protected _assetId;
+
+    get name(): string {
+        return "assets";
+    }
 
     constructor(store: EnhancedStore<S>) {
         super(store);
@@ -500,15 +507,17 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
     connectedCallback() {
         super.connectedCallback();
         this.addEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
+        this.addEventListener(OrAssetTreeRequestSelectEvent.NAME, this._onTreeSelectionRequested);
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
         this.removeEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
+        this.removeEventListener(OrAssetTreeRequestSelectEvent.NAME, this._onTreeSelectionRequested);
     }
 
     protected render(): TemplateResult | void {
-        const selectedIds = [this._assetId];
+        const selectedIds = [this._selectedId];
         return html`
               <or-asset-tree .config="${this.config && this.config.tree ? this.config.tree : null}" id="pageAssetTree" class="${this._assetId ? "hideMobile" : ""}" .selectedIds="${selectedIds}"></or-asset-tree>
               <or-asset-viewer class="${!this._assetId ? "hideMobile" : ""}" .config="${this.config && this.config.viewer ? this.config.viewer : PAGE_ASSETS_DEFAULT_CONFIG}" .assetId="${this._assetId}"></or-asset-viewer>
@@ -516,15 +525,31 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
     }
 
     stateChanged(state: S) {
-        this._assetId = state.app.params && state.app.params.id ? state.app.params.id : undefined;
+        this._selectedId = state.app.params && state.app.params.id ? state.app.params.id : undefined;
+    }
+
+    protected _onTreeSelectionRequested(event: OrAssetTreeRequestSelectEvent) {
+        // Block the selection change but update the route which will cause the change
+        event.detail.allow = false;
+        const assetId = event.detail.detail.node.asset.id;
+        if (assetId) {
+            router.navigate("assets/" + assetId);
+        } else {
+            router.navigate("assets/");
+        }
     }
 
     protected _onTreeSelectionChanged(event: OrAssetTreeSelectionChangedEvent) {
         const nodes = event.detail;
-        if (nodes[0]) {
-            router.navigate("assets/" + nodes[0].asset.id);
-        } else {
+        const assetId = nodes[0] ? nodes[0].asset.id : undefined;
+
+        if (this._selectedId !== assetId) {
+            // Asset requested in route couldn't be selected so navigate to no asset
             router.navigate("assets/");
+            this._assetId = undefined;
+        } else {
+            // Requested asset has been selected in the asset tree
+            this._assetId = assetId;
         }
     }
 }

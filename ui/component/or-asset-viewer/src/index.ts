@@ -10,7 +10,7 @@ import "@openremote/or-table";
 import "@openremote/or-panel";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {OrTranslate, translate} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import {InputType, OrInputChangedEvent, OrInput} from "@openremote/or-input";
 import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import {OrTable} from "@openremote/or-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
@@ -34,7 +34,7 @@ import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-m
 import { GenericAxiosResponse } from "axios";
 import { OrIcon } from "@openremote/or-icon";
 
-export type PanelType = "property" | "location" | "attribute" | "history" | "chart" | "group" | "survey" | "survey-results";
+export type PanelType = "property" | "attribute" | "history" | "group" | "survey" | "survey-results";
 
 export interface PanelConfig {
     type?: PanelType;
@@ -47,6 +47,14 @@ export interface PanelConfig {
     readonly?: string[];
     panelStyles?: { [style: string]: string };
     fieldStyles?: { [field: string]: { [style: string]: string } };
+    itemConfig?: {[name: string]: {
+        readonly?: boolean;
+        disabled?: boolean;
+        label?: string;
+        disableButton?: boolean;
+        disableHelperText?: boolean;
+        inputTypeOverride?: InputType;
+    }};
 }
 
 export interface GroupPanelConfig extends PanelConfig {
@@ -94,10 +102,7 @@ class EventHandler {
     }
 }
 
-export interface OrComputeGridEventDetail {
-}
-
-export class OrComputeGridEvent extends CustomEvent<OrComputeGridEventDetail> {
+export class OrComputeGridEvent extends CustomEvent<void> {
 
     public static readonly NAME = "or-compute-grid-event";
 
@@ -118,17 +123,17 @@ function getPanel(name: string, panelConfig: PanelConfig, content: TemplateResul
     }
 
     return html`
-            <div class=${classMap({panel: true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
-                <div class="panel-content-wrapper">
-                    <div class="panel-title">
-                        <or-translate value="${panelConfig.title ? panelConfig.title : name}"></or-translate>
-                    </div>
-                    <div class="panel-content">
-                        ${content}
-                    </div>
+        <div class=${classMap({panel: true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
+            <div class="panel-content-wrapper">
+                <div class="panel-title">
+                    <or-translate value="${panelConfig.title ? panelConfig.title : name}"></or-translate>
+                </div>
+                <div class="panel-content">
+                    ${content}
                 </div>
             </div>
-        `;
+        </div>
+    `;
 }
 
 export function getPanelContent(panelName: string, asset: Asset, attributes: AssetAttribute[], hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig): TemplateResult | undefined {
@@ -153,22 +158,21 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
 
     let content: TemplateResult | undefined;
 
-    // if (panelConfig && panelConfig.type === "property") {
-    //     // Special handling for info panel which only shows properties
-    //     let properties = OrAssetViewer.getInfoProperties(panelConfig);
+    if (panelConfig && panelConfig.type === "property") {
+        // Special handling for info panel which only shows properties
+        const properties = OrAssetViewer.getInfoProperties(panelConfig);
 
-    //     if (properties.length === 0) {
-    //         return;
-    //     }
+        if (properties.length === 0) {
+            return;
+        }
 
-    //     content = html`
-    //         ${properties.map((prop) => {
-    //         let style = styles ? styles[prop!] : undefined;
-    //         return prop === "attributes" ? `` : OrAssetViewer.getField(prop, true, style, OrAssetViewer.getPropertyTemplate(prop, (asset as { [index: string]: any })[prop], viewerConfig, panelConfig, shadowRoot));
-    //     })}
-    //     `;
-    // } else
-    if (panelConfig && panelConfig.type === "survey") {
+        content = html`
+            ${properties.map((prop) => {
+            const style = styles ? styles[prop!] : undefined;
+            return prop === "attributes" ? `` : getField(prop, true, style, getPropertyTemplate(asset, prop, hostElement, viewerConfig, panelConfig));
+        })}
+        `;
+    } else if (panelConfig && panelConfig.type === "survey") {
         content = html`      
              <or-survey id="survey" .surveyId="${asset.id}"></or-survey>
         `;
@@ -248,41 +252,8 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
                 `;
         }
 
-    }
-        // DEPRECATED
-        // else if (panelConfig && panelConfig.type === "chart") {
-
-        //     let storeDataPointAttrs = attrs.filter((attr) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
-
-        //     let assetAttributes;
-        //     // let defaultAttrs = storeDataPointAttrs.filter((attr) => (defaultAttributes && defaultAttributes.indexOf(attr.name!) >= 0));
-        //     // if(defaultAttrs.length > 0){
-        //     //     assetAttributes = defaultAttrs;
-        //     // } else
-        //     if(storeDataPointAttrs.length > 0) {
-        //         assetAttributes = storeDataPointAttrs;
-        //         assetAttributes.length = 1;
-        //     }
-        //     const assetList:Asset[] = [];
-        //     if(assetAttributes) {
-        //         assetAttributes.forEach(attr => assetList.push(asset));
-        //     }
-        //     content = html`
-        //         <or-chart id="chart" panelName="${panelName}" .config="${viewerConfig.chartConfig}" .activeAsset="${asset}"  activeAssetId="${asset.id}" .assets="${assetList ? assetList : [asset]}" .assetAttributes="${assetAttributes}"></or-chart>
-        //     `;
-
-    // }
-    else if (panelConfig && panelConfig.type === "location") {
-
-        const attribute = attrs.find((attr) => attr.name === AttributeType.LOCATION.attributeName);
-        if (attribute) {
-            content = html`
-                <div class="field">
-                    <or-attribute-input .assetType="${asset.type}" .attribute="${attribute}" readonly disableButton></or-attribute-input>
-                </div>
-            `;
-        }
     } else if (panelConfig && panelConfig.type === "group") {
+
         if (asset.type !== "urn:openremote:asset:group") {
             return;
         }
@@ -382,7 +353,10 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Ass
             loadingMsg.hidden = true;
             attributeTable.hidden = false;
             const headers = [...selectedAttributes].sort();
-            attributeTable.headers = headers.map((header) => i18next.t(header));
+            attributeTable.headers = headers.map((attrName) => {
+                const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attrName, childAssetType);
+                return Util.getAttributeLabel(undefined, attributeDescriptor, undefined, false);
+            });
             attributeTable.headers.unshift(i18next.t("groupAssetName"));
             attributeTable.rows = childAssets.map((childAsset) => {
                 // todo: it's only processing including selected headers here...
@@ -443,9 +417,76 @@ export function getAttributeTemplate(asset: Asset, attribute: AssetAttribute, ho
             return result;
         }
     }
+
+    let attrLabel: string | undefined;
+    let attrDisabled: boolean | undefined;
+    let attrReadonly: boolean | undefined;
+    let attrDisableButton: boolean | undefined;
+    let attrInputType: InputType | undefined;
+    let attrDisableHelper: boolean | undefined;
+
+
+    if (panelConfig.itemConfig && panelConfig.itemConfig[attribute.name!]) {
+        const attrConfig = panelConfig.itemConfig[attribute.name!];
+        attrLabel = attrConfig.label;
+        attrDisabled = attrConfig.disabled;
+        attrReadonly = attrConfig.readonly;
+        attrDisableButton = attrConfig.disableButton;
+        attrDisableHelper = attrConfig.disableHelperText;
+        attrInputType = attrConfig.inputTypeOverride;
+    }
+
     return html`
-        <or-attribute-input dense .assetType="${asset!.type}" .attribute="${attribute}" hasHelperText></or-attribute-input>
+        <or-attribute-input dense .assetType="${asset!.type}" .attribute="${attribute}" .disabled="${attrDisabled}" .label="${attrLabel}" .readonly="${attrReadonly}" .disableButton="${attrDisableButton}" .inputType="${attrInputType}" .hasHelperText="${!attrDisableHelper}"></or-attribute-input>
     `;
+}
+
+export function getPropertyTemplate(asset: Asset, property: string, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig) {
+    let value = (asset as { [index: string]: any })[property];
+
+    if (viewerConfig.propertyViewProvider) {
+        const result = viewerConfig.propertyViewProvider(asset, property, value, hostElement, viewerConfig, panelConfig);
+        if (result) {
+            return result;
+        }
+    }
+
+    let type = InputType.TEXT;
+    let minLength: number | undefined;
+    let maxLength: number | undefined;
+
+    switch (property) {
+        case "path":
+            if (!value || !(Array.isArray(value))) {
+                return;
+            }
+
+            // Populate value when we get the response
+            getAssetNames(value as string[]).then(
+                (names) => {
+                    if (hostElement && hostElement.shadowRoot) {
+                        const pathField = hostElement.shadowRoot.getElementById("property-path") as OrInput;
+                        if (pathField) {
+                            pathField.value = names.reverse().join(" > ");
+                        }
+                    }
+                }
+            );
+            value = i18next.t("loading");
+            break;
+        case "createdOn":
+            type = InputType.DATETIME;
+            break;
+        case "accessPublicRead":
+            type = InputType.CHECKBOX;
+            break;
+        case "name":
+            minLength = 1;
+            maxLength = 1023;
+            break;
+    }
+
+    return html`<or-input id="property-${property}" type="${type}" .minLength="${minLength}" .maxLength="${maxLength}" dense .value="${value}" readonly label="${i18next.t(property)}"></or-input>`;
 }
 
 export function getField(name: string, isProperty: boolean, styles: { [style: string]: string } | undefined, content: TemplateResult | undefined): TemplateResult {
@@ -457,6 +498,23 @@ export function getField(name: string, isProperty: boolean, styles: { [style: st
                 ${content}
             </div>
         `;
+}
+
+async function getAssetNames(ids: string[]): Promise<string[]> {
+    const response = await manager.rest.api.AssetResource.queryAssets({
+        select: {
+            excludePath: true,
+            excludeParentInfo: true,
+            excludeAttributes: true
+        },
+        ids: ids
+    });
+
+    if (response.status !== 200 || !response.data || response.data.length !== ids.length) {
+        return ids;
+    }
+
+    return ids.map((id) => response.data.find((asset) => asset.id === id)!.name!);
 }
 
 async function getAssetChildren(id: string, childAssetType: string): Promise<Asset[]> {
@@ -488,8 +546,6 @@ async function getAssetChildren(id: string, childAssetType: string): Promise<Ass
 
 @customElement("or-asset-viewer")
 export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElement)) {
-
-    public static DEFAULT_PANEL_TYPE: PanelType = "attribute";
 
     public static DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
         viewerStyles: {
@@ -524,12 +580,18 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 }
             },
             location: {
-                type: "location",
+                type: "attribute",
                 include: ["location"],
                 panelStyles: {
                 },
                 fieldStyles: {
                     location: {
+                    }
+                },
+                itemConfig: {
+                    location: {
+                        label: "",
+                        readonly: true
                     }
                 }
             },
@@ -655,6 +717,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 this._loading = true;
                 super.assetIds = [this.assetId];
             } else {
+                this._loading = false;
                 super.assetIds = undefined;
             }
         }
@@ -700,52 +763,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         return properties;
     }
-
-    // public static getPropertyTemplate(property: string, value: any, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, shadowRoot: ShadowRoot | null) {
-    //     let type = InputType.TEXT;
-    //     let minLength: number | undefined;
-    //     let maxLength: number | undefined;
-
-    //     if (viewerConfig.propertyViewProvider) {
-    //         const result = viewerConfig.propertyViewProvider(property, value, viewerConfig, panelConfig);
-    //         if (result) {
-    //             return result;
-    //         }
-    //     }
-
-    //     switch (property) {
-    //         case "path":
-    //             if (!value || !(Array.isArray(value))) {
-    //                 return;
-    //             }
-
-    //             // Populate value when we get the response
-    //             OrAssetViewer.getAssetNames(value as string[]).then(
-    //                 (names) => {
-    //                     if (shadowRoot) {
-    //                         const pathField = shadowRoot.getElementById("property-path") as OrInput;
-    //                         if (pathField) {
-    //                             pathField.value = names.reverse().join(" > ");
-    //                         }
-    //                     }
-    //                 }
-    //             );
-    //             value = i18next.t("loading");
-    //             break;
-    //         case "createdOn":
-    //             type = InputType.DATETIME;
-    //             break;
-    //         case "accessPublicRead":
-    //             type = InputType.CHECKBOX;
-    //             break;
-    //         case "name":
-    //             minLength = 1;
-    //             maxLength = 1023;
-    //             break;
-    //     }
-
-    //     return html`<or-input id="property-${property}" type="${type}" .minLength="${minLength}" .maxLength="${maxLength}" dense .value="${value}" readonly label="${i18next.t(property)}"></or-input>`;
-    // }
 
     // TODO: Add debounce in here to minimise render calls
     _onEvent(event: SharedEvent) {

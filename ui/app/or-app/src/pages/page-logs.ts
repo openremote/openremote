@@ -6,6 +6,7 @@ import {EnhancedStore} from "@reduxjs/toolkit";
 
 export function pageLogsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: ViewerConfig) {
     return {
+        name: "logs",
         routes: [
             "logs"
         ],
@@ -34,16 +35,19 @@ class PageLogs<S extends AppStateKeyed> extends Page<S> {
         `;
     }
 
+    @property()
+    public config?: ViewerConfig;
+
+    get name(): string {
+        return "account";
+    }
+
     constructor(store: EnhancedStore<S>) {
         super(store);
     }
 
     public stateChanged(state: S) {
     }
-
-  
-    @property()
-    public config?: ViewerConfig;
 
     protected render() {
         return html`

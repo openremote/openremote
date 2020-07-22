@@ -220,6 +220,10 @@ export class PageMap<S extends MapStateKeyed> extends Page<S>  {
             return assets.find((asset) => asset.id === currentId);
     });
 
+    get name(): string {
+        return "map";
+    }
+
     constructor(store: EnhancedStore<S>) {
         super(store);
     }

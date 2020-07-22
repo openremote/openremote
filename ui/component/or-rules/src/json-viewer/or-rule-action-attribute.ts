@@ -117,7 +117,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
             attributes = Util.getAssetAttributes(asset).filter((attr) => !Util.hasMetaItem(attr, MetaItemType.READ_ONLY.urn!))
                 .map((attr) => {
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr);
-                    const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
+                    const label = Util.getAttributeLabel(attr, descriptors[0], descriptors[1], false);
                     return [attr.name!, label];
                 });
         } else {

@@ -36,9 +36,14 @@ class PageMobileSplash<S extends AppStateKeyed> extends Page<S> {
         `;
     }
 
+    get name(): string {
+        return "mobile-splash";
+    }
+
     constructor(store: EnhancedStore<S>) {
         super(store);
     }
+
     public connectedCallback() {
         super.connectedCallback();
         setTimeout(() => {

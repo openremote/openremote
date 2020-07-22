@@ -52,9 +52,6 @@ export const PAGE_RULES_CONFIG_DEFAULT: PageRulesConfig = {
 @customElement("page-rules")
 class PageRules<S extends AppStateKeyed> extends Page<S>  {
 
-    @property()
-    public config?: PageRulesConfig;
-    
     static get styles() {
         // language=CSS
         return css`
@@ -67,6 +64,13 @@ class PageRules<S extends AppStateKeyed> extends Page<S>  {
                 height: 100%;
             }
         `;
+    }
+
+    @property()
+    public config?: PageRulesConfig;
+
+    get name(): string {
+        return "rules";
     }
 
     constructor(store: EnhancedStore<S>) {
