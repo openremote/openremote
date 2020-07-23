@@ -65,9 +65,9 @@ build-master:
     - docker push openremote/deployment:${CACHE_TAG:-latest}
     - docker push openremote/manager:${CACHE_TAG:-latest}
     - docker push openremote/manager-swarm:${CACHE_TAG:-latest}
-    #- docker push openremote/proxy:${CACHE_TAG:-latest}
-    #- docker push openremote/keycloak:${CACHE_TAG:-latest}
-    #- docker push openremote/postgresql:${CACHE_TAG:-latest}
+    - docker push openremote/proxy:${CACHE_TAG:-latest}
+    - docker push openremote/keycloak:${CACHE_TAG:-latest}
+    - docker push openremote/postgresql:${CACHE_TAG:-latest}
     ## TODO dind does not support arm64 archieture for now, therefore the code below breaks the build
     # # Build ARM images
     # - docker buildx build --platform linux/arm64 -t openremote/manager:arm64 manager/build/install/manager
