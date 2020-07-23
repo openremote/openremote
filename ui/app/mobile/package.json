@@ -10,7 +10,7 @@
     "modelBuild": "node ../../model-build.js",
     "modelWatch": "node ../../model-watch.js",
     "build": "npx tsc -b && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack --mode production",
-    "serve": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack-dev-server --mode development",
+    "serve": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack-dev-server --host 0.0.0.0 --mode development",
     "watch": "npx tsc -b -w",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
