@@ -1,7 +1,7 @@
 import 'dart:ui';
 
-import 'package:generic_app/models/LinkConfig.dart';
 import 'package:generic_app/models/ConsoleAppConfig.dart';
+import 'package:generic_app/models/LinkConfig.dart';
 import 'package:generic_app/utils/HexColor.dart';
 
 class CurrentConsoleAppConfig {
@@ -77,6 +77,6 @@ class CurrentConsoleAppConfig {
   }
 
   String get baseUrl {
-    return "http://192.168.100.9:8080/api/$_realm";
+    return "https://$_project.openremote.io/api/$_realm";
   }
 }
