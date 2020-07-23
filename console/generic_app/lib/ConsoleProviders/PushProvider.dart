@@ -21,10 +21,10 @@ class PushProvider {
         await SharedPreferences.getInstance(), FirebaseMessaging());
   }
 
-  initialize() async {
+  Future<Map<String, dynamic>> initialize() async {
     return {
       "action": "PROVIDER_INIT",
-      "provider": "geofence",
+      "provider": "push",
       "version": _version,
       "requiresPermission": true,
       "hasPermission": await Permission.notification.isGranted,
@@ -41,6 +41,15 @@ class PushProvider {
     await _sharedPreferences.setBool(pushDisabledKey, false);
 
     if (await Permission.notification.isGranted) {
+      _fcm.getToken().then((token) {
+        callback?.call({
+          "action": "PROVIDER_ENABLE",
+          "provider": "push",
+          "hasPermission": true,
+          "success": true,
+          "data": {"token": token}
+        });
+      });
     } else {
       if (await Permission.notification.isUndetermined) {
         Permission.notification.request().then((value) {
@@ -74,7 +83,7 @@ class PushProvider {
     }
   }
 
-  disable() async {
+  Future<Map<String, dynamic>> disable() async {
     await _sharedPreferences.setBool(pushDisabledKey, true);
     return {
       "action": "PROVIDER_DISABLE",

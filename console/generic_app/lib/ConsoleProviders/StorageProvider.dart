@@ -12,7 +12,7 @@ class StorageProvider {
     return StorageProvider._internal(await SharedPreferences.getInstance());
   }
 
-  initialize() {
+  Map<String, dynamic> initialize() {
     return {
       "action": "PROVIDER_INIT",
       "provider": "storage",
@@ -24,7 +24,7 @@ class StorageProvider {
     };
   }
 
-  enable() {
+  Map<String, dynamic> enable() {
     return {
       "action": "PROVIDER_ENABLE",
       "provider": "storage",
@@ -33,14 +33,14 @@ class StorageProvider {
     };
   }
 
-  disable() {
+  Map<String, dynamic> disable() {
     return {
       "action": "PROVIDER_DISABLE",
       "provider": "storage",
     };
   }
 
-  store(String key, String data) {
+  Map<String, dynamic> store(String key, String data) {
     if (data == null) {
       _sharedPreferences.remove(key);
     } else {
@@ -48,7 +48,7 @@ class StorageProvider {
     }
   }
 
-  retrieve(String key) {
+  Map<String, dynamic> retrieve(String key) {
     return {
       "action": "RETRIEVE",
       "provider": "storage",

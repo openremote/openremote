@@ -29,6 +29,7 @@ class _WebViewPageState extends State<WebViewPage> {
   @override
   Widget build(BuildContext context) {
     _webView = WebView(
+      debuggingEnabled: true,
       onPageStarted: (url) {
         print("started: $url");
       },
@@ -75,12 +76,12 @@ class _WebViewPageState extends State<WebViewPage> {
   _notifyClient(Map<String, dynamic> data) {
     final String jsonString = json.encode(data);
     _controller.evaluateJavascript(
-        "OpenRemoteConsole._handleProviderResponse($jsonString)");
+        "OpenRemoteConsole._handleProviderResponse(JSON.stringify($jsonString))");
   }
 
   JavascriptChannel _postMessageJavascriptChannel(BuildContext context) {
     return JavascriptChannel(
-        name: 'postMessage',
+        name: 'MobileInterface',
         onMessageReceived: (JavascriptMessage message) {
           Map<String, dynamic> messageContent = json.decode(message.message);
           String messageType = messageContent["type"];
@@ -158,8 +159,13 @@ class _WebViewPageState extends State<WebViewPage> {
     }
   }
 
-  _handleStorageProviderMessage(Map<String, dynamic> data) {
+  _handleStorageProviderMessage(Map<String, dynamic> data) async {
     String action = data["action"];
+
+    if (_storageProvider == null) {
+      _storageProvider = await StorageProvider.getInstance();
+    }
+
     if (action == "PROVIDER_INIT") {
       _notifyClient(_storageProvider.initialize());
     } else if (action == "PROVIDER_ENABLE") {

@@ -57,7 +57,7 @@ class GeofenceProvider {
     return GeofenceProvider(await SharedPreferences.getInstance());
   }
 
-  initialize() async {
+  Future<Map<String, dynamic>> initialize() async {
     return {
       "action": "PROVIDER_INIT",
       "provider": "geofence",
@@ -115,7 +115,7 @@ class GeofenceProvider {
     }
   }
 
-  disable() async {
+  Future<Map<String, dynamic>> disable() async {
     for (String geofenceId in geofences.map((e) => e.id)) {
       Geofence.removeGeolocation(
           new Geolocation(id: geofenceId), GeolocationEvent.exit);
@@ -186,7 +186,7 @@ class GeofenceProvider {
 
       _sharedPreferences
           .setString(geofencesKey,
-              json.encode(geofenceDefinitions.map((e) => e.toJson())))
+              json.encode(geofenceDefinitions.map((e) => e.toJson()).toList()))
           .then((value) => geofences = geofenceDefinitions);
     });
   }

@@ -47,6 +47,9 @@ class CurrentConsoleAppConfig {
 
   String get url {
     return _url;
+    //consolePlatform
+    //consoleName=realm
+    //consoleVersion
   }
 
   bool get menuEnabled {
@@ -74,6 +77,6 @@ class CurrentConsoleAppConfig {
   }
 
   String get baseUrl {
-    return "https://$_project.openremote.io/api/$_realm";
+    return "http://192.168.100.9:8080/api/$_realm";
   }
 }
