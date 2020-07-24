@@ -36,8 +36,11 @@ lint-Dockerfile:
 lint-swarm-Dockerfile:
   stage: build
   script:
+    - echo "I'm in the branch $CI_COMMIT_BRANCH $CI_COMMIT_MESSAGE"
     - docker pull hadolint/hadolint
     - docker run --rm -i hadolint/hadolint < ./manager/swarm.Dockerfile
+  after_script:
+    - env
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
       if: $CI_COMMIT_MESSAGE !~ /skip-build/
