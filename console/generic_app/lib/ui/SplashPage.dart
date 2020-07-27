@@ -25,18 +25,19 @@ class _SplashPageState extends State<SplashPage> {
   @override
   Widget build(BuildContext context) {
     return new FutureBuilder(
-        future: _getProjectData(),
+        future: Future.delayed(Duration(seconds: 3), _getProjectData),
         builder: (BuildContext context, AsyncSnapshot snapshot) {
-          Timer(Duration(seconds: 3), () {
-            if (snapshot.hasData) {
+          if (snapshot.hasData) {
+            Future.delayed(Duration.zero, () {
               if (snapshot.data) {
-                _getConsoleAppConfig();
+                Navigator.pushReplacement(context,
+                    MaterialPageRoute(builder: (context) => WebViewPage(initialUrl: CurrentConsoleAppConfig.instance.url)));
+              } else {
+                Navigator.pushReplacement(context,
+                    MaterialPageRoute(builder: (context) => ProjectPage()));
               }
-            } else {
-              Navigator.pushReplacement(context,
-                  CupertinoPageRoute(builder: (context) => ProjectPage()));
-            }
-          });
+            });
+          }
           return Scaffold(
               body: Align(
                   alignment: Alignment.center,
@@ -53,24 +54,22 @@ class _SplashPageState extends State<SplashPage> {
     _projectName = _sharedPreferences.getString("project");
     _realmName = _sharedPreferences.getString("realm");
 
-    return _projectName != null && _realmName != null;
+    bool hasData = _projectName != null && _realmName != null;
+    if (hasData) {
+      await _getConsoleAppConfig();
+    }
+
+    return hasData;
   }
 
-  void _getConsoleAppConfig() {
+  Future _getConsoleAppConfig() async {
     var apiManager = new ApiManager("https://$_projectName.openremote.io/api/$_realmName");
-    apiManager.get(["app", "config"], ConsoleAppConfig.fromJson).then((value) {
+    return apiManager
+        .get(["app", "config"], ConsoleAppConfig.fromJson).then((value) {
       print(value);
       CurrentConsoleAppConfig.instance.updateConfig(value, _projectName);
-      Navigator.pushReplacement(
-          context,
-          CupertinoPageRoute(
-              builder: (context) => WebViewPage(
-                    initialUrl: CurrentConsoleAppConfig.instance.url,
-                  )));
     }).catchError((onError) {
       print(onError);
-      Navigator.pushReplacement(
-          context, CupertinoPageRoute(builder: (context) => ProjectPage()));
     });
   }
 }

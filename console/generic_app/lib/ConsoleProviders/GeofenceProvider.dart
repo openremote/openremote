@@ -40,7 +40,7 @@ class GeofenceProvider {
     String geofenceString = sharedPreferences.getString(geofencesKey);
     List<GeofenceDefinition> geofences;
     if (geofenceString != null) {
-      geofences = List<GeofenceDefinition>.from(json.decode(geofenceString));
+      geofences = List<GeofenceDefinition>.from(json.decode(geofenceString).map((item) => GeofenceDefinition.fromJson(item)));
     } else {
       geofences = new List<GeofenceDefinition>();
     }
