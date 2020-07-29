@@ -2,5 +2,6 @@
   "connectToYourApplication": "Connect to your application",
   "project": "Project",
   "realm": "Realm",
-  "connect": "Connect"
+  "connect": "Connect",
+  "startingPage": "Starting page"
 }

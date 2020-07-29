@@ -2,5 +2,6 @@
   "connectToYourApplication": "Verbind met jouw applicatie",
   "project": "Project",
   "realm": "Realm",
-  "connect": "Verbind"
+  "connect": "Verbind",
+  "startingPage": "Begin pagina"
 }

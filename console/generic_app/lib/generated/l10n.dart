@@ -72,6 +72,16 @@ class S {
       args: [],
     );
   }
+
+  /// `Starting page`
+  String get startingPage {
+    return Intl.message(
+      'Starting page',
+      name: 'startingPage',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

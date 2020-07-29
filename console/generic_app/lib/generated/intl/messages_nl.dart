@@ -24,6 +24,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "connect" : MessageLookupByLibrary.simpleMessage("Verbind"),
     "connectToYourApplication" : MessageLookupByLibrary.simpleMessage("Verbind met jouw applicatie"),
     "project" : MessageLookupByLibrary.simpleMessage("Project"),
-    "realm" : MessageLookupByLibrary.simpleMessage("Realm")
+    "realm" : MessageLookupByLibrary.simpleMessage("Realm"),
+    "startingPage" : MessageLookupByLibrary.simpleMessage("Begin pagina")
   };
 }
