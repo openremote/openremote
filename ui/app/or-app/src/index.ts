@@ -191,7 +191,15 @@ export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(
 }
 
 export function getRealmQueryParameter(): string {
-    return Util.getQueryParameter(location.search, "realm");
+    if(location.search && location.search !== "") {
+        return Util.getQueryParameter(location.search, "realm");
+    }
+    if(location.hash) {
+        let index = location.hash.indexOf("?");
+        if(index > -1) {
+            return Util.getQueryParameter(location.hash.substring(index + 1), "realm");
+        }
+    }
 }
 
 const DEFAULT_MANAGER_CONFIG: ManagerConfig = {

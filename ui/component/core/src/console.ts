@@ -175,7 +175,7 @@ export class Console {
             this._initialiseInProgress = false;
 
             if (this._pendingProviderEnables.length === 0) {
-                this.sendRegistration();
+                await this.sendRegistration();
                 this._callCompletedCallback();
             } else if (this._autoEnable) {
                 await this.enableProviders();

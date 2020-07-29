@@ -25,6 +25,7 @@ import org.openremote.manager.setup.AbstractManagerSetup;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.TenantRuleset;
+import org.openremote.model.value.Values;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -42,6 +43,7 @@ public class RulesDemoSetup extends AbstractManagerSetup {
 
     public Long apartmentActionsRulesetId;
     public Long tenantBuildingRulesetId;
+    public Long tenantSmartCityRulesetId;
 
     @Override
     public void onStart() throws Exception {
@@ -115,6 +117,15 @@ public class RulesDemoSetup extends AbstractManagerSetup {
                 managerDemoSetup.peopleCounter3AssetId, "PeopleCounter 3 Rules", GROOVY, rules
             );
             rulesetStorageService.merge(ruleset);
+        }
+
+        // SmartCity geofences
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoGeofences.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                    keycloakDemoSetup.tenantCity.getRealm(), "Demo Geofences", Ruleset.Lang.JSON, rules
+            ).setAccessPublicRead(true).addMeta("showOnMap", Values.create(true)).addMeta("showOnList", Values.create(true));
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
     }
 }
