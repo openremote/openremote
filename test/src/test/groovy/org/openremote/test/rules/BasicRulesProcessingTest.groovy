@@ -7,8 +7,8 @@ import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.KeycloakTestSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetType
@@ -24,7 +24,7 @@ import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.TimeUnit
 
-import static org.openremote.manager.setup.builtin.ManagerDemoSetup.*
+import static org.openremote.manager.setup.builtin.ManagerTestSetup.*
 import static org.openremote.model.rules.RulesetStatus.*
 import static org.openremote.test.rules.BasicRulesImport.assertRulesFired
 
@@ -38,18 +38,18 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
         TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
 
         and: "some test rulesets have been imported"
-        def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
+        def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakTestSetup, managerTestSetup)
 
         expect: "the rules engines to be ready"
         conditions.eventually {
-            assert rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
+            assert rulesImport.assertEnginesReady(rulesService, keycloakTestSetup, managerTestSetup)
             assert noRuleEngineFiringScheduled()
         }
 
@@ -65,7 +65,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "a LHS filtering test rule definition is loaded into the Smart Building asset"
         def assetRuleset = new AssetRuleset(
-            managerDemoSetup.smartBuildingId,
+            managerTestSetup.smartBuildingId,
             "Some Smart Building asset rules",
             Ruleset.Lang.GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicSmartHomeMatchAllAssetStates.groovy").text)
@@ -74,7 +74,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "the Smart Building rule engine should have ben created, loaded the new rule definition and facts and started"
         conditions.eventually {
-            smartHomeEngine = rulesService.assetEngines.get(managerDemoSetup.smartBuildingId)
+            smartHomeEngine = rulesService.assetEngines.get(managerTestSetup.smartBuildingId)
             assert smartHomeEngine != null
             assert smartHomeEngine.isRunning()
             assert smartHomeEngine.deployments.size() == 1
@@ -100,7 +100,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "an attribute event occurs"
         rulesImport.resetRulesFired(smartHomeEngine)
         def apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
-            managerDemoSetup.apartment2LivingroomId, "presenceDetected", Values.create(true)
+            managerTestSetup.apartment2LivingroomId, "presenceDetected", Values.create(true)
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 
@@ -129,26 +129,26 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
         TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
 
         and: "some test rulesets have been imported"
-        def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
+        def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakTestSetup, managerTestSetup)
 
         expect: "the rules engines to be ready"
         conditions.eventually {
-            assert rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
+            assert rulesImport.assertEnginesReady(rulesService, keycloakTestSetup, managerTestSetup)
             assert noRuleEngineFiringScheduled()
         }
 
         when: "a Kitchen room asset is inserted into apartment that contains a RULE_STATE = true meta flag"
-        def apartment2 = assetStorageService.find(managerDemoSetup.apartment2Id)
+        def apartment2 = assetStorageService.find(managerTestSetup.apartment2Id)
         def asset = new Asset("Kitchen", AssetType.ROOM, apartment2)
-        asset.setRealm(keycloakDemoSetup.tenantBuilding.getRealm())
+        asset.setRealm(keycloakTestSetup.tenantBuilding.getRealm())
         def attributes = [
             new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
@@ -202,13 +202,13 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def apartment2LastFireTimestamp = rulesImport.apartment2Engine.lastFireTimestamp
         def apartment3LastFireTimestamp = rulesImport.apartment3Engine.lastFireTimestamp
         def apartment2LivingRoomWindowOpenChange = new AttributeEvent(
-            managerDemoSetup.apartment2LivingroomId, "windowOpen", Values.create(true)
+            managerTestSetup.apartment2LivingroomId, "windowOpen", Values.create(true)
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomWindowOpenChange)
 
         then: "the attribute event should have been processed"
         conditions.eventually {
-            def apartment2LivingRoom = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
+            def apartment2LivingRoom = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
             assert apartment2LivingRoom.getAttribute("windowOpen").flatMap{it.getValueAsBoolean()}.orElse(false)
         }
 
@@ -358,24 +358,24 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
         TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
 
         and: "some test rulesets have been imported"
-        def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
+        def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakTestSetup, managerTestSetup)
 
         expect: "the rules engines to be ready"
         conditions.eventually {
-            assert rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
+            assert rulesImport.assertEnginesReady(rulesService, keycloakTestSetup, managerTestSetup)
             assert noRuleEngineFiringScheduled()
         }
 
         when: "a broken RHS rule is loaded into the building engine"
         def ruleset = new TenantRuleset(
-            keycloakDemoSetup.tenantBuilding.realm,
+            keycloakTestSetup.tenantBuilding.realm,
             "Some broken test rules",
             Ruleset.Lang.GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicBrokenRules.groovy").text)
@@ -405,7 +405,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def apartment2LastFireTimestamp = rulesImport.apartment2Engine.lastFireTimestamp
         def apartment3LastFireTimestamp = rulesImport.apartment3Engine.lastFireTimestamp
         def apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
-            managerDemoSetup.apartment2LivingroomId, "presenceDetected", Values.create(true)
+            managerTestSetup.apartment2LivingroomId, "presenceDetected", Values.create(true)
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 

@@ -30,7 +30,7 @@ import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.Constants
 import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -115,7 +115,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
 
         when: "the web target builder is configured to use the mock HTTP server (to test subscriptions)"
         if (!websocketClientProtocol.client.configuration.isRegistered(mockServer)) {
@@ -150,7 +150,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                                 new WebsocketSubscription().body(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX + Container.JSON.writeValueAsString(
                                     new EventSubscription(
                                         AttributeEvent.class,
-                                        new AssetFilter<AttributeEvent>().setAssetIds(managerDemoSetup.apartment1LivingroomId),
+                                        new AssetFilter<AttributeEvent>().setAssetIds(managerTestSetup.apartment1LivingroomId),
                                         "1",
                                         null))),
                                 new WebsocketHttpSubscription()
@@ -159,7 +159,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                                     .headers(Values.<ObjectValue>parse(/{"header1": "header1Value1", "header2": ["header2Value1","header2Value2"]}/).get())
                                     .uri("https://mockapi/assets")
                                     .body(
-                                        Container.JSON.writeValueAsString(new AssetQuery().ids(managerDemoSetup.apartment1LivingroomId))
+                                        Container.JSON.writeValueAsString(new AssetQuery().ids(managerTestSetup.apartment1LivingroomId))
                                     )
                             ))
                         ).orElse(null)
@@ -190,7 +190,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
                     new MetaItem(Protocol.META_ATTRIBUTE_WRITE_VALUE, Values.create("\'" + SharedEvent.MESSAGE_PREFIX +
                         Container.JSON.writeValueAsString(new AttributeEvent(
-                            managerDemoSetup.apartment1LivingroomId,
+                            managerTestSetup.apartment1LivingroomId,
                             "targetTemperature",
                             Values.create(0.12345))).replace("0.12345", Protocol.DYNAMIC_VALUE_PLACEHOLDER) + "\'")),
                     new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_FILTERS,
@@ -213,7 +213,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         Values.convertToValue(
                             [
                                 new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(
-                                    new ReadAssetAttributeEvent(managerDemoSetup.apartment1LivingroomId, "targetTemperature")
+                                    new ReadAssetAttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature")
                                 ))
                             ], Container.JSON.writer()).orElse(null))
                 ),
@@ -241,7 +241,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         Values.convertToValue(
                             [
                                 new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(
-                                    new ReadAssetAttributeEvent(managerDemoSetup.apartment1LivingroomId, "co2Level")
+                                    new ReadAssetAttributeEvent(managerTestSetup.apartment1LivingroomId, "co2Level")
                                 ))
                             ]
                             , Container.JSON.writer()).orElse(null))
@@ -272,7 +272,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
 
         when: "the co2level changes"
         def co2LevelIncrement = new AttributeEvent(
-            managerDemoSetup.apartment1LivingroomId, "co2Level", Values.create(600)
+            managerTestSetup.apartment1LivingroomId, "co2Level", Values.create(600)
         )
         simulatorProtocol.putValue(co2LevelIncrement)
 

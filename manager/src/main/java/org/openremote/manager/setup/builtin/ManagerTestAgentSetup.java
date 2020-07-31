@@ -37,7 +37,7 @@ import static org.openremote.model.asset.AssetType.AGENT;
 import static org.openremote.model.asset.AssetType.THING;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 
-public class ManagerDemoAgentSetup extends AbstractManagerSetup {
+public class ManagerTestAgentSetup extends AbstractManagerSetup {
 
     private static final Logger LOG = Logger.getLogger(ManagerDemoAgentSetup.class.getName());
 
@@ -57,7 +57,7 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
     final protected boolean velbus;
     final protected String velbusComPort;
 
-    public ManagerDemoAgentSetup(Container container) {
+    public ManagerTestAgentSetup(Container container) {
         super(container);
 
         this.knx = getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_KNX, false);
@@ -71,8 +71,8 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
     @Override
     public void onStart() throws Exception {
 
-        KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
-        Tenant masterTenant = keycloakDemoSetup.masterTenant;
+        KeycloakTestSetup keycloakTestSetup = setupService.getTaskOfType(KeycloakTestSetup.class);
+        Tenant masterTenant = keycloakTestSetup.masterTenant;
         masterRealm = masterTenant.getRealm();
 
         Asset agent = new Asset("Demo Agent", AGENT);
@@ -82,11 +82,11 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
         if (knx) {
             LOG.info("Enable KNX demo protocol configuration, gateway/local IP: " + knxGatewayIp + "/" + knxLocalIp);
             agent.addAttributes(
-                initProtocolConfiguration(new AssetAttribute("knxConfig"), KNXProtocol.PROTOCOL_NAME)
-                    .addMeta(
-                        new MetaItem(KNXProtocol.META_KNX_GATEWAY_HOST, Values.create(knxGatewayIp)),
-                        new MetaItem(KNXProtocol.META_KNX_LOCAL_HOST, Values.create(knxLocalIp))
-                    )
+                    initProtocolConfiguration(new AssetAttribute("knxConfig"), KNXProtocol.PROTOCOL_NAME)
+                            .addMeta(
+                                    new MetaItem(KNXProtocol.META_KNX_GATEWAY_HOST, Values.create(knxGatewayIp)),
+                                    new MetaItem(KNXProtocol.META_KNX_LOCAL_HOST, Values.create(knxLocalIp))
+                            )
             );
             Asset knxDevices = new Asset("KNX Devices", THING, agent, masterRealm);
             knxDevices = assetStorageService.merge(knxDevices);
@@ -95,10 +95,10 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
         if (velbus) {
             LOG.info("Enable Velbus demo protocol configuration, COM port: " + velbusComPort);
             agent.addAttributes(
-                initProtocolConfiguration(new AssetAttribute("velbusConfig"), VelbusSerialProtocol.PROTOCOL_NAME)
-                    .addMeta(
-                        new MetaItem(VelbusSerialProtocol.META_VELBUS_SERIAL_PORT, Values.create(velbusComPort))
-                    )
+                    initProtocolConfiguration(new AssetAttribute("velbusConfig"), VelbusSerialProtocol.PROTOCOL_NAME)
+                            .addMeta(
+                                    new MetaItem(VelbusSerialProtocol.META_VELBUS_SERIAL_PORT, Values.create(velbusComPort))
+                            )
             );
             Asset velbusDevices = new Asset("VELBUS Devices", THING, agent, masterRealm);
             velbusDevices = assetStorageService.merge(velbusDevices);

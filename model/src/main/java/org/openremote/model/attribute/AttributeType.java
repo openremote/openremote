@@ -49,7 +49,7 @@ public enum AttributeType implements AttributeDescriptor {
         LABEL.withInitialValue(Values.create("Country")),
         ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoCountry"))),
 
-    GEO_POSTAL_CODE("postalCode", AttributeValueType.NUMBER,
+    GEO_POSTAL_CODE("postalCode", AttributeValueType.STRING,
         LABEL.withInitialValue(Values.create("Postal Code")),
         ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoPostalCode"))),
 

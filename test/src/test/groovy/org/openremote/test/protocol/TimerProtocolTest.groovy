@@ -6,7 +6,7 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.query.AssetQuery
@@ -33,7 +33,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
         def container = startContainerWithDemoScenesAndRules(defaultConfig(), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def timerProtocol = container.getService(TimerProtocol.class)
         Asset sceneAgent
         Asset apartment1
@@ -43,8 +43,8 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
             assert isContainerRunning()
             assert noEventProcessedIn(assetProcessingService, 500)
 
-            apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id, true)
-            sceneAgent = assetStorageService.find(new AssetQuery().names("Scene Agent").types(AssetType.AGENT).parents(managerDemoSetup.apartment1Id))
+            apartment1 = assetStorageService.find(managerTestSetup.apartment1Id, true)
+            sceneAgent = assetStorageService.find(new AssetQuery().names("Scene Agent").types(AssetType.AGENT).parents(managerTestSetup.apartment1Id))
             sceneAgent = assetStorageService.find(sceneAgent.id, true)
             assert apartment1.getAttribute("daySceneTimeFRIDAY").get().getValueAsString().orElse("") == "08:30:00"
             assert sceneAgent != null
@@ -78,7 +78,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a trigger is disabled"
-        def disableScene = new AttributeEvent(managerDemoSetup.apartment1Id, "daySceneEnabledFRIDAY", Values.create(false))
+        def disableScene = new AttributeEvent(managerTestSetup.apartment1Id, "daySceneEnabledFRIDAY", Values.create(false))
         assetProcessingService.sendAttributeEvent(disableScene)
 
         then: "the corresponding cron job should be removed from the cron scheduler"
@@ -98,7 +98,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
         }
     
         when: "the trigger is re-enabled"
-        def enableScene = new AttributeEvent(managerDemoSetup.apartment1Id, "daySceneEnabledFRIDAY", Values.create(true))
+        def enableScene = new AttributeEvent(managerTestSetup.apartment1Id, "daySceneEnabledFRIDAY", Values.create(true))
         assetProcessingService.sendAttributeEvent(enableScene)
 
         then: "the quartz job should be recreated and have the correct time"
@@ -116,7 +116,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a trigger time is modified"
-        def modifyTime = new AttributeEvent(managerDemoSetup.apartment1Id, "daySceneTimeFRIDAY", Values.create("04:00:00"))
+        def modifyTime = new AttributeEvent(managerTestSetup.apartment1Id, "daySceneTimeFRIDAY", Values.create("04:00:00"))
         assetProcessingService.sendAttributeEvent(modifyTime)
 
         then: "the quartz job should have the new trigger time"
@@ -150,7 +150,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the trigger cron expression is modified"
-        def modifyCron = new AttributeEvent(managerDemoSetup.apartment1Id, "daySceneCronFRIDAY", Values.create("0 0 4 ? * MON,FRI *"))
+        def modifyCron = new AttributeEvent(managerTestSetup.apartment1Id, "daySceneCronFRIDAY", Values.create("0 0 4 ? * MON,FRI *"))
         assetProcessingService.sendAttributeEvent(modifyCron)
 
         then: "the quartz job should have the new cron expression"

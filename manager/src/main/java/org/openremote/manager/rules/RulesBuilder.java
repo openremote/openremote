@@ -121,5 +121,4 @@ public class RulesBuilder {
         }
         return rules.toArray(new Rule[rules.size()]);
     }
-
 }

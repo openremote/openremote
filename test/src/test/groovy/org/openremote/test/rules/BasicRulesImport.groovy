@@ -3,8 +3,9 @@ package org.openremote.test.rules
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
-import org.openremote.manager.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.KeycloakTestSetup
+import org.openremote.manager.setup.builtin.KeycloakTestSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
@@ -33,8 +34,8 @@ class BasicRulesImport {
     RulesEngine apartment3Engine
 
     BasicRulesImport(RulesetStorageService rulesetStorageService,
-                     KeycloakDemoSetup keycloakDemoSetup,
-                     ManagerDemoSetup managerDemoSetup) {
+                     KeycloakTestSetup keycloakTestSetup,
+                     ManagerTestSetup managerTestSetup) {
 
         Ruleset ruleset = new GlobalRuleset(
                 "Some global demo rules", GROOVY,
@@ -48,21 +49,21 @@ class BasicRulesImport {
         globalRuleset2Id = rulesetStorageService.merge(ruleset).id
 
         ruleset = new TenantRuleset(
-            keycloakDemoSetup.masterTenant.realm,
+            keycloakTestSetup.masterTenant.realm,
             "Some master tenant demo rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
         masterRulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new TenantRuleset(
-            keycloakDemoSetup.tenantBuilding.realm,
+            keycloakTestSetup.tenantBuilding.realm,
             "Some building tenant demo rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
         tenantBuildingRulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new TenantRuleset(
-            keycloakDemoSetup.tenantCity.realm,
+            keycloakTestSetup.tenantCity.realm,
             "Some smartcity tenant demo rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
@@ -70,7 +71,7 @@ class BasicRulesImport {
         tenantCityRulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new AssetRuleset(
-            managerDemoSetup.apartment1Id,
+            managerTestSetup.apartment1Id,
             "Some apartment 1 demo rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
@@ -78,7 +79,7 @@ class BasicRulesImport {
         apartment1RulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new AssetRuleset(
-            managerDemoSetup.apartment2Id,
+            managerTestSetup.apartment2Id,
             "Some apartment 2 demo rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
@@ -86,7 +87,7 @@ class BasicRulesImport {
         apartment2RulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new AssetRuleset(
-            managerDemoSetup.apartment3Id,
+            managerTestSetup.apartment3Id,
             "Some apartment 3 demo rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
@@ -95,8 +96,8 @@ class BasicRulesImport {
 
     @SuppressWarnings("GroovyAccessibility")
     boolean assertEnginesReady(RulesService rulesService,
-                               KeycloakDemoSetup keycloakDemoSetup,
-                               ManagerDemoSetup managerDemoSetup) {
+                               KeycloakTestSetup keycloakTestSetup,
+                               ManagerTestSetup managerTestSetup) {
 
         globalEngine = rulesService.globalEngine
         globalEngine.disableTemporaryFactExpiration = true
@@ -106,34 +107,34 @@ class BasicRulesImport {
         assert globalEngine.deployments.values().any { it -> it.name == "Some global demo rules" && it.status == DEPLOYED }
 
         assert rulesService.tenantEngines.size() == 2
-        masterEngine = rulesService.tenantEngines.get(keycloakDemoSetup.masterTenant.realm)
+        masterEngine = rulesService.tenantEngines.get(keycloakTestSetup.masterTenant.realm)
         masterEngine.disableTemporaryFactExpiration = true
         assert masterEngine != null
         assert masterEngine.isRunning()
         assert masterEngine.deployments.size() == 1
         assert masterEngine.deployments.values().iterator().next().name == "Some master tenant demo rules"
         assert masterEngine.deployments.values().iterator().next().status == DEPLOYED
-        tenantBuildingEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantBuilding.realm)
+        tenantBuildingEngine = rulesService.tenantEngines.get(keycloakTestSetup.tenantBuilding.realm)
         assert tenantBuildingEngine != null
         tenantBuildingEngine.disableTemporaryFactExpiration = true
         assert tenantBuildingEngine.isRunning()
         assert tenantBuildingEngine.deployments.size() == 1
         assert tenantBuildingEngine.deployments.values().iterator().next().name == "Some building tenant demo rules"
         assert tenantBuildingEngine.deployments.values().iterator().next().status == DEPLOYED
-        def tenantCityEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantCity.realm)
+        def tenantCityEngine = rulesService.tenantEngines.get(keycloakTestSetup.tenantCity.realm)
         assert tenantCityEngine == null
 
         assert rulesService.assetEngines.size() == 2
-        apartment1Engine = rulesService.assetEngines.get(managerDemoSetup.apartment1Id)
+        apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
         assert apartment1Engine == null
-        apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
+        apartment2Engine = rulesService.assetEngines.get(managerTestSetup.apartment2Id)
         assert apartment2Engine != null
         apartment2Engine.disableTemporaryFactExpiration = true
         assert apartment2Engine.isRunning()
         assert apartment2Engine.deployments.size() == 1
         assert apartment2Engine.deployments.values().iterator().next().name == "Some apartment 2 demo rules"
         assert apartment2Engine.deployments.values().iterator().next().status == DEPLOYED
-        apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
+        apartment3Engine = rulesService.assetEngines.get(managerTestSetup.apartment3Id)
         assert apartment3Engine != null
         apartment3Engine.disableTemporaryFactExpiration = true
         assert apartment3Engine.isRunning()

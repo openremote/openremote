@@ -11,7 +11,7 @@ import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.console.ConsoleProvider
@@ -32,7 +32,7 @@ import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.TimeUnit
 
-import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
+import static org.openremote.manager.setup.builtin.ManagerTestSetup.DEMO_RULE_STATES_APARTMENT_1
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD
 import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl
@@ -52,7 +52,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def conditions = new PollingConditions(timeout: 20, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def rulesService = container.getService(RulesService.class)
         def notificationService = container.getService(NotificationService.class)
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
@@ -81,23 +81,23 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-            managerDemoSetup.apartment1Id,
+            managerTestSetup.apartment1Id,
             "Demo Apartment - Notify Alarm Trigger",
             Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceNotifyAlarmTrigger.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
-            apartment1Engine = rulesService.assetEngines.get(managerDemoSetup.apartment1Id)
+            apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
             assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
         }
 
         and: "the alarm enabled, presence detected flag of room should not be set"
-        def apartment1Asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
+        def apartment1Asset = assetStorageService.find(managerTestSetup.apartment1Id, true)
         assert !apartment1Asset.getAttribute("alarmEnabled").get().valueAsBoolean.orElse(null)
-        def livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
+        def livingRoomAsset = assetStorageService.find(managerTestSetup.apartment1LivingroomId, true)
         assert !livingRoomAsset.getAttribute("presenceDetected").orElse(null).valueAsBoolean.orElse(null)
 
         and: "an authenticated test user"
@@ -149,23 +149,23 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
         when: "the alarm is enabled"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
-                managerDemoSetup.apartment1Id, "alarmEnabled", Values.create(true), getClockTimeOf(container)
+                managerTestSetup.apartment1Id, "alarmEnabled", Values.create(true), getClockTimeOf(container)
         ))
 
         then: "that value should be stored"
         conditions.eventually {
-            def asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
+            def asset = assetStorageService.find(managerTestSetup.apartment1Id, true)
             assert asset.getAttribute("alarmEnabled").get().valueAsBoolean
         }
 
         when: "the presence is detected in Living room of apartment 1"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
-                managerDemoSetup.apartment1LivingroomId, "presenceDetected", Values.create(true), getClockTimeOf(container)
+                managerTestSetup.apartment1LivingroomId, "presenceDetected", Values.create(true), getClockTimeOf(container)
         ))
 
         then: "that value should be stored"
         conditions.eventually {
-            def asset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
+            def asset = assetStorageService.find(managerTestSetup.apartment1LivingroomId, true)
             assert asset.getAttribute("presenceDetected").get().valueAsBoolean.orElse(null)
         }
 
@@ -185,7 +185,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
             assert !pushMessage.buttons[0].action.openInBrowser
             assert !pushMessage.buttons[0].action.silent
             assert pushMessage.buttons[1].title == "Alarm uit"
-            assert pushMessage.buttons[1].action.url == getWriteAttributeUrl(new AttributeRef(managerDemoSetup.apartment1Id, "alarmEnabled"))
+            assert pushMessage.buttons[1].action.url == getWriteAttributeUrl(new AttributeRef(managerTestSetup.apartment1Id, "alarmEnabled"))
             assert pushMessage.buttons[1].action.httpMethod == WRITE_ATTRIBUTE_HTTP_METHOD
             assert !Values.getBoolean(pushMessage.buttons[1].action.data).orElse(true)
             assert !pushMessage.buttons[1].action.openInBrowser
@@ -195,12 +195,12 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         when: "time moves on and other events happen that trigger evaluation in the rule engine"
         advancePseudoClock(20, TimeUnit.MINUTES, container)
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
-                managerDemoSetup.apartment1LivingroomId, "co2Level", Values.create(444), getClockTimeOf(container)
+                managerTestSetup.apartment1LivingroomId, "co2Level", Values.create(444), getClockTimeOf(container)
         ))
 
         then: "still only one notification should have been sent"
         conditions.eventually {
-            def asset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
+            def asset = assetStorageService.find(managerTestSetup.apartment1LivingroomId, true)
             assert asset.getAttribute("co2Level").get().valueAsInteger.orElse(null) == 444
             assert notificationIds.size() == 1
         }
@@ -216,12 +216,12 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         when: "the presence is no longer triggered in Living room of apartment 1"
         advancePseudoClock(5, TimeUnit.SECONDS, container)
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
-                managerDemoSetup.apartment1LivingroomId, "presenceDetected", Values.create(false), getClockTimeOf(container)
+                managerTestSetup.apartment1LivingroomId, "presenceDetected", Values.create(false), getClockTimeOf(container)
         ))
 
         then: "that value should be stored"
         conditions.eventually {
-            def asset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
+            def asset = assetStorageService.find(managerTestSetup.apartment1LivingroomId, true)
             assert !asset.getAttribute("presenceDetected").get().valueAsBoolean.orElse(null)
         }
 

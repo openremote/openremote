@@ -12,7 +12,7 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static java.util.concurrent.TimeUnit.SECONDS
-import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_GLOBAL
+import static org.openremote.manager.setup.builtin.ManagerTestSetup.DEMO_RULE_STATES_GLOBAL
 
 @Ignore // TODO Implement timer/deferred actions in rules engine
 class BasicRulesTimedExecutionTest extends Specification implements ManagerContainerTrait {

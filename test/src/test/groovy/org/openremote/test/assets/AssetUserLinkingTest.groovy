@@ -3,8 +3,8 @@ package org.openremote.test.assets
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.KeycloakTestSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.UserAsset
 import org.openremote.test.ManagerContainerTrait
@@ -24,8 +24,8 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         def container = startContainer(defaultConfig(), defaultServices())
         def timerService = container.getService(TimerService.class)
         def identityService = container.getService(ManagerIdentityService.class)
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
 
         and: "an authenticated admin user"
         def accessToken = authenticate(
@@ -42,114 +42,114 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         /* ############################################## READ ####################################### */
 
         expect: "some users to be restricted"
-        !identityService.getIdentityProvider().isRestrictedUser(keycloakDemoSetup.testuser1Id)
-        !identityService.getIdentityProvider().isRestrictedUser(keycloakDemoSetup.testuser2Id)
-        identityService.getIdentityProvider().isRestrictedUser(keycloakDemoSetup.testuser3Id)
+        !identityService.getIdentityProvider().isRestrictedUser(keycloakTestSetup.testuser1Id)
+        !identityService.getIdentityProvider().isRestrictedUser(keycloakTestSetup.testuser2Id)
+        identityService.getIdentityProvider().isRestrictedUser(keycloakTestSetup.testuser3Id)
 
         when: "all user assets are retrieved of a realm"
-        def userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.tenantBuilding.realm, null, null)
+        def userAssets = assetResource.getUserAssetLinks(null, keycloakTestSetup.tenantBuilding.realm, null, null)
 
         then: "result should match"
         userAssets.length == 12
         userAssets.any {
-            it.id.realm == keycloakDemoSetup.tenantBuilding.realm &&
-                    it.id.userId == keycloakDemoSetup.testuser3Id &&
-                    it.id.assetId == managerDemoSetup.apartment1Id &&
+            it.id.realm == keycloakTestSetup.tenantBuilding.realm &&
+                    it.id.userId == keycloakTestSetup.testuser3Id &&
+                    it.id.assetId == managerTestSetup.apartment1Id &&
                     it.assetName == "Apartment 1" &&
                     it.parentAssetName == "Smart Building" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
         userAssets.any {
-            it.id.realm == keycloakDemoSetup.tenantBuilding.realm &&
-                    it.id.userId == keycloakDemoSetup.testuser3Id &&
-                    it.id.assetId == managerDemoSetup.apartment1LivingroomId &&
+            it.id.realm == keycloakTestSetup.tenantBuilding.realm &&
+                    it.id.userId == keycloakTestSetup.testuser3Id &&
+                    it.id.assetId == managerTestSetup.apartment1LivingroomId &&
                     it.assetName == "Living Room 1" &&
                     it.parentAssetName == "Apartment 1" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
         userAssets.any {
-            it.id.realm == keycloakDemoSetup.tenantBuilding.realm &&
-                    it.id.userId == keycloakDemoSetup.testuser3Id &&
-                    it.id.assetId == managerDemoSetup.apartment1KitchenId &&
+            it.id.realm == keycloakTestSetup.tenantBuilding.realm &&
+                    it.id.userId == keycloakTestSetup.testuser3Id &&
+                    it.id.assetId == managerTestSetup.apartment1KitchenId &&
                     it.assetName == "Kitchen 1" &&
                     it.parentAssetName == "Apartment 1" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
         userAssets.any {
-            it.id.realm == keycloakDemoSetup.tenantBuilding.realm &&
-                    it.id.userId == keycloakDemoSetup.testuser3Id &&
-                    it.id.assetId == managerDemoSetup.apartment1HallwayId &&
+            it.id.realm == keycloakTestSetup.tenantBuilding.realm &&
+                    it.id.userId == keycloakTestSetup.testuser3Id &&
+                    it.id.assetId == managerTestSetup.apartment1HallwayId &&
                     it.assetName == "Hallway 1" &&
                     it.parentAssetName == "Apartment 1" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
         userAssets.any {
-            it.id.realm == keycloakDemoSetup.tenantBuilding.realm &&
-                    it.id.userId == keycloakDemoSetup.testuser3Id &&
-                    it.id.assetId == managerDemoSetup.apartment1Bedroom1Id &&
+            it.id.realm == keycloakTestSetup.tenantBuilding.realm &&
+                    it.id.userId == keycloakTestSetup.testuser3Id &&
+                    it.id.assetId == managerTestSetup.apartment1Bedroom1Id &&
                     it.assetName == "Bedroom 1" &&
                     it.parentAssetName == "Apartment 1" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
         userAssets.any {
-            it.id.realm == keycloakDemoSetup.tenantBuilding.realm &&
-                    it.id.userId == keycloakDemoSetup.testuser3Id &&
-                    it.id.assetId == managerDemoSetup.apartment1BathroomId &&
+            it.id.realm == keycloakTestSetup.tenantBuilding.realm &&
+                    it.id.userId == keycloakTestSetup.testuser3Id &&
+                    it.id.assetId == managerTestSetup.apartment1BathroomId &&
                     it.assetName == "Bathroom 1" &&
                     it.parentAssetName == "Apartment 1" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
 
         when: "all user assets are retrieved of a realm and user"
-        userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.tenantBuilding.realm, keycloakDemoSetup.testuser3Id, null)
+        userAssets = assetResource.getUserAssetLinks(null, keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser3Id, null)
 
         then: "result should match"
         userAssets.length == 6
 
         when: "the realm and user don't match"
-        assetResource.getUserAssetLinks(null, keycloakDemoSetup.tenantCity.realm, keycloakDemoSetup.testuser3Id, null)
+        assetResource.getUserAssetLinks(null, keycloakTestSetup.tenantCity.realm, keycloakTestSetup.testuser3Id, null)
 
         then: "an error response should be returned"
         WebApplicationException ex = thrown()
         ex.response.status == 400
 
         when: "the realm doesn't exist"
-        assetResource.getUserAssetLinks(null, "doesnotexist", keycloakDemoSetup.testuser3Id, null)
+        assetResource.getUserAssetLinks(null, "doesnotexist", keycloakTestSetup.testuser3Id, null)
 
         then: "an error response should be returned"
         ex = thrown()
         ex.response.status == 404
 
         when: "all user assets are retrieved of a realm and user"
-        userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.tenantBuilding.realm, null, managerDemoSetup.apartment1Id)
+        userAssets = assetResource.getUserAssetLinks(null, keycloakTestSetup.tenantBuilding.realm, null, managerTestSetup.apartment1Id)
 
         then: "result should match"
         userAssets.length == 2
         userAssets.any {
-            it.id.realm == keycloakDemoSetup.tenantBuilding.realm &&
-                    it.id.userId == keycloakDemoSetup.testuser3Id &&
-                    it.id.assetId == managerDemoSetup.apartment1Id &&
+            it.id.realm == keycloakTestSetup.tenantBuilding.realm &&
+                    it.id.userId == keycloakTestSetup.testuser3Id &&
+                    it.id.assetId == managerTestSetup.apartment1Id &&
                     it.assetName == "Apartment 1" &&
                     it.parentAssetName == "Smart Building" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
 
         when: "all user assets are retrieved of a realm and user and asset"
-        userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.tenantBuilding.realm, keycloakDemoSetup.testuser3Id, managerDemoSetup.apartment1Id)
+        userAssets = assetResource.getUserAssetLinks(null, keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser3Id, managerTestSetup.apartment1Id)
 
         then: "result should match"
         userAssets.length == 1
         userAssets.any {
-            it.id.realm == keycloakDemoSetup.tenantBuilding.realm &&
-                    it.id.userId == keycloakDemoSetup.testuser3Id &&
-                    it.id.assetId == managerDemoSetup.apartment1Id &&
+            it.id.realm == keycloakTestSetup.tenantBuilding.realm &&
+                    it.id.userId == keycloakTestSetup.testuser3Id &&
+                    it.id.assetId == managerTestSetup.apartment1Id &&
                     it.assetName == "Apartment 1" &&
                     it.parentAssetName == "Smart Building" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
 
         when: "all user assets are retrieved of a realm and user and asset"
-        userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.tenantBuilding.realm, keycloakDemoSetup.testuser2Id, managerDemoSetup.apartment1Id)
+        userAssets = assetResource.getUserAssetLinks(null, keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser2Id, managerTestSetup.apartment1Id)
 
         then: "result should match"
         userAssets.length == 0
@@ -157,16 +157,16 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is linked to a user"
-        UserAsset userAsset = new UserAsset(keycloakDemoSetup.tenantBuilding.realm, keycloakDemoSetup.testuser2Id, managerDemoSetup.apartment2Id)
+        UserAsset userAsset = new UserAsset(keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser2Id, managerTestSetup.apartment2Id)
         assetResource.createUserAsset(null, userAsset)
-        userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.tenantBuilding.realm, keycloakDemoSetup.testuser2Id, null)
+        userAssets = assetResource.getUserAssetLinks(null, keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser2Id, null)
 
         then: "result should match"
         userAssets.length == 1
         userAssets.any {
-            it.id.realm == keycloakDemoSetup.tenantBuilding.realm &&
-                    it.id.userId == keycloakDemoSetup.testuser2Id &&
-                    it.id.assetId == managerDemoSetup.apartment2Id &&
+            it.id.realm == keycloakTestSetup.tenantBuilding.realm &&
+                    it.id.userId == keycloakTestSetup.testuser2Id &&
+                    it.id.assetId == managerTestSetup.apartment2Id &&
                     it.assetName == "Apartment 2" &&
                     it.parentAssetName == "Smart Building" &&
                     it.userFullName == "testuser2 (DemoA2 DemoLast)" &&
@@ -174,8 +174,8 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         }
 
         when: "an asset link is deleted"
-        assetResource.deleteUserAsset(null, keycloakDemoSetup.tenantBuilding.realm, keycloakDemoSetup.testuser2Id, managerDemoSetup.apartment2Id)
-        userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.tenantBuilding.realm, keycloakDemoSetup.testuser2Id, null)
+        assetResource.deleteUserAsset(null, keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser2Id, managerTestSetup.apartment2Id)
+        userAssets = assetResource.getUserAssetLinks(null, keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser2Id, null)
 
         then: "result should match"
         userAssets.length == 0

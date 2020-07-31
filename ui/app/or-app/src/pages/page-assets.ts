@@ -315,7 +315,7 @@ export const PAGE_ASSETS_DEFAULT_CONFIG: PageAssetsConfig = {
         default: {
             panels: {
                 "attributes": {
-                    exclude: ["location", "userNotes", "manufacturer", "model"]
+                    exclude: ["location", "userNotes", "manufacturer", "model", "status"]
                 },
                 "info": {
                     exclude: ["accessPublicRead"]

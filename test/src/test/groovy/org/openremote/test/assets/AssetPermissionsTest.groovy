@@ -1,8 +1,8 @@
 package org.openremote.test.assets
 
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.KeycloakTestSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.Constants
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.Asset
@@ -36,8 +36,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     def "Access assets as superuser"() {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def conditions = new PollingConditions(delay: 0.2, timeout: 5)
 
         and: "an authenticated admin user"
@@ -63,13 +63,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
+                        .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
                         .parents(new ParentPredicate(true))
         )
 
         then: "result should match"
         assets.length == 1
-        assets[0].id == managerDemoSetup.smartOfficeId
+        assets[0].id == managerTestSetup.smartOfficeId
 
         when: "the child assets of an asset in the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -79,29 +79,29 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "result should match"
         assets.length == 1
-        assets[0].id == managerDemoSetup.groundFloorId
+        assets[0].id == managerTestSetup.groundFloorId
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
+                        .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
                         .parents(new ParentPredicate(true))
         )
 
         then: "result should match"
         assets.length == 1
-        assets[0].id == managerDemoSetup.smartOfficeId
+        assets[0].id == managerTestSetup.smartOfficeId
 
         when: "the root assets of the given realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.tenantBuilding.realm))
+                        .tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm))
                         .parents(new ParentPredicate(true))
         )
 
         then: "result should match"
         assets.length == 1
-        assets[0].id == managerDemoSetup.smartBuildingId
+        assets[0].id == managerTestSetup.smartBuildingId
 
         when: "the child assets of an asset in a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -112,33 +112,33 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "result should match"
         assets.length == 3
         // Should be ordered by creation time
-        assets[0].id == managerDemoSetup.apartment1Id
-        assets[1].id == managerDemoSetup.apartment2Id
-        assets[2].id == managerDemoSetup.apartment3Id
+        assets[0].id == managerTestSetup.apartment1Id
+        assets[1].id == managerTestSetup.apartment2Id
+        assets[2].id == managerTestSetup.apartment3Id
 
         when: "an asset is retrieved by ID in the authenticated realm"
-        def demoThing = assetResource.get(null, managerDemoSetup.thingId)
+        def demoThing = assetResource.get(null, managerTestSetup.thingId)
 
         then: "result should match"
-        demoThing.id == managerDemoSetup.thingId
+        demoThing.id == managerTestSetup.thingId
 
         when: "an asset is retrieved by ID in a foreign realm"
-        def demoSmartBuilding = assetResource.get(null, managerDemoSetup.smartBuildingId)
+        def demoSmartBuilding = assetResource.get(null, managerTestSetup.smartBuildingId)
 
         then: "result should match"
-        demoSmartBuilding.id == managerDemoSetup.smartBuildingId
+        demoSmartBuilding.id == managerTestSetup.smartBuildingId
 
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in the authenticated realm"
-        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.realm)
+        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakTestSetup.masterTenant.realm)
         testAsset = assetResource.create(null, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the asset should exist"
         testAsset.name == "Test Room"
         testAsset.wellKnownType == AssetType.ROOM
-        testAsset.realm == keycloakDemoSetup.masterTenant.realm
+        testAsset.realm == keycloakTestSetup.masterTenant.realm
         testAsset.parentId == null
 
         when: "an asset is made public"
@@ -150,12 +150,12 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         testAsset.accessPublicRead
 
         when: "an asset is updated with a new parent in the authenticated realm"
-        testAsset.setParentId(managerDemoSetup.groundFloorId)
+        testAsset.setParentId(managerTestSetup.groundFloorId)
         assetResource.update(null, testAsset.id, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the asset should be updated"
-        testAsset.parentId == managerDemoSetup.groundFloorId
+        testAsset.parentId == managerTestSetup.groundFloorId
 
         when: "an asset is made a root asset"
         testAsset.setParentId(null)
@@ -166,28 +166,28 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         testAsset.parentId == null
 
         when: "an asset is deleted in the authenticated realm"
-        assetResource.delete(null, [managerDemoSetup.thingId])
-        assetResource.get(null, managerDemoSetup.thingId)
+        assetResource.delete(null, [managerTestSetup.thingId])
+        assetResource.get(null, managerTestSetup.thingId)
 
         then: "the asset should not be found"
         WebApplicationException ex = thrown()
         ex.response.status == 404
 
         when: "an asset is deleted in a foreign realm"
-        assetResource.delete(null, [managerDemoSetup.apartment2LivingroomId])
-        assetResource.get(null, managerDemoSetup.apartment2LivingroomId)
+        assetResource.delete(null, [managerTestSetup.apartment2LivingroomId])
+        assetResource.get(null, managerTestSetup.apartment2LivingroomId)
 
         then: "the asset should be not found"
         ex = thrown()
         ex.response.status == 404
 
         when: "an asset attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 123").toJson())
 
         then: "result should match"
         def asset
         conditions.eventually {
-            asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
+            asset = assetResource.get(null, managerTestSetup.smartOfficeId)
             assert asset.getAttribute(AttributeType.GEO_STREET).get().getValue().isPresent()
             assert asset.getAttribute(AttributeType.GEO_STREET).get().getValue().get().toJson() == Values.create("Teststreet 123").toJson()
         }
@@ -200,18 +200,18 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "an non-existent attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "doesnotexist", Values.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, "doesnotexist", Values.create("Teststreet 123").toJson())
 
         then: "the attribute should be not found"
         ex = thrown()
         ex.response.status == 404
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartBuildingId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 456").toJson())
+        assetResource.writeAttributeValue(null, managerTestSetup.smartBuildingId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 456").toJson())
 
         then: "result should match"
         conditions.eventually {
-            asset = assetResource.get(null, managerDemoSetup.smartBuildingId)
+            asset = assetResource.get(null, managerTestSetup.smartBuildingId)
             assert asset.getAttribute(AttributeType.GEO_STREET).get().getValue().isPresent()
             assert asset.getAttribute(AttributeType.GEO_STREET).get().getValue().get().toJson() == Values.create("Teststreet 456").toJson()
         }
@@ -221,8 +221,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def conditions = new PollingConditions(delay: 0.2, timeout: 10)
 
         and: "an authenticated test user"
@@ -244,7 +244,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "result should match"
         assets.length == 1
-        assets[0].id == managerDemoSetup.smartOfficeId
+        assets[0].id == managerTestSetup.smartOfficeId
         // Assets should not be completely loaded
         assets[0].path == null
         assets[0].attributesList.size() == 0
@@ -252,13 +252,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
+                        .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
                         .parents(new ParentPredicate(true))
         )
 
         then: "result should match"
         assets.length == 1
-        assets[0].id == managerDemoSetup.smartOfficeId
+        assets[0].id == managerTestSetup.smartOfficeId
 
         when: "the child assets of an asset in the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -268,7 +268,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "result should match"
         assets.length == 1
-        assets[0].id == managerDemoSetup.groundFloorId
+        assets[0].id == managerTestSetup.groundFloorId
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -278,13 +278,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "result should match"
         assets.length == 1
-        assets[0].id == managerDemoSetup.smartOfficeId
-        assets[0].realm == keycloakDemoSetup.masterTenant.realm
+        assets[0].id == managerTestSetup.smartOfficeId
+        assets[0].realm == keycloakTestSetup.masterTenant.realm
 
         when: "the root assets of the given realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.tenantBuilding.realm))
+                        .tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm))
                         .parents(new ParentPredicate(true))
         )
 
@@ -294,20 +294,20 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the child assets of an asset in a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .parents(new ParentPredicate(managerDemoSetup.smartBuildingId))
+                        .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
         )
 
         then: "result should be empty"
         assets.length == 0
 
         when: "an asset is retrieved by ID in the authenticated realm"
-        def demoThing = assetResource.get(null, managerDemoSetup.thingId)
+        def demoThing = assetResource.get(null, managerTestSetup.thingId)
 
         then: "result should match"
-        demoThing.id == managerDemoSetup.thingId
+        demoThing.id == managerTestSetup.thingId
 
         when: "an asset is retrieved by ID in a foreign realm"
-        assetResource.get(null, managerDemoSetup.smartBuildingId)
+        assetResource.get(null, managerTestSetup.smartBuildingId)
 
         then: "access should be forbidden"
         WebApplicationException ex = thrown()
@@ -323,19 +323,19 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "the asset should exist"
         testAsset.name == "Test Room"
         testAsset.wellKnownType == AssetType.ROOM
-        testAsset.realm == keycloakDemoSetup.masterTenant.realm
+        testAsset.realm == keycloakTestSetup.masterTenant.realm
         testAsset.parentId == null
 
         when: "an asset is updated with a new parent in the authenticated realm"
-        testAsset.setParentId(managerDemoSetup.groundFloorId)
+        testAsset.setParentId(managerTestSetup.groundFloorId)
         assetResource.update(null, testAsset.id, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the asset should be updated"
-        testAsset.parentId == managerDemoSetup.groundFloorId
+        testAsset.parentId == managerTestSetup.groundFloorId
 
         when: "an asset is moved to a foreign realm and made a root asset"
-        testAsset.setRealm(keycloakDemoSetup.tenantBuilding.realm)
+        testAsset.setRealm(keycloakTestSetup.tenantBuilding.realm)
         testAsset.setParentId(null)
         assetResource.update(null, testAsset.id, testAsset)
 
@@ -344,7 +344,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is updated with a new parent in a foreign realm"
-        testAsset.setParentId(managerDemoSetup.smartBuildingId)
+        testAsset.setParentId(managerTestSetup.smartBuildingId)
         assetResource.update(null, testAsset.id, testAsset)
 
         then: "access should be forbidden"
@@ -352,32 +352,32 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is deleted in the authenticated realm"
-        assetResource.delete(null, [managerDemoSetup.thingId])
-        assetResource.get(null, managerDemoSetup.thingId)
+        assetResource.delete(null, [managerTestSetup.thingId])
+        assetResource.get(null, managerTestSetup.thingId)
 
         then: "the asset should not be found"
         ex = thrown()
         ex.response.status == 404
 
         when: "an asset is deleted in a foreign realm"
-        assetResource.delete(null, [managerDemoSetup.apartment2LivingroomId])
+        assetResource.delete(null, [managerTestSetup.apartment2LivingroomId])
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "an asset attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 123").toJson())
 
         then: "result should match"
         conditions.eventually {
-            def asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
+            def asset = assetResource.get(null, managerTestSetup.smartOfficeId)
             assert asset.getAttribute(AttributeType.GEO_STREET).get().getValue().isPresent()
             assert asset.getAttribute(AttributeType.GEO_STREET).get().getValue().get().toJson() == Values.create("Teststreet 123").toJson()
         }
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartBuildingId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 456").toJson())
+        assetResource.writeAttributeValue(null, managerTestSetup.smartBuildingId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 456").toJson())
 
         then: "access should be forbidden"
         ex = thrown()
@@ -387,20 +387,20 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     def "Access assets as testuser2"() {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
 
         and: "an authenticated test user"
         def accessToken = authenticate(
                 container,
-                keycloakDemoSetup.tenantBuilding.realm,
+                keycloakTestSetup.tenantBuilding.realm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser2",
                 "testuser2"
         ).token
 
         and: "the asset resource"
-        def assetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(AssetResource.class)
+        def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm, accessToken).proxy(AssetResource.class)
 
         /* ############################################## READ ####################################### */
 
@@ -409,7 +409,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "result should match"
         assets.length == 1
-        assets[0].id == managerDemoSetup.smartBuildingId
+        assets[0].id == managerTestSetup.smartBuildingId
         // Assets should not be completely loaded
         assets[0].path == null
         assets[0].attributesList.size() == 0
@@ -417,7 +417,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
+                        .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
                         .parents(new ParentPredicate(true))
         )
 
@@ -432,13 +432,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "result should match"
         assets.length == 1
-        assets[0].id == managerDemoSetup.smartBuildingId
-        assets[0].realm == keycloakDemoSetup.tenantBuilding.realm
+        assets[0].id == managerTestSetup.smartBuildingId
+        assets[0].realm == keycloakTestSetup.tenantBuilding.realm
 
         when: "the root assets of the given realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.tenantCity.realm))
+                        .tenant(new TenantPredicate(keycloakTestSetup.tenantCity.realm))
                         .parents(new ParentPredicate(true))
         )
 
@@ -448,20 +448,20 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the child assets of an asset in a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .parents(new ParentPredicate(managerDemoSetup.thingId))
+                        .parents(new ParentPredicate(managerTestSetup.thingId))
         )
 
         then: "result should be empty"
         assets.length == 0
 
         when: "an asset is retrieved by ID in the authenticated realm"
-        def demoSmartBuilding = assetResource.get(null, managerDemoSetup.smartBuildingId)
+        def demoSmartBuilding = assetResource.get(null, managerTestSetup.smartBuildingId)
 
         then: "result should match"
-        demoSmartBuilding.id == managerDemoSetup.smartBuildingId
+        demoSmartBuilding.id == managerTestSetup.smartBuildingId
 
         when: "an asset is retrieved by ID in a foreign realm"
-        assetResource.get(null, managerDemoSetup.thingId)
+        assetResource.get(null, managerTestSetup.thingId)
 
         then: "access should be forbidden"
         WebApplicationException ex = thrown()
@@ -470,7 +470,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in a foreign realm"
-        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.realm)
+        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakTestSetup.masterTenant.realm)
         assetResource.create(null, testAsset)
 
         then: "access should be forbidden"
@@ -478,7 +478,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is made a root asset in the authenticated realm"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1Id)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1Id)
         testAsset.setParentId(null)
         assetResource.update(null, testAsset.id, testAsset)
 
@@ -487,7 +487,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is created in the authenticated realm"
-        testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.tenantBuilding.realm)
+        testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakTestSetup.tenantBuilding.realm)
         assetResource.create(null, testAsset)
 
         then: "access should be forbidden"
@@ -495,28 +495,28 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is deleted in the authenticated realm"
-        assetResource.delete(null, [managerDemoSetup.apartment2LivingroomId])
+        assetResource.delete(null, [managerTestSetup.apartment2LivingroomId])
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "an asset is deleted in a foreign realm"
-        assetResource.delete(null, [managerDemoSetup.thingId])
+        assetResource.delete(null, [managerTestSetup.thingId])
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "an asset attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartBuildingId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, managerTestSetup.smartBuildingId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 123").toJson())
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 456").toJson())
+        assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 456").toJson())
 
         then: "access should be forbidden"
         ex = thrown()
@@ -526,21 +526,21 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     def "Access assets as testuser3"() {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def conditions = new PollingConditions(delay: 0.2, timeout: 5)
 
         and: "an authenticated test user"
         def accessToken = authenticate(
                 container,
-                keycloakDemoSetup.tenantBuilding.realm,
+                keycloakTestSetup.tenantBuilding.realm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
         ).token
 
         and: "the asset resource"
-        def assetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(AssetResource.class)
+        def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm, accessToken).proxy(AssetResource.class)
 
         /* ############################################## READ ####################################### */
 
@@ -550,39 +550,39 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "result should match"
         assets.length == 6
         Asset apartment1 = assets[0]
-        apartment1.id == managerDemoSetup.apartment1Id
+        apartment1.id == managerTestSetup.apartment1Id
         apartment1.name == "Apartment 1"
         apartment1.createdOn.getTime() < System.currentTimeMillis()
-        apartment1.realm == keycloakDemoSetup.tenantBuilding.realm
+        apartment1.realm == keycloakTestSetup.tenantBuilding.realm
         apartment1.type == AssetType.RESIDENCE.type
-        apartment1.parentId == managerDemoSetup.smartBuildingId
+        apartment1.parentId == managerTestSetup.smartBuildingId
         apartment1.path == null
         apartment1.attributesList.size() == 0
 
         Asset apartment1Livingroom = assets[1]
-        apartment1Livingroom.id == managerDemoSetup.apartment1LivingroomId
+        apartment1Livingroom.id == managerTestSetup.apartment1LivingroomId
         apartment1Livingroom.name == "Living Room 1"
 
         Asset apartment1Kitchen = assets[2]
-        apartment1Kitchen.id == managerDemoSetup.apartment1KitchenId
+        apartment1Kitchen.id == managerTestSetup.apartment1KitchenId
         apartment1Kitchen.name == "Kitchen 1"
 
         Asset apartment1Hallway = assets[3]
-        apartment1Hallway.id == managerDemoSetup.apartment1HallwayId
+        apartment1Hallway.id == managerTestSetup.apartment1HallwayId
         apartment1Hallway.name == "Hallway 1"
 
         Asset apartment1Bedroom1 = assets[4]
-        apartment1Bedroom1.id == managerDemoSetup.apartment1Bedroom1Id
+        apartment1Bedroom1.id == managerTestSetup.apartment1Bedroom1Id
         apartment1Bedroom1.name == "Bedroom 1"
 
         Asset apartment1Bathroom = assets[5]
-        apartment1Bathroom.id == managerDemoSetup.apartment1BathroomId
+        apartment1Bathroom.id == managerTestSetup.apartment1BathroomId
         apartment1Bathroom.name == "Bathroom 1"
 
         when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
+                        .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
                         .parents(new ParentPredicate(true))
         )
 
@@ -601,7 +601,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the root assets of the given realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.tenantCity.realm))
+                        .tenant(new TenantPredicate(keycloakTestSetup.tenantCity.realm))
                         .parents(new ParentPredicate(true))
         )
 
@@ -611,7 +611,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the child assets of linked asset are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .parents(new ParentPredicate(managerDemoSetup.apartment1Id))
+                        .parents(new ParentPredicate(managerTestSetup.apartment1Id))
         )
 
         then: "result should match"
@@ -620,7 +620,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the child assets of an asset in the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .parents(new ParentPredicate(managerDemoSetup.smartBuildingId))
+                        .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
         )
 
         then: "result should match"
@@ -629,24 +629,24 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the child assets of an asset in a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .parents(new ParentPredicate(managerDemoSetup.thingId))
+                        .parents(new ParentPredicate(managerTestSetup.thingId))
         )
 
         then: "result should be empty"
         assets.length == 0
 
         when: "an asset is retrieved by ID in the authenticated realm"
-        assetResource.get(null, managerDemoSetup.smartBuildingId)
+        assetResource.get(null, managerTestSetup.smartBuildingId)
 
         then: "access should be forbidden"
         WebApplicationException ex = thrown()
         ex.response.status == 403
 
         when: "a user asset is retrieved by ID in the authenticated realm"
-        apartment1Livingroom = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        apartment1Livingroom = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
 
         then: "the restricted asset details should be available"
-        apartment1Livingroom.id == managerDemoSetup.apartment1LivingroomId
+        apartment1Livingroom.id == managerTestSetup.apartment1LivingroomId
         apartment1Livingroom.name == "Living Room 1"
         def resultAttributes = apartment1Livingroom.getAttributesList()
         resultAttributes.size() == 7
@@ -664,7 +664,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         resultMeta.stream().filter(isMetaNameEqualTo(UNIT_TYPE)).findFirst().get().getValueAsString().get() == Constants.UNITS_TEMPERATURE_CELSIUS
 
         when: "an asset is retrieved by ID in a foreign realm"
-        assetResource.get(null, managerDemoSetup.thingId)
+        assetResource.get(null, managerTestSetup.thingId)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -673,7 +673,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in a foreign realm"
-        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.realm)
+        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakTestSetup.masterTenant.realm)
         assetResource.create(null, testAsset)
 
         then: "access should be forbidden"
@@ -681,43 +681,43 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is made a root asset in the authenticated realm"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
         testAsset.setParentId(null)
         assetResource.update(null, testAsset.id, testAsset)
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
 
         then: "the update should be ignored"
-        assert testAsset.getParentId() == managerDemoSetup.apartment1Id
+        assert testAsset.getParentId() == managerTestSetup.apartment1Id
 
         when: "an asset is moved to a new parent in the authenticated realm"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
-        testAsset.setParentId(managerDemoSetup.apartment2Id)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
+        testAsset.setParentId(managerTestSetup.apartment2Id)
         assetResource.update(null, testAsset.id, testAsset)
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
 
         then: "the update should be ignored"
-        assert testAsset.getParentId() == managerDemoSetup.apartment1Id
+        assert testAsset.getParentId() == managerTestSetup.apartment1Id
 
         when: "an asset is made public"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
         testAsset.setAccessPublicRead(true)
         assetResource.update(null, testAsset.id, testAsset)
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
 
         then: "the update should be ignored"
         assert !testAsset.isAccessPublicRead()
 
         when: "an asset is renamed"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
         testAsset.setName("Ignored")
         assetResource.update(null, testAsset.id, testAsset)
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1LivingroomId)
 
         then: "the update should be ignored"
         assert testAsset.getName() == "Living Room 1"
 
         when: "an asset is created in the authenticated realm"
-        testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.tenantBuilding.realm)
+        testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakTestSetup.tenantBuilding.realm)
         assetResource.create(null, testAsset)
 
         then: "access should be forbidden"
@@ -725,28 +725,28 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is deleted in the authenticated realm"
-        assetResource.delete(null, [managerDemoSetup.apartment1LivingroomId])
+        assetResource.delete(null, [managerTestSetup.apartment1LivingroomId])
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "an asset is deleted in a foreign realm"
-        assetResource.delete(null, [managerDemoSetup.thingId])
+        assetResource.delete(null, [managerTestSetup.thingId])
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "a private asset attribute is written on a user asset"
-        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomId, "lightSwitch", Values.create(false).toJson())
+        assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "lightSwitch", Values.create(false).toJson())
 
         then: "the attribute should be not found"
         ex = thrown()
         ex.response.status == 404
 
         when: "a restricted read-only asset attribute is written on a user asset"
-        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomId, "currentTemperature", Values.create(22.123d).toJson())
+        assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "currentTemperature", Values.create(22.123d).toJson())
 
         then: "the request should be forbidden"
         ex = thrown()
@@ -760,53 +760,53 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "an non-existent attribute is written on a user asset"
-        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomId, "doesnotexist", Values.create("foo").toJson())
+        assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "doesnotexist", Values.create("foo").toJson())
 
         then: "the attribute should be not found"
         ex = thrown()
         ex.response.status == 404
 
         when: "an asset attribute is written on a non-user asset"
-        assetResource.writeAttributeValue(null, managerDemoSetup.apartment3LivingroomId, "lightSwitch", Values.create(false).toJson())
+        assetResource.writeAttributeValue(null, managerTestSetup.apartment3LivingroomId, "lightSwitch", Values.create(false).toJson())
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, AttributeType.GEO_STREET.attributeName, Values.create("Teststreet 123").toJson())
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "a non-writable attribute value is written on a user asset"
-        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1KitchenId, "presenceDetected", Values.create(true).toJson())
+        assetResource.writeAttributeValue(null, managerTestSetup.apartment1KitchenId, "presenceDetected", Values.create(true).toJson())
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "a non-writable attribute value is updated on a user asset"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
         testAsset.getAttribute("presenceDetected").get().setValue(Values.create(true))
         assetResource.update(null, testAsset.id, testAsset)
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
 
         then: "the update should be ignored"
         assert !testAsset.getAttribute("presenceDetected").get().getValue().isPresent()
 
         when: "a non-writable attribute is updated on a user asset"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
         testAsset.replaceAttribute(new AssetAttribute("presenceDetected", BOOLEAN, Values.create(true)))
         assetResource.update(null, testAsset.id, testAsset)
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
 
         then: "the update should be ignored"
         assert !testAsset.getAttribute("presenceDetected").get().getValue().isPresent()
 
         when: "a non-writable attribute's meta item value is updated"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
         testAsset.getAttribute("presenceDetected").orElse(null).getMetaItem(STORE_DATA_POINTS).orElse(null).setValue(Values.create(false))
         assetResource.update(null, testAsset.id, testAsset)
 
@@ -814,61 +814,61 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assert testAsset.getAttribute("presenceDetected").get().getMetaItem(STORE_DATA_POINTS).get().getValue().get()
 
         when: "a non-writable attribute's meta item value is added"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
         testAsset.getAttribute("presenceDetected").orElse(null).addMeta(new MetaItem(ABOUT, Values.create("Ignored")))
         assetResource.update(null, testAsset.id, testAsset)
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
 
         then: "the update should be ignored"
         assert !testAsset.getAttribute("presenceDetected").get().getMetaItem(ABOUT).isPresent()
 
         when: "a new attribute is added on a user asset"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
         testAsset.addAttributes(new AssetAttribute("myCustomAttribute", NUMBER, Values.create(123)))
         assetResource.update(null, testAsset.id, testAsset)
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
 
         then: "result should match"
         assert testAsset.getAttribute("myCustomAttribute").get().getValue().get() == Values.create(123)
 
         when: "a writable attribute value is written on a user asset"
-        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1KitchenId, "myCustomAttribute", Values.create(456).toJson())
+        assetResource.writeAttributeValue(null, managerTestSetup.apartment1KitchenId, "myCustomAttribute", Values.create(456).toJson())
 
         then: "result should match"
         conditions.eventually {
-            testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+            testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
             assert testAsset.getAttribute("myCustomAttribute").get().getValue().get() == Values.create(456)
         }
 
         when: "a writable attribute has a non-writable meta item"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
         testAsset.getAttribute("myCustomAttribute").get().addMeta(new MetaItem(PROTOCOL_CONFIGURATION, Values.create("Ignored")))
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
         assetResource.update(null, testAsset.id, testAsset)
 
         then: "the update should be ignored"
         assert !testAsset.getAttribute("presenceDetected").get().getMetaItem(PROTOCOL_CONFIGURATION).isPresent()
 
         when: "a writable attribute has a writable meta item"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
         testAsset.getAttribute("myCustomAttribute").get().addMeta(new MetaItem(LABEL, Values.create("My label")))
         assetResource.update(null, testAsset.id, testAsset)
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
 
         then: "the result should match"
         assert testAsset.getAttribute("myCustomAttribute").get().getMetaItem(LABEL).get().getValue().get() == Values.create("My label")
 
         when: "a writable attribute has a writable meta item value update"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
         testAsset.getAttribute("myCustomAttribute").get().getMetaItem(LABEL).get().setValue(Values.create("My label update"))
         assetResource.update(null, testAsset.id, testAsset)
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
 
         then: "the result should match"
         assert testAsset.getAttribute("myCustomAttribute").get().getMetaItem(LABEL).get().getValue().get() == Values.create("My label update")
 
         when: "a writable attribute replaces a writable meta item with several new items"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
         testAsset.getAttribute("myCustomAttribute").get().getMeta().removeIf(isMetaNameEqualTo(LABEL))
         testAsset.getAttribute("myCustomAttribute").get().addMeta(
                 new MetaItem(LABEL, Values.create("Label1")),
@@ -876,7 +876,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                 new MetaItem(LABEL, Values.create("Label3")),
         )
         assetResource.update(null, testAsset.id, testAsset)
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
 
         then: "the result should match"
         assert testAsset.getAttribute("myCustomAttribute").get().getMetaItems(LABEL.getUrn()).length == 3

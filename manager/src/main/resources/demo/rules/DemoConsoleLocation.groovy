@@ -1,7 +1,7 @@
 package demo.rules
 
 import org.openremote.manager.rules.RulesBuilder
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.asset.AssetType
 import org.openremote.model.attribute.AttributeType
 import org.openremote.model.notification.Notification
@@ -29,7 +29,7 @@ rules.add()
         def consoleIds = facts.matchAssetState(new AssetQuery()
                 .types(AssetType.CONSOLE)
                 .attributes(new LocationAttributePredicate(
-                new RadialGeofencePredicate(100, ManagerDemoSetup.SMART_BUILDING_LOCATION.y, ManagerDemoSetup.SMART_BUILDING_LOCATION.x))))
+                new RadialGeofencePredicate(100, ManagerTestSetup.SMART_BUILDING_LOCATION.y, ManagerTestSetup.SMART_BUILDING_LOCATION.x))))
                 .filter({ !facts.getOptional("welcomeHome" + "_${it.id}").isPresent() })
                 .map({ it.id })
                 .collect()

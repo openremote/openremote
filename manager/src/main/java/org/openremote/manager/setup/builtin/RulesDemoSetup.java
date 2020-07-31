@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2020, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -22,7 +22,6 @@ package org.openremote.manager.setup.builtin;
 import org.apache.commons.io.IOUtils;
 import org.openremote.container.Container;
 import org.openremote.manager.setup.AbstractManagerSetup;
-import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.TenantRuleset;
 import org.openremote.model.value.Values;
@@ -30,8 +29,6 @@ import org.openremote.model.value.Values;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
-
-import static org.openremote.model.rules.Ruleset.Lang.GROOVY;
 
 public class RulesDemoSetup extends AbstractManagerSetup {
 
@@ -41,8 +38,6 @@ public class RulesDemoSetup extends AbstractManagerSetup {
         super(container);
     }
 
-    public Long apartmentActionsRulesetId;
-    public Long tenantBuildingRulesetId;
     public Long tenantSmartCityRulesetId;
 
     @Override
@@ -55,69 +50,14 @@ public class RulesDemoSetup extends AbstractManagerSetup {
 
         // ################################ Rules demo data ###################################
 
-        // Apartment 1
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidencePresenceDetection.groovy")) {
-            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-            Ruleset ruleset = new AssetRuleset(
-                managerDemoSetup.apartment1Id, "Demo Residence - Presence Detection with motion and CO2 sensors", Ruleset.Lang.GROOVY, rules
-            );
-            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
-        }
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceVacationMode.groovy")) {
-            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-            Ruleset ruleset = new AssetRuleset(
-                managerDemoSetup.apartment1Id, "Demo Residence - Vacation Mode", Ruleset.Lang.GROOVY, rules
-            );
-            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
-        }
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceAutoVentilation.groovy")) {
-            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-            Ruleset ruleset = new AssetRuleset(
-                managerDemoSetup.apartment1Id, "Demo Residence - Auto Ventilation", Ruleset.Lang.GROOVY, rules
-            );
-            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
-        }
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceNotifyAlarmTrigger.groovy")) {
-            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-            Ruleset ruleset = new AssetRuleset(
-                managerDemoSetup.apartment1Id, "Demo Residence - Notify Alarm Trigger", Ruleset.Lang.GROOVY, rules
-            );
-            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
-        }
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceSmartSwitch.groovy")) {
-            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-            Ruleset ruleset = new AssetRuleset(
-                managerDemoSetup.apartment1Id, "Demo Residence - Smart Start Switch", Ruleset.Lang.GROOVY, rules
-            );
-            ruleset.setEnabled(false);
-            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
-        }
-
-        // Apartment 2
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceAllLightsOff.js")) {
-            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-            Ruleset ruleset = new AssetRuleset(
-                managerDemoSetup.apartment2Id, "Demo Residence - All Lights Off", Ruleset.Lang.JAVASCRIPT, rules
-            );
-            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
-        }
-
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoConsoleLocation.groovy")) {
-            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-            Ruleset ruleset = new TenantRuleset(
-                keycloakDemoSetup.tenantBuilding.getRealm(), "Demo Console Location", Ruleset.Lang.GROOVY, rules
-            ).setAccessPublicRead(true);
-            tenantBuildingRulesetId = rulesetStorageService.merge(ruleset).getId();
-        }
-
         // People counter
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoSmartCityCamera.groovy")) {
-            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-            Ruleset ruleset = new AssetRuleset(
-                managerDemoSetup.peopleCounter3AssetId, "PeopleCounter 3 Rules", GROOVY, rules
-            );
-            rulesetStorageService.merge(ruleset);
-        }
+//        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoSmartCityCamera.groovy")) {
+//            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+//            Ruleset ruleset = new AssetRuleset(
+//                managerDemoSetup.peopleCounter3AssetId, "PeopleCounter 3 Rules", GROOVY, rules
+//            );
+//            rulesetStorageService.merge(ruleset);
+//        }
 
         // SmartCity geofences
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoGeofences.json")) {

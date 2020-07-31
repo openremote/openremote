@@ -31,7 +31,7 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.concurrent.ManagerExecutorService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.asset.AssetFilter
 import org.openremote.model.asset.agent.AgentStatusEvent
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -91,7 +91,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
 
         and: "a simple Websocket client"
         def client = new WebsocketIoClient<String>(
@@ -134,7 +134,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         client.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
             new EventSubscription(
                 AttributeEvent.class,
-                new AssetFilter<AttributeEvent>().setAssetIds(managerDemoSetup.apartment1LivingroomId),
+                new AssetFilter<AttributeEvent>().setAssetIds(managerTestSetup.apartment1LivingroomId),
                 "1",
                 null)))
 
@@ -148,7 +148,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         when: "when apartment 1 living room temp changes"
         receivedMessages.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerDemoSetup.apartment1LivingroomId, "targetTemperature", Values.create(5)))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature", Values.create(5)))
 
         then: "the client receives the event"
         conditions.eventually {
@@ -156,7 +156,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             def triggeredEvent = messageFromString(receivedMessages[0], TriggeredEventSubscription.MESSAGE_PREFIX, TriggeredEventSubscription.class)
             assert triggeredEvent.subscriptionId == "1"
             assert triggeredEvent.events.size() == 1
-            assert ((AttributeEvent)triggeredEvent.events[0]).entityId == managerDemoSetup.apartment1LivingroomId
+            assert ((AttributeEvent)triggeredEvent.events[0]).entityId == managerTestSetup.apartment1LivingroomId
             assert ((AttributeEvent)triggeredEvent.events[0]).attributeName == "targetTemperature"
             assert ((AttributeEvent)triggeredEvent.events[0]).value.flatMap{Values.getNumber(it)}.orElse(0) == 5
         }
@@ -166,7 +166,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         and: "when apartment 1 living room temp is set to the same value again"
         receivedMessages.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerDemoSetup.apartment1LivingroomId, "targetTemperature", Values.create(5)))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature", Values.create(5)))
 
         then: "the client should receive the event"
         conditions.eventually {
@@ -174,7 +174,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             def triggeredEvent = messageFromString(receivedMessages[0], TriggeredEventSubscription.MESSAGE_PREFIX, TriggeredEventSubscription.class)
             assert triggeredEvent.subscriptionId == "1"
             assert triggeredEvent.events.size() == 1
-            assert ((AttributeEvent)triggeredEvent.events[0]).entityId == managerDemoSetup.apartment1LivingroomId
+            assert ((AttributeEvent)triggeredEvent.events[0]).entityId == managerTestSetup.apartment1LivingroomId
             assert ((AttributeEvent)triggeredEvent.events[0]).attributeName == "targetTemperature"
             assert ((AttributeEvent)triggeredEvent.events[0]).value.flatMap{Values.getNumber(it)}.orElse(0) == 5
         }
@@ -184,7 +184,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         and: "when apartment 1 living room temp is set to null"
         receivedMessages.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerDemoSetup.apartment1LivingroomId, "targetTemperature", null))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature", null))
 
         then: "the client receives the event"
         conditions.eventually {
@@ -192,7 +192,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             def triggeredEvent = messageFromString(receivedMessages[0], TriggeredEventSubscription.MESSAGE_PREFIX, TriggeredEventSubscription.class)
             assert triggeredEvent.subscriptionId == "1"
             assert triggeredEvent.events.size() == 1
-            assert ((AttributeEvent)triggeredEvent.events[0]).entityId == managerDemoSetup.apartment1LivingroomId
+            assert ((AttributeEvent)triggeredEvent.events[0]).entityId == managerTestSetup.apartment1LivingroomId
             assert ((AttributeEvent)triggeredEvent.events[0]).attributeName == "targetTemperature"
             assert !((AttributeEvent)triggeredEvent.events[0]).value.isPresent()
         }
@@ -202,11 +202,11 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         and: "when apartment 1 bathroom temp changes"
         receivedMessages.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerDemoSetup.apartment1BathroomId, "targetTemperature", Values.create(10)))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1BathroomId, "targetTemperature", Values.create(10)))
 
         then: "the bathroom target temp should have changed"
         conditions.eventually {
-            def bathroom = assetStorageService.find(managerDemoSetup.apartment1BathroomId)
+            def bathroom = assetStorageService.find(managerTestSetup.apartment1BathroomId)
             assert bathroom.getAttribute("targetTemperature").flatMap{it.getValueAsNumber()}.orElse(0d) == 10d
         }
 
@@ -234,8 +234,8 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         when: "an existing protocol configuration is disabled"
         receivedMessages.clear()
-        def agent = assetStorageService.find(managerDemoSetup.agentId, true)
-        agent.getAttribute(managerDemoSetup.agentProtocolConfigName).get().addMeta(
+        def agent = assetStorageService.find(managerTestSetup.agentId, true)
+        agent.getAttribute(managerTestSetup.agentProtocolConfigName).get().addMeta(
             new MetaItem(MetaItemType.DISABLED)
         )
         agent = assetStorageService.merge(agent)
@@ -248,14 +248,14 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             assert waitingEvent.subscriptionId == "2"
             assert waitingEvent.events.size() == 1
             assert waitingEvent.events[0] instanceof AgentStatusEvent
-            assert (waitingEvent.events[0] as AgentStatusEvent).protocolConfiguration.entityId == managerDemoSetup.agentId
-            assert (waitingEvent.events[0] as AgentStatusEvent).protocolConfiguration.attributeName == managerDemoSetup.agentProtocolConfigName
+            assert (waitingEvent.events[0] as AgentStatusEvent).protocolConfiguration.entityId == managerTestSetup.agentId
+            assert (waitingEvent.events[0] as AgentStatusEvent).protocolConfiguration.attributeName == managerTestSetup.agentProtocolConfigName
             assert (waitingEvent.events[0] as AgentStatusEvent).connectionStatus == ConnectionStatus.WAITING
             assert disabledEvent.subscriptionId == "2"
             assert disabledEvent.events.size() == 1
             assert disabledEvent.events[0] instanceof AgentStatusEvent
-            assert (disabledEvent.events[0] as AgentStatusEvent).protocolConfiguration.entityId == managerDemoSetup.agentId
-            assert (disabledEvent.events[0] as AgentStatusEvent).protocolConfiguration.attributeName == managerDemoSetup.agentProtocolConfigName
+            assert (disabledEvent.events[0] as AgentStatusEvent).protocolConfiguration.entityId == managerTestSetup.agentId
+            assert (disabledEvent.events[0] as AgentStatusEvent).protocolConfiguration.attributeName == managerTestSetup.agentProtocolConfigName
             assert (disabledEvent.events[0] as AgentStatusEvent).connectionStatus == ConnectionStatus.DISABLED
         }
 
@@ -267,7 +267,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
                 "2")))
 
         and: "the existing protocol configuration is re-enabled"
-        agent.getAttribute(managerDemoSetup.agentProtocolConfigName).get().getMeta().removeIf(
+        agent.getAttribute(managerTestSetup.agentProtocolConfigName).get().getMeta().removeIf(
             isMetaNameEqualTo(MetaItemType.DISABLED)
         )
         agent = assetStorageService.merge(agent)
@@ -275,7 +275,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         then: "the protocol should be CONNECTED but no new events should have been received"
         conditions.eventually {
             assert agentService.getProtocolConnectionStatus(
-                new AttributeRef(managerDemoSetup.agentId, managerDemoSetup.agentProtocolConfigName)
+                new AttributeRef(managerTestSetup.agentId, managerTestSetup.agentProtocolConfigName)
             ) == ConnectionStatus.CONNECTED
             assert receivedMessages.isEmpty()
         }

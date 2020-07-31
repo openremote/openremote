@@ -10,8 +10,8 @@ import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.KeycloakTestSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.AttributeType
@@ -49,8 +49,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         given: "the container environment is started with the mock handler"
         def container = startContainer(defaultConfig(), defaultServices())
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def notificationService = container.getService(NotificationService.class)
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
         def consoleResource = (ConsoleResourceImpl)container.getService(WebService.class).getApiSingletons().find {it instanceof ConsoleResourceImpl}
@@ -74,7 +74,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), mockPushNotificationHandler)
 
         and: "an authenticated test user"
-        def realm = keycloakDemoSetup.tenantBuilding.realm
+        def realm = keycloakTestSetup.tenantBuilding.realm
         def testuser1AccessToken = authenticate(
             container,
             MASTER_REALM,
@@ -111,7 +111,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                         "Click to cancel",
                         writeAttributeValueAction(
                                 new AttributeRef(
-                                        managerDemoSetup.apartment1LivingroomId,
+                                        managerTestSetup.apartment1LivingroomId,
                                         "alarmEnabled"
                                 ),
                                 Values.create(false)), null, null), null, null, null)
@@ -121,7 +121,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def testuser2NotificationResource = getClientApiTarget(serverUri(serverPort), realm, testuser2AccessToken).proxy(NotificationResource.class)
         def testuser3NotificationResource = getClientApiTarget(serverUri(serverPort), realm, testuser3AccessToken).proxy(NotificationResource.class)
         def adminNotificationResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(NotificationResource.class)
-        def anonymousNotificationResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm).proxy(NotificationResource.class)
+        def anonymousNotificationResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm).proxy(NotificationResource.class)
         def testuser1ConsoleResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, testuser1AccessToken).proxy(ConsoleResource.class)
         def testuser2ConsoleResource = getClientApiTarget(serverUri(serverPort), realm, testuser2AccessToken).proxy(ConsoleResource.class)
         def testuser3ConsoleResource = getClientApiTarget(serverUri(serverPort), realm, testuser3AccessToken).proxy(ConsoleResource.class)
@@ -171,7 +171,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         anonymousConsole.id != null
 
         when: "the admin user sends a push notification to an entire realm"
-        notification.targets = [new Notification.Target(Notification.TargetType.TENANT, keycloakDemoSetup.tenantBuilding.realm)]
+        notification.targets = [new Notification.Target(Notification.TargetType.TENANT, keycloakTestSetup.tenantBuilding.realm)]
         adminNotificationResource.sendNotification(null, notification)
 
         then: "all consoles in that realm should have been sent a notification"
@@ -191,7 +191,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 403
 
         when: "the admin user sends a notification to a user in a different realm"
-        notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakDemoSetup.testuser2Id)]
+        notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakTestSetup.testuser2Id)]
         advancePseudoClock(1, TimeUnit.HOURS, container)
         adminNotificationResource.sendNotification(null, notification)
 
@@ -199,7 +199,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         notificationIds.size() == 5
 
         when: "a regular user sends a push notification to a user in a different realm"
-        notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakDemoSetup.testuser2Id)]
+        notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakTestSetup.testuser2Id)]
         testuser1NotificationResource.sendNotification(null, notification)
 
         then: "access should be forbidden"
@@ -207,7 +207,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 403
 
         when: "a restricted user sends a push notification to another user in the same realm"
-        notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakDemoSetup.testuser2Id)]
+        notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakTestSetup.testuser2Id)]
         testuser3NotificationResource.sendNotification(null, notification)
 
         then: "access should be forbidden"
@@ -535,7 +535,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         given: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def notificationService = container.getService(NotificationService.class)
         def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -567,8 +567,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def notification = new Notification(
                 "Test",
                 new EmailNotificationMessage().setSubject("Test").setText("Hello world!"),
-                Collections.singletonList(new Notification.Target(Notification.TargetType.TENANT, managerDemoSetup.realmBuildingTenant)), null, null)
-        notificationService.sendNotification(notification, Notification.Source.TENANT_RULESET, managerDemoSetup.realmBuildingTenant)
+                Collections.singletonList(new Notification.Target(Notification.TargetType.TENANT, managerTestSetup.realmBuildingTenant)), null, null)
+        notificationService.sendNotification(notification, Notification.Source.TENANT_RULESET, managerTestSetup.realmBuildingTenant)
 
         then: "the email should have been sent to all tenant users"
         conditions.eventually {
@@ -583,12 +583,12 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "an email attribute is added to an asset"
-        def kitchen = assetStorageService.find(managerDemoSetup.apartment1KitchenId)
+        def kitchen = assetStorageService.find(managerTestSetup.apartment1KitchenId)
         kitchen.addAttributes(new AssetAttribute(AttributeType.EMAIL, Values.create("kitchen@openremote.local")))
         kitchen = assetStorageService.merge(kitchen)
 
         and: "an email notification is sent to a parent asset"
-        notification.setTargets([new Notification.Target(Notification.TargetType.ASSET, managerDemoSetup.apartment1Id)])
+        notification.setTargets([new Notification.Target(Notification.TargetType.ASSET, managerTestSetup.apartment1Id)])
         notificationService.sendNotification(notification)
 
         then: "the child asset with the email attribute should have been sent an email"

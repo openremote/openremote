@@ -11,8 +11,8 @@ import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.KeycloakTestSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.attribute.AttributeRef
@@ -40,8 +40,8 @@ import javax.ws.rs.WebApplicationException
 import java.util.concurrent.TimeUnit
 import java.util.stream.IntStream
 
-import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_SMART_BUILDING
-import static org.openremote.manager.setup.builtin.ManagerDemoSetup.SMART_BUILDING_LOCATION
+import static org.openremote.manager.setup.builtin.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
+import static org.openremote.manager.setup.builtin.ManagerTestSetup.SMART_BUILDING_LOCATION
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD
 import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl
@@ -67,8 +67,8 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
         def notificationService = container.getService(NotificationService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
 
@@ -96,7 +96,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         and: "the demo location predicate console rules are loaded"
         Ruleset ruleset = new TenantRuleset(
-            keycloakDemoSetup.tenantBuilding.realm,
+            keycloakTestSetup.tenantBuilding.realm,
             "Demo Tenant Building - Console Location",
             Ruleset.Lang.GROOVY,
             getClass().getResource("/demo/rules/DemoConsoleLocation.groovy").text)
@@ -104,7 +104,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         expect: "the rule engine to become available and be running"
         conditions.eventually {
-            def tenantBuildingEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantBuilding.realm)
+            def tenantBuildingEngine = rulesService.tenantEngines.get(keycloakTestSetup.tenantBuilding.realm)
             assert tenantBuildingEngine != null
             assert tenantBuildingEngine.isRunning()
             assert tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
@@ -113,19 +113,19 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         and: "an authenticated user"
         def accessToken = authenticate(
                 container,
-                keycloakDemoSetup.tenantBuilding.realm,
+                keycloakTestSetup.tenantBuilding.realm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
         ).token
 
         and: "authenticated and anonymous console, rules and asset resources"
-        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(ConsoleResource.class)
-        def authenticatedRulesResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(RulesResource.class)
-        def authenticatedAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(AssetResource.class)
-        def anonymousConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm).proxy(ConsoleResource.class)
-        def anonymousRulesResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm).proxy(RulesResource.class)
-        def anonymousAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm).proxy(AssetResource.class)
+        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm, accessToken).proxy(ConsoleResource.class)
+        def authenticatedRulesResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm, accessToken).proxy(RulesResource.class)
+        def authenticatedAssetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm, accessToken).proxy(AssetResource.class)
+        def anonymousConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm).proxy(ConsoleResource.class)
+        def anonymousRulesResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm).proxy(RulesResource.class)
+        def anonymousAssetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm).proxy(AssetResource.class)
 
         when: "a console registers with an authenticated user"
         def consoleRegistration = new ConsoleRegistration(null,
@@ -183,7 +183,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         }.orElse(null) == "23123213ad2313b0897efd"
 
         and: "the console should have been linked to the authenticated user"
-        def userAssets = assetStorageService.findUserAssets(keycloakDemoSetup.tenantBuilding.realm, keycloakDemoSetup.testuser3Id, consoleId)
+        def userAssets = assetStorageService.findUserAssets(keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser3Id, consoleId)
         assert userAssets.size() == 1
         assert userAssets.get(0).assetName == "Test Console"
 
@@ -260,7 +260,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consoleTestProvider.data == null
 
         when: "a console registers with the id of another existing asset"
-        consoleRegistration.setId(managerDemoSetup.thingId)
+        consoleRegistration.setId(managerTestSetup.thingId)
         authenticatedConsoleResource.register(null, consoleRegistration)
 
         then: "the result should be bad request"
@@ -416,7 +416,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             assert asset != null
             assert asset.getAttribute(LOCATION.attributeName).flatMap { it.valueTimestamp }.orElse(Long.MIN_VALUE) > timestamp
             assert notificationIds.size() == 1
-            def tenantBuildingEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantBuilding.realm)
+            def tenantBuildingEngine = rulesService.tenantEngines.get(keycloakTestSetup.tenantBuilding.realm)
             assert tenantBuildingEngine != null
             assert tenantBuildingEngine.isRunning()
             assert !tenantBuildingEngine.facts.getOptional("welcomeHome_${testUser3Console2.id}").isPresent()

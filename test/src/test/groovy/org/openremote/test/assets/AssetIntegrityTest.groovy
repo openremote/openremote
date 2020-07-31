@@ -1,8 +1,8 @@
 package org.openremote.test.assets
 
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.KeycloakTestSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
@@ -25,8 +25,8 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
     def "Test asset changes as superuser"() {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
 
         and: "an authenticated admin user"
         def accessToken = authenticate(
@@ -42,13 +42,13 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         def assetResource = getClientApiTarget(serverUri, MASTER_REALM, accessToken).proxy(AssetResource.class)
 
         when: "an asset is created in the authenticated realm"
-        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.realm)
+        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakTestSetup.masterTenant.realm)
         testAsset = assetResource.create(null, testAsset)
 
         then: "the asset should exist"
         testAsset.name == "Test Room"
         testAsset.wellKnownType == AssetType.ROOM
-        testAsset.realm == keycloakDemoSetup.masterTenant.realm
+        testAsset.realm == keycloakTestSetup.masterTenant.realm
         testAsset.parentId == null
 
         when: "an asset is stored with an illegal attribute name"
@@ -130,7 +130,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         when: "an asset is updated with a parent in a different realm"
         testAsset = assetResource.get(null, testAsset.getId())
-        testAsset.setParentId(managerDemoSetup.smartBuildingId)
+        testAsset.setParentId(managerTestSetup.smartBuildingId)
         assetResource.update(null, testAsset.id, testAsset)
 
         then: "the request should be bad"
@@ -138,7 +138,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         ex.response.status == 400
 
         when: "an asset is deleted but has children"
-        assetResource.delete(null, [managerDemoSetup.apartment1Id])
+        assetResource.delete(null, [managerTestSetup.apartment1Id])
 
         then: "the request should be bad"
         ex = thrown()

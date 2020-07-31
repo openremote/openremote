@@ -38,22 +38,46 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
 
         // Basic vs Keycloak identity provider
         if (container.getService(ManagerIdentityService.class).isKeycloakEnabled()) {
+
             // Keycloak is not managed by persistence service so need separate clean task
             addTask(new KeycloakCleanSetup(container));
             addTask(new KeycloakInitSetup(container));
-            if (isImportDemoUsers(container)) {
-                addTask(new KeycloakDemoSetup(container));
+
+            if (isTestSetup(container)) {
+                if (isImportDemoUsers(container)) {
+                    addTask(new KeycloakTestSetup(container));
+                }
+            } else {
+                if (isImportDemoUsers(container)) {
+                    addTask(new KeycloakDemoSetup(container));
+                }
             }
 
-            if (isImportDemoAssets(container)) {
-                addTask(new ManagerDemoSetup(container, isImportDemoScenes(container)));
+            if (isTestSetup(container)) {
+
+                if (isImportDemoAssets(container)) {
+                    addTask(new ManagerTestSetup(container, isImportDemoScenes(container)));
+                }
+                if (isImportDemoRules(container)) {
+                    addTask(new RulesTestSetup(container));
+                }
+                if (isImportDemoAgent(container)) {
+                    addTask(new ManagerTestAgentSetup(container));
+                }
+
+            } else {
+
+                if (isImportDemoAssets(container)) {
+                    addTask(new ManagerDemoSetup(container));
+                }
+                if (isImportDemoRules(container)) {
+                    addTask(new RulesDemoSetup(container));
+                }
+                if (isImportDemoAgent(container)) {
+                    addTask(new ManagerDemoAgentSetup(container));
+                }
             }
-            if (isImportDemoRules(container)) {
-                addTask(new RulesDemoSetup(container));
-            }
-            if (isImportDemoAgent(container)) {
-                addTask(new ManagerDemoAgentSetup(container));
-            }
+
         }
 
         return getTasks();

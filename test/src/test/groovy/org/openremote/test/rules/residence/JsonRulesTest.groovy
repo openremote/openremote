@@ -15,8 +15,8 @@ import org.openremote.manager.rules.RulesetDeployment
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.KeycloakTestSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.calendar.RecurrenceRule
@@ -44,7 +44,7 @@ import java.time.temporal.ChronoUnit
 
 import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.MILLISECONDS
-import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_SMART_BUILDING
+import static org.openremote.manager.setup.builtin.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.attribute.AttributeType.LOCATION
 import static org.openremote.model.value.Values.parse
@@ -72,8 +72,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
         def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
         def notificationService = container.getService(NotificationService.class)
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def timerService = container.getService(TimerService.class)
@@ -115,7 +115,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "some rules"
         Ruleset ruleset = new TenantRuleset(
-            keycloakDemoSetup.tenantBuilding.realm,
+            keycloakTestSetup.tenantBuilding.realm,
             "Demo Apartment - All Lights Off",
             Ruleset.Lang.JSON,
             getClass().getResource("/org/openremote/test/rules/BasicJsonRules.json").text)
@@ -123,7 +123,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         expect: "the rule engines to become available and be running with asset states inserted and no longer tracking location rules"
         conditions.eventually {
-            tenantBuildingEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantBuilding.realm)
+            tenantBuildingEngine = rulesService.tenantEngines.get(keycloakTestSetup.tenantBuilding.realm)
             assert tenantBuildingEngine != null
             assert tenantBuildingEngine.isRunning()
             assert tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
@@ -132,25 +132,25 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "the room lights in an apartment to be on"
         conditions.eventually {
-            def livingroomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
+            def livingroomAsset = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
             assert livingroomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
             assert livingroomAsset.getAttribute("lightSwitchTriggerTimes").get().valueAsArray.get().length() == 2
             assert livingroomAsset.getAttribute("plantsWaterLevels").get().valueAsObject.get().getNumber("cactus").get() == 0.8
-            def bathRoomAsset = assetStorageService.find(managerDemoSetup.apartment2BathroomId, true)
+            def bathRoomAsset = assetStorageService.find(managerTestSetup.apartment2BathroomId, true)
             assert bathRoomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
         }
 
         when: "a user authenticates"
         def accessToken = authenticate(
             container,
-            keycloakDemoSetup.tenantBuilding.realm,
+            keycloakTestSetup.tenantBuilding.realm,
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
         ).token
 
         and: "a console is registered by that user"
-        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantBuilding.realm, accessToken).proxy(ConsoleResource.class)
+        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm, accessToken).proxy(ConsoleResource.class)
         def consoleRegistration = new ConsoleRegistration(null,
             "Test Console",
             "1.0",
@@ -188,7 +188,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the console location is set to the apartment"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue()), AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, ManagerTestSetup.SMART_BUILDING_LOCATION.toValue()), AttributeEvent.Source.CLIENT)
 
         then: "the consoles location should have been updated"
         conditions.eventually {
@@ -198,16 +198,16 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 GeoJSONPoint.fromValue(it)
             }.orElse(null)
             assert assetLocation != null
-            assert assetLocation.x == ManagerDemoSetup.SMART_BUILDING_LOCATION.x
-            assert assetLocation.y == ManagerDemoSetup.SMART_BUILDING_LOCATION.y
-            assert assetLocation.z == ManagerDemoSetup.SMART_BUILDING_LOCATION.z
+            assert assetLocation.x == ManagerTestSetup.SMART_BUILDING_LOCATION.x
+            assert assetLocation.y == ManagerTestSetup.SMART_BUILDING_LOCATION.y
+            assert assetLocation.z == ManagerTestSetup.SMART_BUILDING_LOCATION.z
         }
 
         then: "the console location asset state should be in the rule engine"
         conditions.eventually {
             assert tenantBuildingEngine.assetStates.find {
                 it.id == consoleRegistration.id && it.value.flatMap { GeoJSONPoint.fromValue(it) }.map {
-                    it.x == ManagerDemoSetup.SMART_BUILDING_LOCATION.x && it.y == ManagerDemoSetup.SMART_BUILDING_LOCATION.y ? it : null
+                    it.x == ManagerTestSetup.SMART_BUILDING_LOCATION.x && it.y == ManagerTestSetup.SMART_BUILDING_LOCATION.y ? it : null
                 }.isPresent()
             } != null
         }
@@ -217,11 +217,11 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the apartment lights should be switched off"
         conditions.eventually {
-            def livingroomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
+            def livingroomAsset = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
             assert !livingroomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
             assert livingroomAsset.getAttribute("lightSwitchTriggerTimes").get().valueAsArray.get().length() == 2
             assert livingroomAsset.getAttribute("plantsWaterLevels").get().valueAsObject.get().getNumber("cactus").get() == 0.8
-            def bathRoomAsset = assetStorageService.find(managerDemoSetup.apartment2BathroomId, true)
+            def bathRoomAsset = assetStorageService.find(managerTestSetup.apartment2BathroomId, true)
             assert !bathRoomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
         }
 
@@ -247,7 +247,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
         def lastFireTimestamp = tenantBuildingEngine.lastFireTimestamp
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue()), AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, ManagerTestSetup.SMART_BUILDING_LOCATION.toValue()), AttributeEvent.Source.CLIENT)
 
         and: "the engine fires at least one more time"
         conditions.eventually {
@@ -294,7 +294,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
         lastFireTimestamp = tenantBuildingEngine.lastFireTimestamp
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue()), AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, ManagerTestSetup.SMART_BUILDING_LOCATION.toValue()), AttributeEvent.Source.CLIENT)
 
         then: "the engine fires at least one more time"
         conditions.eventually {
@@ -312,7 +312,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
         lastFireTimestamp = tenantBuildingEngine.lastFireTimestamp
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue()), AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, LOCATION.attributeName, ManagerTestSetup.SMART_BUILDING_LOCATION.toValue()), AttributeEvent.Source.CLIENT)
 
         then: "the engine fires at least one more time"
         conditions.eventually {

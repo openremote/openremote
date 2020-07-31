@@ -4,7 +4,7 @@ import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.datapoint.DatapointInterval
 import org.openremote.model.value.Values
@@ -16,11 +16,9 @@ import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.DAYS
-import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.SECONDS
-import static org.openremote.manager.datapoint.AssetDatapointService.DATA_POINTS_MAX_AGE_DAYS
 import static org.openremote.manager.datapoint.AssetDatapointService.DATA_POINTS_MAX_AGE_DAYS_DEFAULT
-import static org.openremote.manager.setup.builtin.ManagerDemoSetup.thingLightToggleAttributeName
+import static org.openremote.manager.setup.builtin.ManagerTestSetup.thingLightToggleAttributeName
 
 class AssetDatapointTest extends Specification implements ManagerContainerTrait {
 
@@ -32,71 +30,71 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         when: "the demo agent and thing have been deployed"
         def datapointPurgeDays = DATA_POINTS_MAX_AGE_DAYS_DEFAULT
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def simulatorProtocol = container.getService(SimulatorProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
 
         then: "the simulator elements should have the initial state"
         conditions.eventually {
-            def state = simulatorProtocol.getValue(managerDemoSetup.thingId, "light1PowerConsumption")
+            def state = simulatorProtocol.getValue(managerTestSetup.thingId, "light1PowerConsumption")
             assert Values.getNumber(state.orElse(null)).orElse(null) == 12.345d
         }
 
         when: "a simulated sensor receives some values"
         advancePseudoClock(10, SECONDS, container)
-        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(13.3d))
+        simulatorProtocol.putValue(managerTestSetup.thingId, "light1PowerConsumption", Values.create(13.3d))
         advancePseudoClock(10, SECONDS, container)
-        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(13.3d))
+        simulatorProtocol.putValue(managerTestSetup.thingId, "light1PowerConsumption", Values.create(13.3d))
         advancePseudoClock(10, SECONDS, container)
-        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(13.3d))
+        simulatorProtocol.putValue(managerTestSetup.thingId, "light1PowerConsumption", Values.create(13.3d))
 
         and: "we move forward in time more than purge days and a simulated sensor receives a new value"
         advancePseudoClock(datapointPurgeDays, DAYS, container)
         def datapoint1ExpectedTimestamp = getClockTimeOf(container)
-        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(13.3d))
+        simulatorProtocol.putValue(managerTestSetup.thingId, "light1PowerConsumption", Values.create(13.3d))
 
         then: "the attribute should be updated"
         conditions.eventually {
-            def thing = assetStorageService.find(managerDemoSetup.thingId, true)
+            def thing = assetStorageService.find(managerTestSetup.thingId, true)
             assert thing.getAttribute("light1PowerConsumption").flatMap { it.getValueAsNumber() }.orElse(null) == 13.3d
         }
 
         when: "a simulated sensor receives a new value"
         advancePseudoClock(10, SECONDS, container)
         def datapoint2ExpectedTimestamp = getClockTimeOf(container)
-        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(14.4d))
+        simulatorProtocol.putValue(managerTestSetup.thingId, "light1PowerConsumption", Values.create(14.4d))
 
         then: "the attribute should be updated"
         conditions.eventually {
-            def thing = assetStorageService.find(managerDemoSetup.thingId, true)
+            def thing = assetStorageService.find(managerTestSetup.thingId, true)
             assert thing.getAttribute("light1PowerConsumption").flatMap { it.getValueAsNumber() }.orElse(null) == 14.4d
         }
 
         when: "a simulated sensor receives a new value"
         advancePseudoClock(10, SECONDS, container)
         def datapoint3ExpectedTimestamp = getClockTimeOf(container)
-        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(15.5d))
+        simulatorProtocol.putValue(managerTestSetup.thingId, "light1PowerConsumption", Values.create(15.5d))
 
         then: "the attribute should be updated"
         conditions.eventually {
-            def thing = assetStorageService.find(managerDemoSetup.thingId, true)
+            def thing = assetStorageService.find(managerTestSetup.thingId, true)
             assert thing.getAttribute("light1PowerConsumption").flatMap { it.getValueAsNumber() }.orElse(null) == 15.5d
         }
 
         when: "a simulated sensor receives a new value"
         advancePseudoClock(10, SECONDS, container)
-        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", null) // No value!
+        simulatorProtocol.putValue(managerTestSetup.thingId, "light1PowerConsumption", null) // No value!
 
         then: "the attribute should be updated"
         conditions.eventually {
-            def thing = assetStorageService.find(managerDemoSetup.thingId, true)
+            def thing = assetStorageService.find(managerTestSetup.thingId, true)
             assert !thing.getAttribute("light1PowerConsumption").flatMap { it.getValue() }.isPresent()
         }
 
         expect: "the datapoints to be stored"
         conditions.eventually {
-            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, "light1PowerConsumption"))
+            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
             assert datapoints.size() == 3
 
             // Note that the "No value" sensor update should not have created a datapoint, the first
@@ -114,7 +112,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
 
         and: "the aggregated datapoints should match"
         conditions.eventually {
-            def thing = assetStorageService.find(managerDemoSetup.thingId, true)
+            def thing = assetStorageService.find(managerTestSetup.thingId, true)
             def aggregatedDatapoints = assetDatapointService.getValueDatapoints(
                     thing.getAttribute("light1PowerConsumption").orElseThrow({ new RuntimeException("Missing attribute")}),
                     DatapointInterval.MINUTE,
@@ -131,39 +129,39 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         when: "a simulated boolean sensor receives a new value"
         advancePseudoClock(10, SECONDS, container)
         datapoint1ExpectedTimestamp = getClockTimeOf(container)
-        simulatorProtocol.putValue(managerDemoSetup.thingId, thingLightToggleAttributeName, Values.create(false))
+        simulatorProtocol.putValue(managerTestSetup.thingId, thingLightToggleAttributeName, Values.create(false))
 
         then: "the attribute should be updated"
         conditions.eventually {
-            def thing = assetStorageService.find(managerDemoSetup.thingId, true)
+            def thing = assetStorageService.find(managerTestSetup.thingId, true)
             assert !thing.getAttribute(thingLightToggleAttributeName).flatMap { it.getValueAsBoolean() }.orElse(null)
         }
 
         when: "a simulated sensor receives a new value"
         advancePseudoClock(10, SECONDS, container)
         datapoint2ExpectedTimestamp = getClockTimeOf(container)
-        simulatorProtocol.putValue(managerDemoSetup.thingId, thingLightToggleAttributeName, Values.create(true))
+        simulatorProtocol.putValue(managerTestSetup.thingId, thingLightToggleAttributeName, Values.create(true))
 
         then: "the attribute should be updated"
         conditions.eventually {
-            def thing = assetStorageService.find(managerDemoSetup.thingId, true)
+            def thing = assetStorageService.find(managerTestSetup.thingId, true)
             assert thing.getAttribute(thingLightToggleAttributeName).flatMap { it.getValueAsBoolean() }.orElse(null)
         }
 
         when: "a simulated sensor receives a new value"
         advancePseudoClock(10, SECONDS, container)
         datapoint3ExpectedTimestamp = getClockTimeOf(container)
-        simulatorProtocol.putValue(managerDemoSetup.thingId, thingLightToggleAttributeName, Values.create(false))
+        simulatorProtocol.putValue(managerTestSetup.thingId, thingLightToggleAttributeName, Values.create(false))
 
         then: "the attribute should be updated"
         conditions.eventually {
-            def thing = assetStorageService.find(managerDemoSetup.thingId, true)
+            def thing = assetStorageService.find(managerTestSetup.thingId, true)
             assert !thing.getAttribute(thingLightToggleAttributeName).flatMap { it.getValueAsBoolean() }.orElse(null)
         }
 
         expect: "the datapoints to be stored"
         conditions.eventually {
-            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, thingLightToggleAttributeName))
+            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
             assert datapoints.size() == 3
 
             assert !Values.getBoolean(datapoints.get(0).value).orElse(null)
@@ -178,7 +176,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
 
         and: "the aggregated datapoints should match"
         conditions.eventually {
-            def thing = assetStorageService.find(managerDemoSetup.thingId, true)
+            def thing = assetStorageService.find(managerTestSetup.thingId, true)
             def aggregatedDatapoints = assetDatapointService.getValueDatapoints(
                     thing.getAttribute(thingLightToggleAttributeName).orElseThrow({ new RuntimeException("Missing attribute")}),
                     DatapointInterval.MINUTE,
@@ -197,15 +195,15 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
 
         and: "the power sensor with default max age receives a new value"
         def datapoint4ExpectedTimestamp = getClockTimeOf(container)
-        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(17.5d))
+        simulatorProtocol.putValue(managerTestSetup.thingId, "light1PowerConsumption", Values.create(17.5d))
 
         and: "the toggle sensor with a custom max age of 7 days receives a new value"
-        simulatorProtocol.putValue(managerDemoSetup.thingId, thingLightToggleAttributeName, Values.create(true))
+        simulatorProtocol.putValue(managerTestSetup.thingId, thingLightToggleAttributeName, Values.create(true))
 
         then: "the datapoints should be stored"
         conditions.eventually {
-            def powerDatapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, "light1PowerConsumption"))
-            def toggleDatapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, thingLightToggleAttributeName))
+            def powerDatapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
+            def toggleDatapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
 
             assert powerDatapoints.size() == 4
             assert Values.getNumber(powerDatapoints.get(0).value).orElse(null) == 17.5d
@@ -224,7 +222,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
 
         then: "data points older than purge days should be purged for the power sensor"
         conditions.eventually {
-            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, "light1PowerConsumption"))
+            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
             assert datapoints.size() == 1
             assert Values.getNumber(datapoints.get(0).value).orElse(null) == 17.5d
             assert datapoints.get(0).timestamp == datapoint4ExpectedTimestamp
@@ -232,7 +230,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
 
         and: "no data points should have been purged for the toggle sensor"
         conditions.eventually {
-            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, thingLightToggleAttributeName))
+            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
             assert datapoints.size() == 4
             assert Values.getBoolean(datapoints.get(0).value).orElse(false)
             assert datapoints.get(0).timestamp == datapoint4ExpectedTimestamp
@@ -246,13 +244,13 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
 
         then: "all data points should be purged for power sensor"
         conditions.eventually {
-            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, "light1PowerConsumption"))
+            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
             assert datapoints.isEmpty()
         }
 
         and: "no data points should have been purged for the toggle sensor"
         conditions.eventually {
-            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, thingLightToggleAttributeName))
+            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
             assert datapoints.size() == 4
             assert Values.getBoolean(datapoints.get(0).value).orElse(false)
             assert datapoints.get(0).timestamp == datapoint4ExpectedTimestamp
@@ -266,7 +264,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
 
         then: "data points older than 7 days should have been purged for the toggle sensor"
         conditions.eventually {
-            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, thingLightToggleAttributeName))
+            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
             assert datapoints.size() == 1
             assert Values.getBoolean(datapoints.get(0).value).orElse(false)
             assert datapoints.get(0).timestamp == datapoint4ExpectedTimestamp
@@ -280,7 +278,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
 
         then: "all data points should have been purged for the toggle sensor"
         conditions.eventually {
-            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, thingLightToggleAttributeName))
+            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
             assert datapoints.isEmpty()
         }
     }

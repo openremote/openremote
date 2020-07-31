@@ -7,7 +7,7 @@ import org.openremote.manager.rules.RulesLoopException
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RulesetStatus
@@ -26,14 +26,14 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
         TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def conditions = new PollingConditions(timeout: 20, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         RulesEngine apartment2Engine
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-            managerDemoSetup.apartment2Id,
+            managerTestSetup.apartment2Id,
             "Failure Ruleset",
             Ruleset.Lang.GROOVY,
             getClass().getResource("/org/openremote/test/failure/RulesFailureConditionInvalidReturn.groovy").text)
@@ -41,7 +41,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
 
         expect: "the rule engine should have an error (first firing after initial asset state insert)"
         conditions.eventually {
-            apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
+            apartment2Engine = rulesService.assetEngines.get(managerTestSetup.apartment2Id)
             assert apartment2Engine != null
             assert apartment2Engine.isError()
             assert apartment2Engine.getError() instanceof RuntimeException
@@ -62,14 +62,14 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
         TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def conditions = new PollingConditions(timeout: 20, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         RulesEngine apartment2Engine
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-            managerDemoSetup.apartment2Id,
+            managerTestSetup.apartment2Id,
             "Failure Ruleset",
             Ruleset.Lang.GROOVY,
             getClass().getResource("/org/openremote/test/failure/RulesFailureConditionThrowsException.groovy").text)
@@ -77,7 +77,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
 
         expect: "the rule engine should have an error (first firing after initial asset state insert)"
         conditions.eventually {
-            apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
+            apartment2Engine = rulesService.assetEngines.get(managerTestSetup.apartment2Id)
             assert apartment2Engine != null
             assert apartment2Engine.deployments[ruleset.id].status == RulesetStatus.EXECUTION_ERROR
             assert apartment2Engine.deployments[ruleset.id].error instanceof RuntimeException
@@ -98,14 +98,14 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
         TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def conditions = new PollingConditions(timeout: 20, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         RulesEngine apartment2Engine
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-            managerDemoSetup.apartment2Id,
+            managerTestSetup.apartment2Id,
             "Failure Ruleset",
             Ruleset.Lang.GROOVY,
             getClass().getResource("/org/openremote/test/failure/RulesFailureActionThrowsException.groovy").text)
@@ -113,7 +113,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
 
         expect: "the rule engine should have an error (first firing after initial asset state insert)"
         conditions.eventually {
-            apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
+            apartment2Engine = rulesService.assetEngines.get(managerTestSetup.apartment2Id)
             assert apartment2Engine != null
             assert apartment2Engine.deployments[ruleset.id].status == RulesetStatus.EXECUTION_ERROR
             assert apartment2Engine.deployments[ruleset.id].error instanceof RuntimeException
@@ -134,14 +134,14 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
         TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def conditions = new PollingConditions(timeout: 20, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         RulesEngine apartment2Engine
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-            managerDemoSetup.apartment2Id,
+            managerTestSetup.apartment2Id,
             "Failure Ruleset",
             Ruleset.Lang.GROOVY,
             getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text)
@@ -150,7 +150,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
 
         expect: "the rule engine should have an error (first firing after initial asset state insert)"
         conditions.eventually {
-            apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
+            apartment2Engine = rulesService.assetEngines.get(managerTestSetup.apartment2Id)
             assert apartment2Engine != null
             assert apartment2Engine.deployments[ruleset.id].status == RulesetStatus.LOOP_ERROR
             assert apartment2Engine.deployments[ruleset.id].error instanceof RulesLoopException

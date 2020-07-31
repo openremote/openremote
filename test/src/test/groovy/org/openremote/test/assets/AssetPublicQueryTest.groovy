@@ -1,11 +1,11 @@
 package org.openremote.test.assets
 
-import org.openremote.container.Container
+
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.KeycloakTestSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetResource
@@ -17,18 +17,17 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import static org.openremote.model.Constants.MASTER_REALM
-import static org.openremote.model.attribute.MetaItemType.ACCESS_PUBLIC_READ
-import static org.openremote.model.attribute.MetaItemType.LABEL
 import static org.openremote.model.asset.AssetType.THING
 import static org.openremote.model.attribute.AttributeValueType.NUMBER
-import static org.openremote.model.query.AssetQuery.Select
+import static org.openremote.model.attribute.MetaItemType.ACCESS_PUBLIC_READ
+import static org.openremote.model.attribute.MetaItemType.LABEL
 
 class AssetPublicQueryTest extends Specification implements ManagerContainerTrait {
 
     @Shared
-    static ManagerDemoSetup managerDemoSetup
+    static ManagerTestSetup managerTestSetup
     @Shared
-    static KeycloakDemoSetup keycloakDemoSetup
+    static KeycloakTestSetup keycloakTestSetup
     @Shared
     static AssetStorageService assetStorageService
     @Shared
@@ -41,8 +40,8 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
     def setupSpec() {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
-        managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         assetStorageService = container.getService(AssetStorageService.class)
         persistenceService = container.getService(PersistenceService.class)
         assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AssetResource.class)
@@ -51,7 +50,7 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
 
         for (int i = 0; i < 10; i++) {
             Asset somePublicAsset = new Asset("Some Public Asset", THING)
-            somePublicAsset.setParentId(managerDemoSetup.smartOfficeId)
+            somePublicAsset.setParentId(managerTestSetup.smartOfficeId)
             somePublicAsset.setAccessPublicRead(true)
             somePublicAsset.setAttributes(
                     new AssetAttribute("somePrivateAttribute", NUMBER, Values.create(123)).addMeta(
@@ -83,8 +82,8 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
         assets[0].id == returnedAssets.get(0).id
         assets[0].name == "Some Public Asset"
         assets[0].wellKnownType == THING
-        assets[0].parentId == managerDemoSetup.smartOfficeId
-        assets[0].realm == keycloakDemoSetup.masterTenant.realm
+        assets[0].parentId == managerTestSetup.smartOfficeId
+        assets[0].realm == keycloakTestSetup.masterTenant.realm
         !assets[0].getAttribute("somePrivateAttribute").isPresent()
         assets[0].getAttribute("somePublicAttribute").get().getValue().get() == Values.create(456)
         assets[0].getAttribute("somePublicAttribute").get().getMeta().size() == 1
@@ -100,8 +99,8 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
         assets[0].id == returnedAssets.get(0).id
         assets[0].name == "Some Public Asset"
         assets[0].wellKnownType == THING
-        assets[0].parentId == managerDemoSetup.smartOfficeId
-        assets[0].realm == keycloakDemoSetup.masterTenant.realm
+        assets[0].parentId == managerTestSetup.smartOfficeId
+        assets[0].realm == keycloakTestSetup.masterTenant.realm
         !assets[0].getAttribute("somePrivateAttribute").isPresent()
         assets[0].getAttribute("somePublicAttribute").get().getValue().get() == Values.create(456)
         assets[0].getAttribute("somePublicAttribute").get().getMeta().size() == 1

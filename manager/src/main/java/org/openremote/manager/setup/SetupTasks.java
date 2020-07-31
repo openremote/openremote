@@ -70,6 +70,7 @@ public interface SetupTasks {
     String SETUP_IMPORT_DEMO_RULES = "SETUP_IMPORT_DEMO_RULES";
     String SETUP_IMPORT_DEMO_SCENES = "SETUP_IMPORT_DEMO_SCENES";
     String SETUP_IMPORT_DEMO_AGENT = "SETUP_IMPORT_DEMO_AGENT";
+    String SETUP_TESTS = "SETUP_TESTS";
 
     static boolean isImportDemoUsers(Container container) {
         return isImportDemoAssets(container)
@@ -94,6 +95,10 @@ public interface SetupTasks {
     // Defaults to always disabled as agents might require actual protocol-specific hardware
     static boolean isImportDemoAgent(Container container) {
         return getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_AGENT, false);
+    }
+
+    static boolean isTestSetup(Container container) {
+        return getBoolean(container.getConfig(), SETUP_TESTS, false);
     }
 
     List<Setup> createTasks(Container container);

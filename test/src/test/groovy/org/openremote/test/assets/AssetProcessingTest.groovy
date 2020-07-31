@@ -6,8 +6,8 @@ import org.openremote.manager.asset.*
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.KeycloakTestSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetType
@@ -147,8 +147,8 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def container = startContainer(defaultConfig(), defaultServices(mockProtocol))
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
 
         then: "the container should be running and initialised"
         conditions.eventually {
@@ -169,7 +169,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         mockAgent.setAttributes(
                 ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("mock123"), mockProtocolName)
         )
-        mockAgent.setRealm(keycloakDemoSetup.masterTenant.realm)
+        mockAgent.setRealm(keycloakTestSetup.masterTenant.realm)
         mockAgent = assetStorageService.merge(mockAgent)
 
         and: "a mock thing asset is created with a valid protocol attribute, an invalid protocol attribute and a plain attribute"
@@ -194,7 +194,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
                         ),
                         new MetaItem(
                                 MetaItemType.AGENT_LINK,
-                                new AttributeRef("INVALID AGENT ID", managerDemoSetup.agentProtocolConfigName).toArrayValue()
+                                new AttributeRef("INVALID AGENT ID", managerTestSetup.agentProtocolConfigName).toArrayValue()
                         )
                 ),
                 new AssetAttribute("plainAttribute", AttributeValueType.STRING, Values.create("demo"))

@@ -7,7 +7,7 @@ import org.openremote.manager.rules.FlowRulesBuilder
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
@@ -30,7 +30,7 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
         def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
         TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -39,21 +39,21 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "relevant attributes have been populated"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
-                managerDemoSetup.apartment1LivingroomId,
+                managerTestSetup.apartment1LivingroomId,
                 "targetTemperature",
                 Values.create(startTemperature)
         ))
 
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
-                managerDemoSetup.apartment1Bedroom1Id,
+                managerTestSetup.apartment1Bedroom1Id,
                 "targetTemperature",
                 Values.create(0)
         ))
 
         when: "a valid node collection is added"
         String json = getClass().getResource("/org/openremote/test/rules/BasicFlowRules.json").text
-        json = json.replaceAll("%LIVING ROOM ID%", managerDemoSetup.apartment1LivingroomId)
-        json = json.replaceAll("%BEDROOM ID%", managerDemoSetup.apartment1Bedroom1Id)
+        json = json.replaceAll("%LIVING ROOM ID%", managerTestSetup.apartment1LivingroomId)
+        json = json.replaceAll("%BEDROOM ID%", managerTestSetup.apartment1Bedroom1Id)
         NodeCollection realCollection = container.JSON.readValue(json, NodeCollection.class)
         def ruleset = (new GlobalRuleset(
                 realCollection.name,
@@ -72,7 +72,7 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
         and: "the flow should be executed correctly"
         conditions.eventually {
             def bedroomTargetTemp = assetStorageService.
-                    find(managerDemoSetup.apartment1Bedroom1Id).
+                    find(managerTestSetup.apartment1Bedroom1Id).
                     getAttribute("targetTemperature").get().getValueAsNumber().get()
             assert bedroomTargetTemp.intValue() == (startTemperature.intValue() + 10) : ("it was actually " +  bedroomTargetTemp.intValue())//convert to int considering floating point inaccuracy
         }

@@ -743,4 +743,52 @@ public abstract class AbstractManagerSetup implements Setup {
 
         return lightAsset;
     }
+
+    protected Asset createDemoElectricityStorageAsset(String name, Asset area, GeoJSON location) {
+        Asset electricityStorageAsset = new Asset(name, ELECTRICITY_STORAGE, area).addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+        );
+
+    return electricityStorageAsset;
+    }
+
+    protected Asset createDemoElectricityProducerAsset(String name, Asset area, GeoJSON location) {
+        Asset electricityProducerAsset = new Asset(name, ELECTRICITY_PRODUCER, area).addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+        );
+
+    return electricityProducerAsset;
+    }
+
+    protected Asset createDemoElectricityConsumerAsset(String name, Asset area, GeoJSON location) {
+        Asset electricityConsumerAsset = new Asset(name, ELECTRICITY_CONSUMER, area).addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+        );
+
+    return electricityConsumerAsset;
+    }
+
+    protected Asset createDemoElectricityChargerAsset(String name, Asset area, GeoJSON location) {
+        Asset electricityConsumerAsset = new Asset(name, ELECTRICITY_CHARGER, area).addAttributes(
+                new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+        );
+
+        return electricityConsumerAsset;
+    }
+
+    protected Asset createDemoGroundwaterAsset(String name, Asset area, GeoJSON location) {
+        Asset groundwaterAsset = new Asset(name, GROUNDWATER, area).addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+        );
+
+    return groundwaterAsset;
+    }
+
+    protected Asset createDemoParkingAsset(String name, Asset area, GeoJSON location) {
+        Asset parkingAsset = new Asset(name, PARKING, area).addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+        );
+
+    return parkingAsset;
+    }
 }
