@@ -161,6 +161,8 @@ build-master:
     - keycloak_${CI_ENVIRONMENT_SLUG}.log
     - postgresql_${CI_ENVIRONMENT_SLUG}.log
     expire_in: 1 week
+  retry:
+    max: 2
 
 # This step is executed when build fails. The purpose is to e-mail a git commiter about the problem.
 email failed build:
@@ -201,11 +203,11 @@ deploy demo on OVH:
   allow_failure: true
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
-      when: manual
-    - if: $CI_COMMIT_BRANCH == "master"
       if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
       when: on_success
+    - if: $CI_COMMIT_BRANCH == "master"
+      if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
+      when: manual
   variables:
     DEPLOYMENT_HOST: ${PROJECT_NAME}.openremote.io
     SETUP_WIPE_CLEAN_INSTALL: 'true'
