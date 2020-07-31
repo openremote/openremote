@@ -203,6 +203,9 @@ deploy demo on OVH:
     - if: $CI_COMMIT_BRANCH == "master"
       if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
       when: manual
+    - if: $CI_COMMIT_BRANCH == "master"
+      if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
+      when: on_success
   variables:
     DEPLOYMENT_HOST: ${PROJECT_NAME}.openremote.io
     SETUP_WIPE_CLEAN_INSTALL: 'true'
