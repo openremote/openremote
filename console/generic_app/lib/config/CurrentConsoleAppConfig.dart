@@ -18,8 +18,7 @@ class CurrentConsoleAppConfig {
     this._primaryColor = appConfig.primaryColor;
     this._secondaryColor = appConfig.secondaryColor;
     this._links = appConfig.links;
-    this._project;
-    this._realm;
+    this._project = project;
   }
 
   String _realm;

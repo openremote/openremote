@@ -73,15 +73,7 @@ class S {
     );
   }
 
-  /// `Starting page`
-  String get startingPage {
-    return Intl.message(
-      'Starting page',
-      name: 'startingPage',
-      desc: '',
-      args: [],
-    );
-  }
+  // skipped getter for the 'Change project' key
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

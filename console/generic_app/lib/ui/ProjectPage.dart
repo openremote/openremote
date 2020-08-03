@@ -77,7 +77,7 @@ class _ProjectPageState extends State<ProjectPage> {
                                 ),
                                 textInputAction: TextInputAction.next,
                                 onChanged: (inputText) {
-                                  _projectName = inputText;
+                                  _projectName = inputText.trim();
                                 },
                                 onSubmitted: (inputText) {
                                   FocusScope.of(context).nextFocus();
@@ -99,7 +99,7 @@ class _ProjectPageState extends State<ProjectPage> {
                                 ),
                                 textInputAction: TextInputAction.done,
                                 onChanged: (inputText) {
-                                  _realmName = inputText;
+                                  _realmName = inputText.trim();
                                 },
                                 onSubmitted: (inputText) {
                                   _getConsoleAppConfig();

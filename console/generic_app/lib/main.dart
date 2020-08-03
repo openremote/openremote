@@ -12,10 +12,12 @@ void main() {
   });
 }
 class ORApp extends StatelessWidget {
+  static final GlobalKey<NavigatorState> navigatorKey = new GlobalKey<NavigatorState>();
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'OR App',
       theme: ThemeData(
         primarySwatch: Colors.green,
