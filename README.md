@@ -100,7 +100,7 @@ For more information and how to set up a development environment, see the [Devel
 
 ## Discuss OpenRemote
 
-Join us on the [community group](https://groups.google.com/forum/#!forum/openremotecommunity).
+Join us on the [community group](https://forum.openremote.io/).
 
 ## See also
 
