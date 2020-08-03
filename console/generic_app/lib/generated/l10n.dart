@@ -73,7 +73,15 @@ class S {
     );
   }
 
-  // skipped getter for the 'Change project' key
+  /// `Change project`
+  String get changeProject {
+    return Intl.message(
+      'Change project',
+      name: 'changeProject',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

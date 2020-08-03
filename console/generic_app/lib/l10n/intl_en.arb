@@ -3,5 +3,5 @@
   "project": "Project",
   "realm": "Realm",
   "connect": "Connect",
-  "Change project": "Change project"
+  "changeProject": "Change project"
 }
