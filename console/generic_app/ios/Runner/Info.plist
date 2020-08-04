@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>Permission to Apple Music is needed in order to easly share information</string>
+	<key>CFBundleDisplayName</key>
+	<string></string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>
@@ -19,9 +23,13 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Permission to Calendars is needed in order to easly share information</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Permission to Contacts is needed in order to easly share information</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Location is needed in order to get updates on surveys</string>
 	<key>NSLocationAlwaysUsageDescription</key>
@@ -30,6 +38,10 @@
 	<string>Location is needed in order to get updates on surveys</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Location is needed in order to get updates on surveys</string>
+	<key>NSMotionUsageDescription</key>
+	<string>Permission to Motion is needed in order to easly share information</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Permission to Speach Recognition is needed in order to easly share information</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
