@@ -120,7 +120,7 @@ public class RulesTestSetup extends AbstractManagerSetup {
         }
 
         // SmartCity geofences
-        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/demo/rules/DemoGeofences.json")) {
+        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/demo/rules/DemoGeofence.json")) {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new TenantRuleset(
                     keycloakTestSetup.tenantCity.getRealm(), "Demo Geofences", Ruleset.Lang.JSON, rules

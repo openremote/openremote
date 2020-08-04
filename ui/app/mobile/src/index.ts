@@ -51,7 +51,7 @@ const onboardingConfig:OnboardingConfig  = {
             image: require("../images/logo-mobile.png")
         }
     ],
-    redirect: "#!geofences?realm=smartcity&consoleProviders=geofence push storage"
+    redirect: "/mobile/#!geofences?realm=smartcity&consoleProviders=geofence push storage"
 }
 
 const splashConfig:SplashConfig  = {

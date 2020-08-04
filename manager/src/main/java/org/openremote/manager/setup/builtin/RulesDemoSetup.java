@@ -60,10 +60,26 @@ public class RulesDemoSetup extends AbstractManagerSetup {
 //        }
 
         // SmartCity geofences
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoGeofences.json")) {
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoGeofence.json")) {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new TenantRuleset(
-                    keycloakDemoSetup.tenantCity.getRealm(), "Demo Geofences", Ruleset.Lang.JSON, rules
+                    keycloakDemoSetup.tenantCity.getRealm(), "De Kuip", Ruleset.Lang.JSON, rules
+            ).setAccessPublicRead(true).addMeta("showOnMap", Values.create(true)).addMeta("showOnList", Values.create(true));
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoGeofence2.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                keycloakDemoSetup.tenantCity.getRealm(), "Euromast", Ruleset.Lang.JSON, rules
+            ).setAccessPublicRead(true).addMeta("showOnMap", Values.create(true)).addMeta("showOnList", Values.create(true));
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoGeofence3.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                keycloakDemoSetup.tenantCity.getRealm(), "Markthal", Ruleset.Lang.JSON, rules
             ).setAccessPublicRead(true).addMeta("showOnMap", Values.create(true)).addMeta("showOnList", Values.create(true));
             tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
