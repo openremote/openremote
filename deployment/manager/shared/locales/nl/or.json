@@ -259,7 +259,7 @@
     "POWER_KW": "kW",
     "POWER_W": "W",
     "POWER_KWP": "kWp",
-    "POWER_PER_SQUARE_M": "W/m²",
+    "POWER_PER_M2": "W/m²",
     "ENERGY_KWH": "kWh",
     "KG_CARBON_PER_KWH": "kg CO₂/kWh",
     "MASS_KG": "kg",
