@@ -197,6 +197,9 @@ test-master:
       - "test/build/reports/tests/test/*"
       - "test/build/reports/tests/test/*/*"
     expire_in: 2 weeks
+  retry:
+    max: 2
+  timeout: 30m
 
 deploy demo on OVH:
   stage: deploy_ovh
