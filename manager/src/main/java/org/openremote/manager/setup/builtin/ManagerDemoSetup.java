@@ -759,10 +759,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         Values.createArray().addAll(
                                 Values.createObject()
                                         .put("displayText", "Map")
-                                        .put("pageLink", "https://demo.openremote.io/mobile/#!geofences?realm=smartcity&consoleProviders=geofence push storage"),
-                                Values.createObject()
-                                        .put("displayText", "List")
-                                        .put("pageLink", "https://demo.openremote.io/mobile/#!geofences?realm=smartcity&consoleProviders=geofence push storage&view=list")
+                                        .put("pageLink", "https://demo.openremote.io/mobile/#!geofences?realm=smartcity&consoleProviders=geofence push storage")
                         )))
         );
 
