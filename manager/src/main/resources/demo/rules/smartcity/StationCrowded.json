@@ -1,0 +1,171 @@
+{
+  "rules": [
+    {
+      "recurrence": {
+        "mins": 0
+      },
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    {
+                      "predicateType": "string",
+                      "match": "EXACT",
+                      "value": "urn:openremote:asset:microphone"
+                    }
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "microphoneLevel"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_THAN",
+                          "value": 60
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "49R3piJ2Pu3s4GSvJxBgEv"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    {
+                      "predicateType": "string",
+                      "match": "EXACT",
+                      "value": "urn:openremote:asset:microphone"
+                    }
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "microphoneLevel"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_THAN",
+                          "value": 60
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "7RCNs2Mb3XZOS8npXsvC9k"
+                  ]
+                }
+              },
+              {
+                "assets": {
+                  "types": [
+                    {
+                      "predicateType": "string",
+                      "match": "EXACT",
+                      "value": "urn:openremote:asset:peopleCounter"
+                    }
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "peopleCountGrowth"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_THAN",
+                          "value": 2
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "5S1IkRe9oZ3QUCv6AFCuY3"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "5Pc19lYBXGp1oGjb1mnLAj"
+              ],
+              "types": [
+                {
+                  "predicateType": "string",
+                  "value": "urn:openremote:asset:light"
+                }
+              ]
+            }
+          },
+          "value": 60,
+          "attributeName": "lightDimLevel"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "3V6eqJqfSBjfQT3AhlEvx3"
+              ],
+              "types": [
+                {
+                  "predicateType": "string",
+                  "value": "urn:openremote:asset:light"
+                }
+              ]
+            }
+          },
+          "value": 75,
+          "attributeName": "lightDimLevel"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "3GIADRIXFMxjUIEL3io0at"
+              ],
+              "types": [
+                {
+                  "predicateType": "string",
+                  "value": "urn:openremote:asset:light"
+                }
+              ]
+            }
+          },
+          "value": 70,
+          "attributeName": "lightDimLevel"
+        }
+      ],
+      "name": "Station: Crowded square"
+    }
+  ]
+}

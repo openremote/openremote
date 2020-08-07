@@ -1,0 +1,160 @@
+{
+  "rules": [
+    {
+      "recurrence": {
+        "mins": 0
+      },
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    {
+                      "predicateType": "string",
+                      "match": "EXACT",
+                      "value": "urn:openremote:asset:weather"
+                    }
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "windSpeed"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "LESS_EQUALS",
+                          "value": 2
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "2bMjSx0iy1usC9KKhT24h9"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "50hkax4s7pQloGAv3d4NAw"
+              ],
+              "types": [
+                {
+                  "predicateType": "string",
+                  "value": "urn:openremote:asset:light"
+                }
+              ]
+            }
+          },
+          "value": 60,
+          "attributeName": "lightDimLevel"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "5B5Die9qlpXk6I0AnUKsGz"
+              ],
+              "types": [
+                {
+                  "predicateType": "string",
+                  "value": "urn:openremote:asset:light"
+                }
+              ]
+            }
+          },
+          "value": 60,
+          "attributeName": "lightDimLevel"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "5fBdNTUStqaRl2lck2taz3"
+              ],
+              "types": [
+                {
+                  "predicateType": "string",
+                  "value": "urn:openremote:asset:light"
+                }
+              ]
+            }
+          },
+          "value": 60,
+          "attributeName": "lightDimLevel"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "3ejfNQCTpu7c7QKrhuWX2U"
+              ],
+              "types": [
+                {
+                  "predicateType": "string",
+                  "value": "urn:openremote:asset:light"
+                }
+              ]
+            }
+          },
+          "value": 60,
+          "attributeName": "lightDimLevel"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "1xg374XfhgHBIan8hsEV8e"
+              ],
+              "types": [
+                {
+                  "predicateType": "string",
+                  "value": "urn:openremote:asset:light"
+                }
+              ]
+            }
+          },
+          "value": 60,
+          "attributeName": "lightDimLevel"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "7JJAn5YHWD2m2AMwtIYjHz"
+              ],
+              "types": [
+                {
+                  "predicateType": "string",
+                  "value": "urn:openremote:asset:light"
+                }
+              ]
+            }
+          },
+          "value": 60,
+          "attributeName": "lightDimLevel"
+        }
+      ],
+      "name": "Ons Park: Dim lights with low wind speed"
+    }
+  ]
+}

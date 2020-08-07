@@ -48,12 +48,11 @@ import java.util.function.Supplier;
 import static org.openremote.agent.protocol.macro.MacroProtocol.META_MACRO_ACTION_INDEX;
 import static org.openremote.agent.protocol.timer.TimerConfiguration.initTimerConfiguration;
 import static org.openremote.agent.protocol.timer.TimerProtocol.META_TIMER_VALUE_LINK;
-import static org.openremote.model.Constants.UNITS_DENSITY_MICROGRAMS_CUBIC_M;
 import static org.openremote.model.Constants.UNITS_TEMPERATURE_CELSIUS;
-import static org.openremote.model.attribute.MetaItemType.*;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 import static org.openremote.model.attribute.AttributeValueType.*;
+import static org.openremote.model.attribute.MetaItemType.*;
 
 public abstract class AbstractManagerSetup implements Setup {
 
@@ -661,34 +660,20 @@ public abstract class AbstractManagerSetup implements Setup {
         Asset environmentAsset = new Asset(name, ENVIRONMENT_SENSOR, area).addAttributes(
             new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
         );
-        environmentAsset.getAttribute("temperature").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ).addMeta(agentLinker.get()));
-        environmentAsset.getAttribute("nO2").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ).addMeta(agentLinker.get()));
-        environmentAsset.getAttribute("relHumidity").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ).addMeta(agentLinker.get()));
-        environmentAsset.getAttribute("ozone").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ).addMeta(agentLinker.get()));
-        environmentAsset.getAttribute("particlesPM1").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ).addMeta(agentLinker.get()));
-        environmentAsset.getAttribute("particlesPM2_5").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ).addMeta(agentLinker.get()));
-        environmentAsset.getAttribute("particlesPM10").ifPresent(assetAttribute -> assetAttribute.addMeta(
-            new MetaItem(RULE_STATE),
-            new MetaItem(STORE_DATA_POINTS)
-        ).addMeta(agentLinker.get()));
+        environmentAsset.getAttribute("temperature").ifPresent(assetAttribute -> assetAttribute
+            .addMeta(agentLinker.get()));
+        environmentAsset.getAttribute("nO2").ifPresent(assetAttribute -> assetAttribute
+            .addMeta(agentLinker.get()));
+        environmentAsset.getAttribute("relHumidity").ifPresent(assetAttribute -> assetAttribute
+            .addMeta(agentLinker.get()));
+        environmentAsset.getAttribute("ozone").ifPresent(assetAttribute -> assetAttribute
+            .addMeta(agentLinker.get()));
+        environmentAsset.getAttribute("particlesPM1").ifPresent(assetAttribute -> assetAttribute
+            .addMeta(agentLinker.get()));
+        environmentAsset.getAttribute("particlesPM2_5").ifPresent(assetAttribute -> assetAttribute
+            .addMeta(agentLinker.get()));
+        environmentAsset.getAttribute("particlesPM10").ifPresent(assetAttribute -> assetAttribute
+            .addMeta(agentLinker.get()));
 
         return environmentAsset;
     }

@@ -1,0 +1,97 @@
+{
+  "rules": [
+    {
+      "recurrence": {
+        "mins": 0
+      },
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    {
+                      "predicateType": "string",
+                      "match": "EXACT",
+                      "value": "urn:openremote:asset:groundwater"
+                    }
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "waterLevel"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_THAN",
+                          "value": 4
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    {
+                      "predicateType": "string",
+                      "match": "EXACT",
+                      "value": "urn:openremote:asset:enviroment"
+                    }
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "ozone"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_THAN",
+                          "value": 120
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "notification",
+          "notification": {
+            "message": {
+              "type": "email",
+              "subject": "%RULESET_NAME%",
+              "html": "%TRIGGER_ASSETS%",
+              "to": [
+                {
+                  "address": "test@testemail.com",
+                  "name": "test@testemail.com"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "name": "Environment monitoring: Alerts"
+    }
+  ]
+}

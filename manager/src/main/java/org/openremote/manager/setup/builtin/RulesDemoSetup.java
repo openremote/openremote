@@ -63,7 +63,7 @@ public class RulesDemoSetup extends AbstractManagerSetup {
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoGeofence.json")) {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new TenantRuleset(
-                    keycloakDemoSetup.tenantCity.getRealm(), "De Kuip", Ruleset.Lang.JSON, rules
+                keycloakDemoSetup.tenantCity.getRealm(), "Demo Geofences", Ruleset.Lang.JSON, rules
             ).setAccessPublicRead(true).addMeta("showOnMap", Values.create(true)).addMeta("showOnList", Values.create(true));
             tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
@@ -81,6 +81,102 @@ public class RulesDemoSetup extends AbstractManagerSetup {
             Ruleset ruleset = new TenantRuleset(
                 keycloakDemoSetup.tenantCity.getRealm(), "Markthal", Ruleset.Lang.JSON, rules
             ).setAccessPublicRead(true).addMeta("showOnMap", Values.create(true)).addMeta("showOnList", Values.create(true));
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/DeKuip.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                keycloakDemoSetup.tenantCity.getRealm(), "De Kuip", Ruleset.Lang.JSON, rules
+            ).setAccessPublicRead(true).addMeta("showOnMap", Values.create(true)).addMeta("showOnList", Values.create(true));
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/Euromast.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                keycloakDemoSetup.tenantCity.getRealm(), "Euromast", Ruleset.Lang.JSON, rules
+            ).setAccessPublicRead(true).addMeta("showOnMap", Values.create(true)).addMeta("showOnList", Values.create(true));
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/Markthal.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                keycloakDemoSetup.tenantCity.getRealm(), "Markthal", Ruleset.Lang.JSON, rules
+            ).setAccessPublicRead(true).addMeta("showOnMap", Values.create(true)).addMeta("showOnList", Values.create(true));
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/MarkthalChargersInUse.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                keycloakDemoSetup.tenantCity.getRealm(), "Markthal: All chargers in use", Ruleset.Lang.JSON, rules
+            ).setAccessPublicRead(true).addMeta("showOnMap", Values.create(true)).addMeta("showOnList", Values.create(true));
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/OnsParkBrightStrongWinds.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                keycloakDemoSetup.tenantCity.getRealm(), "Ons Park: Brighter light with strong winds", Ruleset.Lang.JSON, rules
+            );
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/OnsParkDimLightWinds.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                keycloakDemoSetup.tenantCity.getRealm(), "Ons Park: Dim lights with low wind speed", Ruleset.Lang.JSON, rules
+            );
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/StationCrowded.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                keycloakDemoSetup.tenantCity.getRealm(), "Station: Crowded square", Ruleset.Lang.JSON, rules
+            );
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/EnvironmentAlerts.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                keycloakDemoSetup.tenantCity.getRealm(), "Environment monitoring: Alerts", Ruleset.Lang.JSON, rules
+            );
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/TotalPowerConsumption.flow")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                keycloakDemoSetup.tenantCity.getRealm(), "Total power consumption of buildings", Ruleset.Lang.FLOW, rules
+            );
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/TotalSolarProduction.flow")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                keycloakDemoSetup.tenantCity.getRealm(), "Total power production of solar panels", Ruleset.Lang.FLOW, rules
+            );
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/RotterdamPowerBalance.flow")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                keycloakDemoSetup.tenantCity.getRealm(), "De Rotterdam: Power balance", Ruleset.Lang.FLOW, rules
+            );
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/ParkingOccupiedPercentage.flow")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                keycloakDemoSetup.tenantCity.getRealm(), "Parking: Percentage of occupied spaces", Ruleset.Lang.FLOW, rules
+            );
             tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
     }

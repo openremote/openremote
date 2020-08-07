@@ -1,0 +1,98 @@
+{
+  "rules": [
+    {
+      "name": "Euromast",
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    {
+                      "predicateType": "string",
+                      "match": "EXACT",
+                      "value": "urn:openremote:asset:console"
+                    }
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "location"
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "2XY9PRltl9XELEXJzipxs6"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "notification",
+          "target": {
+            "useAssetsFromWhen": true
+          },
+          "notification": {
+            "name": "Euromast",
+            "message": {
+              "type": "push",
+              "title": "Euromast",
+              "body": "Euromast, sinds 1960",
+              "action": {
+                "url": "https://euromast.nl"
+              },
+              "buttons": [
+                {
+                  "title": "Open in app",
+                  "action": {
+                    "url": "https://euromast.nl",
+                    "openInBrowser": true
+                  }
+                },
+                {
+                  "title": "Open in browser",
+                  "action": {
+                    "url": "https://euromast.nl",
+                    "openInBrowser": true
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "50hkax4s7pQloGAv3d4NAw"
+              ],
+              "types": [
+                {
+                  "predicateType": "string",
+                  "value": "urn:openremote:asset:light"
+                }
+              ]
+            }
+          },
+          "value": 37,
+          "attributeName": "lightDimLevel"
+        }
+      ],
+      "reset": {
+        "timer": "1m"
+      }
+    }
+  ]
+}

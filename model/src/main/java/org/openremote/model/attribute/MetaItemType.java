@@ -429,7 +429,7 @@ public enum MetaItemType implements MetaItemDescriptor {
     ),
 
     /**
-     * Could possible have predicted datapoints
+     * Could possibly have predicted datapoints
      */
     HAS_PREDICTED_DATA_POINTS(
         ASSET_META_NAMESPACE + ":hasPredictedDatapoints",
@@ -445,7 +445,7 @@ public enum MetaItemType implements MetaItemDescriptor {
      * input with optional show)
      */
     SECRET(
-        ASSET_META_NAMESPACE + ":readOnly",
+        ASSET_META_NAMESPACE + ":secret",
         new Access(true, false, true),
     ValueType.BOOLEAN,
         null,

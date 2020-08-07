@@ -1,0 +1,158 @@
+{
+  "rules": [
+    {
+      "recurrence": {
+        "mins": 0
+      },
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    {
+                      "predicateType": "string",
+                      "match": "EXACT",
+                      "value": "urn:openremote:asset:electricityCharger"
+                    }
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "power"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_EQUALS",
+                          "value": 0.01
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "2PDhv85TE8UR81EaBdU4Sn"
+                  ]
+                }
+              },
+              {
+                "assets": {
+                  "types": [
+                    {
+                      "predicateType": "string",
+                      "match": "EXACT",
+                      "value": "urn:openremote:asset:electricityCharger"
+                    }
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "power"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_EQUALS",
+                          "value": 0.01
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "5sPOlQ4hwoDBAHpWSxXFlZ"
+                  ]
+                }
+              },
+              {
+                "assets": {
+                  "types": [
+                    {
+                      "predicateType": "string",
+                      "match": "EXACT",
+                      "value": "urn:openremote:asset:electricityCharger"
+                    }
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "power"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_EQUALS",
+                          "value": 0.01
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "79arRAQF4HzIdCG2ezj3gV"
+                  ]
+                }
+              },
+              {
+                "assets": {
+                  "types": [
+                    {
+                      "predicateType": "string",
+                      "match": "EXACT",
+                      "value": "urn:openremote:asset:electricityCharger"
+                    }
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "power"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_EQUALS",
+                          "value": 0.01
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "2FMdjRfgAEvD8tQMjZQKi5"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "notification",
+          "notification": {
+            "message": {
+              "type": "email",
+              "subject": "%RULESET_NAME%",
+              "html": "%TRIGGER_ASSETS%",
+              "to": [
+                {
+                  "address": "test@testemail.com",
+                  "name": "test@testemail.com"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "name": "Markthal: All chargers are in use"
+    }
+  ]
+}

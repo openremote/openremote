@@ -1,0 +1,76 @@
+{
+  "rules": [
+    {
+      "name": "Markthal",
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    {
+                      "predicateType": "string",
+                      "match": "EXACT",
+                      "value": "urn:openremote:asset:console"
+                    }
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "notification",
+          "target": {
+            "useAssetsFromWhen": true
+          },
+          "notification": {
+            "name": "Markthal",
+            "message": {
+              "type": "push",
+              "title": "Markthal",
+              "body": "Happy Food Shopping",
+              "action": {
+                "url": "https://www.markthal.nl"
+              },
+              "buttons": [
+                {
+                  "title": "Open in app",
+                  "action": {
+                    "url": "https://www.markthal.nl",
+                    "openInBrowser": true
+                  }
+                },
+                {
+                  "title": "Open in browser",
+                  "action": {
+                    "url": "https://www.markthal.nl",
+                    "openInBrowser": true
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "reset": {
+        "timer": "1m"
+      }
+    }
+  ]
+}
