@@ -31,13 +31,17 @@ import static org.openremote.model.attribute.MetaItemType.*;
  */
 public enum AttributeType implements AttributeDescriptor {
 
-    CONSOLE_NAME("consoleName", AttributeValueType.STRING),
+    CONSOLE_NAME("consoleName", AttributeValueType.STRING,
+        LABEL.withInitialValue(Values.create("Console name"))),
 
-    CONSOLE_VERSION("consoleVersion", AttributeValueType.STRING),
+    CONSOLE_VERSION("consoleVersion", AttributeValueType.STRING,
+        LABEL.withInitialValue(Values.create("Console version"))),
 
-    CONSOLE_PLATFORM("consolePlatform", AttributeValueType.STRING),
+    CONSOLE_PLATFORM("consolePlatform", AttributeValueType.STRING,
+        LABEL.withInitialValue(Values.create("Console platform"))),
 
-    CONSOLE_PROVIDERS("consoleProviders", AttributeValueType.OBJECT),
+    CONSOLE_PROVIDERS("consoleProviders", AttributeValueType.OBJECT,
+        LABEL.withInitialValue(Values.create("Console providers"))),
 
     EMAIL("email", AttributeValueType.EMAIL, LABEL.withInitialValue(Values.create("Email"))),
 
@@ -50,23 +54,25 @@ public enum AttributeType implements AttributeDescriptor {
         ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoCountry"))),
 
     GEO_POSTAL_CODE("postalCode", AttributeValueType.STRING,
-        LABEL.withInitialValue(Values.create("Postal Code")),
+        LABEL.withInitialValue(Values.create("Postal code")),
         ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoPostalCode"))),
 
     GEO_STREET("street", AttributeValueType.STRING,
         LABEL.withInitialValue(Values.create("Street")),
         ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoStreet"))),
 
-    LOCATION("location", AttributeValueType.GEO_JSON_POINT, LABEL.withInitialValue(Values.create("Location"))),
+    LOCATION("location", AttributeValueType.GEO_JSON_POINT,
+        LABEL.withInitialValue(Values.create("Location")),
+        SHOW_ON_DASHBOARD),
 
     SURFACE_AREA("surfaceArea", AttributeValueType.NUMBER,
-        LABEL.withInitialValue(Values.create("Surface Area")),
+        LABEL.withInitialValue(Values.create("Surface area")),
         DESCRIPTION.withInitialValue(Values.create("Floor area of building measured in m²")),
         ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/area"))),
 
     ASSET_STATUS(
         "assetStatus", AttributeValueType.ASSET_STATUS,
-        LABEL.withInitialValue(Values.create("Asset Status")),
+        LABEL.withInitialValue(Values.create("Asset status")),
         DESCRIPTION.withInitialValue(Values.create("Defines an arbitrary status for the containing asset")),
         metaItemObject(
             ASSET_META_NAMESPACE + ":assetStatusColors",
@@ -76,7 +82,7 @@ public enum AttributeType implements AttributeDescriptor {
 
     TAGS(
         "assetTags", AttributeValueType.ARRAY,
-        LABEL.withInitialValue(Values.create("Asset Tags")),
+        LABEL.withInitialValue(Values.create("Asset tags")),
         DESCRIPTION.withInitialValue(Values.create("List of tags associated with an asset"))
     );
 
