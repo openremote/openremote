@@ -3,7 +3,7 @@ default:
   image: docker:latest
   services:
     - docker:dind
-  timeout: 1h 30m
+  timeout: 30m
 
 variables:
   PROJECT_NAME: demo
@@ -29,8 +29,9 @@ lint-Dockerfile:
     - docker run --rm -i hadolint/hadolint < Dockerfile
   allow_failure: true
   rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-build/
+    - if: $CI_COMMIT_BRANCH != "master"
+      when: never
+    - if: $CI_COMMIT_MESSAGE !~ /skip-build/
       when: manual
 
 lint-swarm-Dockerfile:
@@ -42,8 +43,9 @@ lint-swarm-Dockerfile:
   after_script:
     - env
   rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-build/
+    - if: $CI_COMMIT_BRANCH != "master"
+      when: never
+    - if: $CI_COMMIT_MESSAGE !~ /skip-build/
 
 build-master:
   stage: build
@@ -85,11 +87,11 @@ build-master:
     # - docker push openremote/keycloak:arm64
     # - docker push openremote/postgresql:arm64
   rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-build/
+    - if: $CI_COMMIT_BRANCH != "master"
+      when: never
+    - if: $CI_COMMIT_MESSAGE !~ /skip-build/
   retry:
     max: 2
-  timeout: 30m
 
 .email_template: &email_definition
   image: docker:latest
@@ -120,8 +122,6 @@ build-master:
 - ssh-keyscan -H -p $DEPLOYMENT_PORT $DEPLOYMENT_HOST >> ~/.ssh/known_hosts
 - alias SSH="ssh -p $DEPLOYMENT_PORT ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}"
 - alias SCP="scp -p -r -P $DEPLOYMENT_PORT"
-
-# Templates
 
 .deploy_template: &deploy_definition
   before_script:
@@ -171,8 +171,9 @@ email failed build:
     - export STAGE='docker images build'
   <<: *email_definition
   rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-build/
+    - if: $CI_COMMIT_BRANCH != "master"
+      when: never
+    - if: $CI_COMMIT_MESSAGE !~ /skip-build/
       when: on_failure
 
 test-master:
@@ -188,8 +189,9 @@ test-master:
     - docker run --network host -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "./gradlew clean test"
   rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-test/
+    - if: $CI_COMMIT_BRANCH != "master"
+      when: never
+    - if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: on_success
   artifacts:
     when: on_failure
@@ -199,17 +201,16 @@ test-master:
     expire_in: 2 weeks
   retry:
     max: 2
-  timeout: 30m
 
 deploy demo on OVH:
   stage: deploy_ovh
   allow_failure: true
   rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
+    - if: $CI_COMMIT_BRANCH != "master"
+      when: never
+    - if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
       when: on_success
-    - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
+    - if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
       when: manual
   variables:
     DEPLOYMENT_HOST: ${PROJECT_NAME}.openremote.io
@@ -226,8 +227,9 @@ email failed tests:
     - export STAGE='tests'
   <<: *email_definition
   rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-test/
+    - if: $CI_COMMIT_BRANCH != "master"
+      when: never
+    - if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: on_failure
 
 manual delete aws cloudformation stack:
@@ -254,6 +256,7 @@ manual delete aws cloudformation stack:
     - aws cloudformation wait stack-delete-complete --stack-name $AWS_STACK_NAME
   allow_failure: true # set when:manual optional and not blocking
   rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-      if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
+    - if: $CI_COMMIT_BRANCH != "master"
+      when: never
+    - if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
       when: never
