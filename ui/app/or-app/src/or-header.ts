@@ -13,7 +13,6 @@ import "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import "@openremote/or-icon";
 import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import {Tenant} from "@openremote/model";
-import {router} from "./index";
 
 export interface HeaderConfig {
     mainMenu: HeaderItem[];
@@ -85,6 +84,7 @@ class OrHeader extends LitElement {
                 --internal-or-header-drawer-separator-color: var(--or-header-drawer-separator-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
                 
                 display: block;
+                z-index: 99999;
             }
               
             #toolbar-top {
@@ -122,16 +122,12 @@ class OrHeader extends LitElement {
             }
                     
             #drawer {
-                z-index: 999999;
+                width: 100%;
                 position: absolute;
                 top: var(--internal-or-header-height);
-                width: 100%;
+                max-height: 0;
                 height: calc(100% - var(--internal-or-header-height));
-                transition: all 300ms ease-in;
-                transition-property: -webkit-transform;
-                transition-property: transform;
-                -webkit-transform: translate3d(0, -100%, 0);
-                transform: translate3d(0, -100%, 0);
+                transition: max-height 0.25s ease-out;
                 background: var(--internal-or-header-drawer-color);
                 color: var(--internal-or-header-drawer-text-color);
                 --or-icon-fill: var(--internal-or-header-drawer-text-color);
@@ -140,8 +136,8 @@ class OrHeader extends LitElement {
             }
             
             #drawer[opened] {
-                -webkit-transform: translate3d(0, 0, 0);
-                transform: translate3d(0, 0, 0);
+                max-height: 10000px;
+                transition: max-height 0.75s ease-in;
             }
                             
             #drawer > div {
@@ -234,8 +230,6 @@ class OrHeader extends LitElement {
           
             /* Wide layout: when the viewport width is bigger than 780px, layout
             changes to a wide layout. */
-           
-    
             @media (min-width: 780px) {
                 #menu-btn-desktop {
                     display: block;
@@ -257,7 +251,7 @@ class OrHeader extends LitElement {
                     display: inline-block;
                 }
                 
-                #desktop-left .menu-item or-icon{
+                #desktop-left .menu-item or-icon {
                     display: none;
                 }
     
@@ -265,9 +259,7 @@ class OrHeader extends LitElement {
                     border-bottom: 4px solid var(--internal-or-header-selected-color);
                     line-height: calc(var(--internal-or-header-height) - 4px);
                 }
-            }
-            
-            @media (min-width: 1024px) {
+                
                 #logo {
                     margin: var(--internal-or-header-logo-margin);
                     height: var(--internal-or-header-logo-height);
@@ -277,9 +269,22 @@ class OrHeader extends LitElement {
                 #logo-mobile {
                     display: none;
                 }
-    
-                #desktop-left .menu-item or-icon{
+
+                #drawer {
+                    display: none;
+                }
+                
+                #desktop-right {
+                    display: block;
+                }
+                
+                #desktop-left ::slotted(*) {
                     display: inline-block;
+                }
+    
+                #desktop-left ::slotted(*[selected]) {                
+                    border-bottom: 4px solid var(--internal-or-header-selected-color);
+                    line-height: calc(var(--internal-or-header-height) - 4px);
                 }
             }
     `;
