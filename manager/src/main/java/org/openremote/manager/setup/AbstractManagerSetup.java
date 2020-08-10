@@ -525,7 +525,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected Asset createDemoPeopleCounterAsset(String name, Asset area, GeoJSON location, Supplier<MetaItem[]> agentLinker) {
         Asset peopleCounterAsset = new Asset(name, PEOPLE_COUNTER, area).addAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+            new AssetAttribute(AttributeType.LOCATION, location.toValue())
         );
         peopleCounterAsset.getAttribute("peopleCountIn").ifPresent(assetAttribute -> {
             assetAttribute.addMeta(
@@ -587,7 +587,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected Asset createDemoMicrophoneAsset(String name, Asset area, GeoJSON location, Supplier<MetaItem[]> agentLinker) {
         Asset microphoneAsset = new Asset(name, MICROPHONE, area).addAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+            new AssetAttribute(AttributeType.LOCATION, location.toValue())
         );
         microphoneAsset.getAttribute("microphoneLevel").ifPresent(assetAttribute -> {
             assetAttribute.addMeta(
@@ -605,7 +605,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected Asset createDemoSoundEventAsset(String name, Asset area, GeoJSON location, Supplier<MetaItem[]> agentLinker) {
         Asset soundEventAsset = new Asset(name, SOUND_EVENT, area).addAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+            new AssetAttribute(AttributeType.LOCATION, location.toValue())
         );
         soundEventAsset.getAttribute("lastAggressionEvent").ifPresent(assetAttribute -> {
             assetAttribute.addMeta(
@@ -658,7 +658,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected Asset createDemoEnvironmentAsset(String name, Asset area, GeoJSON location, Supplier<MetaItem[]> agentLinker) {
         Asset environmentAsset = new Asset(name, ENVIRONMENT_SENSOR, area).addAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+            new AssetAttribute(AttributeType.LOCATION, location.toValue())
         );
         environmentAsset.getAttribute("temperature").ifPresent(assetAttribute -> assetAttribute
             .addMeta(agentLinker.get()));
@@ -731,7 +731,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected Asset createDemoElectricityStorageAsset(String name, Asset area, GeoJSON location) {
         Asset electricityStorageAsset = new Asset(name, ELECTRICITY_STORAGE, area).addAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+            new AssetAttribute(AttributeType.LOCATION, location.toValue())
         );
 
     return electricityStorageAsset;
@@ -739,7 +739,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected Asset createDemoElectricityProducerAsset(String name, Asset area, GeoJSON location) {
         Asset electricityProducerAsset = new Asset(name, ELECTRICITY_PRODUCER, area).addAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+            new AssetAttribute(AttributeType.LOCATION, location.toValue())
         );
 
     return electricityProducerAsset;
@@ -747,7 +747,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected Asset createDemoElectricityConsumerAsset(String name, Asset area, GeoJSON location) {
         Asset electricityConsumerAsset = new Asset(name, ELECTRICITY_CONSUMER, area).addAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+            new AssetAttribute(AttributeType.LOCATION, location.toValue())
         );
 
     return electricityConsumerAsset;
@@ -755,7 +755,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected Asset createDemoElectricityChargerAsset(String name, Asset area, GeoJSON location) {
         Asset electricityConsumerAsset = new Asset(name, ELECTRICITY_CHARGER, area).addAttributes(
-                new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+                new AssetAttribute(AttributeType.LOCATION, location.toValue())
         );
 
         return electricityConsumerAsset;
@@ -763,7 +763,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected Asset createDemoGroundwaterAsset(String name, Asset area, GeoJSON location) {
         Asset groundwaterAsset = new Asset(name, GROUNDWATER, area).addAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+            new AssetAttribute(AttributeType.LOCATION, location.toValue())
         );
 
     return groundwaterAsset;
@@ -771,7 +771,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected Asset createDemoParkingAsset(String name, Asset area, GeoJSON location) {
         Asset parkingAsset = new Asset(name, PARKING, area).addAttributes(
-            new AssetAttribute(AttributeType.LOCATION, location.toValue()).addMeta(SHOW_ON_DASHBOARD)
+            new AssetAttribute(AttributeType.LOCATION, location.toValue())
         );
 
     return parkingAsset;

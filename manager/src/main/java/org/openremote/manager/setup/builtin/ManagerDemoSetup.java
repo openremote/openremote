@@ -497,8 +497,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                 new MetaItem(ATTRIBUTE_LINK, createWeatherApiAttributeLink(weather.getId(), "wind", "speed", "windSpeed")),
                                 new MetaItem(ATTRIBUTE_LINK, createWeatherApiAttributeLink(weather.getId(), "wind", "deg", "windDirection"))
                         ));
-        new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(4.463250, 51.918849).toValue())
-                .addMeta(SHOW_ON_DASHBOARD);
+        new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(4.463250, 51.918849).toValue());
         weather = assetStorageService.merge(weather);
 
         // ################################ Realm smartcity - Environment monitor ###################################

@@ -267,7 +267,7 @@ public class ManagerTestSetup extends AbstractManagerSetup {
         smartBuilding.setName("Smart Building");
         smartBuilding.setType(BUILDING);
         smartBuilding.setAttributes(
-                new AssetAttribute(AttributeType.LOCATION, SMART_BUILDING_LOCATION.toValue()).addMeta(SHOW_ON_DASHBOARD),
+                new AssetAttribute(AttributeType.LOCATION, SMART_BUILDING_LOCATION.toValue()),
                 new AssetAttribute(AttributeType.GEO_STREET, Values.create("Kastanjelaan 500")),
                 new AssetAttribute(AttributeType.GEO_POSTAL_CODE, Values.create("5616")),
                 new AssetAttribute(AttributeType.GEO_CITY, Values.create("Eindhoven")),
