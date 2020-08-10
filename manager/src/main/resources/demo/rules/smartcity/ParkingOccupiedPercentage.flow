@@ -1,5 +1,5 @@
 {
-	"name": "Parking: Percentage of occupied spaces",
+	"name": "Parking: Occupied spaces",
 	"description": null,
 	"connections": [
 		{
@@ -65,7 +65,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "3Snb9xk4Qr35XbxZD98n8W",
+						"assetId": "2tLAEBGjmRCu1KrdJn9T2Z",
 						"attributeName": "occupiedSpaces"
 					}
 				}
@@ -99,7 +99,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "5neUJEqucLhYdRTYHqtm1P",
+						"assetId": "1yuaW634x1LqumPTwGxvyg",
 						"attributeName": "occupiedSpaces"
 					}
 				}
@@ -133,7 +133,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "6iJyO3fOGmT5GRWmC5Warv",
+						"assetId": "3D49AxXerrIycM8gNd0zlK",
 						"attributeName": "occupiedSpaces"
 					}
 				}
@@ -167,7 +167,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "5neUJEqucLhYdRTYHqtm1P",
+						"assetId": "1yuaW634x1LqumPTwGxvyg",
 						"attributeName": "totalSpaces"
 					}
 				}
@@ -201,7 +201,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "3Snb9xk4Qr35XbxZD98n8W",
+						"assetId": "2tLAEBGjmRCu1KrdJn9T2Z",
 						"attributeName": "totalSpaces"
 					}
 				}
@@ -235,7 +235,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "6iJyO3fOGmT5GRWmC5Warv",
+						"assetId": "3D49AxXerrIycM8gNd0zlK",
 						"attributeName": "totalSpaces"
 					}
 				}
@@ -529,7 +529,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "4BcMGBFNLNqji2j0dJKyUj",
+						"assetId": "7UUzmvnTuLdjVpTb8MnjSX",
 						"attributeName": "totalOccupancy"
 					}
 				}

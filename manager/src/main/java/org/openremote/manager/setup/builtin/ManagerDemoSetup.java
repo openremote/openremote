@@ -134,6 +134,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         RULE_STATE,
                         READ_ONLY)
         );
+        energyManagement.setId(UniqueIdentifierGenerator.generateId(energyManagement.getName()));
         energyManagement = assetStorageService.merge(energyManagement);
         energyManagementId = energyManagement.getId();
 
@@ -151,12 +152,15 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         RULE_STATE,
                         READ_ONLY)
         );
+        building1Asset.setId(UniqueIdentifierGenerator.generateId(building1Asset.getName() + "building"));
         building1Asset = assetStorageService.merge(building1Asset);
 
         Asset storage1Asset = createDemoElectricityStorageAsset("Battery De Rotterdam", building1Asset, new GeoJSONPoint(4.488324, 51.906577));
+        storage1Asset.setId(UniqueIdentifierGenerator.generateId(storage1Asset.getName()));
         storage1Asset = assetStorageService.merge(storage1Asset);
 
         Asset consumption1Asset = createDemoElectricityConsumerAsset("Consumption De Rotterdam", building1Asset, new GeoJSONPoint(4.487519, 51.906544));
+        consumption1Asset.setId(UniqueIdentifierGenerator.generateId(consumption1Asset.getName()));
         consumption1Asset = assetStorageService.merge(consumption1Asset);
 
         Asset production1Asset = createDemoElectricityProducerAsset("Solar De Rotterdam", building1Asset, new GeoJSONPoint(4.488592, 51.907047));
@@ -168,6 +172,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         production1Asset.getAttribute("installedCapacity").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(16.52)));
         production1Asset.getAttribute("systemEfficiency").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(93)));
         production1Asset.getAttribute("panelOrientation").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(ElectricityProducerOrientationType.EAST_WEST.name())));
+        production1Asset.setId(UniqueIdentifierGenerator.generateId(production1Asset.getName()));
         production1Asset = assetStorageService.merge(production1Asset);
 
         // ### Stadhuis ###
@@ -179,12 +184,15 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new AssetAttribute(AttributeType.GEO_CITY, Values.create("Rotterdam")),
                 new AssetAttribute(AttributeType.GEO_COUNTRY, Values.create("Netherlands"))
         );
+        building2Asset.setId(UniqueIdentifierGenerator.generateId(building2Asset.getName() + "building"));
         building2Asset = assetStorageService.merge(building2Asset);
 
         Asset storage2Asset = createDemoElectricityStorageAsset("Battery Stadhuis", building2Asset, new GeoJSONPoint(4.47985, 51.92274));
+        storage2Asset.setId(UniqueIdentifierGenerator.generateId(storage2Asset.getName()));
         storage2Asset = assetStorageService.merge(storage2Asset);
 
         Asset consumption2Asset = createDemoElectricityConsumerAsset("Consumption Stadhuis", building2Asset, new GeoJSONPoint(4.47933, 51.92259));
+        consumption2Asset.setId(UniqueIdentifierGenerator.generateId(consumption2Asset.getName()));
         consumption2Asset = assetStorageService.merge(consumption2Asset);
 
         Asset production2Asset = createDemoElectricityProducerAsset("Solar Stadhuis", building2Asset, new GeoJSONPoint(4.47945, 51.92301));
@@ -196,6 +204,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         production2Asset.getAttribute("installedCapacity").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(15.70)));
         production2Asset.getAttribute("systemEfficiency").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(79)));
         production2Asset.getAttribute("panelOrientation").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(ElectricityProducerOrientationType.SOUTH.name())));
+        production2Asset.setId(UniqueIdentifierGenerator.generateId(production2Asset.getName()));
         production2Asset = assetStorageService.merge(production2Asset);
 
         // ### Markthal ###
@@ -212,6 +221,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                 RULE_STATE,
                                 READ_ONLY)
         );
+        building3Asset.setId(UniqueIdentifierGenerator.generateId(building3Asset.getName() + "building"));
         building3Asset = assetStorageService.merge(building3Asset);
 
         Asset production3Asset = createDemoElectricityProducerAsset("Solar Markthal", building3Asset, new GeoJSONPoint(4.47945, 51.92301));
@@ -223,6 +233,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         production3Asset.getAttribute("installedCapacity").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(18.11)));
         production3Asset.getAttribute("systemEfficiency").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(91)));
         production3Asset.getAttribute("panelOrientation").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(ElectricityProducerOrientationType.SOUTH.name())));
+        production3Asset.setId(UniqueIdentifierGenerator.generateId(production3Asset.getName()));
         production3Asset = assetStorageService.merge(production3Asset);
 
         Asset charger1Asset = createDemoElectricityChargerAsset("Charger 1 Markthal", building3Asset, new GeoJSONPoint(4.486143, 51.920058));
@@ -267,6 +278,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
             );
         });
+        charger1Asset.setId(UniqueIdentifierGenerator.generateId(charger1Asset.getName()));
         charger1Asset = assetStorageService.merge(charger1Asset);
 
         Asset charger2Asset = createDemoElectricityChargerAsset("Charger 2 Markthal", building3Asset, new GeoJSONPoint(4.486188, 51.919957));
@@ -311,6 +323,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
             );
         });
+        charger2Asset.setId(UniqueIdentifierGenerator.generateId(charger2Asset.getName()));
         charger2Asset = assetStorageService.merge(charger2Asset);
 
         Asset charger3Asset = createDemoElectricityChargerAsset("Charger 3 Markthal", building3Asset, new GeoJSONPoint(4.486232, 51.919856));
@@ -355,6 +368,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
             );
         });
+        charger3Asset.setId(UniqueIdentifierGenerator.generateId(charger3Asset.getName()));
         charger3Asset = assetStorageService.merge(charger3Asset);
 
         Asset charger4Asset = createDemoElectricityChargerAsset("Charger 4 Markthal", building3Asset, new GeoJSONPoint(4.486286, 51.919733));
@@ -399,6 +413,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
             );
         });
+        charger4Asset.setId(UniqueIdentifierGenerator.generateId(charger4Asset.getName()));
         charger4Asset = assetStorageService.merge(charger4Asset);
 
         // ### Erasmianum ###
@@ -410,9 +425,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new AssetAttribute(AttributeType.GEO_CITY, Values.create("Rotterdam")),
                 new AssetAttribute(AttributeType.GEO_COUNTRY, Values.create("Netherlands"))
         );
+        building4Asset.setId(UniqueIdentifierGenerator.generateId(building4Asset.getName() + "building"));
         building4Asset = assetStorageService.merge(building4Asset);
 
         Asset consumption4Asset = createDemoElectricityConsumerAsset("Consumption Erasmianum", building4Asset, new GeoJSONPoint(4.468324, 51.912062));
+        consumption4Asset.setId(UniqueIdentifierGenerator.generateId(consumption4Asset.getName()));
         consumption4Asset = assetStorageService.merge(consumption4Asset);
 
         // ### Oostelijk zwembad ###
@@ -424,9 +441,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new AssetAttribute(AttributeType.GEO_CITY, Values.create("Rotterdam")),
                 new AssetAttribute(AttributeType.GEO_COUNTRY, Values.create("Netherlands"))
         );
+        building5Asset.setId(UniqueIdentifierGenerator.generateId(building5Asset.getName() + "building"));
         building5Asset = assetStorageService.merge(building5Asset);
 
         Asset consumption5Asset = createDemoElectricityConsumerAsset("Consumption Zwembad", building5Asset, new GeoJSONPoint(4.498048, 51.925770));
+        consumption5Asset.setId(UniqueIdentifierGenerator.generateId(consumption5Asset.getName()));
         consumption5Asset = assetStorageService.merge(consumption5Asset);
 
         Asset production5Asset = createDemoElectricityProducerAsset("Solar Zwembad", building5Asset, new GeoJSONPoint(4.498281, 51.925507));
@@ -438,6 +457,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         production5Asset.getAttribute("installedCapacity").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(12.79)));
         production5Asset.getAttribute("systemEfficiency").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(86)));
         production5Asset.getAttribute("panelOrientation").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(ElectricityProducerOrientationType.SOUTH.name())));
+        production5Asset.setId(UniqueIdentifierGenerator.generateId(production5Asset.getName()));
         production5Asset = assetStorageService.merge(production5Asset);
 
         // ### Weather ###
@@ -479,7 +499,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         ));
         new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(4.463250, 51.918849).toValue())
                 .addMeta(SHOW_ON_DASHBOARD);
-
         weather = assetStorageService.merge(weather);
 
         // ################################ Realm smartcity - Environment monitor ###################################
@@ -488,30 +507,35 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         environmentMonitor.setRealm(this.realmCityTenant);
         environmentMonitor.setName("Environment Monitor");
         environmentMonitor.setType(THING);
+        environmentMonitor.setId(UniqueIdentifierGenerator.generateId(environmentMonitor.getName()));
         environmentMonitor = assetStorageService.merge(environmentMonitor);
 
         Asset environment1Asset = createDemoEnvironmentAsset("Oudehaven", environmentMonitor, new GeoJSONPoint(4.49313, 51.91885), () -> new MetaItem[]{
                 new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
                 new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
+        environment1Asset.setId(UniqueIdentifierGenerator.generateId(environment1Asset.getName()));
         environment1Asset = assetStorageService.merge(environment1Asset);
 
         Asset environment2Asset = createDemoEnvironmentAsset("Kaappark", environmentMonitor, new GeoJSONPoint(4.480434, 51.899287), () -> new MetaItem[]{
                 new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
                 new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
+        environment2Asset.setId(UniqueIdentifierGenerator.generateId(environment2Asset.getName()));
         environment2Asset = assetStorageService.merge(environment2Asset);
 
         Asset environment3Asset = createDemoEnvironmentAsset("Museumpark", environmentMonitor, new GeoJSONPoint(4.472457, 51.912047), () -> new MetaItem[]{
                 new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
                 new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
+        environment3Asset.setId(UniqueIdentifierGenerator.generateId(environment3Asset.getName()));
         environment3Asset = assetStorageService.merge(environment3Asset);
 
         Asset environment4Asset = createDemoEnvironmentAsset("Eendrachtsplein", environmentMonitor, new GeoJSONPoint(4.473599, 51.916292), () -> new MetaItem[]{
                 new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
                 new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
+        environment4Asset.setId(UniqueIdentifierGenerator.generateId(environment4Asset.getName()));
         environment4Asset = assetStorageService.merge(environment4Asset);
 
         Asset groundwater1Asset = createDemoGroundwaterAsset("Leuvehaven", environmentMonitor, new GeoJSONPoint(4.48413, 51.91431));
@@ -563,6 +587,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             groundwaterArray[i].getAttribute("waterLevel").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(3.51)));
         }
 
+        groundwater1Asset.setId(UniqueIdentifierGenerator.generateId(groundwater1Asset.getName()));
+        groundwater2Asset.setId(UniqueIdentifierGenerator.generateId(groundwater2Asset.getName()));
+        groundwater3Asset.setId(UniqueIdentifierGenerator.generateId(groundwater3Asset.getName()));
         groundwater1Asset = assetStorageService.merge(groundwater1Asset);
         groundwater2Asset = assetStorageService.merge(groundwater2Asset);
         groundwater3Asset = assetStorageService.merge(groundwater3Asset);
@@ -573,6 +600,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         mobilityAndSafety.setRealm(this.realmCityTenant);
         mobilityAndSafety.setName("Mobility and Safety");
         mobilityAndSafety.setType(THING);
+        mobilityAndSafety.setId(UniqueIdentifierGenerator.generateId(mobilityAndSafety.getName()));
         mobilityAndSafety = assetStorageService.merge(mobilityAndSafety);
 
         // ### Parking ###
@@ -586,6 +614,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                 RULE_STATE,
                                 READ_ONLY,
                                 STORE_DATA_POINTS));
+        parkingGroupAsset.setId(UniqueIdentifierGenerator.generateId(parkingGroupAsset.getName()));
         parkingGroupAsset = assetStorageService.merge(parkingGroupAsset);
 
         Asset parking1Asset = createDemoParkingAsset("Markthal", parkingGroupAsset, new GeoJSONPoint(4.48527, 51.91984));
@@ -631,6 +660,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         });
         parking1Asset.getAttribute("priceHourly").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(3.75)));
         parking1Asset.getAttribute("priceDaily").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(25.00)));
+        parking1Asset.getAttribute("totalSpaces").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(623)));
+        parking1Asset.setId(UniqueIdentifierGenerator.generateId(parking1Asset.getName()));
         parking1Asset = assetStorageService.merge(parking1Asset);
 
         Asset parking2Asset = createDemoParkingAsset("Lijnbaan", parkingGroupAsset, new GeoJSONPoint(4.47681, 51.91849));
@@ -676,6 +707,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         });
         parking2Asset.getAttribute("priceHourly").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(3.50)));
         parking2Asset.getAttribute("priceDaily").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(23.00)));
+        parking2Asset.getAttribute("totalSpaces").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(556)));
+        parking2Asset.setId(UniqueIdentifierGenerator.generateId(parking2Asset.getName()));
         parking2Asset = assetStorageService.merge(parking2Asset);
 
         Asset parking3Asset = createDemoParkingAsset("Erasmusbrug", parkingGroupAsset, new GeoJSONPoint(4.48207, 51.91127));
@@ -721,6 +754,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         });
         parking3Asset.getAttribute("priceHourly").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(3.40)));
         parking3Asset.getAttribute("priceDaily").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(20.00)));
+        parking3Asset.getAttribute("totalSpaces").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(502)));
+        parking3Asset.setId(UniqueIdentifierGenerator.generateId(parking3Asset.getName()));
         parking3Asset = assetStorageService.merge(parking3Asset);
 
         // ### Crowd control ###
@@ -732,6 +767,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new AssetAttribute(AttributeType.GEO_CITY, Values.create("Rotterdam")),
                         new AssetAttribute(AttributeType.GEO_COUNTRY, Values.create("Netherlands"))
                 );
+        assetAreaStation.setId(UniqueIdentifierGenerator.generateId(assetAreaStation.getName()));
         assetAreaStation = assetStorageService.merge(assetAreaStation);
         area1Id = assetAreaStation.getId();
 
@@ -739,13 +775,71 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
                 new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
+        peopleCounter1Asset.setId(UniqueIdentifierGenerator.generateId(peopleCounter1Asset.getName()));
         peopleCounter1Asset = assetStorageService.merge(peopleCounter1Asset);
 
         Asset peopleCounter2Asset = createDemoPeopleCounterAsset("People Counter North", assetAreaStation, new GeoJSONPoint(4.469329, 51.923700), () -> new MetaItem[]{
                 new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
                 new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
+        peopleCounter2Asset.setId(UniqueIdentifierGenerator.generateId(peopleCounter2Asset.getName()));
         peopleCounter2Asset = assetStorageService.merge(peopleCounter2Asset);
+
+        Asset microphone1Asset = createDemoMicrophoneAsset("Microphone South", assetAreaStation, new GeoJSONPoint(4.470362, 51.923201), () -> new MetaItem[]{
+                new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
+                new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+        microphone1Asset.setId(UniqueIdentifierGenerator.generateId(microphone1Asset.getName()));
+        microphone1Asset = assetStorageService.merge(microphone1Asset);
+
+        Asset microphone2Asset = createDemoMicrophoneAsset("Microphone North", assetAreaStation, new GeoJSONPoint(4.469190, 51.923786), () -> new MetaItem[]{
+                new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
+                new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+        microphone2Asset.setId(UniqueIdentifierGenerator.generateId(microphone2Asset.getName()));
+        microphone2Asset = assetStorageService.merge(microphone2Asset);
+
+        Asset lightStation1Asset = createDemoLightAsset("Station Light NW", assetAreaStation, new GeoJSONPoint(4.468874, 51.923881));
+        lightStation1Asset.setId(UniqueIdentifierGenerator.generateId(lightStation1Asset.getName()));
+        lightStation1Asset = assetStorageService.merge(lightStation1Asset);
+
+        Asset lightStation2Asset = createDemoLightAsset("Station Light NE", assetAreaStation, new GeoJSONPoint(4.470539, 51.923991));
+        lightStation2Asset.setId(UniqueIdentifierGenerator.generateId(lightStation2Asset.getName()));
+        lightStation2Asset = assetStorageService.merge(lightStation2Asset);
+
+        Asset lightStation3Asset = createDemoLightAsset("Station Light S", assetAreaStation, new GeoJSONPoint(4.470558, 51.923186));
+        lightStation3Asset.setId(UniqueIdentifierGenerator.generateId(lightStation3Asset.getName()));
+        lightStation3Asset = assetStorageService.merge(lightStation3Asset);
+
+        // ### Lighting controller ###
+
+        Asset lightingControllerOPAsset = createDemoLightControllerAsset("Lighting Noordereiland", mobilityAndSafety, new GeoJSONPoint(4.496177, 51.915060));
+        lightingControllerOPAsset.setId(UniqueIdentifierGenerator.generateId(lightingControllerOPAsset.getName()));
+        lightingControllerOPAsset = assetStorageService.merge(lightingControllerOPAsset);
+
+        Asset lightOP1Asset = createDemoLightAsset("OnsPark1", lightingControllerOPAsset, new GeoJSONPoint(4.49626, 51.91516));
+        lightOP1Asset.setId(UniqueIdentifierGenerator.generateId(lightOP1Asset.getName()));
+        lightOP1Asset = assetStorageService.merge(lightOP1Asset);
+
+        Asset lightOP2Asset = createDemoLightAsset("OnsPark2", lightingControllerOPAsset, new GeoJSONPoint(4.49705, 51.91549));
+        lightOP2Asset.setId(UniqueIdentifierGenerator.generateId(lightOP2Asset.getName()));
+        lightOP2Asset = assetStorageService.merge(lightOP2Asset);
+
+        Asset lightOP3Asset = createDemoLightAsset("OnsPark3", lightingControllerOPAsset, new GeoJSONPoint(4.49661, 51.91495));
+        lightOP3Asset.setId(UniqueIdentifierGenerator.generateId(lightOP3Asset.getName()));
+        lightOP3Asset = assetStorageService.merge(lightOP3Asset);
+
+        Asset lightOP4Asset = createDemoLightAsset("OnsPark4", lightingControllerOPAsset, new GeoJSONPoint(4.49704, 51.91520));
+        lightOP4Asset.setId(UniqueIdentifierGenerator.generateId(lightOP4Asset.getName()));
+        lightOP4Asset = assetStorageService.merge(lightOP4Asset);
+
+        Asset lightOP5Asset = createDemoLightAsset("OnsPark5", lightingControllerOPAsset, new GeoJSONPoint(4.49758, 51.91440));
+        lightOP5Asset.setId(UniqueIdentifierGenerator.generateId(lightOP5Asset.getName()));
+        lightOP5Asset = assetStorageService.merge(lightOP5Asset);
+
+        Asset lightOP6Asset = createDemoLightAsset("OnsPark6", lightingControllerOPAsset, new GeoJSONPoint(4.49786, 51.91452));
+        lightOP6Asset.setId(UniqueIdentifierGenerator.generateId(lightOP6Asset.getName()));
+        lightOP6Asset = assetStorageService.merge(lightOP6Asset);
 
         persistenceService.doTransaction(entityManager ->
                 entityManager.merge(new ConsoleAppConfig(
@@ -762,50 +856,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                         .put("pageLink", "https://demo.openremote.io/mobile/#!geofences?realm=smartcity&consoleProviders=geofence push storage")
                         )))
         );
-
-        Asset microphone1Asset = createDemoMicrophoneAsset("Microphone South", assetAreaStation, new GeoJSONPoint(4.470362, 51.923201), () -> new MetaItem[]{
-                new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
-                new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
-        });
-        microphone1Asset = assetStorageService.merge(microphone1Asset);
-
-        Asset microphone2Asset = createDemoMicrophoneAsset("Microphone North", assetAreaStation, new GeoJSONPoint(4.469190, 51.923786), () -> new MetaItem[]{
-                new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
-                new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
-        });
-        microphone2Asset = assetStorageService.merge(microphone2Asset);
-
-        Asset lightStation1Asset = createDemoLightAsset("Station Light NW", assetAreaStation, new GeoJSONPoint(4.468874, 51.923881));
-        lightStation1Asset = assetStorageService.merge(lightStation1Asset);
-
-        Asset lightStation2Asset = createDemoLightAsset("Station Light NE", assetAreaStation, new GeoJSONPoint(4.470539, 51.923991));
-        lightStation2Asset = assetStorageService.merge(lightStation2Asset);
-
-        Asset lightStation3Asset = createDemoLightAsset("Station Light S", assetAreaStation, new GeoJSONPoint(4.470558, 51.923186));
-        lightStation3Asset = assetStorageService.merge(lightStation3Asset);
-
-        // ### Lighting controller ###
-
-        Asset lightingControllerOPAsset = createDemoLightControllerAsset("Lighting Noordereiland", mobilityAndSafety, new GeoJSONPoint(4.496177, 51.915060));
-        lightingControllerOPAsset = assetStorageService.merge(lightingControllerOPAsset);
-
-        Asset lightOP1Asset = createDemoLightAsset("OnsPark1", lightingControllerOPAsset, new GeoJSONPoint(4.49626, 51.91516));
-        lightOP1Asset = assetStorageService.merge(lightOP1Asset);
-
-        Asset lightOP2Asset = createDemoLightAsset("OnsPark2", lightingControllerOPAsset, new GeoJSONPoint(4.49705, 51.91549));
-        lightOP2Asset = assetStorageService.merge(lightOP2Asset);
-
-        Asset lightOP3Asset = createDemoLightAsset("OnsPark3", lightingControllerOPAsset, new GeoJSONPoint(4.49661, 51.91495));
-        lightOP3Asset = assetStorageService.merge(lightOP3Asset);
-
-        Asset lightOP4Asset = createDemoLightAsset("OnsPark4", lightingControllerOPAsset, new GeoJSONPoint(4.49704, 51.91520));
-        lightOP4Asset = assetStorageService.merge(lightOP4Asset);
-
-        Asset lightOP5Asset = createDemoLightAsset("OnsPark5", lightingControllerOPAsset, new GeoJSONPoint(4.49758, 51.91440));
-        lightOP5Asset = assetStorageService.merge(lightOP5Asset);
-
-        Asset lightOP6Asset = createDemoLightAsset("OnsPark6", lightingControllerOPAsset, new GeoJSONPoint(4.49786, 51.91452));
-        lightOP6Asset = assetStorageService.merge(lightOP6Asset);
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")

@@ -1,5 +1,5 @@
 {
-	"name": "Total power production of solar panels",
+	"name": "Total power production",
 	"description": null,
 	"connections": [
 		{
@@ -41,7 +41,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "4qSMq7lzXJATWgITK4pZQF",
+						"assetId": "6DW7WWYVtOybr7W1BWREc3",
 						"attributeName": "totalPower"
 					}
 				}
@@ -75,7 +75,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "7P0Nk5pdY0UzrfR6wv1raD",
+						"assetId": "4Fnz8pxxdtDobuDGWYwRNp",
 						"attributeName": "totalPower"
 					}
 				}
@@ -109,7 +109,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "3wus03XiU0n6ukvUfJdSct",
+						"assetId": "2RIt5xuSj1BSyaRhwU3z3I",
 						"attributeName": "totalPower"
 					}
 				}
@@ -143,7 +143,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "7bX04Q5sAVXBaIhG47pi7T",
+						"assetId": "5xgMdcrVWORYWpUKuP2Mo0",
 						"attributeName": "totalPower"
 					}
 				}
@@ -295,7 +295,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "2OF3l0ek5JltAmwEAUcSli",
+						"assetId": "642TlrE2HLMmRErWHC6NF6",
 						"attributeName": "totalPowerProducers"
 					}
 				}

@@ -24,13 +24,17 @@
                           "predicateType": "string",
                           "match": "EXACT",
                           "value": "location"
+                        },
+                        "value": {
+                          "predicateType": "radial",
+                          "negated": false,
+                          "radius": 100,
+                          "lat": 51.9069373,
+                          "lng": 4.4633775
                         }
                       }
                     ]
-                  },
-                  "ids": [
-                    "2XY9PRltl9XELEXJzipxs6"
-                  ]
+                  }
                 }
               }
             ]
@@ -56,8 +60,7 @@
                 {
                   "title": "Open in app",
                   "action": {
-                    "url": "https://euromast.nl",
-                    "openInBrowser": true
+                    "url": "https://euromast.nl"
                   }
                 },
                 {
@@ -70,24 +73,6 @@
               ]
             }
           }
-        },
-        {
-          "action": "write-attribute",
-          "target": {
-            "assets": {
-              "ids": [
-                "50hkax4s7pQloGAv3d4NAw"
-              ],
-              "types": [
-                {
-                  "predicateType": "string",
-                  "value": "urn:openremote:asset:light"
-                }
-              ]
-            }
-          },
-          "value": 37,
-          "attributeName": "lightDimLevel"
         }
       ],
       "reset": {

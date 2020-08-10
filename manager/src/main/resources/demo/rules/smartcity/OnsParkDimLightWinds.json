@@ -50,7 +50,7 @@
           "target": {
             "assets": {
               "ids": [
-                "50hkax4s7pQloGAv3d4NAw"
+                "54LS0LDCxIqVHnOCAVTK58"
               ],
               "types": [
                 {
@@ -68,7 +68,7 @@
           "target": {
             "assets": {
               "ids": [
-                "5B5Die9qlpXk6I0AnUKsGz"
+                "4vHXXX1zQEB6J27Kee8Nwf"
               ],
               "types": [
                 {
@@ -86,7 +86,7 @@
           "target": {
             "assets": {
               "ids": [
-                "5fBdNTUStqaRl2lck2taz3"
+                "57wYnE3LEpPLDfsBwnOHzk"
               ],
               "types": [
                 {
@@ -104,7 +104,7 @@
           "target": {
             "assets": {
               "ids": [
-                "3ejfNQCTpu7c7QKrhuWX2U"
+                "61BNFNS5vTR2SCOLDXUBvX"
               ],
               "types": [
                 {
@@ -122,7 +122,7 @@
           "target": {
             "assets": {
               "ids": [
-                "1xg374XfhgHBIan8hsEV8e"
+                "6uE2d0t2SqZcXUtv9qnjq5"
               ],
               "types": [
                 {
@@ -140,7 +140,7 @@
           "target": {
             "assets": {
               "ids": [
-                "7JJAn5YHWD2m2AMwtIYjHz"
+                "3uCPRjC6XTrx38xFG10FSb"
               ],
               "types": [
                 {
@@ -154,7 +154,7 @@
           "attributeName": "lightDimLevel"
         }
       ],
-      "name": "Ons Park: Dim lights with low wind speed"
+      "name": "Ons Park: Dim lights"
     }
   ]
 }

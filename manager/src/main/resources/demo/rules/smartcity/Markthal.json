@@ -22,7 +22,15 @@
                       {
                         "name": {
                           "predicateType": "string",
-                          "match": "EXACT"
+                          "match": "EXACT",
+                          "value": "location"
+                        },
+                        "value": {
+                          "predicateType": "radial",
+                          "negated": false,
+                          "radius": 100,
+                          "lat": 51.9202494,
+                          "lng": 4.4851372
                         }
                       }
                     ]
@@ -52,8 +60,7 @@
                 {
                   "title": "Open in app",
                   "action": {
-                    "url": "https://www.markthal.nl",
-                    "openInBrowser": true
+                    "url": "https://www.markthal.nl"
                   }
                 },
                 {

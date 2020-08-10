@@ -27,15 +27,15 @@ import {pageMobileGeofencesProvider, GeofencesConfig} from "@openremote/or-app/d
 const onboardingConfig:OnboardingConfig  = {
     pages: [
         {
-            title: "Welcome",
+            title: "Your opinion matters",
             type: "default",
-            description: "Welcome at the first page",
+            description: "With this app we will involve you in developments within the city. We keep you up to date on current projects and will ask for your opinion.",
             image: require("../images/logo-mobile.png")
         },
         {
             title: "At the right time and place",
             type: "bottom-image",
-            description: "Welcome at the second page",
+            description: "By sharing your location and allowing messages you receive useful info and surveys at the right time and place. Give your opinion and keep up to date on your favourite places.",
             enableProviders: [
                 {
                     name:"geofence",
@@ -46,8 +46,8 @@ const onboardingConfig:OnboardingConfig  = {
         },
         {
             title: "View your messages",
-            type: "default",
-            description: "Welcome at the third page",
+            type: "bottom-image",
+            description: "Use the menu at the bottom to find messages that are always available to you.",
             image: require("../images/logo-mobile.png")
         }
     ],

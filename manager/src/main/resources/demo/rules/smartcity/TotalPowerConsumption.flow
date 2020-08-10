@@ -1,5 +1,5 @@
 {
-	"name": "Total power consumption of buildings",
+	"name": "Total power consumption",
 	"description": null,
 	"connections": [
 		{
@@ -41,7 +41,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "4wdiljqcz2JYv3hEcB32oz",
+						"assetId": "3Mj9yiC6bcH4MoIYDY2T35",
 						"attributeName": "totalPower"
 					}
 				}
@@ -75,7 +75,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "62Bqe0GL7ZsGwHCAl7cYQT",
+						"assetId": "4jBtdIZOtA7pLxPNSwWCVa",
 						"attributeName": "totalPower"
 					}
 				}
@@ -109,7 +109,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "3guR57kNLarlKBYBrlOI47",
+						"assetId": "6L8hVlM1fQ4dDHFM6HYA6O",
 						"attributeName": "totalPower"
 					}
 				}
@@ -143,7 +143,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "4kvjjhyOk11asFPQ36DCDl",
+						"assetId": "4oio0T4DX9lxeBsZVNIpEN",
 						"attributeName": "totalPower"
 					}
 				}
@@ -295,7 +295,7 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "2OF3l0ek5JltAmwEAUcSli",
+						"assetId": "642TlrE2HLMmRErWHC6NF6",
 						"attributeName": "totalPowerConsumers"
 					}
 				}
