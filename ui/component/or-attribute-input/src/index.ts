@@ -1,4 +1,14 @@
-import {css, customElement, unsafeCSS, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
+import {
+    css,
+    customElement,
+    html,
+    LitElement,
+    property,
+    PropertyValues,
+    query,
+    TemplateResult,
+    unsafeCSS
+} from "lit-element";
 import {ifDefined} from "lit-html/directives/if-defined";
 import {i18next, translate} from "@openremote/or-translate";
 import {
@@ -9,14 +19,21 @@ import {
     AttributeValueDescriptor,
     AttributeValueType,
     MetaItemType,
-    ValueType,
-    SharedEvent
+    SharedEvent,
+    ValueType
 } from "@openremote/model";
-import manager, {AssetModelUtil, subscribe, Util, DefaultColor4} from "@openremote/core";
+import manager, {AssetModelUtil, DefaultColor4, subscribe, Util} from "@openremote/core";
 import "@openremote/or-input";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 import "@openremote/or-map";
-import {Util as MapUtil, LngLat, getMarkerIconAndColorFromAssetType, OrMapClickedEvent, MapEventDetail} from "@openremote/or-map";
+import {
+    getMarkerIconAndColorFromAssetType,
+    LngLat,
+    MapEventDetail,
+    MapGL,
+    OrMapClickedEvent,
+    Util as MapUtil
+} from "@openremote/or-map";
 
 export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputChangedEventDetail> {
 
@@ -49,37 +66,70 @@ export type AttributeInputCustomProviderResult = ((value: any, timestamp: number
 
 export type AttributeInputCustomProvider = (assetType: string | undefined, attribute: AssetAttribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, readonly: boolean | undefined, disabled: boolean | undefined, label: string | undefined) => AttributeInputCustomProviderResult;
 
-export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (assetType, attribute, attributeDescriptor, valueDescriptor, valueChangeNotifier, readonly, disabled, label) => (value, timestamp, loading, sending, error) => {
-    let pos: LngLat | undefined;
-    let center: number[] | undefined;
-    if (value) {
-        pos = MapUtil.getLngLat(value);
-        center = pos ? pos.toArray() : undefined;
+export class CenterControl {
+    protected map?: MapGL;
+    protected elem?: HTMLElement;
+    public pos?: LngLat;
+
+    onAdd(map: MapGL): HTMLElement {
+        this.map = map;
+        const control = document.createElement("div");
+        control.classList.add("mapboxgl-ctrl");
+        control.classList.add("mapboxgl-ctrl-group");
+        const button = document.createElement("button");
+        button.className = "mapboxgl-ctrl-icon mapboxgl-ctrl-geolocate";
+        button.addEventListener("click", (ev) => map.flyTo({
+            center: this.pos,
+            zoom: map.getZoom()
+        }));
+        control.appendChild(button);
+        this.elem = control;
+        return control;
     }
-    const iconAndColor = getMarkerIconAndColorFromAssetType(assetType);
 
-    const clickHandler = (mapClickDetail: MapEventDetail) => {
-        if (!readonly && !disabled && mapClickDetail.doubleClick) {
-            const geoJsonPoint = MapUtil.getGeoJSONPoint(mapClickDetail.lngLat);
-            if (valueChangeNotifier) {
-                valueChangeNotifier(geoJsonPoint);
-            }
+    onRemove(map: MapGL) {
+        this.map = undefined;
+        this.elem = undefined;
+    }
+}
+
+export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (assetType, attribute, attributeDescriptor, valueDescriptor, valueChangeNotifier, readonly, disabled, label) => {
+
+    const centerControl = new CenterControl();
+
+    return (value, timestamp, loading, sending, error) => {
+        let pos: LngLat | undefined;
+        let center: number[] | undefined;
+        if (value) {
+            pos = MapUtil.getLngLat(value);
+            center = pos ? pos.toArray() : undefined;
         }
-    };
+        centerControl.pos = pos;
+        const iconAndColor = getMarkerIconAndColorFromAssetType(assetType);
 
-    const content = html`
+        const clickHandler = (mapClickDetail: MapEventDetail) => {
+            if (!readonly && !disabled && mapClickDetail.doubleClick) {
+                const geoJsonPoint = MapUtil.getGeoJSONPoint(mapClickDetail.lngLat);
+                if (valueChangeNotifier) {
+                    valueChangeNotifier(geoJsonPoint);
+                }
+            }
+        };
+
+        const content = html`
         <style>
             or-map {
                 border: #e5e5e5 1px solid;
                 margin: 3px 0;
             }
         </style>
-        <or-map class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => clickHandler(ev.detail)}" .center="${center}">
+        <or-map class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => clickHandler(ev.detail)}" .center="${center}" .controls="${[centerControl]}">
             <or-map-marker active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .color="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
         </or-map>
     `;
 
-    return getAttributeInputWrapper(content, loading, !!disabled, getHelperText(sending, false, timestamp), label, undefined);
+        return getAttributeInputWrapper(content, loading, !!disabled, getHelperText(sending, false, timestamp), label, undefined);
+    }
 }
 
 export function getAttributeInputWrapper(content: TemplateResult, loading: boolean, disabled: boolean, helperText: string | undefined, label: string | undefined, buttonIcon?: string, valueProvider?: () => any, valueChangeConsumer?: (value: any) => void): TemplateResult {
@@ -145,6 +195,10 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             
             #wrapper or-input, #wrapper or-map {
                 width: 100%;
+            }
+            
+            #wrapper or-map {
+                min-height: 250px;
             }
             
             #wrapper {
@@ -364,6 +418,9 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     @property({type: Boolean})
     public disableSubscribe: boolean = false;
 
+    @property({type: Boolean})
+    public disableWrite: boolean = false;
+
     @property()
     protected _attributeEvent?: AttributeEvent;
 
@@ -497,7 +554,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             this._attributeDescriptor = this.attributeDescriptor;
             this._attributeValueDescriptor = this.attributeValueDescriptor;
         } else {
-            const attributeOrDescriptorOrName = this.attributeDescriptor || this.attribute ? this.attribute : this.attributeRef ? this.attributeRef.attributeName! : undefined;
+            const attributeOrDescriptorOrName = this.attributeDescriptor || (this.attribute ? this.attribute : this.attributeRef ? this.attributeRef.attributeName! : undefined);
 
             if (!attributeOrDescriptorOrName) {
                 this._attributeDescriptor = this.attributeDescriptor;
@@ -737,7 +794,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         // the system or for the attribute property to be updated by a parent control or timeout and reset the value
         const attributeRef = this._getAttributeRef();
 
-        if (attributeRef) {
+        if (attributeRef && !this.disableWrite) {
 
             super._sendEvent({
                 eventType: "attribute",

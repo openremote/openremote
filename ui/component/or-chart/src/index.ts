@@ -30,7 +30,7 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import moment from "moment";
 import {OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
-import {MenuItem, OrMwcMenu, OrMwcMenuChangedEvent} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import * as ChartAnnotation from "chartjs-plugin-annotation";
 export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
 
@@ -303,23 +303,6 @@ const style = css`
     }
 `;
 
-export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (MenuItem | MenuItem[] | null)[], selectedValues: string[] | string | undefined, valueChangedCallback: (values: string[] | string) => void, closedCallback?: () => void, multiSelect = false): TemplateResult {
-
-    const openMenu = (evt: Event) => {
-        if (!menuItems) {
-            return;
-        }
-
-        ((evt.currentTarget as Element).parentElement!.lastElementChild as OrMwcMenu).open();
-    };
-
-    return html`
-        <span>
-            <span @click="${openMenu}">${content}</span>
-            ${menuItems ? html`<or-mwc-menu ?multiselect="${multiSelect}" @or-mwc-menu-closed="${() => {if (closedCallback) { closedCallback(); }} }" @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => {if (valueChangedCallback) { valueChangedCallback(evt.detail); }} }" .values="${selectedValues}" .menuItems="${menuItems}" id="menu"></or-mwc-menu>` : ``}
-        </span>
-    `;
-}
 export interface ChartValueDatapoint<T> {
     x?: number | string;
     y?: T;

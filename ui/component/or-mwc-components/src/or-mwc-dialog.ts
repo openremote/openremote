@@ -1,14 +1,4 @@
-import {
-    css,
-    customElement,
-    html,
-    LitElement,
-    property,
-    query,
-    TemplateResult,
-    unsafeCSS,
-    CSSResult
-} from "lit-element";
+import {css, customElement, html, LitElement, property, query, TemplateResult, unsafeCSS, PropertyValues} from "lit-element";
 import {MDCDialog} from "@material/dialog";
 import "@openremote/or-translate";
 import "@openremote/or-input";
@@ -23,13 +13,17 @@ export interface DialogConfig {
     actions?: DialogAction[];
     avatar?: boolean;
     styles?: TemplateResult | string;
+    dismissAction?: DialogActionBase | null;
 }
-
-export interface DialogAction {
-    default?: boolean;
-    content: TemplateResult | string;
+export interface DialogActionBase {
     actionName: string;
     action?: () => void;
+}
+
+export interface DialogAction extends DialogActionBase {
+    default?: boolean;
+    content: TemplateResult | string;
+    disabled?: boolean;
 }
 
 export class OrMwcDialogOpenedEvent extends CustomEvent<void> {
@@ -64,6 +58,29 @@ declare global {
     }
 }
 
+export function showDialog(config: DialogConfig, hostElement: HTMLElement = document.body): OrMwcDialog | undefined {
+    if (!hostElement) {
+        return;
+    }
+
+    const dialog = new OrMwcDialog();
+    dialog.isOpen = true;
+    dialog.addEventListener(OrMwcDialogOpenedEvent.NAME, (ev) => {
+        ev.stopPropagation();
+    });
+    dialog.addEventListener(OrMwcDialogClosedEvent.NAME, (ev) => {
+        ev.stopPropagation();
+        window.setTimeout(() => {
+            if (dialog.parentElement) {
+                dialog.parentElement.removeChild(dialog);
+            }
+        }, 0);
+    });
+    dialog.config = config;
+    hostElement.append(dialog);
+    return dialog;
+}
+
 // language=CSS
 const style = css`
     :host {
@@ -81,6 +98,12 @@ const style = css`
     
     .mdc-list {
         padding: 0 24px
+    }
+
+    @media (min-width: 1280px) {
+        .mdc-dialog .mdc-dialog__surface {
+            max-width: 1024px;
+        }
     }
 `;
 
@@ -100,6 +123,7 @@ export class OrMwcDialog extends LitElement {
             this.dialogTitle = config.title;
             this.dialogContent = config.content;
             this.dialogActions = config.actions;
+            this.dismissAction = config.dismissAction;
             this.avatar = config.avatar;
             this.styles = config.styles;
         }
@@ -114,11 +138,17 @@ export class OrMwcDialog extends LitElement {
     @property({type: Array, attribute: false})
     public dialogActions?: DialogAction[];
 
+    @property({type: Object, attribute: false})
+    public dismissAction: DialogActionBase | null | undefined;
+
     @property({type: Boolean})
     public avatar?: boolean;
 
     @property()
     public styles?: TemplateResult | string;
+
+    @property({attribute: false})
+    protected _open: boolean = false;
 
     @query("#dialog")
     protected _mdcElem!: HTMLElement;
@@ -129,10 +159,14 @@ export class OrMwcDialog extends LitElement {
         return this._mdcComponent ? this._mdcComponent.isOpen : false;
     }
 
+    public set isOpen(isOpen: boolean) {
+        this._open = true;
+    }
+
     public open() {
         if (this._mdcElem && !this._mdcComponent) {
             this._mdcComponent = new MDCDialog(this._mdcElem);
-            this._mdcComponent!.scrimClickAction = "";
+            this._mdcComponent!.scrimClickAction = this.dismissAction || this.dismissAction === null ? "close" : "";
         }
         if (this._mdcComponent) {
             this._mdcComponent.open();
@@ -156,9 +190,8 @@ export class OrMwcDialog extends LitElement {
     protected render() {
 
         return html`
+            ${typeof(this.styles) === "string" ?  html`<style>${this.styles}</style>` : this.styles || ``}
             
-            ${typeof(this.styles) === "string" ?  html`<style>${this.styles}</style>` : this.styles}
-
             <div id="dialog"
                 class="mdc-dialog"
                 role="alertdialog"
@@ -179,7 +212,7 @@ export class OrMwcDialog extends LitElement {
                                 ${this.dialogActions ? this.dialogActions.map((action) => {
                                     return html`
                                     <div class="mdc-button mdc-dialog__button" ?data-mdc-dialog-button-default="${action.default}" data-mdc-dialog-action="${action.actionName}">
-                                        ${typeof(action.content) === "string" ? html`<or-input .type="${InputType.BUTTON}" .label="${action.content}"></or-input>` : action.content}
+                                        ${typeof(action.content) === "string" ? html`<or-input .type="${InputType.BUTTON}" .disabled="${action.disabled}" .label="${action.content}"></or-input>` : action.content}
                                     </div>`;
                                 }) : ``}
                             </footer>
@@ -196,17 +229,26 @@ export class OrMwcDialog extends LitElement {
         `;
     }
 
+    protected updated(_changedProperties: PropertyValues) {
+        super.updated(_changedProperties);
+        if (_changedProperties.has("_open") && this._open) {
+            this.open();
+        }
+    }
+
     protected _onDialogOpened() {
         this.dispatchEvent(new OrMwcDialogOpenedEvent());
     }
 
     protected _onDialogClosed(action?: string) {
-        this.dispatchEvent(new OrMwcDialogClosedEvent(action));
-        if (action && this.dialogActions) {
+        if (action === "close" && this.dismissAction && this.dismissAction.action) {
+            this.dismissAction.action();
+        } else if (action && this.dialogActions) {
             const matchedAction = this.dialogActions.find((dialogAction) => dialogAction.actionName === action);
             if (matchedAction && matchedAction.action) {
                 matchedAction.action();
             }
         }
+        this.dispatchEvent(new OrMwcDialogClosedEvent(action));
     }
 }

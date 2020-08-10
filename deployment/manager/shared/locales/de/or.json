@@ -145,7 +145,7 @@
   "matched": "Passend",
   "unmatched": "Nicht passend",
   "wait": "Warte",
-  "group": "Zugrundeliegende Assets",     
+  "underlyingAssets": "Zugrundeliegende Assets",
   "groupAssetName": "Assetname",
   "history": "Historie",
   "attributes": "Attribute",

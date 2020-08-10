@@ -1,3 +1,6 @@
+// Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
+declare function require(name: string): any;
+
 import {
     css,
     customElement,

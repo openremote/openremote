@@ -1,17 +1,16 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, unsafeCSS} from "lit-element";
-import {classMap} from "lit-html/directives/class-map";
 import i18next from "i18next";
-import {Asset, AssetAttribute, Attribute, DatapointInterval, MetaItemType, ValueDatapoint, AssetEvent} from "@openremote/model";
-import {manager, DefaultColor3, DefaultColor4, Util, AssetModelUtil} from "@openremote/core";
+import {Asset, AssetAttribute, AssetEvent, DatapointInterval, MetaItemType, ValueDatapoint} from "@openremote/model";
+import {AssetModelUtil, DefaultColor3, DefaultColor4, manager, Util} from "@openremote/core";
 import Chart, {ChartTooltipCallback} from "chart.js";
-import {getContentWithMenuTemplate, OrChartConfig} from "@openremote/or-chart";
+import {OrChartConfig} from "@openremote/or-chart";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {getMetaValue} from "@openremote/core/dist/util";
 import moment from "moment";
-import {OrAssetTreeRequestSelectEvent, OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
-import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
+import {OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 
 export type ContextMenuOptions = "editAttribute" | "editDelta" | "editCurrentValue";
 

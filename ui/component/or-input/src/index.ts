@@ -337,22 +337,8 @@ export class OrInput extends LitElement {
     @property({type: String})
     public label?: string;
 
-    @property()
-    protected _disabled: boolean = false;
-
-    public set disabled(disabled: boolean) {
-        this._disabled = disabled;
-        if (this._mdcComponent) {
-            (this._mdcComponent as any).disabled = disabled;
-        }
-        if (this.type === InputType.RANGE && this._mdcComponent2) {
-            (this._mdcComponent2 as any).disabled = disabled;
-        }
-    }
-
-    public get disabled() {
-        return this._disabled;
-    }
+    @property({type: Boolean})
+    public disabled: boolean = false;
 
     /* TEXT INPUT STYLES END */
 
@@ -373,6 +359,24 @@ export class OrInput extends LitElement {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues) {
+
+        if (_changedProperties.has("disabled")) {
+            if (this._mdcComponent) {
+                (this._mdcComponent as any).disabled = this.disabled;
+            }
+            if (this.type === InputType.RANGE && this._mdcComponent2) {
+                (this._mdcComponent2 as any).disabled = this.disabled;
+            }
+        }
+
+        if (_changedProperties.has("readonly")) {
+            if (this._mdcComponent) {
+                (this._mdcComponent as any).readonly = this.readonly;
+            }
+            if (this.type === InputType.RANGE && this._mdcComponent2) {
+                (this._mdcComponent2 as any).readonly = this.readonly;
+            }
+        }
 
         if (!this.type && this.value) {
             if (this.value instanceof Date) {

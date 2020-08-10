@@ -2,7 +2,10 @@
 ///<reference path="../@types/mapbox.js/index.d.ts" />
 import manager, {MapType} from "@openremote/core";
 import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL, Style as StyleGL, LngLat,
-    MapMouseEvent} from "mapbox-gl";
+    MapMouseEvent,
+    NavigationControl,
+    Control,
+    IControl} from "mapbox-gl";
 import L, {Map as MapJS, MapOptions as OptionsJS, Marker as MarkerJS} from "mapbox.js";
 import {OrMapClickedEvent, OrMapLoadedEvent, ViewSettings} from "./index";
 import {
@@ -29,6 +32,7 @@ export class MapWidget {
     protected _viewSettings?: ViewSettings;
     protected _center?: LngLat | LngLatLike;
     protected _zoom?: number;
+    protected _controls?: (Control | IControl)[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
 
     constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement) {
@@ -114,6 +118,14 @@ export class MapWidget {
         return this;
     }
 
+    public setControls(controls?: (Control | IControl)[]): this {
+        this._controls = controls;
+        if (this._mapGl && this._controls) {
+            this._controls.forEach((control) => this._mapGl!.addControl(control));
+        }
+        return this;
+    }
+
     public async loadViewSettings() {
         let settingsResponse;
         if (this._type === MapType.RASTER) {
@@ -181,7 +193,6 @@ export class MapWidget {
                     this._mapJs.setMinZoom(minZoom);
                 }
             }
-
         } else {
             // Add style to shadow root
             const style = document.createElement("style");
@@ -234,6 +245,14 @@ export class MapWidget {
             this._mapGl.on("dblclick", (e: MapMouseEvent) => {
                 this._onMapClick(e.lngLat, true);
             });
+
+            // Add zoom and rotation controls to the map
+            this._mapGl.addControl(new NavigationControl());
+
+            // Add custom controls
+            if (this._controls) {
+                this._controls.forEach((control) => this._mapGl!.addControl(control));
+            }
         }
 
         this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
@@ -365,9 +384,6 @@ export class MapWidget {
                         if (marker.interactive) {
                             this._addMarkerClickHandler(marker, mGl.getElement());
                         }
-
-
-
                     }
                     if(marker.radius) {
                         this._createMarkerRadius(marker);

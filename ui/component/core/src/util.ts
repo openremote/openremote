@@ -329,6 +329,10 @@ export function getAttributeLabel(attribute: Attribute | undefined, descriptor: 
     return i18next.t(keys) + (units ? " (" + units + ")" : "");
 }
 
+export function getMetaItemLabel(urn: string): string {
+    return i18next.t(["metaItemType." + urn, urn], {nsSeparator: "@"});
+}
+
 export function getAttributeValueFormat(attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined): string | undefined {
     let format = getMetaValue(MetaItemType.FORMAT, attribute, descriptor, valueDescriptor) as string;
     if (!format) {
@@ -406,3 +410,17 @@ export function loadJs(url: string) {
             document.body.appendChild(script);
         });
 };
+
+export function sortByString<T>(valueExtractor: (item: T) => string): (a: T, b: T) => number {
+    return (a,b) => {
+        const v1 = valueExtractor(a);
+        const v2 = valueExtractor(b);
+        if (v1 > v2) {
+            return 1;
+        }
+        if (v1 < v2) {
+            return -1;
+        }
+        return 0;
+    };
+}

@@ -280,11 +280,7 @@ abstract class EventProviderImpl implements EventProvider {
                     event: {
                         eventType: "read-assets",
                         assetQuery: {
-                            ids: assetIds,
-                            select: {
-                                excludeParentInfo: true,
-                                excludePath: true
-                            }
+                            ids: assetIds
                         }
                     }
                 }

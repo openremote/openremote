@@ -148,7 +148,7 @@
   "history": "Historia",
   "attributes": "Atributos",
   "info": "Informacion",
-  "group":"Activos subyacentes",
+  "underlyingAssets":"Activos subyacentes",
   "groupAssetName":"Nombre de activo",
   "notSupported":"No soportado",
   "ruleName":"Nombre de la regla",

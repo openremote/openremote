@@ -16,7 +16,6 @@ import { DefaultColor8, DefaultColor4 } from "@openremote/core";
 const listStyle = require("!!raw-loader!@material/list/dist/mdc.list.css");
 const menuSurfaceStyle = require("!!raw-loader!@material/menu-surface/dist/mdc.menu-surface.css");
 const menuStyle = require("!!raw-loader!@material/menu/dist/mdc.menu.css");
-const checkboxStyle = require("!!raw-loader!@material/checkbox/dist/mdc.checkbox.css");
 
 export interface MenuItem {
     icon?: string;
@@ -108,7 +107,6 @@ export class OrMwcMenu extends LitElement {
             css`${unsafeCSS(listStyle)}`,
             css`${unsafeCSS(menuStyle)}`,
             css`${unsafeCSS(menuSurfaceStyle)}`,
-            css`${unsafeCSS(checkboxStyle)}`,
             style
         ];
     }
