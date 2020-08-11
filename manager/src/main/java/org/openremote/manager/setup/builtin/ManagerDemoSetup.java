@@ -841,19 +841,20 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         lightOP6Asset = assetStorageService.merge(lightOP6Asset);
 
         persistenceService.doTransaction(entityManager ->
-                entityManager.merge(new ConsoleAppConfig(
-                        realmCityTenant,
-                        "https://demo.openremote.io/mobile/?realm=smartcity&consoleProviders=geofence push storage",
-                        true,
-                        ConsoleAppConfig.MenuPosition.BOTTOM_LEFT,
-                        null,
-                        "#FAFAFA",
-                        "#AFAFAF",
-                        Values.createArray().addAll(
-                                Values.createObject()
-                                        .put("displayText", "Map")
-                                        .put("pageLink", "https://demo.openremote.io/mobile/#!geofences?realm=smartcity&consoleProviders=geofence push storage")
-                        )))
+            entityManager.merge(new ConsoleAppConfig(
+                realmCityTenant,
+                "https://demo.openremote.io/mobile/?realm=smartcity&consoleProviders=geofence push storage",
+                "https://demo.openremote.io/mobile/?realm=smartcity&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences",
+                true,
+                ConsoleAppConfig.MenuPosition.BOTTOM_LEFT,
+                null,
+                "#FAFAFA",
+                "#AFAFAF",
+                Values.createArray().addAll(
+                    Values.createObject()
+                        .put("displayText", "Map")
+                        .put("pageLink", "https://demo.openremote.io/mobile/?realm=smartcity&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences")
+                )))
         );
     }
 

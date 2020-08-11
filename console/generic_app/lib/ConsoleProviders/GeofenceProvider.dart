@@ -66,7 +66,8 @@ class GeofenceProvider {
       "hasPermission": await Permission.locationAlways.isGranted,
       "success": true,
       "enabled": false,
-      "disabled": _sharedPreferences.containsKey(geoDisabledKey)
+      "disabled": _sharedPreferences.containsKey(geoDisabledKey) &&
+          _sharedPreferences.getBool(geoDisabledKey)
     };
   }
 
@@ -262,14 +263,15 @@ class GeofenceProvider {
     _getLocationCallback = callback;
 
     if (await Permission.locationAlways.isGranted) {
-      Coordinate coordinate = await Geofence.getCurrentLocation();
-      _getLocationCallback({
-        "action": "GET_LOCATION",
-        "provider": "geofence",
-        "data": {
-          "latitude": coordinate.latitude,
-          "longitude": coordinate.longitude
-        }
+      Geofence.getCurrentLocation().then((coordinate) {
+        _getLocationCallback({
+          "action": "GET_LOCATION",
+          "provider": "geofence",
+          "data": {
+            "latitude": coordinate.latitude,
+            "longitude": coordinate.longitude
+          }
+        });
       });
     } else {
       if (await Permission.locationAlways.isUndetermined) {

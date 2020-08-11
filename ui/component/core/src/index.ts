@@ -14,7 +14,8 @@ import {
     MetaItemDescriptor,
     User,
     Role,
-    Attribute
+    Attribute,
+    ConsoleAppConfig
 } from "@openremote/model";
 import * as Util from "./util";
 import orIconSet from "./or-icon-set";
@@ -453,6 +454,10 @@ export class Manager implements EventProviderFactory {
         return this._console;
     }
 
+    get consoleAppConfig() {
+        return this._consoleAppConfig;
+    }
+
     get events() {
         return this._events;
     }
@@ -569,6 +574,7 @@ export class Manager implements EventProviderFactory {
     private _managerVersion: string = "";
     private _listeners: EventCallback[] = [];
     private _console!: Console;
+    private _consoleAppConfig?: ConsoleAppConfig;
     private _events?: EventProvider;
     private _displayRealm?: string = "";
 
@@ -621,6 +627,7 @@ export class Manager implements EventProviderFactory {
 
         if (success) {
             success = await this.doDescriptorsInit();
+            await this.getConsoleAppConfig();
         }
 
         // TODO: Reinstate this once websocket supports anonymous connections
@@ -848,6 +855,13 @@ export class Manager implements EventProviderFactory {
         } catch (e) {
             this._setError(ORError.CONSOLE_ERROR);
             return false;
+        }
+    }
+
+    protected async getConsoleAppConfig(): Promise<void> {
+        const consoleAppConfigResponse = await this.rest.api.ConsoleAppResource.getAppConfig();
+        if(consoleAppConfigResponse.status === 200) {
+            this._consoleAppConfig = consoleAppConfigResponse.data;
         }
     }
 
