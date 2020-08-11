@@ -35,6 +35,8 @@ class _SplashPageState extends State<SplashPage> {
     ]);
     quickActions.initialize((String shortcutType) async {
       if (shortcutType == 'starting_page') {
+        _sharedPreferences = await SharedPreferences.getInstance();
+        await _sharedPreferences.clear();
         ORApp.navigatorKey.currentState.pushReplacement(MaterialPageRoute(builder: (context) => ProjectPage()));
       }
     });
@@ -54,7 +56,7 @@ class _SplashPageState extends State<SplashPage> {
                     context,
                     MaterialPageRoute(
                         builder: (context) => WebViewPage(
-                            initialUrl: CurrentConsoleAppConfig.instance.url)));
+                            initialUrl: CurrentConsoleAppConfig.instance.initialUrl)));
               } else {
                 Navigator.pushReplacement(context,
                     MaterialPageRoute(builder: (context) => ProjectPage()));
@@ -91,7 +93,7 @@ class _SplashPageState extends State<SplashPage> {
 
   Future<bool> _getConsoleAppConfig() async {
     var apiManager =
-        new ApiManager("https://$_projectName.openremote.io/api/$_realmName");
+        new ApiManager("http://192.168.100.9:8080/api/$_realmName");
     return apiManager
         .get(["app", "config"], ConsoleAppConfig.fromJson).then((value) {
       CurrentConsoleAppConfig.instance.updateConfig(value, _projectName);

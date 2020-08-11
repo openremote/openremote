@@ -131,7 +131,7 @@ class _ProjectPageState extends State<ProjectPage> {
   }
 
   void _getConsoleAppConfig() {
-    var apiManager =  new ApiManager("https://$_projectName.openremote.io/api/$_realmName");
+    var apiManager =  new ApiManager("http://192.168.100.9:8080/api/$_realmName");
     apiManager.get(["app", "config"], ConsoleAppConfig.fromJson).then((value) {
       _sharedPreferences.setString("project", _projectName);
       _sharedPreferences.setString("realm", _realmName);
@@ -140,7 +140,7 @@ class _ProjectPageState extends State<ProjectPage> {
           context,
           MaterialPageRoute(
               builder: (context) => WebViewPage(
-                    initialUrl: CurrentConsoleAppConfig.instance.url,
+                    initialUrl: CurrentConsoleAppConfig.instance.initialUrl,
                   )));
     }).catchError((onError) {
       print(onError);

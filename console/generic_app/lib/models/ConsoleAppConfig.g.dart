@@ -10,6 +10,7 @@ ConsoleAppConfig _$ConsoleAppConfigFromJson(Map<String, dynamic> json) {
   return ConsoleAppConfig(
     id: json['id'] as int,
     realm: json['realm'] as String,
+    initialUrl: json['initialUrl'] as String,
     url: json['url'] as String,
     menuEnabled: json['menuEnabled'] as bool,
     menuPosition: json['menuPosition'] as String,
@@ -27,6 +28,7 @@ Map<String, dynamic> _$ConsoleAppConfigToJson(ConsoleAppConfig instance) =>
     <String, dynamic>{
       'id': instance.id,
       'realm': instance.realm,
+      'initialUrl': instance.initialUrl,
       'url': instance.url,
       'menuEnabled': instance.menuEnabled,
       'menuPosition': instance.menuPosition,

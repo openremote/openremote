@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_geofence/Geolocation.dart';
 import 'package:flutter_geofence/geofence.dart';
+import 'package:location/location.dart';
 import 'package:generic_app/ConsoleProviders/GeoLocation.dart';
 import 'package:generic_app/models/GeofenceDefinition.dart';
 import 'package:generic_app/network/ApiManager.dart';
@@ -33,8 +34,10 @@ class GeofenceProvider {
   GeoLocation _exitedLocation;
   bool _sendQueued;
 
+  Location _locationManager;
+
   GeofenceProvider._internal(this._baseURL, this._consoleId, this.geofences,
-      this._sharedPreferences, this._apiManager);
+      this._sharedPreferences, this._apiManager, this._locationManager);
 
   factory GeofenceProvider(SharedPreferences sharedPreferences) {
     String geofenceString = sharedPreferences.getString(geofencesKey);
@@ -50,7 +53,8 @@ class GeofenceProvider {
         sharedPreferences.getString(consoleIdKey),
         geofences,
         sharedPreferences,
-        ApiManager(sharedPreferences.getString(baseUrlKey)));
+        ApiManager(sharedPreferences.getString(baseUrlKey)),
+        new Location());
   }
 
   static Future<GeofenceProvider> getInstance() async {
@@ -263,27 +267,26 @@ class GeofenceProvider {
     _getLocationCallback = callback;
 
     if (await Permission.locationAlways.isGranted) {
-      Geofence.getCurrentLocation().then((coordinate) {
-        _getLocationCallback({
-          "action": "GET_LOCATION",
-          "provider": "geofence",
-          "data": {
-            "latitude": coordinate.latitude,
-            "longitude": coordinate.longitude
-          }
-        });
+      LocationData locationData = await _locationManager.getLocation();
+      _getLocationCallback({
+        "action": "GET_LOCATION",
+        "provider": "geofence",
+        "data": {
+          "latitude": locationData.latitude,
+          "longitude": locationData.longitude
+        }
       });
     } else {
       if (await Permission.locationAlways.isUndetermined) {
         Permission.locationAlways.request().then((value) {
           if (value.isGranted) {
-            Geofence.getCurrentLocation().then((coordinate) {
+            _locationManager.getLocation().then((locationData) {
               _getLocationCallback({
                 "action": "GET_LOCATION",
                 "provider": "geofence",
                 "data": {
-                  "latitude": coordinate.latitude,
-                  "longitude": coordinate.longitude
+                  "latitude": locationData.latitude,
+                  "longitude": locationData.longitude
                 }
               });
             });

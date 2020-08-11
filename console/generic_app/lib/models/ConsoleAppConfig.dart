@@ -10,25 +10,20 @@ part 'ConsoleAppConfig.g.dart';
 class ConsoleAppConfig implements BaseModel {
 
   final int id;
-  final String realm  ;
-
+  final String realm;
+  final String initialUrl;
   final String url;
-
   final bool menuEnabled;
-
   final String  menuPosition;
-
   final String menuImage;
-
   final String primaryColor;
-
   final String secondaryColor;
-
   final List<LinkConfig> links;
 
   ConsoleAppConfig({
      this.id,
      this.realm,
+     this.initialUrl,
      this.url,
      this.menuEnabled,
      this.menuPosition,

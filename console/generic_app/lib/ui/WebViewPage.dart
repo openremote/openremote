@@ -205,6 +205,13 @@ class _WebViewPageState extends State<WebViewPage> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: CurrentConsoleAppConfig.instance.primaryColor,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.5),
+                spreadRadius: 2,
+                blurRadius: 2,
+              ),
+            ]
           ),
           child: Icon(Icons.menu),
         ),

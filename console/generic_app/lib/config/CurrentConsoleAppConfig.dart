@@ -12,6 +12,7 @@ class CurrentConsoleAppConfig {
 
   updateConfig(ConsoleAppConfig appConfig, String project) {
     this._realm = appConfig.realm;
+    this._initialUrl = appConfig.initialUrl;
     this._url = appConfig.url;
     this._menuEnabled = appConfig.menuEnabled;
     this._menuPosition = appConfig.menuPosition;
@@ -22,26 +23,23 @@ class CurrentConsoleAppConfig {
   }
 
   String _realm;
-
+  String _initialUrl;
   String _url;
-
   bool _menuEnabled;
-
   String _menuPosition;
-
   String _menuImage;
-
   String _primaryColor;
-
   String _secondaryColor;
-
   List<LinkConfig> _links;
-
   String _project;
 
 
   String get realm {
     return _realm;
+  }
+
+  String get initialUrl {
+    return _initialUrl;
   }
 
   String get url {
@@ -76,6 +74,6 @@ class CurrentConsoleAppConfig {
   }
 
   String get baseUrl {
-    return "https://$_project.openremote.io/api/$_realm";
+    return "http://192.168.100.9:8080/api/$_realm";
   }
 }
