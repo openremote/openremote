@@ -144,6 +144,7 @@ create table GATEWAY_CONNECTION (
 create table CONSOLE_APP_CONFIG (
     ID              int8                     not null,
     REALM           varchar(255)             not null,
+    INITIAL_URL     varchar(255)             not null,
     URL             varchar(255)             not null,
     MENU_ENABLED    varchar(255)             not null default false,
     MENU_POSITION   varchar(255)             not null default 'BOTTOM_LEFT',

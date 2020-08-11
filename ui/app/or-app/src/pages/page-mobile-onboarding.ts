@@ -92,7 +92,7 @@ class PageMobileOnboarding<S extends AppStateKeyed> extends Page<S> {
     public connectedCallback() {
         super.connectedCallback();
         if (localStorage.getItem("completedOnboarding") !== null) {
-            window.location.href = this.config.redirect;
+            window.location.href = manager.consoleAppConfig ? manager.consoleAppConfig.url : this.config.redirect;
         }
     }
 
@@ -133,21 +133,23 @@ class PageMobileOnboarding<S extends AppStateKeyed> extends Page<S> {
         `;
     }
 
-    private async enableProviders() {
-        if(this.config.pages[this.pageIndex-1].enableProviders) {
-            this.config.pages[this.pageIndex-1].enableProviders.map(provider => {
-                manager.console.sendProviderMessage({provider: provider.name, action: provider.action}, true)
-            })
+    private enableProviders(): Promise<any> {
+        if(this.config.pages[this.pageIndex].enableProviders) {
+            return Promise.all(this.config.pages[this.pageIndex].enableProviders.map(provider => {
+                return manager.console.sendProviderMessage({provider: provider.name, action: provider.action, consoleId: manager.console.registration.id}, true);
+            }));
         }
+        return Promise.resolve();
     }
-    
+
     private nextPage(index) {
-        if(this.config.pages.length-1 === index) {
-            window.location.href = this.config.redirect;
-            window.localStorage.setItem("completedOnboarding", "1");
-        } else {
-            this.pageIndex = this.pageIndex+1
-        }
-        this.enableProviders();
+        this.enableProviders().then(() => {
+            if (this.config.pages.length - 1 === index) {
+                window.location.href = manager.consoleAppConfig ? manager.consoleAppConfig.url : this.config.redirect;
+                window.localStorage.setItem("completedOnboarding", "1");
+            } else {
+                this.pageIndex = this.pageIndex + 1
+            }
+        });
     }
 }

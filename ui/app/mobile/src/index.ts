@@ -30,7 +30,13 @@ const onboardingConfig:OnboardingConfig  = {
             title: "Your opinion matters",
             type: "default",
             description: "With this app we will involve you in developments within the city. We keep you up to date on current projects and will ask for your opinion.",
-            image: require("../images/logo-mobile.png")
+            image: require("../images/logo-mobile.png"),
+            enableProviders: [
+                {
+                    name:"push",
+                    action:"PROVIDER_ENABLE"
+                }
+            ],
         },
         {
             title: "At the right time and place",
@@ -39,7 +45,7 @@ const onboardingConfig:OnboardingConfig  = {
             enableProviders: [
                 {
                     name:"geofence",
-                    action:"GEOFENCE_REFRESH"
+                    action:"PROVIDER_ENABLE"
                 }
             ],
             image: require("../images/logo-mobile.png")
@@ -56,7 +62,7 @@ const onboardingConfig:OnboardingConfig  = {
 
 const splashConfig:SplashConfig  = {
     redirect: "#!onboarding/",
-    interval: 5000,
+    interval: 3000,
     logoMobile: require("../images/logo-mobile.png")
 }
 
@@ -78,7 +84,7 @@ const managerConfig: ManagerConfig = {
     auth: Auth.NONE,
     autoLogin: false,
     realm: getRealmQueryParameter(),
-    consoleAutoEnable: true,
+    consoleAutoEnable: false,
     loadTranslations: ["app", "or"]
 };
 

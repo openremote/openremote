@@ -21,8 +21,9 @@ public class ConsoleAppConfig {
     public ConsoleAppConfig() {
     }
 
-    public ConsoleAppConfig(String realm, String url, Boolean menuEnabled, MenuPosition menuPosition, String menuImage, String primaryColor, String secondaryColor, ArrayValue links) {
+    public ConsoleAppConfig(String realm, String initialUrl, String url, Boolean menuEnabled, MenuPosition menuPosition, String menuImage, String primaryColor, String secondaryColor, ArrayValue links) {
         this.realm = realm;
+        this.initialUrl = initialUrl;
         this.url = url;
         this.menuEnabled = menuEnabled;
         this.menuPosition = menuPosition;
@@ -39,6 +40,9 @@ public class ConsoleAppConfig {
 
     @Column(name = "REALM", nullable = false)
     protected String realm;
+
+    @Column(name = "INITIAL_URL", nullable = false)
+    protected String initialUrl;
 
     @Column(name = "URL", nullable = false)
     protected String url;
