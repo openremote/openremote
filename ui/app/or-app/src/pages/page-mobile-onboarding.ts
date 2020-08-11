@@ -97,7 +97,7 @@ class PageMobileOnboarding<S extends AppStateKeyed> extends Page<S> {
     public connectedCallback() {
         super.connectedCallback();
         if (localStorage.getItem("completedOnboarding") !== null) {
-            window.location.href = this.config.redirect;
+            window.location.href = manager.consoleAppConfig ? manager.consoleAppConfig.url : this.config.redirect;
         } else {
             this.active = true;
         }
