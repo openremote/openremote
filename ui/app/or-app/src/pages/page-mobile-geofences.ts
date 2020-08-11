@@ -117,7 +117,12 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
                 z-index: 99999;
                 
             }
-            
+
+            .marker-tooltip.full-width {
+                width: 100%;
+                max-width: none
+            }
+
             .marker-tooltip.bottom_left {
                 top: auto;
                 bottom: 0;
@@ -236,7 +241,7 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
                         `})}
                     </or-map>
                     ${this.activeItem ? html`
-                        <a class="marker-tooltip ${manager.consoleAppConfig.appIconPosition ? manager.consoleAppConfig.appIconPosition.toLowerCase()  : ""}" href="${this.createUrl(this.activeItem.notification.action)}">
+                        <a class="marker-tooltip ${manager.consoleAppConfig.menuPosition ? manager.consoleAppConfig.menuPosition.toLowerCase()  : ""} ${manager.consoleAppConfig.menuEnabled ? "" : "full-width"}" href="${this.createUrl(this.activeItem.notification.action)}">
                             <div class="flex marker-tooltip-inner" >
                                     <div style="flex-direction:row;" class="d-flex">
                                     <div class="flex">
