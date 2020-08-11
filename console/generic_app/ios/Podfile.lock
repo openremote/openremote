@@ -84,6 +84,10 @@ PODS:
     - GoogleUtilities/Logger
   - GoogleUtilities/UserDefaults (6.6.0):
     - GoogleUtilities/Logger
+  - location (0.0.1):
+    - Flutter
+  - location_web (0.0.1):
+    - Flutter
   - nanopb (1.30905.0):
     - nanopb/decode (= 1.30905.0)
     - nanopb/encode (= 1.30905.0)
@@ -108,6 +112,8 @@ DEPENDENCIES:
   - firebase_messaging (from `.symlinks/plugins/firebase_messaging/ios`)
   - Flutter (from `Flutter`)
   - flutter_geofence (from `.symlinks/plugins/flutter_geofence/ios`)
+  - location (from `.symlinks/plugins/location/ios`)
+  - location_web (from `.symlinks/plugins/location_web/ios`)
   - permission_handler (from `.symlinks/plugins/permission_handler/ios`)
   - quick_actions (from `.symlinks/plugins/quick_actions/ios`)
   - shared_preferences (from `.symlinks/plugins/shared_preferences/ios`)
@@ -141,6 +147,10 @@ EXTERNAL SOURCES:
     :path: Flutter
   flutter_geofence:
     :path: ".symlinks/plugins/flutter_geofence/ios"
+  location:
+    :path: ".symlinks/plugins/location/ios"
+  location_web:
+    :path: ".symlinks/plugins/location_web/ios"
   permission_handler:
     :path: ".symlinks/plugins/permission_handler/ios"
   quick_actions:
@@ -171,6 +181,8 @@ SPEC CHECKSUMS:
   GoogleDataTransport: f6f8eba931df03ebd2232ff4645aa85f8f47b5ab
   GoogleDataTransportCCTSupport: d70a561f7d236af529fee598835caad5e25f6d3d
   GoogleUtilities: 39530bc0ad980530298e9c4af8549e991fd033b1
+  location: 3a2eed4dd2fab25e7b7baf2a9efefe82b512d740
+  location_web: b94e7433cfe28c0f7c8923c2ee482824b32e55a7
   nanopb: c43f40fadfe79e8b8db116583945847910cbabc9
   permission_handler: eac8e15b4a1a3fba55b761d19f3f4e6b005d15b6
   PromisesObjC: c119f3cd559f50b7ae681fa59dc1acd19173b7e6

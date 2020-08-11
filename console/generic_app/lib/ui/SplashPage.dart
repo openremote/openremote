@@ -93,7 +93,7 @@ class _SplashPageState extends State<SplashPage> {
 
   Future<bool> _getConsoleAppConfig() async {
     var apiManager =
-        new ApiManager("http://192.168.100.9:8080/api/$_realmName");
+        new ApiManager("https://$_projectName.openremote.io/api/$_realmName");
     return apiManager
         .get(["app", "config"], ConsoleAppConfig.fromJson).then((value) {
       CurrentConsoleAppConfig.instance.updateConfig(value, _projectName);

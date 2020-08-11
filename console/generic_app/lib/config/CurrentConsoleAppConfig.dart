@@ -19,7 +19,7 @@ class CurrentConsoleAppConfig {
     this._primaryColor = appConfig.primaryColor;
     this._secondaryColor = appConfig.secondaryColor;
     this._links = appConfig.links;
-    this._project = project;
+    this._projectName = project;
   }
 
   String _realm;
@@ -31,7 +31,7 @@ class CurrentConsoleAppConfig {
   String _primaryColor;
   String _secondaryColor;
   List<LinkConfig> _links;
-  String _project;
+  String _projectName;
 
 
   String get realm {
@@ -74,6 +74,6 @@ class CurrentConsoleAppConfig {
   }
 
   String get baseUrl {
-    return "http://192.168.100.9:8080/api/$_realm";
+    return "https://$_projectName.openremote.io/api/$_realm";
   }
 }

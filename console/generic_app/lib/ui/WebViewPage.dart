@@ -220,7 +220,7 @@ class _WebViewPageState extends State<WebViewPage> {
         onSelected: (selectedValue) {
           LinkConfig linkConfig =
               CurrentConsoleAppConfig.instance.links[selectedValue];
-          _controller.loadUrl(linkConfig.pageLink);
+          _controller.loadUrl(Uri.encodeFull(linkConfig.pageLink));
         },
       );
 
