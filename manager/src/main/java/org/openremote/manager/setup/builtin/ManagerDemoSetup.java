@@ -844,7 +844,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             entityManager.merge(new ConsoleAppConfig(
                 realmCityTenant,
                 "https://demo.openremote.io/mobile/?realm=smartcity&consoleProviders=geofence push storage",
-                "https://demo.openremote.io/mobile/?realm=smartcity&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences",
+                "https://demo.openremote.io/main/?realm=smartcity&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences",
                 true,
                 ConsoleAppConfig.MenuPosition.BOTTOM_LEFT,
                 null,
