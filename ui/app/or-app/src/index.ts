@@ -131,8 +131,7 @@ export function headerItemInsights<S extends AppStateKeyed, A extends AnyAction>
     return {
         icon: "chart-areaspline",
         href: "#!insights",
-        text: "insights",
-        hideMobile: true
+        text: "insights"
     };
 }
 

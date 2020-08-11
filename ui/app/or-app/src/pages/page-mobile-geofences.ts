@@ -1,5 +1,6 @@
 import {css, customElement, html, property} from "lit-element";
 import {AppStateKeyed, Page} from "../index";
+import {NavigationControl} from "mapbox-gl";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import manager from "@openremote/core";
 import { JsonRulesetDefinition } from "@openremote/model";
@@ -22,6 +23,7 @@ export function pageMobileGeofencesProvider<S extends AppStateKeyed>(store: Enha
     };
 }
 const QUERY_VIEW = new URLSearchParams(window.location.search).get("view");
+const APP_ICON_POSITION = new URLSearchParams(window.location.search).get("appIconPosition");
 @customElement("page-mobile-geofences")
 class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
 
@@ -67,11 +69,19 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
                 display: flex;
                 flex-direction: row;
                 text-decoration: none;
-                padding: 10px;
+                padding: 20px;
                 color: var(--or-app-color3);
                 border-bottom: 1px solid var(--or-app-color3);;
             }
 
+            h3, p {
+                margin: 0;
+            }
+
+            h3 {
+                color: var(--or-app-color4);
+            }
+            
             .button {
                 cursor: pointer;
                 background-color: var(--or-app-color2);
@@ -107,11 +117,55 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
                 z-index: 99999;
                 
             }
+            
+            .marker-tooltip.bottom_left {
+                top: auto;
+                bottom: 0;
+                right: auto;
+                left: 0;
+            }
+
+            .marker-tooltip.bottom_right {
+                top: auto;
+                bottom: 0;
+                right: 0;
+                left: auto;
+            }
+
+            .marker-tooltip.top_left {
+                top: 0;
+                bottom: auto;
+                right: auto;
+                left: 0;
+            }
+
+            .marker-tooltip.top_right {
+                top: 0;
+                bottom: auto;
+                right: 0;
+                left: auto;
+            }
 
             or-map-marker[active] {
                 --or-map-marker-width: 60px;
                 --or-map-marker-height: 60px;
             }
+
+         
+
+          
+            @supports(padding:max(0px)) {
+                body, .header, footer {
+                    padding-top: min(0vmin, env(safe-area-inset-top));
+                    padding-bottom: min(0vmin, env(safe-area-inset-bottom));
+                }
+            }
+            .list-container,
+            .header {
+                padding-top: env(safe-area-inset-top); /* Apply safe area */
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            
         `;
     }
 
@@ -165,6 +219,7 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
     public config?: GeofencesConfig;
 
     protected render() {
+        const controls = [new NavigationControl({showCompass: false, showZoom: false})];
         return html`
             ${this.view === 'map' ? html`
                     <div class="header">
@@ -174,16 +229,16 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
                             <a class="d-flex location-button button" @click="${this.getLocation}"><or-icon icon="crosshairs-gps"></or-icon></a>
                         </div>
                     </div>
-                    <or-map id="vector" class="or-map" type="VECTOR" style="height: 100%; width: 100%;">
+                    <or-map id="vector" class="or-map" .controls="${controls}" type="VECTOR" style="height: 100%; width: 100%;">
                         ${this.mapItems.map((marker: any) => {
                         return html`
                             <or-map-marker ?active="${JSON.stringify(this.activeItem) === JSON.stringify(marker) }" icon="information" .marker="${marker}" lat="${marker.predicate.lat}" lng="${marker.predicate.lng}"></or-map-marker>
                         `})}
                     </or-map>
                     ${this.activeItem ? html`
-                        <a class="marker-tooltip" href="${this.createUrl(this.activeItem.notification.action)}">
+                        <a class="marker-tooltip ${manager.consoleAppConfig.appIconPosition ? manager.consoleAppConfig.appIconPosition.toLowerCase()  : ""}" href="${this.createUrl(this.activeItem.notification.action)}">
                             <div class="flex marker-tooltip-inner" >
-                                    <div style="flex-direction:row;" class="d-flex list-item">
+                                    <div style="flex-direction:row;" class="d-flex">
                                     <div class="flex">
                                         <h3>${this.activeItem.notification.title}</h3>
                                         <p>${this.activeItem.notification.body}</p>

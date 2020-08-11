@@ -133,6 +133,7 @@ class OrHeader extends LitElement {
                 --or-icon-fill: var(--internal-or-header-drawer-text-color);
                 --or-icon-height: calc(var(--internal-or-header-drawer-item-size) - 10px);
                 --or-icon-width: calc(var(--internal-or-header-drawer-item-size) - 10px);
+                overflow: hidden;
             }
             
             #drawer[opened] {
@@ -259,7 +260,7 @@ class OrHeader extends LitElement {
                     border-bottom: 4px solid var(--internal-or-header-selected-color);
                     line-height: calc(var(--internal-or-header-height) - 4px);
                 }
-                
+
                 #logo {
                     margin: var(--internal-or-header-logo-margin);
                     height: var(--internal-or-header-logo-height);
@@ -269,13 +270,13 @@ class OrHeader extends LitElement {
                 #logo-mobile {
                     display: none;
                 }
-
+                
                 #drawer {
                     display: none;
                 }
                 
                 #desktop-right {
-                    display: block;
+                    display: flex;
                 }
                 
                 #desktop-left ::slotted(*) {
@@ -285,6 +286,14 @@ class OrHeader extends LitElement {
                 #desktop-left ::slotted(*[selected]) {                
                     border-bottom: 4px solid var(--internal-or-header-selected-color);
                     line-height: calc(var(--internal-or-header-height) - 4px);
+                }
+            }
+            
+            @media (min-width: 1024px) {
+               
+    
+                #desktop-left .menu-item or-icon{
+                    display: inline-block;
                 }
             }
     `;

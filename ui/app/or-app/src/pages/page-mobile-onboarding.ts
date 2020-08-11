@@ -43,9 +43,9 @@ class PageMobileOnboarding<S extends AppStateKeyed> extends Page<S> {
             :host {
                 flex: 1;
                 width: 100%; 
-                flex-direction: column;           
+                flex-direction: column;     
             }
-            
+          
             .page-container {
                 width: 100vw;
                 height: 100vh;
@@ -64,6 +64,8 @@ class PageMobileOnboarding<S extends AppStateKeyed> extends Page<S> {
                 flex-direction: column;    
                 align-items: center;
                 justify-content: center;    
+                text-align: center;
+                padding: 20px;
             }
 
             .next-button {
@@ -81,6 +83,9 @@ class PageMobileOnboarding<S extends AppStateKeyed> extends Page<S> {
         `;
     }
 
+    @property()
+    protected active: boolean = false;
+
     get name(): string {
         return "mobile-onboarding";
     }
@@ -93,6 +98,8 @@ class PageMobileOnboarding<S extends AppStateKeyed> extends Page<S> {
         super.connectedCallback();
         if (localStorage.getItem("completedOnboarding") !== null) {
             window.location.href = this.config.redirect;
+        } else {
+            this.active = true;
         }
     }
 
@@ -106,31 +113,33 @@ class PageMobileOnboarding<S extends AppStateKeyed> extends Page<S> {
     public config?: OnboardingConfig;
 
     protected render() {
-        return html`
-            ${this.config.pages.map((page, index) => {
-                return html`
-                    <div class="page-container ${this.pageIndex === index ? "active" :""}">
-                        <div class="page-content">
-                            ${page.type === "default" ? html`
-                                <div><img src="${page.image}" /></div> 
-                                <h1>${page.title}</h1>
-                                <p>${page.description}</p> 
-                            ` : ``}
+        if(this.active) {
+            return html`
+                ${this.config.pages.map((page, index) => {
+                    return html`
+                        <div class="page-container ${this.pageIndex === index ? "active" :""}">
+                            <div class="page-content">
+                                ${page.type === "default" ? html`
+                                    <div><img src="${page.image}" /></div> 
+                                    <h1>${page.title}</h1>
+                                    <p>${page.description}</p> 
+                                ` : ``}
 
-                            ${page.type === "bottom-image" ? html`
-                                <h1>${page.title}</h1>
-                                <p>${page.description}</p>
-                                <div><img src="${page.image}" /></div>  
-                            ` : ``}
+                                ${page.type === "bottom-image" ? html`
+                                    <h1>${page.title}</h1>
+                                    <p>${page.description}</p>
+                                    <div><img src="${page.image}" /></div>  
+                                ` : ``}
+                            </div>
+                        
+                            <div class="next-button" @click="${() => this.nextPage(index)}">
+                                <or-icon icon="chevron-right"></or-icon>
+                            </div>
                         </div>
-                     
-                        <div class="next-button" @click="${() => this.nextPage(index)}">
-                            <or-icon icon="chevron-right"></or-icon>
-                        </div>
-                    </div>
-                `
-            })}
-        `;
+                    `
+                })}
+            `;
+        }
     }
 
     private async enableProviders() {

@@ -246,12 +246,13 @@ export class MapWidget {
                 this._onMapClick(e.lngLat, true);
             });
 
-            // Add zoom and rotation controls to the map
-            this._mapGl.addControl(new NavigationControl());
 
             // Add custom controls
             if (this._controls) {
                 this._controls.forEach((control) => this._mapGl!.addControl(control));
+            } else {
+                // Add zoom and rotation controls to the map
+                this._mapGl.addControl(new NavigationControl());
             }
         }
 
