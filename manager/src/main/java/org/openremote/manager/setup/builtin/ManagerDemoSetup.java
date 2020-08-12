@@ -845,7 +845,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 realmCityTenant,
                 "http://localhost:9000/mobile/?realm=smartcity&consoleProviders=geofence push storage",
                 "http://localhost:8000/main/?realm=smartcity&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences",
-                true,
+                false,
                 ConsoleAppConfig.MenuPosition.BOTTOM_LEFT,
                 null,
                 "#FAFAFA",
