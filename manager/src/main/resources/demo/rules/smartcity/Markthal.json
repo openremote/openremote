@@ -45,7 +45,13 @@
         {
           "action": "notification",
           "target": {
-            "useAssetsFromWhen": true
+            "matchedAssets": {
+              "types": [
+                {
+                  "predicateType": "string"
+                }
+              ]
+            }
           },
           "notification": {
             "name": "Markthal",
