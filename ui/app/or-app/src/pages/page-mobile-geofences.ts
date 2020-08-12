@@ -124,31 +124,33 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
             }
 
             .marker-tooltip.bottom_left {
+             
                 top: auto;
                 bottom: 0;
-                right: auto;
-                left: 0;
+                right: 0;
+                left: auto;
             }
 
             .marker-tooltip.bottom_right {
                 top: auto;
                 bottom: 0;
-                right: 0;
-                left: auto;
+                right: auto;
+                left: 0;
             }
 
             .marker-tooltip.top_left {
                 top: 0;
                 bottom: auto;
-                right: auto;
-                left: 0;
+                right: 0;
+                left: auto;
             }
 
             .marker-tooltip.top_right {
+               
                 top: 0;
                 bottom: auto;
-                right: 0;
-                left: auto;
+                right: auto;
+                left: 0;
             }
 
             or-map-marker[active] {
@@ -160,11 +162,12 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
 
           
             @supports(padding:max(0px)) {
-                body, .header, footer {
+                .header {
                     padding-top: min(0vmin, env(safe-area-inset-top));
                     padding-bottom: min(0vmin, env(safe-area-inset-bottom));
                 }
             }
+
             .list-container,
             .header {
                 padding-top: env(safe-area-inset-top); /* Apply safe area */
