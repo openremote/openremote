@@ -30,20 +30,24 @@ class _ProjectPageState extends State<ProjectPage> {
   @override
   Widget build(BuildContext context) {
 
-    return Scaffold(body: Builder(builder: (BuildContext innerContext) {
-      _innerContext = innerContext;
-      return SafeArea(
-          child: SingleChildScrollView(
-              physics: ClampingScrollPhysics(),
-              child: Align(
-                  alignment: Alignment.center,
-                  child: Column(children: <Widget>[
-                    Container(
-                      padding: EdgeInsets.only(top: 25, left: 20, right: 20),
-                      height: MediaQuery.of(context).size.height * 0.4,
-                      child: Image.asset('assets/images/or_logo.png',
-                          fit: BoxFit.contain),
-                    ),
+    return Scaffold(
+        backgroundColor: Colors.white,
+        body: Builder(builder: (BuildContext innerContext) {
+          _innerContext = innerContext;
+          return SafeArea(
+              child: SingleChildScrollView(
+                  physics: ClampingScrollPhysics(),
+                  child: Align(
+                      alignment: Alignment.center,
+                      child: Column(children: <Widget>[
+                        Container(
+                          color: Colors.white,
+                          padding:
+                              EdgeInsets.only(top: 25, left: 50, right: 50),
+                          height: MediaQuery.of(context).size.height * 0.4,
+                          child: Image.asset('assets/images/or_logo.png',
+                              fit: BoxFit.contain),
+                        ),
                     Container(
                       color: Colors.white,
                       height: MediaQuery.of(context).size.height * 0.6,
@@ -67,13 +71,15 @@ class _ProjectPageState extends State<ProjectPage> {
                                 cursorColor: CurrentConsoleAppConfig
                                     .instance.primaryColor,
                                 decoration: InputDecoration(
-                                  labelText: S.of(context).project,
+                                  border: new UnderlineInputBorder(
+                                      borderRadius: BorderRadius.only(
+                                          topLeft: Radius.circular(3),
+                                          topRight: Radius.circular(3))),
+                                  labelText: S
+                                      .of(context)
+                                      .project,
                                   filled: true,
                                   fillColor: Colors.grey.shade100,
-                                  focusedBorder: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  errorBorder: InputBorder.none,
-                                  disabledBorder: InputBorder.none,
                                 ),
                                 textInputAction: TextInputAction.next,
                                 onChanged: (inputText) {
@@ -89,13 +95,15 @@ class _ProjectPageState extends State<ProjectPage> {
                                 cursorColor: CurrentConsoleAppConfig
                                     .instance.primaryColor,
                                 decoration: InputDecoration(
-                                  labelText: S.of(context).realm,
+                                  border: new UnderlineInputBorder(
+                                      borderRadius: BorderRadius.only(
+                                          topLeft: Radius.circular(3),
+                                          topRight: Radius.circular(3))),
+                                  labelText: S
+                                      .of(context)
+                                      .realm,
                                   filled: true,
                                   fillColor: Colors.grey.shade100,
-                                  focusedBorder: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  errorBorder: InputBorder.none,
-                                  disabledBorder: InputBorder.none,
                                 ),
                                 textInputAction: TextInputAction.done,
                                 onChanged: (inputText) {
@@ -105,7 +113,7 @@ class _ProjectPageState extends State<ProjectPage> {
                                   _getConsoleAppConfig();
                                   FocusScope.of(context).unfocus();
                                 }),
-                            padding: EdgeInsets.all(25),
+                            padding: EdgeInsets.fromLTRB(25, 10, 25, 10),
                           ),
                           Container(
                             child: Align(
@@ -121,7 +129,7 @@ class _ProjectPageState extends State<ProjectPage> {
                                   },
                                   child: Text(S.of(context).connect)),
                             ),
-                            padding: EdgeInsets.all(25),
+                            padding: EdgeInsets.fromLTRB(25, 10, 25, 10),
                           )
                         ],
                       ),

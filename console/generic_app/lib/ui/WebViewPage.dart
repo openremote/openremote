@@ -52,20 +52,20 @@ class _WebViewPageState extends State<WebViewPage> {
       switch (CurrentConsoleAppConfig.instance.menuPosition) {
         case "BOTTOM_RIGHT":
           stack.children
-              .add(Positioned(bottom: 25, right: 25, child: _menuPopup(-50, -100)));
+              .add(Positioned(bottom: 25, right: 25, child: _menuPopup(-50, -80)));
           break;
         case "TOP_LEFT":
           stack.children
-              .add(Positioned(top: 25, left: 25, child: _menuPopup(0, 100)));
+              .add(Positioned(top: 25, left: 25, child: _menuPopup(0, 80)));
           break;
         case "TOP_RIGHT":
           stack.children
-              .add(Positioned(top: 25, right: 25, child: _menuPopup(-50, 100)));
+              .add(Positioned(top: 25, right: 25, child: _menuPopup(-50, 80)));
           break;
         case "BOTTOM_LEFT":
         default:
           stack.children
-              .add(Positioned(bottom: 25, left: 25, child: _menuPopup(0, -100)));
+              .add(Positioned(bottom: 25, left: 25, child: _menuPopup(0, -80)));
           break;
       }
     }
@@ -187,8 +187,7 @@ class _WebViewPageState extends State<WebViewPage> {
           if (CurrentConsoleAppConfig.instance.links == null) return items;
 
           int index = 0;
-          for (LinkConfig linkConfig
-              in CurrentConsoleAppConfig.instance.links) {
+          for (LinkConfig linkConfig in CurrentConsoleAppConfig.instance.links) {
             items.add(PopupMenuItem(
               value: index++,
               child: Text(
@@ -215,7 +214,7 @@ class _WebViewPageState extends State<WebViewPage> {
           ),
           child: Icon(Icons.menu),
         ),
-        offset: Offset(offsetX, offsetY),
+        offset: Offset(offsetX, offsetY * CurrentConsoleAppConfig.instance.links?.length ?? 1),
         elevation: 2,
         onSelected: (selectedValue) {
           LinkConfig linkConfig =

@@ -36,6 +36,7 @@ dependencies:
   permission_handler: ^5.0.1+1
   firebase_messaging: ^5.1.4
   quick_actions: 0.4.0+6
+  show_up_animation: ^1.0.2
 
 dev_dependencies:
   flutter_test:
@@ -43,12 +44,12 @@ dev_dependencies:
 
   build_runner: 1.8.1
   json_serializable: 3.3.0
-  flutter_launcher_icons: "^0.7.3"
+  flutter_launcher_icons: "^0.7.5"
 
 flutter_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/or_splash.png"
+  image_path: "assets/images/or_app_icon.png"
 
 
 # For information on the generic Dart part of this file, see the
