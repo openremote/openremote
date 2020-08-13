@@ -81,6 +81,7 @@
   "cancel": "Annuler",
   "createdOn": "Créé le",
   "createdOnWithDate": "Créé le: {{-date, LLLL}}",
+  "updatedWithDate": "Mise à jour: {{-date, llll}}",
   "accessPublicRead": "Accès public en lecture",
   "type": "Type",
   "path": "Chemin",

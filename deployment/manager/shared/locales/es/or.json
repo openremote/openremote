@@ -84,6 +84,7 @@
   "cancel": "Cancelar",
   "createdOn": "Creado en",
   "createdOnWithDate": "Creado en: {{-date, LLLL}}",
+  "updatedWithDate": "Actualizado: {{-date, llll}}",
   "accessPublicRead": "Acceso público de lectura",
   "type": "Tipo",
   "path": "Ruta",

@@ -45,14 +45,6 @@ export const style = css`
         animation: fadein 0.3s;
     }
     
-    @media only screen and (max-width: 767px) {
-        #wrapper {
-            position: absolute;
-            left: 0;
-            right: 0;
-        }
-    }
-    
     @keyframes fadein {
         from { opacity: 0; }
         to   { opacity: 1; }
@@ -174,6 +166,12 @@ export const style = css`
     }
     
     @media screen and (max-width: 769px) {
+        #wrapper {
+            position: absolute;
+            left: 0;
+            right: 0;
+        }
+
         .back-navigation {
             display: block;
         }
@@ -184,14 +182,7 @@ export const style = css`
         
         #asset-header {
             grid-area: auto!important;
-        }
-
-        #asset-header {
             padding: 20px 15px 0;
-        }
-
-        #container {
-            grid-auto-rows: auto;
         }
 
         .panel {
@@ -218,10 +209,9 @@ export const style = css`
         }
         
         #container { 
+            grid-auto-rows: auto;
             grid-template-columns: 100% !important;
             padding: 20px 0;
         }
-        
-        
     }
 `;

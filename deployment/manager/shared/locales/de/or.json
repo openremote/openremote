@@ -84,6 +84,7 @@
   "cancel": "Abbrechen",
   "createdOn": "Erstellt am:",
   "createdOnWithDate": "Erstellt am: {{-date, LLLL}}",
+  "updatedWithDate": "Aktualisiert am: {{-date, llll}}",
   "accessPublicRead": "Alle dürfen lesen",
   "type": "Typ",
   "path": "Pfad",

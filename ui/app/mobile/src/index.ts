@@ -27,10 +27,10 @@ import {pageMobileGeofencesProvider, GeofencesConfig} from "@openremote/or-app/d
 const onboardingConfig:OnboardingConfig  = {
     pages: [
         {
-            title: "Your opinion matters",
+            title: "The city assets in your pocket",
             type: "default",
-            description: "With this app we will involve you in developments within the city. We keep you up to date on current projects and will ask for your opinion.",
-            image: require("../images/logo-mobile.png"),
+            description: "With this app you have all live asset data conveniently available. Handy when doing maintenance or installing new devices.",
+            image: require("../images/onboarding-assets.svg"),
             enableProviders: [
                 {
                     name:"push",
@@ -39,22 +39,16 @@ const onboardingConfig:OnboardingConfig  = {
             ],
         },
         {
-            title: "At the right time and place",
+            title: "At the right time and the right place",
             type: "bottom-image",
-            description: "By sharing your location and allowing messages you receive useful info and surveys at the right time and place. Give your opinion and keep up to date on your favourite places.",
+            description: "You can receive notifications that are created by workflow rules. Based on your location relevant messages can be sent to you.",
             enableProviders: [
                 {
                     name:"geofence",
                     action:"PROVIDER_ENABLE"
                 }
             ],
-            image: require("../images/logo-mobile.png")
-        },
-        {
-            title: "View your messages",
-            type: "bottom-image",
-            description: "Use the menu at the bottom to find messages that are always available to you.",
-            image: require("../images/logo-mobile.png")
+            image: require("../images/onboarding-geofence.svg")
         }
     ],
     redirect: "/main/?realm=smartcity&consoleProviders=geofence push storage"
@@ -63,7 +57,7 @@ const onboardingConfig:OnboardingConfig  = {
 const splashConfig:SplashConfig  = {
     redirect: "#!onboarding/",
     interval: 3000,
-    logoMobile: require("../images/logo-mobile.png")
+    logoMobile: require("../images/logo-mobile.svg")
 }
 
 declare var MANAGER_URL: string;

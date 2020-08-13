@@ -153,7 +153,7 @@ class OrHeader extends LitElement {
                 background: none;
                 border: none;
                 cursor: pointer;
-                padding: 0 6px;
+                padding: 0 16px;
                 height: 100%;
             }
             
@@ -162,7 +162,7 @@ class OrHeader extends LitElement {
             }
     
             #menu-btn-desktop {
-                    display: none;
+                display: none;
             }
             
             #desktop-right {
