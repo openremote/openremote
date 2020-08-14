@@ -70,7 +70,7 @@ class _WebViewPageState extends State<WebViewPage> {
       }
     }
 
-    return WillPopScope( onWillPop: _onBackPressed, child: Scaffold(body: stack));
+    return WillPopScope( onWillPop: _onBackPressed, child: Scaffold(body: SafeArea(child: stack)));
   }
 
   _notifyClient(Map<String, dynamic> data) {
