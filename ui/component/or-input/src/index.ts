@@ -266,7 +266,7 @@ export class OrInput extends LitElement {
     @property({type: Boolean})
     public multiple: boolean = false;
 
-    @property({type: String})
+    @property({type: String, attribute: true, reflect: false})
     public pattern?: string;
 
     @property({type: String})
@@ -549,7 +549,7 @@ export class OrInput extends LitElement {
                         <button id="component" class="mdc-icon-button ${this.value ? "mdc-icon-button--on" : ""}"
                             ?readonly="${this.readonly}"
                             ?disabled="${this.disabled}"
-                            @MDCIconButtonToggle:change="${(evt: MDCIconButtonToggleEventDetail) => this.onValueChange(undefined, evt.isOn)}">
+                            @MDCIconButtonToggle:change="${(evt: CustomEvent<MDCIconButtonToggleEventDetail>) => this.onValueChange(undefined, evt.detail.isOn)}">
                             ${this.icon ? html`<or-icon class="mdc-icon-button__icon" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
                             ${this.iconOn ? html`<or-icon class="mdc-icon-button__icon mdc-icon-button__icon--on" aria-hidden="true" icon="${this.iconOn}"></or-icon>` : ``}
                         </button>
@@ -725,7 +725,7 @@ export class OrInput extends LitElement {
                             <input type="${type}" id="elem" aria-labelledby="${ifDefined(label ? "label" : undefined)}"
                             class="mdc-text-field__input" ?required="${this.required}" ?readonly="${this.readonly}"
                             ?disabled="${this.disabled}" min="${ifDefined(valMinMax[1])}" max="${ifDefined(valMinMax[2])}"
-                            step="${this.step ? this.step : "any"}" minlength="${ifDefined(this.minLength)}"
+                            step="${ifDefined(this.step)}" minlength="${ifDefined(this.minLength)}" pattern="${ifDefined(this.pattern)}"
                             maxlength="${ifDefined(this.maxLength)}" placeholder="${ifDefined(this.placeHolder)}"
                             .value="${valMinMax[0] !== null && valMinMax[0] !== undefined ? valMinMax[0] : ""}"
                             @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}" />`;
@@ -949,4 +949,10 @@ export class OrInput extends LitElement {
         return true;
     }
 
+    public get currentValue(): any {
+        const elem = this.shadowRoot!.getElementById("elem") as any;
+        if (elem && elem.value) {
+            return elem.value;
+        }
+    }
 }

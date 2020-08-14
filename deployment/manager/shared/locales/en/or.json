@@ -315,6 +315,5 @@
     "urn:openremote:asset:meta:ruleEventExpires": "Rule event expires",
     "urn:openremote:asset:meta:protocolConfiguration": "Protocol configuration"
   },
-  "addMetaItems": "Add configuration items",
-  "customAttribute": "Custom attribute"
+  "addMetaItems": "Add configuration items"
 }

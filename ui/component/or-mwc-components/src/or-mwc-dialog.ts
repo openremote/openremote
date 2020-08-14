@@ -17,7 +17,7 @@ export interface DialogConfig {
 }
 export interface DialogActionBase {
     actionName: string;
-    action?: () => void;
+    action?: (dialog: OrMwcDialog) => void;
 }
 
 export interface DialogAction extends DialogActionBase {
@@ -58,9 +58,9 @@ declare global {
     }
 }
 
-export function showDialog(config: DialogConfig, hostElement: HTMLElement = document.body): OrMwcDialog | undefined {
+export function showDialog(config: DialogConfig, hostElement: HTMLElement = document.body): OrMwcDialog {
     if (!hostElement) {
-        return;
+        hostElement = document.body;
     }
 
     const dialog = new OrMwcDialog();
@@ -242,11 +242,11 @@ export class OrMwcDialog extends LitElement {
 
     protected _onDialogClosed(action?: string) {
         if (action === "close" && this.dismissAction && this.dismissAction.action) {
-            this.dismissAction.action();
+            this.dismissAction.action(this);
         } else if (action && this.dialogActions) {
             const matchedAction = this.dialogActions.find((dialogAction) => dialogAction.actionName === action);
             if (matchedAction && matchedAction.action) {
-                matchedAction.action();
+                matchedAction.action(this);
             }
         }
         this.dispatchEvent(new OrMwcDialogClosedEvent(action));

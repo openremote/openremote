@@ -1,5 +1,54 @@
 import {css, unsafeCSS} from "lit-element";
-import {DefaultBoxShadow, DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5} from "@openremote/core";
+import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5, DefaultColor4} from "@openremote/core";
+
+// language=CSS
+export const panelStyles = css`
+    .panel {
+        background-color: var(--internal-or-asset-viewer-panel-color);
+        border: 1px solid #e5e5e5;
+        border-radius: 5px;
+        max-width: 100%;
+        position: relative;
+    }
+
+    .panel-content-wrapper {
+        padding: var(--internal-or-asset-viewer-panel-padding);
+    }
+
+    .panel-content {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .panel-title {
+        text-transform: uppercase;
+        font-weight: bolder;
+        line-height: 1em;
+        color: var(--internal-or-asset-viewer-title-text-color);
+        margin-bottom: 20px;
+        flex: 0 0 auto;
+        letter-spacing: 0.025em;
+    }
+
+    .field {
+        margin: 10px 0;
+        width: 100%;
+        flex: 0 0 auto;
+    }
+
+    .field > * {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .panel-content > :first-child {
+        margin-top: 0;
+    }
+
+    .panel-content > :last-child {
+        margin-bottom: 0;
+    }
+`;
 
 // language=CSS
 export const style = css`
@@ -12,7 +61,8 @@ export const style = css`
         --internal-or-asset-viewer-title-text-color: var(--or-asset-viewer-title-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));       
         --internal-or-asset-viewer-panel-color: var(--or-asset-viewer-panel-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
         --internal-or-asset-viewer-line-color: var(--or-asset-viewer-line-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
-        
+        --internal-or-asset-viewer-button-color: var(--or-asset-viewer-button-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
+                
         height: 100%;
         width: 100%;
         background-color: var(--internal-or-asset-viewer-background-color);
@@ -43,6 +93,18 @@ export const style = css`
         -ms-animation: fadein 0.3s; /* Internet Explorer */
         -o-animation: fadein 0.3s; /* Opera < 12.1 */
         animation: fadein 0.3s;
+    }
+    
+    #name-input {
+        width: 300px;
+    }
+    
+    @media only screen and (max-width: 767px) {
+        #wrapper {
+            position: absolute;
+            left: 0;
+            right: 0;
+        }
     }
     
     @keyframes fadein {
@@ -90,24 +152,14 @@ export const style = css`
     #title > or-icon {
         margin-right: 10px;
     }
-    
-    #created {
-        text-align: right;
-        flex: 1 0 auto;
+   
+    #created-time {
+        flex: 0 0 auto;
         font-size: 12px;
-        font-color: #ccc;
     }
-    
-    .panel {
-        background-color: var(--internal-or-asset-viewer-panel-color);     
-        border: 1px solid #e5e5e5;
-        border-radius: 5px;
-        max-width: 100%;
-        position: relative;
-    }
-    
-    .panel-content-wrapper {
-        padding: var(--internal-or-asset-viewer-panel-padding);
+
+    #save-btn {
+        margin-left: 20px;
     }
     
     #location-panel .panel-content {
@@ -116,40 +168,6 @@ export const style = css`
     
     #history-panel .panel-content {
         position: relative;
-    }
-    
-    .panel-content {
-        display: flex;
-        flex-wrap: wrap;
-    }
-        
-    .panel-title {
-        text-transform: uppercase;
-        font-weight: bolder;
-        line-height: 1em;
-        color: var(--internal-or-asset-viewer-title-text-color);
-        margin-bottom: 20px;
-        flex: 0 0 auto;
-        letter-spacing: 0.025em;
-    }
-   
-    .field {
-        margin: 10px 0;
-        width: 100%;
-        flex: 0 0 auto;
-    }
-    
-    .field > * {
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    #attributes-panel .panel-content > :first-child, #info-panel .panel-content > :first-child {
-        margin-top: 0;
-    }
-
-    #attributes-panel .panel-content > :last-child, #info-panel .panel-content > :last-child {
-        margin-bottom: 0;
     }
     
     .msg {
@@ -163,6 +181,11 @@ export const style = css`
     .back-navigation {
         display: none;
         cursor: pointer;
+    }
+    
+    or-edit-asset-panel {
+        grid-column-start: 1;
+        grid-column-end: 3;
     }
     
     @media screen and (max-width: 769px) {
@@ -199,8 +222,7 @@ export const style = css`
             grid-row-start: 2;
         }
         
-        #location-panel {
-         
+        #location-panel {         
             grid-row-start: 3;
         }
         

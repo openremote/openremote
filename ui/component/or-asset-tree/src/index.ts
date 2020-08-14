@@ -8,12 +8,14 @@ import {style} from "./style";
 import manager, {AssetModelUtil, Util, OREvent, EventCallback, subscribe} from "@openremote/core";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import Qs from "qs";
-import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
+import {getAssetDescriptorIconTemplate, OrIcon} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/dist/or-mwc-menu";
 import {getContentWithMenuTemplate, MenuItem, OrMwcMenuChangedEvent} from "@openremote/or-mwc-components/dist/or-mwc-menu";
-import {i18next} from "@openremote/or-translate";
-import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
-
+import "@openremote/or-mwc-components/dist/or-mwc-list";
+import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/dist/or-mwc-list";
+import {i18next, OrTranslate} from "@openremote/or-translate";
+import "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 
 export interface AssetTreeTypeConfig {
     include?: string[];
@@ -22,9 +24,8 @@ export interface AssetTreeTypeConfig {
 
 export interface AssetTreeConfig {
     default?: AssetTreeTypeConfig;
-    addAssetTypes?: { [assetType: string]: AssetTreeTypeConfig };
+    addAssetTypes?: AssetTreeTypeConfig;
 }
-
 
 export interface UiAssetTreeNode extends AssetTreeNode {
     selected: boolean;
@@ -62,17 +63,46 @@ export class OrAssetTreeRequestSelectEvent extends CustomEvent<RequestEventDetai
     }
 }
 
-export class OrAssetTreeRequestAddEvent extends CustomEvent<RequestEventDetail<void>> {
+export class OrAssetTreeRequestEditToggleEvent extends CustomEvent<RequestEventDetail<boolean>> {
+
+    public static readonly NAME = "or-asset-tree-request-edit-toggle";
+
+    constructor(edit: boolean) {
+        super(OrAssetTreeRequestEditToggleEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                allow: true,
+                detail: edit
+            }
+        });
+    }
+}
+
+export class OrAssetTreeEditChangedEvent extends CustomEvent<boolean> {
+
+    public static readonly NAME = "or-asset-tree-edit-changed";
+
+    constructor(edit: boolean) {
+        super(OrAssetTreeEditChangedEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: edit
+        });
+    }
+}
+
+export class OrAssetTreeRequestAddEvent extends CustomEvent<RequestEventDetail<Asset>> {
 
     public static readonly NAME = "or-asset-tree-request-add";
 
-    constructor() {
+    constructor(asset: Asset) {
         super(OrAssetTreeRequestAddEvent.NAME, {
             bubbles: true,
             composed: true,
             detail: {
                 allow: true,
-                detail: undefined
+                detail: asset
             }
         });
     }
@@ -130,6 +160,8 @@ declare global {
         [OrAssetTreeRequestDeleteEvent.NAME]: OrAssetTreeRequestDeleteEvent;
         [OrAssetTreeRequestCopyEvent.NAME]: OrAssetTreeRequestCopyEvent;
         [OrAssetTreeSelectionChangedEvent.NAME]: OrAssetTreeSelectionChangedEvent;
+        [OrAssetTreeRequestEditToggleEvent.NAME]: OrAssetTreeRequestEditToggleEvent;
+        [OrAssetTreeEditChangedEvent.NAME]: OrAssetTreeEditChangedEvent;
     }
 }
 
@@ -152,52 +184,6 @@ export const getAssetTypes = async () => {
     }
 }
 
-function getActionTypesMenu(config?: AssetTreeConfig, selectedNodes?:UiAssetTreeNode[]): MenuItem[] {
-    let assetDescriptors:AssetDescriptor[] = AssetModelUtil.getAssetDescriptors()
-    
-    if(config && config.addAssetTypes && selectedNodes && selectedNodes.length > 0) {
-        const type = selectedNodes[0].asset && selectedNodes[0].asset.type ? selectedNodes[0].asset.type : ""
-        const assetTypeConfig = config && config.addAssetTypes[type];
-        const includedAssetTypes = assetTypeConfig && assetTypeConfig.include ? assetTypeConfig.include : undefined;
-        const excludedAssetTypes = assetTypeConfig && assetTypeConfig.exclude ? assetTypeConfig.exclude : [];
-        assetDescriptors = assetDescriptors.filter((assetDescriptor) =>
-        (!includedAssetTypes || includedAssetTypes.indexOf(assetDescriptor.type!) >= 0)
-        && (!excludedAssetTypes || excludedAssetTypes.indexOf(assetDescriptor.type!) < 0));
-    }
-
-    const menu: MenuItem[] = [];
-
-    if (assetDescriptors) {
-        menu.push(...assetDescriptors.map((ad) => {
-            return getAssetTypeOption(ad)
-        }));
-    }
-
-    return menu;
-}
-
-function getAssetTypeOption(assetDescriptor?: AssetDescriptor) {
-        const color = AssetModelUtil.getAssetDescriptorColor(assetDescriptor);
-        const icon = AssetModelUtil.getAssetDescriptorIcon(assetDescriptor);
-        const styleMap = color ? {"--or-icon-fill": "#" + color} : undefined;
-
-        if(assetDescriptor && assetDescriptor.name && assetDescriptor.type) {
-            return {
-                text: i18next.t(assetDescriptor.name, {defaultValue: assetDescriptor.name!.replace(/_/g, " ").toLowerCase()}),
-                value: assetDescriptor.type,
-                icon: icon ? icon : AssetType.THING.icon,
-                styleMap: styleMap
-            };
-        } else {
-            return{
-                text: "",
-                value: "",
-                icon: icon ? icon : AssetType.THING.icon,
-                styleMap: styleMap
-            };
-        }
-           
-}
 // TODO: Add websocket support
 // TODO: Make modal a standalone component
 @customElement("or-asset-tree")
@@ -224,9 +210,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @property({type: Array})
     public _assetTypeOptions?: string[];
 
-    @property({type: Object})
-    public _selectedAssetTypeOption?: AssetDescriptor;
-
     @property({type: Array})
     public rootAssets?: Asset[];
 
@@ -241,6 +224,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     @property({type: Boolean})
     public multiSelect?: boolean = true;
+
+    @property({type: Boolean})
+    public editMode?: boolean = false;
 
     @property({type: Function, noAccessor: true, attribute: false})
     public selector?: (node: UiAssetTreeNode) => boolean;
@@ -293,45 +279,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
-    protected renderDialogHTML() {
-        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
-        if(!this.shadowRoot) return
-
-        const form:HTMLElement|null = this.shadowRoot.getElementById('mdc-dialog-form-add');
-        if (dialog && form) {
-            dialog.dialogContent = html`${form}`;
-            this.requestUpdate();
-        }
-    }
-
     protected render() {
-        const dialogActions: DialogAction[] = [
-            {
-                actionName: "cancel",
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
-                action: () => {
-                    // Nothing to do here
-                }
-            },
-            {
-                actionName: "yes",
-                default: true,
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" data-mdc-dialog-action="yes"></or-input>`,
-                action: () => {
-                    // TODO change this to open edit page
-                    if(!this.shadowRoot) return
-                    const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
-                    if(!dialog.shadowRoot) return
-                    if(this._selectedAssetTypeOption){
-                        const type = this._selectedAssetTypeOption.type;
-                        this._doRequest(new OrAssetTreeRequestAddEvent(), () => this._doAdd("New Asset", type));
-                    }
+        const editMode = this.editMode;
 
-                }
-            }
-        ];
-        const selectedAssetTypeOption = getAssetTypeOption(this._selectedAssetTypeOption)
-        const hasAssetWriteRole = manager.hasRole("write:assets");
         return html`
             <div id="header">
                 <div id="title-container">
@@ -339,9 +289,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 </div>
 
                 <div id="header-btns">                
-                    <or-input style="display: none;" ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-input>
-                    <or-input ?hidden="${this._isReadonly() || !hasAssetWriteRole || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-input>
-                    <or-input ?hidden="${this._isReadonly() || !hasAssetWriteRole || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked()}"></or-input>
+                    <or-input style="display: none;" ?hidden="${this._isReadonly() || !editMode || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-input>
+                    <or-input ?hidden="${this._isReadonly() || !editMode || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-input>
+                    <or-input ?hidden="${this._isReadonly() || !editMode || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked()}"></or-input>
+                    <or-input ?hidden="${this._isReadonly()}" type="${InputType.BUTTON_TOGGLE}" icon="eye" .value="${this.editMode}" iconOn="pencil" @or-input-changed="${(ev: OrInputChangedEvent) => this._onEditToggled(ev.detail.value)}"></or-input>
                     <or-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-input>
                     
                     ${getContentWithMenuTemplate(
@@ -367,21 +318,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             <div id="footer">
             
             </div>
-
-
-        <or-mwc-dialog id="mdc-dialog" dialogTitle="addAsset" .dialogActions="${dialogActions}"></or-mwc-dialog>
-        <form id="mdc-dialog-form-add" style="display: flex; flex-direction: horizontal; height:400px; border-top: 1px solid var(--or-app-color2);">
-            <div style="overflow-y: scroll;">
-                <or-mwc-menu visible noSurface  @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => {this._selectedAssetTypeOption = typeof evt.detail === "string" ? AssetModelUtil.getAssetDescriptor(evt.detail) : undefined}} }" .menuItems="${getActionTypesMenu(this.config, this._selectedNodes)}" .values="${this._selectedAssetTypeOption}"  id="menu"></or-mwc-menu>
-            </div>
-            <div class="asset-type-option-container" style="background-color: var(--or-app-color2); padding: 15px; width: 260px; max-width: 100%; ${selectedAssetTypeOption.styleMap ? styleMap(selectedAssetTypeOption.styleMap) : ""}">
-                ${this._selectedAssetTypeOption ? html`
-                    <or-icon icon="${selectedAssetTypeOption.icon}"></or-icon>
-                    <span style="font-size: 16px;"><or-translate value="${selectedAssetTypeOption.text}"></or-translate></span>
-                ` : ``}
-            </div>
-
-        </form>
         `;
     }
 
@@ -389,11 +325,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         return this.readonly || !manager.hasRole(ClientRole.WRITE_ASSETS);
     }
 
-    protected firstUpdated(_changedProperties: PropertyValues){
-        this.renderDialogHTML();
-    }
-
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
+        if (this.editMode && this._isReadonly()) {
+            this.editMode = false;
+        }
+
         const result = super.shouldUpdate(_changedProperties);
         if (_changedProperties.has("_assetIdsOverride")
             || _changedProperties.has("assets")
@@ -497,9 +433,108 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected _onAddClicked() {
-        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
-        console.log(dialog)
-        dialog.open();
+
+        const includedAssetTypes = this.config && this.config.addAssetTypes && this.config.addAssetTypes.include ? this.config.addAssetTypes.include : undefined;
+        const excludedAssetTypes = this.config && this.config.addAssetTypes && this.config.addAssetTypes.exclude ? this.config.addAssetTypes.exclude : [];
+
+        const listItems: ListItem[] = AssetModelUtil.getAssetDescriptors()
+            .filter((descriptor) => (!includedAssetTypes || includedAssetTypes.indexOf(descriptor.type!) >= 0)
+                && (excludedAssetTypes.indexOf(descriptor.type!) < 0))
+            .sort(Util.sortByString((descriptor) => descriptor.name!))
+            .map((descriptor) => {
+                return {
+                    styleMap: {
+                        "--or-icon-fill": descriptor.color ? "#" + descriptor.color : "unset"
+                    },
+                    icon: descriptor.icon,
+                    text: i18next.t(descriptor.name!, {defaultValue: descriptor.name!.replace(/_/g, " ").toLowerCase()}),
+                    value: descriptor.type!,
+                    data: descriptor
+                }
+            });
+
+        let descriptor: AssetDescriptor;
+
+        const onAssetTypeChanged = (listItem: ListItem) => {
+            descriptor = listItem.data as AssetDescriptor;
+            const icon = dialog.shadowRoot!.getElementById("type-icon") as OrIcon;
+            const description = dialog.shadowRoot!.getElementById("type-description") as OrTranslate;
+            icon.icon = descriptor.icon;
+            description.value = listItem.text;
+        };
+
+        const dialog = showDialog(
+            {
+                title: "addAsset",
+                content: html`
+                    <form id="mdc-dialog-form-add">
+                        <div id="type-list">
+                            <or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => onAssetTypeChanged(evt.detail[0] as ListItem)}" .listItems="${listItems}" id="menu"></or-mwc-list>
+                        </div>
+                        <div id="asset-type-option-container">
+                            <or-icon id="type-icon" class="hidden"></or-icon>
+                            <or-translate id="type-description" class="hidden"></or-translate>
+                        </div>
+                    </form>`,
+                actions: [
+                    {
+                        actionName: "cancel",
+                        content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`
+                    },
+                    {
+                        actionName: "yes",
+                        default: true,
+                        content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" data-mdc-dialog-action="yes"></or-input>`,
+                        action: () => {
+                            // TODO change this to open edit page
+                            if (!descriptor) {
+                                return;
+                            }
+
+                            const asset: Asset = {
+                                name: "New Asset",
+                                type: descriptor.type,
+                                realm: manager.getRealm()
+                            };
+                            if(this.selectedIds) {
+                                asset['parentId'] = this.selectedIds[0];
+                            }
+                            this._doRequest(new OrAssetTreeRequestAddEvent(asset), () => this._doAdd(asset));
+                        }
+                    }
+                ],
+                styles: html`
+                    <style>
+                        #mdc-dialog-form-add {
+                            display: flex;
+                            height:400px;
+                            border-top: 1px solid var(--or-app-color2);
+                        }
+                        #asset-type-option-container {
+                            background-color: var(--or-app-color2);
+                            padding: 15px;
+                            width: 260px;
+                            max-width: 100%;
+                            font-size: 16px;
+                        }
+                        #type-list {
+                            overflow-y: scroll;
+                        }
+                        .hidden {
+                            visibility: hidden;
+                        }
+                    </style>
+                `
+            }
+        )
+    }
+
+    protected _onEditToggled(edit: boolean) {
+        this._doRequest(new OrAssetTreeRequestEditToggleEvent(edit), () => this._doEditToggle(edit));
+    }
+
+    protected _doEditToggle(edit: boolean) {
+        this.editMode = edit;
     }
 
     protected _onSearchClicked() {
@@ -585,15 +620,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         return window.confirm(i18next.t("confirmDeleteAssets"));
     }
 
-    protected _doAdd(name:string, type:string | undefined) {
-        const _asset: Asset = {
-            name: name,
-            type: type,
-            realm: manager.getRealm()
-        };
-        if(this.selectedIds) _asset['parentId'] = this.selectedIds[0];
-
-        manager.rest.api.AssetResource.create(_asset).then((response) => {
+    protected _doAdd(asset: Asset) {
+        manager.rest.api.AssetResource.create(asset).then((response) => {
             this._loadAssets();
         });
     }

@@ -1,22 +1,25 @@
-import {css, customElement, html, property, TemplateResult, unsafeCSS} from "lit-element";
+import {css, customElement, html, property, TemplateResult, unsafeCSS, query} from "lit-element";
 import "@openremote/or-asset-tree";
 import "@openremote/or-asset-viewer";
-import {ViewerConfig} from "@openremote/or-asset-viewer";
-import {AssetTreeConfig, OrAssetTreeSelectionChangedEvent, OrAssetTreeRequestSelectEvent} from "@openremote/or-asset-tree";
+import {ViewerConfig, OrAssetViewer} from "@openremote/or-asset-viewer";
+import {AssetTreeConfig, OrAssetTreeSelectionChangedEvent, OrAssetTreeRequestSelectEvent, OrAssetTreeRequestEditToggleEvent, OrAssetTreeEditChangedEvent} from "@openremote/or-asset-tree";
 import {DefaultBoxShadow} from "@openremote/core";
 import {AppStateKeyed, Page, router} from "../index";
 import {EnhancedStore} from "@reduxjs/toolkit";
+import { showDialog } from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import i18next from "i18next";
 
 export interface PageAssetsConfig {
     viewer: ViewerConfig;
     tree?: AssetTreeConfig;
 }
 
-export function pageAssetsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config: PageAssetsConfig = PAGE_ASSETS_DEFAULT_CONFIG) {
+export function pageAssetsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: PageAssetsConfig) {
     return {
         routes: [
             "assets",
-            "assets/:id"
+            "assets/:editMode",
+            "assets/:editMode/:id"
         ],
         pageCreator: () => {
             const page = new PageAssets(store);
@@ -27,150 +30,6 @@ export function pageAssetsProvider<S extends AppStateKeyed>(store: EnhancedStore
         }
     };
 }
-
-export const PAGE_ASSETS_DEFAULT_CONFIG: PageAssetsConfig = {
-    viewer: {
-        historyConfig: {
-            table: {
-                attributeNames: {
-
-                }
-            }
-        },
-        default: {
-            panels: {
-                "attributes": {
-                    exclude: ["location", "userNotes", "manufacturer", "model", "status"]
-                },
-                "info": {
-                    exclude: ["accessPublicRead"]
-                }
-            }
-        },
-        assetTypes: {
-            // TODO: These need to move to custom project
-            // "urn:openremote:asset:topic": {
-            //     panels: {
-            //         "attributes": {
-            //             exclude: ["location", "status"]
-            //         }
-            //     }
-            // },
-            // "urn:openremote:asset:tcn:soilmoisture": {
-            //     panels: {
-            //         "attributes": {
-            //             exclude: ["location", "name", "id", "code", "type"]
-            //         }
-            //     }
-            // },
-            // "urn:openremote:asset:tcn:meteo": {
-            //     panels: {
-            //         "attributes": {
-            //             exclude: ["location", "name", "id", "code", "type"]
-            //         }
-            //     }
-            // },
-            // "urn:openremote:asset:tcn:point": {
-            //     panels: {
-            //         "attributes": {
-            //             exclude: ["location", "name", "id", "code", "type"]
-            //         }
-            //     }
-            // },
-            // "urn:openremote:asset:residence": {
-            //     panels: {
-            //         "attributes": {
-            //             exclude: [
-            //                 "dayScene",
-            //                 "daySceneEnabledFRIDAY",
-            //                 "daySceneEnabledMONDAY",
-            //                 "daySceneEnabledTUESDAY",
-            //                 "daySceneEnabledWEDNESDAY",
-            //                 "daySceneEnabledTHURSDAY",
-            //                 "daySceneEnabledSATURDAY",
-            //                 "daySceneEnabledSUNDAY",
-            //                 "daySceneTimeFRIDAY",
-            //                 "daySceneTimeMONDAY",
-            //                 "daySceneTimeTUESDAY",
-            //                 "daySceneTimeWEDNESDAY",
-            //                 "daySceneTimeTHURSDAY",
-            //                 "daySceneTimeSATURDAY",
-            //                 "daySceneTimeSUNDAY",
-            //                 "disableSceneTimer",
-            //                 "enableSceneTimer",
-            //                 "eveningScene",
-            //                 "dayScene",
-            //                 "eveningSceneEnabledFRIDAY",
-            //                 "eveningSceneEnabledMONDAY",
-            //                 "eveningSceneEnabledTUESDAY",
-            //                 "eveningSceneEnabledWEDNESDAY",
-            //                 "eveningSceneEnabledTHURSDAY",
-            //                 "eveningSceneEnabledSATURDAY",
-            //                 "eveningSceneEnabledSUNDAY",
-            //                 "eveningSceneTimeFRIDAY",
-            //                 "eveningSceneTimeMONDAY",
-            //                 "eveningSceneTimeTUESDAY",
-            //                 "eveningSceneTimeWEDNESDAY",
-            //                 "eveningSceneTimeTHURSDAY",
-            //                 "eveningSceneTimeSATURDAY",
-            //                 "eveningSceneTimeSUNDAY",
-            //                 "morningScene",
-            //                 "nightscene",
-            //                 "morningSceneEnabledFRIDAY",
-            //                 "morningSceneEnabledMONDAY",
-            //                 "morningSceneEnabledTUESDAY",
-            //                 "morningSceneEnabledWEDNESDAY",
-            //                 "morningSceneEnabledTHURSDAY",
-            //                 "morningSceneEnabledSATURDAY",
-            //                 "morningSceneEnabledSUNDAY",
-            //                 "morningSceneTimeFRIDAY",
-            //                 "morningSceneTimeMONDAY",
-            //                 "morningSceneTimeTUESDAY",
-            //                 "morningSceneTimeWEDNESDAY",
-            //                 "morningSceneTimeTHURSDAY",
-            //                 "morningSceneTimeSATURDAY",
-            //                 "morningSceneTimeSUNDAY",
-            //                 "nightSceneEnabledFRIDAY",
-            //                 "nightSceneEnabledMONDAY",
-            //                 "nightSceneEnabledTUESDAY",
-            //                 "nightSceneEnabledWEDNESDAY",
-            //                 "nightSceneEnabledTHURSDAY",
-            //                 "nightSceneEnabledSATURDAY",
-            //                 "nightSceneEnabledSUNDAY",
-            //                 "nightSceneTimeFRIDAY",
-            //                 "nightSceneTimeMONDAY",
-            //                 "nightSceneTimeTUESDAY",
-            //                 "nightSceneTimeWEDNESDAY",
-            //                 "nightSceneTimeTHURSDAY",
-            //                 "nightSceneTimeSATURDAY",
-            //                 "nightSceneTimeSUNDAY",
-            //                 "vacationUntil",
-            //                 "ventilationLevel",
-            //                 "location",
-            //                 "firstPresenceDetected",
-            //                 "lastPresenceDetected",
-            //                 "smartSwitchStartTimeA",
-            //                 "smartSwitchStartTimeB",
-            //                 "smartSwitchStartTimeC",
-            //                 "smartSwitchEnabledA",
-            //                 "smartSwitchEnabledB",
-            //                 "smartSwitchEnabledC",
-            //                 "smartSwitchStopTimeA",
-            //                 "smartSwitchStopTimeB",
-            //                 "smartSwitchStopTimeC",
-            //                 "smartSwitchBeginEndA",
-            //                 "smartSwitchBeginEndB",
-            //                 "smartSwitchBeginEndC",
-            //                 "smartSwitchModeA",
-            //                 "smartSwitchModeB",
-            //                 "smartSwitchModeC"
-            //             ]
-            //         }
-            //     }
-            // }
-        }
-    }
-};
 
 @customElement("page-assets")
 class PageAssets<S extends AppStateKeyed> extends Page<S>  {
@@ -214,12 +73,15 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
 
     @property()
     public config?: PageAssetsConfig;
-    
+
     @property()
-    protected _selectedId;
+    protected _editMode: boolean;
 
     @property()
     protected _assetId;
+
+    @query("#viewer")
+    protected _viewer!: OrAssetViewer;
 
     get name(): string {
         return "assets";
@@ -233,6 +95,8 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         super.connectedCallback();
         this.addEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
         this.addEventListener(OrAssetTreeRequestSelectEvent.NAME, this._onTreeSelectionRequested);
+        this.addEventListener(OrAssetTreeRequestEditToggleEvent.NAME, this._onTreeEditToggleRequested);
+        this.addEventListener(OrAssetTreeEditChangedEvent.NAME, this._onTreeEditChanged);
     }
 
     disconnectedCallback() {
@@ -242,39 +106,89 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
     }
 
     protected render(): TemplateResult | void {
-        const selectedIds = [this._selectedId];
+        const selectedIds = this._assetId ? [this._assetId] : undefined;
         return html`
-              <or-asset-tree .config="${this.config && this.config.tree ? this.config.tree : null}" id="pageAssetTree" class="${this._assetId ? "hideMobile" : ""}" .selectedIds="${selectedIds}"></or-asset-tree>
-              <or-asset-viewer class="${!this._assetId ? "hideMobile" : ""}" .config="${this.config && this.config.viewer ? this.config.viewer : PAGE_ASSETS_DEFAULT_CONFIG}" .assetId="${this._assetId}"></or-asset-viewer>
+              <or-asset-tree id="tree" .editMode="${!!this._editMode}" .config="${this.config && this.config.tree ? this.config.tree : null}" class="${this._assetId ? "hideMobile" : ""}" .selectedIds="${selectedIds}"></or-asset-tree>
+              <or-asset-viewer id="viewer" .editMode="${!!this._editMode}" class="${!this._assetId ? "hideMobile" : ""}" .config="${this.config && this.config.viewer ? this.config.viewer : undefined}"></or-asset-viewer>
         `;
     }
 
     stateChanged(state: S) {
-        this._selectedId = state.app.params && state.app.params.id ? state.app.params.id : undefined;
+        const editMode = state.app.params && state.app.params.editMode === "true";
+        const id = state.app.params && state.app.params.id ? state.app.params.id : undefined;
+        this._assetId = id;
+        this._editMode = editMode;
     }
 
     protected _onTreeSelectionRequested(event: OrAssetTreeRequestSelectEvent) {
-        // Block the selection change but update the route which will cause the change
+        // Block the navigation and show dialog then navigate
         event.detail.allow = false;
         const assetId = event.detail.detail.node.asset.id;
-        if (assetId) {
-            router.navigate("assets/" + assetId);
-        } else {
-            router.navigate("assets/");
-        }
+        const action = () => {
+            this._assetId = assetId;
+            this._updateRoute(false);
+        };
+        this._checkIfModified(action);
     }
 
     protected _onTreeSelectionChanged(event: OrAssetTreeSelectionChangedEvent) {
         const nodes = event.detail;
         const assetId = nodes[0] ? nodes[0].asset.id : undefined;
+        this._assetId = assetId;
+        this._viewer.assetId = assetId;
+        this._updateRoute();
+    }
 
-        if (this._selectedId !== assetId) {
-            // Asset requested in route couldn't be selected so navigate to no asset
-            router.navigate("assets/");
-            this._assetId = undefined;
+    protected _onTreeEditToggleRequested(event: OrAssetTreeRequestEditToggleEvent) {
+        // Block the request and show dialog then toggle
+        event.detail.allow = false;
+        const editMode = event.detail.detail;
+        const action = () => {
+            this._editMode = editMode;
+            this._updateRoute(false);
+        };
+        this._checkIfModified(action);
+    }
+
+    protected _onTreeEditChanged(event: OrAssetTreeEditChangedEvent) {
+        this._editMode = event.detail;
+        this._updateRoute();
+    }
+
+    protected _checkIfModified(action: () => void) {
+        if (this._viewer.isModified()) {
+            showDialog(
+                {
+                    content: html`<p>${i18next.t("confirmContinueAssetModified")}</p>`,
+                    actions: [
+                        {
+                            actionName: "ok",
+                            content: "ok",
+                            action: action
+                        },
+                        {
+                            actionName: "cancel",
+                            content: "cancel",
+                            default: true
+                        }
+                    ],
+                    title: "assetModified"
+                }
+            )
         } else {
-            // Requested asset has been selected in the asset tree
-            this._assetId = assetId;
+            action();
+        }
+    }
+
+    protected _updateRoute(silent: boolean = true) {
+        if (silent) {
+            router.pause();
+        }
+        const assetId = this._assetId ? "/" + this._assetId : "";
+        const editMode = !!this._editMode;
+        router.navigate("assets/" + editMode + assetId);
+        if (silent) {
+            router.resume();
         }
     }
 }

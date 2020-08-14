@@ -15,6 +15,7 @@
     "array-type": false,
     "object-literal-shorthand": false,
     "no-string-literal": false,
-    "no-shadowed-variable": false
+    "no-shadowed-variable": false,
+    "no-var-requires": false
   }
 }
