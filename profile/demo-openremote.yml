@@ -90,7 +90,7 @@ services:
     environment:
       MAP_TILES_PATH: '/deployment.local/map/mapdata.mbtiles'
       IDENTITY_NETWORK_HOST: demo.openremote.io
-      FIREBASE_CONFIG_FILE: '/deployment/manager/openremoteapp-a6a60-firebase-adminsdk-c40fr-41938f4c85.json'
+      FIREBASE_CONFIG_FILE: ${FIREBASE_CONFIG_FILE}
 
   keycloak:
     extends:

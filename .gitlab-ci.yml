@@ -216,6 +216,7 @@ deploy demo on OVH:
     DEPLOYMENT_HOST: ${PROJECT_NAME}.openremote.io
     SETUP_WIPE_CLEAN_INSTALL: 'true'
     DOCKER_IMAGE_TAG: latest
+    FIREBASE_CONFIG_FILE: ${FIREBASE_CONFIG_FILE}
   environment:
     name: demo
     url: https://${PROJECT_NAME}.openremote.io
