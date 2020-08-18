@@ -775,7 +775,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         return super.shouldUpdate(changedProperties);
     }
 
-    protected render(): TemplateResult | string {
+    protected render(): TemplateResult | void {
 
         if (this._loading) {
             return html`
