@@ -59,13 +59,9 @@ When all Docker containers are ready, you can access the OpenRemote UI and API w
 Username: admin  
 Password: secret
 
-**Demo Smart Building App:** https://localhost/main/?realm=building
-Username: building  
-Password: building
-
 **Demo Smart City App:** https://localhost/main/?realm=smartcity
-Username: smartCity  
-Password: smartCity
+Username: smartcity  
+Password: smartcity
 
 You must accept and make an exception for the 'insecure' self-signed SSL certificate. You can configure a production installation of OpenRemote with a your own certificate or automatically use one from [Let's Encrypt](https://letsencrypt.org/).
 
