@@ -107,7 +107,7 @@ public enum AssetType implements AssetDescriptor {
             READ_ONLY)
     ),
 
-    ENVIRONMENT_SENSOR(ASSET_NAMESPACE + ":enviroment", "periodic-table-co2", "f18546",
+    ENVIRONMENT_SENSOR(ASSET_NAMESPACE + ":environment", "periodic-table-co2", "f18546",
         new AttributeDescriptorImpl("manufacturer", STRING, null,
             LABEL.withInitialValue("Manufacturer")
         ),

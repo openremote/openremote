@@ -467,7 +467,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
             attributeTable.hidden = false;
             const headers = [...selectedAttributes].sort();
             attributeTable.headers = headers.map((attrName) => {
-                const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attrName, childAssetType);
+                const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attrName, childAssetType);
                 return Util.getAttributeLabel(undefined, attributeDescriptor, undefined, false);
             });
             attributeTable.headers.unshift(i18next.t("groupAssetName"));

@@ -766,7 +766,7 @@ export class OrAttributeCard extends LitElement {
         const attr = this.asset.attributes![this.attributeName!];
         const roundedVal = +value.toFixed(this.mainValueDecimals); // + operator prevents str return
 
-        const attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(this.attributeName!);
+        const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(this.attributeName!);
         const unitKey = Util.getMetaValue(MetaItemType.UNIT_TYPE, attr, attributeDescriptor);
         const unit = i18next.t("units." + unitKey);
 

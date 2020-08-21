@@ -107,8 +107,8 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
 
         const asset = idValue && idValue !== "*" ? this._assets.find(a => a.id === idValue) : undefined;
         const showUpdateOptions = !this.config || !this.config.controls || !this.config.controls.hideActionUpdateOptions;
-        const attributeDescriptor = AssetModelUtil.getAssetAttributeDescriptor(assetDescriptor, this.action.attributeName);
-        let attribute: Attribute | undefined = asset && this.action.attributeName ? Util.getAssetAttribute(asset, this.action.attributeName) : undefined;
+        const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(this.action.attributeName, assetDescriptor);
+        const attribute: Attribute | undefined = asset && this.action.attributeName ? Util.getAssetAttribute(asset, this.action.attributeName) : undefined;
         const attributeValueDescriptor = attributeDescriptor && attributeDescriptor.valueDescriptor ? typeof attributeDescriptor.valueDescriptor === "string" ? AssetModelUtil.getAttributeValueDescriptor(attributeDescriptor.valueDescriptor as string) : attributeDescriptor.valueDescriptor : attribute ? AssetModelUtil.getAttributeValueDescriptor(attribute.type as string) : undefined;
 
         // Only RW attributes can be used in actions

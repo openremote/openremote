@@ -47,7 +47,7 @@ const style = css`
     }
     
     or-rule-condition {
-        margin: 10px 0;
+        margin-bottom: 10px;
     }
 
     .rule-group-item > or-icon {

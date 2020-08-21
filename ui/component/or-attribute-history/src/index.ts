@@ -681,7 +681,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
             if (attr) {
                 const attributeType = attr.type as string;
-                const attrDescriptor = AssetModelUtil.getAttributeValueDescriptorFromAsset(attributeType, this.assetType, attributeName);
+                const attrDescriptor = AssetModelUtil.getAttributeValueDescriptor(attributeType, this.assetType, attributeName);
 
                 if (attrDescriptor && attrDescriptor.valueType) {
                     this._type = attrDescriptor.valueType;

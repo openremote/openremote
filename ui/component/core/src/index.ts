@@ -15,7 +15,8 @@ import {
     User,
     Role,
     Attribute,
-    ConsoleAppConfig
+    ConsoleAppConfig,
+    AssetType
 } from "@openremote/model";
 import * as Util from "./util";
 import orIconSet from "./or-icon-set";
@@ -236,58 +237,52 @@ export class AssetModelUtil {
         });
     }
 
-    public static getAssetAttributeDescriptor(assetDescriptor?: AssetDescriptor, attributeName?: string): AttributeDescriptor | undefined {
-        if (!attributeName || !assetDescriptor || !assetDescriptor.attributeDescriptors) {
-            return;
-        }
-
-        return assetDescriptor.attributeDescriptors.find((attributeDescriptor) => attributeDescriptor.attributeName === attributeName);
-    }
-
-    public static getAttributeDescriptor(attributeName?: string): AttributeDescriptor | undefined {
+    public static getAttributeDescriptor(attributeName?: string, assetTypeOrDescriptor?: string | AssetDescriptor): AttributeDescriptor | undefined {
         if (!attributeName) {
             return;
         }
 
-        return this._attributeDescriptors.find((attributeDescriptor) => {
+        let descriptor = this._attributeDescriptors.find((attributeDescriptor) => {
             return attributeDescriptor.attributeName === attributeName;
         });
+
+        if (descriptor || !assetTypeOrDescriptor) {
+            return descriptor;
+        }
+
+        let assetDescriptor: AssetDescriptor | undefined;
+        if ((assetTypeOrDescriptor as AssetDescriptor).name) {
+            assetDescriptor = assetTypeOrDescriptor as AssetDescriptor;
+        } else {
+            assetDescriptor = this.getAssetDescriptor(assetTypeOrDescriptor as string);
+        }
+        if (assetDescriptor && assetDescriptor.attributeDescriptors) {
+            descriptor = assetDescriptor.attributeDescriptors.find((ad) => ad.attributeName === attributeName);
+        }
+
+        return descriptor;
     }
 
-    public static getAttributeDescriptorFromAsset(attributeName: string, assetType?: string): AttributeDescriptor | undefined {
-        if (!attributeName) {
+    public static getAttributeValueDescriptor(name?: string, attributeNameOrDescriptor?: string | AttributeDescriptor, assetTypeOrDescriptor?: string | AssetDescriptor): AttributeValueDescriptor | undefined {
+        if (!name) {
             return;
         }
 
-        if (assetType) {
-            const assetDescriptor = this.getAssetDescriptor(assetType);
-            if (assetDescriptor && assetDescriptor.attributeDescriptors) {
-                const attributeDescriptor = assetDescriptor.attributeDescriptors.find((ad) => ad.attributeName === attributeName);
-                if (attributeDescriptor) {
-                    return attributeDescriptor;
-                }
-            }
-        }
-
-        return this.getAttributeDescriptor(attributeName);
-    }
-
-    public static getAttributeValueDescriptor(name: string): AttributeValueDescriptor | undefined {
-        return this._attributeValueDescriptors.find((attributeValueDescriptor) => {
+        const descriptor = this._attributeValueDescriptors.find((attributeValueDescriptor) => {
             return attributeValueDescriptor.name === name;
         });
-    }
 
-    public static getAttributeValueDescriptorFromAsset(name: string | undefined, assetType?: string, attributeName?: string): AttributeValueDescriptor | undefined {
-        if (name) {
-            return this.getAttributeValueDescriptor(name);
+        if (descriptor || !attributeNameOrDescriptor) {
+            return descriptor;
         }
-
-        if (attributeName) {
-            const attributeDescriptor = this.getAttributeDescriptorFromAsset(attributeName, assetType);
-            if (attributeDescriptor) {
-                return attributeDescriptor.valueDescriptor;
-            }
+        let attributeDescriptor: AttributeDescriptor | undefined;
+        if ((attributeNameOrDescriptor as AttributeDescriptor).attributeName) {
+            attributeDescriptor = attributeNameOrDescriptor as AttributeDescriptor;
+        } else {
+            attributeDescriptor = this.getAttributeDescriptor(attributeNameOrDescriptor as string, assetTypeOrDescriptor);
+        }
+        if (attributeDescriptor) {
+            return attributeDescriptor.valueDescriptor;
         }
     }
 
@@ -299,12 +294,12 @@ export class AssetModelUtil {
 
         if (typeof attributeOrNameOrDescriptor === "string") {
             attributeName = attributeOrNameOrDescriptor;
-            attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attributeOrNameOrDescriptor, assetType);
+            attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attributeOrNameOrDescriptor, assetType);
             attributeTypeOrDescriptor = attributeDescriptor ? attributeDescriptor.valueDescriptor : undefined;
         } else if (attributeOrNameOrDescriptor) {
             if ((attributeOrNameOrDescriptor as Attribute).type) {
                 attributeName = (attributeOrNameOrDescriptor as Attribute).name!;
-                attributeDescriptor = AssetModelUtil.getAttributeDescriptorFromAsset(attributeName, assetType);
+                attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attributeName, assetType);
                 attributeTypeOrDescriptor = (attributeOrNameOrDescriptor as Attribute).type;
             } else {
                 attributeName = (attributeOrNameOrDescriptor as AttributeDescriptor).attributeName!;
@@ -315,7 +310,7 @@ export class AssetModelUtil {
 
         if (attributeTypeOrDescriptor) {
             if (typeof attributeTypeOrDescriptor === "string") {
-                attributeValueDescriptor = AssetModelUtil.getAttributeValueDescriptorFromAsset(attributeTypeOrDescriptor, assetType, attributeName);
+                attributeValueDescriptor = AssetModelUtil.getAttributeValueDescriptor(attributeTypeOrDescriptor, assetType, attributeName);
             } else {
                 attributeValueDescriptor = attributeTypeOrDescriptor;
             }
@@ -324,14 +319,30 @@ export class AssetModelUtil {
         return [attributeDescriptor, attributeValueDescriptor];
     }
 
-    public static getMetaItemDescriptor(urn?: string): MetaItemDescriptor | undefined {
+    public static getMetaItemDescriptor(urn?: string, attributeNameOrDescriptor?: string | AttributeDescriptor, assetTypeOrDescriptor?: string | AssetDescriptor): MetaItemDescriptor | undefined {
         if (!urn) {
             return;
         }
 
-        return this._metaItemDescriptors.find((metaItemDescriptor) => {
+        let descriptor = this._metaItemDescriptors.find((metaItemDescriptor) => {
             return metaItemDescriptor.urn === urn;
         });
+
+        if (descriptor || !attributeNameOrDescriptor) {
+            return descriptor;
+        }
+
+        let attributeDescriptor: AttributeDescriptor | undefined;
+        if ((attributeNameOrDescriptor as AttributeDescriptor).attributeName) {
+            attributeDescriptor = attributeNameOrDescriptor as AttributeDescriptor;
+        } else {
+            attributeDescriptor = this.getAttributeDescriptor(attributeNameOrDescriptor as string, assetTypeOrDescriptor);
+        }
+        if (attributeDescriptor && attributeDescriptor.metaItemDescriptors) {
+            descriptor = attributeDescriptor.metaItemDescriptors.find((mid) => mid.urn === urn);
+        }
+
+        return descriptor;
     }
 
     public static attributeValueDescriptorsMatch(attributeValueDescriptor1: AttributeValueDescriptor, attributeValueDescriptor2: AttributeValueDescriptor) {

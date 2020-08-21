@@ -96,7 +96,7 @@ const style = css`
     #type {
         white-space: nowrap;
         text-transform: capitalize;
-        margin: 4px 3px auto 0;
+        margin: 14px 3px auto 0;
     }
 `;
 

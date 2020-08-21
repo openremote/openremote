@@ -140,7 +140,7 @@ export class OrEditAssetPanel extends LitElement {
 
         const updatePublicRead = (publicRead: boolean) => {
             this.asset.accessPublicRead = publicRead;
-            this.onUpdated();
+            this.onModified();
         };
 
         // Properties panel fields
@@ -207,7 +207,7 @@ export class OrEditAssetPanel extends LitElement {
 
         const deleteAttribute = () => {
             this.attrs!.splice(this.attrs!.indexOf(attribute), 1);
-            this.onUpdated();
+            this.onModified();
         };
 
         return html`
@@ -222,7 +222,7 @@ export class OrEditAssetPanel extends LitElement {
                     <div>
                         <div class="meta-item-container">
                             <div>
-                                ${!attribute.meta ? `` : attribute.meta.sort(Util.sortByString((metaItem) => metaItem.name!)).map((metaItem) => this._getEditMetaItemTemplate(attribute, metaItem))}
+                                ${!attribute.meta ? `` : attribute.meta.sort(Util.sortByString((metaItem) => metaItem.name!)).map((metaItem) => this._getMetaItemTemplate(attribute, metaItem))}
                             </div>
                             <div class="item-add">
                                 <or-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @click="${() => this._addMetaItems(attribute)}"></or-input>
@@ -234,20 +234,20 @@ export class OrEditAssetPanel extends LitElement {
         `;
     };
 
-    protected onUpdated() {
+    protected onModified() {
         this.dispatchEvent(new OrEditAssetChangedEvent());
         this.requestUpdate();
     }
 
-    protected _getEditMetaItemTemplate(attribute: Attribute, metaItem: MetaItem): TemplateResult {
+    protected _getMetaItemTemplate(attribute: Attribute, metaItem: MetaItem): TemplateResult {
 
         const removeMetaItem = () => {
             attribute.meta!.splice(attribute.meta!.indexOf(metaItem), 1);
-            this.onUpdated();
+            this.onModified();
         };
 
         const descriptor = AssetModelUtil.getMetaItemDescriptor(metaItem.name);
-        let valueType = descriptor ? descriptor.valueType : undefined;
+        let valueType = descriptor ? descriptor .valueType : undefined;
         let inputType = InputType.TEXT;
         if (!valueType && metaItem.value !== undefined && metaItem.value !== null) {
             switch (typeof metaItem.value) {
@@ -333,7 +333,7 @@ export class OrEditAssetPanel extends LitElement {
                     actionName: "add",
                     action: () => {
                         this.attrs!.push(attr);
-                        this.onUpdated();
+                        this.onModified();
                     },
                     content: html`<or-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-input>`
                 },
@@ -404,7 +404,7 @@ export class OrEditAssetPanel extends LitElement {
                                             value: descriptor.initialValue
                                         }
                                     );
-                                    this.onUpdated();
+                                    this.onModified();
                                 }
                             });
                         }
@@ -439,13 +439,13 @@ export class OrEditAssetPanel extends LitElement {
                 parentNode = parentNode.parent;
             }
             this.asset.path = path;
-            this.onUpdated();
+            this.onModified();
         };
 
         const clearParent = () => {
             this.asset.parentId = undefined;
             this.asset.path = [this.asset.id!];
-            this.onUpdated();
+            this.onModified();
         };
 
         const blockEvent = (ev: Event) => {
