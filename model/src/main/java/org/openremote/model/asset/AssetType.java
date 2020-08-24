@@ -127,7 +127,6 @@ public enum AssetType implements AssetDescriptor {
             LABEL.withInitialValue(Values.create("Nitrogen Level")),
             UNIT_TYPE.withInitialValue(Values.create(UNITS_DENSITY_MICROGRAMS_CUBIC_M)),
             READ_ONLY,
-            STORE_DATA_POINTS,
             RULE_STATE
         ),
         new AttributeDescriptorImpl("relHumidity", PERCENTAGE, null,
@@ -303,7 +302,7 @@ public enum AssetType implements AssetDescriptor {
             LABEL.withInitialValue(Values.create("Water level")),
             DESCRIPTION.withInitialValue(Values.create("Level of the groundwater")),
             STORE_DATA_POINTS,
-            UNIT_TYPE.withInitialValue(Values.create(UNITS_DISTANCE_METRES)),
+            UNIT_TYPE.withInitialValue(Values.create(UNITS_DISTANCE_CENTIMETRES)),
             READ_ONLY,
             RULE_STATE
         ),
@@ -317,6 +316,15 @@ public enum AssetType implements AssetDescriptor {
     ),
 
     PEOPLE_COUNTER(ASSET_NAMESPACE + ":peopleCounter", "account-multiple", "4b5966", false,
+        new AttributeDescriptorImpl("manufacturer", STRING, null,
+                LABEL.withInitialValue("Manufacturer")
+        ),
+        new AttributeDescriptorImpl("model", STRING, null,
+                LABEL.withInitialValue("Model")
+        ),
+        new AttributeDescriptorImpl("userNotes", STRING, null,
+                LABEL.withInitialValue("User notes")
+        ),
         new AttributeDescriptorImpl("peopleCountIn", INTEGER, null,
             LABEL.withInitialValue(Values.create("People Count In")),
             DESCRIPTION.withInitialValue(Values.create("Cumulative number of people going into area")),

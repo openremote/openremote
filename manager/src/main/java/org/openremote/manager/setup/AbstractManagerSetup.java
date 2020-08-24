@@ -572,15 +572,6 @@ public abstract class AbstractManagerSetup implements Setup {
                 assetAttribute.addMeta(agentLinker.get());
             }
         });
-        peopleCounterAsset.getAttribute("peopleCountGrowth").ifPresent(assetAttribute -> {
-            assetAttribute.addMeta(
-                new MetaItem(RULE_STATE),
-                new MetaItem(STORE_DATA_POINTS)
-            );
-            if (agentLinker != null) {
-                assetAttribute.addMeta(agentLinker.get());
-            }
-        });
 
         return peopleCounterAsset;
     }
@@ -665,8 +656,6 @@ public abstract class AbstractManagerSetup implements Setup {
         environmentAsset.getAttribute("nO2").ifPresent(assetAttribute -> assetAttribute
             .addMeta(agentLinker.get()));
         environmentAsset.getAttribute("relHumidity").ifPresent(assetAttribute -> assetAttribute
-            .addMeta(agentLinker.get()));
-        environmentAsset.getAttribute("ozone").ifPresent(assetAttribute -> assetAttribute
             .addMeta(agentLinker.get()));
         environmentAsset.getAttribute("particlesPM1").ifPresent(assetAttribute -> assetAttribute
             .addMeta(agentLinker.get()));

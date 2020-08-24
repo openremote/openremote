@@ -44,6 +44,7 @@ import org.openremote.model.value.Values;
 
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.Random;
 
 import static java.time.temporal.ChronoField.SECOND_OF_DAY;
 import static org.openremote.agent.protocol.http.HttpClientProtocol.*;
@@ -67,6 +68,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
     public ManagerDemoSetup(Container container) {
         super(container);
+    }
+
+    private static int getRandomNumberInRange(int min, int max) {
+        if (min >= max) {
+            throw new IllegalArgumentException("max must be greater than min");
+        }
+        Random r = new Random();
+        return r.nextInt((max - min) + 1) + min;
     }
 
     @Override
@@ -145,6 +154,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new AssetAttribute(AttributeType.GEO_POSTAL_CODE, Values.create("3072 AP")),
                 new AssetAttribute(AttributeType.GEO_CITY, Values.create("Rotterdam")),
                 new AssetAttribute(AttributeType.GEO_COUNTRY, Values.create("Netherlands")),
+                new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(4.488324, 51.906577).toValue())
+                        .removeMeta(SHOW_ON_DASHBOARD),
                 new AssetAttribute("powerBalance", POWER).addMeta(
                         LABEL.withInitialValue("Balance of power production and use"),
                         UNIT_TYPE.withInitialValue(UNITS_POWER_KILOWATT),
@@ -156,20 +167,102 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         building1Asset = assetStorageService.merge(building1Asset);
 
         Asset storage1Asset = createDemoElectricityStorageAsset("Battery De Rotterdam", building1Asset, new GeoJSONPoint(4.488324, 51.906577));
+        storage1Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Super-B")));
+        storage1Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Nomia")));
         storage1Asset.setId(UniqueIdentifierGenerator.generateId(storage1Asset.getName()));
         storage1Asset = assetStorageService.merge(storage1Asset);
 
         Asset consumption1Asset = createDemoElectricityConsumerAsset("Consumption De Rotterdam", building1Asset, new GeoJSONPoint(4.487519, 51.906544));
+        consumption1Asset.getAttribute("totalPower").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(STORE_DATA_POINTS);
+            assetAttribute.addMeta(
+                    new MetaItem(
+                            AGENT_LINK,
+                            new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ReplaySimulatorElement.ELEMENT_NAME)
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.REPLAY_ATTRIBUTE_LINK_DATA,
+                            Values.createArray().addAll(
+                                    Values.createObject().put("timestamp", midnight.get(SECOND_OF_DAY)).put("value", 23),
+                                    Values.createObject().put("timestamp", midnight.plusHours(1).get(SECOND_OF_DAY)).put("value", 21),
+                                    Values.createObject().put("timestamp", midnight.plusHours(2).get(SECOND_OF_DAY)).put("value", 20),
+                                    Values.createObject().put("timestamp", midnight.plusHours(3).get(SECOND_OF_DAY)).put("value", 22),
+                                    Values.createObject().put("timestamp", midnight.plusHours(4).get(SECOND_OF_DAY)).put("value", 21),
+                                    Values.createObject().put("timestamp", midnight.plusHours(5).get(SECOND_OF_DAY)).put("value", 22),
+                                    Values.createObject().put("timestamp", midnight.plusHours(6).get(SECOND_OF_DAY)).put("value", 41),
+                                    Values.createObject().put("timestamp", midnight.plusHours(7).get(SECOND_OF_DAY)).put("value", 54),
+                                    Values.createObject().put("timestamp", midnight.plusHours(8).get(SECOND_OF_DAY)).put("value", 63),
+                                    Values.createObject().put("timestamp", midnight.plusHours(9).get(SECOND_OF_DAY)).put("value", 76),
+                                    Values.createObject().put("timestamp", midnight.plusHours(10).get(SECOND_OF_DAY)).put("value", 80),
+                                    Values.createObject().put("timestamp", midnight.plusHours(11).get(SECOND_OF_DAY)).put("value", 79),
+                                    Values.createObject().put("timestamp", midnight.plusHours(12).get(SECOND_OF_DAY)).put("value", 84),
+                                    Values.createObject().put("timestamp", midnight.plusHours(13).get(SECOND_OF_DAY)).put("value", 76),
+                                    Values.createObject().put("timestamp", midnight.plusHours(14).get(SECOND_OF_DAY)).put("value", 82),
+                                    Values.createObject().put("timestamp", midnight.plusHours(15).get(SECOND_OF_DAY)).put("value", 83),
+                                    Values.createObject().put("timestamp", midnight.plusHours(16).get(SECOND_OF_DAY)).put("value", 77),
+                                    Values.createObject().put("timestamp", midnight.plusHours(17).get(SECOND_OF_DAY)).put("value", 71),
+                                    Values.createObject().put("timestamp", midnight.plusHours(18).get(SECOND_OF_DAY)).put("value", 63),
+                                    Values.createObject().put("timestamp", midnight.plusHours(19).get(SECOND_OF_DAY)).put("value", 41),
+                                    Values.createObject().put("timestamp", midnight.plusHours(20).get(SECOND_OF_DAY)).put("value", 27),
+                                    Values.createObject().put("timestamp", midnight.plusHours(21).get(SECOND_OF_DAY)).put("value", 22),
+                                    Values.createObject().put("timestamp", midnight.plusHours(22).get(SECOND_OF_DAY)).put("value", 24),
+                                    Values.createObject().put("timestamp", midnight.plusHours(23).get(SECOND_OF_DAY)).put("value", 20)
+                            )
+                    )
+            );
+        });
         consumption1Asset.setId(UniqueIdentifierGenerator.generateId(consumption1Asset.getName()));
         consumption1Asset = assetStorageService.merge(consumption1Asset);
 
         Asset production1Asset = createDemoElectricityProducerAsset("Solar De Rotterdam", building1Asset, new GeoJSONPoint(4.488592, 51.907047));
+        production1Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("AEG")));
+        production1Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("AS-P60")));
         production1Asset.getAttribute("totalPower").ifPresent(assetAttribute -> {
-            assetAttribute.setValue(Values.create(6.02));
             assetAttribute.addMeta(STORE_DATA_POINTS);
+            assetAttribute.addMeta(
+                    new MetaItem(
+                            AGENT_LINK,
+                            new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ReplaySimulatorElement.ELEMENT_NAME)
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.REPLAY_ATTRIBUTE_LINK_DATA,
+                            Values.createArray().addAll(
+                                    Values.createObject().put("timestamp", midnight.get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(1).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(2).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(3).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(4).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(5).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(6).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(7).get(SECOND_OF_DAY)).put("value", 1),
+                                    Values.createObject().put("timestamp", midnight.plusHours(8).get(SECOND_OF_DAY)).put("value", 10),
+                                    Values.createObject().put("timestamp", midnight.plusHours(9).get(SECOND_OF_DAY)).put("value", 15),
+                                    Values.createObject().put("timestamp", midnight.plusHours(10).get(SECOND_OF_DAY)).put("value", 39),
+                                    Values.createObject().put("timestamp", midnight.plusHours(11).get(SECOND_OF_DAY)).put("value", 52),
+                                    Values.createObject().put("timestamp", midnight.plusHours(12).get(SECOND_OF_DAY)).put("value", 50),
+                                    Values.createObject().put("timestamp", midnight.plusHours(13).get(SECOND_OF_DAY)).put("value", 48),
+                                    Values.createObject().put("timestamp", midnight.plusHours(14).get(SECOND_OF_DAY)).put("value", 36),
+                                    Values.createObject().put("timestamp", midnight.plusHours(15).get(SECOND_OF_DAY)).put("value", 23),
+                                    Values.createObject().put("timestamp", midnight.plusHours(16).get(SECOND_OF_DAY)).put("value", 24),
+                                    Values.createObject().put("timestamp", midnight.plusHours(17).get(SECOND_OF_DAY)).put("value", 18),
+                                    Values.createObject().put("timestamp", midnight.plusHours(18).get(SECOND_OF_DAY)).put("value", 10),
+                                    Values.createObject().put("timestamp", midnight.plusHours(19).get(SECOND_OF_DAY)).put("value", 8),
+                                    Values.createObject().put("timestamp", midnight.plusHours(20).get(SECOND_OF_DAY)).put("value", 3),
+                                    Values.createObject().put("timestamp", midnight.plusHours(21).get(SECOND_OF_DAY)).put("value", 1),
+                                    Values.createObject().put("timestamp", midnight.plusHours(22).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(23).get(SECOND_OF_DAY)).put("value", 0)
+                            )
+                    )
+            );
         });
-        production1Asset.getAttribute("totalEnergy").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(6.02)));
-        production1Asset.getAttribute("installedCapacity").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(16.52)));
+        production1Asset.getAttribute("totalEnergy").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(152689)));
+        production1Asset.getAttribute("installedCapacity").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(89.6)));
         production1Asset.getAttribute("systemEfficiency").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(93)));
         production1Asset.getAttribute("panelOrientation").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(ElectricityProducerOrientationType.EAST_WEST.name())));
         production1Asset.setId(UniqueIdentifierGenerator.generateId(production1Asset.getName()));
@@ -182,28 +275,112 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new AssetAttribute(AttributeType.GEO_STREET, Values.create("Coolsingel 40")),
                 new AssetAttribute(AttributeType.GEO_POSTAL_CODE, Values.create("3011 AD")),
                 new AssetAttribute(AttributeType.GEO_CITY, Values.create("Rotterdam")),
-                new AssetAttribute(AttributeType.GEO_COUNTRY, Values.create("Netherlands"))
+                new AssetAttribute(AttributeType.GEO_COUNTRY, Values.create("Netherlands")),
+                new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(4.47985, 51.92274).toValue())
+                        .removeMeta(SHOW_ON_DASHBOARD)
         );
         building2Asset.setId(UniqueIdentifierGenerator.generateId(building2Asset.getName() + "building"));
         building2Asset = assetStorageService.merge(building2Asset);
 
         Asset storage2Asset = createDemoElectricityStorageAsset("Battery Stadhuis", building2Asset, new GeoJSONPoint(4.47985, 51.92274));
+        storage2Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("LG Chem")));
+        storage2Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("ESS Industrial")));
         storage2Asset.setId(UniqueIdentifierGenerator.generateId(storage2Asset.getName()));
         storage2Asset = assetStorageService.merge(storage2Asset);
 
         Asset consumption2Asset = createDemoElectricityConsumerAsset("Consumption Stadhuis", building2Asset, new GeoJSONPoint(4.47933, 51.92259));
+        consumption2Asset.getAttribute("totalPower").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(STORE_DATA_POINTS);
+            assetAttribute.addMeta(
+                    new MetaItem(
+                            AGENT_LINK,
+                            new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ReplaySimulatorElement.ELEMENT_NAME)
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.REPLAY_ATTRIBUTE_LINK_DATA,
+                            Values.createArray().addAll(
+                                    Values.createObject().put("timestamp", midnight.get(SECOND_OF_DAY)).put("value", 7),
+                                    Values.createObject().put("timestamp", midnight.plusHours(1).get(SECOND_OF_DAY)).put("value", 8),
+                                    Values.createObject().put("timestamp", midnight.plusHours(2).get(SECOND_OF_DAY)).put("value", 7),
+                                    Values.createObject().put("timestamp", midnight.plusHours(3).get(SECOND_OF_DAY)).put("value", 9),
+                                    Values.createObject().put("timestamp", midnight.plusHours(4).get(SECOND_OF_DAY)).put("value", 8),
+                                    Values.createObject().put("timestamp", midnight.plusHours(5).get(SECOND_OF_DAY)).put("value", 9),
+                                    Values.createObject().put("timestamp", midnight.plusHours(6).get(SECOND_OF_DAY)).put("value", 12),
+                                    Values.createObject().put("timestamp", midnight.plusHours(7).get(SECOND_OF_DAY)).put("value", 22),
+                                    Values.createObject().put("timestamp", midnight.plusHours(8).get(SECOND_OF_DAY)).put("value", 30),
+                                    Values.createObject().put("timestamp", midnight.plusHours(9).get(SECOND_OF_DAY)).put("value", 36),
+                                    Values.createObject().put("timestamp", midnight.plusHours(10).get(SECOND_OF_DAY)).put("value", 39),
+                                    Values.createObject().put("timestamp", midnight.plusHours(11).get(SECOND_OF_DAY)).put("value", 32),
+                                    Values.createObject().put("timestamp", midnight.plusHours(12).get(SECOND_OF_DAY)).put("value", 36),
+                                    Values.createObject().put("timestamp", midnight.plusHours(13).get(SECOND_OF_DAY)).put("value", 44),
+                                    Values.createObject().put("timestamp", midnight.plusHours(14).get(SECOND_OF_DAY)).put("value", 47),
+                                    Values.createObject().put("timestamp", midnight.plusHours(15).get(SECOND_OF_DAY)).put("value", 44),
+                                    Values.createObject().put("timestamp", midnight.plusHours(16).get(SECOND_OF_DAY)).put("value", 38),
+                                    Values.createObject().put("timestamp", midnight.plusHours(17).get(SECOND_OF_DAY)).put("value", 38),
+                                    Values.createObject().put("timestamp", midnight.plusHours(18).get(SECOND_OF_DAY)).put("value", 34),
+                                    Values.createObject().put("timestamp", midnight.plusHours(19).get(SECOND_OF_DAY)).put("value", 33),
+                                    Values.createObject().put("timestamp", midnight.plusHours(20).get(SECOND_OF_DAY)).put("value", 23),
+                                    Values.createObject().put("timestamp", midnight.plusHours(21).get(SECOND_OF_DAY)).put("value", 13),
+                                    Values.createObject().put("timestamp", midnight.plusHours(22).get(SECOND_OF_DAY)).put("value", 9),
+                                    Values.createObject().put("timestamp", midnight.plusHours(23).get(SECOND_OF_DAY)).put("value", 8)
+                            )
+                    )
+            );
+        });
         consumption2Asset.setId(UniqueIdentifierGenerator.generateId(consumption2Asset.getName()));
         consumption2Asset = assetStorageService.merge(consumption2Asset);
 
         Asset production2Asset = createDemoElectricityProducerAsset("Solar Stadhuis", building2Asset, new GeoJSONPoint(4.47945, 51.92301));
         production2Asset.getAttribute("totalPower").ifPresent(assetAttribute -> {
-            assetAttribute.setValue(Values.create(5.13));
             assetAttribute.addMeta(STORE_DATA_POINTS);
+            assetAttribute.addMeta(
+                    new MetaItem(
+                            AGENT_LINK,
+                            new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ReplaySimulatorElement.ELEMENT_NAME)
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.REPLAY_ATTRIBUTE_LINK_DATA,
+                            Values.createArray().addAll(
+                                    Values.createObject().put("timestamp", midnight.get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(1).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(2).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(3).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(4).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(5).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(6).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(7).get(SECOND_OF_DAY)).put("value", 1),
+                                    Values.createObject().put("timestamp", midnight.plusHours(8).get(SECOND_OF_DAY)).put("value", 2),
+                                    Values.createObject().put("timestamp", midnight.plusHours(9).get(SECOND_OF_DAY)).put("value", 3),
+                                    Values.createObject().put("timestamp", midnight.plusHours(10).get(SECOND_OF_DAY)).put("value", 8),
+                                    Values.createObject().put("timestamp", midnight.plusHours(11).get(SECOND_OF_DAY)).put("value", 14),
+                                    Values.createObject().put("timestamp", midnight.plusHours(12).get(SECOND_OF_DAY)).put("value", 12),
+                                    Values.createObject().put("timestamp", midnight.plusHours(13).get(SECOND_OF_DAY)).put("value", 10),
+                                    Values.createObject().put("timestamp", midnight.plusHours(14).get(SECOND_OF_DAY)).put("value", 7),
+                                    Values.createObject().put("timestamp", midnight.plusHours(15).get(SECOND_OF_DAY)).put("value", 5),
+                                    Values.createObject().put("timestamp", midnight.plusHours(16).get(SECOND_OF_DAY)).put("value", 7),
+                                    Values.createObject().put("timestamp", midnight.plusHours(17).get(SECOND_OF_DAY)).put("value", 5),
+                                    Values.createObject().put("timestamp", midnight.plusHours(18).get(SECOND_OF_DAY)).put("value", 3),
+                                    Values.createObject().put("timestamp", midnight.plusHours(19).get(SECOND_OF_DAY)).put("value", 2),
+                                    Values.createObject().put("timestamp", midnight.plusHours(20).get(SECOND_OF_DAY)).put("value", 1),
+                                    Values.createObject().put("timestamp", midnight.plusHours(21).get(SECOND_OF_DAY)).put("value", 1),
+                                    Values.createObject().put("timestamp", midnight.plusHours(22).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(23).get(SECOND_OF_DAY)).put("value", 0)
+                            )
+                    )
+            );
         });
-        production2Asset.getAttribute("totalEnergy").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(5.13)));
-        production2Asset.getAttribute("installedCapacity").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(15.70)));
+        production2Asset.getAttribute("totalEnergy").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(88961)));
+        production2Asset.getAttribute("installedCapacity").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(19.2)));
         production2Asset.getAttribute("systemEfficiency").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(79)));
         production2Asset.getAttribute("panelOrientation").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(ElectricityProducerOrientationType.SOUTH.name())));
+        production2Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Solarwatt")));
+        production2Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("EasyIn 60M")));
         production2Asset.setId(UniqueIdentifierGenerator.generateId(production2Asset.getName()));
         production2Asset = assetStorageService.merge(production2Asset);
 
@@ -215,6 +392,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new AssetAttribute(AttributeType.GEO_POSTAL_CODE, Values.create("3011 GZ")),
                 new AssetAttribute(AttributeType.GEO_CITY, Values.create("Rotterdam")),
                 new AssetAttribute(AttributeType.GEO_COUNTRY, Values.create("Netherlands")),
+                new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(4.47945, 51.92301).toValue())
+                        .removeMeta(SHOW_ON_DASHBOARD),
                 new AssetAttribute("allChargersInUse", BOOLEAN)
                         .addMeta(
                                 LABEL.withInitialValue("All chargers in use"),
@@ -226,13 +405,52 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         Asset production3Asset = createDemoElectricityProducerAsset("Solar Markthal", building3Asset, new GeoJSONPoint(4.47945, 51.92301));
         production3Asset.getAttribute("totalPower").ifPresent(assetAttribute -> {
-            assetAttribute.setValue(Values.create(4.28));
             assetAttribute.addMeta(STORE_DATA_POINTS);
+            assetAttribute.addMeta(
+                    new MetaItem(
+                            AGENT_LINK,
+                            new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ReplaySimulatorElement.ELEMENT_NAME)
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.REPLAY_ATTRIBUTE_LINK_DATA,
+                            Values.createArray().addAll(
+                                    Values.createObject().put("timestamp", midnight.get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(1).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(2).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(3).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(4).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(5).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(6).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(7).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(8).get(SECOND_OF_DAY)).put("value", 2),
+                                    Values.createObject().put("timestamp", midnight.plusHours(9).get(SECOND_OF_DAY)).put("value", 6),
+                                    Values.createObject().put("timestamp", midnight.plusHours(10).get(SECOND_OF_DAY)).put("value", 10),
+                                    Values.createObject().put("timestamp", midnight.plusHours(11).get(SECOND_OF_DAY)).put("value", 13),
+                                    Values.createObject().put("timestamp", midnight.plusHours(12).get(SECOND_OF_DAY)).put("value", 21),
+                                    Values.createObject().put("timestamp", midnight.plusHours(13).get(SECOND_OF_DAY)).put("value", 14),
+                                    Values.createObject().put("timestamp", midnight.plusHours(14).get(SECOND_OF_DAY)).put("value", 17),
+                                    Values.createObject().put("timestamp", midnight.plusHours(15).get(SECOND_OF_DAY)).put("value", 10),
+                                    Values.createObject().put("timestamp", midnight.plusHours(16).get(SECOND_OF_DAY)).put("value", 9),
+                                    Values.createObject().put("timestamp", midnight.plusHours(17).get(SECOND_OF_DAY)).put("value", 7),
+                                    Values.createObject().put("timestamp", midnight.plusHours(18).get(SECOND_OF_DAY)).put("value", 5),
+                                    Values.createObject().put("timestamp", midnight.plusHours(19).get(SECOND_OF_DAY)).put("value", 4),
+                                    Values.createObject().put("timestamp", midnight.plusHours(20).get(SECOND_OF_DAY)).put("value", 2),
+                                    Values.createObject().put("timestamp", midnight.plusHours(21).get(SECOND_OF_DAY)).put("value", 1),
+                                    Values.createObject().put("timestamp", midnight.plusHours(22).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(23).get(SECOND_OF_DAY)).put("value", 0)
+                            )
+                    )
+            );
         });
-        production3Asset.getAttribute("totalEnergy").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(4.28)));
-        production3Asset.getAttribute("installedCapacity").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(18.11)));
+        production3Asset.getAttribute("totalEnergy").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(24134)));
+        production3Asset.getAttribute("installedCapacity").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(29.8)));
         production3Asset.getAttribute("systemEfficiency").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(91)));
         production3Asset.getAttribute("panelOrientation").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(ElectricityProducerOrientationType.SOUTH.name())));
+        production3Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Sunpower")));
+        production3Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("E20-327")));
         production3Asset.setId(UniqueIdentifierGenerator.generateId(production3Asset.getName()));
         production3Asset = assetStorageService.merge(production3Asset);
 
@@ -278,6 +496,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
             );
         });
+        charger1Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Allego")));
+        charger1Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("HPC")));
         charger1Asset.setId(UniqueIdentifierGenerator.generateId(charger1Asset.getName()));
         charger1Asset = assetStorageService.merge(charger1Asset);
 
@@ -323,6 +543,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
             );
         });
+        charger2Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Bosch")));
+        charger2Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("EV800")));
         charger2Asset.setId(UniqueIdentifierGenerator.generateId(charger2Asset.getName()));
         charger2Asset = assetStorageService.merge(charger2Asset);
 
@@ -368,6 +590,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
             );
         });
+        charger3Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Siemens")));
+        charger3Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("CPC 50")));
         charger3Asset.setId(UniqueIdentifierGenerator.generateId(charger3Asset.getName()));
         charger3Asset = assetStorageService.merge(charger3Asset);
 
@@ -413,6 +637,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
             );
         });
+        charger4Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("SemaConnect")));
+        charger4Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("The Series 6")));
         charger4Asset.setId(UniqueIdentifierGenerator.generateId(charger4Asset.getName()));
         charger4Asset = assetStorageService.merge(charger4Asset);
 
@@ -423,12 +649,55 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new AssetAttribute(AttributeType.GEO_STREET, Values.create("Wytemaweg 25")),
                 new AssetAttribute(AttributeType.GEO_POSTAL_CODE, Values.create("3015 CN")),
                 new AssetAttribute(AttributeType.GEO_CITY, Values.create("Rotterdam")),
-                new AssetAttribute(AttributeType.GEO_COUNTRY, Values.create("Netherlands"))
+                new AssetAttribute(AttributeType.GEO_COUNTRY, Values.create("Netherlands")),
+                new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(4.468324, 51.912062).toValue())
+                        .removeMeta(SHOW_ON_DASHBOARD)
         );
         building4Asset.setId(UniqueIdentifierGenerator.generateId(building4Asset.getName() + "building"));
         building4Asset = assetStorageService.merge(building4Asset);
 
         Asset consumption4Asset = createDemoElectricityConsumerAsset("Consumption Erasmianum", building4Asset, new GeoJSONPoint(4.468324, 51.912062));
+        consumption4Asset.getAttribute("totalPower").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(STORE_DATA_POINTS);
+            assetAttribute.addMeta(
+                    new MetaItem(
+                            AGENT_LINK,
+                            new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ReplaySimulatorElement.ELEMENT_NAME)
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.REPLAY_ATTRIBUTE_LINK_DATA,
+                            Values.createArray().addAll(
+                                    Values.createObject().put("timestamp", midnight.get(SECOND_OF_DAY)).put("value", 6),
+                                    Values.createObject().put("timestamp", midnight.plusHours(1).get(SECOND_OF_DAY)).put("value", 5),
+                                    Values.createObject().put("timestamp", midnight.plusHours(2).get(SECOND_OF_DAY)).put("value", 6),
+                                    Values.createObject().put("timestamp", midnight.plusHours(3).get(SECOND_OF_DAY)).put("value", 7),
+                                    Values.createObject().put("timestamp", midnight.plusHours(4).get(SECOND_OF_DAY)).put("value", 5),
+                                    Values.createObject().put("timestamp", midnight.plusHours(5).get(SECOND_OF_DAY)).put("value", 6),
+                                    Values.createObject().put("timestamp", midnight.plusHours(6).get(SECOND_OF_DAY)).put("value", 9),
+                                    Values.createObject().put("timestamp", midnight.plusHours(7).get(SECOND_OF_DAY)).put("value", 23),
+                                    Values.createObject().put("timestamp", midnight.plusHours(8).get(SECOND_OF_DAY)).put("value", 37),
+                                    Values.createObject().put("timestamp", midnight.plusHours(9).get(SECOND_OF_DAY)).put("value", 41),
+                                    Values.createObject().put("timestamp", midnight.plusHours(10).get(SECOND_OF_DAY)).put("value", 47),
+                                    Values.createObject().put("timestamp", midnight.plusHours(11).get(SECOND_OF_DAY)).put("value", 49),
+                                    Values.createObject().put("timestamp", midnight.plusHours(12).get(SECOND_OF_DAY)).put("value", 51),
+                                    Values.createObject().put("timestamp", midnight.plusHours(13).get(SECOND_OF_DAY)).put("value", 43),
+                                    Values.createObject().put("timestamp", midnight.plusHours(14).get(SECOND_OF_DAY)).put("value", 48),
+                                    Values.createObject().put("timestamp", midnight.plusHours(15).get(SECOND_OF_DAY)).put("value", 45),
+                                    Values.createObject().put("timestamp", midnight.plusHours(16).get(SECOND_OF_DAY)).put("value", 46),
+                                    Values.createObject().put("timestamp", midnight.plusHours(17).get(SECOND_OF_DAY)).put("value", 41),
+                                    Values.createObject().put("timestamp", midnight.plusHours(18).get(SECOND_OF_DAY)).put("value", 38),
+                                    Values.createObject().put("timestamp", midnight.plusHours(19).get(SECOND_OF_DAY)).put("value", 30),
+                                    Values.createObject().put("timestamp", midnight.plusHours(20).get(SECOND_OF_DAY)).put("value", 19),
+                                    Values.createObject().put("timestamp", midnight.plusHours(21).get(SECOND_OF_DAY)).put("value", 15),
+                                    Values.createObject().put("timestamp", midnight.plusHours(22).get(SECOND_OF_DAY)).put("value", 7),
+                                    Values.createObject().put("timestamp", midnight.plusHours(23).get(SECOND_OF_DAY)).put("value", 6)
+                            )
+                    )
+            );
+        });
         consumption4Asset.setId(UniqueIdentifierGenerator.generateId(consumption4Asset.getName()));
         consumption4Asset = assetStorageService.merge(consumption4Asset);
 
@@ -439,24 +708,106 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new AssetAttribute(AttributeType.GEO_STREET, Values.create("Gerdesiaweg 480")),
                 new AssetAttribute(AttributeType.GEO_POSTAL_CODE, Values.create("3061 RA")),
                 new AssetAttribute(AttributeType.GEO_CITY, Values.create("Rotterdam")),
-                new AssetAttribute(AttributeType.GEO_COUNTRY, Values.create("Netherlands"))
+                new AssetAttribute(AttributeType.GEO_COUNTRY, Values.create("Netherlands")),
+                new AssetAttribute(AttributeType.LOCATION, new GeoJSONPoint(4.498048, 51.925770).toValue())
+                        .removeMeta(SHOW_ON_DASHBOARD)
         );
         building5Asset.setId(UniqueIdentifierGenerator.generateId(building5Asset.getName() + "building"));
         building5Asset = assetStorageService.merge(building5Asset);
 
         Asset consumption5Asset = createDemoElectricityConsumerAsset("Consumption Zwembad", building5Asset, new GeoJSONPoint(4.498048, 51.925770));
+        consumption5Asset.getAttribute("totalPower").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(STORE_DATA_POINTS);
+            assetAttribute.addMeta(
+                    new MetaItem(
+                            AGENT_LINK,
+                            new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ReplaySimulatorElement.ELEMENT_NAME)
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.REPLAY_ATTRIBUTE_LINK_DATA,
+                            Values.createArray().addAll(
+                                    Values.createObject().put("timestamp", midnight.get(SECOND_OF_DAY)).put("value", 16),
+                                    Values.createObject().put("timestamp", midnight.plusHours(1).get(SECOND_OF_DAY)).put("value", 16),
+                                    Values.createObject().put("timestamp", midnight.plusHours(2).get(SECOND_OF_DAY)).put("value", 15),
+                                    Values.createObject().put("timestamp", midnight.plusHours(3).get(SECOND_OF_DAY)).put("value", 16),
+                                    Values.createObject().put("timestamp", midnight.plusHours(4).get(SECOND_OF_DAY)).put("value", 17),
+                                    Values.createObject().put("timestamp", midnight.plusHours(5).get(SECOND_OF_DAY)).put("value", 16),
+                                    Values.createObject().put("timestamp", midnight.plusHours(6).get(SECOND_OF_DAY)).put("value", 24),
+                                    Values.createObject().put("timestamp", midnight.plusHours(7).get(SECOND_OF_DAY)).put("value", 35),
+                                    Values.createObject().put("timestamp", midnight.plusHours(8).get(SECOND_OF_DAY)).put("value", 32),
+                                    Values.createObject().put("timestamp", midnight.plusHours(9).get(SECOND_OF_DAY)).put("value", 33),
+                                    Values.createObject().put("timestamp", midnight.plusHours(10).get(SECOND_OF_DAY)).put("value", 34),
+                                    Values.createObject().put("timestamp", midnight.plusHours(11).get(SECOND_OF_DAY)).put("value", 33),
+                                    Values.createObject().put("timestamp", midnight.plusHours(12).get(SECOND_OF_DAY)).put("value", 34),
+                                    Values.createObject().put("timestamp", midnight.plusHours(13).get(SECOND_OF_DAY)).put("value", 31),
+                                    Values.createObject().put("timestamp", midnight.plusHours(14).get(SECOND_OF_DAY)).put("value", 36),
+                                    Values.createObject().put("timestamp", midnight.plusHours(15).get(SECOND_OF_DAY)).put("value", 34),
+                                    Values.createObject().put("timestamp", midnight.plusHours(16).get(SECOND_OF_DAY)).put("value", 32),
+                                    Values.createObject().put("timestamp", midnight.plusHours(17).get(SECOND_OF_DAY)).put("value", 37),
+                                    Values.createObject().put("timestamp", midnight.plusHours(18).get(SECOND_OF_DAY)).put("value", 38),
+                                    Values.createObject().put("timestamp", midnight.plusHours(19).get(SECOND_OF_DAY)).put("value", 37),
+                                    Values.createObject().put("timestamp", midnight.plusHours(20).get(SECOND_OF_DAY)).put("value", 38),
+                                    Values.createObject().put("timestamp", midnight.plusHours(21).get(SECOND_OF_DAY)).put("value", 35),
+                                    Values.createObject().put("timestamp", midnight.plusHours(22).get(SECOND_OF_DAY)).put("value", 24),
+                                    Values.createObject().put("timestamp", midnight.plusHours(23).get(SECOND_OF_DAY)).put("value", 19)
+                            )
+                    )
+            );
+        });
         consumption5Asset.setId(UniqueIdentifierGenerator.generateId(consumption5Asset.getName()));
         consumption5Asset = assetStorageService.merge(consumption5Asset);
 
         Asset production5Asset = createDemoElectricityProducerAsset("Solar Zwembad", building5Asset, new GeoJSONPoint(4.498281, 51.925507));
         production5Asset.getAttribute("totalPower").ifPresent(assetAttribute -> {
-            assetAttribute.setValue(Values.create(5.13));
             assetAttribute.addMeta(STORE_DATA_POINTS);
+            assetAttribute.addMeta(
+                    new MetaItem(
+                            AGENT_LINK,
+                            new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ReplaySimulatorElement.ELEMENT_NAME)
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.REPLAY_ATTRIBUTE_LINK_DATA,
+                            Values.createArray().addAll(
+                                    Values.createObject().put("timestamp", midnight.get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(1).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(2).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(3).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(4).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(5).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(6).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(7).get(SECOND_OF_DAY)).put("value", 1),
+                                    Values.createObject().put("timestamp", midnight.plusHours(8).get(SECOND_OF_DAY)).put("value", 3),
+                                    Values.createObject().put("timestamp", midnight.plusHours(9).get(SECOND_OF_DAY)).put("value", 8),
+                                    Values.createObject().put("timestamp", midnight.plusHours(10).get(SECOND_OF_DAY)).put("value", 30),
+                                    Values.createObject().put("timestamp", midnight.plusHours(11).get(SECOND_OF_DAY)).put("value", 44),
+                                    Values.createObject().put("timestamp", midnight.plusHours(12).get(SECOND_OF_DAY)).put("value", 42),
+                                    Values.createObject().put("timestamp", midnight.plusHours(13).get(SECOND_OF_DAY)).put("value", 41),
+                                    Values.createObject().put("timestamp", midnight.plusHours(14).get(SECOND_OF_DAY)).put("value", 29),
+                                    Values.createObject().put("timestamp", midnight.plusHours(15).get(SECOND_OF_DAY)).put("value", 19),
+                                    Values.createObject().put("timestamp", midnight.plusHours(16).get(SECOND_OF_DAY)).put("value", 16),
+                                    Values.createObject().put("timestamp", midnight.plusHours(17).get(SECOND_OF_DAY)).put("value", 11),
+                                    Values.createObject().put("timestamp", midnight.plusHours(18).get(SECOND_OF_DAY)).put("value", 4),
+                                    Values.createObject().put("timestamp", midnight.plusHours(19).get(SECOND_OF_DAY)).put("value", 3),
+                                    Values.createObject().put("timestamp", midnight.plusHours(20).get(SECOND_OF_DAY)).put("value", 2),
+                                    Values.createObject().put("timestamp", midnight.plusHours(21).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(22).get(SECOND_OF_DAY)).put("value", 0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(23).get(SECOND_OF_DAY)).put("value", 0)
+                            )
+                    )
+            );
         });
-        production5Asset.getAttribute("totalEnergy").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(7.44)));
-        production5Asset.getAttribute("installedCapacity").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(12.79)));
+        production5Asset.getAttribute("totalEnergy").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(23461)));
+        production5Asset.getAttribute("installedCapacity").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(76.2)));
         production5Asset.getAttribute("systemEfficiency").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(86)));
         production5Asset.getAttribute("panelOrientation").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(ElectricityProducerOrientationType.SOUTH.name())));
+        production5Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("S-Energy")));
+        production5Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("SN260P-10")));
         production5Asset.setId(UniqueIdentifierGenerator.generateId(production5Asset.getName()));
         production5Asset = assetStorageService.merge(production5Asset);
 
@@ -513,29 +864,66 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
                 new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
-        environment1Asset.setId(UniqueIdentifierGenerator.generateId(environment1Asset.getName()));
-        environment1Asset = assetStorageService.merge(environment1Asset);
-
         Asset environment2Asset = createDemoEnvironmentAsset("Kaappark", environmentMonitor, new GeoJSONPoint(4.480434, 51.899287), () -> new MetaItem[]{
                 new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
                 new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
-        environment2Asset.setId(UniqueIdentifierGenerator.generateId(environment2Asset.getName()));
-        environment2Asset = assetStorageService.merge(environment2Asset);
-
         Asset environment3Asset = createDemoEnvironmentAsset("Museumpark", environmentMonitor, new GeoJSONPoint(4.472457, 51.912047), () -> new MetaItem[]{
                 new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
                 new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
-        environment3Asset.setId(UniqueIdentifierGenerator.generateId(environment3Asset.getName()));
-        environment3Asset = assetStorageService.merge(environment3Asset);
-
         Asset environment4Asset = createDemoEnvironmentAsset("Eendrachtsplein", environmentMonitor, new GeoJSONPoint(4.473599, 51.916292), () -> new MetaItem[]{
                 new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
                 new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
-        environment4Asset.setId(UniqueIdentifierGenerator.generateId(environment4Asset.getName()));
-        environment4Asset = assetStorageService.merge(environment4Asset);
+
+        Asset[] environmentArray = {environment1Asset, environment2Asset, environment3Asset, environment4Asset};
+        for (int i = 0; i < environmentArray.length; i++) {
+            environmentArray[i].getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Intemo")));
+            environmentArray[i].getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Josene outdoor")));
+            environmentArray[i].getAttribute("ozone").ifPresent(assetAttribute -> {
+                assetAttribute.addMeta(
+                        new MetaItem(
+                                AGENT_LINK,
+                                new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()
+                        ),
+                        new MetaItem(
+                                SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ReplaySimulatorElement.ELEMENT_NAME)
+                        ),
+                        new MetaItem(
+                                SimulatorProtocol.REPLAY_ATTRIBUTE_LINK_DATA,
+                                Values.createArray().addAll(
+                                        Values.createObject().put("timestamp", midnight.get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(80,90)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(1).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(80,90)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(2).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(80,90)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(3).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(80,90)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(4).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(80,90)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(5).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(80,90)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(6).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(80,90)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(7).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(80,90)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(8).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(80,90)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(9).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(80,90)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(10).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(90,110)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(11).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(90,110)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(12).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(90,110)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(13).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(90,110)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(14).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(15).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(115,125)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(16).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(115,125)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(17).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(18).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(90,110)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(19).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(90,110)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(20).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(80,90)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(21).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(80,90)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(22).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(80,90)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(23).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(80,90))
+                                )
+                        )
+                );
+            });
+            environmentArray[i].setId(UniqueIdentifierGenerator.generateId(environmentArray[i].getName()));
+            environmentArray[i] = assetStorageService.merge(environmentArray[i]);
+        }
 
         Asset groundwater1Asset = createDemoGroundwaterAsset("Leuvehaven", environmentMonitor, new GeoJSONPoint(4.48413, 51.91431));
         Asset groundwater2Asset = createDemoGroundwaterAsset("Steiger", environmentMonitor, new GeoJSONPoint(4.482887, 51.920082));
@@ -543,6 +931,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         Asset[] groundwaterArray = {groundwater1Asset, groundwater2Asset, groundwater3Asset};
         for (int i = 0; i < groundwaterArray.length; i++) {
+            groundwaterArray[i].getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Eijkelkamp")));
+            groundwaterArray[i].getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("TeleControlNet")));
             groundwaterArray[i].getAttribute("soilTemperature").ifPresent(assetAttribute -> {
                 assetAttribute.addMeta(
                         new MetaItem(
@@ -583,15 +973,49 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         )
                 );
             });
-            groundwaterArray[i].getAttribute("waterLevel").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(3.51)));
+            groundwaterArray[i].getAttribute("waterLevel").ifPresent(assetAttribute -> {
+                assetAttribute.addMeta(
+                        new MetaItem(
+                                AGENT_LINK,
+                                new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()
+                        ),
+                        new MetaItem(
+                                SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ReplaySimulatorElement.ELEMENT_NAME)
+                        ),
+                        new MetaItem(
+                                SimulatorProtocol.REPLAY_ATTRIBUTE_LINK_DATA,
+                                Values.createArray().addAll(
+                                        Values.createObject().put("timestamp", midnight.get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(1).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(2).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(3).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(4).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(5).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(6).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(7).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(8).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(9).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(10).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(11).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(12).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(13).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(14).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(15).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(100,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(16).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(100,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(17).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(90,110)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(18).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(100,110)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(19).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(100,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(20).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(21).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(22).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120)),
+                                        Values.createObject().put("timestamp", midnight.plusHours(23).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(110,120))
+                                )
+                        )
+                );
+            });
+            groundwaterArray[i].setId(UniqueIdentifierGenerator.generateId(groundwaterArray[i].getName()));
+            groundwaterArray[i] = assetStorageService.merge(groundwaterArray[i]);
         }
-
-        groundwater1Asset.setId(UniqueIdentifierGenerator.generateId(groundwater1Asset.getName()));
-        groundwater2Asset.setId(UniqueIdentifierGenerator.generateId(groundwater2Asset.getName()));
-        groundwater3Asset.setId(UniqueIdentifierGenerator.generateId(groundwater3Asset.getName()));
-        groundwater1Asset = assetStorageService.merge(groundwater1Asset);
-        groundwater2Asset = assetStorageService.merge(groundwater2Asset);
-        groundwater3Asset = assetStorageService.merge(groundwater3Asset);
 
         // ################################ Realm smartcity - Mobility and Safety ###################################
 
@@ -617,6 +1041,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         parkingGroupAsset = assetStorageService.merge(parkingGroupAsset);
 
         Asset parking1Asset = createDemoParkingAsset("Markthal", parkingGroupAsset, new GeoJSONPoint(4.48527, 51.91984));
+        parking1Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("SKIDATA")));
+        parking1Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Barrier.Gate")));
         parking1Asset.getAttribute("occupiedSpaces").ifPresent(assetAttribute -> {
             assetAttribute.addMeta(
                     new MetaItem(
@@ -659,11 +1085,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         });
         parking1Asset.getAttribute("priceHourly").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(3.75)));
         parking1Asset.getAttribute("priceDaily").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(25.00)));
-        parking1Asset.getAttribute("totalSpaces").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(623)));
+        parking1Asset.getAttribute("totalSpaces").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(512)));
         parking1Asset.setId(UniqueIdentifierGenerator.generateId(parking1Asset.getName()));
         parking1Asset = assetStorageService.merge(parking1Asset);
 
         Asset parking2Asset = createDemoParkingAsset("Lijnbaan", parkingGroupAsset, new GeoJSONPoint(4.47681, 51.91849));
+        parking2Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("SKIDATA")));
+        parking2Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Barrier.Gate")));
         parking2Asset.getAttribute("occupiedSpaces").ifPresent(assetAttribute -> {
             assetAttribute.addMeta(
                     new MetaItem(
@@ -706,11 +1134,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         });
         parking2Asset.getAttribute("priceHourly").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(3.50)));
         parking2Asset.getAttribute("priceDaily").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(23.00)));
-        parking2Asset.getAttribute("totalSpaces").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(556)));
+        parking2Asset.getAttribute("totalSpaces").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(390)));
         parking2Asset.setId(UniqueIdentifierGenerator.generateId(parking2Asset.getName()));
         parking2Asset = assetStorageService.merge(parking2Asset);
 
         Asset parking3Asset = createDemoParkingAsset("Erasmusbrug", parkingGroupAsset, new GeoJSONPoint(4.48207, 51.91127));
+        parking3Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Kiestra")));
+        parking3Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Genius Rainbow")));
         parking3Asset.getAttribute("occupiedSpaces").ifPresent(assetAttribute -> {
             assetAttribute.addMeta(
                     new MetaItem(
@@ -753,7 +1183,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         });
         parking3Asset.getAttribute("priceHourly").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(3.40)));
         parking3Asset.getAttribute("priceDaily").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(20.00)));
-        parking3Asset.getAttribute("totalSpaces").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(502)));
+        parking3Asset.getAttribute("totalSpaces").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(373)));
         parking3Asset.setId(UniqueIdentifierGenerator.generateId(parking3Asset.getName()));
         parking3Asset = assetStorageService.merge(parking3Asset);
 
@@ -774,6 +1204,48 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
                 new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
+        peopleCounter1Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("ViNotion")));
+        peopleCounter1Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("ViSense")));
+        peopleCounter1Asset.getAttribute("peopleCountGrowth").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(
+                    new MetaItem(
+                            AGENT_LINK,
+                            new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ReplaySimulatorElement.ELEMENT_NAME)
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.REPLAY_ATTRIBUTE_LINK_DATA,
+                            Values.createArray().addAll(
+                                    Values.createObject().put("timestamp", midnight.get(SECOND_OF_DAY)).put("value", 0.2),
+                                    Values.createObject().put("timestamp", midnight.plusHours(1).get(SECOND_OF_DAY)).put("value", 0.3),
+                                    Values.createObject().put("timestamp", midnight.plusHours(2).get(SECOND_OF_DAY)).put("value", 0.1),
+                                    Values.createObject().put("timestamp", midnight.plusHours(3).get(SECOND_OF_DAY)).put("value", 0.0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(4).get(SECOND_OF_DAY)).put("value", 0.2),
+                                    Values.createObject().put("timestamp", midnight.plusHours(5).get(SECOND_OF_DAY)).put("value", 0.4),
+                                    Values.createObject().put("timestamp", midnight.plusHours(6).get(SECOND_OF_DAY)).put("value", 0.5),
+                                    Values.createObject().put("timestamp", midnight.plusHours(7).get(SECOND_OF_DAY)).put("value", 0.7),
+                                    Values.createObject().put("timestamp", midnight.plusHours(8).get(SECOND_OF_DAY)).put("value", 1.8),
+                                    Values.createObject().put("timestamp", midnight.plusHours(9).get(SECOND_OF_DAY)).put("value", 2.1),
+                                    Values.createObject().put("timestamp", midnight.plusHours(10).get(SECOND_OF_DAY)).put("value", 2.4),
+                                    Values.createObject().put("timestamp", midnight.plusHours(11).get(SECOND_OF_DAY)).put("value", 1.9),
+                                    Values.createObject().put("timestamp", midnight.plusHours(12).get(SECOND_OF_DAY)).put("value", 1.8),
+                                    Values.createObject().put("timestamp", midnight.plusHours(13).get(SECOND_OF_DAY)).put("value", 2.1),
+                                    Values.createObject().put("timestamp", midnight.plusHours(14).get(SECOND_OF_DAY)).put("value", 1.8),
+                                    Values.createObject().put("timestamp", midnight.plusHours(15).get(SECOND_OF_DAY)).put("value", 1.7),
+                                    Values.createObject().put("timestamp", midnight.plusHours(16).get(SECOND_OF_DAY)).put("value", 2.3),
+                                    Values.createObject().put("timestamp", midnight.plusHours(17).get(SECOND_OF_DAY)).put("value", 3.1),
+                                    Values.createObject().put("timestamp", midnight.plusHours(18).get(SECOND_OF_DAY)).put("value", 2.8),
+                                    Values.createObject().put("timestamp", midnight.plusHours(19).get(SECOND_OF_DAY)).put("value", 2.2),
+                                    Values.createObject().put("timestamp", midnight.plusHours(20).get(SECOND_OF_DAY)).put("value", 1.6),
+                                    Values.createObject().put("timestamp", midnight.plusHours(21).get(SECOND_OF_DAY)).put("value", 1.7),
+                                    Values.createObject().put("timestamp", midnight.plusHours(22).get(SECOND_OF_DAY)).put("value", 1.1),
+                                    Values.createObject().put("timestamp", midnight.plusHours(23).get(SECOND_OF_DAY)).put("value", 0.8)
+                            )
+                    )
+            );
+        });
         peopleCounter1Asset.setId(UniqueIdentifierGenerator.generateId(peopleCounter1Asset.getName()));
         peopleCounter1Asset = assetStorageService.merge(peopleCounter1Asset);
 
@@ -781,62 +1253,186 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
                 new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
+        peopleCounter2Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Axis")));
+        peopleCounter2Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("P1375-E")));
+        peopleCounter2Asset.getAttribute("peopleCountGrowth").ifPresent(assetAttribute -> {
+            assetAttribute.addMeta(
+                    new MetaItem(
+                            AGENT_LINK,
+                            new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ReplaySimulatorElement.ELEMENT_NAME)
+                    ),
+                    new MetaItem(
+                            SimulatorProtocol.REPLAY_ATTRIBUTE_LINK_DATA,
+                            Values.createArray().addAll(
+                                    Values.createObject().put("timestamp", midnight.get(SECOND_OF_DAY)).put("value", 0.3),
+                                    Values.createObject().put("timestamp", midnight.plusHours(1).get(SECOND_OF_DAY)).put("value", 0.2),
+                                    Values.createObject().put("timestamp", midnight.plusHours(2).get(SECOND_OF_DAY)).put("value", 0.3),
+                                    Values.createObject().put("timestamp", midnight.plusHours(3).get(SECOND_OF_DAY)).put("value", 0.1),
+                                    Values.createObject().put("timestamp", midnight.plusHours(4).get(SECOND_OF_DAY)).put("value", 0.0),
+                                    Values.createObject().put("timestamp", midnight.plusHours(5).get(SECOND_OF_DAY)).put("value", 0.3),
+                                    Values.createObject().put("timestamp", midnight.plusHours(6).get(SECOND_OF_DAY)).put("value", 0.7),
+                                    Values.createObject().put("timestamp", midnight.plusHours(7).get(SECOND_OF_DAY)).put("value", 0.6),
+                                    Values.createObject().put("timestamp", midnight.plusHours(8).get(SECOND_OF_DAY)).put("value", 1.9),
+                                    Values.createObject().put("timestamp", midnight.plusHours(9).get(SECOND_OF_DAY)).put("value", 2.2),
+                                    Values.createObject().put("timestamp", midnight.plusHours(10).get(SECOND_OF_DAY)).put("value", 2.8),
+                                    Values.createObject().put("timestamp", midnight.plusHours(11).get(SECOND_OF_DAY)).put("value", 1.6),
+                                    Values.createObject().put("timestamp", midnight.plusHours(12).get(SECOND_OF_DAY)).put("value", 1.9),
+                                    Values.createObject().put("timestamp", midnight.plusHours(13).get(SECOND_OF_DAY)).put("value", 2.2),
+                                    Values.createObject().put("timestamp", midnight.plusHours(14).get(SECOND_OF_DAY)).put("value", 1.9),
+                                    Values.createObject().put("timestamp", midnight.plusHours(15).get(SECOND_OF_DAY)).put("value", 1.6),
+                                    Values.createObject().put("timestamp", midnight.plusHours(16).get(SECOND_OF_DAY)).put("value", 2.4),
+                                    Values.createObject().put("timestamp", midnight.plusHours(17).get(SECOND_OF_DAY)).put("value", 3.2),
+                                    Values.createObject().put("timestamp", midnight.plusHours(18).get(SECOND_OF_DAY)).put("value", 2.9),
+                                    Values.createObject().put("timestamp", midnight.plusHours(19).get(SECOND_OF_DAY)).put("value", 2.3),
+                                    Values.createObject().put("timestamp", midnight.plusHours(20).get(SECOND_OF_DAY)).put("value", 1.7),
+                                    Values.createObject().put("timestamp", midnight.plusHours(21).get(SECOND_OF_DAY)).put("value", 1.4),
+                                    Values.createObject().put("timestamp", midnight.plusHours(22).get(SECOND_OF_DAY)).put("value", 1.2),
+                                    Values.createObject().put("timestamp", midnight.plusHours(23).get(SECOND_OF_DAY)).put("value", 0.7)
+                            )
+                    )
+            );
+        });
         peopleCounter2Asset.setId(UniqueIdentifierGenerator.generateId(peopleCounter2Asset.getName()));
         peopleCounter2Asset = assetStorageService.merge(peopleCounter2Asset);
 
         Asset microphone1Asset = createDemoMicrophoneAsset("Microphone South", assetAreaStation, new GeoJSONPoint(4.470362, 51.923201), () -> new MetaItem[]{
                 new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
-                new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ReplaySimulatorElement.ELEMENT_NAME)),
+                new MetaItem(
+                        SimulatorProtocol.REPLAY_ATTRIBUTE_LINK_DATA,
+                        Values.createArray().addAll(
+                                Values.createObject().put("timestamp", midnight.get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(50,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(1).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(45,50)),
+                                Values.createObject().put("timestamp", midnight.plusHours(2).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(45,50)),
+                                Values.createObject().put("timestamp", midnight.plusHours(3).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(45,50)),
+                                Values.createObject().put("timestamp", midnight.plusHours(4).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(45,50)),
+                                Values.createObject().put("timestamp", midnight.plusHours(5).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(45,50)),
+                                Values.createObject().put("timestamp", midnight.plusHours(6).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(50,55)),
+                                Values.createObject().put("timestamp", midnight.plusHours(7).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(50,55)),
+                                Values.createObject().put("timestamp", midnight.plusHours(8).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(50,55)),
+                                Values.createObject().put("timestamp", midnight.plusHours(9).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(55,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(10).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(55,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(11).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(55,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(12).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(60,65)),
+                                Values.createObject().put("timestamp", midnight.plusHours(13).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(60,65)),
+                                Values.createObject().put("timestamp", midnight.plusHours(14).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(55,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(15).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(55,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(16).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(60,65)),
+                                Values.createObject().put("timestamp", midnight.plusHours(17).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(60,70)),
+                                Values.createObject().put("timestamp", midnight.plusHours(18).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(60,65)),
+                                Values.createObject().put("timestamp", midnight.plusHours(19).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(55,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(20).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(55,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(21).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(60,70)),
+                                Values.createObject().put("timestamp", midnight.plusHours(22).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(60,65)),
+                                Values.createObject().put("timestamp", midnight.plusHours(23).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(50,60))
+                        )
+                )
         });
+        microphone1Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Sorama")));
+        microphone1Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("CAM1K")));
         microphone1Asset.setId(UniqueIdentifierGenerator.generateId(microphone1Asset.getName()));
         microphone1Asset = assetStorageService.merge(microphone1Asset);
 
         Asset microphone2Asset = createDemoMicrophoneAsset("Microphone North", assetAreaStation, new GeoJSONPoint(4.469190, 51.923786), () -> new MetaItem[]{
                 new MetaItem(AGENT_LINK, new AttributeRef(smartcitySimulatorAgentId, "replaySimulator").toArrayValue()),
-                new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ReplaySimulatorElement.ELEMENT_NAME)),
+                new MetaItem(
+                        SimulatorProtocol.REPLAY_ATTRIBUTE_LINK_DATA,
+                        Values.createArray().addAll(
+                                Values.createObject().put("timestamp", midnight.get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(50,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(1).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(45,50)),
+                                Values.createObject().put("timestamp", midnight.plusHours(2).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(45,50)),
+                                Values.createObject().put("timestamp", midnight.plusHours(3).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(45,50)),
+                                Values.createObject().put("timestamp", midnight.plusHours(4).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(45,50)),
+                                Values.createObject().put("timestamp", midnight.plusHours(5).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(45,50)),
+                                Values.createObject().put("timestamp", midnight.plusHours(6).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(50,55)),
+                                Values.createObject().put("timestamp", midnight.plusHours(7).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(50,55)),
+                                Values.createObject().put("timestamp", midnight.plusHours(8).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(50,55)),
+                                Values.createObject().put("timestamp", midnight.plusHours(9).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(55,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(10).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(55,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(11).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(55,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(12).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(60,65)),
+                                Values.createObject().put("timestamp", midnight.plusHours(13).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(60,65)),
+                                Values.createObject().put("timestamp", midnight.plusHours(14).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(55,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(15).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(55,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(16).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(60,65)),
+                                Values.createObject().put("timestamp", midnight.plusHours(17).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(60,70)),
+                                Values.createObject().put("timestamp", midnight.plusHours(18).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(60,65)),
+                                Values.createObject().put("timestamp", midnight.plusHours(19).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(55,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(20).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(55,60)),
+                                Values.createObject().put("timestamp", midnight.plusHours(21).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(60,70)),
+                                Values.createObject().put("timestamp", midnight.plusHours(22).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(60,65)),
+                                Values.createObject().put("timestamp", midnight.plusHours(23).get(SECOND_OF_DAY)).put("value", getRandomNumberInRange(50,60))
+                        )
+                )
         });
+        microphone2Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Sorama")));
+        microphone2Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("CAM1K")));
         microphone2Asset.setId(UniqueIdentifierGenerator.generateId(microphone2Asset.getName()));
         microphone2Asset = assetStorageService.merge(microphone2Asset);
 
         Asset lightStation1Asset = createDemoLightAsset("Station Light NW", assetAreaStation, new GeoJSONPoint(4.468874, 51.923881));
+        lightStation1Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Philips")));
+        lightStation1Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("CityTouch")));
         lightStation1Asset.setId(UniqueIdentifierGenerator.generateId(lightStation1Asset.getName()));
         lightStation1Asset = assetStorageService.merge(lightStation1Asset);
 
         Asset lightStation2Asset = createDemoLightAsset("Station Light NE", assetAreaStation, new GeoJSONPoint(4.470539, 51.923991));
+        lightStation2Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Philips")));
+        lightStation2Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("CityTouch")));
         lightStation2Asset.setId(UniqueIdentifierGenerator.generateId(lightStation2Asset.getName()));
         lightStation2Asset = assetStorageService.merge(lightStation2Asset);
 
         Asset lightStation3Asset = createDemoLightAsset("Station Light S", assetAreaStation, new GeoJSONPoint(4.470558, 51.923186));
+        lightStation3Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Philips")));
+        lightStation3Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("CityTouch")));
         lightStation3Asset.setId(UniqueIdentifierGenerator.generateId(lightStation3Asset.getName()));
         lightStation3Asset = assetStorageService.merge(lightStation3Asset);
 
         // ### Lighting controller ###
 
         Asset lightingControllerOPAsset = createDemoLightControllerAsset("Lighting Noordereiland", mobilityAndSafety, new GeoJSONPoint(4.496177, 51.915060));
+        lightingControllerOPAsset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Pharos")));
+        lightingControllerOPAsset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("LPC X")));
         lightingControllerOPAsset.setId(UniqueIdentifierGenerator.generateId(lightingControllerOPAsset.getName()));
         lightingControllerOPAsset = assetStorageService.merge(lightingControllerOPAsset);
 
         Asset lightOP1Asset = createDemoLightAsset("OnsPark1", lightingControllerOPAsset, new GeoJSONPoint(4.49626, 51.91516));
+        lightOP1Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Schréder")));
+        lightOP1Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Axia 2")));
         lightOP1Asset.setId(UniqueIdentifierGenerator.generateId(lightOP1Asset.getName()));
         lightOP1Asset = assetStorageService.merge(lightOP1Asset);
 
         Asset lightOP2Asset = createDemoLightAsset("OnsPark2", lightingControllerOPAsset, new GeoJSONPoint(4.49705, 51.91549));
+        lightOP2Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Schréder")));
+        lightOP2Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Axia 2")));
         lightOP2Asset.setId(UniqueIdentifierGenerator.generateId(lightOP2Asset.getName()));
         lightOP2Asset = assetStorageService.merge(lightOP2Asset);
 
         Asset lightOP3Asset = createDemoLightAsset("OnsPark3", lightingControllerOPAsset, new GeoJSONPoint(4.49661, 51.91495));
+        lightOP3Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Schréder")));
+        lightOP3Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Axia 2")));
         lightOP3Asset.setId(UniqueIdentifierGenerator.generateId(lightOP3Asset.getName()));
         lightOP3Asset = assetStorageService.merge(lightOP3Asset);
 
         Asset lightOP4Asset = createDemoLightAsset("OnsPark4", lightingControllerOPAsset, new GeoJSONPoint(4.49704, 51.91520));
+        lightOP4Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Schréder")));
+        lightOP4Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Axia 2")));
         lightOP4Asset.setId(UniqueIdentifierGenerator.generateId(lightOP4Asset.getName()));
         lightOP4Asset = assetStorageService.merge(lightOP4Asset);
 
         Asset lightOP5Asset = createDemoLightAsset("OnsPark5", lightingControllerOPAsset, new GeoJSONPoint(4.49758, 51.91440));
+        lightOP5Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Schréder")));
+        lightOP5Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Axia 2")));
         lightOP5Asset.setId(UniqueIdentifierGenerator.generateId(lightOP5Asset.getName()));
         lightOP5Asset = assetStorageService.merge(lightOP5Asset);
 
         Asset lightOP6Asset = createDemoLightAsset("OnsPark6", lightingControllerOPAsset, new GeoJSONPoint(4.49786, 51.91452));
+        lightOP6Asset.getAttribute("manufacturer").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Schréder")));
+        lightOP6Asset.getAttribute("model").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create("Axia 2")));
         lightOP6Asset.setId(UniqueIdentifierGenerator.generateId(lightOP6Asset.getName()));
         lightOP6Asset = assetStorageService.merge(lightOP6Asset);
 

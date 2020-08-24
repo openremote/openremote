@@ -155,5 +155,13 @@ public class RulesDemoSetup extends AbstractManagerSetup {
             );
             tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/ParkingFull.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                    keycloakDemoSetup.tenantCity.getRealm(), "Parking: Almost full", Ruleset.Lang.JSON, rules
+            );
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
     }
 }

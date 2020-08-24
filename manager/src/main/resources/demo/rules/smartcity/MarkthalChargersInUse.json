@@ -2,7 +2,7 @@
   "rules": [
     {
       "recurrence": {
-        "mins": 0
+        "mins": 10080
       },
       "when": {
         "operator": "OR",

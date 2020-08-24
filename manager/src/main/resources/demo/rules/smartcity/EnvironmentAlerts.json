@@ -2,7 +2,7 @@
   "rules": [
     {
       "recurrence": {
-        "mins": 0
+        "mins": 10080
       },
       "when": {
         "operator": "OR",
@@ -29,8 +29,8 @@
                         },
                         "value": {
                           "predicateType": "number",
-                          "operator": "GREATER_THAN",
-                          "value": 4
+                          "operator": "LESS_THAN",
+                          "value": 100
                         }
                       }
                     ]
@@ -48,7 +48,7 @@
                     {
                       "predicateType": "string",
                       "match": "EXACT",
-                      "value": "urn:openremote:asset:enviroment"
+                      "value": "urn:openremote:asset:environment"
                     }
                   ],
                   "attributes": {
