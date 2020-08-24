@@ -93,7 +93,7 @@ export class OrMwcList extends LitElement {
     public values?: string[] | string;
 
     @property({type: String, attribute: true})
-    public type: ListType = ListType.PLAIN;
+    public type: ListType = ListType.SELECTABLE;
 
     @query("#wrapper")
     protected _wrapperElem!: HTMLElement;
