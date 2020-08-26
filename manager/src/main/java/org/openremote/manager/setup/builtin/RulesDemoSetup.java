@@ -163,5 +163,21 @@ public class RulesDemoSetup extends AbstractManagerSetup {
             );
             tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/RotterdamBatteryUse.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                    keycloakDemoSetup.tenantCity.getRealm(), "De Rotterdam: Battery use", Ruleset.Lang.JSON, rules
+            );
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/LightGroupOnOff.flow")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new TenantRuleset(
+                    keycloakDemoSetup.tenantCity.getRealm(), "Light group: On/Off", Ruleset.Lang.FLOW, rules
+            );
+            tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
     }
 }
