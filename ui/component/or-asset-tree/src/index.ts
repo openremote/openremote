@@ -291,7 +291,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 <div id="header-btns">                
                     <or-input style="display: none;" ?hidden="${this._isReadonly() || !editMode || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-input>
                     <or-input ?hidden="${this._isReadonly() || !editMode || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-input>
-                    <or-input ?hidden="${this._isReadonly() || !editMode || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked()}"></or-input>
+                    <or-input ?hidden="${this._isReadonly() || !editMode}" type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked()}"></or-input>
                     <or-input ?hidden="${this._isReadonly()}" type="${InputType.BUTTON_TOGGLE}" icon="eye" .value="${this.editMode}" iconOn="pencil" @or-input-changed="${(ev: OrInputChangedEvent) => this._onEditToggled(ev.detail.value)}"></or-input>
                     <or-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-input>
                     

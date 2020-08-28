@@ -40,7 +40,6 @@ import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
 import {GenericAxiosResponse} from "axios";
 import {OrIcon} from "@openremote/or-icon";
-import {OrAssetTree, UiAssetTreeNode} from "@openremote/or-asset-tree";
 import "./or-edit-asset-panel";
 import { OrEditAssetChangedEvent } from "./or-edit-asset-panel";
 
