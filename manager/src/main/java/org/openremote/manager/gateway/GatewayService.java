@@ -63,6 +63,7 @@ import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.manager.event.ClientEventService.*;
+import static org.openremote.manager.gateway.GatewayConnector.mapAssetId;
 import static org.openremote.model.asset.AssetAttribute.attributeFromJson;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
@@ -267,11 +268,11 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                     LOG.fine("Attribute event for a gateway descendant asset being forwarded to the gateway (Asset ID=" + asset.getId() + ", Gateway ID=" + gatewayId + "): " + attribute);
                     connector.sendMessageToGateway(
                         new AttributeEvent(
-                            asset.getId(),
+                            mapAssetId(gatewayId, asset.getId(), true),
                             attribute.getNameOrThrow(),
                             attribute.getValue().orElse(null),
                             attribute.getValueTimestamp().orElse(0L))
-                            .setParentId(asset.getParentId()).setRealm(asset.getRealm()));
+                            .setParentId(mapAssetId(gatewayId, asset.getParentId(), true)).setRealm(asset.getRealm()));
                 }
 
                 // Consume this event as it is for a gateway descendant and we've sent it to that gateway for processing

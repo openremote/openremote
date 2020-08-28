@@ -34,8 +34,14 @@ import org.openremote.model.console.ConsoleConfiguration;
 import org.openremote.model.console.ConsoleRegistration;
 import org.openremote.model.console.ConsoleResource;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.filter.AttributePredicate;
+import org.openremote.model.query.filter.ParentPredicate;
+import org.openremote.model.query.filter.StringPredicate;
+import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.Values;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.core.Response;
@@ -141,18 +147,25 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
     }
 
     public static Asset getConsoleParentAsset(AssetStorageService assetStorageService, Tenant tenant) {
-        String id = consoleParentAssetIdGenerator(tenant.getRealm());
-        Asset consoleParent = assetStorageService.find(id, false);
+
+        // Look for a group asset with a child type of console in the realm root
+        Asset consoleParent = assetStorageService.find(
+            new AssetQuery()
+                .select(AssetQuery.Select.selectExcludeAll())
+                .names(CONSOLE_PARENT_ASSET_NAME)
+                .parents(new ParentPredicate(true))
+                .types(AssetType.GROUP)
+                .tenant(new TenantPredicate(tenant.getRealm()))
+                .attributes(new AttributePredicate("childAssetType").value(new StringPredicate(AssetType.CONSOLE.getType())))
+        );
+
         if (consoleParent == null) {
-            consoleParent = new Asset(CONSOLE_PARENT_ASSET_NAME, AssetType.THING);
-            consoleParent.setId(id);
+            consoleParent = new Asset(CONSOLE_PARENT_ASSET_NAME, AssetType.GROUP);
+            consoleParent.getAttribute("childAssetType").ifPresent(attr ->
+                attr.setValue(Values.create(AssetType.CONSOLE.getType())));
             consoleParent.setRealm(tenant.getRealm());
             consoleParent = assetStorageService.merge(consoleParent);
         }
         return consoleParent;
-    }
-
-    protected static String consoleParentAssetIdGenerator(String realm) {
-        return UniqueIdentifierGenerator.generateId(realm + "Consoles");
     }
 }

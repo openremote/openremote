@@ -31,16 +31,21 @@ import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.Pair;
 import org.openremote.model.value.Values;
 
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.openremote.model.query.AssetQuery.Select.selectExcludeAll;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
@@ -57,6 +62,7 @@ public class GatewayConnector {
     public static int SYNC_ASSET_BATCH_SIZE = 20;
     public static final String ASSET_READ_EVENT_NAME_INITIAL = "INITIAL";
     public static final String ASSET_READ_EVENT_NAME_BATCH = "BATCH";
+    protected static final Map<String, Pair<Function<String, String>, Function<String, String>>> ASSET_ID_MAPPERS = new HashMap<>();
     protected final String realm;
     protected final String gatewayId;
     protected final AssetStorageService assetStorageService;
@@ -76,6 +82,44 @@ public class GatewayConnector {
     int syncErrors;
     Asset gateway;
     String expectedSyncResponseName;
+
+    protected static List<Integer> ALPHA_NUMERIC_CHARACTERS = new ArrayList<>(62);
+
+    static {
+        ALPHA_NUMERIC_CHARACTERS.addAll(
+            Stream.concat(
+                Stream.concat(
+                    IntStream.rangeClosed('a', 'z').boxed(),
+                    IntStream.rangeClosed('A', 'Z').boxed()
+                ),
+                IntStream.rangeClosed('0', '9').boxed()
+            ).collect(Collectors.toList())
+        );
+    }
+
+    /**
+     * An easily reversible mathematical way of ensuring gateway asset IDs are unique by incrementing the first two
+     * characters by adding the first two characters of the gateway ID for inbound IDs and the reverse for outbound.
+     */
+    public static String mapAssetId(String gatewayId, String assetId, boolean outbound) {
+        Pair<Function<String, String>, Function<String, String>> gatewayIdMappers = ASSET_ID_MAPPERS.computeIfAbsent(gatewayId, gwId -> {
+            int g1 = gatewayId.charAt(0) % ALPHA_NUMERIC_CHARACTERS.size();
+            int g2 = gatewayId.charAt(1) % ALPHA_NUMERIC_CHARACTERS.size();
+
+            BiFunction<Integer, String, String> mapper = (sign, id) -> {
+                int a1 = (ALPHA_NUMERIC_CHARACTERS.indexOf((int)id.charAt(0)) + (sign * g1) + ALPHA_NUMERIC_CHARACTERS.size()) % ALPHA_NUMERIC_CHARACTERS.size();
+                int a2 = (ALPHA_NUMERIC_CHARACTERS.indexOf((int)id.charAt(1)) + (sign * g2) + ALPHA_NUMERIC_CHARACTERS.size()) % ALPHA_NUMERIC_CHARACTERS.size();
+                return String.valueOf((char)ALPHA_NUMERIC_CHARACTERS.get(a1).intValue()) + ((char)ALPHA_NUMERIC_CHARACTERS.get(a2).intValue()) + id.substring(2);
+            };
+
+            return new Pair<>(
+                id -> mapper.apply(1, id), // Inbound
+                id -> mapper.apply(-1, id) // Outbound
+            );
+        });
+
+        return outbound ? gatewayIdMappers.value.apply(assetId) : gatewayIdMappers.key.apply(assetId);
+    }
 
     public GatewayConnector(
         AssetStorageService assetStorageService,
@@ -309,8 +353,9 @@ public class GatewayConnector {
 
         if (isInitialResponse) {
 
+            // Put assets in hierarchical order
             Map<String, String> gatewayAssetIdParentIdMap = e.getAssets().stream()
-                .collect(HashMap::new, (m,v)->m.put(v.getId(), v.getParentId()), HashMap::putAll);
+                .collect(HashMap::new, (m, v) -> m.put(v.getId(), v.getParentId()), HashMap::putAll);
 
             ToIntFunction<Asset> assetLevelExtractor = asset -> {
                 int level = 0;
@@ -436,7 +481,7 @@ public class GatewayConnector {
 
         // Delete obsolete assets
         List<String> obsoleteLocalAssetIds = localAssets.stream()
-            .filter(localAsset -> !syncAssetIds.contains(localAsset.getId()))
+            .filter(localAsset -> !syncAssetIds.contains(mapAssetId(gatewayId, localAsset.getId(), true)))
             .map(Asset::getId).collect(Collectors.toList());
 
         if (!obsoleteLocalAssetIds.isEmpty()) {
@@ -473,14 +518,19 @@ public class GatewayConnector {
                 throw new IllegalStateException(msg);
             }
 
-
             if (id == null) {
                 // Generate an ID to allow tracking the asset when it is returned from the gateway
                 asset.setId(UniqueIdentifierGenerator.generateId());
+            } else {
+                // Put original gateway asset ID back
+                asset.setId(mapAssetId(gatewayId, id, true));
             }
 
             if (gatewayId.equals(parentId)) {
                 asset.setParentId(null);
+            } else if (parentId != null) {
+                // Put original parent asset ID back
+                asset.setParentId(mapAssetId(gatewayId, parentId, true));
             }
 
             sendMessageToGateway(new AssetEvent(isUpdate ? AssetEvent.Cause.UPDATE : AssetEvent.Cause.CREATE, asset, null));
@@ -497,13 +547,13 @@ public class GatewayConnector {
                 }
 
                 if (mergedAsset == null) {
-                    throw new IllegalStateException("Gateway asset merge failed: Gateway ID=" + gatewayId + ", Asset ID=" + asset.getId());
+                    throw new IllegalStateException("Gateway asset merge failed: Gateway ID=" + gatewayId + ", Asset ID=" + asset.getId() + ", Asset ID Mapped=" + id);
                 }
 
                 return mergedAsset;
 
             } catch (InterruptedException e) {
-                String msg = "Gateway asset merge interrupted: Gateway ID=" + gatewayId + ", Asset ID=" + id;
+                String msg = "Gateway asset merge interrupted: Gateway ID=" + gatewayId + ", Asset ID=" + asset.getId() + ", Asset ID Mapped=" + id;
                 LOG.info(msg);
                 throw new IllegalStateException(msg);
             } finally {
@@ -527,25 +577,27 @@ public class GatewayConnector {
         synchronized (pendingAssetDelete) {
 
             if (pendingAssetDelete.get() != null) {
-                String msg = "Gateway asset delete already pending: Gateway ID=" + gatewayId + ", Asset IDs=" + Arrays.toString(assetIds.toArray());
+                String msg = "Gateway asset delete already pending: Gateway ID=" + gatewayId + ", Asset IDs Mapped=" + Arrays.toString(pendingAssetDelete.get().getEvent().getAssetIds().toArray());
                 LOG.info(msg);
                 throw new IllegalStateException(msg);
             }
 
+            List<String> originalIds = assetIds.stream().map(id -> mapAssetId(gatewayId, id, true)).collect(Collectors.toList());
+
             pendingAssetDelete.set(new EventRequestResponseWrapper<>(
                 UniqueIdentifierGenerator.generateId(),
-                new DeleteAssetsRequestEvent(new ArrayList<>(assetIds))
+                new DeleteAssetsRequestEvent(new ArrayList<>(originalIds))
             ));
 
             try {
                 sendMessageToGateway(pendingAssetDelete.get());
                 pendingAssetDelete.wait(ASSET_CRUD_TIMEOUT_MILLIS);
                 if (pendingAssetDelete.get() != null) {
-                    throw new IllegalStateException("Gateway asset delete failed: Gateway ID=" + gatewayId + ", Asset IDs=" + Arrays.toString(assetIds.toArray()));
+                    throw new IllegalStateException("Gateway asset delete failed: Gateway ID=" + gatewayId + ", Asset IDs=" + originalIds + ", Asset IDs Mapped=" + Arrays.toString(assetIds.toArray()));
                 }
                 return true;
             } catch (InterruptedException e) {
-                String msg = "Gateway asset delete interrupted: Gateway ID=" + gatewayId + ", Asset IDs=" + Arrays.toString(assetIds.toArray());
+                String msg = "Gateway asset delete interrupted: Gateway ID=" + gatewayId + ", Asset IDs=" + originalIds + ", Asset IDs Mapped=" + Arrays.toString(assetIds.toArray());
                 LOG.info(msg);
                 throw new IllegalStateException(msg);
             } finally {
@@ -581,12 +633,13 @@ public class GatewayConnector {
             case CREATE:
             case READ:
             case UPDATE:
+                String assetId = e.getEntityId();
                 Asset mergedAsset = saveAssetLocally(e.getAsset());
 
                 synchronized (pendingAssetMerges) {
-                    if (pendingAssetMerges.containsKey(e.getEntityId())) {
+                    if (pendingAssetMerges.containsKey(assetId)) {
                         @SuppressWarnings("OptionalGetWithoutIsPresent")
-                        Map.Entry<String, Asset> pendingAssetMergeEntry = pendingAssetMerges.entrySet().stream().filter(entry -> entry.getKey().equals(e.getEntityId())).findFirst().get();
+                        Map.Entry<String, Asset> pendingAssetMergeEntry = pendingAssetMerges.entrySet().stream().filter(entry -> entry.getKey().equals(assetId)).findFirst().get();
                         String id = pendingAssetMergeEntry.getKey();
                         pendingAssetMergeEntry.setValue(mergedAsset);
 
@@ -600,7 +653,7 @@ public class GatewayConnector {
                 break;
             case DELETE:
                 try {
-                    deleteAssetsLocally(Collections.singletonList(e.getEntityId()));
+                    deleteAssetsLocally(Collections.singletonList(mapAssetId(gatewayId, e.getEntityId(), false)));
                 } catch (Exception ex) {
                     LOG.log(Level.SEVERE, "Removing obsolete asset failed: " + e.getEntityId(), ex);
                 }
@@ -610,13 +663,18 @@ public class GatewayConnector {
 
     protected void onAttributeEvent(AttributeEvent e) {
         // Just push the event through the processing chain
-        assetProcessingService.sendAttributeEvent(e, AttributeEvent.Source.GATEWAY);
+        assetProcessingService.sendAttributeEvent(
+            new AttributeEvent(mapAssetId(gatewayId, e.getEntityId(), false), e.getAttributeName(), e.getValue().orElse(null), e.getTimestamp()),
+            AttributeEvent.Source.GATEWAY
+        );
     }
 
     protected Asset saveAssetLocally(Asset asset) {
-        asset.setParentId(asset.getParentId() != null ? asset.getParentId() : gatewayId);
+        String assetId = asset.getId();
+        asset.setId(mapAssetId(gatewayId, assetId, false));
+        asset.setParentId(asset.getParentId() != null ? mapAssetId(gatewayId, asset.getParentId(), false) : gatewayId);
         asset.setRealm(realm);
-        LOG.fine("Creating/updating gateway asset: Gateway ID=" + gatewayId + ", Asset ID=" + asset.getId());
+        LOG.fine("Creating/updating gateway asset: Gateway ID=" + gatewayId + ", Asset ID=" + assetId + ", Asset ID Mapped=" + asset.getId());
         return assetStorageService.merge(asset, true, true, null);
     }
 
