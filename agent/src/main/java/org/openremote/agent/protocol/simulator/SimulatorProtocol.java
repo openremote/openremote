@@ -565,8 +565,13 @@ public class SimulatorProtocol extends AbstractProtocol {
             return executorService.schedule(() -> {
                 withLock(getProtocolName() + "::firingNextUpdate", () -> {
                     LOG.info("Updating asset " + attributeRef.getEntityId() + " for attribute " + attributeRef.getAttributeName() + " with value " + nextDatapoint.value.toString());
-                    updateLinkedAttribute(new AttributeState(attributeRef, nextDatapoint.value));
-                    replayMap.put(attributeRef, scheduleReplay(attributeRef, replaySimulatorElement));
+                    try {
+                        updateLinkedAttribute(new AttributeState(attributeRef, nextDatapoint.value));
+                    } catch (Exception e) {
+                        LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
+                    } finally {
+                        replayMap.put(attributeRef, scheduleReplay(attributeRef, replaySimulatorElement));
+                    }
                 });
             }, nextRunRelative, TimeUnit.SECONDS);
         } catch (JsonProcessingException e) {
