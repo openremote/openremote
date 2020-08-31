@@ -65,14 +65,19 @@ public abstract class AbstractKeycloakSetup implements Setup {
         return keycloakProvider;
     }
 
-    protected Tenant createTenant(String realm, String displayName) {
+    protected Tenant createTenant(String realm, String displayName, boolean rememberMe) {
         Tenant tenant = new Tenant();
         tenant.setRealm(realm);
         tenant.setDisplayName(displayName);
         tenant.setEnabled(true);
         tenant.setDuplicateEmailsAllowed(true);
+        tenant.setRememberMe(rememberMe);
         tenant = keycloakProvider.createTenant(tenant);
         return tenant;
+    }
+
+    protected Tenant createTenant(String realm, String displayName) {
+        return  createTenant(realm, displayName, false);
     }
 
     protected Tenant createTenant(Tenant tenant) {
