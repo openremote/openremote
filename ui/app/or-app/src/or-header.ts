@@ -13,6 +13,7 @@ import "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import "@openremote/or-icon";
 import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import {Tenant} from "@openremote/model";
+import {router} from "./index";
 
 export interface HeaderConfig {
     mainMenu: HeaderItem[];
@@ -24,6 +25,7 @@ export interface HeaderItem {
    text: string;
    value?: string;
    href?: string;
+   absolute?: boolean;
    action?: () => void;
    hideMobile?: boolean;
    roles?: string[] | {[client: string]: string[]};
@@ -459,7 +461,7 @@ class OrHeader extends LitElement {
         if (headerItem.action) {
             headerItem.action();
         } else if (headerItem.href) {
-            window.location.href = headerItem.href;
+            router.navigate(headerItem.href, !!headerItem.absolute);
         }
     }
 

@@ -101,8 +101,7 @@ const style = css`
     
     :host([hidden]) {
         display: none;
-    }
-    
+    }    
 
     :host([type=select]) {
         height: 56px;
@@ -158,16 +157,12 @@ const style = css`
         width: inherit;
     }
     
-    .mdc-text-field--dense:not(.mdc-text-field--no-label):not(.mdc-text-field--outlined) {
-        height: 52px;
+    .mdc-text-field.dense-comfortable {
+        height: 48px;
     }
     
-    .mdc-text-field--dense.mdc-text-field--no-label {
-        height: 40px;
-    }
-    
-    .mdc-text-field--dense .mdc-text-field__input {
-        white-space: nowrap;
+    .mdc-text-field.dense-compact {
+        height: 36px;
     }
     
     .mdc-select:not(.mdc-list) {
@@ -290,7 +285,10 @@ export class OrInput extends LitElement {
     public iconTrailing?: string;
 
     @property({type: Boolean})
-    public dense: boolean = false;
+    public compact: boolean = false;
+
+    @property({type: Boolean})
+    public comfortable: boolean = false;
 
     /* BUTTON STYLES START */
 
@@ -562,12 +560,11 @@ export class OrInput extends LitElement {
                         "mdc-icon-button": isIconButton,
                         "mdc-fab": !isIconButton && this.action,
                         "mdc-fab--extended": !isIconButton && this.action && !!this.label,
-                        "mdc-fab--mini": !isIconButton && this.action, // && this.dense,
+                        "mdc-fab--mini": !isIconButton && this.action && (this.compact || this.comfortable),
                         "mdc-button": !isIconButton && !this.action,
                         "mdc-button--raised": !isIconButton && !this.action && this.raised,
                         "mdc-button--unelevated": !isIconButton && !this.action && this.unElevated,
                         "mdc-button--outlined": !isIconButton && !this.action && this.outlined,
-                        "mdc-button--dense": false, // !isIconButton && !this.action && this.dense,
                         "or-input--rounded": !isIconButton && !this.action && this.rounded
                     };
                     return html`
@@ -618,7 +615,7 @@ export class OrInput extends LitElement {
                 case InputType.TEXTAREA:
                 case InputType.JSON: {
                     // The following HTML input types require the values as specially formatted strings
-                    const valMinMax: [any, any, any] = [this.value || "", this.min, this.max];
+                    const valMinMax: [any, any, any] = [this.value === undefined || this.value === null ? "" : this.value, this.min, this.max];
 
                     if (valMinMax.some((v) => v !== undefined && v !== null && typeof (v) !== "string")) {
 
@@ -680,8 +677,8 @@ export class OrInput extends LitElement {
                     let label = this.label;
                     let type = this.type;
                     let componentId = "component";
-                    let denseDefault = true;
-                    let denseCompact = false;
+                    let denseComfortable = this.comfortable;
+                    let denseCompact = !this.comfortable && this.compact;
                     let rounded = false;
 
                     if (this.type === InputType.RANGE) {
@@ -689,8 +686,7 @@ export class OrInput extends LitElement {
                         label = undefined;
                         outlined = true;
                         hasHelper = false;
-                        denseCompact = true;
-                        denseDefault = false;
+                        denseComfortable = true;
                         rounded = true;
                         type = InputType.NUMBER;
                         componentId = "number";
@@ -704,7 +700,7 @@ export class OrInput extends LitElement {
                             "mdc-text-field--textarea": type === InputType.TEXTAREA || type === InputType.JSON,
                             "mdc-text-field--disabled": this.disabled,
                             "mdc-text-field--fullwidth": this.fullWidth && !outlined,
-                            "dense-default": denseDefault,
+                            "dense-comfortable": denseComfortable,
                             "dense-compact": denseCompact,
                             "is-rounded": rounded,
                             "mdc-text-field--label-floating" : hasValue,

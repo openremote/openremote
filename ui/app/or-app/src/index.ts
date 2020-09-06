@@ -10,102 +10,34 @@ import {
     unsafeCSS
 } from "lit-element";
 import {unsafeHTML} from "lit-html/directives/unsafe-html";
+import {AppConfig, DefaultAppConfig, router} from "./types";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/dist/or-mwc-menu";
 import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
-import Navigo from "navigo";
 import manager, {Auth, DefaultColor2, DefaultColor3, ManagerConfig, Util, BasicLoginResult} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig, HeaderItem, Languages} from "./or-header";
 import {DialogConfig, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {AnyAction, EnhancedStore, Unsubscribe} from "@reduxjs/toolkit";
-import {AppStateKeyed, updatePage} from "./app";
 import {ThunkMiddleware} from "redux-thunk";
-import { translate } from "@openremote/or-translate";
+import {AppStateKeyed, updatePage} from "./app";
 import { InputType, OrInputChangedEvent } from "@openremote/or-input";
+import {getMapRoute} from "./pages/page-map";
 export * from "./app";
 export * from "./or-header";
+export * from "./types";
 
 // Declare MANAGER_URL - Global var injected by webpack
 declare var MANAGER_URL: string;
 
-// Configure routing
-export const router = new Navigo(null, true, "#!");
 export {HeaderConfig};
-
-export interface DefaultAppConfig {
-    appTitle: string;
-    logo: HTMLTemplateElement | string;
-    logoMobile: HTMLTemplateElement | string;
-    language?: string;
-    header?: HeaderConfig;
-    styles?: TemplateResult;
-}
-
-export interface RealmAppConfig {
-    appTitle?: string;
-    logo?: HTMLTemplateElement | string;
-    logoMobile?: HTMLTemplateElement | string;
-    language?: string;
-    header?: HeaderConfig;
-    styles?: TemplateResult;
-}
-
-export interface AppConfig<S extends AppStateKeyed> {
-    pages?: {
-        default: PageProvider<S>;
-        [name: string]: PageProvider<S>;
-    };
-    default?: DefaultAppConfig;
-    realms?: {
-        [realm: string]: RealmAppConfig;
-    };
-}
-
-export interface PageProvider<S extends AppStateKeyed> {
-    routes: string[];
-    pageCreator: () => Page<S>;
-}
-
-export abstract class Page<S extends AppStateKeyed> extends translate(i18next)(LitElement) {
-
-    abstract get name(): string;
-
-    protected _store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>;
-
-    protected _storeUnsubscribe!: Unsubscribe;
-
-        constructor(store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>) {
-        super();
-        this._store = store;
-    }
-
-    connectedCallback() {
-        if (super.connectedCallback) {
-            super.connectedCallback();
-        }
-
-        this._storeUnsubscribe = this._store.subscribe(() => this.stateChanged(this._store.getState()));
-        this.stateChanged(this._store.getState());
-    }
-
-    disconnectedCallback() {
-        this._storeUnsubscribe();
-
-        if (super.disconnectedCallback) {
-            super.disconnectedCallback();
-        }
-    }
-
-    abstract stateChanged(state: S);
-}
 
 export function headerItemMap<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "map",
-        href: "#!map",
+        href: getMapRoute(),
         text: "map"
     };
 }
@@ -194,7 +126,7 @@ export function getRealmQueryParameter(): string {
         return Util.getQueryParameter(location.search, "realm");
     }
     if(location.hash) {
-        let index = location.hash.indexOf("?");
+        const index = location.hash.indexOf("?");
         if(index > -1) {
             return Util.getQueryParameter(location.hash.substring(index + 1), "realm");
         }

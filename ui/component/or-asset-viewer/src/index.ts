@@ -12,11 +12,11 @@ import "@openremote/or-survey-results";
 import "@openremote/or-table";
 import "@openremote/or-panel";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import "@openremote/or-mwc-components/dist/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
-import manager, {AssetModelUtil, DefaultColor5, subscribe, Util} from "@openremote/core";
+import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import {OrTable} from "@openremote/or-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
@@ -27,12 +27,9 @@ import {
     AssetType,
     Attribute,
     AttributeEvent,
-    MetaItem,
+    ClientRole,
     MetaItemType,
-    SharedEvent,
-    ValueType,
-    AttributeDescriptor,
-    ClientRole
+    SharedEvent
 } from "@openremote/model";
 import {panelStyles, style} from "./style";
 import i18next from "i18next";
@@ -41,7 +38,7 @@ import {classMap} from "lit-html/directives/class-map";
 import {GenericAxiosResponse} from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
-import { OrEditAssetChangedEvent } from "./or-edit-asset-panel";
+import {OrEditAssetChangedEvent} from "./or-edit-asset-panel";
 
 export interface PanelConfig {
     type?: "info" | "history" | "group" | "survey" | "survey-results";

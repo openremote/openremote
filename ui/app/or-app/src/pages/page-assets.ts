@@ -4,7 +4,8 @@ import "@openremote/or-asset-viewer";
 import {ViewerConfig, OrAssetViewer} from "@openremote/or-asset-viewer";
 import {AssetTreeConfig, OrAssetTreeSelectionChangedEvent, OrAssetTreeRequestSelectEvent, OrAssetTreeRequestEditToggleEvent, OrAssetTreeEditChangedEvent} from "@openremote/or-asset-tree";
 import {DefaultBoxShadow} from "@openremote/core";
-import {AppStateKeyed, Page, router} from "../index";
+import {AppStateKeyed} from "../app";
+import {Page, router} from "../types";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import { showDialog } from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import i18next from "i18next";
@@ -29,6 +30,15 @@ export function pageAssetsProvider<S extends AppStateKeyed>(store: EnhancedStore
             return page;
         }
     };
+}
+
+export function getAssetsRoute(editMode?: boolean, assetId?: string) {
+    let route = "assets/" + (editMode ? "true" : "false");
+    if (assetId) {
+        route += "/" + assetId;
+    }
+
+    return route;
 }
 
 @customElement("page-assets")
@@ -184,9 +194,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         if (silent) {
             router.pause();
         }
-        const assetId = this._assetId ? "/" + this._assetId : "";
-        const editMode = !!this._editMode;
-        router.navigate("assets/" + editMode + assetId);
+        getAssetsRoute(this._editMode, this._assetId);
         if (silent) {
             router.resume();
         }

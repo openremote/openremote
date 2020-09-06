@@ -1,5 +1,6 @@
 import {css, customElement, html, property} from "lit-element";
-import {AppStateKeyed, Page} from "../index";
+import {AppStateKeyed} from "../app";
+import {Page} from "../types";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import manager from "@openremote/core";
 

@@ -1,14 +1,19 @@
-import {customElement, html, property, query, css} from "lit-element";
+import {css, customElement, html, property, query} from "lit-element";
 import {Action, createSlice, EnhancedStore, PayloadAction, ThunkAction} from "@reduxjs/toolkit";
 import "@openremote/or-map";
-import "@openremote/or-map/dist/or-map-asset-card";
-import {ViewerConfig} from "@openremote/or-map/dist/or-map-asset-card";
-
+import {
+    MapAssetCardConfig,
+    OrMap,
+    OrMapAssetCardLoadAssetEvent,
+    OrMapClickedEvent,
+    OrMapMarkerAsset,
+    OrMapMarkerClickedEvent
+} from "@openremote/or-map";
 import manager, {Util} from "@openremote/core";
-import {OrMap, OrMapClickedEvent, OrMapMarkerAsset, OrMapMarkerClickedEvent} from "@openremote/or-map";
 import {createSelector} from "reselect";
 import {Asset, AssetEvent, AssetEventCause, AttributeEvent, AttributeType, MetaItemType} from "@openremote/model";
-import {Page, router} from "../index";
+import {getAssetsRoute} from "./page-assets";
+import {Page, router} from "../types";
 import {AppStateKeyed} from "../app";
 
 export interface MapState {
@@ -82,7 +87,7 @@ const pageMapSlice = createSlice({
 const {assetEventReceived, attributeEventReceived, setAssetSubscriptionId, setAttributeSubscriptionId} = pageMapSlice.actions;
 export const pageMapReducer = pageMapSlice.reducer;
 
-export function pageMapProvider<S extends MapStateKeyed>(store: EnhancedStore<S>, config?:ViewerConfig) {
+export function pageMapProvider<S extends MapStateKeyed>(store: EnhancedStore<S>, config?:MapAssetCardConfig) {
     return {
         routes: [
             "map",
@@ -94,6 +99,15 @@ export function pageMapProvider<S extends MapStateKeyed>(store: EnhancedStore<S>
             return page
         }
     };
+}
+
+export function getMapRoute(assetId?: string) {
+    let route = "map";
+    if (assetId) {
+        route += "/" + assetId;
+    }
+
+    return route;
 }
 
 const subscribeAssets = (): ThunkAction<void, MapStateKeyed, unknown, Action<string>> => async (dispatch) => {
@@ -139,7 +153,7 @@ const unsubscribeAssets = (): ThunkAction<void, MapStateKeyed, unknown, Action<s
     }
 };
 
-const mapCardConfig: ViewerConfig = {
+const mapCardConfig: MapAssetCardConfig = {
     default: {
             exclude: ["userNotes"]
     },
@@ -151,7 +165,7 @@ const mapCardConfig: ViewerConfig = {
 };
 
 @customElement("page-map")
-export class PageMap<S extends MapStateKeyed> extends Page<S>  {
+export class PageMap<S extends MapStateKeyed> extends Page<S> {
 
     static get styles() {
         // language=CSS
@@ -188,7 +202,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S>  {
     }
 
     @property()
-    public config?: ViewerConfig;
+    public config?: MapAssetCardConfig;
 
     @query("#map")
     protected _map?: OrMap;
@@ -226,6 +240,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S>  {
 
     constructor(store: EnhancedStore<S>) {
         super(store);
+        this.addEventListener(OrMapAssetCardLoadAssetEvent.NAME, this.onLoadAssetEvent);
     }
 
     protected render() {
@@ -271,14 +286,18 @@ export class PageMap<S extends MapStateKeyed> extends Page<S>  {
 
     protected onMapMarkerClick(e: OrMapMarkerClickedEvent) {
         const asset = (e.detail.marker as OrMapMarkerAsset).asset;
-        router.navigate("map/" + asset.id);
+        router.navigate(getMapRoute(asset.id));
     }
 
     protected onMapClick(e: OrMapClickedEvent) {
-        router.navigate('map');
+        router.navigate(getMapRoute());
     }
 
     protected getCurrentAsset() {
         this._getCurrentAsset(this._store.getState());
+    }
+
+    protected onLoadAssetEvent(loadAssetEvent: OrMapAssetCardLoadAssetEvent) {
+        router.navigate(getAssetsRoute(false, loadAssetEvent.detail));
     }
 }

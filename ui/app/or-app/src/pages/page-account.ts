@@ -1,9 +1,10 @@
-import {css, customElement, html, property, PropertyValues, TemplateResult, unsafeCSS} from "lit-element";
+import {css, customElement, html, TemplateResult} from "lit-element";
 import manager from "@openremote/core";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
-import {AppStateKeyed, Page} from "../index";
 import {EnhancedStore} from "@reduxjs/toolkit";
+import {AppStateKeyed} from "../app";
+import {Page} from "../types";
 
 export function pageAccountProvider<S extends AppStateKeyed>(store: EnhancedStore<S>) {
     return {

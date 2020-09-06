@@ -7,7 +7,7 @@ import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL
     Control,
     IControl} from "mapbox-gl";
 import L, {Map as MapJS, MapOptions as OptionsJS, Marker as MarkerJS} from "mapbox.js";
-import {OrMapClickedEvent, OrMapLoadedEvent, ViewSettings} from "./index";
+import {ControlPosition, OrMapClickedEvent, OrMapLoadedEvent, ViewSettings} from "./index";
 import {
     OrMapMarker
 } from "./markers/or-map-marker";
@@ -32,7 +32,7 @@ export class MapWidget {
     protected _viewSettings?: ViewSettings;
     protected _center?: LngLat | LngLatLike;
     protected _zoom?: number;
-    protected _controls?: (Control | IControl)[];
+    protected _controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
 
     constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement) {
@@ -118,10 +118,22 @@ export class MapWidget {
         return this;
     }
 
-    public setControls(controls?: (Control | IControl)[]): this {
+    public setControls(controls?: (Control | IControl | [Control | IControl, ControlPosition?])[]): this {
         this._controls = controls;
-        if (this._mapGl && this._controls) {
-            this._controls.forEach((control) => this._mapGl!.addControl(control));
+        if (this._mapGl) {
+            if (this._controls) {
+                this._controls.forEach((control) => {
+                    if (Array.isArray(control)) {
+                        const controlAndPosition: [Control | IControl, ControlPosition?] = control;
+                        this._mapGl!.addControl(controlAndPosition[0], controlAndPosition[1]);
+                    } else {
+                        this._mapGl!.addControl(control);
+                    }
+                });
+            } else {
+                // Add zoom and rotation controls to the map
+                this._mapGl.addControl(new NavigationControl());
+            }
         }
         return this;
     }
@@ -246,10 +258,16 @@ export class MapWidget {
                 this._onMapClick(e.lngLat, true);
             });
 
-
             // Add custom controls
             if (this._controls) {
-                this._controls.forEach((control) => this._mapGl!.addControl(control));
+                this._controls.forEach((control) => {
+                    if (Array.isArray(control)) {
+                        const controlAndPosition: [Control | IControl, ControlPosition?] = control;
+                        this._mapGl!.addControl(controlAndPosition[0], controlAndPosition[1]);
+                    } else {
+                        this._mapGl!.addControl(control);
+                    }
+                });
             } else {
                 // Add zoom and rotation controls to the map
                 this._mapGl.addControl(new NavigationControl());

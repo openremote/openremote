@@ -1,7 +1,8 @@
 import {css, customElement, html, property, TemplateResult} from "lit-element";
 import "@openremote/or-data-viewer";
 import {DataViewerConfig} from "@openremote/or-data-viewer";
-import {AppStateKeyed, Page} from "../index";
+import {AppStateKeyed} from "../app";
+import {Page} from "../types";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import i18next from "i18next";
 

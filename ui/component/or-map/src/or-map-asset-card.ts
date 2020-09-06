@@ -1,5 +1,4 @@
 import {
-    css,
     CSSResult,
     CSSResultArray,
     customElement,
@@ -7,25 +6,25 @@ import {
     LitElement,
     property,
     PropertyValues,
-    TemplateResult,
-    unsafeCSS
+    TemplateResult
 } from "lit-element";
-import {Asset,Attribute, AssetEvent, AssetEventCause, AttributeEvent, AttributeType, AttributeValueType, MetaItemType, AttributeDescriptor, SharedEvent} from "@openremote/model";
-import manager, {
-    AssetModelUtil,
-    DefaultColor1,
-    DefaultColor3,
-    DefaultColor4,
-    DefaultColor5,
-    DefaultHeaderHeight,
-    subscribe,
-    Util
-} from "@openremote/core";
+import {
+    Asset,
+    AssetEvent,
+    AssetEventCause,
+    Attribute,
+    AttributeEvent,
+    AttributeType,
+    AttributeValueType,
+    SharedEvent
+} from "@openremote/model";
+import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import "@openremote/or-icon";
 import "./or-map-attribute-field";
 import {orAttributeTemplateProvider} from "./or-map-attribute-field";
-import { i18next } from "@openremote/or-translate";
 import {mapAssetCardStyle} from "./style";
+import { InputType } from "@openremote/or-input";
+import { i18next } from "@openremote/or-translate";
 
 orAttributeTemplateProvider.setTemplate((attribute:Attribute) => {
     let template;
@@ -56,15 +55,33 @@ orAttributeTemplateProvider.setTemplate((attribute:Attribute) => {
     return template;
 });
 
-export interface MapAssetCardConfig {
+export interface MapAssetCardTypeConfig {
     include?: string[];
     exclude?: string[];
 }
 
+export interface MapAssetCardConfig {
+    default?: MapAssetCardTypeConfig;
+    assetTypes?: { [assetType: string]: MapAssetCardTypeConfig };
+}
 
-export interface ViewerConfig {
-    default?: MapAssetCardConfig;
-    assetTypes?: { [assetType: string]: MapAssetCardConfig };
+export class OrMapAssetCardLoadAssetEvent extends CustomEvent<string> {
+
+    public static readonly NAME = "or-map-asset-card-load-asset";
+
+    constructor(assetId: string) {
+        super(OrMapAssetCardLoadAssetEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: assetId
+        });
+    }
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [OrMapAssetCardLoadAssetEvent.NAME]: OrMapAssetCardLoadAssetEvent;
+    }
 }
 
 @customElement("or-map-asset-card")
@@ -77,7 +94,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
     public asset?: Asset;
 
     @property({type: Object})
-    public config?: ViewerConfig;
+    public config?: MapAssetCardConfig;
 
     @property({type: Boolean, attribute: true})
     public useAssetColor: boolean = true;
@@ -141,7 +158,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
 
         const icon = this.getIcon();
         const color = this.getColor();
-        const styleStr = color ? "--internal-or-asset-summary-card-header-color: #" + color + ";" : "";
+        const styleStr = color ? "--internal-or-map-asset-card-header-color: #" + color + ";" : "";
         const cardConfig = this.getCardConfig();
         const attributes = Util.getAssetAttributes(this.asset).filter((attr) => attr.name !== AttributeType.LOCATION.attributeName);
         const includedAttributes = cardConfig && cardConfig.include ? cardConfig.include : undefined;
@@ -166,10 +183,14 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                     </ul>
                 </div>
                 <div id="footer">
-                    <a data-navigo href="#!assets/${this.asset.id}">Asset details</a>          
+                    <or-input .type="${InputType.BUTTON}" .label="${i18next.t("viewAsset")}" @click="${(e: MouseEvent) => {e.preventDefault(); this._loadAsset(this.asset!.id!);}}"></or-input>          
                 </div>
-            </div>        
+            </div>
         `;
+    }
+
+    protected _loadAsset(assetId: string) {
+        this.dispatchEvent(new OrMapAssetCardLoadAssetEvent(assetId));
     }
 
     protected getIcon(): string | undefined {

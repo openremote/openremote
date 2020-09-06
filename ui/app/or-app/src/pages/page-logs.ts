@@ -1,7 +1,8 @@
 import {css, customElement, html, property} from "lit-element";
 import "@openremote/or-log-viewer";
 import {ViewerConfig} from "@openremote/or-log-viewer";
-import {AppStateKeyed, Page} from "../index";
+import {AppStateKeyed} from "../app";
+import {Page} from "../types";
 import {EnhancedStore} from "@reduxjs/toolkit";
 
 export function pageLogsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: ViewerConfig) {

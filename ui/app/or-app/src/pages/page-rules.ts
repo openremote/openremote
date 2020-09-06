@@ -1,9 +1,10 @@
 import {css, customElement, html, property} from "lit-element";
 import "@openremote/or-rules";
 import {RulesConfig} from "@openremote/or-rules";
-import {AssetType, RulesetLang, NotificationTargetType} from "@openremote/model";
-import {AppStateKeyed, Page} from "../index";
+import {AssetType, NotificationTargetType, RulesetLang} from "@openremote/model";
 import {EnhancedStore} from "@reduxjs/toolkit";
+import {AppStateKeyed} from "../app";
+import {Page} from "../types";
 
 export interface PageRulesConfig {
     rules: RulesConfig;

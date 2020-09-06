@@ -182,7 +182,7 @@ export class OrEditAssetPanel extends LitElement {
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
-                        ${this.attrs!.sort(Util.sortByString((attr: Attribute) => attr.name!.toUpperCase())).map((attr) => this._getEditAttributeTemplate(attr))}
+                        ${this.attrs!.sort(Util.sortByString((attr: Attribute) => attr.name!.toUpperCase())).map((attr) => this._getEditAttributeTemplate(this.asset.type!, attr))}
                         <tr>
                             <td colspan="4">
                                 <div class="item-add">
@@ -203,7 +203,7 @@ export class OrEditAssetPanel extends LitElement {
         `;
     }
 
-    protected _getEditAttributeTemplate(attribute: Attribute): TemplateResult {
+    protected _getEditAttributeTemplate(assetType: string, attribute: Attribute): TemplateResult {
 
         const deleteAttribute = () => {
             this.attrs!.splice(this.attrs!.indexOf(attribute), 1);
@@ -214,7 +214,9 @@ export class OrEditAssetPanel extends LitElement {
             <tr class="mdc-data-table__row">
                 <td class="mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
                 <td class="mdc-data-table__cell">${attribute.type}</td>
-                <td class="mdc-data-table__cell">${attribute.value}</td>
+                <td class="mdc-data-table__cell">
+                    <or-attribute-input compact .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" .hasHelperText="${false}" disableWrite disableSubscribe disableButton></or-attribute-input>
+                </td>
                 <td class="mdc-data-table__cell actions-cell"><or-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}"></td>
             </tr>
             <tr class="attribute-meta-row">
