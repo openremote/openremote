@@ -194,7 +194,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         if (silent) {
             router.pause();
         }
-        getAssetsRoute(this._editMode, this._assetId);
+        router.navigate(getAssetsRoute(this._editMode, this._assetId));
         if (silent) {
             router.resume();
         }

@@ -158,7 +158,9 @@ export class OrMap extends LitElement {
 
     public disconnectedCallback() {
         super.disconnectedCallback();
-        this._observer!.disconnect();
+        if (this._observer) {
+            this._observer.disconnect();
+        }
         manager.removeListener(this.onManagerEvent);
     }
 

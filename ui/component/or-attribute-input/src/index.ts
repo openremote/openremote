@@ -226,7 +226,7 @@ export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (
             content = html`
                 <div>
                     <or-input .type="${InputType.TEXT}" comfortable outlined .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeNotifier)(e)}"></or-input>
-                    <or-input .type="${InputType.BUTTON}" compact action icon="crosshairs-gps" @clicked="${onClick}"></or-input>
+                    <or-input style="width: auto;" .type="${InputType.BUTTON}" compact action icon="crosshairs-gps" @clicked="${onClick}"></or-input>
                 </div>
             `;
         }

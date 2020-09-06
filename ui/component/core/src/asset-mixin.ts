@@ -107,10 +107,18 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
             if (ids && ids.length > 0) {
                 if (!isAttributes) {
                     const assetSubscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAssetEvents(ids, true, (event) => this._onEvent(event));
+                    if (!this._subscriptionIds) {
+                        eventProviderFactory.getEventProvider()!.unsubscribe(assetSubscriptionId);
+                        return;
+                    }
                     this._subscriptionIds.push(assetSubscriptionId);
                 }
                 const subscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAttributeEvents(ids, isAttributes, (event) => this._onEvent(event));
-                this._subscriptionIds.push(subscriptionId);
+                if (!this._subscriptionIds) {
+                    eventProviderFactory.getEventProvider()!.unsubscribe(subscriptionId);
+                } else {
+                    this._subscriptionIds.push(subscriptionId);
+                }
             }
         }
 
