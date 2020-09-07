@@ -392,7 +392,10 @@ public enum AssetType implements AssetDescriptor {
     ),
 
     GROUP(ASSET_NAMESPACE + ":group", "folder", "B3B3B3",
-        new AttributeDescriptorImpl("childAssetType", STRING, null, READ_ONLY)
+        new AttributeDescriptorImpl("childAssetType", STRING, null,
+            LABEL.withInitialValue(Values.create("Child asset type")),
+            DESCRIPTION.withInitialValue(Values.create("Asset type of children")),
+            READ_ONLY)
     ),
 
     THING(ASSET_NAMESPACE + ":thing", "cube-outline", null),
