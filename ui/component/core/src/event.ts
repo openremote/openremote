@@ -350,6 +350,17 @@ abstract class EventProviderImpl implements EventProvider {
                             return;
                         }
 
+                        // Keep cached asset in sync
+                        if (assetSubscription.asset) {
+                            if (evt.attributeState!.deleted) {
+                                delete assetSubscription.asset.attributes![evt.attributeState!.attributeRef!.attributeName!];
+                            } else {
+                                const attr = assetSubscription.asset.attributes![evt.attributeState!.attributeRef!.attributeName!] as Attribute;
+                                attr.value = evt.attributeState!.value;
+                                attr.valueTimestamp = evt.timestamp;
+                            }
+                        }
+
                         assetSubscription.callbacks.forEach((cb, key) => {
                             cb(evt);
                         });
