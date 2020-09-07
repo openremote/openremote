@@ -465,7 +465,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         const dialog = showDialog(
             {
-                title: "addAsset",
+                title: i18next.t("addAsset"),
                 content: html`
                     <form id="mdc-dialog-form-add">
                         <div id="type-list">
@@ -519,6 +519,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         }
                         #type-list {
                             overflow-y: scroll;
+                            text-transform: capitalize;
                         }
                         .hidden {
                             visibility: hidden;
