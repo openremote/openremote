@@ -102,21 +102,21 @@ const style = css`
     }
 `;
 
-export class OrEditAssetChangedEvent extends CustomEvent<void> {
+export class OrEditAssetModifiedEvent extends CustomEvent<void> {
 
-    public static readonly NAME = "or-edit-asset-changed";
+    public static readonly NAME = "or-edit-asset-modified";
 
     constructor() {
-        super(OrEditAssetChangedEvent.NAME, {
+        super(OrEditAssetModifiedEvent.NAME, {
             bubbles: true,
-            composed: false
+            composed: true
         });
     }
 }
 
 declare global {
     export interface HTMLElementEventMap {
-        [OrEditAssetChangedEvent.NAME]: OrEditAssetChangedEvent;
+        [OrEditAssetModifiedEvent.NAME]: OrEditAssetModifiedEvent;
     }
 }
 
@@ -238,7 +238,7 @@ export class OrEditAssetPanel extends LitElement {
     };
 
     protected _onModified() {
-        this.dispatchEvent(new OrEditAssetChangedEvent());
+        this.dispatchEvent(new OrEditAssetModifiedEvent());
         this.requestUpdate();
     }
 

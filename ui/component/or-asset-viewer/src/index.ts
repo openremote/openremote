@@ -38,7 +38,7 @@ import {classMap} from "lit-html/directives/class-map";
 import {GenericAxiosResponse} from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
-import {OrEditAssetChangedEvent} from "./or-edit-asset-panel";
+import {OrEditAssetModifiedEvent} from "./or-edit-asset-panel";
 
 export interface PanelConfig {
     type?: "info" | "history" | "group" | "survey" | "survey-results";
@@ -759,7 +759,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         this.addEventListener(OrAssetViewerComputeGridEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrChartEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
-        this.addEventListener(OrEditAssetChangedEvent.NAME, () => this._onAssetModified());
+        this.addEventListener(OrEditAssetModifiedEvent.NAME, () => this._onAssetModified());
     }
 
     public isModified() {
