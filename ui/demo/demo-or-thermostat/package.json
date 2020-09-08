@@ -1,6 +1,6 @@
 {
   "name": "@openremote/demo-or-thermostat",
-  "version": "1.1.0",
+  "version": "1.0.4",
   "description": "Component Demo",
   "scripts": {
     "clean": "npx shx rm -rf dist",

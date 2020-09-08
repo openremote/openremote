@@ -1,6 +1,6 @@
 {
   "name": "demo",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "Demo App",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
@@ -15,7 +15,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@openremote/or-app": "^1.0.3"
+    "@openremote/or-app": "^1.0.4"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",

@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-asset-tree",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "OpenRemote Asset Tree",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",

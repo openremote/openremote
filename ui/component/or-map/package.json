@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-map",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Displays s vector or raster map",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
@@ -16,7 +16,7 @@
     "@openremote/core": "^1.0.3",
     "@openremote/model": "^1.0.3",
     "@openremote/or-icon": "^1.0.3",
-    "@openremote/or-input": "^1.0.3",
+    "@openremote/or-input": "^1.0.4",
     "@openremote/or-translate": "^1.0.3",
     "@openremote/rest": "^1.0.3",
     "@polymer/polymer": "^3.3.1",

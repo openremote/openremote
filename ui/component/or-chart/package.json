@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-chart",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "OpenRemote chart",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
@@ -16,7 +16,7 @@
     "@material/dialog": "^4.0.0",
     "@openremote/core": "^1.0.3",
     "@openremote/or-icon": "^1.0.3",
-    "@openremote/or-input": "^1.0.3",
+    "@openremote/or-input": "^1.0.4",
     "@openremote/or-mwc-components": "^1.0.3",
     "@openremote/or-panel": "^1.0.3",
     "@openremote/or-translate": "^1.0.3",

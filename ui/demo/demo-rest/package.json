@@ -1,6 +1,6 @@
 {
   "name": "@openremote/demo-rest",
-  "version": "1.1.0",
+  "version": "1.0.4",
   "description": "Demo",
   "private": true,
   "scripts": {
