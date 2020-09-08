@@ -113,6 +113,7 @@ export class OrEditAssetChangedEvent extends CustomEvent<void> {
         });
     }
 }
+
 declare global {
     export interface HTMLElementEventMap {
         [OrEditAssetChangedEvent.NAME]: OrEditAssetChangedEvent;
@@ -140,7 +141,7 @@ export class OrEditAssetPanel extends LitElement {
 
         const updatePublicRead = (publicRead: boolean) => {
             this.asset.accessPublicRead = publicRead;
-            this.onModified();
+            this._onModified();
         };
 
         // Properties panel fields
@@ -207,7 +208,7 @@ export class OrEditAssetPanel extends LitElement {
 
         const deleteAttribute = () => {
             this.attrs!.splice(this.attrs!.indexOf(attribute), 1);
-            this.onModified();
+            this._onModified();
         };
 
         return html`
@@ -236,7 +237,7 @@ export class OrEditAssetPanel extends LitElement {
         `;
     };
 
-    protected onModified() {
+    protected _onModified() {
         this.dispatchEvent(new OrEditAssetChangedEvent());
         this.requestUpdate();
     }
@@ -245,7 +246,7 @@ export class OrEditAssetPanel extends LitElement {
 
         const removeMetaItem = () => {
             attribute.meta!.splice(attribute.meta!.indexOf(metaItem), 1);
-            this.onModified();
+            this._onModified();
         };
 
         const descriptor = AssetModelUtil.getMetaItemDescriptor(metaItem.name);
@@ -335,7 +336,7 @@ export class OrEditAssetPanel extends LitElement {
                     actionName: "add",
                     action: () => {
                         this.attrs!.push(attr);
-                        this.onModified();
+                        this._onModified();
                     },
                     content: html`<or-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-input>`
                 },
@@ -406,7 +407,7 @@ export class OrEditAssetPanel extends LitElement {
                                             value: descriptor.initialValue
                                         }
                                     );
-                                    this.onModified();
+                                    this._onModified();
                                 }
                             });
                         }
@@ -441,13 +442,13 @@ export class OrEditAssetPanel extends LitElement {
                 parentNode = parentNode.parent;
             }
             this.asset.path = path;
-            this.onModified();
+            this._onModified();
         };
 
         const clearParent = () => {
             this.asset.parentId = undefined;
             this.asset.path = [this.asset.id!];
-            this.onModified();
+            this._onModified();
         };
 
         const blockEvent = (ev: Event) => {

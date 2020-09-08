@@ -160,15 +160,40 @@ class EventHandler {
     }
 }
 
-export class OrComputeGridEvent extends CustomEvent<void> {
+export class OrAssetViewerComputeGridEvent extends CustomEvent<void> {
 
-    public static readonly NAME = "or-compute-grid-event";
+    public static readonly NAME = "or-asset-viewer-compute-grid-event";
 
     constructor() {
-        super(OrComputeGridEvent.NAME, {
+        super(OrAssetViewerComputeGridEvent.NAME, {
             bubbles: true,
             composed: true
         });
+    }
+}
+
+export type SaveResult = {
+    asset: Asset,
+    statusCode: number
+};
+
+export class OrAssetViewerSaveResultEvent extends CustomEvent<SaveResult> {
+
+    public static readonly NAME = "or-asset-viewer-save-result-event";
+
+    constructor(saveResult:SaveResult) {
+        super(OrAssetViewerComputeGridEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: saveResult
+        });
+    }
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [OrAssetViewerComputeGridEvent.NAME]: OrAssetViewerComputeGridEvent;
+        [OrAssetViewerSaveResultEvent.NAME]: OrAssetViewerSaveResultEvent;
     }
 }
 
@@ -731,10 +756,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     constructor() {
         super();
-        this.addEventListener(OrComputeGridEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
+        this.addEventListener(OrAssetViewerComputeGridEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrChartEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
-        this.addEventListener(OrEditAssetChangedEvent.NAME, () => this._onAssetChanged());
+        this.addEventListener(OrEditAssetChangedEvent.NAME, () => this._onAssetModified());
     }
 
     public isModified() {
@@ -825,10 +850,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     </a>
                     <div id="title">
                         <or-icon title="${descriptor && descriptor.type ? descriptor.type : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.color ? "#" + descriptor.color : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetType.THING.icon}"></or-icon>
-                        ${editMode ? html`<or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" required outlined .label="${i18next.t("name")}" .value="${this.asset.name}"></or-input>` : html`<span>${this.asset.name}</span>`}
+                        ${editMode ? html`<or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" required outlined .label="${i18next.t("name")}" .value="${this.asset.name}" @or-input-changed="${(e: OrInputChangedEvent) => {this.asset!.name = e.detail.value; this._onAssetModified();}}"></or-input>` : html`<span>${this.asset.name}</span>`}
                     </div>
                     <div id="created-time" class="mobileHidden"><or-translate value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as i18next.TOptions<i18next.InitOptions>}"></or-translate></div>
-                    ${editMode ? html`<or-input id="save-btn" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-input-changed="${() => this._saveAsset()}"></or-input>` : ``}
+                    ${editMode ? html`<or-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-input-changed="${() => this._saveAsset()}"></or-input>` : ``}
                 </div>
                 <div id="container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
                     ${content}
@@ -850,11 +875,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 super.assetIds = undefined;
             }
         } else if (_changedProperties.has("editMode") && !this.editMode) {
-            this.asset = undefined;
-            if (this.assetId) {
-                this._loading = true;
-                super._refreshEventSubscriptions();
-            }
+            this._reloadAsset();
         }
 
         this.onCompleted().then(() => {
@@ -862,6 +883,15 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 OrAssetViewer.generateGrid(this.shadowRoot);
             });
         });
+    }
+
+    protected _reloadAsset() {
+        this.asset = undefined;
+        this._assetModified = false;
+        if (this.assetId) {
+            this._loading = true;
+            super._refreshEventSubscriptions();
+        }
     }
 
     protected _isReadonly() {
@@ -876,11 +906,22 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     }
 
-    protected _saveAsset() {
+    protected async _saveAsset() {
+        if (!this.asset) {
+            return;
+        }
+        const response = await manager.rest.api.AssetResource.update(this.asset.id!, this.asset);
+        this.dispatchEvent(new OrAssetViewerSaveResultEvent({
+            asset: this.asset,
+            statusCode: response.status
+        }));
 
+        if (response.status === 204) {
+            this._reloadAsset();
+        }
     }
 
-    protected _onAssetChanged() {
+    protected _onAssetModified() {
         this._assetModified = true;
         this.requestUpdate();
     }

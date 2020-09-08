@@ -108,6 +108,19 @@ export class OrAssetTreeRequestAddEvent extends CustomEvent<RequestEventDetail<A
     }
 }
 
+export class OrAssetTreeAssetAddedEvent extends CustomEvent<Asset> {
+
+    public static readonly NAME = "or-asset-tree-asset-added";
+
+    constructor(asset: Asset) {
+        super(OrAssetTreeRequestAddEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: asset
+        });
+    }
+}
+
 export class OrAssetTreeRequestDeleteEvent extends CustomEvent<RequestEventDetail<UiAssetTreeNode[]>> {
 
     public static readonly NAME = "or-asset-tree-request-delete";
@@ -248,6 +261,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _connected: boolean = false;
     protected _selectedNodes: UiAssetTreeNode[] = [];
     protected _initCallback?: EventCallback;
+    protected _addedAssetId?: string;
 
     public get selectedNodes(): UiAssetTreeNode[] {
         return this._selectedNodes ? [...this._selectedNodes] : [];
@@ -611,7 +625,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             this._nodes = undefined;
         }).catch((reason) => {
             // TODO: Error announcement
-            // Clear nodes to refetch them
+            // Clear nodes to re-fetch them
             this._nodes = undefined;
         });
         this.disabled = true;
@@ -621,10 +635,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         return window.confirm(i18next.t("confirmDeleteAssets"));
     }
 
-    protected _doAdd(asset: Asset) {
-        manager.rest.api.AssetResource.create(asset).then((response) => {
-            this._loadAssets();
-        });
+    protected async _doAdd(asset: Asset) {
+        const response = await manager.rest.api.AssetResource.create(asset);
+        this._addedAssetId = response.data.id!;
+        this.dispatchEvent(new OrAssetTreeAssetAddedEvent(response.data));
     }
 
     protected _doCopy(node: UiAssetTreeNode) {
@@ -727,6 +741,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 }
             });
             this._buildTreeNodes(assets, this._getSortFunction());
+            if (this._addedAssetId) {
+                this.selectedIds = [this._addedAssetId];
+                this._addedAssetId = undefined;
+            }
         }
     }
 

@@ -745,16 +745,21 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             this._step = Util.getMetaValue(MetaItemType.STEP, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as number;
             this._options = Util.getMetaValue(MetaItemType.ALLOWED_VALUES, this.attribute, this._attributeDescriptor);
 
-            if (!this.inputType && this._inputType === InputType.TEXT && this._options && Array.isArray(this._options) && this._options.length > 0) {
-                this._inputType = InputType.SELECT;
+            if (this._inputType === InputType.TEXT) {
+                if (this._options && Array.isArray(this._options) && this._options.length > 0) {
+                    this._inputType = InputType.SELECT;
+                } else if (Util.getMetaValue(MetaItemType.MULTILINE, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor)) {
+                    this._inputType = InputType.TEXTAREA;
+                }
             }
 
-            if (!this.inputType && this._inputType === InputType.TEXT && Util.getMetaValue(MetaItemType.MULTILINE, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor)) {
-                this._inputType = InputType.TEXTAREA;
-            }
-
-            if (!this.inputType && this._inputType === InputType.NUMBER && this._min !== undefined && this._max) {
-                this._inputType = InputType.RANGE;
+            if (this._inputType === InputType.NUMBER) {
+                if (this._options && Array.isArray(this._options) && this._options.length > 0) {
+                    this._inputType = InputType.SELECT;
+                    this._options = this._options.map((opt, index) => [index, opt]);
+                } else if (this._min !== undefined && this._max) {
+                    this._inputType = InputType.RANGE;
+                }
             }
 
             this._valueFormat = Util.getAttributeValueFormat(this.attribute, this._attributeDescriptor, this._attributeValueDescriptor);

@@ -401,8 +401,9 @@ public enum MetaItemType implements MetaItemDescriptor {
         true),
 
     /**
-     * Indicates the discreet values allowed for this attribute, only makes sense for attributes that
-     * support a limited number of values otherwise can be <code>null</code>.
+     * Indicates the discreet values allowed for this attribute, only makes sense for attributes that support a
+     * limited number of values otherwise can be <code>null</code>. For number attributes, if the values are of type
+     * string then they are assumed to define zero based enum ordinal values.
      */
     ALLOWED_VALUES(
         ASSET_META_NAMESPACE + ":allowedValues",

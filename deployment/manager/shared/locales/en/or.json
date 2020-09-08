@@ -317,5 +317,10 @@
     "urn:openremote:asset:meta:ruleEventExpires": "Rule event expires",
     "urn:openremote:asset:meta:protocolConfiguration": "Protocol configuration"
   },
-  "addMetaItems": "Add configuration items"
+  "addMetaItems": "Add configuration items",
+  "assetModified": "Asset modified",
+  "confirmContinueAssetModified": "Asset has been modified, discard changes?",
+  "noCommand": "No command",
+  "start": "Start",
+  "stop": "Stop"
 }

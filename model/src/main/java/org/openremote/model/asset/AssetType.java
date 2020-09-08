@@ -594,7 +594,11 @@ public enum AssetType implements AssetDescriptor {
             DESCRIPTION.withInitialValue("Positive is consuming, negative is delivering to network")),
         new AttributeDescriptorImpl("command", NUMBER, null,
             LABEL.withInitialValue("Command"),
-            DESCRIPTION.withInitialValue("0 = No command, 1 = Start, 2 = Stop")),
+            DESCRIPTION.withInitialValue("0 = No command, 1 = Start, 2 = Stop"),
+            ALLOWED_VALUES.withInitialValue(Values.createArray(
+                Values.create("noCommand"),
+                Values.create("start"),
+                Values.create("stop")))),
         new AttributeDescriptorImpl("energyCharged", NUMBER, null,
             LABEL.withInitialValue("Energy charged"),
             UNIT_TYPE.withInitialValue(UNITS_ENERGY_KILOWATT_HOUR),
