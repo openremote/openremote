@@ -14,7 +14,7 @@
   "dependencies": {
     "@openremote/core": "^1.1.0",
     "@openremote/model": "^1.1.0",
-    "lit-element": "^2.2.1"
+    "lit-element": "^2.4.0"
   },
   "devDependencies": {
     "tslint": ">=5.11.0",

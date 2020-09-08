@@ -14,7 +14,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@material/data-table": "^5.1.0",
-    "lit-element": "^2.2.1"
+    "lit-element": "^2.4.0"
   },
   "devDependencies": {
     "tslint": ">=5.11.0",

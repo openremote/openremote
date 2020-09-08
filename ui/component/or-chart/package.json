@@ -23,7 +23,7 @@
     "chart.js": "2.9.3",
     "chartjs-plugin-annotation": "0.5.7",
     "jsonpath-plus": "^1.1.0",
-    "lit-element": "^2.2.1",
+    "lit-element": "^2.4.0",
     "moment": "^2.24.0"
   },
   "devDependencies": {

@@ -12,7 +12,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "i18next": "^15.0.9",
-    "lit-element": "^2.2.1"
+    "lit-element": "^2.4.0"
   },
   "devDependencies": {
     "tslint": ">=5.11.0",

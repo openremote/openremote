@@ -19,7 +19,7 @@
     "@openremote/or-icon": "^1.1.0",
     "@openremote/or-translate": "^1.1.0",
     "i18next": "^15.0.9",
-    "lit-element": "^2.2.1"
+    "lit-element": "^2.4.0"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",

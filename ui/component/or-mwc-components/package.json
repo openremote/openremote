@@ -13,7 +13,7 @@
     "@material/menu": "^4.0.0",
     "@material/drawer": "^4.0.0",
     "@material/dialog": "^4.0.0",
-    "lit-element": "^2.2.1"
+    "lit-element": "^2.4.0"
   },
   "devDependencies": {
     "tslint": ">=5.11.0",
