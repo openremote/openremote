@@ -112,10 +112,10 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
     }
 
     public ValueDatapoint[] getValueDatapoints(AttributeRef attributeRef,
-                                               DatapointInterval datapointInterval,
+                                               String truncate,
+                                               String interval,
                                                long fromTimestamp,
                                                long toTimestamp) {
-
         Asset asset = assetStorageService.find(attributeRef.getEntityId());
         if (asset == null) {
             throw new IllegalStateException("Asset not found: " + attributeRef.getEntityId());
@@ -134,38 +134,6 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
 
                     StringBuilder query = new StringBuilder();
                     boolean downsample = (attributeValueType == ValueType.NUMBER || attributeValueType == ValueType.BOOLEAN);
-
-                    String truncateX = null;
-                    String interval = null;
-
-                    switch (datapointInterval) {
-                        case MINUTE:
-                            truncateX = "minute";
-                            interval = "1 minute";
-                            break;
-                        case HOUR:
-                            truncateX = "hour";
-                            interval = "1 hour";
-                            break;
-                        case DAY:
-                            truncateX = "day";
-                            interval = "1 day";
-                            break;
-                        case WEEK:
-                            truncateX = "day";
-                            interval = "7 day";
-                            break;
-                        case MONTH:
-                            truncateX = "day";
-                            interval = "1 month";
-                            break;
-                        case YEAR:
-                            truncateX = "month";
-                            interval = "1 year";
-                            break;
-                        default:
-                            throw new IllegalArgumentException("Can't handle interval: " + datapointInterval);
-                    }
 
                     if (downsample) {
                         // TODO: Change this to use something like this max min decimation algorithm https://knowledge.ni.com/KnowledgeArticleDetails?id=kA00Z0000019YLKSA2&l=en-GB)
@@ -213,11 +181,11 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
                         long toTimestampSeconds = toTimestamp / 1000;
 
                         if (downsample) {
-                            st.setString(1, truncateX);
+                            st.setString(1, truncate);
                             st.setLong(2, fromTimestampSeconds);
                             st.setLong(3, toTimestampSeconds);
                             st.setObject(4, new PGInterval(interval));
-                            st.setString(5, truncateX);
+                            st.setString(5, truncate);
                             st.setLong(6, fromTimestampSeconds);
                             st.setLong(7, toTimestampSeconds);
                             st.setString(8, attributeRef.getEntityId());
@@ -241,6 +209,45 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
                 }
             })
         );
+    }
+
+    public ValueDatapoint[] getValueDatapoints(AttributeRef attributeRef,
+                                               DatapointInterval datapointInterval,
+                                               long fromTimestamp,
+                                               long toTimestamp) {
+        String truncateX;
+        String interval;
+
+        switch (datapointInterval) {
+            case MINUTE:
+                truncateX = "minute";
+                interval = "1 minute";
+                break;
+            case HOUR:
+                truncateX = "hour";
+                interval = "1 hour";
+                break;
+            case DAY:
+                truncateX = "day";
+                interval = "1 day";
+                break;
+            case WEEK:
+                truncateX = "day";
+                interval = "7 day";
+                break;
+            case MONTH:
+                truncateX = "day";
+                interval = "1 month";
+                break;
+            case YEAR:
+                truncateX = "month";
+                interval = "1 year";
+                break;
+            default:
+                throw new IllegalArgumentException("Can't handle interval: " + datapointInterval);
+        }
+
+        return getValueDatapoints(attributeRef, truncateX, interval, fromTimestamp, toTimestamp);
     }
 
     public void updateValue(AttributeRef attributeRef, Value value, long timestamp) {
