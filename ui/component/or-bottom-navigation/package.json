@@ -5,8 +5,7 @@
   "main": "dist/or-bottom-navigation.js",
   "types": "src/or-bottom-navigation.ts",
   "scripts": {
-    "test": "echo \"No tests\" && exit 0",
-    "prepublishOnly": "npx tsc -b && npx webpack"
+    "test": "echo \"No tests\" && exit 0"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
