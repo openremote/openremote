@@ -15,7 +15,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@openremote/or-app": "^1.1.0"
+    "@openremote/or-app": "^1.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",

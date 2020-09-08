@@ -14,8 +14,8 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/demo-core": "^1.1.0",
-    "@openremote/or-map": "^1.1.0"
+    "@openremote/demo-core": "^1.0.3",
+    "@openremote/or-map": "^1.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",

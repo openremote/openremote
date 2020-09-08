@@ -15,7 +15,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/rest": "^1.1.0",
+    "@openremote/rest": "^1.0.3",
     "lit-element": "^2.4.0"
   },
   "devDependencies": {

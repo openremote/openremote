@@ -1,7 +1,7 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
 
-import {customElement, html, LitElement, property, PropertyValues, TemplateResult, unsafeCSS} from "lit-element";
+import {customElement, html, LitElement, property, PropertyValues, TemplateResult, unsafeCSS, query} from "lit-element";
 import "@openremote/or-icon";
 import "@openremote/or-input";
 import "@openremote/or-attribute-input";
@@ -754,6 +754,12 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     protected _attributes?: Attribute[];
     protected resizeHandler = () => OrAssetViewer.generateGrid(this.shadowRoot);
 
+    @query("#wrapper")
+    protected wrapperElem!: HTMLDivElement;
+
+    @query("#save-btn")
+    protected saveBtnElem!: OrInput;
+
     constructor() {
         super();
         this.addEventListener(OrAssetViewerComputeGridEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
@@ -875,7 +881,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 super.assetIds = undefined;
             }
         } else if (_changedProperties.has("editMode") && !this.editMode) {
-            this._reloadAsset();
+            this.reloadAsset();
         }
 
         this.onCompleted().then(() => {
@@ -885,7 +891,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         });
     }
 
-    protected _reloadAsset() {
+    public reloadAsset() {
         this.asset = undefined;
         this._assetModified = false;
         if (this.assetId) {
@@ -906,14 +912,19 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         if (!this.asset) {
             return;
         }
+
+        this.saveBtnElem.disabled = true;
+        this.wrapperElem.classList.add("saving");
         const response = await manager.rest.api.AssetResource.update(this.asset.id!, this.asset);
+        this.wrapperElem.classList.remove("saving");
+        this.saveBtnElem.disabled = false;
         this.dispatchEvent(new OrAssetViewerSaveResultEvent({
             asset: this.asset,
             statusCode: response.status
         }));
 
         if (response.status === 204) {
-            this._reloadAsset();
+            this.reloadAsset();
         }
     }
 

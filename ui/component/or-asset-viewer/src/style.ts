@@ -80,6 +80,11 @@ export const style = css`
         overflow: auto;
     }
     
+    #wrapper.saving {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    
     #container {
         box-sizing: border-box;
         display: grid;

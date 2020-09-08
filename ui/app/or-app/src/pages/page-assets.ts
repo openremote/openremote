@@ -135,8 +135,13 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         event.detail.allow = false;
         const assetId = event.detail.detail.node.asset.id;
         const action = () => {
-            this._assetId = assetId;
-            this._updateRoute(false);
+            if (this._assetId === assetId && this._viewer.isModified()) {
+                // User has selected the same asset so reload it to discard changes
+                this._viewer.reloadAsset();
+            } else {
+                this._assetId = assetId;
+                this._updateRoute(false);
+            }
         };
         this._checkIfModified(action);
     }
