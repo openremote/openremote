@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-input",
-  "version": "1.1.1",
+  "version": "1.0.3",
   "description": "OpenRemote input",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",

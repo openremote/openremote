@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-icon",
-  "version": "1.1.1",
+  "version": "1.0.3",
   "description": "Icon component for displaying an icon from an icon set",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",

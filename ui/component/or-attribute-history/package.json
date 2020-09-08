@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-attribute-history",
-  "version": "1.1.1",
+  "version": "1.0.3",
   "description": "OpenRemote attribute history",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
@@ -13,10 +13,10 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@material/data-table": "^5.1.0",
-    "@openremote/core": "^1.1.1",
-    "@openremote/or-input": "^1.1.1",
-    "@openremote/or-panel": "^1.1.1",
-    "@openremote/or-translate": "^1.1.1",
+    "@openremote/core": "^1.0.3",
+    "@openremote/or-input": "^1.0.3",
+    "@openremote/or-panel": "^1.0.3",
+    "@openremote/or-translate": "^1.0.3",
     "chart.js": "^2.8.0",
     "jsonpath-plus": "^1.1.0",
     "lit-element": "^2.4.0",

@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-timeline",
-  "version": "1.1.1",
+  "version": "1.0.3",
   "description": "OpenRemote Timeline",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",

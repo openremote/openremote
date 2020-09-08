@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-survey-results",
-  "version": "1.1.1",
+  "version": "1.0.3",
   "description": "Displays survey results",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
@@ -12,8 +12,8 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/core": "^1.1.1",
-    "@openremote/model": "^1.1.1",
+    "@openremote/core": "^1.0.3",
+    "@openremote/model": "^1.0.3",
     "lit-element": "^2.4.0"
   },
   "devDependencies": {
