@@ -118,10 +118,10 @@ export interface RulesConfig {
         when?: RulesDescriptorSection;
         action?: RulesDescriptorSection;
     };
-    rulesetAddHandler?: (ruleset: Ruleset) => boolean;
-    rulesetDeleteHandler?: (ruleset: Ruleset) => boolean;
-    rulesetCopyHandler?: (ruleset: Ruleset) => boolean;
-    rulesetSaveHandler?: (ruleset: Ruleset) => boolean;
+    rulesetAddHandler?: (ruleset: RulesetUnion) => boolean;
+    rulesetDeleteHandler?: (ruleset: RulesetUnion) => boolean;
+    rulesetCopyHandler?: (ruleset: RulesetUnion) => boolean;
+    rulesetSaveHandler?: (ruleset: RulesetUnion) => boolean;
     json?: {
         rule?: JsonRule;
         whenGroup?: LogicGroup<RuleCondition>;
