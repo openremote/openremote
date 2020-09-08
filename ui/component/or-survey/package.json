@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-survey",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Displays survey",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
@@ -12,11 +12,11 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/core": "^1.1.0",
-    "@openremote/model": "^1.1.0",
-    "@openremote/or-translate": "^1.1.0",
-    "lit-element": "^2.4.0",
+    "@openremote/core": "^1.1.1",
+    "@openremote/model": "^1.1.1",
+    "@openremote/or-translate": "^1.1.1",
     "@types/lodash-es": "^4.17.3",
+    "lit-element": "^2.4.0",
     "lodash-es": "^4.17.15",
     "moment": "2.24.0"
   },

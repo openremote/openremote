@@ -1,6 +1,6 @@
 {
   "name": "@openremote/core",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "OpenRemote 3.x Core",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
@@ -16,8 +16,8 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/or-icon": "^1.1.0",
-    "@openremote/rest": "^1.1.0",
+    "@openremote/or-icon": "^1.1.1",
+    "@openremote/rest": "^1.1.1",
     "i18next": "^15.0.9",
     "i18next-sprintf-postprocessor": "0.2.2",
     "i18next-xhr-backend": "^2.0.1",

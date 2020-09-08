@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-attribute-input",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "OpenRemote attribute input",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
@@ -12,11 +12,11 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/core": "^1.1.0",
-    "@openremote/or-input": "^1.1.0",
-    "@openremote/or-mwc-components": "^1.1.0",
-    "@openremote/or-translate": "^1.1.0",
-    "@openremote/or-map": "^1.1.0",
+    "@openremote/core": "^1.1.1",
+    "@openremote/or-input": "^1.1.1",
+    "@openremote/or-map": "^1.1.1",
+    "@openremote/or-mwc-components": "^1.1.1",
+    "@openremote/or-translate": "^1.1.1",
     "lit-element": "^2.4.0"
   },
   "devDependencies": {

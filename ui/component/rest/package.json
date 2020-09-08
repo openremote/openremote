@@ -1,6 +1,6 @@
 {
   "name": "@openremote/rest",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "OpenRemote 3.x REST API",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
@@ -17,7 +17,7 @@
     "qs": "^6.8.0"
   },
   "devDependencies": {
-    "@openremote/model": "^1.1.0",
+    "@openremote/model": "^1.1.1",
     "@types/qs": "^6.5.3",
     "tslint": ">=5.11.0",
     "typescript": ">=3.4.5",
