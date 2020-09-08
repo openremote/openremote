@@ -4,12 +4,12 @@
   "useWorkspaces": true,
   "command": {
     "publish": {
+      "npmClient": "npm",
       "ignoreChanges": [
         "*.js",
         "*.md"
       ],
-      "message": "UI updates: Set version for publishing",
-      "registry": "https://npm.pkg.github.com"
+      "message": "UI updates: Set version for publishing"
     }
   },
   "packages": [
