@@ -28,7 +28,8 @@ import {
     ValueType,
     ClientRole,
     Asset,
-    NotificationTargetType
+    NotificationTargetType,
+    Ruleset
 } from "@openremote/model";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/dist/or-mwc-drawer";
@@ -94,7 +95,6 @@ export interface NotificationActionTargetType {
     [messageType: string]: NotificationTargetType[]
 }
 
-
 export interface RulesConfig {
     controls?: {
         allowedLanguages?: RulesetLang[];
@@ -118,7 +118,10 @@ export interface RulesConfig {
         when?: RulesDescriptorSection;
         action?: RulesDescriptorSection;
     };
-    rulesetName?: string;
+    rulesetAddHandler?: (ruleset: Ruleset) => boolean;
+    rulesetDeleteHandler?: (ruleset: Ruleset) => boolean;
+    rulesetCopyHandler?: (ruleset: Ruleset) => boolean;
+    rulesetSaveHandler?: (ruleset: Ruleset) => boolean;
     json?: {
         rule?: JsonRule;
         whenGroup?: LogicGroup<RuleCondition>;
@@ -629,16 +632,24 @@ export class OrRules extends translate(i18next)(LitElement) {
             return;
         }
 
-        const name = this.config && this.config.rulesetName ? this.config.rulesetName : OrRules.DEFAULT_RULESET_NAME;
         const realm = manager.isSuperUser() ? manager.displayRealm : manager.config.realm;
         const ruleset: RulesetUnion = {
             id: 0,
             type: type,
-            name: name,
+            name: OrRules.DEFAULT_RULESET_NAME,
             lang: lang,
             realm: realm,
             rules: undefined // View needs to populate this on load
         };
+        
+        if (this.config && this.config.rulesetAddHandler && !this.config.rulesetAddHandler(ruleset)) {
+            return;
+        }
+
+        // Ensure config hasn't messed with the certain values
+        if (type === "tenant") {
+            (ruleset as TenantRuleset).realm = realm;
+        }
         this._activeRuleset = ruleset;
     }
 
@@ -649,12 +660,17 @@ export class OrRules extends translate(i18next)(LitElement) {
             return;
         }
 
-        let ruleset = JSON.parse(JSON.stringify(e.detail)) as RulesetUnion;
+        const ruleset = JSON.parse(JSON.stringify(e.detail)) as RulesetUnion;
         delete ruleset.lastModified;
         delete ruleset.createdOn;
         delete ruleset.status;
         delete ruleset.error;
         delete ruleset.id;
+        
+        if (this.config && this.config.rulesetCopyHandler && !this.config.rulesetCopyHandler(ruleset)) {
+            return;
+        }
+        
         this._activeRuleset = ruleset;
     }
 
@@ -678,7 +694,12 @@ export class OrRules extends translate(i18next)(LitElement) {
 
         // We need to call the backend so disable list until done
         this._rulesList.disabled = true;
-        for (let ruleset of rulesetsToDelete) {
+        for (const ruleset of rulesetsToDelete) {
+
+            if (this.config && this.config.rulesetDeleteHandler && !this.config.rulesetDeleteHandler(ruleset)) {
+                continue;
+            }
+            
             try {
                 await manager.rest.api.RulesResource.deleteTenantRuleset(ruleset.id!);
             } catch (e) {
