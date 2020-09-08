@@ -1,6 +1,7 @@
 {
   "version": "1.0.3",
   "npmClient": "yarn",
+  "useWorkspaces": true,
   "command": {
     "publish": {
       "ignoreChanges": [
@@ -12,6 +13,7 @@
     }
   },
   "packages": [
-    "ui/component/*"
+    "ui/component/*",
+    "ui/app/*"
   ]
 }

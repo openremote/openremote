@@ -7,7 +7,6 @@
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
-  "private": true,
   "scripts": {
     "clean": "npx shx rm -rf dist",
     "modelBuild": "node ../../model-build.js",
