@@ -902,10 +902,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         await this.updateComplete;
     }
 
-    protected _toggleEdit(edit: boolean) {
-
-    }
-
     protected async _saveAsset() {
         if (!this.asset) {
             return;

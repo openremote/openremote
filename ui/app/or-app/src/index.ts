@@ -45,7 +45,7 @@ export function headerItemMap<S extends AppStateKeyed, A extends AnyAction>(orAp
 export function headerItemAssets<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "rhombus-split",
-        href: "#!assets",
+        href: "assets",
         text: "asset_plural",
     };
 }
@@ -53,7 +53,7 @@ export function headerItemAssets<S extends AppStateKeyed, A extends AnyAction>(o
 export function headerItemRules<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "state-machine",
-        href: "#!rules",
+        href: "rules",
         text: "rule_plural",
         hideMobile: true
     };
@@ -62,7 +62,7 @@ export function headerItemRules<S extends AppStateKeyed, A extends AnyAction>(or
 export function headerItemInsights<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "chart-areaspline",
-        href: "#!insights",
+        href: "insights",
         text: "insights"
     };
 }
@@ -103,7 +103,7 @@ export function headerItemLogs<S extends AppStateKeyed, A extends AnyAction>(orA
     return {
         icon: "file-document-box-search-outline",
         value: "logs",
-        href: "#!logs",
+        href: "logs",
         text: "logs",
         hideMobile: true
     };
@@ -113,7 +113,7 @@ export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(
     return {
         icon: "account",
         value: "account",
-        href: "#!account",
+        href: "account",
         text: "account",
         roles: {
             account: ["manage-account"]

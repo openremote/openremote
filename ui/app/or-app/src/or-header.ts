@@ -325,7 +325,7 @@ class OrHeader extends LitElement {
     private _drawerOpened = false;
 
     @property({ type: String })
-    private activeMenu: string | undefined = window.location.hash ? window.location.hash : "#!map";
+    private activeMenu: string | undefined = window.location.hash ? window.location.hash.split("/")[0].substr(2) : "map";
 
     public connectedCallback(): void {
         super.connectedCallback();
@@ -339,7 +339,7 @@ class OrHeader extends LitElement {
 
     public _onHashChanged(e: Event) {
         const menu = window.location.hash.split("/")[0];
-        this.activeMenu = menu;
+        this.activeMenu = menu.substr(2);
     }
 
     public _onRealmSelect(realm: string) {
