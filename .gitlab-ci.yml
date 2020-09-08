@@ -134,6 +134,7 @@ build-master:
     - if [ ! $DOCKER_IMAGE_TAG ]; then echo "export CI_ENVIRONMENT=$CI_ENVIRONMENT_SLUG" >> deploy.sh; fi
     - if [ $DOCKER_IMAGE_TAG ]; then echo "export CI_ENVIRONMENT=$DOCKER_IMAGE_TAG" >> deploy.sh; fi
     - echo "export SETUP_WIPE_CLEAN_INSTALL=$SETUP_WIPE_CLEAN_INSTALL" >> deploy.sh
+    - echo "export FIREBASE_CONFIG_FILE=${FIREBASE_CONFIG_FILE}" >> deploy.sh
     - if [ $SETUP_ADMIN_PASSWORD ]; then echo "export SETUP_ADMIN_PASSWORD=$SETUP_ADMIN_PASSWORD" >> deploy.sh; fi
     - echo "docker pull \$CI_REGISTRY_IMAGE/manager:\$CI_ENVIRONMENT"   >> deploy.sh
     - echo "docker pull \$CI_REGISTRY_IMAGE/deployment:\$CI_ENVIRONMENT">> deploy.sh
