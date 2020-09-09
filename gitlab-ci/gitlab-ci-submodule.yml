@@ -1,0 +1,200 @@
+default:
+  interruptible: true
+  image: docker:latest
+  services:
+    - docker:dind              # Docker in docker service
+
+variables:
+  ## Following 3 varaiables should be defined as GitLab CI/CD variables
+  #PROJECT_NAME:
+  #DEPLOYMENT_HOST_USER:
+  #DEPLOYMENT_PORT:
+  GIT_SUBMODULE_STRATEGY: normal
+  DAST_WEBSITE: https://staging.${PROJECT_NAME}.${DOMAIN}
+
+stages:
+  - build
+  - build_fail
+  - test
+  - deploy
+  - dast
+
+.build_template: &build_definition
+  stage: build
+  variables:
+    SCAN_IMAGE_TAG:    $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA
+    MANAGER_IMAGE_TAG: $CI_REGISTRY_IMAGE/manager:$CI_ENVIRONMENT_SLUG
+    DEPLOY_IMAGE_TAG:  $CI_REGISTRY_IMAGE/deployment:$CI_ENVIRONMENT_SLUG
+    PROXY_IMAGE_TAG:   $CI_REGISTRY_IMAGE/proxy:$CI_ENVIRONMENT_SLUG
+    POSTGRE_IMAGE_TAG: $CI_REGISTRY_IMAGE/postgresql:$CI_ENVIRONMENT_SLUG
+    KEYCLO_IMAGE_TAG:  $CI_REGISTRY_IMAGE/keycloak:$CI_ENVIRONMENT_SLUG
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+  script:
+    - docker run -v $(pwd):/or registry.gitlab.com/openremote/openremote:master
+      /bin/sh -c "./gradlew --console plain clean installDist"
+    - docker run -v $(pwd):/or
+      -v /var/run/docker.sock:/var/run/docker.sock
+      -e "CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE"
+      -e "CI_ENVIRONMENT=$CI_ENVIRONMENT_SLUG"
+      registry.gitlab.com/openremote/openremote:master
+      /bin/sh -c "docker-compose -f profile/$CI_ENVIRONMENT_SLUG.yml build"
+    - docker images
+    # Image for container scanning
+    - docker tag $MANAGER_IMAGE_TAG $SCAN_IMAGE_TAG
+    - docker push $SCAN_IMAGE_TAG
+    # Push to registry
+    - docker push "$MANAGER_IMAGE_TAG"
+    - docker push "$DEPLOY_IMAGE_TAG"
+    - docker push "$PROXY_IMAGE_TAG"
+    - docker push "$POSTGRE_IMAGE_TAG"
+    - docker push "$KEYCLO_IMAGE_TAG"
+    # Tag for possible rollback
+    - if [ $CI_COMMIT_TAG ]; then
+    -   docker tag "$CI_REGISTRY_IMAGE/manager:$CI_ENVIRONMENT_SLUG" "$CI_REGISTRY_IMAGE/manager:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    -   docker tag "$CI_REGISTRY_IMAGE/deployment:$CI_ENVIRONMENT_SLUG" "$CI_REGISTRY_IMAGE/deployment:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    -   docker tag "$CI_REGISTRY_IMAGE/proxy:$CI_ENVIRONMENT_SLUG" "$CI_REGISTRY_IMAGE/proxy:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    -   docker tag "$CI_REGISTRY_IMAGE/postgresql:$CI_ENVIRONMENT_SLUG" "$CI_REGISTRY_IMAGE/postgresql:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    -   docker tag "$CI_REGISTRY_IMAGE/keycloak:$CI_ENVIRONMENT_SLUG" "$CI_REGISTRY_IMAGE/keycloak:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    -   docker push "$CI_REGISTRY_IMAGE/manager:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    -   docker push "$CI_REGISTRY_IMAGE/deployment:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    -   docker push "$CI_REGISTRY_IMAGE/proxy:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    -   docker push "$CI_REGISTRY_IMAGE/postgresql:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    -   docker push "$CI_REGISTRY_IMAGE/keycloak:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    - fi
+
+build production docker images:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      when: manual
+  allow_failure: true
+  environment: production
+  <<: *build_definition
+
+build staging docker images:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "master"
+      when: never
+    - if: $CI_COMMIT_MESSAGE !~ /skip-build/
+  environment: staging
+  <<: *build_definition
+
+build manually staging docker images:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "master"
+      when: never
+    - if: $CI_COMMIT_MESSAGE =~ /skip-build/
+      when: manual
+  allow_failure: true
+  environment: staging
+  <<: *build_definition
+
+# This step is executed when build fails. The purpose is to e-mail a git commiter about the problem.
+email failed pipeline:
+  stage: build_fail
+  image: docker:latest
+  before_script:
+    - cat $AWS_MAIL > aws_mail.py
+  script:
+    - docker pull registry.gitlab.com/openremote/openremote:master
+    - export WHO=$(docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master git log --pretty="%ce" -1)
+    - export WHEN=$(docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master git log --pretty="%ad %ar" -1)
+    - export WHAT=$(docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master git log --pretty="%h %s" -1)
+    - export REPO=$(docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master git remote get-url origin|xargs basename)
+    - echo $REPO
+    - docker run -v $(pwd):/usr/src/myapp -w /usr/src/myapp
+      -e "WHO=$WHO"
+      -e "WHAT=$WHAT"
+      -e "WHEN=$WHEN"
+      -e "REPO=$REPO"
+      -e "SMTP_USERNAME=$SMTP_USERNAME"
+      -e "SMTP_PASSWORD=$SMTP_PASSWORD"
+      --rm python:3 python aws_mail.py
+  when: on_failure
+  only:
+    - master
+
+include:
+  - template: Container-Scanning.gitlab-ci.yml
+  - template: Dependency-Scanning.gitlab-ci.yml
+  - template: License-Scanning.gitlab-ci.yml
+#  - template: SAST.gitlab-ci.yml
+  - template: DAST.gitlab-ci.yml
+
+.ssh_config: &ssh_config
+- mkdir -p ~/.ssh
+- chmod 600 "$GITLAB_SSH_PRIVATE_KEY"
+- eval "$(ssh-agent -s)"
+- ssh-add "$GITLAB_SSH_PRIVATE_KEY"
+- ssh-keyscan -H -p $DEPLOYMENT_PORT $DEPLOYMENT_HOST >> ~/.ssh/known_hosts
+- alias SSH="ssh -p $DEPLOYMENT_PORT ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}"
+- alias SCP="scp -p -r -P $DEPLOYMENT_PORT"
+
+.deploy_template: &deploy_definition
+  stage: deploy
+  before_script:
+    - *ssh_config
+  script:
+    - echo "Deploy to $CI_ENVIRONMENT_SLUG server"
+    - echo "export PROJECT_NAME=$PROJECT_NAME" >> deploy.sh
+    - echo "export CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE" >> deploy.sh
+    - if [ ! $DOCKER_IMAGE_TAG ]; then echo "export CI_ENVIRONMENT=$CI_ENVIRONMENT_SLUG" >> deploy.sh; fi
+    - if [ $DOCKER_IMAGE_TAG ]; then echo "export CI_ENVIRONMENT=$DOCKER_IMAGE_TAG" >> deploy.sh; fi
+    - echo "export SETUP_WIPE_CLEAN_INSTALL=$SETUP_WIPE_CLEAN_INSTALL" >> deploy.sh
+    - echo "export FIREBASE_CONFIG_FILE=${FIREBASE_CONFIG_FILE}" >> deploy.sh
+    - if [ $SETUP_ADMIN_PASSWORD ]; then echo "export SETUP_ADMIN_PASSWORD=$SETUP_ADMIN_PASSWORD" >> deploy.sh; fi
+    - echo "echo ${OR_PASSWORD} | docker login -u openremote --password-stdin $CI_REGISTRY || exit 666" >> deploy.sh
+    - echo "docker pull $CI_REGISTRY_IMAGE/manager:\$CI_ENVIRONMENT"   >> deploy.sh
+    - echo "docker pull $CI_REGISTRY_IMAGE/deployment:\$CI_ENVIRONMENT">> deploy.sh
+    - echo "docker pull $CI_REGISTRY_IMAGE/proxy:\$CI_ENVIRONMENT"     >> deploy.sh
+    - echo "docker pull $CI_REGISTRY_IMAGE/postgresql:\$CI_ENVIRONMENT">> deploy.sh
+    - echo "docker pull $CI_REGISTRY_IMAGE/keycloak:\$CI_ENVIRONMENT"  >> deploy.sh
+    - echo "docker-compose -p $PROJECT_NAME -f profile/$CI_ENVIRONMENT_SLUG.yml down || exit 666" >> deploy.sh
+    - echo "docker volume rm ${PROJECT_NAME}_deployment-data" >> deploy.sh
+    - echo "docker-compose -p $PROJECT_NAME -f profile/$CI_ENVIRONMENT_SLUG.yml up --no-build -d || exit 666" >> deploy.sh
+    - chmod +x deploy.sh
+    - SSH mkdir -p profile openremote/profile deployment openremote/proxy openremote/manager/build/install/manager openremote/postgresql openremote/keycloak
+    - SCP ./profile/ deploy.sh ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/
+    - SCP ./openremote/profile/* ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/openremote/profile/
+    - SSH ./deploy.sh
+    - SSH "docker system prune -f; docker images -q --filter dangling=true | xargs docker rmi; rm -rf openremote/ profile/ deployment/ deploy.sh .docker/config.json"
+  after_script:
+    - *ssh_config
+    - SSH "docker logs ${PROJECT_NAME}_proxy_1 &> proxy_${CI_ENVIRONMENT_SLUG}.log"
+    - SSH "docker logs ${PROJECT_NAME}_manager_1 &> manager_${CI_ENVIRONMENT_SLUG}.log"
+    - SSH "docker logs ${PROJECT_NAME}_keycloak_1 &> keycloak_${CI_ENVIRONMENT_SLUG}.log"
+    - SSH "docker logs ${PROJECT_NAME}_postgresql_1 &> postgresql_${CI_ENVIRONMENT_SLUG}.log"
+    - SCP ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/*.log .
+    - SSH "rm ~/*.log"
+  artifacts:
+    paths:
+    - proxy_${CI_ENVIRONMENT_SLUG}.log
+    - manager_${CI_ENVIRONMENT_SLUG}.log
+    - keycloak_${CI_ENVIRONMENT_SLUG}.log
+    - postgresql_${CI_ENVIRONMENT_SLUG}.log
+    expire_in: 1 week
+
+deploy staging:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      when: on_success
+  variables:
+    DEPLOYMENT_HOST: ${CI_ENVIRONMENT_SLUG}.${PROJECT_NAME}.${DOMAIN}
+    SETUP_WIPE_CLEAN_INSTALL: 'true'
+  environment:
+    name: staging
+    url: https://${CI_ENVIRONMENT_SLUG}.${PROJECT_NAME}.${DOMAIN}
+  <<: *deploy_definition
+
+deploy production:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      when: manual
+  allow_failure: true
+  variables:
+    DEPLOYMENT_HOST: ${PROJECT_NAME}.${DOMAIN}
+    SETUP_WIPE_CLEAN_INSTALL: 'false'
+  environment:
+    name: production
+    url: https://${PROJECT_NAME}.${DOMAIN}
+  <<: *deploy_definition
