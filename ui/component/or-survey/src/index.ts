@@ -16,7 +16,7 @@ export interface OrComputeGridEventDetail {
 
 export class OrComputeGridEvent extends CustomEvent<OrComputeGridEventDetail> {
 
-    public static readonly NAME = "or-compute-grid-event";
+    public static readonly NAME = "or-asset-viewer-compute-grid-event";
 
     constructor() {
         super(OrComputeGridEvent.NAME, {
@@ -239,6 +239,8 @@ class OrSurvey extends LitElement {
         } else if (today.diff(endDate) > 0) {
             // after end date
             return 'after';
+        } else {
+            return 'not_published'
         }
     }
 
