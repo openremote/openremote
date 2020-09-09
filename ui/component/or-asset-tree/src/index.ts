@@ -10,12 +10,12 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import Qs from "qs";
 import {getAssetDescriptorIconTemplate, OrIcon} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/dist/or-mwc-menu";
-import {getContentWithMenuTemplate, MenuItem, OrMwcMenuChangedEvent} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import "@openremote/or-mwc-components/dist/or-mwc-list";
 import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/dist/or-mwc-list";
 import {i18next, OrTranslate} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {showDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 
 export interface AssetTreeTypeConfig {
     include?: string[];
@@ -449,11 +449,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _onAddClicked() {
 
         const includedAssetTypes = this.config && this.config.addAssetTypes && this.config.addAssetTypes.include ? this.config.addAssetTypes.include : undefined;
-        const excludedAssetTypes = this.config && this.config.addAssetTypes && this.config.addAssetTypes.exclude ? this.config.addAssetTypes.exclude : [];
+        const excludedAssetTypes = this.config && this.config.addAssetTypes && this.config.addAssetTypes.exclude ? this.config.addAssetTypes.exclude : undefined;
 
         const listItems: ListItem[] = AssetModelUtil.getAssetDescriptors()
-            .filter((descriptor) => (!includedAssetTypes || includedAssetTypes.indexOf(descriptor.type!) >= 0)
-                && (excludedAssetTypes.indexOf(descriptor.type!) < 0))
+            .filter((descriptor) => (!includedAssetTypes || includedAssetTypes.some((inc) => Util.stringMatch(inc, descriptor.type!)))
+                && (!excludedAssetTypes || !excludedAssetTypes.some((exc) => Util.stringMatch(exc, descriptor.type!))))
             .sort(Util.sortByString((descriptor) => descriptor.name!))
             .map((descriptor) => {
                 return {

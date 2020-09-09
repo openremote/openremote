@@ -100,6 +100,9 @@ const style = css`
     .button-clear.hidden {
         visibility: hidden;
     }
+    .padded-cell {
+        padding: 10px 0;
+    }
 `;
 
 export class OrEditAssetModifiedEvent extends CustomEvent<void> {
@@ -213,23 +216,21 @@ export class OrEditAssetPanel extends LitElement {
 
         return html`
             <tr class="mdc-data-table__row">
-                <td class="mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
-                <td class="mdc-data-table__cell">${attribute.type}</td>
-                <td class="mdc-data-table__cell">
-                    <or-attribute-input compact .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" .hasHelperText="${false}" disableWrite disableSubscribe disableButton></or-attribute-input>
+                <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
+                <td class="padded-cell mdc-data-table__cell">${attribute.type}</td>
+                <td class="padded-cell mdc-data-table__cell">
+                    <or-attribute-input compact .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" hasHelperText disableWrite disableSubscribe disableButton></or-attribute-input>
                 </td>
-                <td class="mdc-data-table__cell actions-cell"><or-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}"></td>
+                <td class="padded-cell mdc-data-table__cell actions-cell"><or-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}"></td>
             </tr>
             <tr class="attribute-meta-row">
                 <td colspan="4">
-                    <div>
-                        <div class="meta-item-container">
-                            <div>
-                                ${!attribute.meta ? `` : attribute.meta.sort(Util.sortByString((metaItem) => metaItem.name!)).map((metaItem) => this._getMetaItemTemplate(attribute, metaItem))}
-                            </div>
-                            <div class="item-add">
-                                <or-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @click="${() => this._addMetaItems(attribute)}"></or-input>
-                            </div>
+                    <div class="meta-item-container">
+                        <div>
+                            ${!attribute.meta ? `` : attribute.meta.sort(Util.sortByString((metaItem) => metaItem.name!)).map((metaItem) => this._getMetaItemTemplate(attribute, metaItem))}
+                        </div>
+                        <div class="item-add">
+                            <or-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @click="${() => this._addMetaItems(attribute)}"></or-input>
                         </div>
                     </div>                     
                 </td>
@@ -240,6 +241,11 @@ export class OrEditAssetPanel extends LitElement {
     protected _onModified() {
         this.dispatchEvent(new OrEditAssetModifiedEvent());
         this.requestUpdate();
+    }
+
+    protected _onMetaItemModified(metaItem: MetaItem, value: any) {
+        metaItem.value = value;
+        this._onModified();
     }
 
     protected _getMetaItemTemplate(attribute: Attribute, metaItem: MetaItem): TemplateResult {
@@ -290,7 +296,7 @@ export class OrEditAssetPanel extends LitElement {
         const readonly = descriptor && !!descriptor.valueFixed;
         return html`
                 <div class="meta-item-wrapper">
-                    <or-input .label=${Util.getMetaItemLabel(metaItem.name!)} .type="${inputType}" .value="${metaItem.value}" ?disabled="${readonly}"></or-input>
+                    <or-input .label=${Util.getMetaItemLabel(metaItem.name!)} .type="${inputType}" .value="${metaItem.value}" @or-input-changed="${(e: OrInputChangedEvent) => this._onMetaItemModified(metaItem, e.detail.value)}" ?disabled="${readonly}"></or-input>
                     <button class="button-clear" @click="${removeMetaItem}"><or-icon icon="close-circle"></or-icon></input>
                 </div>
             `;

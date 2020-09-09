@@ -239,6 +239,36 @@ export function arrayRemove<T>(arr: T[], item: T) {
     }
 }
 
+export function stringMatch(needle: string, haystack: string): boolean {
+
+    if (haystack === needle) {
+        return true;
+    }
+
+    const startsWith = needle.endsWith("*");
+    const endsWith = !startsWith && needle.startsWith("*");
+    const regExp = !startsWith && !endsWith && needle.startsWith("^") && needle.endsWith("$")
+
+    if (startsWith && haystack.startsWith(needle.substr(0, needle.length - 1))) {
+        return true;
+    }
+
+    if (endsWith && haystack.endsWith(needle.substr(1))) {
+        return true;
+    }
+
+    if (regExp) {
+        try {
+            const regexp = new RegExp(needle);
+            return regexp.test(haystack);
+        } catch(e) {
+            console.error("Failed to compile needle as a RegExp: " + e);
+        }
+    }
+
+    return false;
+}
+
 export function enumContains(enm: object, val: string): boolean {
     return enm && Object.values(enm).includes(val);
 }

@@ -180,14 +180,16 @@ export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (
     return (value, timestamp, loading, sending, error) => {
         let pos: LngLat | undefined;
         let center: number[] | undefined;
+
         if (value) {
             pos = MapUtil.getLngLat(value);
             center = pos ? pos.toArray() : undefined;
         }
 
+        const centerStr = center ? center.join(", ") : undefined;
         centerControl.pos = pos;
         coordinatesControl.readonly = !!attributeInput.disabled || !!attributeInput.readonly || sending || loading;
-        coordinatesControl.value = center ? center.join(", ") : undefined;
+        coordinatesControl.value = centerStr;
 
         const iconAndColor = getMarkerIconAndColorFromAssetType(assetType);
 
@@ -205,33 +207,52 @@ export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (
                 or-map {
                     border: #e5e5e5 1px solid;
                     margin: 3px 0;
+                    width: 100%;
+                    height: 100%;
                 }
             </style>
-            <or-map class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => clickHandler(ev.detail)}" .center="${center}" .controls="${[centerControl, [coordinatesControl, "top-left"]]}">
-                <or-map-marker active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .color="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
-            </or-map>
+            <div id="geo-json-point-input-wrapper">
+                <or-map class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => clickHandler(ev.detail)}" .center="${center}" .controls="${[centerControl, [coordinatesControl, "top-left"]]}">
+                    <or-map-marker active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .color="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
+                </or-map>
+            </div>
         `;
 
         if (attributeInput.compact) {
-
             const mapContent = content;
 
             const onClick = () => {
                 showDialog(
                     {
                         content: mapContent,
+                        styles: html`
+                            <style>
+                                #geo-json-point-input-wrapper {
+                                    width: 600px;
+                                    height:600px;
+                                }
+                            </style>
+                        `
                     });
             };
 
             content = html`
-                <div>
-                    <or-input .type="${InputType.TEXT}" comfortable outlined .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeNotifier)(e)}"></or-input>
-                    <or-input style="width: auto;" .type="${InputType.BUTTON}" compact action icon="crosshairs-gps" @clicked="${onClick}"></or-input>
+                <style>
+                    #geo-json-point-input-compact-wrapper {
+                        display: table-cell;
+                    }
+                    #geo-json-point-input-compact-wrapper > * {
+                        vertical-align: middle;
+                    }
+                </style>
+                <div id="geo-json-point-input-compact-wrapper">
+                    <or-input .type="${InputType.TEXT}" .value="${centerStr}" .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeNotifier)(e)}"></or-input>
+                    <or-input style="width: auto;" .type="${InputType.BUTTON}" compact action icon="crosshairs-gps" @click="${onClick}"></or-input>
                 </div>
             `;
         }
 
-        return getAttributeInputWrapper(content, loading, !!attributeInput.disabled, getHelperText(sending, false, timestamp), attributeInput.label, undefined);
+        return getAttributeInputWrapper(content, loading, !!attributeInput.disabled, attributeInput.hasHelperText ? getHelperText(sending, false, timestamp) : undefined, attributeInput.label, undefined);
     }
 }
 
@@ -919,6 +940,11 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
             this._writeTimeoutHandler = window.setTimeout(() => this._onWriteTimeout(), this.writeTimeout);
         } else {
+            if (this.attribute) {
+                this.attribute.value = newValue;
+                this.attribute.valueTimestamp = undefined; // Clear timestamp so server will set this
+            }
+
             this.value = newValue;
             this.dispatchEvent(new OrAttributeInputChangedEvent(newValue, oldValue));
         }

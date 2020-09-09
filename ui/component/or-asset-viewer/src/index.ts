@@ -132,10 +132,13 @@ export function getIncludedProperties(config?: InfoPanelConfig): string[] {
 
 export function getIncludedAttributes(attributes: Attribute[], config?: InfoPanelConfig): Attribute[] {
     const includedAttributes = config && config.attributes && config.attributes.include ? config.attributes.include : undefined;
-    const excludedAttributes = config && config.attributes && config.attributes.exclude ? config.attributes.exclude : [];
-    return attributes.filter((attr) =>
-        (!includedAttributes || includedAttributes.indexOf(attr.name!) >= 0)
-        && (!excludedAttributes || excludedAttributes.indexOf(attr.name!) < 0));
+    const excludedAttributes = config && config.attributes && config.attributes.exclude ? config.attributes.exclude : undefined;
+    if (includedAttributes || excludedAttributes) {
+        return attributes.filter((attr) =>
+            (!includedAttributes || includedAttributes.some((inc) => Util.stringMatch(inc, attr.name!)))
+            && (!excludedAttributes || !excludedAttributes.some((exc) => Util.stringMatch(exc, attr.name!))));
+    }
+    return attributes;
 }
 
 class EventHandler {

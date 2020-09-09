@@ -7,7 +7,8 @@ import manager, {
     DefaultColor3,
     DefaultColor4,
     DefaultColor5,
-    DefaultColor6
+    DefaultColor6,
+    Util
 } from "@openremote/core";
 import i18next from "i18next";
 import "@openremote/or-icon";
@@ -305,19 +306,13 @@ export function getAssetDescriptors(config: RulesConfig | undefined, useActionCo
 
             // Remove any excluded attributes
             if (modifiedDescriptor.attributeDescriptors) {
-                const inc = configDescriptor.includeAttributes !== undefined ? configDescriptor.includeAttributes : undefined;
-                const exc = configDescriptor.excludeAttributes !== undefined ? configDescriptor.excludeAttributes : undefined;
+                const includedAttributes = configDescriptor.includeAttributes !== undefined ? configDescriptor.includeAttributes : undefined;
+                const excludedAttributes = configDescriptor.excludeAttributes !== undefined ? configDescriptor.excludeAttributes : undefined;
 
-                if (inc || exc) {
-                    modifiedDescriptor.attributeDescriptors = modifiedDescriptor.attributeDescriptors.filter((mad) => {
-                        if (exc && exc.indexOf(mad.attributeName!) >= 0) {
-                            return false;
-                        }
-                        if (inc && inc.indexOf(mad.attributeName!) < 0) {
-                            return false;
-                        }
-                        return true;
-                    });
+                if (includedAttributes || excludedAttributes) {
+                    modifiedDescriptor.attributeDescriptors = modifiedDescriptor.attributeDescriptors.filter((mad) =>
+                        (!includedAttributes || includedAttributes.some((inc) => Util.stringMatch(inc,  mad.attributeName!)))
+                        && (!excludedAttributes || !excludedAttributes.some((exc) => Util.stringMatch(exc,  mad.attributeName!))));
                 }
 
                 // Override any attribute descriptors
