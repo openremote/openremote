@@ -35,6 +35,10 @@ export const style = css`
         min-height: var(--internal-or-map-min-height);
         width: var(--internal-or-map-width);
     }
+    
+    canvas {
+        outline: none !important;
+    }
 
     :host([hidden]) {
         display: none;

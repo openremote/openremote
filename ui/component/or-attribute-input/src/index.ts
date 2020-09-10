@@ -207,15 +207,11 @@ export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (
                 or-map {
                     border: #e5e5e5 1px solid;
                     margin: 3px 0;
-                    width: 100%;
-                    height: 100%;
                 }
             </style>
-            <div id="geo-json-point-input-wrapper">
-                <or-map class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => clickHandler(ev.detail)}" .center="${center}" .controls="${[centerControl, [coordinatesControl, "top-left"]]}">
-                    <or-map-marker active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .color="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
-                </or-map>
-            </div>
+            <or-map class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => clickHandler(ev.detail)}" .center="${center}" .controls="${[centerControl, [coordinatesControl, "top-left"]]}">
+                <or-map-marker active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .color="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
+            </or-map>
         `;
 
         if (attributeInput.compact) {
@@ -227,9 +223,9 @@ export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (
                         content: mapContent,
                         styles: html`
                             <style>
-                                #geo-json-point-input-wrapper {
-                                    width: 600px;
-                                    height:600px;
+                                or-map {
+                                    width: 600px !important;
+                                    height: 600px !important;
                                 }
                             </style>
                         `
