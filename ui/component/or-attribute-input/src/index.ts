@@ -26,14 +26,16 @@ import manager, {AssetModelUtil, DefaultColor4, subscribe, Util} from "@openremo
 import "@openremote/or-input";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 import "@openremote/or-map";
-import {showDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {showDialog, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {
     getMarkerIconAndColorFromAssetType,
     LngLat,
     MapEventDetail,
     MapGL,
     OrMapClickedEvent,
-    Util as MapUtil
+    Util as MapUtil,
+    OrMap,
+    OrMapMarker
 } from "@openremote/or-map";
 
 export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputChangedEventDetail> {
@@ -193,12 +195,31 @@ export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (
 
         const iconAndColor = getMarkerIconAndColorFromAssetType(assetType);
 
-        const clickHandler = (mapClickDetail: MapEventDetail) => {
-            if (!attributeInput.readonly && !attributeInput.disabled && mapClickDetail.doubleClick) {
-                const geoJsonPoint = MapUtil.getGeoJSONPoint(mapClickDetail.lngLat);
-                if (valueChangeNotifier) {
-                    valueChangeNotifier(geoJsonPoint);
-                }
+        let dialog: OrMwcDialog | undefined;
+
+        const updateHandler = () => {
+            if (valueChangeNotifier) {
+                valueChangeNotifier(MapUtil.getGeoJSONPoint(pos));
+            }
+        };
+
+        const setPos = (lngLat: LngLat | undefined) => {
+            if (attributeInput.readonly || attributeInput.disabled) {
+                return;
+            }
+
+            pos = lngLat;
+
+            if (dialog) {
+                // We're in compact mode modal
+                const marker = dialog.shadowRoot!.getElementById("geo-json-point-marker") as OrMapMarker;
+                marker.lng = pos ? pos.lng : undefined;
+                marker.lat = pos ? pos.lat : undefined;
+                center = pos ? pos.toArray() : undefined;
+                const centerStr = center ? center.join(", ") : undefined;
+                coordinatesControl.value = centerStr;
+            } else {
+                updateHandler();
             }
         };
 
@@ -209,8 +230,8 @@ export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (
                     margin: 3px 0;
                 }
             </style>
-            <or-map class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => clickHandler(ev.detail)}" .center="${center}" .controls="${[centerControl, [coordinatesControl, "top-left"]]}">
-                <or-map-marker active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .color="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
+            <or-map id="geo-json-point-map" class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => {if (ev.detail.doubleClick) {setPos(ev.detail.lngLat);}}}" .center="${center}" .controls="${[centerControl, [coordinatesControl, "top-left"]]}">
+                <or-map-marker id="geo-json-point-marker" active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .color="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
             </or-map>
         `;
 
@@ -218,7 +239,7 @@ export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (
             const mapContent = content;
 
             const onClick = () => {
-                showDialog(
+                dialog = showDialog(
                     {
                         content: mapContent,
                         styles: html`
@@ -228,7 +249,29 @@ export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (
                                     height: 600px !important;
                                 }
                             </style>
-                        `
+                        `,
+                        actions: [
+                            {
+                                actionName: "none",
+                                content: i18next.t("none"),
+                                action: () => {
+                                    setPos(undefined);
+                                    updateHandler();
+                                }
+                            },
+                            {
+                                actionName: "ok",
+                                content: i18next.t("ok"),
+                                action: () => {
+                                    updateHandler();
+                                }
+                            },
+                            {
+                                default: true,
+                                actionName: "cancel",
+                                content: i18next.t("cancel")
+                            }
+                        ]
                     });
             };
 

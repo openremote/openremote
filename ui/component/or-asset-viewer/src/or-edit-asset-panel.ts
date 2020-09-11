@@ -473,10 +473,14 @@ export class OrEditAssetPanel extends LitElement {
                 action: clearParent
             },
             {
-                default: true,
                 actionName: "ok",
                 content: i18next.t("ok"),
                 action: setParent
+            },
+            {
+                default: true,
+                actionName: "cancel",
+                content: i18next.t("cancel")
             }
         ];
 
