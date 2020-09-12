@@ -187,6 +187,7 @@ build production docker images:
 
 deploy production:
   stage: deploy_production
+  needs: ["build production docker images"]
   variables:
     DEPLOYMENT_HOST: ${PROJECT_NAME}.${DOMAIN}
     SETUP_WIPE_CLEAN_INSTALL: 'false'
