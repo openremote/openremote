@@ -182,6 +182,7 @@ deploy staging:
 build production docker images:
   stage: build_production
   when: manual
+  allow_failure: false
   environment: production
   <<: *build_definition
 
