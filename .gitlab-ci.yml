@@ -12,6 +12,11 @@ variables:
   DEPLOYMENT_PORT: 2222
   DAST_WEBSITE: https://staging.${PROJECT_NAME}.openremote.io
 
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "master"
+      when: never
+
 stages:
   - build
   - build_fail
