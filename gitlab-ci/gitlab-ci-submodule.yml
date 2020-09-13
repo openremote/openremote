@@ -200,6 +200,7 @@ deploy production:
 deploy production clean:
   stage: deploy_production_clean
   when: on_failure
+  needs: ["build production docker images"]
   variables:
     DEPLOYMENT_HOST: ${PROJECT_NAME}.${DOMAIN}
     SETUP_WIPE_CLEAN_INSTALL: 'true'
