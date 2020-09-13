@@ -145,7 +145,7 @@ include:
     - echo "docker pull $CI_REGISTRY_IMAGE/postgresql:\$CI_ENVIRONMENT">> deploy.sh
     - echo "docker pull $CI_REGISTRY_IMAGE/keycloak:\$CI_ENVIRONMENT"  >> deploy.sh
     # Dump DB if it exists for possible data restoration
-    - echo "if [ \"\$(docker ps --filter name=${PROJECT_NAME}_postgresql_1 -q)\" ]; then docker-compose -p $PROJECT_NAME -f profile/$CI_ENVIRONMENT_SLUG.yml exec postgresql pg_dump -U postgres openremote > dump/\$RANDOM.sql; fi || exit 666" >> deploy.sh
+    - echo "if [ \"\$(docker ps --filter name=${PROJECT_NAME}_postgresql_1 -q)\" ]; then docker exec ${PROJECT_NAME}_postgresql_1 pg_dump -U postgres openremote > dump/\$RANDOM.sql; fi || exit 666" >> deploy.sh
     - echo "docker-compose -p $PROJECT_NAME -f profile/$CI_ENVIRONMENT_SLUG.yml down || exit 666" >> deploy.sh
     - echo "docker volume rm ${PROJECT_NAME}_deployment-data" >> deploy.sh
     - echo "docker-compose -p $PROJECT_NAME -f profile/$CI_ENVIRONMENT_SLUG.yml up --no-build -d || exit 666" >> deploy.sh
