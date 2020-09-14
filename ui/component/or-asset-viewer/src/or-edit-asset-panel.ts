@@ -103,6 +103,9 @@ const style = css`
     .padded-cell {
         padding: 10px 0;
     }
+    .overflow-visible {
+        overflow: visible;
+    }
 `;
 
 export class OrEditAssetModifiedEvent extends CustomEvent<void> {
@@ -218,8 +221,8 @@ export class OrEditAssetPanel extends LitElement {
             <tr class="mdc-data-table__row">
                 <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
                 <td class="padded-cell mdc-data-table__cell">${attribute.type}</td>
-                <td class="padded-cell mdc-data-table__cell">
-                    <or-attribute-input compact .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" hasHelperText disableWrite disableSubscribe disableButton></or-attribute-input>
+                <td class="padded-cell overflow-visible mdc-data-table__cell">
+                    <or-attribute-input compact .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" disableWrite disableSubscribe disableButton></or-attribute-input>
                 </td>
                 <td class="padded-cell mdc-data-table__cell actions-cell"><or-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}"></td>
             </tr>

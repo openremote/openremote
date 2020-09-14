@@ -12,7 +12,7 @@ import "@openremote/or-survey-results";
 import "@openremote/or-table";
 import "@openremote/or-panel";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import "@openremote/or-mwc-components/dist/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
@@ -408,7 +408,6 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
         // Determine available and selected attributes for the child asset type
         let availableAttributes: string[] = [];
         let selectedAttributes: string[] = [];
-        const newlySelectedAttributes: string[] = []; // Updated when the dialog is open
 
         if (groupConfig.childAssetTypes && groupConfig.childAssetTypes[childAssetType]) {
             availableAttributes = groupConfig.childAssetTypes[childAssetType].availableAttributes ? groupConfig.childAssetTypes[childAssetType].availableAttributes! : [];
@@ -426,44 +425,46 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
             selectedAttributes = [...availableAttributes];
         }
 
-        const attributePickerModalActions: DialogAction[] = [
-            {
-                actionName: "ok",
-                default: true,
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("ok")}"></or-input>`,
-                action: () => {
-                    selectedAttributes.length = 0;
-                    selectedAttributes.push(...newlySelectedAttributes);
-                    updateTable();
-                }
-            },
-            {
-                actionName: "cancel",
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
-                action: () => {
-                    // Nothing to do here
-                }
-            },
-        ];
-
         const attributePickerModalOpen = () => {
-            const dialog: OrMwcDialog = hostElement.shadowRoot!.getElementById(panelName + "-attribute-modal") as OrMwcDialog;
 
-            if (dialog) {
-                newlySelectedAttributes.length = 0;
-                newlySelectedAttributes.push(...selectedAttributes);
-                // Update content which will cause a re-render
-                dialog.dialogContent = html`
-                        <div style="display:grid">
+            const newlySelectedAttributes = [...selectedAttributes];
+            let dialog: OrMwcDialog | undefined;
+
+            const attributePickerModalActions: DialogAction[] = [
+                {
+                    actionName: "ok",
+                    default: true,
+                    content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("ok")}"></or-input>`,
+                    action: () => {
+                        selectedAttributes.length = 0;
+                        selectedAttributes.push(...newlySelectedAttributes);
+                        updateTable();
+                    }
+                },
+                {
+                    actionName: "cancel",
+                    content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
+                    action: () => {
+                        // Nothing to do here
+                    }
+                },
+            ];
+
+            showDialog(
+                {
+                    title: "addRemoveAttributes",
+                    actions: attributePickerModalActions,
+                    content: html`
+                        <div style="display: grid">
                             ${availableAttributes.sort().map((attribute) =>
-                    html`<div style="grid-column: 1 / -1;">
-                                        <or-input .type="${InputType.CHECKBOX}" .label="${i18next.t(attribute)}" .value="${!!newlySelectedAttributes.find((selected) => selected === attribute)}"
+                                html`<div style="grid-column: 1 / -1;">
+                                        <or-input .type="${InputType.CHECKBOX}" .label="${i18next.t(attribute)}" .value="${!!selectedAttributes.find((selected) => selected === attribute)}"
                                             @or-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"></or-input>
                                     </div>`)}
                         </div>
-                    `;
-                dialog.open();
-            }
+                    `
+                }
+            );
         };
 
         // Function to update the table and message when assets or config changes
@@ -530,7 +531,6 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
                 <or-icon class="asset-group-add-remove-button" .id="${panelName}-add-remove-columns" icon="pencil" @click="${() => attributePickerModalOpen()}"></or-icon>
                 <or-table hidden .id="${panelName}-attribute-table" .options="{stickyFirstColumn:true}"></or-table>
                 <span><or-translate id="${panelName}-attribute-table-msg" value="loading"></or-translate></span>
-                <or-mwc-dialog id="${panelName}-attribute-modal" dialogTitle="addRemoveAttributes" .dialogActions="${attributePickerModalActions}"></or-mwc-dialog>
             `;
     }
 

@@ -224,8 +224,9 @@ export class OrMwcDialog extends LitElement {
                             </ul>
                         `}
                     </div>
+                </div>
+                <div class="mdc-dialog__scrim"></div>
             </div>
-            <div class="mdc-dialog__scrim"></div>
         `;
     }
 
@@ -248,6 +249,10 @@ export class OrMwcDialog extends LitElement {
             if (matchedAction && matchedAction.action) {
                 matchedAction.action(this);
             }
+        }
+        if (this._mdcComponent) {
+            this._mdcComponent.destroy();
+            this._mdcComponent = undefined;
         }
         this.dispatchEvent(new OrMwcDialogClosedEvent(action));
     }
