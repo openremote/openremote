@@ -90,7 +90,7 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
                 
                 
                 <label>Straal (minimaal 100m)</label>     
-                <input @change="${(e:any) => this.setValuePredicateProperty("radius", parseInt(e.target.value))}" style="max-width: calc(50% - 30px);" required placeholder=" " min="50" type="number" .value="${value && value.radius ? value.radius : null}" />
+                <input @change="${(e:any) => this.setValuePredicateProperty("radius", parseInt(e.target.value))}" style="max-width: calc(50% - 30px);" required placeholder=" " min="100" type="number" .value="${value && value.radius ? value.radius : null}" />
             </div>`;
         }
     }

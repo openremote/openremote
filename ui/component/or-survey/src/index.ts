@@ -438,7 +438,7 @@ class OrSurvey extends LitElement {
             console.error("Error: " + reason);
         });
 
-        if(localStorage.getItem('survey'+surveyId)){
+        if(localStorage.getItem('survey'+surveyId) && this.saveanswers){
             this.hasSubmission = true;
             return;
         }

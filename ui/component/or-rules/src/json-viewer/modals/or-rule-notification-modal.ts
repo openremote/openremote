@@ -19,7 +19,7 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
 
     @property({type: String})
     public title = "message";
-    
+
     @property({type: Object})
     public query?: AssetQuery;
     
@@ -63,14 +63,46 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
             {
                 actionName: "cancel",
                 content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
-                action: () => {
-                    // Nothing to do here
+                action: (dialog) => {
+                  
                 }
             },
             {
-                actionName: "ok",
+                actionName: "none",
                 content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("ok")}"></or-input>`,
-                action: () => {
+                action: (dialog) => {
+                    dialog.open()
+                    if (dialog.shadowRoot && dialog.shadowRoot.querySelector('or-rule-form-push-notification')) {
+                        const pushNotification = dialog.shadowRoot.querySelector('or-rule-form-push-notification');
+                        if(pushNotification && pushNotification.shadowRoot) {
+                            const form = pushNotification.shadowRoot.querySelector('form')
+                            if(form) {
+                                const inputs = form.querySelectorAll('or-input')
+                                const elements = Array.prototype.slice.call(inputs);
+
+                                const valid = elements.every((element) => {
+                                    if(element.shadowRoot) {
+                                        const input  = element.shadowRoot.querySelector('input, textarea, select') as any
+
+                                        if(input && input.checkValidity()) {
+                                            return true
+                                        } else {
+                                            element._mdcComponent.valid = false;
+                                            element._mdcComponent.helperTextContent = 'required';
+                                            return false;
+                                        }
+                                    } else {
+                                        return false;
+                                    }
+                                })
+                                if(valid) {
+                                    dialog.close()
+                                } else {
+                                }
+                            }
+
+                        }
+                    }
                 }
             }
         ];
@@ -85,7 +117,7 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
 
         return html`
             <or-input .type="${InputType.BUTTON}" .label="${i18next.t("message")}" @click="${notificationPickerModalOpen}"></or-input>
-            <or-mwc-dialog id="notification-modal" dialogTitle="${this.title}" .dialogActions="${notificationPickerModalActions}"></or-mwc-dialog>
+            <or-mwc-dialog id="notification-modal" dialogTitle="${this.title}"  .dialogActions="${notificationPickerModalActions}"></or-mwc-dialog>
             <slot class="notification-form-slot"></slot>
         `
     }
