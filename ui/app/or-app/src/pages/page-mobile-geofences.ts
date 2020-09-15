@@ -108,7 +108,7 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
                 background-color: var(--or-app-color2);
                 color: var(--or-app-color3);
                 text-decoration: none;
-                max-width: 260px;
+                max-width: 230px;
                 
                 -webkit-box-shadow: 0 2px 4px rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.19);
                 -moz-box-shadow: 0 2px 4px rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.19);
