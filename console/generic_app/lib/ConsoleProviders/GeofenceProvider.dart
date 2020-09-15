@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_geofence/Geolocation.dart';
 import 'package:flutter_geofence/geofence.dart';
+import 'package:generic_app/config/CurrentConsoleAppConfig.dart';
 import 'package:location/location.dart';
 import 'package:generic_app/ConsoleProviders/GeoLocation.dart';
 import 'package:generic_app/models/GeofenceDefinition.dart';
@@ -32,7 +32,7 @@ class GeofenceProvider {
 
   GeoLocation _enteredLocation;
   GeoLocation _exitedLocation;
-  bool _sendQueued;
+  bool _sendQueued = false;
 
   Location _locationManager;
 
@@ -43,7 +43,9 @@ class GeofenceProvider {
     String geofenceString = sharedPreferences.getString(geofencesKey);
     List<GeofenceDefinition> geofences;
     if (geofenceString != null) {
-      geofences = List<GeofenceDefinition>.from(json.decode(geofenceString).map((item) => GeofenceDefinition.fromJson(item)));
+      geofences = List<GeofenceDefinition>.from(json
+          .decode(geofenceString)
+          .map((item) => GeofenceDefinition.fromJson(item)));
     } else {
       geofences = new List<GeofenceDefinition>();
     }
@@ -53,7 +55,7 @@ class GeofenceProvider {
         sharedPreferences.getString(consoleIdKey),
         geofences,
         sharedPreferences,
-        ApiManager(sharedPreferences.getString(baseUrlKey)),
+        ApiManager(sharedPreferences.getString(baseUrlKey), baseHeaders: {"Content-Type": "application/json", "Accept": "application/json"}),
         new Location());
   }
 
@@ -160,6 +162,9 @@ class GeofenceProvider {
           geofences.firstWhere((element) => element.id == geolocation.id),
           null);
     });
+    geofences.forEach((geofence) {
+      addGeofence(geofence);
+    });
   }
 
   removeGeofence(String id) {
@@ -183,7 +188,7 @@ class GeofenceProvider {
         }
       });
 
-      geofenceDefinitions.forEach((definition) {
+      remainingGeofences.forEach((definition) {
         if (!geofences.any((element) => element.id == definition.id)) {
           addGeofence(definition);
         }
@@ -218,18 +223,18 @@ class GeofenceProvider {
     }
   }
 
-  _doSendLocation() {
+  _doSendLocation() async {
     print("Do send location");
     bool success = false;
 
     if (_exitedLocation != null) {
-      if (_sendLocation(
+      if (await _sendLocation(
           _exitedLocation.geofenceDefinition, _exitedLocation.data)) {
         _exitedLocation = null;
         success = true;
       }
     } else if (_enteredLocation != null) {
-      if (_sendLocation(
+      if (await _sendLocation(
           _enteredLocation.geofenceDefinition, _enteredLocation.data)) {
         _enteredLocation = null;
         success = true;
@@ -254,13 +259,17 @@ class GeofenceProvider {
   _sendLocation(GeofenceDefinition geofenceDefinition,
       Map<String, dynamic> locationData) {
     return _apiManager
-        .post(
-            overrideUrl: geofenceDefinition.url,
+        .put(
+            overrideUrl:
+                "${CurrentConsoleAppConfig.instance.baseUrl}${geofenceDefinition.url}",
             rawModel: locationData != null
                 ? jsonEncode(locationData)
                 : null.toString())
         .then((value) => true)
-        .catchError((error) => false);
+        .catchError((error) {
+      print(error);
+      return false;
+    });
   }
 
   getLocation(ProviderCallback callback, BuildContext context) async {

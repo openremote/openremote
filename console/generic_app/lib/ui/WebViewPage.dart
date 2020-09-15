@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:generic_app/ConsoleProviders/GeofenceProvider.dart';
 import 'package:generic_app/ConsoleProviders/PushProvider.dart';
@@ -25,6 +27,26 @@ class _WebViewPageState extends State<WebViewPage> {
   PushProvider _pushProvider;
   StorageProvider _storageProvider;
   WebView _webView;
+
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+
+  @override
+  void initState() {
+    super.initState();
+
+    _firebaseMessaging.configure(
+      onMessage: (Map<String, dynamic> message) async {
+        print("onMessage: $message");
+      },
+      onLaunch: (Map<String, dynamic> message) async {
+        print("onLaunch: $message");
+      },
+      onResume: (Map<String, dynamic> message) async {
+        print("onResume: $message");
+      },
+      onBackgroundMessage: Platform.isAndroid ? myBackgroundMessageHandler : null
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -231,4 +253,18 @@ class _WebViewPageState extends State<WebViewPage> {
       return Future.value(true);
     }
   }
+}
+
+Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
+  if (message.containsKey('data')) {
+    // Handle data message
+    final dynamic data = message['data'];
+  }
+
+  if (message.containsKey('notification')) {
+    // Handle notification message
+    final dynamic notification = message['notification'];
+  }
+
+  // Or do other work.
 }
