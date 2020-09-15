@@ -93,7 +93,7 @@ email failed pipeline:
   image: docker:latest
   # Do not clone git repo as it can fail and sending mail'll fail too
   variables:
-    GIT_STRATEGY: none
+    GIT_SUBMODULE_STRATEGY: none
   before_script:
     - cat $AWS_MAIL > aws_mail.py
   script:
