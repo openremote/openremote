@@ -19,6 +19,7 @@ workflow:
     - when: always
 
 stages:
+  - prebuild
   - build
   - build_fail
   - deploy_ovh
@@ -29,7 +30,7 @@ stages:
   - cleanup
 
 lint-Dockerfile:
-  stage: build
+  stage: prebuild
   script:
     - docker pull hadolint/hadolint
     - docker run --rm -i hadolint/hadolint < Dockerfile
@@ -41,7 +42,7 @@ lint-Dockerfile:
       when: manual
 
 lint-swarm-Dockerfile:
-  stage: build
+  stage: prebuild
   script:
     - echo "I'm in the branch $CI_COMMIT_BRANCH $CI_COMMIT_MESSAGE"
     - docker pull hadolint/hadolint
@@ -52,6 +53,24 @@ lint-swarm-Dockerfile:
     - if: $CI_COMMIT_BRANCH != "master"
       when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
+
+build-enviroment:
+  stage: prebuild
+  before_script:
+    - export DOCKER_CLI_EXPERIMENTAL=enabled
+    - mkdir -p /root/.docker/cli-plugins
+    - mv .docker/cli-plugins/docker-buildx /root/.docker/cli-plugins/
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker login -u "$DOCKERHUB_USER" -p "$DOCKERHUB_PASSWORD"
+  script:
+    - docker buildx use default
+    - docker buildx ls
+    - docker context ls
+    - docker buildx build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+  rules:
+    - changes:
+      - Dockerfile
 
 build-deployment-manager-swarm:
   stage: build
@@ -65,8 +84,6 @@ build-deployment-manager-swarm:
     - docker buildx use default
     - docker buildx ls
     - docker context ls
-    - docker buildx build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
-    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
     - docker run -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "./gradlew --console plain clean installDist"
     - docker run -v $(pwd):/or
