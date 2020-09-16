@@ -836,18 +836,23 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         if (editMode) {
             content = html`
-                <or-edit-asset-panel .asset="${this.asset}" .attrs="${this._attributes}"></or-edit-asset-panel>
+                <div id="edit-container">
+                    <or-edit-asset-panel .asset="${this.asset}"></or-edit-asset-panel>
+                </div>
             `;
         } else {
             if (this._viewerConfig.panels) {
-                content = html`${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
-
-                    if (panelConfig.hide) {
-                        return ``;
-                    }
-
-                    return getPanel(name, panelConfig, getPanelContent(name, this.asset!, this._attributes!, this, this._viewerConfig!, panelConfig)) || ``;
-                })}`;
+                content = html`                
+                    <div id="view-container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
+                        ${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
+        
+                            if (panelConfig.hide) {
+                                return ``;
+                            }
+        
+                            return getPanel(name, panelConfig, getPanelContent(name, this.asset!, this._attributes!, this, this._viewerConfig!, panelConfig)) || ``;
+                        })}
+                    </div>`;
             }
         }
 
@@ -864,9 +869,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     <div id="created-time" class="mobileHidden"><or-translate value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as i18next.TOptions<i18next.InitOptions>}"></or-translate></div>
                     ${editMode ? html`<or-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-input-changed="${() => this._saveAsset()}"></or-input>` : ``}
                 </div>
-                <div id="container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
-                    ${content}
-                </div>
+                ${content}
             </div>
         `;
     }
@@ -938,7 +941,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     public static generateGrid(shadowRoot: ShadowRoot | null) {
         if (shadowRoot) {
-            const grid = shadowRoot.querySelector('#container');
+            const grid = shadowRoot.querySelector('#view-container');
             if (grid) {
                 const rowHeight = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-auto-rows'), 10);
                 const rowGap = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-row-gap'), 10);

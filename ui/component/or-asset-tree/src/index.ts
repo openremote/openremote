@@ -15,7 +15,7 @@ import "@openremote/or-mwc-components/dist/or-mwc-list";
 import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/dist/or-mwc-list";
 import {i18next, OrTranslate} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {showDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {showDialog, showErrorDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 
 export interface AssetTreeTypeConfig {
     include?: string[];
@@ -236,6 +236,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     public disabled: boolean = false;
 
     @property({type: Boolean})
+    public disableSubscribe: boolean = false;
+
+    @property({type: Boolean})
     public multiSelect?: boolean = true;
 
     @property({type: Boolean})
@@ -365,6 +368,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         if (_changedProperties.has("sortBy")) {
             this._updateSort(this._nodes!, this._getSortFunction());
+        }
+
+        if (_changedProperties.has("disabledSubscribe")) {
+            if (this.disableSubscribe) {
+                this._removeEventSubscriptions();
+            }
         }
 
         return result;
@@ -597,42 +606,54 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     protected _doDelete() {
 
-        if (!this._selectedNodes) {
+        if (!this._selectedNodes || this._selectedNodes.length === 0) {
             return;
         }
 
-        // Check each selected node has no children
-        if (this._selectedNodes.find((node) => node.children && node.children.length > 0)) {
-            window.alert(i18next.t("deleteAssetsNoChildrenAllowed"));
-            return;
-        }
+        const doDelete = () => {
+            this.disabled = true;
 
-        if (!this._okToDelete()) {
-            return;
-        }
+            // Get all descendant IDs of selected nodes
+            const assetIds: string[] = [];
+            OrAssetTree._forEachNodeRecursive(this._selectedNodes, (node) => {
+                assetIds.push(node.asset!.id!);
+            });
 
-        this.disabled = true;
-        manager.rest.api.AssetResource.delete({
-            assetId: this._selectedNodes.map((node) => node.asset!.id!)
-        }, {
-            paramsSerializer: params => Qs.stringify(params, {arrayFormat: 'repeat'})
-        }).then((response) => {
-            if (response.status !== 200) {
-                // TODO: Error announcement
-            }
+            manager.rest.api.AssetResource.delete({
+                assetId: assetIds
+            }, {
+                paramsSerializer: params => Qs.stringify(params, {arrayFormat: 'repeat'})
+            }).then((response) => {
+                // Clear nodes to re-fetch them
+                this._nodes = undefined;
+                this.disabled = false;
 
-            // Clear nodes to refetch them
-            this._nodes = undefined;
-        }).catch((reason) => {
-            // TODO: Error announcement
-            // Clear nodes to re-fetch them
-            this._nodes = undefined;
+                if (response.status !== 204) {
+                    showErrorDialog(i18next.t("deleteFailed"));
+                }
+            }).catch((reason) => {
+                // Clear nodes to re-fetch them
+                this._nodes = undefined;
+                this.disabled = false;
+                showErrorDialog(i18next.t("deleteFailed"));
+            });
+        };
+
+        // Confirm deletion request
+        showDialog({
+            content: html`<or-translate value="deleteAssetsConfirm"></or-translate>`,
+            actions: [
+                {
+                    content: i18next.t("ok"),
+                    actionName: "ok",
+                    action: () => doDelete()
+                },
+                {
+                    content: i18next.t("cancel"),
+                    actionName: "cancel"
+                }
+            ]
         });
-        this.disabled = true;
-    }
-
-    protected _okToDelete() {
-        return window.confirm(i18next.t("confirmDeleteAssets"));
     }
 
     protected async _doAdd(asset: Asset) {
@@ -696,8 +717,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     /* Subscribe mixin overrides */
 
     public async _addEventSubscriptions(): Promise<void> {
-        // Subscribe to asset events for all assets in the realm
-        this._subscriptionIds = [await manager.getEventProvider()!.subscribeAssetEvents(null, false, (event) => this._onEvent(event))];
+        if (!this.disableSubscribe) {
+            // Subscribe to asset events for all assets in the realm
+            this._subscriptionIds = [await manager.getEventProvider()!.subscribeAssetEvents(null, false, (event) => this._onEvent(event))];
+        }
     }
 
     public onEventsConnect() {

@@ -77,7 +77,6 @@ export const style = css`
         width: 100%;
         display: flex;
         flex-direction: column;
-        overflow: auto;
     }
     
     #wrapper.saving {
@@ -85,7 +84,8 @@ export const style = css`
         pointer-events: none;
     }
     
-    #container {
+    #view-container {
+        flex: 1 0 auto;
         box-sizing: border-box;
         display: grid;
         padding: 20px 20px;
@@ -98,6 +98,12 @@ export const style = css`
         -ms-animation: fadein 0.3s; /* Internet Explorer */
         -o-animation: fadein 0.3s; /* Opera < 12.1 */
         animation: fadein 0.3s;
+    }
+    
+    #edit-container {
+        flex: 0 1 auto;
+        margin-top: 10px;
+        overflow: auto;
     }
     
     #name-input {
@@ -144,6 +150,7 @@ export const style = css`
     #asset-header {
         padding: 20px 30px 0 30px;
         display: flex;
+        flex: 0 0 auto;
         align-items: center;
         justify-content: space-between;
     }
@@ -188,7 +195,7 @@ export const style = css`
         cursor: pointer;
     }
     
-    or-edit-asset-panel {
+    #edit-container {
         grid-column-start: 1;
         grid-column-end: 3;
     }
@@ -235,7 +242,7 @@ export const style = css`
             grid-row-start: 4;
         }
         
-        #container { 
+        #view-container { 
             grid-auto-rows: auto;
             grid-template-columns: 100% !important;
             padding: 20px 0;

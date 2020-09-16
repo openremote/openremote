@@ -701,12 +701,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             // Update all empty attribute timestamps with server-time (a caller which doesn't have a
             // reliable time source such as a browser should clear the timestamp when setting an attribute
             // value).
+            // Ensure attribute names are not stored in the value object
 
             asset.getAttributesStream().forEach(attribute -> {
                 Optional<Long> timestamp = attribute.getValueTimestamp();
                 if (!timestamp.isPresent() || timestamp.get() <= 0) {
                     attribute.setValueTimestamp(timerService.getCurrentTimeMillis());
                 }
+                attribute.getObjectValue().remove("name");
             });
 
             // If username present

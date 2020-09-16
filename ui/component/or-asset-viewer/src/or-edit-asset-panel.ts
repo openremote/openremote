@@ -9,9 +9,12 @@ import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-componen
 import {ListItem, ListType, OrMwcList} from "@openremote/or-mwc-components/dist/or-mwc-list";
 import "./or-add-attribute-panel";
 import {getField, getPanel, getPropertyTemplate} from "./index";
-import {OrAddAttributePanelAttributeChangedEvent} from "./or-add-attribute-panel";
+import {
+    OrAddAttributePanelAttributeChangedEvent,
+} from "./or-add-attribute-panel";
 import {panelStyles} from "./style";
 import { OrAssetTree, UiAssetTreeNode } from "@openremote/or-asset-tree";
+import { OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const tableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-table.css");
@@ -132,9 +135,6 @@ export class OrEditAssetPanel extends LitElement {
     @property({attribute: false})
     protected asset!: Asset;
 
-    @property({attribute: false})
-    protected attrs!: Attribute[];
-
     public static get styles() {
         return [
             unsafeCSS(tableStyle),
@@ -189,7 +189,7 @@ export class OrEditAssetPanel extends LitElement {
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
-                        ${this.attrs!.sort(Util.sortByString((attr: Attribute) => attr.name!.toUpperCase())).map((attr) => this._getEditAttributeTemplate(this.asset.type!, attr))}
+                        ${Object.entries(this.asset.attributes!).sort(Util.sortByString(([name, attribute]) => name.toUpperCase())).map(([name, attribute]) => {attribute.name = name; return this._getEditAttributeTemplate(this.asset.type!, attribute as Attribute);})}
                         <tr>
                             <td colspan="4">
                                 <div class="item-add">
@@ -213,7 +213,7 @@ export class OrEditAssetPanel extends LitElement {
     protected _getEditAttributeTemplate(assetType: string, attribute: Attribute): TemplateResult {
 
         const deleteAttribute = () => {
-            this.attrs!.splice(this.attrs!.indexOf(attribute), 1);
+            delete this.asset.attributes![attribute.name!];
             this._onModified();
         };
 
@@ -222,7 +222,7 @@ export class OrEditAssetPanel extends LitElement {
                 <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
                 <td class="padded-cell mdc-data-table__cell">${attribute.type}</td>
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
-                    <or-attribute-input compact .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" disableWrite disableSubscribe disableButton></or-attribute-input>
+                    <or-attribute-input compact .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" disableWrite disableSubscribe disableButton @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
                 <td class="padded-cell mdc-data-table__cell actions-cell"><or-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}"></td>
             </tr>
@@ -244,6 +244,12 @@ export class OrEditAssetPanel extends LitElement {
     protected _onModified() {
         this.dispatchEvent(new OrEditAssetModifiedEvent());
         this.requestUpdate();
+    }
+
+    protected _onAttributeModified(attribute: Attribute, newValue: any) {
+        attribute.value = newValue;
+        attribute.valueTimestamp = undefined; // Clear timestamp so server will set this
+        this._onModified();
     }
 
     protected _onMetaItemModified(metaItem: MetaItem, value: any) {
@@ -344,7 +350,7 @@ export class OrEditAssetPanel extends LitElement {
                     default: true,
                     actionName: "add",
                     action: () => {
-                        this.attrs!.push(attr);
+                        this.asset.attributes![attr.name!] = attr;
                         this._onModified();
                     },
                     content: html`<or-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-input>`
@@ -433,14 +439,10 @@ export class OrEditAssetPanel extends LitElement {
     }
 
     protected _getParentTemplate() {
-        const showDialog = () => {
-            const dialog = this.shadowRoot!.getElementById("asset-picker-modal") as OrMwcDialog;
-            dialog.open();
-        };
         const viewer = this;
+        let dialog: OrMwcDialog;
 
         const setParent = () => {
-            const dialog = this.shadowRoot!.getElementById("asset-picker-modal") as OrMwcDialog;
             const assetTree = dialog.shadowRoot!.getElementById("parent-asset-tree") as OrAssetTree;
             this.asset.parentId = assetTree.selectedIds!.length === 1 ? assetTree.selectedIds![0] : undefined;
             // Need to update the assets path as well
@@ -467,7 +469,7 @@ export class OrEditAssetPanel extends LitElement {
         const parentSelector = (node: UiAssetTreeNode) => node.asset!.id !== this.asset.id;
 
         // Prevent change event from bubbling up as it will affect any ancestor listeners that are interested in a different asset tree
-        const dialogContent = html`<or-asset-tree id="parent-asset-tree" .selectedIds="${this.asset!.parentId ? [this.asset.parentId] : []}" @or-asset-tree-request-select="${blockEvent}" @or-asset-tree-selection-changed="${blockEvent}" .selector="${parentSelector}"></or-asset-tree>`;
+        const dialogContent = html`<or-asset-tree id="parent-asset-tree" disableSubscribe readonly .selectedIds="${this.asset!.parentId ? [this.asset.parentId] : []}" @or-asset-tree-request-select="${blockEvent}" @or-asset-tree-selection-changed="${blockEvent}" .selector="${parentSelector}"></or-asset-tree>`;
 
         const dialogActions: DialogAction[] = [
             {
@@ -487,12 +489,40 @@ export class OrEditAssetPanel extends LitElement {
             }
         ];
 
+        const openDialog = () => {
+            dialog = showDialog(
+                {
+                    content: dialogContent,
+                    actions: dialogActions,
+                    styles: html`
+                        <style>
+                            .mdc-dialog__surface {
+                                width: 400px;
+                                height: 800px;
+                                display: flex;
+                                overflow: visible;
+                                overflow-x: visible !important;
+                                overflow-y: visible !important;
+                            }
+                            #dialog-content {
+                                flex: 1;    
+                                overflow: visible;
+                                min-height: 0;
+                            }
+                            or-asset-tree {
+                                height: 100%;
+                            }
+                        </style>
+                    `
+                }
+            );
+        };
+
         return html`
             <div id="parent-edit-wrapper">
                 ${getPropertyTemplate(this.asset, "parentId", this, undefined, undefined, {readonly: false, label: i18next.t("parent")})}
-                <or-input id="change-parent-btn" type="${InputType.BUTTON}" raised .label="${i18next.t("edit")}" @or-input-changed="${showDialog}"></or-input>
+                <or-input id="change-parent-btn" type="${InputType.BUTTON}" raised .label="${i18next.t("edit")}" @or-input-changed="${openDialog}"></or-input>
             </div>
-            <or-mwc-dialog id="asset-picker-modal" .dialogContent="${dialogContent}" .dialogActions="${dialogActions}" .multiSelect="${false}"></or-mwc-dialog>
         `;
     }
 }

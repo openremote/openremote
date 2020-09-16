@@ -235,8 +235,7 @@ public interface AssetResource {
     /**
      * Deletes an asset. Regular users can only delete assets in their authenticated realm, the superuser can delete
      * assets in other (all) realms. A 403 status is returned if a regular user tries to delete an asset in a realm
-     * different than its authenticated realm, or if the user is restricted. A 400 status code is returned if the asset
-     * has children and therefore can't be deleted.
+     * different than its authenticated realm, or if the user is restricted.
      */
     @DELETE
     @Produces(APPLICATION_JSON)

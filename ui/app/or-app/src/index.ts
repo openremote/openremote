@@ -19,7 +19,7 @@ import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
 import manager, {Auth, DefaultColor2, DefaultColor3, ManagerConfig, Util, BasicLoginResult} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig, HeaderItem, Languages} from "./or-header";
-import {DialogConfig, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {DialogConfig, OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {AnyAction, EnhancedStore, Unsubscribe} from "@reduxjs/toolkit";
 import {ThunkMiddleware} from "redux-thunk";
 import {AppStateKeyed, updatePage} from "./app";
@@ -160,9 +160,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     @property()
     protected _page?: string;
 
-    @query("#app-modal")
-    protected _appModal!: OrMwcDialog;
-
     protected _config!: DefaultAppConfig;
 
     protected _store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>;
@@ -219,6 +216,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     constructor(store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>) {
         super();
         this._store = store;
+
+        // Set this element as the host for dialogs
+        OrMwcDialog.DialogHostElement = this;
     }
 
     connectedCallback() {
@@ -295,7 +295,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
                 router.resolve();
             } else {
-                this.showErrorModal(manager.isError ? "managerError." + manager.error : "");
+                showErrorDialog(manager.isError ? "managerError." + manager.error : "");
             }
         });
     }
@@ -319,7 +319,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             }
         `;
 
-        this.showModal({
+        const dialog = showDialog({
             styles: html`<style>${styles}</style>`,
             title: html`<img id="login-logo" src="${this._config.logoMobile || this._config.logo}" /></or-icon><or-translate value="login"></or-translate>`,
             content: html`
@@ -337,7 +337,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                             cancel: false,
                             username: u,
                             password: p,
-                            closeCallback: () => { this.closeModal(); }
+                            closeCallback: () => { dialog.close(); }
                         });
                     },
                     content: html`<or-input .type=${InputType.BUTTON} .label="${i18next.t("submit")}" raised></or-input>`
@@ -390,8 +390,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             
             <!-- Main content -->
             <main role="main" class="main-content d-none"></main>
-
-            <or-mwc-dialog id="app-modal"></or-mwc-dialog>
+            
+            <slot></slot>
         `;
     }
 
@@ -404,43 +404,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     }
 
     public showLanguageModal() {
-        this.showModal(this._getLanguageModalConfig(DEFAULT_LANGUAGES));
-    }
-
-    public showErrorModal(errorMessage: string) {
-         this.showModal({
-             title: "error",
-             content: html`
-                <div>
-                    <p><or-translate value="errorOccurred"></or-translate>
-                    ${errorMessage ? html`
-                        :</p>
-                        <p>
-                            <or-translate value="error"></or-translate>
-                            <span> = </span> 
-                            <or-translate .value="${errorMessage}"></or-translate>
-                    ` : ``}
-                    </p>
-                </div>`,
-             actions: [{
-                 actionName: "ok",
-                 content: i18next.t("ok"),
-                 default: true
-             }]
-         });
-    }
-
-    public showModal(config: DialogConfig) {
-        if (this._appModal) {
-            this._appModal.config = config;
-            this._appModal.open();
-        }
-    }
-
-    public closeModal() {
-        if (this._appModal) {
-            this._appModal.close();
-        }
+        showDialog(this._getLanguageModalConfig(DEFAULT_LANGUAGES));
     }
 
     public stateChanged(state: S) {

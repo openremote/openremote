@@ -637,7 +637,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         }
 
         if (_changedProperties.has("attribute")) {
-            const oldAttr = _changedProperties.get("attribute") as AssetAttribute;
+            const oldAttr = {..._changedProperties.get("attribute") as AssetAttribute};
             const attr = this.attribute;
 
             if (oldAttr && attr) {
@@ -979,11 +979,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
             this._writeTimeoutHandler = window.setTimeout(() => this._onWriteTimeout(), this.writeTimeout);
         } else {
-            if (this.attribute) {
-                this.attribute.value = newValue;
-                this.attribute.valueTimestamp = undefined; // Clear timestamp so server will set this
-            }
-
             this.value = newValue;
             this.dispatchEvent(new OrAttributeInputChangedEvent(newValue, oldValue));
         }
