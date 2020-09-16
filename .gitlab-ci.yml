@@ -53,7 +53,7 @@ lint-swarm-Dockerfile:
       when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
 
-build-master:
+build-deployment-manager-swarm:
   stage: build
   before_script:
     - export DOCKER_CLI_EXPERIMENTAL=enabled
@@ -72,13 +72,10 @@ build-master:
     - docker run -v $(pwd):/or
       -v /var/run/docker.sock:/var/run/docker.sock
       "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-      /bin/sh -c "docker-compose -f profile/deploy.yml build --build-arg GIT_COMMIT=$SOURCE_COMMIT"
+      /bin/sh -c "docker-compose -f profile/deploy.yml build --build-arg GIT_COMMIT=$SOURCE_COMMIT deployment manager swarm"
     - docker push openremote/deployment:${CACHE_TAG:-latest}
     - docker push openremote/manager:${CACHE_TAG:-latest}
     - docker push openremote/manager-swarm:${CACHE_TAG:-latest}
-    - docker push openremote/proxy:${CACHE_TAG:-latest}
-    - docker push openremote/keycloak:${CACHE_TAG:-latest}
-    - docker push openremote/postgresql:${CACHE_TAG:-latest}
     ## TODO dind does not support arm64 archieture for now, therefore the code below breaks the build
     # # Build ARM images
     # - docker buildx build --platform linux/arm64 -t openremote/manager:arm64 manager/build/install/manager
@@ -93,9 +90,33 @@ build-master:
     # - docker push openremote/keycloak:arm64
     # - docker push openremote/postgresql:arm64
   rules:
-    - if: $CI_COMMIT_BRANCH != "master"
-      when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
+  retry:
+    max: 2
+
+build-keycloak-postgresql-proxy:
+  stage: build
+  before_script:
+    - export DOCKER_CLI_EXPERIMENTAL=enabled
+    - mkdir -p /root/.docker/cli-plugins
+    - mv .docker/cli-plugins/docker-buildx /root/.docker/cli-plugins/
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker login -u "$DOCKERHUB_USER" -p "$DOCKERHUB_PASSWORD"
+  script:
+    - docker run -v $(pwd):/or
+      -v /var/run/docker.sock:/var/run/docker.sock
+      "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      /bin/sh -c "docker-compose -f profile/deploy.yml build --build-arg GIT_COMMIT=$SOURCE_COMMIT keycloak proxy postgresql"
+    - docker push openremote/proxy:${CACHE_TAG:-latest}
+    - docker push openremote/keycloak:${CACHE_TAG:-latest}
+    - docker push openremote/postgresql:${CACHE_TAG:-latest}
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /skip-build/
+      when: never
+    - changes:
+      - proxy/**/*
+      - postgresql/**/*
+      - keycloak/**/*
   retry:
     max: 2
 
