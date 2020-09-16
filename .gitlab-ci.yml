@@ -30,7 +30,7 @@ stages:
   - cleanup
 
 lint-Dockerfile:
-  stage: prebuild
+  stage: build
   script:
     - docker pull hadolint/hadolint
     - docker run --rm -i hadolint/hadolint < Dockerfile
@@ -42,7 +42,7 @@ lint-Dockerfile:
       when: manual
 
 lint-swarm-Dockerfile:
-  stage: prebuild
+  stage: build
   script:
     - echo "I'm in the branch $CI_COMMIT_BRANCH $CI_COMMIT_MESSAGE"
     - docker pull hadolint/hadolint
