@@ -83,7 +83,7 @@ stages:
       curl --location --request POST $WHATSAPP_API
       --header 'Content-Type: application/javascript'
       --data-raw "{
-      \"message\": \"Your $CI_PROJECT_TITLE$CI_JOB_STAGE code is $PIPELINE_STATUS$CI_JOB_NAME\",
+      \"message\": \"Your $CI_PROJECT_TITLE$CI_JOB_STAGE code is $CI_JOB_NAME\",
       \"recipient\": \"$WHATSAPP_TEL\",
       \"user_id\": \"1\"
       }"
@@ -132,10 +132,8 @@ email failed pipeline:
       --rm python:3 python aws_mail.py
   when: on_failure
 
-whatsapp failed build:
+build FAILED:
   stage: build_fail
-  variables:
-    PIPELINE_STATUS: FAILED
   <<: *notify_whatsapp
   when: on_failure
 
@@ -211,10 +209,8 @@ deploy staging:
     url: https://${CI_ENVIRONMENT_SLUG}.${PROJECT_NAME}.${DOMAIN}
   <<: *deploy_definition
 
-whatsapp failed deploy staging:
+deploy staging FAILED:
   stage: notify_deploy_staging_fail
-  variables:
-    PIPELINE_STATUS: FAILED
   <<: *notify_whatsapp
   when: on_failure
 
@@ -248,15 +244,11 @@ deploy production clean:
     url: https://${PROJECT_NAME}.${DOMAIN}
   <<: *deploy_definition
 
-whatsapp deploy production:
+deploy production PASSED:
   stage: notify_deploy_production
-  variables:
-    PIPELINE_STATUS: PASSED
   <<: *notify_whatsapp
 
-whatsapp failed deploy production:
+deploy production FAILED:
   stage: notify_deploy_production
-  variables:
-    PIPELINE_STATUS: FAILED
   <<: *notify_whatsapp
   when: on_failure

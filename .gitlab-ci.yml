@@ -169,7 +169,7 @@ build-keycloak-postgresql-proxy:
       curl --location --request POST $WHATSAPP_API
       --header 'Content-Type: application/javascript'
       --data-raw "{
-      \"message\": \"Your $CI_PROJECT_TITLE$CI_JOB_STAGE code is $PIPELINE_STATUS$CI_JOB_NAME\",
+      \"message\": \"Your $CI_PROJECT_TITLE+$CI_JOB_STAGE code is $CI_JOB_NAME\",
       \"recipient\": \"$WHATSAPP_TEL\",
       \"user_id\": \"1\"
       }"
@@ -235,10 +235,8 @@ email failed build:
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
       when: on_failure
 
-whatsapp failed build:
+build FAILED:
   stage: build_fail
-  variables:
-    PIPELINE_STATUS: FAILED
   <<: *notify_whatsapp
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
@@ -274,7 +272,7 @@ deploy demo on OVH:
   rules:
     - if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
       when: never
-    - if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
+    - if: $CI_COMMIT_MESSAGE !~ /skip-build/
       when: manual
   variables:
     DEPLOYMENT_HOST: ${PROJECT_NAME}.openremote.io
@@ -312,10 +310,8 @@ email failed tests:
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: on_failure
 
-whatsapp failed test:
+test FAILED:
   stage: tests_fail
-  variables:
-    PIPELINE_STATUS: FAILED
   <<: *notify_whatsapp
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
@@ -348,15 +344,11 @@ manual delete aws cloudformation stack:
     - if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
       when: never
 
-report pipeline status:
+pipeline PASSED:
   stage: notify_pipeline
-  variables:
-    PIPELINE_STATUS: PASSED
   <<: *notify_whatsapp
 
-report pipeline status fail:
+pipeline FAILED:
   stage: notify_pipeline
-  variables:
-    PIPELINE_STATUS: FAILED
   <<: *notify_whatsapp
   when: on_failure
