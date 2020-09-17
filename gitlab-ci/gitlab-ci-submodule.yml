@@ -76,15 +76,17 @@ stages:
 .notify_whatsapp: &notify_whatsapp
   image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
   allow_failure: true
+  variables:
+    GIT_STRATEGY: none
   script:
     - >
       curl --location --request POST $WHATSAPP_API
       --header 'Content-Type: application/javascript'
-      --data-raw '{
-      "message": "Your $CI_PROJECT_TITLE$CI_JOB_STAGE code is $STATUS",
-      "recipient": "$WHATSAPP_TEL",
-      "user_id": "1"
-      }'
+      --data-raw "{
+      \"message\": \"Your $CI_PROJECT_TITLE$CI_JOB_STAGE code is $STATUS\",
+      \"recipient\": \"$WHATSAPP_TEL\",
+      \"user_id\": \"1\"
+      }"
   retry:
     max: 2
 
