@@ -28,6 +28,7 @@ stages:
   - deploy
   - dast
   - cleanup
+  - notify_pipeline
 
 lint-Dockerfile:
   stage: build
@@ -65,6 +66,7 @@ build-enviroment:
     - docker buildx build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
   rules:
+    - if: $CI_COMMIT_MESSAGE !~ /skip-build/
     - changes:
         - Dockerfile
 
@@ -145,7 +147,7 @@ build-keycloak-postgresql-proxy:
     - export REPO=$(docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master git remote get-url origin|xargs basename)
     - echo $REPO
     - docker run -v $(pwd):/usr/src/myapp -w /usr/src/myapp
-      -e "STAGE=$STAGE"
+      -e "STAGE=$CI_JOB_STAGE"
       -e "WHO=$WHO"
       -e "WHAT=$WHAT"
       -e "WHEN=$WHEN"
@@ -153,6 +155,21 @@ build-keycloak-postgresql-proxy:
       -e "SMTP_USERNAME=$SMTP_USERNAME"
       -e "SMTP_PASSWORD=$SMTP_PASSWORD"
       --rm python:3 python aws_mail.py
+  retry:
+    max: 2
+
+.notify_whatsapp: &notify_whatsapp
+  image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
+  allow_failure: true
+  script:
+    - >
+      curl --location --request POST $WHATSAPP_API
+      --header 'Content-Type: application/javascript'
+      --data-raw '{
+      "message": "Your $CI_PROJECT_TITLE$CI_JOB_STAGE code is $STATUS",
+      "recipient": "$WHATSAPP_TEL",
+      "user_id": "1"
+      }'
   retry:
     max: 2
 
@@ -210,12 +227,17 @@ build-keycloak-postgresql-proxy:
 # This step is executed when build fails. The purpose is to e-mail a git commiter about the problem.
 email failed build:
   stage: build_fail
-  before_script:
-    - export STAGE='docker images build'
   <<: *email_definition
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
       when: on_failure
+
+whatsapp failed build:
+  stage: build_fail
+  variables:
+    SATATUS: FAILED
+  <<: *notify_whatsapp
+  when: on_failure
 
 test-master:
   stage: test
@@ -285,6 +307,15 @@ email failed tests:
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: on_failure
 
+whatsapp failed test:
+  stage: tests_fail
+  variables:
+    SATATUS: FAILED
+  <<: *notify_whatsapp
+  rules:
+    - if: $CI_COMMIT_MESSAGE !~ /skip-test/
+      when: on_failure
+
 manual delete aws cloudformation stack:
   image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
   stage: cleanup
@@ -311,3 +342,16 @@ manual delete aws cloudformation stack:
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
       when: never
+
+report pipeline status:
+  stage: notify_pipeline
+  variables:
+    STATUS: PASSED
+  <<: *notify_whatsapp
+
+report pipeline status fail:
+  stage: notify_pipeline
+  variables:
+    STATUS: FAILED
+  <<: *notify_whatsapp
+  when: on_failure

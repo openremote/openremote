@@ -2,7 +2,7 @@ default:
   interruptible: true
   image: docker:latest
   services:
-    - docker:dind              # Docker in docker service
+    - docker:dind # Docker in docker service
 
 variables:
   ## Following 3 variables should be defined as GitLab CI/CD variables
@@ -23,19 +23,21 @@ stages:
   - build_fail
   - test
   - deploy
+  - notify_deploy_staging_fail
   - dast
   - build_production
   - deploy_production
   - deploy_production_clean
+  - notify_deploy_production
 
 .build_template: &build_definition
   variables:
-    SCAN_IMAGE_TAG:    $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA
+    SCAN_IMAGE_TAG: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA
     MANAGER_IMAGE_TAG: $CI_REGISTRY_IMAGE/manager:$CI_ENVIRONMENT_SLUG
-    DEPLOY_IMAGE_TAG:  $CI_REGISTRY_IMAGE/deployment:$CI_ENVIRONMENT_SLUG
-    PROXY_IMAGE_TAG:   $CI_REGISTRY_IMAGE/proxy:$CI_ENVIRONMENT_SLUG
+    DEPLOY_IMAGE_TAG: $CI_REGISTRY_IMAGE/deployment:$CI_ENVIRONMENT_SLUG
+    PROXY_IMAGE_TAG: $CI_REGISTRY_IMAGE/proxy:$CI_ENVIRONMENT_SLUG
     POSTGRE_IMAGE_TAG: $CI_REGISTRY_IMAGE/postgresql:$CI_ENVIRONMENT_SLUG
-    KEYCLO_IMAGE_TAG:  $CI_REGISTRY_IMAGE/keycloak:$CI_ENVIRONMENT_SLUG
+    KEYCLO_IMAGE_TAG: $CI_REGISTRY_IMAGE/keycloak:$CI_ENVIRONMENT_SLUG
   before_script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
@@ -59,17 +61,32 @@ stages:
     - docker push "$KEYCLO_IMAGE_TAG"
     # Tag for possible rollback
     - if [ $CI_COMMIT_TAG ]; then
-    -   docker tag "$CI_REGISTRY_IMAGE/manager:$CI_ENVIRONMENT_SLUG" "$CI_REGISTRY_IMAGE/manager:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
-    -   docker tag "$CI_REGISTRY_IMAGE/deployment:$CI_ENVIRONMENT_SLUG" "$CI_REGISTRY_IMAGE/deployment:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
-    -   docker tag "$CI_REGISTRY_IMAGE/proxy:$CI_ENVIRONMENT_SLUG" "$CI_REGISTRY_IMAGE/proxy:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
-    -   docker tag "$CI_REGISTRY_IMAGE/postgresql:$CI_ENVIRONMENT_SLUG" "$CI_REGISTRY_IMAGE/postgresql:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
-    -   docker tag "$CI_REGISTRY_IMAGE/keycloak:$CI_ENVIRONMENT_SLUG" "$CI_REGISTRY_IMAGE/keycloak:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
-    -   docker push "$CI_REGISTRY_IMAGE/manager:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
-    -   docker push "$CI_REGISTRY_IMAGE/deployment:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
-    -   docker push "$CI_REGISTRY_IMAGE/proxy:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
-    -   docker push "$CI_REGISTRY_IMAGE/postgresql:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
-    -   docker push "$CI_REGISTRY_IMAGE/keycloak:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    - docker tag "$CI_REGISTRY_IMAGE/manager:$CI_ENVIRONMENT_SLUG" "$CI_REGISTRY_IMAGE/manager:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    - docker tag "$CI_REGISTRY_IMAGE/deployment:$CI_ENVIRONMENT_SLUG" "$CI_REGISTRY_IMAGE/deployment:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    - docker tag "$CI_REGISTRY_IMAGE/proxy:$CI_ENVIRONMENT_SLUG" "$CI_REGISTRY_IMAGE/proxy:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    - docker tag "$CI_REGISTRY_IMAGE/postgresql:$CI_ENVIRONMENT_SLUG" "$CI_REGISTRY_IMAGE/postgresql:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    - docker tag "$CI_REGISTRY_IMAGE/keycloak:$CI_ENVIRONMENT_SLUG" "$CI_REGISTRY_IMAGE/keycloak:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    - docker push "$CI_REGISTRY_IMAGE/manager:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    - docker push "$CI_REGISTRY_IMAGE/deployment:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    - docker push "$CI_REGISTRY_IMAGE/proxy:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    - docker push "$CI_REGISTRY_IMAGE/postgresql:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
+    - docker push "$CI_REGISTRY_IMAGE/keycloak:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
     - fi
+
+.notify_whatsapp: &notify_whatsapp
+  image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
+  allow_failure: true
+  script:
+    - >
+      curl --location --request POST $WHATSAPP_API
+      --header 'Content-Type: application/javascript'
+      --data-raw '{
+      "message": "Your $CI_PROJECT_TITLE$CI_JOB_STAGE code is $STATUS",
+      "recipient": "$WHATSAPP_TEL",
+      "user_id": "1"
+      }'
+  retry:
+    max: 2
 
 build staging docker images:
   stage: build_staging
@@ -113,21 +130,28 @@ email failed pipeline:
       --rm python:3 python aws_mail.py
   when: on_failure
 
+whatsapp failed build:
+  stage: build_fail
+  variables:
+    SATATUS: FAILED
+  <<: *notify_whatsapp
+  when: on_failure
+
 include:
   - template: Container-Scanning.gitlab-ci.yml
   - template: Dependency-Scanning.gitlab-ci.yml
   - template: License-Scanning.gitlab-ci.yml
-#  - template: SAST.gitlab-ci.yml
+  #  - template: SAST.gitlab-ci.yml
   - template: DAST.gitlab-ci.yml
 
 .ssh_config: &ssh_config
-- mkdir -p ~/.ssh
-- chmod 600 "$GITLAB_SSH_PRIVATE_KEY"
-- eval "$(ssh-agent -s)"
-- ssh-add "$GITLAB_SSH_PRIVATE_KEY"
-- ssh-keyscan -H -p $DEPLOYMENT_PORT $DEPLOYMENT_HOST >> ~/.ssh/known_hosts
-- alias SSH="ssh -p $DEPLOYMENT_PORT ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}"
-- alias SCP="scp -p -r -P $DEPLOYMENT_PORT"
+  - mkdir -p ~/.ssh
+  - chmod 600 "$GITLAB_SSH_PRIVATE_KEY"
+  - eval "$(ssh-agent -s)"
+  - ssh-add "$GITLAB_SSH_PRIVATE_KEY"
+  - ssh-keyscan -H -p $DEPLOYMENT_PORT $DEPLOYMENT_HOST >> ~/.ssh/known_hosts
+  - alias SSH="ssh -p $DEPLOYMENT_PORT ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}"
+  - alias SCP="scp -p -r -P $DEPLOYMENT_PORT"
 
 .deploy_template: &deploy_definition
   before_script:
@@ -169,21 +193,28 @@ include:
     - SSH "rm ~/*.log"
   artifacts:
     paths:
-    - proxy_${CI_ENVIRONMENT_SLUG}.log
-    - manager_${CI_ENVIRONMENT_SLUG}.log
-    - keycloak_${CI_ENVIRONMENT_SLUG}.log
-    - postgresql_${CI_ENVIRONMENT_SLUG}.log
+      - proxy_${CI_ENVIRONMENT_SLUG}.log
+      - manager_${CI_ENVIRONMENT_SLUG}.log
+      - keycloak_${CI_ENVIRONMENT_SLUG}.log
+      - postgresql_${CI_ENVIRONMENT_SLUG}.log
     expire_in: 1 week
 
 deploy staging:
   stage: deploy
   variables:
     DEPLOYMENT_HOST: ${CI_ENVIRONMENT_SLUG}.${PROJECT_NAME}.${DOMAIN}
-    SETUP_WIPE_CLEAN_INSTALL: 'true'
+    SETUP_WIPE_CLEAN_INSTALL: "true"
   environment:
     name: staging
     url: https://${CI_ENVIRONMENT_SLUG}.${PROJECT_NAME}.${DOMAIN}
   <<: *deploy_definition
+
+whatsapp failed deploy staging:
+  stage: notify_deploy_staging_fail
+  variables:
+    SATATUS: FAILED
+  <<: *notify_whatsapp
+  when: on_failure
 
 build production docker images:
   stage: build_production
@@ -197,7 +228,7 @@ deploy production:
   needs: ["build production docker images"]
   variables:
     DEPLOYMENT_HOST: ${PROJECT_NAME}.${DOMAIN}
-    SETUP_WIPE_CLEAN_INSTALL: 'false'
+    SETUP_WIPE_CLEAN_INSTALL: "false"
   environment:
     name: production
     url: https://${PROJECT_NAME}.${DOMAIN}
@@ -209,8 +240,21 @@ deploy production clean:
   needs: ["build production docker images"]
   variables:
     DEPLOYMENT_HOST: ${PROJECT_NAME}.${DOMAIN}
-    SETUP_WIPE_CLEAN_INSTALL: 'true'
+    SETUP_WIPE_CLEAN_INSTALL: "true"
   environment:
     name: production
     url: https://${PROJECT_NAME}.${DOMAIN}
   <<: *deploy_definition
+
+whatsapp deploy production:
+  stage: notify_deploy_production
+  variables:
+    SATATUS: PASSED
+  <<: *notify_whatsapp
+
+whatsapp failed deploy production:
+  stage: notify_deploy_production
+  variables:
+    SATATUS: FAILED
+  <<: *notify_whatsapp
+  when: on_failure
