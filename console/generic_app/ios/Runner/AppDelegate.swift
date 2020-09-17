@@ -1,5 +1,6 @@
 import UIKit
 import Flutter
+import geofencing
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
@@ -8,6 +9,9 @@ import Flutter
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
         GeneratedPluginRegistrant.register(with: self)
+
+        GeofencingPlugin.setPluginRegistrantCallback({_ in
+        })
         
         UNUserNotificationCenter.current().delegate = self;
         

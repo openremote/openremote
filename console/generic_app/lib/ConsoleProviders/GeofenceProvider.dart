@@ -1,18 +1,20 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_geofence/geofence.dart';
-import 'package:generic_app/config/CurrentConsoleAppConfig.dart';
-import 'package:location/location.dart';
 import 'package:generic_app/ConsoleProviders/GeoLocation.dart';
+import 'package:generic_app/config/CurrentConsoleAppConfig.dart';
 import 'package:generic_app/models/GeofenceDefinition.dart';
 import 'package:generic_app/network/ApiManager.dart';
+import 'package:geofencing/geofencing.dart';
+import 'package:location/location.dart' as lm;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ProviderConstants.dart';
 
 class GeofenceProvider {
+  static GeofenceProvider _instance;
+
   static const String baseUrlKey = "baseUrl";
   static const String consoleIdKey = "consoleId";
   static const String geofencesKey = "geofences";
@@ -33,8 +35,38 @@ class GeofenceProvider {
   GeoLocation _enteredLocation;
   GeoLocation _exitedLocation;
   bool _sendQueued = false;
+  final List<GeofenceEvent> triggers = <GeofenceEvent>[
+    GeofenceEvent.enter,
+    GeofenceEvent.exit
+  ];
 
-  Location _locationManager;
+  static void geofenceTriggerCallback(
+      List<String> ids, Location location, GeofenceEvent event) async {
+    GeofenceProvider instance = await GeofenceProvider.getInstance();
+    if (event == GeofenceEvent.enter) {
+      ids.forEach((id) {
+        GeofenceDefinition geofenceDefinition =
+            instance.geofences.firstWhere((element) => element.id == id);
+        if (geofenceDefinition != null) {
+          instance._queueSendLocation(geofenceDefinition, {
+            "type": "Point",
+            "coordinates": [location.longitude, location.latitude]
+          });
+        }
+      });
+    }
+    if (event == GeofenceEvent.exit) {
+      ids.forEach((id) {
+        GeofenceDefinition geofenceDefinition =
+            instance.geofences.firstWhere((element) => element.id == id);
+        if (geofenceDefinition != null) {
+          instance._queueSendLocation(geofenceDefinition, null);
+        }
+      });
+    }
+  }
+
+  lm.Location _locationManager;
 
   GeofenceProvider._internal(this._baseURL, this._consoleId, this.geofences,
       this._sharedPreferences, this._apiManager, this._locationManager);
@@ -56,11 +88,16 @@ class GeofenceProvider {
         geofences,
         sharedPreferences,
         ApiManager(sharedPreferences.getString(baseUrlKey), baseHeaders: {"Content-Type": "application/json", "Accept": "application/json"}),
-        new Location());
+        new lm.Location());
   }
 
   static Future<GeofenceProvider> getInstance() async {
-    return GeofenceProvider(await SharedPreferences.getInstance());
+    if (_instance == null) {
+      // ignore: invalid_use_of_visible_for_testing_member
+      SharedPreferences.setMockInitialValues({});
+      _instance = GeofenceProvider(await SharedPreferences.getInstance());
+    }
+    return _instance;
   }
 
   Future<Map<String, dynamic>> initialize() async {
@@ -124,10 +161,7 @@ class GeofenceProvider {
 
   Future<Map<String, dynamic>> disable() async {
     for (String geofenceId in geofences.map((e) => e.id)) {
-      Geofence.removeGeolocation(
-          new Geolocation(id: geofenceId), GeolocationEvent.exit);
-      Geofence.removeGeolocation(
-          new Geolocation(id: geofenceId), GeolocationEvent.entry);
+      await GeofencingManager.removeGeofenceById(geofenceId);
     }
 
     await _sharedPreferences.setBool(geoDisabledKey, true);
@@ -138,65 +172,52 @@ class GeofenceProvider {
     };
   }
 
-  addGeofence(GeofenceDefinition geofenceDefinition) {
-    Geolocation geolocation = new Geolocation(
-        id: geofenceDefinition.id,
-        latitude: geofenceDefinition.lat,
-        longitude: geofenceDefinition.lng,
-        radius: geofenceDefinition.radius);
-    Geofence.addGeolocation(geolocation, GeolocationEvent.entry);
-    Geofence.addGeolocation(geolocation, GeolocationEvent.exit);
+  addGeofence(GeofenceDefinition geofenceDefinition) async {
+    await GeofencingManager.registerGeofence(
+        new GeofenceRegion(
+            geofenceDefinition.id,
+            geofenceDefinition.lat,
+            geofenceDefinition.lng,
+            geofenceDefinition.radius,
+            triggers), geofenceTriggerCallback);
   }
 
-  _startGeofenceProvider() {
-    Geofence.initialize();
-    Geofence.startListening(GeolocationEvent.entry, (geolocation) {
-      _queueSendLocation(
-          geofences.firstWhere((element) => element.id == geolocation.id), {
-        "type": "Point",
-        "coordinates": [geolocation.longitude, geolocation.latitude]
-      });
-    });
-    Geofence.startListening(GeolocationEvent.exit, (geolocation) {
-      _queueSendLocation(
-          geofences.firstWhere((element) => element.id == geolocation.id),
-          null);
-    });
-    geofences.forEach((geofence) {
-      addGeofence(geofence);
+  _startGeofenceProvider() async {
+    await GeofencingManager.initialize();
+    geofences.forEach((geofence) async {
+      await addGeofence(geofence);
     });
   }
 
-  removeGeofence(String id) {
-    Geofence.removeGeolocation(new Geolocation(id: id), GeolocationEvent.exit);
-    Geofence.removeGeolocation(new Geolocation(id: id), GeolocationEvent.entry);
+  removeGeofence(String id) async {
+    await GeofencingManager.removeGeofenceById(id);
   }
 
-  refreshGeofences() {
+  refreshGeofences() async {
     _apiManager.getAll<GeofenceDefinition>(["rules", "geofences", _consoleId],
-        GeofenceDefinition.fromJson).then((geofenceDefinitions) {
+        GeofenceDefinition.fromJson).then((geofenceDefinitions) async {
       print("Fetched geofences=${geofenceDefinitions.length}");
 
       List<GeofenceDefinition> remainingGeofences =
-          new List<GeofenceDefinition>();
-      geofences.forEach((oldGeofence) {
+      new List<GeofenceDefinition>();
+      geofences.forEach((oldGeofence) async {
         if (!geofenceDefinitions
             .any((definition) => definition.id == oldGeofence.id)) {
-          removeGeofence(oldGeofence.id);
+          await removeGeofence(oldGeofence.id);
         } else {
           remainingGeofences.add(oldGeofence);
         }
       });
 
-      remainingGeofences.forEach((definition) {
+      remainingGeofences.forEach((definition) async {
         if (!geofences.any((element) => element.id == definition.id)) {
-          addGeofence(definition);
+          await addGeofence(definition);
         }
       });
 
-      _sharedPreferences
+      await _sharedPreferences
           .setString(geofencesKey,
-              json.encode(geofenceDefinitions.map((e) => e.toJson()).toList()))
+          json.encode(geofenceDefinitions.map((e) => e.toJson()).toList()))
           .then((value) => geofences = geofenceDefinitions);
     });
   }
@@ -260,11 +281,11 @@ class GeofenceProvider {
       Map<String, dynamic> locationData) {
     return _apiManager
         .put(
-            overrideUrl:
-                "${CurrentConsoleAppConfig.instance.baseUrl}${geofenceDefinition.url}",
-            rawModel: locationData != null
-                ? jsonEncode(locationData)
-                : null.toString())
+        overrideUrl:
+        "${CurrentConsoleAppConfig.instance.baseUrl}${geofenceDefinition.url}",
+        rawModel: locationData != null
+            ? jsonEncode(locationData)
+            : null.toString())
         .then((value) => true)
         .catchError((error) {
       print(error);
@@ -276,7 +297,7 @@ class GeofenceProvider {
     _getLocationCallback = callback;
 
     if (await Permission.locationAlways.isGranted) {
-      LocationData locationData = await _locationManager.getLocation();
+      lm.LocationData locationData = await _locationManager.getLocation();
       _getLocationCallback({
         "action": "GET_LOCATION",
         "provider": "geofence",

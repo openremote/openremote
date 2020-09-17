@@ -12,10 +12,10 @@ class MainActivity: FlutterActivity() {
         GeneratedPluginRegistrant.registerWith(flutterEngine);
     }
 
-    override fun onDestroy() {
-        flutterEngine?.platformViewsController?.onFlutterViewDestroyed()
-        super.onDestroy()
-    }
+//    override fun onDestroy() {
+//        flutterEngine?.platformViewsController?.onFlutterViewDestroyed()
+//        super.onDestroy()
+//    }
 
 //    companion object {
 //        fun createIntent(context: Context, initialRoute: String = "/"): Intent {

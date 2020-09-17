@@ -3,14 +3,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:generic_app/services/PushNotificationService.dart';
 import 'package:generic_app/ui/SplashPage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'generated/l10n.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
       .then((_) async {
-        PushNotificationService pushNotificationService = new PushNotificationService();
-        await pushNotificationService.initialise();
+    //ignore: invalid_use_of_visible_for_testing_member
+    SharedPreferences.setMockInitialValues({});
+    PushNotificationService pushNotificationService = new PushNotificationService();
+    await pushNotificationService.initialise();
     runApp(new ORApp());
   });
 }

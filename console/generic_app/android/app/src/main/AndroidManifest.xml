@@ -39,9 +39,9 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <receiver android:name="com.intivoto.geofence.GeofenceBroadcastReceiver"
+        <receiver android:name="io.flutter.plugins.geofencing.GeofencingBroadcastReceiver"
                   android:enabled="true" android:exported="true"/>
-        <service android:name="com.intivoto.geofence.GeofencePlugin"
+        <service android:name="io.flutter.plugins.geofencing.GeofencingService"
                  android:permission="android.permission.BIND_JOB_SERVICE" android:exported="true"/>
     </application>
 </manifest>

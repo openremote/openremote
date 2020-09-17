@@ -44,7 +44,7 @@ PODS:
     - GoogleUtilities/UserDefaults (~> 6.5)
     - Protobuf (>= 3.9.2, ~> 3.9)
   - Flutter (1.0.0)
-  - flutter_geofence (0.1.1):
+  - geofencing (0.0.1):
     - Flutter
   - GoogleDataTransport (7.3.0):
     - nanopb (~> 1.30906.0)
@@ -87,7 +87,7 @@ DEPENDENCIES:
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - firebase_messaging (from `.symlinks/plugins/firebase_messaging/ios`)
   - Flutter (from `Flutter`)
-  - flutter_geofence (from `.symlinks/plugins/flutter_geofence/ios`)
+  - geofencing (from `.symlinks/plugins/geofencing/ios`)
   - location (from `.symlinks/plugins/location/ios`)
   - permission_handler (from `.symlinks/plugins/permission_handler/ios`)
   - quick_actions (from `.symlinks/plugins/quick_actions/ios`)
@@ -117,8 +117,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/firebase_messaging/ios"
   Flutter:
     :path: Flutter
-  flutter_geofence:
-    :path: ".symlinks/plugins/flutter_geofence/ios"
+  geofencing:
+    :path: ".symlinks/plugins/geofencing/ios"
   location:
     :path: ".symlinks/plugins/location/ios"
   permission_handler:
@@ -142,7 +142,7 @@ SPEC CHECKSUMS:
   FirebaseInstanceID: cef67c4967c7cecb56ea65d8acbb4834825c587b
   FirebaseMessaging: 29543feb343b09546ab3aa04d008ee8595b43c44
   Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
-  flutter_geofence: 08e5427c56c540ffac97425b8e10dd598912fb3d
+  geofencing: 98674d4c10508e8bbf7678623d48c2a4172559ee
   GoogleDataTransport: e85fb700c9b027079ce182c3d08e12e0f9618bb4
   GoogleUtilities: 7f2f5a07f888cdb145101d6042bc4422f57e70b3
   location: 3a2eed4dd2fab25e7b7baf2a9efefe82b512d740
