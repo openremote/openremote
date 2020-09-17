@@ -83,7 +83,7 @@ stages:
       curl --location --request POST $WHATSAPP_API
       --header 'Content-Type: application/javascript'
       --data-raw "{
-      \"message\": \"Your $CI_PROJECT_TITLE$CI_JOB_STAGE code is $STATUS\",
+      \"message\": \"Your $CI_PROJECT_TITLE$CI_JOB_STAGE code is $PIPELINE_STATUS$CI_JOB_NAME\",
       \"recipient\": \"$WHATSAPP_TEL\",
       \"user_id\": \"1\"
       }"
@@ -135,7 +135,7 @@ email failed pipeline:
 whatsapp failed build:
   stage: build_fail
   variables:
-    SATATUS: FAILED
+    PIPELINE_STATUS: FAILED
   <<: *notify_whatsapp
   when: on_failure
 
@@ -214,7 +214,7 @@ deploy staging:
 whatsapp failed deploy staging:
   stage: notify_deploy_staging_fail
   variables:
-    SATATUS: FAILED
+    PIPELINE_STATUS: FAILED
   <<: *notify_whatsapp
   when: on_failure
 
@@ -251,12 +251,12 @@ deploy production clean:
 whatsapp deploy production:
   stage: notify_deploy_production
   variables:
-    SATATUS: PASSED
+    PIPELINE_STATUS: PASSED
   <<: *notify_whatsapp
 
 whatsapp failed deploy production:
   stage: notify_deploy_production
   variables:
-    SATATUS: FAILED
+    PIPELINE_STATUS: FAILED
   <<: *notify_whatsapp
   when: on_failure
