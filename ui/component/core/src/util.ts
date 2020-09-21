@@ -454,3 +454,17 @@ export function sortByString<T>(valueExtractor: (item: T) => string): (a: T, b: 
         return 0;
     };
 }
+
+export interface RequestEventDetail<T> {
+    allow: boolean;
+    detail: T;
+}
+
+export function dispatchCancellableEvent<T>(target: EventTarget, event: CustomEvent<RequestEventDetail<T>>, handler: (detail: T) => void) {
+    target.dispatchEvent(event);
+    window.setTimeout(() => {
+        if (event.detail.allow) {
+            handler(event.detail.detail);
+        }
+    });
+}

@@ -19,7 +19,7 @@ import {
 import "@openremote/or-app/dist/pages/page-map";
 import {pageMapReducer, pageMapProvider} from "@openremote/or-app/dist/pages/page-map";
 import "@openremote/or-app/dist/pages/page-assets";
-import {pageAssetsProvider} from "@openremote/or-app/dist/pages/page-assets";
+import {pageAssetsProvider, PageAssetsConfig} from "@openremote/or-app/dist/pages/page-assets";
 import "@openremote/or-app/dist/pages/page-gateway";
 import {pageGatewayProvider} from "@openremote/or-app/dist/pages/page-gateway";
 import "@openremote/or-app/dist/pages/page-insights";

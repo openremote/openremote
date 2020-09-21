@@ -83,9 +83,15 @@ export const style = css`
         opacity: 0.5;
         pointer-events: none;
     }
+
+    #view-container, #edit-container {
+        flex: 0 1 auto;
+        margin-top: 10px;
+        overflow: auto;
+    }
     
     #view-container {
-        flex: 1 0 auto;
+        margin-top: 0;
         box-sizing: border-box;
         display: grid;
         padding: 20px 20px;
@@ -98,12 +104,6 @@ export const style = css`
         -ms-animation: fadein 0.3s; /* Internet Explorer */
         -o-animation: fadein 0.3s; /* Opera < 12.1 */
         animation: fadein 0.3s;
-    }
-    
-    #edit-container {
-        flex: 0 1 auto;
-        margin-top: 10px;
-        overflow: auto;
     }
     
     #name-input {
@@ -156,7 +156,7 @@ export const style = css`
     }
 
     #title {
-        flex: 1 0 auto;
+        flex: 1 1 0%;
         font-size: 18px;
         font-weight: bold;
     }
@@ -166,8 +166,20 @@ export const style = css`
     }
    
     #created-time {
-        flex: 0 0 auto;
         font-size: 12px;
+    }
+    
+    #right-wrapper {
+        flex: 1 1 0%;
+        text-align: right;
+    }
+    
+    #edit-wrapper {
+        flex: 0 0 auto;
+    }
+
+    #edit-wrapper > or-translate {
+        margin-right: 10px;
     }
 
     #save-btn {
@@ -194,12 +206,7 @@ export const style = css`
         display: none;
         cursor: pointer;
     }
-    
-    #edit-container {
-        grid-column-start: 1;
-        grid-column-end: 3;
-    }
-    
+
     @media screen and (max-width: 769px) {
         #wrapper {
             position: absolute;

@@ -193,10 +193,27 @@ export class OrAssetViewerSaveResultEvent extends CustomEvent<SaveResult> {
     }
 }
 
+export class OrAssetViewerRequestEditToggleEvent extends CustomEvent<Util.RequestEventDetail<boolean>> {
+
+    public static readonly NAME = "or-asset-viewer-request-edit-toggle";
+
+    constructor(edit: boolean) {
+        super(OrAssetViewerRequestEditToggleEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                allow: true,
+                detail: edit
+            }
+        });
+    }
+}
+
 declare global {
     export interface HTMLElementEventMap {
         [OrAssetViewerComputeGridEvent.NAME]: OrAssetViewerComputeGridEvent;
         [OrAssetViewerSaveResultEvent.NAME]: OrAssetViewerSaveResultEvent;
+        [OrAssetViewerRequestEditToggleEvent.NAME]: OrAssetViewerRequestEditToggleEvent;
     }
 }
 
@@ -864,10 +881,18 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     </a>
                     <div id="title">
                         <or-icon title="${descriptor && descriptor.type ? descriptor.type : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.color ? "#" + descriptor.color : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetType.THING.icon}"></or-icon>
-                        ${editMode ? html`<or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" required outlined .label="${i18next.t("name")}" .value="${this.asset.name}" @or-input-changed="${(e: OrInputChangedEvent) => {this.asset!.name = e.detail.value; this._onAssetModified();}}"></or-input>` : html`<span>${this.asset.name}</span>`}
+                        ${editMode ? html`<or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.asset.name}" @or-input-changed="${(e: OrInputChangedEvent) => {this.asset!.name = e.detail.value; this._onAssetModified();}}"></or-input>` : html`<span>${this.asset.name}</span>`}
                     </div>
-                    <div id="created-time" class="mobileHidden"><or-translate value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as i18next.TOptions<i18next.InitOptions>}"></or-translate></div>
-                    ${editMode ? html`<or-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-input-changed="${() => this._saveAsset()}"></or-input>` : ``}
+                    ${!this._isReadonly() ? html`
+                        <span id="edit-wrapper">
+                            <or-translate value="editAsset"></or-translate>
+                            <or-input .type="${InputType.SWITCH}" .value="${this.editMode}" @or-input-changed="${(ev: OrInputChangedEvent) => this._onEditToggled(ev.detail.value)}"></or-input>
+                        </span>
+                    `: ``}
+                    <div id="right-wrapper">
+                        <or-translate id="created-time" class="mobileHidden" value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as i18next.TOptions<i18next.InitOptions>}"></or-translate>
+                        ${editMode ? html`<or-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-input-changed="${() => this._saveAsset()}"></or-input>` : ``}
+                    </div>
                 </div>
                 ${content}
             </div>
@@ -912,6 +937,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     async onCompleted() {
         await this.updateComplete;
+    }
+
+    protected _onEditToggled(edit: boolean) {
+        Util.dispatchCancellableEvent(this, new OrAssetViewerRequestEditToggleEvent(edit), () => this.editMode = edit);
     }
 
     protected async _saveAsset() {

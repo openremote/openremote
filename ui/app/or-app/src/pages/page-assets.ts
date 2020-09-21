@@ -1,8 +1,8 @@
 import {css, customElement, html, property, TemplateResult, unsafeCSS, query} from "lit-element";
 import "@openremote/or-asset-tree";
 import "@openremote/or-asset-viewer";
-import {ViewerConfig, OrAssetViewer} from "@openremote/or-asset-viewer";
-import {AssetTreeConfig, OrAssetTreeSelectionChangedEvent, OrAssetTreeRequestSelectEvent, OrAssetTreeRequestEditToggleEvent, OrAssetTreeEditChangedEvent} from "@openremote/or-asset-tree";
+import {ViewerConfig, OrAssetViewer, OrAssetViewerRequestEditToggleEvent} from "@openremote/or-asset-viewer";
+import {AssetTreeConfig, OrAssetTreeSelectionChangedEvent, OrAssetTreeRequestSelectEvent, OrAssetTreeEditChangedEvent} from "@openremote/or-asset-tree";
 import {DefaultBoxShadow} from "@openremote/core";
 import {AppStateKeyed} from "../app";
 import {Page, router} from "../types";
@@ -11,7 +11,7 @@ import { showDialog } from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import i18next from "i18next";
 
 export interface PageAssetsConfig {
-    viewer: ViewerConfig;
+    viewer?: ViewerConfig;
     tree?: AssetTreeConfig;
 }
 
@@ -105,7 +105,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         super.connectedCallback();
         this.addEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
         this.addEventListener(OrAssetTreeRequestSelectEvent.NAME, this._onTreeSelectionRequested);
-        this.addEventListener(OrAssetTreeRequestEditToggleEvent.NAME, this._onTreeEditToggleRequested);
+        this.addEventListener(OrAssetViewerRequestEditToggleEvent.NAME, this._onTreeEditToggleRequested);
         this.addEventListener(OrAssetTreeEditChangedEvent.NAME, this._onTreeEditChanged);
     }
 
@@ -118,7 +118,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
     protected render(): TemplateResult | void {
         const selectedIds = this._assetId ? [this._assetId] : undefined;
         return html`
-              <or-asset-tree id="tree" .editMode="${!!this._editMode}" .config="${this.config && this.config.tree ? this.config.tree : null}" class="${this._assetId ? "hideMobile" : ""}" .selectedIds="${selectedIds}"></or-asset-tree>
+              <or-asset-tree id="tree" .config="${this.config && this.config.tree ? this.config.tree : null}" class="${this._assetId ? "hideMobile" : ""}" .selectedIds="${selectedIds}"></or-asset-tree>
               <or-asset-viewer id="viewer" .editMode="${!!this._editMode}" class="${!this._assetId ? "hideMobile" : ""}" .config="${this.config && this.config.viewer ? this.config.viewer : undefined}"></or-asset-viewer>
         `;
     }
@@ -154,7 +154,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         this._updateRoute();
     }
 
-    protected _onTreeEditToggleRequested(event: OrAssetTreeRequestEditToggleEvent) {
+    protected _onTreeEditToggleRequested(event: OrAssetViewerRequestEditToggleEvent) {
         // Block the request and show dialog then toggle
         event.detail.allow = false;
         const editMode = event.detail.detail;

@@ -677,17 +677,12 @@ export class OrInput extends LitElement {
                     let label = this.label;
                     let type = this.type;
                     let componentId = "component";
-                    let denseComfortable = this.comfortable;
-                    let denseCompact = !this.comfortable && this.compact;
-                    let rounded = false;
 
                     if (this.type === InputType.RANGE) {
                         // Change vars so number input can be included alongside the slider
                         label = undefined;
                         outlined = false;
                         hasHelper = false;
-                        denseComfortable = true;
-                        rounded = true;
                         type = InputType.NUMBER;
                         componentId = "number";
                     }
@@ -700,9 +695,8 @@ export class OrInput extends LitElement {
                             "mdc-text-field--textarea": type === InputType.TEXTAREA || type === InputType.JSON,
                             "mdc-text-field--disabled": this.disabled,
                             "mdc-text-field--fullwidth": this.fullWidth && !outlined,
-                            "dense-comfortable": denseComfortable,
-                            "dense-compact": denseCompact,
-                            "is-rounded": rounded,
+                            "dense-comfortable": this.comfortable,
+                            "dense-compact": !this.comfortable && this.compact,
                             "mdc-text-field--label-floating": hasValue,
                             "mdc-text-field--no-label": !this.label,
                             "mdc-text-field--with-leading-icon": !!this.icon,
