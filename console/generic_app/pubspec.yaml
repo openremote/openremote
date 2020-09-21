@@ -37,6 +37,8 @@ dependencies:
   firebase_messaging: ^7.0.0
   quick_actions: 0.4.0+8
   show_up_animation: ^1.0.2
+  awesome_dialog: ^1.2.0
+  event_bus: ^1.1.1
 
 dev_dependencies:
   flutter_test:

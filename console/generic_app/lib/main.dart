@@ -11,8 +11,6 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
       .then((_) async {
-    //ignore: invalid_use_of_visible_for_testing_member
-    SharedPreferences.setMockInitialValues({});
     PushNotificationService pushNotificationService = new PushNotificationService();
     await pushNotificationService.initialise();
     runApp(new ORApp());

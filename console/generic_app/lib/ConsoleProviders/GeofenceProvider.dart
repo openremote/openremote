@@ -93,8 +93,6 @@ class GeofenceProvider {
 
   static Future<GeofenceProvider> getInstance() async {
     if (_instance == null) {
-      // ignore: invalid_use_of_visible_for_testing_member
-      SharedPreferences.setMockInitialValues({});
       _instance = GeofenceProvider(await SharedPreferences.getInstance());
     }
     return _instance;
