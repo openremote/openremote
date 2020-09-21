@@ -9,12 +9,9 @@ import 'package:generic_app/ConsoleProviders/StorageProvider.dart';
 import 'package:generic_app/events/OpenWebPageEvent.dart';
 import 'package:generic_app/models/AlertAction.dart';
 import 'package:generic_app/models/AlertButton.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'EventBusService.dart';
-
-Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> remoteMessage) async {
-  await PushNotificationService.handleNotification(remoteMessage, false, false);
-}
 
 class PushNotificationService {
   static FirebaseMessaging _fcm;
@@ -22,11 +19,9 @@ class PushNotificationService {
   static BuildContext _context;
 
   static init({@required BuildContext context}) {
-    _fcm = FirebaseMessaging();
     _context = context;
-  }
 
-  Future initialise() async {
+    _fcm = FirebaseMessaging();
     _fcm.configure(
       onMessage: (Map<String, dynamic> remoteMessage) async {
         print("onMessage: $remoteMessage");
@@ -40,13 +35,15 @@ class PushNotificationService {
         print("onResume: $remoteMessage");
         await handleNotification(remoteMessage, true, false);
       },
-      onBackgroundMessage: Platform.isIOS ? null : myBackgroundMessageHandler,
+      onBackgroundMessage: Platform.isIOS ? null : handleBackgroundNotification,
     );
   }
 
-  static Future handleNotification(Map<String, dynamic> remoteMessage, bool onResume, bool onLaunch) async {
-    Map<dynamic, dynamic> messageData = remoteMessage["data"] ??
-        remoteMessage;
+  static Future handleBackgroundNotification(Map<String, dynamic> remoteMessage) => handleNotification(remoteMessage, true, true);
+
+  static Future handleNotification(
+      Map<String, dynamic> remoteMessage, bool onResume, bool onLaunch) async {
+    Map<dynamic, dynamic> messageData = remoteMessage["data"] ?? remoteMessage;
     if (messageData != null) {
       bool isSilent = !messageData.containsKey("or-title");
 
@@ -74,15 +71,12 @@ class PushNotificationService {
 
         // Check for action (to be executed when notification is clicked)
         if (messageData.containsKey("action")) {
-          Map<dynamic, dynamic> actionJson = messageData["action"];
+          String actionJson = messageData["action"];
 
           if (actionJson != null && actionJson.isNotEmpty) {
-            action = AlertAction.fromJson(actionJson);
-
-            if(onResume || onLaunch) {
-              if(action.openInBrowser) {
-
-              }
+            action = AlertAction.fromJson(jsonDecode(actionJson));
+            if (onResume || onLaunch) {
+              performAlertAction(action);
             }
           }
         }
@@ -90,37 +84,48 @@ class PushNotificationService {
         // Check for buttons
         if (messageData.containsKey("buttons")) {
           String buttonsJson = messageData["buttons"];
-
           if (buttonsJson != null && buttonsJson.isNotEmpty) {
-            buttons = (jsonDecode(buttonsJson) as List).map((e) => AlertButton.fromJson(e));
+            buttons = List.from(jsonDecode(buttonsJson)).map((e) => AlertButton.fromJson(e)).toList();
           }
         }
 
         AwesomeDialog(
-          context: _context,
-          dialogType: DialogType.INFO,
+            context: _context,
+            dialogType: DialogType.INFO,
             animType: AnimType.BOTTOMSLIDE,
-          title: title,
-          desc: body,
-          btnOkText: buttons != null && buttons.isNotEmpty ? buttons[0].title : null,
-          btnCancelText: buttons != null && buttons.isNotEmpty ? buttons[1].title: null,
-          btnOkOnPress: () {
-            if (buttons != null && buttons.isNotEmpty) {
-              AlertButton button = buttons[0];
-              if (button.action.url != null && button.action.url.isNotEmpty) {
-                if (button.action.openInBrowser) {
-
-                } else {
-                  EventBusService
-                      .getInstance()
-                      .eventBus
-                      .fire(new OpenWebPageEvent(button.action.url));
-                }
+            title: title,
+            desc: body,
+            btnOkText: buttons != null && buttons.isNotEmpty ? buttons[0].title : "Ok",
+            btnCancelText: buttons != null && buttons.isNotEmpty ? buttons[1].title : null,
+            btnOkOnPress: () async {
+              if (buttons != null && buttons.isNotEmpty) {
+                performAlertAction(buttons[0].action);
+              }
+              else if (action!= null) {
+                performAlertAction(action);
+              }
+            },
+            btnCancelOnPress: () {
+              if (buttons != null && buttons.isNotEmpty) {
+                performAlertAction(buttons[1].action);
               }
             }
-          },
-            btnCancelOnPress: () {}
-        );
+        ).show();
+      }
+    }
+  }
+
+  static void performAlertAction(AlertAction action) async {
+    if (action.url != null && action.url.isNotEmpty) {
+      if (action.openInBrowser) {
+        if (await canLaunch(action.url)) {
+          await launch(action.url);
+        }
+      } else {
+        EventBusService
+            .getInstance()
+            .eventBus
+            .fire(new OpenWebPageEvent(action.url));
       }
     }
   }

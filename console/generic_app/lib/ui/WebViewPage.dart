@@ -9,6 +9,8 @@ import 'package:generic_app/config/CurrentConsoleAppConfig.dart';
 import 'package:generic_app/events/OpenWebPageEvent.dart';
 import 'package:generic_app/models/LinkConfig.dart';
 import 'package:generic_app/services/EventBusService.dart';
+import 'package:generic_app/services/PushNotificationService.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class WebViewPage extends StatefulWidget {
@@ -35,8 +37,9 @@ class _WebViewPageState extends State<WebViewPage> {
         .eventBus
         .on<OpenWebPageEvent>()
         .listen((event) {
-
+      _controller.loadUrl(event.url);
     });
+    PushNotificationService.init(context: context);
 
     super.initState();
   }
@@ -56,7 +59,15 @@ class _WebViewPageState extends State<WebViewPage> {
       javascriptChannels: <JavascriptChannel>[
         _postMessageJavascriptChannel(context),
       ].toSet(),
-      navigationDelegate: (navigationRequest) {
+      navigationDelegate: (navigationRequest) async {
+        if (navigationRequest.url.startsWith("webbrowser")) {
+          String navUrl =
+              navigationRequest.url.replaceAll("webbrowser", "https");
+          if (await canLaunch(navUrl)) {
+            await launch(navUrl);
+          }
+          return NavigationDecision.prevent;
+        }
         return NavigationDecision.navigate;
       },
     );

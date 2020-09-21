@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="starting_page">Change project</string>
+    <string name="notification_channel_id" translatable="false">or_fcm_id</string>
+    <string name="notification_channel_name">OR notifications</string>
+    <string name="notification_channel_desc">Receive information about your project.</string>
 </resources>

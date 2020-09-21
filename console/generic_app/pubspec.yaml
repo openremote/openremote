@@ -39,6 +39,7 @@ dependencies:
   show_up_animation: ^1.0.2
   awesome_dialog: ^1.2.0
   event_bus: ^1.1.1
+  url_launcher: ^5.4.2
 
 dev_dependencies:
   flutter_test:
