@@ -13,6 +13,30 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'EventBusService.dart';
 
+Future<dynamic> backgroundMessageHandler(Map<String, dynamic> remoteMessage) async {
+  print("background: $remoteMessage");
+  Map<dynamic, dynamic> messageData = remoteMessage["data"] ?? remoteMessage;
+
+  bool isSilent = !messageData.containsKey("or-title");
+
+  if (isSilent) {
+    String action = messageData["action"];
+
+    switch (action) {
+      case "GEOFENCE_REFRESH":
+        GeofenceProvider geofenceProvider = await GeofenceProvider
+            .getInstance();
+        geofenceProvider.refreshGeofences();
+        break;
+      case "STORE":
+        StorageProvider storageProvider = await StorageProvider
+            .getInstance();
+        storageProvider.store(messageData["key"], messageData["value"]);
+        break;
+    }
+  }
+}
+
 class PushNotificationService {
   static FirebaseMessaging _fcm;
 
@@ -35,11 +59,9 @@ class PushNotificationService {
         print("onResume: $remoteMessage");
         await handleNotification(remoteMessage, true, false);
       },
-      onBackgroundMessage: Platform.isIOS ? null : handleBackgroundNotification,
+      onBackgroundMessage: Platform.isIOS ? null : backgroundMessageHandler,
     );
   }
-
-  static Future handleBackgroundNotification(Map<String, dynamic> remoteMessage) => handleNotification(remoteMessage, true, true);
 
   static Future handleNotification(
       Map<String, dynamic> remoteMessage, bool onResume, bool onLaunch) async {

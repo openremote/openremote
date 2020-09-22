@@ -43,6 +43,10 @@
                 android:name="com.google.firebase.messaging.default_notification_channel_id"
                 android:value="@string/notification_channel_id" />
 
+        <meta-data
+                android:name="com.google.firebase.messaging.default_notification_icon"
+                android:resource="@drawable/or_push_icon" />
+
         <receiver android:name="io.flutter.plugins.geofencing.GeofencingBroadcastReceiver"
                   android:enabled="true" android:exported="true"/>
         <service android:name="io.flutter.plugins.geofencing.GeofencingService"
