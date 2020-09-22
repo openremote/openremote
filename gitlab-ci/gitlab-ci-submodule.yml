@@ -211,6 +211,7 @@ deploy staging:
 
 deploy staging FAILED:
   stage: notify_deploy_staging_fail
+  needs: ["deploy staging"]
   <<: *notify_whatsapp
   when: on_failure
 
@@ -250,5 +251,6 @@ deploy production PASSED:
 
 deploy production FAILED:
   stage: notify_deploy_production
+  needs: ["build production docker images"]
   <<: *notify_whatsapp
   when: on_failure
