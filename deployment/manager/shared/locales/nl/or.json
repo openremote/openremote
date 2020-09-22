@@ -78,7 +78,7 @@
   "lang": "Taal",
   "status": "Status",
   "name": "Naam",
-  "deleteAssetsConfirm": "Remove asset(s) and all descendant assets?",
+  "deleteAssetsConfirm": "Verwijder alle asset(s) en onderliggende assets?",
   "ok": "OK",
   "cancel": "Annuleren",
   "createdOn": "Aangemaakt op",

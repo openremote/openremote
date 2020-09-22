@@ -18,6 +18,9 @@ import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-
 import {OrMap, OrMapClickedEvent} from '@openremote/or-map';
 import '@openremote/or-map/dist/markers/or-map-marker';
 
+import {LatLngLike} from "mapbox.js";
+import {LngLatLike} from "mapbox-gl";
+
 @customElement("or-rule-radial-modal")
 export class OrRuleRadialModal extends translate(i18next)(LitElement) {
 
@@ -55,6 +58,16 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
                 this.setValuePredicateProperty('lat', lngLat.lat);
                 this.setValuePredicateProperty('lng', lngLat.lng);
             });
+            if(map){
+                const latElement = (<HTMLInputElement>modal.shadowRoot!.querySelector('.location-lat'));
+                const lngElement = (<HTMLInputElement>modal.shadowRoot!.querySelector('.location-lng'));
+                if(lngElement.value && latElement.value) {
+                    const LngLat:LngLatLike = [parseFloat(lngElement.value), parseFloat(latElement.value)];
+                    map.flyTo(LngLat, 15)
+                } else {
+                    map.flyTo();
+                }
+            }
         }
     }
 
@@ -75,7 +88,9 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
     }
 
     renderDialogHTML(value:RadialGeofencePredicate) {
-        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("radial-modal") as OrMwcDialog;
+            const dialog: OrMwcDialog = this.shadowRoot!.getElementById("radial-modal") as OrMwcDialog;
+          
+           
             if (dialog) {
             dialog.dialogContent = html`
             <div style="display:grid">
@@ -90,8 +105,9 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
                 
                 
                 <label>Straal (minimaal 100m)</label>     
-                <input @change="${(e:any) => this.setValuePredicateProperty("radius", parseInt(e.target.value))}" style="max-width: calc(50% - 30px);" required placeholder=" " min="100" type="number" .value="${value && value.radius ? value.radius : null}" />
+                <input @change="${(e:any) => this.setValuePredicateProperty("radius", parseInt(e.target.value))}" style="max-width: calc(50% - 30px);" required placeholder=" " min="100" type="number" .value="${value && value.radius ? value.radius : 100}" />
             </div>`;
+            
         }
     }
 
@@ -132,6 +148,7 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
             if (dialog) {
                 dialog.open();
                 this.renderDialogHTML(value);
+
             }
         };
 

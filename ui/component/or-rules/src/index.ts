@@ -661,7 +661,7 @@ export class OrRules extends translate(i18next)(LitElement) {
         delete ruleset.status;
         delete ruleset.error;
         delete ruleset.id;
-        
+        ruleset.name = ruleset.name + " copy";
         if (this.config && this.config.rulesetCopyHandler && !this.config.rulesetCopyHandler(ruleset)) {
             return;
         }
