@@ -83,7 +83,7 @@ stages:
       curl --location --request POST $WHATSAPP_API
       --header 'Content-Type: application/javascript'
       --data-raw "{
-      \"message\": \"Your $CI_PROJECT_TITLE$CI_JOB_STAGE code is $CI_JOB_NAME\",
+      \"message\": \"Your $CI_PROJECT_TITLE+$CI_JOB_STAGE code is $CI_JOB_NAME\",
       \"recipient\": \"$WHATSAPP_TEL\",
       \"user_id\": \"1\"
       }"
