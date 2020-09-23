@@ -846,15 +846,18 @@ export class OrInput extends LitElement {
                 }
             }
         } else {
+            // some components need to be kept in sync with the DOM
             if (this.type === InputType.SELECT && this._mdcComponent) {
                 (this._mdcComponent as MDCSelect).selectedIndex = this._selectedIndex;
-            }
-            if (this.type === InputType.RANGE && this._mdcComponent) {
+            } else if (this.type === InputType.RANGE && this._mdcComponent) {
                 const slider = this._mdcComponent as MDCSlider;
                 slider.disabled = this.disabled || this.readonly;
                 slider.min = this.min;
                 slider.max = this.max;
                 slider.value = this.value;
+            } else if (this.type === InputType.SWITCH && this._mdcComponent) {
+                const swtch = this._mdcComponent as MDCSwitch;
+                swtch.checked = this.value;
             }
         }
     }

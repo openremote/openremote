@@ -196,18 +196,8 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
     constructor(store: EnhancedStore<S>) {
         super(store);
         this.getGeoNotifications();
-    }
-    
-    public connectedCallback() {
-        super.connectedCallback();
         this.addEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
         this.addEventListener(OrMapClickedEvent.NAME, this.onMapClick);
-    }
-
-    public disconnectedCallback() {
-        super.disconnectedCallback();
-        this.removeEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
-        this.removeEventListener(OrMapClickedEvent.NAME, this.onMapClick);
     }
 
     protected onMapMarkerClick(evt: OrMapMarkerClickedEvent) {

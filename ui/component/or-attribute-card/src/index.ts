@@ -8,7 +8,7 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import moment from "moment";
-import {OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
+import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 
@@ -231,12 +231,12 @@ export class OrAttributeCard extends LitElement {
 
     constructor() {
         super();
-        this.addEventListener(OrAttributeCardAddAttributeEvent.NAME, this._setAttribute)
+        this.addEventListener(OrAttributeCardAddAttributeEvent.NAME, this._setAttribute);
+        this.addEventListener(OrAssetTreeSelectionEvent.NAME, this._onTreeSelectionChanged);
     }
 
     connectedCallback() {
         super.connectedCallback();
-        this.addEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
         this._style = window.getComputedStyle(this);
         this.getData();
     }
@@ -244,7 +244,6 @@ export class OrAttributeCard extends LitElement {
     disconnectedCallback(): void {
         super.disconnectedCallback();
         this._cleanup();
-        this.removeEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
     }
 
     updated(changedProperties: PropertyValues) {
@@ -444,13 +443,13 @@ export class OrAttributeCard extends LitElement {
         }
     }
 
-    protected _onTreeSelectionChanged(event: OrAssetTreeSelectionChangedEvent) {
+    protected _onTreeSelectionChanged(event: OrAssetTreeSelectionEvent) {
         // Need to fully load the asset
         if (!manager.events) {
             return;
         }
 
-        const selectedNode = event.detail && event.detail.length > 0 ? event.detail[0] : undefined;
+        const selectedNode = event.detail && event.detail.newNodes.length > 0 ? event.detail.newNodes[0] : undefined;
 
         if (!selectedNode) {
             this.asset = undefined;

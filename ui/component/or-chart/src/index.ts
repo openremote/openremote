@@ -28,7 +28,7 @@ import "@openremote/or-translate";
 import Chart, {ChartDataSets, ChartOptions} from "chart.js";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import moment from "moment";
-import {OrAssetTreeSelectionChangedEvent} from "@openremote/or-asset-tree";
+import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import * as ChartAnnotation from "chartjs-plugin-annotation";
@@ -389,13 +389,13 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    protected _onTreeSelectionChanged(event: OrAssetTreeSelectionChangedEvent) {
+    protected _onTreeSelectionChanged(event: OrAssetTreeSelectionEvent) {
         // Need to fully load the asset
         if (!manager.events) {
             return;
         }
 
-        const selectedNode = event.detail && event.detail.length > 0 ? event.detail[0] : undefined;
+        const selectedNode = event.detail && event.detail.newNodes.length > 0 ? event.detail.newNodes[0] : undefined;
 
         if (!selectedNode) {
             this.activeAsset = undefined;
@@ -415,13 +415,13 @@ export class OrChart extends translate(i18next)(LitElement) {
     connectedCallback() {
         super.connectedCallback();
         this._style = window.getComputedStyle(this);
-        this.addEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
+        this.addEventListener(OrAssetTreeSelectionEvent.NAME, this._onTreeSelectionChanged);
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
         this._cleanup();
-        this.removeEventListener(OrAssetTreeSelectionChangedEvent.NAME, this._onTreeSelectionChanged);
+        this.removeEventListener(OrAssetTreeSelectionEvent.NAME, this._onTreeSelectionChanged);
     }
 
     render() {

@@ -209,11 +209,25 @@ export class OrAssetViewerRequestEditToggleEvent extends CustomEvent<Util.Reques
     }
 }
 
+export class OrAssetViewerEditToggleEvent extends CustomEvent<boolean> {
+
+    public static readonly NAME = "or-asset-viewer-edit-toggle";
+
+    constructor(edit: boolean) {
+        super(OrAssetViewerEditToggleEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: edit
+        });
+    }
+}
+
 declare global {
     export interface HTMLElementEventMap {
         [OrAssetViewerComputeGridEvent.NAME]: OrAssetViewerComputeGridEvent;
         [OrAssetViewerSaveResultEvent.NAME]: OrAssetViewerSaveResultEvent;
         [OrAssetViewerRequestEditToggleEvent.NAME]: OrAssetViewerRequestEditToggleEvent;
+        [OrAssetViewerEditToggleEvent.NAME]: OrAssetViewerEditToggleEvent;
     }
 }
 
@@ -780,6 +794,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     @query("#save-btn")
     protected saveBtnElem!: OrInput;
 
+    @query("#edit-btn")
+    protected editBtnElem!: OrInput;
+
     constructor() {
         super();
         this.addEventListener(OrAssetViewerComputeGridEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
@@ -789,7 +806,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     public isModified() {
-        return this.editMode && this._assetModified;
+        return !!this.editMode && this._assetModified;
     }
 
     connectedCallback() {
@@ -886,7 +903,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     ${!this._isReadonly() ? html`
                         <span id="edit-wrapper">
                             <or-translate value="editAsset"></or-translate>
-                            <or-input .type="${InputType.SWITCH}" .value="${this.editMode}" @or-input-changed="${(ev: OrInputChangedEvent) => this._onEditToggled(ev.detail.value)}"></or-input>
+                            <or-input id="edit-btn" .type="${InputType.SWITCH}" .value="${this.editMode}" @or-input-changed="${(ev: OrInputChangedEvent) => this._onEditToggleClicked(ev.detail.value)}"></or-input>
                         </span>
                     `: ``}
                     <div id="right-wrapper">
@@ -939,8 +956,17 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         await this.updateComplete;
     }
 
-    protected _onEditToggled(edit: boolean) {
-        Util.dispatchCancellableEvent(this, new OrAssetViewerRequestEditToggleEvent(edit), () => this.editMode = edit);
+    protected _onEditToggleClicked(edit: boolean) {
+        Util.dispatchCancellableEvent(
+            this,
+            new OrAssetViewerRequestEditToggleEvent(edit),
+            () => this._doEditToggle(edit),
+            () => this.editBtnElem.value = !edit);
+    }
+
+    protected _doEditToggle(edit: boolean) {
+        this.editMode = edit;
+        this.dispatchEvent(new OrAssetViewerEditToggleEvent(edit));
     }
 
     protected async _saveAsset() {

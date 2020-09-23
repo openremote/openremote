@@ -460,11 +460,13 @@ export interface RequestEventDetail<T> {
     detail: T;
 }
 
-export function dispatchCancellableEvent<T>(target: EventTarget, event: CustomEvent<RequestEventDetail<T>>, handler: (detail: T) => void) {
+export function dispatchCancellableEvent<T>(target: EventTarget, event: CustomEvent<RequestEventDetail<T>>, handler: (detail: T) => void, cancelledHandler?: () => void) {
     target.dispatchEvent(event);
     window.setTimeout(() => {
         if (event.detail.allow) {
             handler(event.detail.detail);
+        } else if (cancelledHandler) {
+            cancelledHandler();
         }
     });
 }

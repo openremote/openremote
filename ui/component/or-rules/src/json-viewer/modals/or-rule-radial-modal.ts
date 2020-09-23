@@ -17,8 +17,6 @@ import {translate} from "@openremote/or-translate";
 import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {OrMap, OrMapClickedEvent} from '@openremote/or-map';
 import '@openremote/or-map/dist/markers/or-map-marker';
-
-import {LatLngLike} from "mapbox.js";
 import {LngLatLike} from "mapbox-gl";
 
 @customElement("or-rule-radial-modal")
@@ -41,14 +39,14 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
 
     initRadialMap() {
         const modal = this.shadowRoot!.getElementById('radial-modal');
-        if(!modal) return;
+        if (!modal) return;
 
         const map = modal.shadowRoot!.querySelector('.or-map') as OrMap;
-        if(map){
+        if (map) {
             map.addEventListener(OrMapClickedEvent.NAME, (evt: CustomEvent) => {
                 const lngLat:any = evt.detail.lngLat;
-                const latElement = (<HTMLInputElement>modal.shadowRoot!.querySelector('.location-lat'));
-                const lngElement = (<HTMLInputElement>modal.shadowRoot!.querySelector('.location-lng'));
+                const latElement = modal.shadowRoot!.querySelector('.location-lat') as HTMLInputElement;
+                const lngElement = modal.shadowRoot!.querySelector('.location-lng') as HTMLInputElement;
                 latElement.value = lngLat.lat;
                 lngElement.value = lngLat.lng;
     
@@ -58,15 +56,14 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
                 this.setValuePredicateProperty('lat', lngLat.lat);
                 this.setValuePredicateProperty('lng', lngLat.lng);
             });
-            if(map){
-                const latElement = (<HTMLInputElement>modal.shadowRoot!.querySelector('.location-lat'));
-                const lngElement = (<HTMLInputElement>modal.shadowRoot!.querySelector('.location-lng'));
-                if(lngElement.value && latElement.value) {
-                    const LngLat:LngLatLike = [parseFloat(lngElement.value), parseFloat(latElement.value)];
-                    map.flyTo(LngLat, 15)
-                } else {
-                    map.flyTo();
-                }
+
+            const latElement = modal.shadowRoot!.querySelector('.location-lat') as HTMLInputElement;
+            const lngElement = modal.shadowRoot!.querySelector('.location-lng') as HTMLInputElement;
+            if (lngElement.value && latElement.value) {
+                const LngLat:LngLatLike = [parseFloat(lngElement.value), parseFloat(latElement.value)];
+                map.flyTo(LngLat, 15)
+            } else {
+                map.flyTo();
             }
         }
     }
@@ -88,26 +85,24 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
     }
 
     renderDialogHTML(value:RadialGeofencePredicate) {
-            const dialog: OrMwcDialog = this.shadowRoot!.getElementById("radial-modal") as OrMwcDialog;
-          
-           
-            if (dialog) {
+        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("radial-modal") as OrMwcDialog;
+
+        if (dialog) {
             dialog.dialogContent = html`
-            <div style="display:grid">
-                <or-map class="or-map" type="VECTOR" style="border: 1px solid #d5d5d5; height: 400px; min-width: 300px;">
-                    <or-map-marker active color="#FF0000" icon="information" lat="${value.lat}" lng="${value.lng}" radius="${value.radius}"></or-map-marker>
-                </or-map>
-            
-                <div class="layout horizontal">
-                    <input hidden class="location-lng"  required placeholder=" " type="text" .value="${value && value.lng ? value.lng : null}" />
-                    <input hidden class="location-lat" required placeholder=" " type="text" .value="${value && value.lat ? value.lat : null}" />
-                </div>
+                <div style="display:grid">
+                    <or-map class="or-map" type="VECTOR" style="border: 1px solid #d5d5d5; height: 400px; min-width: 300px;">
+                        <or-map-marker active color="#FF0000" icon="information" lat="${value.lat}" lng="${value.lng}" radius="${value.radius}"></or-map-marker>
+                    </or-map>
                 
-                
-                <label>Straal (minimaal 100m)</label>     
-                <input @change="${(e:any) => this.setValuePredicateProperty("radius", parseInt(e.target.value))}" style="max-width: calc(50% - 30px);" required placeholder=" " min="100" type="number" .value="${value && value.radius ? value.radius : 100}" />
-            </div>`;
-            
+                    <div class="layout horizontal">
+                        <input hidden class="location-lng"  required placeholder=" " type="text" .value="${value && value.lng ? value.lng : null}" />
+                        <input hidden class="location-lat" required placeholder=" " type="text" .value="${value && value.lat ? value.lat : null}" />
+                    </div>
+                    
+                    
+                    <label>Straal (minimaal 100m)</label>     
+                    <input @change="${(e:any) => this.setValuePredicateProperty("radius", parseInt(e.target.value))}" style="max-width: calc(50% - 30px);" required placeholder=" " min="100" type="number" .value="${value && value.radius ? value.radius : 100}" />
+                </div>`;
         }
     }
 

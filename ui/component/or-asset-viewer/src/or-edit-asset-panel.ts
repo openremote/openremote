@@ -189,7 +189,7 @@ export class OrEditAssetPanel extends LitElement {
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
-                        ${Object.entries(this.asset.attributes!).sort(Util.sortByString(([name, attribute]) => name.toUpperCase())).map(([name, attribute]) => {attribute.name = name; return this._getEditAttributeTemplate(this.asset.type!, attribute as Attribute);})}
+                        ${!this.asset.attributes ? `` : Object.entries(this.asset.attributes!).sort(Util.sortByString(([name, attribute]) => name.toUpperCase())).map(([name, attribute]) => {attribute.name = name; return this._getEditAttributeTemplate(this.asset.type!, attribute as Attribute);})}
                         <tr>
                             <td colspan="4">
                                 <div class="item-add">

@@ -86,7 +86,7 @@ export class OrTable extends LitElement {
     public headers?: string[];
 
     @property({type: Array})
-    public rows!: string[][];
+    public rows?: string[][];
 
     @property({type: Array})
     public options?: TableOptions = {
@@ -111,7 +111,7 @@ export class OrTable extends LitElement {
                 <table class="mdc-data-table__table" aria-label="Dessert calories">
                     ${headerTemplate}
                     <tbody class="mdc-data-table__content">
-                        ${this.rows.map(item => html`
+                        ${!this.rows ? `` : this.rows.map(item => html`
                             <tr class="mdc-data-table__row">
                                 ${item.map((cell: string|number) => {
                                     return html`<td class="mdc-data-table__cell ${classMap({"mdc-data-table__cell--numeric": typeof cell === "number"})}" title="${cell}">${cell}</td>`;
