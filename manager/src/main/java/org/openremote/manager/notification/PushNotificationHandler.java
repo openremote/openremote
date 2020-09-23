@@ -88,7 +88,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         }
 
         if (!Files.isReadable(Paths.get(firebaseConfigFilePath))) {
-            LOG.warning(FIREBASE_CONFIG_FILE + " invalid path or file not readable");
+            LOG.warning(FIREBASE_CONFIG_FILE + " invalid path or file not readable: " + firebaseConfigFilePath);
             return;
         }
 
