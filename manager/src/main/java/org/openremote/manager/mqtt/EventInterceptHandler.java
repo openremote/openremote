@@ -89,11 +89,7 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
 
     @Override
     public void onConnect(InterceptConnectMessage interceptConnectMessage) {
-
         MqttConnection connection = new MqttConnection(interceptConnectMessage.getClientID(), interceptConnectMessage.getUsername(), interceptConnectMessage.getPassword());
-        String suppliedClientSecret = new String(interceptConnectMessage.getPassword(), StandardCharsets.UTF_8);
-        connection.accessToken = identityProvider.getExternalKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthForm(connection.username, suppliedClientSecret)).getToken();
-
         mqttConnectionMap.put(connection.clientId, connection);
 
         Map<String, Object> headers = prepareHeaders(connection);

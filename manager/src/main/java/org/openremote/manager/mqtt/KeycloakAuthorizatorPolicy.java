@@ -5,7 +5,6 @@ import io.moquette.broker.subscriptions.Token;
 import io.moquette.broker.subscriptions.Topic;
 import org.keycloak.adapters.rotation.AdapterTokenVerifier;
 import org.keycloak.common.VerificationException;
-import org.keycloak.exceptions.TokenNotActiveException;
 import org.keycloak.representations.AccessToken;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.ClientCredentialsAuthForm;
@@ -26,7 +25,8 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.mqtt.MqttBrokerService.*;
+import static org.openremote.manager.mqtt.MqttBrokerService.ASSETS_TOPIC;
+import static org.openremote.manager.mqtt.MqttBrokerService.ASSET_ATTRIBUTE_VALUE_TOPIC;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
 public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
@@ -98,21 +98,16 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             }
         }
 
-        AccessToken accessToken = null;
+        AccessToken accessToken;
         try {
             accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
         } catch (VerificationException e) {
-            if (e instanceof TokenNotActiveException) {
-                String suppliedClientSecret = new String(connection.password, StandardCharsets.UTF_8);
-                connection.accessToken = identityProvider.getExternalKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthForm(connection.username, suppliedClientSecret)).getToken();
-                try {
-                    accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
-                } catch (VerificationException verificationException) {
-                    LOG.log(Level.INFO, "Couldn't verify token", verificationException);
-                    return false;
-                }
-            } else {
-                LOG.log(Level.INFO, "Couldn't verify token", e);
+            String suppliedClientSecret = new String(connection.password, StandardCharsets.UTF_8);
+            connection.accessToken = identityProvider.getExternalKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthForm(connection.username, suppliedClientSecret)).getToken();
+            try {
+                accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
+            } catch (VerificationException verificationException) {
+                LOG.log(Level.INFO, "Couldn't verify token", verificationException);
                 return false;
             }
         }
