@@ -160,6 +160,7 @@ include:
     - echo "Deploy to $CI_ENVIRONMENT_SLUG server"
     - echo "export PROJECT_NAME=$PROJECT_NAME" >> deploy.sh
     - echo "export CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE" >> deploy.sh
+    - echo "export FIREBASE_CONFIG_FILE=$FIREBASE_CONFIG_FILE" >> deploy.sh
     - if [ ! $DOCKER_IMAGE_TAG ]; then echo "export CI_ENVIRONMENT=$CI_ENVIRONMENT_SLUG" >> deploy.sh; fi
     - if [ $DOCKER_IMAGE_TAG ]; then echo "export CI_ENVIRONMENT=$DOCKER_IMAGE_TAG" >> deploy.sh; fi
     - echo "export SETUP_WIPE_CLEAN_INSTALL=$SETUP_WIPE_CLEAN_INSTALL" >> deploy.sh
