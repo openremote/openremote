@@ -90,7 +90,7 @@ services:
     environment:
       MAP_TILES_PATH: '/deployment.local/map/mapdata.mbtiles'
       IDENTITY_NETWORK_HOST: demo.openremote.io
-      FIREBASE_CONFIG_FILE: ${FIREBASE_CONFIG_FILE}
+      FIREBASE_CONFIG_FILE: '/fcm.json'
 
   keycloak:
     extends:
