@@ -755,6 +755,7 @@ export class Manager implements EventProviderFactory {
         }
 
         try {
+            const agentDescriptorResponse = await rest.api.AssetModelResource.getAgentDescriptors();
             const assetDescriptorResponse = await rest.api.AssetModelResource.getAssetDescriptors();
             const attributeDescriptorResponse = await rest.api.AssetModelResource.getAttributeDescriptors();
             const attributeValueDescriptorResponse = await rest.api.AssetModelResource.getAttributeValueDescriptors();

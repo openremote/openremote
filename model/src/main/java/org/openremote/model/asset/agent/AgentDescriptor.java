@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2020, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,25 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset;
+package org.openremote.model.asset.agent;
 
-import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.attribute.AttributeDescriptor;
-import org.openremote.model.attribute.AttributeValueDescriptor;
-import org.openremote.model.attribute.MetaItemDescriptor;
+import org.openremote.model.asset.AssetDescriptor;
 
-/**
- * Extend the asset model in custom projects.
- */
-public interface AssetModelProvider {
+public interface AgentDescriptor extends AssetDescriptor {
+    boolean hasInstanceDiscovery();
 
-    MetaItemDescriptor[] getMetaItemDescriptors();
+    boolean hasAssetDiscovery();
 
-    AssetDescriptor[] getAssetDescriptors();
+    boolean hasInstanceImport();
 
-    AgentDescriptor[] getAgentDescriptors();
-
-    AttributeDescriptor[] getAttributeDescriptors();
-
-    AttributeValueDescriptor[] getAttributeValueDescriptors();
+    boolean hasAssetImport();
 }

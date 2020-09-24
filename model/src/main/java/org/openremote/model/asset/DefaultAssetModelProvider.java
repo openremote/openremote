@@ -19,12 +19,18 @@
  */
 package org.openremote.model.asset;
 
+import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.attribute.*;
 
 /**
  * The built-in and well-known asset model.
  */
 public class DefaultAssetModelProvider implements AssetModelProvider {
+
+    @Override
+    public AgentDescriptor[] getAgentDescriptors() {
+        return new AgentDescriptor[0];
+    }
 
     @Override
     public MetaItemDescriptor[] getMetaItemDescriptors() {

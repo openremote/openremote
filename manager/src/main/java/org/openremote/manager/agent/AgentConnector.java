@@ -34,6 +34,8 @@ import java.util.List;
  * This is an interface for communicating with an agent. It
  * should be stateless and re-usable.
  */
+// TODO: Remove this as replaced by the gateway service
+@Deprecated
 public interface AgentConnector {
 
     List<AgentStatusEvent> getConnectionStatus(Asset agent);

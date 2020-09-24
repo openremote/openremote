@@ -32,7 +32,6 @@ public class AssetDescriptorImpl implements AssetDescriptor {
     protected String type;
     protected String icon;
     protected String color;
-    protected boolean accessPublicRead;
     AttributeDescriptor[] attributeDescriptors;
 
     @JsonCreator
@@ -41,13 +40,11 @@ public class AssetDescriptorImpl implements AssetDescriptor {
                                @JsonProperty("type") String type,
                                @JsonProperty("icon") String icon,
                                @JsonProperty("color") String color,
-                               @JsonProperty("accessPublicRead") boolean accessPublicRead,
                                @JsonProperty("attributeDescriptors") AttributeDescriptor[] attributeDescriptors) {
         this.name = name;
         this.type = type;
         this.icon = icon;
         this.color = color;
-        this.accessPublicRead = accessPublicRead;
         this.attributeDescriptors = attributeDescriptors;
     }
 
@@ -69,10 +66,6 @@ public class AssetDescriptorImpl implements AssetDescriptor {
     @Override
     public String getColor() {
         return null;
-    }
-
-    public boolean getAccessPublicRead() {
-        return accessPublicRead;
     }
 
     @Override

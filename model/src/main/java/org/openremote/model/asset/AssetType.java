@@ -315,7 +315,7 @@ public enum AssetType implements AssetDescriptor {
         )
     ),
 
-    PEOPLE_COUNTER(ASSET_NAMESPACE + ":peopleCounter", "account-multiple", "4b5966", false,
+    PEOPLE_COUNTER(ASSET_NAMESPACE + ":peopleCounter", "account-multiple", "4b5966",
         new AttributeDescriptorImpl("manufacturer", STRING, null,
                 LABEL.withInitialValue("Manufacturer")
         ),
@@ -400,7 +400,7 @@ public enum AssetType implements AssetDescriptor {
 
     THING(ASSET_NAMESPACE + ":thing", "cube-outline", null),
 
-    ELECTRICITY_CONSUMER(ASSET_NAMESPACE + ":electricityConsumer", "power-plug", "8A293D", false,
+    ELECTRICITY_CONSUMER(ASSET_NAMESPACE + ":electricityConsumer", "power-plug", "8A293D",
             new AttributeDescriptorImpl("manufacturer", STRING, null,
                     LABEL.withInitialValue("Manufacturer")),
             new AttributeDescriptorImpl("model", STRING, null,
@@ -465,7 +465,7 @@ public enum AssetType implements AssetDescriptor {
                     RULE_STATE)
     ),
 
-    ELECTRICITY_CHARGER(ASSET_NAMESPACE + ":electricityCharger", "ev-station", "8A293D", false,
+    ELECTRICITY_CHARGER(ASSET_NAMESPACE + ":electricityCharger", "ev-station", "8A293D",
         new AttributeDescriptorImpl("manufacturer", STRING, null,
             LABEL.withInitialValue("Manufacturer")),
         new AttributeDescriptorImpl("model", STRING, null,
@@ -513,7 +513,7 @@ public enum AssetType implements AssetDescriptor {
             UNIT_TYPE.withInitialValue(UNITS_EUR_PER_KILOWATT_HOUR))
     ),
 
-    ELECTRICITY_PRODUCER(ASSET_NAMESPACE + ":electricityProducer", "white-balance-sunny", "CC9423", false,
+    ELECTRICITY_PRODUCER(ASSET_NAMESPACE + ":electricityProducer", "white-balance-sunny", "CC9423",
         new AttributeDescriptorImpl("manufacturer", STRING, null,
             LABEL.withInitialValue("Manufacturer")),
         new AttributeDescriptorImpl("model", STRING, null,
@@ -550,7 +550,7 @@ public enum AssetType implements AssetDescriptor {
         )
     ),
 
-    ELECTRICITY_STORAGE(ASSET_NAMESPACE + ":electricityStorage", "battery-charging", "1B7C89", false,
+    ELECTRICITY_STORAGE(ASSET_NAMESPACE + ":electricityStorage", "battery-charging", "1B7C89",
         new AttributeDescriptorImpl("manufacturer", STRING, null,
             LABEL.withInitialValue("Manufacturer")),
         new AttributeDescriptorImpl("model", STRING, null,
@@ -620,7 +620,7 @@ public enum AssetType implements AssetDescriptor {
             READ_ONLY)
     ),
 
-    ELECTRICITY_SUPPLIER(ASSET_NAMESPACE + ":electricitySupplier", "upload-network", "9257A9", false,
+    ELECTRICITY_SUPPLIER(ASSET_NAMESPACE + ":electricitySupplier", "upload-network", "9257A9",
         new AttributeDescriptorImpl("utilityProviderName", STRING, null,
             LABEL.withInitialValue("Provider name")),
         new AttributeDescriptorImpl("gridOperatorName", STRING, null,
@@ -702,7 +702,7 @@ public enum AssetType implements AssetDescriptor {
             READ_ONLY)
     ),
 
-    WEATHER(ASSET_NAMESPACE + ":weather", "weather-partly-cloudy", "49B0D8", false,
+    WEATHER(ASSET_NAMESPACE + ":weather", "weather-partly-cloudy", "49B0D8",
         new AttributeDescriptorImpl("userNotes", STRING, null,
             LABEL.withInitialValue("User notes")),
         new AttributeDescriptorImpl("temperature", TEMPERATURE, null,
@@ -764,18 +764,12 @@ public enum AssetType implements AssetDescriptor {
     final protected String type;
     final protected String icon;
     final protected String color;
-    final protected boolean accessPublicRead;
     final protected AttributeDescriptor[] attributeDescriptors;
 
     AssetType(String type, String icon, String color, AttributeDescriptor... attributeDescriptors) {
-        this(type, icon, color, false, attributeDescriptors);
-    }
-
-    AssetType(String type, String icon, String color, boolean accessPublicRead, AttributeDescriptor... attributeDescriptors) {
         this.type = type;
         this.icon = icon;
         this.color = color;
-        this.accessPublicRead = accessPublicRead;
         this.attributeDescriptors = attributeDescriptors;
     }
 
@@ -808,11 +802,6 @@ public enum AssetType implements AssetDescriptor {
     @Override
     public String getColor() {
         return color;
-    }
-
-    @Override
-    public boolean getAccessPublicRead() {
-        return accessPublicRead;
     }
 
     @Override

@@ -19,8 +19,8 @@
  */
 package org.openremote.model.asset;
 
-
 import jsinterop.annotations.JsType;
+import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.attribute.AttributeDescriptor;
 import org.openremote.model.attribute.AttributeValueDescriptor;
 import org.openremote.model.attribute.MetaItemDescriptor;
@@ -45,6 +45,13 @@ public interface AssetModelResource {
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
     AssetDescriptor[] getAssetDescriptors(@BeanParam RequestParams requestParams);
+
+    @GET
+    @Path("agent/descriptors")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
+    AgentDescriptor[] getAgentDescriptors(@BeanParam RequestParams requestParams);
 
     /**
      * Retrieve attribute type descriptors {@link AttributeDescriptor} present.
