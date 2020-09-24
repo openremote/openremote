@@ -28,7 +28,6 @@ stages:
   - deploy
   - dast
   - cleanup
-  - notify_pipeline
 
 lint-Dockerfile:
   stage: build
@@ -344,11 +343,3 @@ manual delete aws cloudformation stack:
     - if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
       when: never
 
-pipeline PASSED:
-  stage: notify_pipeline
-  <<: *notify_whatsapp
-
-pipeline FAILED:
-  stage: notify_pipeline
-  <<: *notify_whatsapp
-  when: on_failure
