@@ -11,7 +11,7 @@ description: Generic app of OpenRemote
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.0.1+13
+version: 1.0.1+14
 
 environment:
   sdk: ">=2.2.0 <3.0.0"
@@ -32,7 +32,7 @@ dependencies:
   geofencing: ^0.1.0
   location: ^3.0.0
   webview_flutter: ^0.3.22+1
-  shared_preferences: ^0.5.10
+  shared_preferences: ^0.5.12
   permission_handler: ^5.0.1+1
   firebase_messaging: ^7.0.0
   quick_actions: 0.4.0+8

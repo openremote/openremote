@@ -10,8 +10,7 @@ import geofencing
     ) -> Bool {
         GeneratedPluginRegistrant.register(with: self)
 
-        GeofencingPlugin.setPluginRegistrantCallback({_ in
-        })
+        GeofencingPlugin.setPluginRegistrantCallback { (registry) in GeneratedPluginRegistrant.register(with: registry) }
         
         UNUserNotificationCenter.current().delegate = self;
         

@@ -280,7 +280,7 @@ class GeofenceProvider {
     return _apiManager
         .put(
         overrideUrl:
-        "${CurrentConsoleAppConfig.instance.baseUrl}${geofenceDefinition.url}",
+        "${_baseURL}${geofenceDefinition.url}",
         rawModel: locationData != null
             ? jsonEncode(locationData)
             : null.toString())
