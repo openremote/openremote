@@ -747,12 +747,29 @@ public class JsonRulesBuilder extends RulesBuilder {
                     }
                 }
 
-                // Override the notification targets if set in the rule
-                Notification.TargetType targetType = targetIsNotAssets(ruleAction.target) ? Notification.TargetType.USER : Notification.TargetType.ASSET;
+                // Transfer the rule action target into notification targets
+                Notification.TargetType targetType = Notification.TargetType.ASSET;
+                if (ruleAction.target != null) {
+                    if (ruleAction.target.users != null
+                        && ruleAction.target.conditionAssets == null
+                        && ruleAction.target.assets == null
+                        && ruleAction.target.matchedAssets == null) {
+                        targetType = Notification.TargetType.USER;
+                    } else if (ruleAction.target.custom != null
+                        && ruleAction.target.conditionAssets == null
+                        && ruleAction.target.assets == null
+                        && ruleAction.target.matchedAssets == null) {
+                        targetType = Notification.TargetType.CUSTOM;
+                    }
+                }
+
                 Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts);
 
-                if (ids != null && !ids.isEmpty()) {
-                    notification.setTargets(ids.stream().map(id -> new Notification.Target(targetType, id)).collect(Collectors.toList()));
+                if (ids == null) {
+                    notificationAction.notification.setTargets((List<Notification.Target>)null);
+                } else {
+                    Notification.TargetType finalTargetType = targetType;
+                    notificationAction.notification.setTargets(ids.stream().map(id -> new Notification.Target(finalTargetType, id)).collect(Collectors.toList()));
                 }
 
                 log(Level.FINE, "Sending notification for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
@@ -977,8 +994,8 @@ public class JsonRulesBuilder extends RulesBuilder {
         Map<String, RuleConditionState> conditionStateMap = ruleState.conditionStateMap;
 
         if (target != null) {
-            if (!TextUtil.isNullOrEmpty(target.ruleConditionTag) && conditionStateMap != null) {
-                RuleConditionState triggerState = conditionStateMap.get(target.ruleConditionTag);
+            if (!TextUtil.isNullOrEmpty(target.conditionAssets) && conditionStateMap != null) {
+                RuleConditionState triggerState = conditionStateMap.get(target.conditionAssets);
                 if (!useUnmatched) {
                     return triggerState != null ? triggerState.getMatchedAssetIds() : Collections.emptyList();
                 }
@@ -995,7 +1012,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 return facts.matchAssetState(target.matchedAssets)
                     .map(AssetState::getId)
                     .distinct()
-                    .filter(matchedAssetId -> compareAssetIds.indexOf(matchedAssetId) >= 0)
+                    .filter(compareAssetIds::contains)
                     .collect(Collectors.toList());
             }
 
@@ -1005,6 +1022,10 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             if (target.users != null) {
                 return getUserIds(usersFacade, target.users);
+            }
+
+            if (target.custom != null) {
+                return Collections.singleton(target.custom);
             }
         }
 

@@ -48,7 +48,7 @@ public class Notification {
         protected String id;
 
         @JsonCreator
-        public Target(@JsonProperty("type") TargetType type, @JsonProperty("id")String id) {
+        public Target(@JsonProperty("type") TargetType type, @JsonProperty("id") String id) {
             this.type = type;
             this.id = id;
         }

@@ -14,7 +14,8 @@ import {
     AttributeDescriptor,
     MetaItemType,
     MetaItemDescriptor,
-    AttributeValueDescriptor
+    AttributeValueDescriptor,
+    AssetDescriptor
 } from "@openremote/model";
 import i18next from "i18next";
 import Qs from "qs";
@@ -146,8 +147,8 @@ function addPushNotificationsFromRuleAction(ruleAction: RuleActionUnion, geoPred
         if (ruleAction.notification && ruleAction.notification.message && ruleAction.notification.message.type === "push") {
             // Find applicable targets
             const target = ruleAction.target;
-            if (target && target.ruleConditionTag) {
-                const geoNotifications = geoPredicateMap.get(target.ruleConditionTag);
+            if (target && target.conditionAssets) {
+                const geoNotifications = geoPredicateMap.get(target.conditionAssets);
                 if (geoNotifications) {
                     geoNotifications.forEach((geoNotification) => {
                         geoNotification.notification = ruleAction.notification!.message as PushNotificationMessage;
@@ -269,6 +270,16 @@ export function stringMatch(needle: string, haystack: string): boolean {
     return false;
 }
 
+export function capitaliseFirstLetter(str: string | undefined) {
+    if (!str) {
+        return;
+    }
+    if (str.length == 1) {
+        return str.toUpperCase();
+    }
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 export function enumContains(enm: object, val: string): boolean {
     return enm && Object.values(enm).includes(val);
 }
@@ -361,6 +372,16 @@ export function getAttributeLabel(attribute: Attribute | undefined, descriptor: 
 
 export function getMetaItemLabel(urn: string): string {
     return i18next.t(["metaItemType." + urn, urn], {nsSeparator: "@"});
+}
+
+export function getAssetTypeLabel(type: string | AssetDescriptor | undefined): string {
+    if (typeof type === "string") {
+        type = AssetModelUtil.getAssetDescriptor(type);
+    }
+    if (!type) {
+        return "";
+    }
+    return i18next.t("assetType." + type.type, {nsSeparator: "@", defaultValue: capitaliseFirstLetter(type.name!.toLowerCase())});
 }
 
 export function getAttributeValueFormat(attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined): string | undefined {

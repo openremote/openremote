@@ -223,6 +223,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                     // Check this is a rule compatible with this editor
                     if (!OrRuleWhen._isRuleWhenCompatible(this.rule.when)) {
                         this.rule = undefined;
+                        this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
                     }
                 }
             }
@@ -251,7 +252,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                             getWhenTypesMenu(this.config, this.assetDescriptors),
                             undefined,
                             (values: string[] | string) => this.addGroup(this.rule!.when!, values as string))}
-                        <strong>${i18next.t(this.rule.when.groups == undefined || (this.rule.when.groups && this.rule.when.groups.length === 0) ? "when" : "orWhen")}...</strong>
+                        <strong>${i18next.t(!this.rule.when.groups || this.rule.when.groups.length === 0 ? "when" : "orWhen")}...</strong>
                     </span>
                 </or-panel>
             `}

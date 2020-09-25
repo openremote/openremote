@@ -50,10 +50,12 @@ export const enum ConditionType {
 
 export const enum ActionType {
     WAIT = "wait",
-    NOTIFICATION = "notification",
+    EMAIL = "email",
     PUSH_NOTIFICATION = "push",
     ATTRIBUTE = "attribute"
 }
+
+export import ActionTargetType = NotificationTargetType;
 
 export enum AssetQueryOperator {
     VALUE_EMPTY = "empty",
@@ -92,8 +94,9 @@ export interface AssetTypeAttributeName {
     assetType: string;
     attributeName: string;
 }
-export interface NotificationActionTargetType {
-    [messageType: string]: NotificationTargetType[]
+export interface AllowedActionTargetTypes {
+    default?: ActionTargetType[];
+    actions?: {[actionType in ActionType]: ActionTargetType[]};
 }
 
 export interface RulesConfig {
@@ -103,7 +106,7 @@ export interface RulesConfig {
         allowedActionTypes?: ActionType[];
         allowedAssetQueryOperators?: Map<AssetTypeAttributeName | AttributeDescriptor | AttributeValueDescriptor | ValueType, AssetQueryOperator[]>;
         allowedRecurrenceOptions?: RecurrenceOption[];
-        hideNotificationTargetType?: NotificationActionTargetType;
+        allowedActionTargetTypes?: AllowedActionTargetTypes;
         hideActionTypeOptions?: boolean;
         hideActionTargetOptions?: boolean;
         hideActionUpdateOptions?: boolean;
@@ -646,6 +649,7 @@ export class OrRules extends translate(i18next)(LitElement) {
             (ruleset as TenantRuleset).realm = realm;
         }
         this._activeRuleset = ruleset;
+        this.selectedIds = undefined;
     }
 
     protected _onRequestCopy(e: OrRulesRequestCopyEvent) {
@@ -710,8 +714,12 @@ export class OrRules extends translate(i18next)(LitElement) {
     }
 
     protected _onRuleSelectionChanged(event: OrRulesSelectionChangedEvent) {
-        this._activeRuleset = event.detail.length === 1 ? {...event.detail[0]} : undefined;
-        this.selectedIds = event.detail.length === 1 ? [event.detail[0].id!] : undefined;
+        const isNewRule = this._activeRuleset && !this._activeRuleset.id;
+
+        if (!isNewRule || event.detail.length !== 0) {
+            this._activeRuleset = event.detail.length === 1 ? {...event.detail[0]} : undefined;
+        }
+        this.selectedIds = event.detail.length === 1 && event.detail[0].id ? [event.detail[0].id!] : undefined;
     }
 
     protected _onRuleSaveStart(event: OrRulesSaveStartEvent) {

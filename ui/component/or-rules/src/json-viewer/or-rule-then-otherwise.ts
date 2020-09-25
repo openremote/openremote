@@ -32,7 +32,7 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
     if (config && config.controls && config.controls.allowedActionTypes) {
         addAssetTypes = config.controls.allowedActionTypes.indexOf(ActionType.ATTRIBUTE) >= 0;
         addWait = config.controls.allowedActionTypes.indexOf(ActionType.WAIT) >= 0;
-        addNotification = config.controls.allowedActionTypes.indexOf(ActionType.NOTIFICATION) >= 0;
+        addNotification = config.controls.allowedActionTypes.indexOf(ActionType.EMAIL) >= 0;
         addPushNotification = config.controls.allowedActionTypes.indexOf(ActionType.PUSH_NOTIFICATION) >= 0;
     }
 
@@ -59,7 +59,7 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
         menu.push({
             text: i18next.t("email"),
             icon: "email",
-            value: ActionType.NOTIFICATION,
+            value: ActionType.EMAIL,
             styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
         } as MenuItem);
     }
@@ -193,6 +193,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         return style;
     }
 
+    @property({type: Array, attribute: false})
+    public targetTypeMap!: [string, string?][];
+
     @property({type: Object, attribute: false})
     public rule!: JsonRule;
 
@@ -267,14 +270,14 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             let buttonColor = "inherit";
 
             if (action.action) {
-                switch (action.action as ActionType) {
+                switch (action.action) {
                     case ActionType.WAIT:
                         buttonIcon = "timer";
                         buttonColor = WAIT_COLOR;
                         break;
-                    case ActionType.NOTIFICATION:
+                    case "notification":
                         action = action as RuleActionNotification
-                        if(type === "push") {
+                        if (type === "push") {
                             buttonIcon = "cellphone-message";
                             buttonColor = NOTIFICATION_COLOR;
                         } else {
@@ -313,14 +316,13 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     template = html`<span>WAIT NOT IMPLEMENTED</span>`;
                     break;
                 case ActionType.PUSH_NOTIFICATION:
-                    template = html`<or-rule-action-notification id="push-notification" .action="${action}" .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}"></or-rule-action-notification>`;
+                    template = html`<or-rule-action-notification id="push-notification" .rule="${this.rule}" .action="${action}" .actionType="${ActionType.PUSH_NOTIFICATION}" .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}"></or-rule-action-notification>`;
                     break;
-                case ActionType.NOTIFICATION:
-                case "email":
-                    template = html`<or-rule-action-notification id="email-notification" .action="${action}" .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}"></or-rule-action-notification>`;
+                case ActionType.EMAIL:
+                    template = html`<or-rule-action-notification id="email-notification" .rule="${this.rule}" .action="${action}" .actionType="${ActionType.EMAIL}" .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}"></or-rule-action-notification>`;
                     break;
                 default:
-                    template = html`<or-rule-action-attribute .action="${action}" .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}"></or-rule-action-attribute>`;
+                    template = html`<or-rule-action-attribute .action="${action}" .targetTypeMap="${this.targetTypeMap}" .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}"></or-rule-action-attribute>`;
                     break;
             }
         }
@@ -435,7 +437,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
         if (value === ActionType.WAIT) {
             action.action = "wait";
-        } else if (value === ActionType.NOTIFICATION) {
+        } else if (value === ActionType.EMAIL) {
             action = action as RuleActionNotification;
             action.action = "notification";
             action.notification = {

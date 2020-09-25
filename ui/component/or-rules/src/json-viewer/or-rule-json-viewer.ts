@@ -45,6 +45,40 @@ declare global {
     }
 }
 
+function getTypeAndTagsFromGroup(group: LogicGroup<RuleCondition>): [string, string?][] {
+    if (!group) {
+        return [];
+    }
+
+    let typesAndTags: [string, string?][] = [];
+
+    if (group.items) {
+        for (const condition of group.items) {
+            const type = getAssetTypeFromQuery(condition.assets);
+            if (type) {
+                typesAndTags.push([type, condition.tag]);
+            }
+        }
+    }
+
+    if (group.groups) {
+        for (const condition of group.groups) {
+            typesAndTags = typesAndTags.concat(getTypeAndTagsFromGroup(condition));
+        }
+    }
+
+    return typesAndTags;
+}
+
+export function getTargetTypeMap(rule: JsonRule): [string, string?][] {
+    if (!rule.when) {
+        return [];
+    }
+
+    return getTypeAndTagsFromGroup(rule.when);
+}
+
+
 const style = css`
     :host {
         display: flex;
@@ -159,7 +193,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             return html``;
         }
 
-        const targetTypeMap = this.getTargetTypeMap();
+        const targetTypeMap = getTargetTypeMap(this._rule);
         return html`
             <div class="section-container">                                    
                 <or-rule-when .rule="${this._rule}" .config="${this.config}" .assetDescriptors="${this._whenAssetDescriptors}" ?readonly="${this.readonly}"></or-rule-when>
@@ -192,39 +226,6 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
 
             return this._whenAssetDescriptors;
         })
-    }
-
-    protected getTargetTypeMap(): [string, string?][] {
-        if (!this._rule.when) {
-            return [];
-        }
-
-        return this.getTypeAndTagsFromGroup(this._rule.when);
-    }
-
-    protected getTypeAndTagsFromGroup(group: LogicGroup<RuleCondition>): [string, string?][] {
-        if (!group) {
-            return [];
-        }
-
-        let typesAndTags: [string, string?][] = [];
-
-        if (group.items) {
-            for (const condition of group.items) {
-                const type = getAssetTypeFromQuery(condition.assets);
-                if (type) {
-                    typesAndTags.push([type, condition.tag]);
-                }
-            }
-        }
-
-        if (group.groups) {
-            for (const condition of group.groups) {
-                typesAndTags = typesAndTags.concat(this.getTypeAndTagsFromGroup(condition));
-            }
-        }
-
-        return typesAndTags;
     }
 
     public beforeSave() {
@@ -353,7 +354,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             return true;
         }
 
-        if (!target.assets && !target.ruleConditionTag) {
+        if (!target.assets && !target.conditionAssets) {
             return false;
         }
 
@@ -365,8 +366,8 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             return this._validateAssetQuery(target.matchedAssets, false, true);
         }
 
-        const typesAndTags = this.getTypeAndTagsFromGroup(rule.when!);
-        if (typesAndTags.findIndex((typeAndTag) => target.ruleConditionTag === typeAndTag[1]) < 0) {
+        const typesAndTags = getTypeAndTagsFromGroup(rule.when!);
+        if (typesAndTags.findIndex((typeAndTag) => target.conditionAssets === typeAndTag[1]) < 0) {
             return false;
         }
 
