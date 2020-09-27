@@ -286,12 +286,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         gatewayService = container.getService(GatewayService.class);
         EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, this);
 
-        META_ITEM_RESTRICTED_READ_SQL_FRAGMENT =
-            " ('" + Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).filter(i -> i.getAccess().restrictedRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
-
-        META_ITEM_PUBLIC_READ_SQL_FRAGMENT =
-            " ('" + Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).filter(i -> i.getAccess().publicRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
-
         clientEventService.addSubscriptionAuthorizer((auth, subscription) ->
             (subscription.isEventType(AssetTreeModifiedEvent.class))
                 && identityService.getIdentityProvider().canSubscribeWith(
@@ -336,6 +330,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     @Override
     public void start(Container container) throws Exception {
+        META_ITEM_RESTRICTED_READ_SQL_FRAGMENT =
+            " ('" + Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).filter(i -> i.getAccess().restrictedRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
+
+        META_ITEM_PUBLIC_READ_SQL_FRAGMENT =
+            " ('" + Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).filter(i -> i.getAccess().publicRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
     }
 
     @Override

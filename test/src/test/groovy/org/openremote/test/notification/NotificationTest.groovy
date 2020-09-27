@@ -526,11 +526,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
     def "Check email notification functionality"() {
 
-        def notificationIds = []
-        def notificationTargetTypes = []
-        def notificationTargetIds = []
-        def notificationMessages = []
-        def toAddresses = []
+        List<Email> sentEmails = []
 
         given: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
@@ -543,23 +539,12 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         and: "a mock email notification handler"
         EmailNotificationHandler mockEmailNotificationHandler = Spy(emailNotificationHandler)
         mockEmailNotificationHandler.isValid() >> true
-        mockEmailNotificationHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
-            id, source, sourceId, target, message ->
-                notificationIds << id
-                notificationTargetTypes << target.type
-                notificationTargetIds << target.id
-                notificationMessages << message
-                callRealMethod()
-        }
 
-        // Assume sent to FCM
+        // Log email and assume sent to SMTP Server
         mockEmailNotificationHandler.sendMessage(_ as Email) >> {
-            email ->
-                if (email instanceof List) {
-                    def e = ((List)email).get(0) as Email
-                    e.recipients.forEach {toAddresses.add(it.address)}
-                    return NotificationSendResult.success()
-                }
+            Email email ->
+                sentEmails << email
+                return NotificationSendResult.success()
         }
         notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), mockEmailNotificationHandler)
 
@@ -572,14 +557,12 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the email should have been sent to all tenant users"
         conditions.eventually {
-            assert notificationMessages.size() == 4
-            assert ((EmailNotificationMessage) notificationMessages.get(0)).getText() == "Hello world!"
-            assert ((EmailNotificationMessage) notificationMessages.get(0)).getSubject() == "Test"
-            assert ((EmailNotificationMessage) notificationMessages.get(1)).getText() == "Hello world!"
-            assert ((EmailNotificationMessage) notificationMessages.get(1)).getSubject() == "Test"
-            assert toAddresses.any { it == "testuser2@openremote.local" }
-            assert toAddresses.any { it == "testuser3@openremote.local" }
-            assert toAddresses.any { it == "building@openremote.local" }
+            assert sentEmails.size() == 4
+            assert sentEmails.every {it.getPlainText() == "Hello world!"}
+            assert sentEmails.every {it.getSubject() == "Test"}
+            assert sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "testuser2@openremote.local"}
+            assert sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "testuser3@openremote.local"}
+            assert sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "building@openremote.local"}
         }
 
         when: "an email attribute is added to an asset"
@@ -588,14 +571,31 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         kitchen = assetStorageService.merge(kitchen)
 
         and: "an email notification is sent to a parent asset"
+        ((EmailNotificationMessage)notification.message).subject = "Test 2"
         notification.setTargets([new Notification.Target(Notification.TargetType.ASSET, managerTestSetup.apartment1Id)])
         notificationService.sendNotification(notification)
 
         then: "the child asset with the email attribute should have been sent an email"
         conditions.eventually {
-            assert notificationMessages.size() == 5
-            assert toAddresses.size() == 5
-            assert toAddresses.any { it == "kitchen@openremote.local" }
+            assert sentEmails.size() == 5
+            assert sentEmails.get(4).getSubject() == "Test 2"
+            assert sentEmails.get(4).getRecipients().get(0).getAddress() == "kitchen@openremote.local"
+        }
+
+        when: "an email is sent to a custom target"
+        ((EmailNotificationMessage)notification.message).subject = "Test Custom"
+        notification.setTargets([new Notification.Target(Notification.TargetType.CUSTOM, "custom1@openremote.local;to:custom2@openremote.local;cc:custom3@openremote.local;bcc:custom4@openremote.local")])
+        notificationService.sendNotification(notification)
+
+        then: "the email should have been sent to all custom recipients"
+        conditions.eventually {
+            assert sentEmails.size() == 6
+            assert sentEmails.get(5).getSubject() == "Test Custom"
+            assert sentEmails.get(5).getRecipients().size() == 4
+            assert sentEmails.get(5).getRecipients().any{ it.type == javax.mail.Message.RecipientType.TO && it.address == "custom1@openremote.local"}
+            assert sentEmails.get(5).getRecipients().any{ it.type == javax.mail.Message.RecipientType.TO && it.address == "custom2@openremote.local"}
+            assert sentEmails.get(5).getRecipients().any{ it.type == javax.mail.Message.RecipientType.CC && it.address == "custom3@openremote.local"}
+            assert sentEmails.get(5).getRecipients().any{ it.type == javax.mail.Message.RecipientType.BCC && it.address == "custom4@openremote.local"}
         }
 
         cleanup: "the mock is removed"

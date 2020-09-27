@@ -1089,30 +1089,32 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         return container.getServices(Protocol.class).stream().map((protocol) -> {
             ProtocolDescriptor pd = protocol.getProtocolDescriptor();
 
-            // Translate meta item descriptors into asset descriptors
-            AttributeDescriptor[] attributeDescriptors = pd.getProtocolConfigurationMetaItems().stream()
-                .map((descriptor) -> {
-                    AttributeValueDescriptor valueDescriptor = EnumUtil.enumFromString(AttributeValueType.class, descriptor.getValueType().name()).orElse(AttributeValueType.OBJECT);
+            if (pd != null) {
+                // Translate meta item descriptors into asset descriptors
+                AttributeDescriptor[] attributeDescriptors = pd.getProtocolConfigurationMetaItems() == null ? new AttributeDescriptor[0] : pd.getProtocolConfigurationMetaItems().stream()
+                    .map((descriptor) -> {
+                        AttributeValueDescriptor valueDescriptor = EnumUtil.enumFromString(AttributeValueType.class, descriptor.getValueType().name()).orElse(AttributeValueType.OBJECT);
 
-                    return new AttributeDescriptorImpl(
-                        descriptor.getUrn(),
-                        valueDescriptor,
-                        descriptor.getInitialValue()
-                    );
-                }).toArray(AttributeDescriptor[]::new);
+                        return new AttributeDescriptorImpl(
+                            descriptor.getUrn(),
+                            valueDescriptor,
+                            descriptor.getInitialValue()
+                        );
+                    }).toArray(AttributeDescriptor[]::new);
 
-            return new AgentDescriptorImpl(
-                pd.getDisplayName(),
-                pd.getName(),
-                "cogs",
-                null,
-                attributeDescriptors)
-                .setInstanceDiscovery(pd.isConfigurationDiscovery())
-                .setInstanceImport(pd.isConfigurationImport())
-                .setAssetDiscovery(pd.isDeviceDiscovery())
-                .setAssetImport(pd.isDeviceImport());
-
-        }).toArray(AgentDescriptor[]::new);
+                return new AgentDescriptorImpl(
+                    pd.getDisplayName(),
+                    pd.getName(),
+                    "cogs",
+                    null,
+                    attributeDescriptors)
+                    .setInstanceDiscovery(pd.isConfigurationDiscovery())
+                    .setInstanceImport(pd.isConfigurationImport())
+                    .setAssetDiscovery(pd.isDeviceDiscovery())
+                    .setAssetImport(pd.isDeviceImport());
+            }
+            return null;
+        }).filter(Objects::nonNull).toArray(AgentDescriptor[]::new);
     }
 
     @Override

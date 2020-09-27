@@ -184,6 +184,7 @@ public class EmailNotificationHandler implements NotificationHandler {
                                 .collect(Collectors.toList()));
                         break;
                     case USER:
+                    case CUSTOM:
                         // Nothing to do here
                         mappedTargets.add(new Notification.Target(targetType, targetId));
                         break;
@@ -326,15 +327,12 @@ public class EmailNotificationHandler implements NotificationHandler {
             });
         }
 
-        if ((emailNotificationMessage.getTo() == null || emailNotificationMessage.getTo().isEmpty())
-            && (emailNotificationMessage.getCc() == null || emailNotificationMessage.getCc().isEmpty())
-            && (emailNotificationMessage.getBcc() == null || emailNotificationMessage.getBcc().isEmpty())) {
-            LOG.warning("No recipient found for " + targetType.name().toLowerCase() + ": " + targetId);
+        if (emailBuilder.getRecipients().isEmpty()) {
             return NotificationSendResult.failure("No recipients set for " + targetType.name().toLowerCase() + ": " + targetId);
         }
 
         // Set from based on source if not already set
-        if (emailNotificationMessage.getFrom() == null) {
+        if (emailBuilder.getFromRecipient() == null) {
             emailBuilder.from(defaultFrom);
         }
 
