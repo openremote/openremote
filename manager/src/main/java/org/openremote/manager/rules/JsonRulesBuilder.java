@@ -781,10 +781,10 @@ public class JsonRulesBuilder extends RulesBuilder {
                 Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts);
 
                 if (ids == null) {
-                    notificationAction.notification.setTargets((List<Notification.Target>)null);
+                    notification.setTargets((List<Notification.Target>)null);
                 } else {
                     Notification.TargetType finalTargetType = targetType;
-                    notificationAction.notification.setTargets(ids.stream().map(id -> new Notification.Target(finalTargetType, id)).collect(Collectors.toList()));
+                    notification.setTargets(ids.stream().map(id -> new Notification.Target(finalTargetType, id)).collect(Collectors.toList()));
                 }
 
                 log(Level.FINE, "Sending notification for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
