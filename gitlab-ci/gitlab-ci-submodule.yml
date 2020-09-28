@@ -146,15 +146,16 @@ build FAILED:
 
 test-master:
   stage: test
+  allow_failure: true
   before_script:
     - docker run -v $(pwd):/or
-      -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      -v /var/run/docker.sock:/var/run/docker.sock registry.gitlab.com/openremote/openremote:master
       /bin/sh -c "docker-compose -f profile/dev-testing.yml pull"
     - docker run -v $(pwd):/or
-      -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      -v /var/run/docker.sock:/var/run/docker.sock registry.gitlab.com/openremote/openremote:master
       /bin/sh -c "docker-compose -f profile/dev-testing.yml up --no-build -d"
   script:
-    - docker run --network host -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+    - docker run --network host -v $(pwd):/or registry.gitlab.com/openremote/openremote:master
       /bin/sh -c "./gradlew clean test"
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
