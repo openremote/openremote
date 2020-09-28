@@ -177,7 +177,8 @@ include:
     - echo "docker-compose -p $PROJECT_NAME -f profile/$CI_ENVIRONMENT_SLUG.yml down || exit 666" >> deploy.sh
     - echo "docker volume rm ${PROJECT_NAME}_deployment-data" >> deploy.sh
     - echo "docker-compose -p $PROJECT_NAME -f profile/$CI_ENVIRONMENT_SLUG.yml up --no-build -d || exit 666" >> deploy.sh
-    - echo "docker cp FIREBASE_CONFIG_FILE ${PROJECT_NAME}_manager_1:/fcm.json || exit 666" >> deploy.sh
+    - echo "docker cp FIREBASE_CONFIG_FILE ${PROJECT_NAME}_manager_1:/deployment/manager/fcm.json || exit 666" >> deploy.sh
+    - echo "docker restart ${PROJECT_NAME}_manager_1 || exit 666" >> deploy.sh
     - chmod +x deploy.sh
     - SSH mkdir -p dump profile openremote/profile deployment openremote/proxy openremote/manager/build/install/manager openremote/postgresql openremote/keycloak
     - SCP ./profile/ deploy.sh ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/
