@@ -46,7 +46,7 @@ class GeofenceProvider {
     if (event == GeofenceEvent.enter) {
       ids.forEach((id) {
         GeofenceDefinition geofenceDefinition =
-            instance.geofences.firstWhere((element) => element.id == id);
+            instance.geofences.firstWhere((element) => element.id == id, orElse: () => null);
         if (geofenceDefinition != null) {
           instance._queueSendLocation(geofenceDefinition, {
             "type": "Point",
@@ -58,7 +58,7 @@ class GeofenceProvider {
     if (event == GeofenceEvent.exit) {
       ids.forEach((id) {
         GeofenceDefinition geofenceDefinition =
-            instance.geofences.firstWhere((element) => element.id == id);
+            instance.geofences.firstWhere((element) => element.id == id, orElse: () => null);
         if (geofenceDefinition != null) {
           instance._queueSendLocation(geofenceDefinition, null);
         }
@@ -196,14 +196,14 @@ class GeofenceProvider {
         GeofenceDefinition.fromJson).then((geofenceDefinitions) async {
       print("Fetched geofences=${geofenceDefinitions.length}");
 
-      List<GeofenceDefinition> remainingGeofences =
+      List<GeofenceDefinition> remainingGeofences = List.from(geofenceDefinitions);
       new List<GeofenceDefinition>();
       geofences.forEach((oldGeofence) async {
         if (!geofenceDefinitions
             .any((definition) => definition.id == oldGeofence.id)) {
           await removeGeofence(oldGeofence.id);
         } else {
-          remainingGeofences.add(oldGeofence);
+          remainingGeofences.removeWhere((element) => element.id == oldGeofence.id);
         }
       });
 

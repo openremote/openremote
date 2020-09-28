@@ -89,6 +89,8 @@ class PushNotificationService {
         String body = messageData["or-body"];
 
         List<AlertButton> buttons;
+        AlertButton confirmButton;
+        AlertButton declineButton;
         AlertAction action;
 
         // Check for action (to be executed when notification is clicked)
@@ -108,31 +110,32 @@ class PushNotificationService {
           String buttonsJson = messageData["buttons"];
           if (buttonsJson != null && buttonsJson.isNotEmpty) {
             buttons = List.from(jsonDecode(buttonsJson)).map((e) => AlertButton.fromJson(e)).toList();
+            confirmButton = buttons.firstWhere((element) => element.action != null, orElse: () => null);
+            declineButton = buttons.firstWhere((element) => element.action == null, orElse: () => null);
           }
         }
 
-        AwesomeDialog(
-            context: _context,
-            dialogType: DialogType.INFO,
-            animType: AnimType.BOTTOMSLIDE,
-            title: title,
-            desc: body,
-            btnOkText: buttons != null && buttons.isNotEmpty ? buttons[0].title : "Ok",
-            btnCancelText: buttons != null && buttons.isNotEmpty ? buttons[1].title : null,
-            btnOkOnPress: () async {
-              if (buttons != null && buttons.isNotEmpty) {
-                performAlertAction(buttons[0].action);
-              }
-              else if (action!= null) {
-                performAlertAction(action);
-              }
-            },
-            btnCancelOnPress: () {
-              if (buttons != null && buttons.isNotEmpty) {
-                performAlertAction(buttons[1].action);
-              }
-            }
-        ).show();
+        if(!onResume && !onLaunch) {
+          AwesomeDialog(
+              context: _context,
+              dialogType: DialogType.INFO,
+              animType: AnimType.BOTTOMSLIDE,
+              title: title,
+              desc: body,
+              btnOkText: confirmButton?.title ?? "Ok",
+              btnCancelText: declineButton?.title,
+              btnOkOnPress: confirmButton != null ? () {
+                if (confirmButton != null && confirmButton.action != null) {
+                  performAlertAction(confirmButton.action);
+                }
+                else if (action != null) {
+                  performAlertAction(action);
+                }
+              } : null,
+              btnCancelOnPress: declineButton != null ?  () {
+              } : null
+          ).show();
+        }
       }
     }
   }
