@@ -135,7 +135,7 @@ build-keycloak-postgresql-proxy:
   retry:
     max: 2
 
-.email_template: &email_definition
+.email_template: &notify_email
   image: docker:latest
   before_script:
     - cat $AWS_MAIL > aws_mail.py
@@ -231,7 +231,7 @@ build-keycloak-postgresql-proxy:
 # This step is executed when build fails. The purpose is to e-mail a git commiter about the problem.
 email failed build:
   stage: build_fail
-  <<: *email_definition
+  <<: *notify_email
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
       when: on_failure
@@ -263,7 +263,7 @@ test-master:
     paths:
       - "test/build/reports/tests/test/*"
       - "test/build/reports/tests/test/*/*"
-    expire_in: 2 weeks
+    expire_in: 4 weeks
   retry:
     max: 2
 
@@ -306,7 +306,7 @@ email failed tests:
   stage: tests_fail
   before_script:
     - export STAGE='tests'
-  <<: *email_definition
+  <<: *notify_email
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: on_failure
