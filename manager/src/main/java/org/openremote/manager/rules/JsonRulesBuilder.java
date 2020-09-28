@@ -28,6 +28,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.notification.EmailNotificationMessage;
 import org.openremote.model.notification.Notification;
+import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.UserQuery;
@@ -718,27 +719,41 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 Notification notification = notificationAction.notification;
 
-                if (notification.getMessage() != null && Objects.equals(notification.getMessage().getType(), EmailNotificationMessage.TYPE)) {
-                    EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
+                if (notification.getMessage() != null) {
+                    String body = null;
 
-                    boolean hasBody = !TextUtil.isNullOrEmpty(email.getHtml()) || !TextUtil.isNullOrEmpty(email.getText());
-                    boolean isHtml = !TextUtil.isNullOrEmpty(email.getHtml());
+                    boolean isEmail = Objects.equals(notification.getMessage().getType(), EmailNotificationMessage.TYPE);
+                    boolean isPush = Objects.equals(notification.getMessage().getType(), PushNotificationMessage.TYPE);
 
-                    if (hasBody) {
-                        String body = isHtml ? email.getHtml() : email.getText();
+                    boolean isHtml = false;
 
+                    if (isEmail) {
+                        EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
+                        isHtml = !TextUtil.isNullOrEmpty(email.getHtml());
+                        body = isHtml ? email.getHtml() : email.getText();
+                    } else if (isPush) {
+                        PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
+                        body = pushNotificationMessage.getBody();
+                    }
+
+                    if (!TextUtil.isNullOrEmpty(body)) {
                         if (body.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
-
                             // Need to clone the notification
                             try {
                                 notification = JSON.readValue(JSON.writeValueAsString(notification), Notification.class);
-                                email = (EmailNotificationMessage) notification.getMessage();
                                 String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, isHtml);
                                 body = body.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
-                                if (isHtml) {
-                                    email.setHtml(body);
-                                } else {
-                                    email.setText(body);
+
+                                if (isEmail) {
+                                    EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
+                                    if (isHtml) {
+                                        email.setHtml(body);
+                                    } else {
+                                        email.setText(body);
+                                    }
+                                } else if (isPush) {
+                                    PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
+                                    pushNotificationMessage.setBody(body);
                                 }
                             } catch (JsonProcessingException e) {
                                 LOG.warning("Failed to clone notification so cannot insert asset info");
