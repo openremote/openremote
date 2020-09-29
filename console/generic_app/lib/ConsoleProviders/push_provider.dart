@@ -2,7 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'ProviderConstants.dart';
+import 'provider_constants.dart';
 
 class PushProvider {
   static const String consoleIdKey = "consoleId";
@@ -35,7 +35,7 @@ class PushProvider {
     };
   }
 
-  enable(String consoleId, ProviderCallback callback) async {
+  Future enable(String consoleId, ProviderCallback callback) async {
     _consoleId = consoleId;
     await _sharedPreferences.setString(consoleIdKey, consoleId);
     await _sharedPreferences.setBool(pushDisabledKey, false);

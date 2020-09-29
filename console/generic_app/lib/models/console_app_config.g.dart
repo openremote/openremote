@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'ConsoleAppConfig.dart';
+part of 'console_app_config.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator

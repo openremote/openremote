@@ -1,7 +1,7 @@
 import 'dart:ui';
 
-import 'package:generic_app/models/ConsoleAppConfig.dart';
-import 'package:generic_app/models/LinkConfig.dart';
+import 'package:generic_app/models/console_app_config.dart';
+import 'package:generic_app/models/link_config.dart';
 import 'package:generic_app/utils/HexColor.dart';
 
 class CurrentConsoleAppConfig {
@@ -10,16 +10,16 @@ class CurrentConsoleAppConfig {
 
   CurrentConsoleAppConfig._privateConstructor();
 
-  updateConfig(ConsoleAppConfig appConfig, String project) {
-    this._realm = appConfig.realm;
-    this._initialUrl = appConfig.initialUrl;
-    this._url = appConfig.url;
-    this._menuEnabled = appConfig.menuEnabled;
-    this._menuPosition = appConfig.menuPosition;
-    this._primaryColor = appConfig.primaryColor;
-    this._secondaryColor = appConfig.secondaryColor;
-    this._links = appConfig.links;
-    this._projectName = project;
+  void updateConfig(ConsoleAppConfig appConfig, String project) {
+    _realm = appConfig.realm;
+    _initialUrl = appConfig.initialUrl;
+    _url = appConfig.url;
+    _menuEnabled = appConfig.menuEnabled;
+    _menuPosition = appConfig.menuPosition;
+    _primaryColor = appConfig.primaryColor;
+    _secondaryColor = appConfig.secondaryColor;
+    _links = appConfig.links;
+    _projectName = project;
   }
 
   String _realm;

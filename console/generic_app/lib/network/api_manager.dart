@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../models/BaseModel.dart';
+import '../models/base_model.dart';
 
 typedef ResponseParser<T extends BaseModel> = T Function(Map<String, dynamic>);
 
@@ -26,13 +26,13 @@ class ApiManager {
     return http.get(_prepareUrl(pathComponents, queryParameters: queryParameters), headers: _prepareHeaders(additionalHeaders)).then((response) {
       if (response.statusCode == 200) {
         try {
-          Map<String, dynamic> json = jsonDecode(response.body);
+          final Map<String, dynamic> json = jsonDecode(response.body);
           var jsonData = json;
           if (responseBodyDataKey != null && responseBodyDataKey != "") {
             jsonData = json[responseBodyDataKey];
           }
           if (jsonData is List) {
-            throw new Exception("Expected json object");
+            throw Exception("Expected json object");
           } else {
             return responseParser(jsonData) as T;
           }
@@ -41,7 +41,7 @@ class ApiManager {
           rethrow;
         }
       } else {
-        throw new Exception(
+        throw Exception(
             "Response error: ${response.statusCode} - ${response.body}");
       }
     });
@@ -55,7 +55,7 @@ class ApiManager {
     return http.get(_prepareUrl(pathComponents, queryParameters: queryParameters), headers: _prepareHeaders(additionalHeaders)).then((response) {
       if (response.statusCode == 200) {
         try {
-          var json = jsonDecode(response.body);
+          final json = jsonDecode(response.body);
           var jsonData = json;
           if (responseBodyDataKey != null && responseBodyDataKey != "") {
             jsonData = json[responseBodyDataKey];
@@ -70,7 +70,7 @@ class ApiManager {
           rethrow;
         }
       } else {
-        throw new Exception(
+        throw Exception(
             "Response error: ${response.statusCode} - ${response.body}");
       }
     });
@@ -87,13 +87,13 @@ class ApiManager {
         .then((response) {
       if (response.statusCode == 201) {
         try {
-          var json = jsonDecode(response.body);
+          final json = jsonDecode(response.body);
           var jsonData = json;
           if (responseBodyDataKey != null && responseBodyDataKey != "") {
             jsonData = json[responseBodyDataKey];
           }
           if (jsonData is List) {
-            throw new Exception("Expected json object");
+            throw Exception("Expected json object");
           } else {
             return responseParser(jsonData) as T;
           }
@@ -104,7 +104,7 @@ class ApiManager {
       } else if (response.statusCode >= 200 && response.statusCode <= 299) {
         return null;
       } else {
-        throw new Exception(
+        throw Exception(
             "Response error: ${response.statusCode} - ${response.body}");
       }
     });
@@ -119,13 +119,13 @@ class ApiManager {
         .then((response) {
       if (response.statusCode == 201) {
         try {
-          var json = jsonDecode(response.body);
+          final json = jsonDecode(response.body);
           var jsonData = json;
           if (responseBodyDataKey != null && responseBodyDataKey != "") {
             jsonData = json[responseBodyDataKey];
           }
           if (jsonData is List) {
-            throw new Exception("Expected json object");
+            throw Exception("Expected json object");
           } else {
             return responseParser(jsonData) as T;
           }
@@ -136,21 +136,21 @@ class ApiManager {
       } else if (response.statusCode >= 200 && response.statusCode <= 299) {
         return null;
       } else {
-        throw new Exception(
+        throw Exception(
             "Response error: ${response.statusCode} - ${response.body}");
       }
     });
   }
 
   String _prepareUrl(List<String> pathComponents, {Map<String, dynamic> queryParameters}) {
-    StringBuffer urlBuffer = new StringBuffer(baseUrl);
+    final StringBuffer urlBuffer = StringBuffer(baseUrl);
 
     pathComponents
-        .forEach((pathComponent) => urlBuffer.write("/" + pathComponent));
+        .forEach((pathComponent) => urlBuffer.write("/$pathComponent"));
 
     if (queryParameters != null) {
       urlBuffer.write("?");
-      List<MapEntry<String, dynamic>> params = queryParameters.entries.toList();
+      final List<MapEntry<String, dynamic>> params = queryParameters.entries.toList();
       for (var i = 0; i < params.length; i++) {
         if (i > 0) {
           urlBuffer.write("&");
@@ -162,8 +162,8 @@ class ApiManager {
   }
 
   Map<String, String> _prepareHeaders(Map<String, String> additionalHeaders) {
-    Map<String, String> headers =
-    baseHeaders != null ? new HashMap.from(baseHeaders) : new HashMap();
+    final Map<String, String> headers =
+    baseHeaders != null ? HashMap.from(baseHeaders) : HashMap();
     if (additionalHeaders != null) {
       headers.addAll(additionalHeaders);
     }

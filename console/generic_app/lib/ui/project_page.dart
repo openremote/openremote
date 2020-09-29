@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:generic_app/config/CurrentConsoleAppConfig.dart';
+import 'package:generic_app/config/current_console_app_config.dart';
 import 'package:generic_app/generated/l10n.dart';
-import 'package:generic_app/models/ConsoleAppConfig.dart';
-import 'package:generic_app/network/ApiManager.dart';
-import 'package:generic_app/ui/WebViewPage.dart';
+import 'package:generic_app/models/console_app_config.dart';
+import 'package:generic_app/network/api_manager.dart';
+import 'package:generic_app/ui/web_view_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProjectPage extends StatefulWidget {
-  ProjectPage({Key key}) : super(key: key);
+  const ProjectPage({Key key}) : super(key: key);
 
   @override
   _ProjectPageState createState() => _ProjectPageState();
@@ -36,14 +36,13 @@ class _ProjectPageState extends State<ProjectPage> {
           _innerContext = innerContext;
           return SafeArea(
               child: SingleChildScrollView(
-                  physics: ClampingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   child: Align(
-                      alignment: Alignment.center,
                       child: Column(children: <Widget>[
                         Container(
                           color: Colors.white,
                           padding:
-                              EdgeInsets.only(top: 25, left: 50, right: 50),
+                              const EdgeInsets.only(top: 25, left: 50, right: 50),
                           height: MediaQuery.of(context).size.height * 0.4,
                           child: Image.asset('assets/images/or_logo.png',
                               fit: BoxFit.contain),
@@ -56,22 +55,23 @@ class _ProjectPageState extends State<ProjectPage> {
                           Align(
                               alignment: Alignment.centerLeft,
                               child: Container(
-                                padding: EdgeInsets.only(
+                                padding: const EdgeInsets.only(
                                     top: 25, left: 25, right: 25),
                                 child: Text(
                                   S.of(context).connectToYourApplication,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 18,
                                       color: Colors.black54),
                                 ),
                               )),
                           Container(
+                            padding: const EdgeInsets.all(25),
                             child: TextField(
                                 cursorColor: CurrentConsoleAppConfig
                                     .instance.primaryColor,
                                 decoration: InputDecoration(
-                                  border: new UnderlineInputBorder(
+                                  border: const UnderlineInputBorder(
                                       borderRadius: BorderRadius.only(
                                           topLeft: Radius.circular(3),
                                           topRight: Radius.circular(3))),
@@ -88,14 +88,14 @@ class _ProjectPageState extends State<ProjectPage> {
                                 onSubmitted: (inputText) {
                                   FocusScope.of(context).nextFocus();
                                 }),
-                            padding: EdgeInsets.all(25),
                           ),
                           Container(
+                            padding: const EdgeInsets.fromLTRB(25, 10, 25, 10),
                             child: TextField(
                                 cursorColor: CurrentConsoleAppConfig
                                     .instance.primaryColor,
                                 decoration: InputDecoration(
-                                  border: new UnderlineInputBorder(
+                                  border: const UnderlineInputBorder(
                                       borderRadius: BorderRadius.only(
                                           topLeft: Radius.circular(3),
                                           topRight: Radius.circular(3))),
@@ -113,9 +113,9 @@ class _ProjectPageState extends State<ProjectPage> {
                                   _getConsoleAppConfig();
                                   FocusScope.of(context).unfocus();
                                 }),
-                            padding: EdgeInsets.fromLTRB(25, 10, 25, 10),
                           ),
                           Container(
+                            padding: const EdgeInsets.fromLTRB(25, 10, 25, 10),
                             child: Align(
                               alignment: Alignment.centerRight,
                               child: RaisedButton(
@@ -129,7 +129,6 @@ class _ProjectPageState extends State<ProjectPage> {
                                   },
                                   child: Text(S.of(context).connect)),
                             ),
-                            padding: EdgeInsets.fromLTRB(25, 10, 25, 10),
                           )
                         ],
                       ),
@@ -139,7 +138,7 @@ class _ProjectPageState extends State<ProjectPage> {
   }
 
   void _getConsoleAppConfig() {
-    var apiManager =  new ApiManager("https://$_projectName.openremote.io/api/$_realmName");
+    final apiManager =  ApiManager("https://$_projectName.openremote.io/api/$_realmName");
     apiManager.get(["app", "config"], ConsoleAppConfig.fromJson).then((value) {
       _sharedPreferences.setString("project", _projectName);
       _sharedPreferences.setString("realm", _realmName);
@@ -153,7 +152,7 @@ class _ProjectPageState extends State<ProjectPage> {
     }).catchError((onError) {
       print(onError);
       Scaffold.of(_innerContext).showSnackBar(
-          SnackBar(
+          const SnackBar(
               content: Text(
                   "Error occurred getting app config. Check your input and try again")),
         );

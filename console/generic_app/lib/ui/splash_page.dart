@@ -2,18 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:generic_app/config/CurrentConsoleAppConfig.dart';
-import 'package:generic_app/models/ConsoleAppConfig.dart';
-import 'package:generic_app/network/ApiManager.dart';
-import 'package:generic_app/ui/ProjectPage.dart';
+import 'package:generic_app/config/current_console_app_config.dart';
+import 'package:generic_app/models/console_app_config.dart';
+import 'package:generic_app/network/api_manager.dart';
+import 'package:generic_app/ui/project_page.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../main.dart';
-import 'WebViewPage.dart';
+import 'web_view_page.dart';
 
 class SplashPage extends StatefulWidget {
-  SplashPage({Key key}) : super(key: key);
+  const SplashPage({Key key}) : super(key: key);
 
   @override
   _SplashPageState createState() => _SplashPageState();
@@ -46,12 +46,12 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
-    return new FutureBuilder(
-        future: Future.delayed(Duration(seconds: 3), _getProjectData),
+    return FutureBuilder(
+        future: Future.delayed(const Duration(seconds: 3), _getProjectData),
         builder: (BuildContext context, AsyncSnapshot snapshot) {
           if (snapshot.hasData) {
             Future.delayed(Duration.zero, () {
-              if (snapshot.data) {
+              if (snapshot.data != null) {
                 Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
@@ -70,9 +70,8 @@ class _SplashPageState extends State<SplashPage> {
   Widget _splashIcon() {
     return Scaffold(
         body: Align(
-            alignment: Alignment.center,
             child: Container(
-              padding: EdgeInsets.all(100),
+              padding: const EdgeInsets.all(100),
               child: Image.asset('assets/images/or_splash.png',
                   fit: BoxFit.contain),
             )));
@@ -92,8 +91,8 @@ class _SplashPageState extends State<SplashPage> {
   }
 
   Future<bool> _getConsoleAppConfig() async {
-    var apiManager =
-        new ApiManager("https://$_projectName.openremote.io/api/$_realmName");
+    final apiManager =
+        ApiManager("https://$_projectName.openremote.io/api/$_realmName");
     return apiManager
         .get(["app", "config"], ConsoleAppConfig.fromJson).then((value) {
       CurrentConsoleAppConfig.instance.updateConfig(value, _projectName);

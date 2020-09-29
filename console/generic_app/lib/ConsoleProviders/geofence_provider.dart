@@ -1,16 +1,15 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:generic_app/ConsoleProviders/GeoLocation.dart';
-import 'package:generic_app/config/CurrentConsoleAppConfig.dart';
-import 'package:generic_app/models/GeofenceDefinition.dart';
-import 'package:generic_app/network/ApiManager.dart';
+import 'package:generic_app/ConsoleProviders/geo_location.dart';
+import 'package:generic_app/models/geofence_definition.dart';
+import 'package:generic_app/network/api_manager.dart';
 import 'package:geofencing/geofencing.dart';
 import 'package:location/location.dart' as lm;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'ProviderConstants.dart';
+import 'provider_constants.dart';
 
 class GeofenceProvider {
   static GeofenceProvider _instance;
@@ -40,12 +39,12 @@ class GeofenceProvider {
     GeofenceEvent.exit
   ];
 
-  static void geofenceTriggerCallback(
+  static Future geofenceTriggerCallback(
       List<String> ids, Location location, GeofenceEvent event) async {
-    GeofenceProvider instance = await GeofenceProvider.getInstance();
+    final GeofenceProvider instance = await GeofenceProvider.getInstance();
     if (event == GeofenceEvent.enter) {
       ids.forEach((id) {
-        GeofenceDefinition geofenceDefinition =
+        final GeofenceDefinition geofenceDefinition =
             instance.geofences.firstWhere((element) => element.id == id, orElse: () => null);
         if (geofenceDefinition != null) {
           instance._queueSendLocation(geofenceDefinition, {
@@ -57,7 +56,7 @@ class GeofenceProvider {
     }
     if (event == GeofenceEvent.exit) {
       ids.forEach((id) {
-        GeofenceDefinition geofenceDefinition =
+        final GeofenceDefinition geofenceDefinition =
             instance.geofences.firstWhere((element) => element.id == id, orElse: () => null);
         if (geofenceDefinition != null) {
           instance._queueSendLocation(geofenceDefinition, null);
@@ -72,14 +71,14 @@ class GeofenceProvider {
       this._sharedPreferences, this._apiManager, this._locationManager);
 
   factory GeofenceProvider(SharedPreferences sharedPreferences) {
-    String geofenceString = sharedPreferences.getString(geofencesKey);
+    final String geofenceString = sharedPreferences.getString(geofencesKey);
     List<GeofenceDefinition> geofences;
     if (geofenceString != null) {
       geofences = List<GeofenceDefinition>.from(json
           .decode(geofenceString)
           .map((item) => GeofenceDefinition.fromJson(item)));
     } else {
-      geofences = new List<GeofenceDefinition>();
+      geofences = <GeofenceDefinition>[];
     }
 
     return GeofenceProvider._internal(
@@ -88,14 +87,11 @@ class GeofenceProvider {
         geofences,
         sharedPreferences,
         ApiManager(sharedPreferences.getString(baseUrlKey), baseHeaders: {"Content-Type": "application/json", "Accept": "application/json"}),
-        new lm.Location());
+        lm.Location());
   }
 
   static Future<GeofenceProvider> getInstance() async {
-    if (_instance == null) {
-      _instance = GeofenceProvider(await SharedPreferences.getInstance());
-    }
-    return _instance;
+    return _instance ??= GeofenceProvider(await SharedPreferences.getInstance());
   }
 
   Future<Map<String, dynamic>> initialize() async {
@@ -112,15 +108,15 @@ class GeofenceProvider {
     };
   }
 
-  enable(String baseUrl, String consoleId, ProviderCallback callback) async {
-    this._baseURL = baseUrl;
-    this._consoleId = consoleId;
-    this._apiManager.baseUrl = baseUrl;
-    await this._sharedPreferences.setString(baseUrlKey, baseUrl);
-    await this._sharedPreferences.setString(consoleIdKey, consoleId);
-    await this._sharedPreferences.setBool(geoDisabledKey, false);
-    await this._sharedPreferences.setString(baseUrlKey, baseUrl);
-    this._enableCallback = callback;
+  Future enable(String baseUrl, String consoleId, ProviderCallback callback) async {
+    _baseURL = baseUrl;
+    _consoleId = consoleId;
+    _apiManager.baseUrl = baseUrl;
+    await _sharedPreferences.setString(baseUrlKey, baseUrl);
+    await _sharedPreferences.setString(consoleIdKey, consoleId);
+    await _sharedPreferences.setBool(geoDisabledKey, false);
+    await _sharedPreferences.setString(baseUrlKey, baseUrl);
+    _enableCallback = callback;
 
     if (await Permission.locationAlways.isGranted) {
       _startGeofenceProvider();
@@ -130,13 +126,13 @@ class GeofenceProvider {
         "hasPermission": await Permission.locationAlways.isGranted,
         "success": true
       });
-      Future.delayed(Duration(seconds: 5)).then((value) => refreshGeofences());
+      Future.delayed(const Duration(seconds: 5)).then((value) => refreshGeofences());
     } else {
       if (await Permission.locationAlways.isUndetermined) {
         Permission.locationAlways.request().then((value) {
           if (value.isGranted) {
             _startGeofenceProvider();
-            Future.delayed(Duration(seconds: 5))
+            Future.delayed(const Duration(seconds: 5))
                 .then((value) => refreshGeofences());
           }
           _enableCallback?.call({
@@ -158,7 +154,7 @@ class GeofenceProvider {
   }
 
   Future<Map<String, dynamic>> disable() async {
-    for (String geofenceId in geofences.map((e) => e.id)) {
+    for (final String geofenceId in geofences.map((e) => e.id)) {
       await GeofencingManager.removeGeofenceById(geofenceId);
     }
 
@@ -170,9 +166,9 @@ class GeofenceProvider {
     };
   }
 
-  addGeofence(GeofenceDefinition geofenceDefinition) async {
+  Future addGeofence(GeofenceDefinition geofenceDefinition) async {
     await GeofencingManager.registerGeofence(
-        new GeofenceRegion(
+        GeofenceRegion(
             geofenceDefinition.id,
             geofenceDefinition.lat,
             geofenceDefinition.lng,
@@ -180,24 +176,23 @@ class GeofenceProvider {
             triggers), geofenceTriggerCallback);
   }
 
-  _startGeofenceProvider() async {
+  Future _startGeofenceProvider() async {
     await GeofencingManager.initialize();
     geofences.forEach((geofence) async {
       await addGeofence(geofence);
     });
   }
 
-  removeGeofence(String id) async {
+  Future removeGeofence(String id) async {
     await GeofencingManager.removeGeofenceById(id);
   }
 
-  refreshGeofences() async {
+  Future refreshGeofences() async {
     _apiManager.getAll<GeofenceDefinition>(["rules", "geofences", _consoleId],
         GeofenceDefinition.fromJson).then((geofenceDefinitions) async {
       print("Fetched geofences=${geofenceDefinitions.length}");
 
-      List<GeofenceDefinition> remainingGeofences = List.from(geofenceDefinitions);
-      new List<GeofenceDefinition>();
+      final List<GeofenceDefinition> remainingGeofences = List.from(geofenceDefinitions);
       geofences.forEach((oldGeofence) async {
         if (!geofenceDefinitions
             .any((definition) => definition.id == oldGeofence.id)) {
@@ -220,7 +215,7 @@ class GeofenceProvider {
     });
   }
 
-  _queueSendLocation(GeofenceDefinition geofenceDefinition,
+  void _queueSendLocation(GeofenceDefinition geofenceDefinition,
       Map<String, dynamic> locationData) {
     if (locationData == null) {
       _exitedLocation = GeoLocation(geofenceDefinition);
@@ -236,13 +231,13 @@ class GeofenceProvider {
     if (!_sendQueued) {
       _sendQueued = true;
       print("Schedule send location");
-      Future.delayed(Duration(seconds: 2)).then((value) {
+      Future.delayed(const Duration(seconds: 2)).then((value) {
         _doSendLocation();
       });
     }
   }
 
-  _doSendLocation() async {
+  Future _doSendLocation() async {
     print("Do send location");
     bool success = false;
 
@@ -275,7 +270,7 @@ class GeofenceProvider {
     }
   }
 
-  _sendLocation(GeofenceDefinition geofenceDefinition,
+  Future<bool> _sendLocation(GeofenceDefinition geofenceDefinition,
       Map<String, dynamic> locationData) {
     return _apiManager
         .put(
@@ -291,7 +286,7 @@ class GeofenceProvider {
     });
   }
 
-  getLocation(ProviderCallback callback, BuildContext context) async {
+  Future getLocation(ProviderCallback callback, BuildContext context) async {
     _getLocationCallback = callback;
 
     if (await Permission.locationAlways.isGranted) {
@@ -326,21 +321,21 @@ class GeofenceProvider {
               context: context,
               builder: (BuildContext context) {
                 return AlertDialog(
-                  title: new Text("Location permission denied"),
-                  content: new Text(
+                  title: const Text("Location permission denied"),
+                  content: const Text(
                       "In order to get the location it's necessary to give permissions to the app. Do you want to open the settings?"),
                   actions: <Widget>[
-                    new FlatButton(
-                      child: new Text("Yes"),
+                    FlatButton(
                       onPressed: () {
                         openAppSettings();
                       },
+                      child: const Text("Yes"),
                     ),
-                    new FlatButton(
-                      child: new Text("No"),
+                    FlatButton(
                       onPressed: () {
                         Navigator.of(context).pop();
                       },
+                      child: const Text("No"),
                     ),
                   ],
                 );

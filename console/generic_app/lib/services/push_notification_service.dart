@@ -4,14 +4,14 @@ import 'dart:io';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/widgets.dart';
-import 'package:generic_app/ConsoleProviders/GeofenceProvider.dart';
-import 'package:generic_app/ConsoleProviders/StorageProvider.dart';
-import 'package:generic_app/events/OpenWebPageEvent.dart';
-import 'package:generic_app/models/AlertAction.dart';
-import 'package:generic_app/models/AlertButton.dart';
+import 'package:generic_app/ConsoleProviders/geofence_provider.dart';
+import 'package:generic_app/ConsoleProviders/storage_provider.dart';
+import 'package:generic_app/events/open_web_page_event.dart';
+import 'package:generic_app/models/alert_action.dart';
+import 'package:generic_app/models/alert_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'EventBusService.dart';
+import 'event_bus_service.dart';
 
 Future<dynamic> backgroundMessageHandler(Map<String, dynamic> remoteMessage) async {
   print("background: $remoteMessage");
@@ -29,7 +29,7 @@ Future<dynamic> backgroundMessageHandler(Map<String, dynamic> remoteMessage) asy
         geofenceProvider.refreshGeofences();
         break;
       case "STORE":
-        StorageProvider storageProvider = await StorageProvider
+        final StorageProvider storageProvider = await StorageProvider
             .getInstance();
         storageProvider.store(messageData["key"], messageData["value"]);
         break;

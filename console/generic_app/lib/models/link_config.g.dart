@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'LinkConfig.dart';
+part of 'link_config.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator

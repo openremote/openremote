@@ -40,7 +40,7 @@ class StorageProvider {
     };
   }
 
-  Map<String, dynamic> store(String key, String data) {
+  void store(String key, String data) {
     if (data == null) {
       _sharedPreferences.remove(key);
     } else {

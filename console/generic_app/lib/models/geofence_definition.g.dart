@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'GeofenceDefinition.dart';
+part of 'geofence_definition.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'AlertButton.dart';
+part of 'alert_button.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator

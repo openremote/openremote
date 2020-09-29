@@ -1,8 +1,8 @@
 
-import 'package:generic_app/models/BaseModel.dart';
+import 'package:generic_app/models/base_model.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-part 'AlertAction.g.dart';
+part 'alert_action.g.dart';
 
 @JsonSerializable()
 class AlertAction implements BaseModel {
@@ -22,5 +22,6 @@ class AlertAction implements BaseModel {
   });
 
   static AlertAction fromJson(Map<String, dynamic> json) => _$AlertActionFromJson(json);
+  @override
   Map<String, dynamic> toJson() => _$AlertActionToJson(this);
 }

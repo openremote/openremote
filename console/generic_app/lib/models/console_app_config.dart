@@ -1,10 +1,10 @@
 
-import 'package:generic_app/models/LinkConfig.dart';
+import 'package:generic_app/models/link_config.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-import 'BaseModel.dart';
+import 'base_model.dart';
 
-part 'ConsoleAppConfig.g.dart';
+part 'console_app_config.g.dart';
 
 @JsonSerializable()
 class ConsoleAppConfig implements BaseModel {
@@ -34,5 +34,6 @@ class ConsoleAppConfig implements BaseModel {
    });
 
   static ConsoleAppConfig fromJson(Map<String, dynamic> json) => _$ConsoleAppConfigFromJson(json);
+  @override
   Map<String, dynamic> toJson() => _$ConsoleAppConfigToJson(this);
 }

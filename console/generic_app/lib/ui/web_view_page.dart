@@ -2,19 +2,19 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:generic_app/ConsoleProviders/GeofenceProvider.dart';
-import 'package:generic_app/ConsoleProviders/PushProvider.dart';
-import 'package:generic_app/ConsoleProviders/StorageProvider.dart';
-import 'package:generic_app/config/CurrentConsoleAppConfig.dart';
-import 'package:generic_app/events/OpenWebPageEvent.dart';
-import 'package:generic_app/models/LinkConfig.dart';
-import 'package:generic_app/services/EventBusService.dart';
-import 'package:generic_app/services/PushNotificationService.dart';
+import 'package:generic_app/ConsoleProviders/geofence_provider.dart';
+import 'package:generic_app/ConsoleProviders/push_provider.dart';
+import 'package:generic_app/ConsoleProviders/storage_provider.dart';
+import 'package:generic_app/config/current_console_app_config.dart';
+import 'package:generic_app/events/open_web_page_event.dart';
+import 'package:generic_app/models/link_config.dart';
+import 'package:generic_app/services/event_bus_service.dart';
+import 'package:generic_app/services/push_notification_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class WebViewPage extends StatefulWidget {
-  WebViewPage({Key key, this.title, this.initialUrl}) : super(key: key);
+  const WebViewPage({Key key, this.title, this.initialUrl}) : super(key: key);
 
   final String title;
   final String initialUrl;
@@ -56,12 +56,12 @@ class _WebViewPageState extends State<WebViewPage> {
       onWebViewCreated: (WebViewController webViewController) {
         _controller = webViewController;
       },
-      javascriptChannels: <JavascriptChannel>[
+      javascriptChannels: <JavascriptChannel>{
         _postMessageJavascriptChannel(context),
-      ].toSet(),
+      },
       navigationDelegate: (navigationRequest) async {
         if (navigationRequest.url.startsWith("webbrowser")) {
-          String navUrl =
+          final String navUrl =
               navigationRequest.url.replaceAll("webbrowser", "https");
           if (await canLaunch(navUrl)) {
             await launch(navUrl);
@@ -72,7 +72,7 @@ class _WebViewPageState extends State<WebViewPage> {
       },
     );
 
-    var stack = Stack(children: <Widget>[_webView]);
+    final stack = Stack(children: <Widget>[_webView]);
 
     if (CurrentConsoleAppConfig.instance.menuEnabled) {
       switch (CurrentConsoleAppConfig.instance.menuPosition) {
@@ -99,7 +99,7 @@ class _WebViewPageState extends State<WebViewPage> {
     return WillPopScope( onWillPop: _onBackPressed, child: Scaffold(body: SafeArea(child: stack)));
   }
 
-  _notifyClient(Map<String, dynamic> data) {
+  void _notifyClient(Map<String, dynamic> data) {
     final String jsonString = json.encode(data);
     _controller.evaluateJavascript(
         "OpenRemoteConsole._handleProviderResponse(JSON.stringify($jsonString))");
@@ -109,9 +109,9 @@ class _WebViewPageState extends State<WebViewPage> {
     return JavascriptChannel(
         name: 'MobileInterface',
         onMessageReceived: (JavascriptMessage message) {
-          Map<String, dynamic> messageContent = json.decode(message.message);
-          String messageType = messageContent["type"];
-          Map<String, dynamic> data = messageContent["data"];
+          final Map<String, dynamic> messageContent = json.decode(message.message);
+          final String messageType = messageContent["type"];
+          final Map<String, dynamic> data = messageContent["data"];
           switch (messageType) {
             case "error":
               print("Received WebApp message, error: " + data["error"]);
@@ -120,9 +120,9 @@ class _WebViewPageState extends State<WebViewPage> {
               );
               break;
             case "provider":
-              String action = data["action"];
+              final String action = data["action"];
               if (action != null) {
-                String provider = data["provider"];
+                final String provider = data["provider"];
                 if (provider == "geofence") {
                   _handleGeofenceProviderMessage(data);
                 } else if (provider == "push") {
@@ -137,17 +137,15 @@ class _WebViewPageState extends State<WebViewPage> {
         });
   }
 
-  _handleGeofenceProviderMessage(Map<String, dynamic> data) async {
-    String action = data["action"];
+  Future _handleGeofenceProviderMessage(Map<String, dynamic> data) async {
+    final String action = data["action"];
 
-    if (_geofenceProvider == null) {
-      _geofenceProvider = await GeofenceProvider.getInstance();
-    }
+    _geofenceProvider ??= await GeofenceProvider.getInstance();
 
     if (action == "PROVIDER_INIT") {
       _notifyClient(await _geofenceProvider.initialize());
     } else if (action == "PROVIDER_ENABLE") {
-      String consoleId = data["consoleId"];
+      final String consoleId = data["consoleId"];
 
       if (consoleId != null) {
         await _geofenceProvider.enable(
@@ -165,16 +163,14 @@ class _WebViewPageState extends State<WebViewPage> {
     }
   }
 
-  _handlePushProviderMessage(Map<String, dynamic> data) async {
-    String action = data["action"];
+  Future _handlePushProviderMessage(Map<String, dynamic> data) async {
+    final String action = data["action"];
 
-    if (_pushProvider == null) {
-      _pushProvider = await PushProvider.getInstance();
-    }
+    _pushProvider ??= await PushProvider.getInstance();
     if (action == "PROVIDER_INIT") {
       _notifyClient(await _pushProvider.initialize());
     } else if (action == "PROVIDER_ENABLE") {
-      String consoleId = data["consoleId"];
+      final String consoleId = data["consoleId"];
 
       if (consoleId != null) {
         await _pushProvider.enable(
@@ -185,44 +181,49 @@ class _WebViewPageState extends State<WebViewPage> {
     }
   }
 
-  _handleStorageProviderMessage(Map<String, dynamic> data) async {
-    String action = data["action"];
+  Future _handleStorageProviderMessage(Map<String, dynamic> data) async {
+    final String action = data["action"];
 
-    if (_storageProvider == null) {
-      _storageProvider = await StorageProvider.getInstance();
-    }
+    _storageProvider ??= await StorageProvider.getInstance();
 
     if (action == "PROVIDER_INIT") {
       _notifyClient(_storageProvider.initialize());
     } else if (action == "PROVIDER_ENABLE") {
       _notifyClient(_storageProvider.enable());
     } else if (action == "STORE") {
-      String key = data["key"];
-      String valueJson = data["value"];
+      final String key = data["key"];
+      final String valueJson = data["value"];
       _storageProvider.store(key, valueJson);
     } else if (action == "RETRIEVE") {
-      String key = data["key"];
+      final String key = data["key"];
       _notifyClient(_storageProvider.retrieve(key));
     }
   }
 
   Widget _menuPopup(double offsetX, double offsetY) => PopupMenuButton<int>(
         itemBuilder: (context) {
-          List<PopupMenuItem<int>> items = new List<PopupMenuItem<int>>();
+          final List<PopupMenuItem<int>> items = <PopupMenuItem<int>>[];
 
           if (CurrentConsoleAppConfig.instance.links == null) return items;
 
           int index = 0;
-          for (LinkConfig linkConfig in CurrentConsoleAppConfig.instance.links) {
+          for (final LinkConfig linkConfig in CurrentConsoleAppConfig.instance.links) {
             items.add(PopupMenuItem(
               value: index++,
               child: Text(
                 linkConfig.displayText,
-                style: TextStyle(color: Colors.black87),
+                style: const TextStyle(color: Colors.black87),
               ),
             ));
           }
           return items;
+        },
+        offset: Offset(offsetX, offsetY * CurrentConsoleAppConfig.instance.links?.length ?? 1),
+        elevation: 2,
+        onSelected: (selectedValue) {
+          final LinkConfig linkConfig =
+              CurrentConsoleAppConfig.instance.links[selectedValue];
+          _controller.loadUrl(Uri.encodeFull(linkConfig.pageLink));
         },
         child: Container(
           height: 50,
@@ -238,15 +239,8 @@ class _WebViewPageState extends State<WebViewPage> {
               ),
             ]
           ),
-          child: Icon(Icons.menu),
+          child: const Icon(Icons.menu),
         ),
-        offset: Offset(offsetX, offsetY * CurrentConsoleAppConfig.instance.links?.length ?? 1),
-        elevation: 2,
-        onSelected: (selectedValue) {
-          LinkConfig linkConfig =
-              CurrentConsoleAppConfig.instance.links[selectedValue];
-          _controller.loadUrl(Uri.encodeFull(linkConfig.pageLink));
-        },
       );
 
   Future<bool> _onBackPressed() async {

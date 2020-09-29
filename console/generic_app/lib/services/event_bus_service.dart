@@ -10,9 +10,6 @@ class EventBusService {
   }
 
   static EventBusService getInstance() {
-    if (_instance == null) {
-      _instance = EventBusService._internal();
-    }
-    return _instance;
+    return _instance ??= EventBusService._internal();
   }
 }

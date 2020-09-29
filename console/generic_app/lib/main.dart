@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:generic_app/ui/SplashPage.dart';
+import 'package:generic_app/ui/splash_page.dart';
 
 import 'generated/l10n.dart';
 

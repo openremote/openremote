@@ -1,9 +1,9 @@
 
 import 'package:json_annotation/json_annotation.dart';
 
-import 'BaseModel.dart';
+import 'base_model.dart';
 
-part 'LinkConfig.g.dart';
+part 'link_config.g.dart';
 
 @JsonSerializable()
 class LinkConfig implements BaseModel {
@@ -14,5 +14,6 @@ class LinkConfig implements BaseModel {
   LinkConfig(this.displayText, this.pageLink);
 
   static LinkConfig fromJson(Map<String, dynamic> json) => _$LinkConfigFromJson(json);
+  @override
   Map<String, dynamic> toJson() => _$LinkConfigToJson(this);
 }

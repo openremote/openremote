@@ -1,5 +1,5 @@
 
-import 'package:generic_app/models/GeofenceDefinition.dart';
+import 'package:generic_app/models/geofence_definition.dart';
 
 class GeoLocation {
   final GeofenceDefinition geofenceDefinition;
