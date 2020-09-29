@@ -27,6 +27,8 @@ import org.openremote.model.attribute.MetaItemDescriptor;
 
 import java.util.List;
 
+// TODO: Remove this in favour of AgentDescriptor
+@Deprecated
 public class ProtocolDescriptor {
 
     protected String name;

@@ -184,6 +184,7 @@ public class EmailNotificationHandler implements NotificationHandler {
                                 .collect(Collectors.toList()));
                         break;
                     case USER:
+                    case CUSTOM:
                         // Nothing to do here
                         mappedTargets.add(new Notification.Target(targetType, targetId));
                         break;
@@ -222,32 +223,40 @@ public class EmailNotificationHandler implements NotificationHandler {
         }
         EmailNotificationMessage email = (EmailNotificationMessage)message;
 
-        // Move to/cc/bcc to targets (for traceability) in sent notifications
+        // Map to/cc/bcc into a custom target for traceability in sent notifications
+        List<String> addresses = new ArrayList<>();
+
         if (email.getTo() != null) {
-            mappedTargets.addAll(
+            addresses.addAll(
                 email.getTo().stream()
-                    .map(recipient ->
-                        new Notification.Target(Notification.TargetType.CUSTOM, recipient.getAddress()))
+                    .map(EmailNotificationMessage.Recipient::getAddress)
+                    .map(address -> "to:" + address)
                     .collect(Collectors.toList()));
+
             email.setTo((List<EmailNotificationMessage.Recipient>) null);
         }
         if (email.getCc() != null) {
-            mappedTargets.addAll(
+            addresses.addAll(
                 email.getCc().stream()
-                    .map(recipient ->
-                        new Notification.Target(Notification.TargetType.CUSTOM, recipient.getAddress()))
+                    .map(EmailNotificationMessage.Recipient::getAddress)
+                    .map(address -> "cc:" + address)
                     .collect(Collectors.toList()));
+
             email.setCc((List<EmailNotificationMessage.Recipient>) null);
         }
         if (email.getBcc() != null) {
-            mappedTargets.addAll(
+            addresses.addAll(
                 email.getBcc().stream()
-                    .map(recipient ->
-                        new Notification.Target(Notification.TargetType.CUSTOM, recipient.getAddress()))
+                    .map(EmailNotificationMessage.Recipient::getAddress)
+                    .map(address -> "bcc:" + address)
                     .collect(Collectors.toList()));
+
             email.setBcc((List<EmailNotificationMessage.Recipient>) null);
         }
 
+        if (!addresses.isEmpty()) {
+            mappedTargets.add(new Notification.Target(Notification.TargetType.CUSTOM, String.join(";", addresses)));
+        }
         return mappedTargets;
     }
 
@@ -260,21 +269,34 @@ public class EmailNotificationHandler implements NotificationHandler {
             return NotificationSendResult.failure("SMTP invalid configuration so ignoring");
         }
 
-        EmailNotificationMessage.Recipient recipient = null;
+        List<EmailNotificationMessage.Recipient> toRecipients = new ArrayList<>();
+        List<EmailNotificationMessage.Recipient> ccRecipients = new ArrayList<>();
+        List<EmailNotificationMessage.Recipient> bccRecipients = new ArrayList<>();
         Notification.TargetType targetType = target.getType();
         String targetId = target.getId();
 
         switch (targetType) {
 
             case USER:
-                recipient = getUserRecipient(targetId);
+                toRecipients.add(getUserRecipient(targetId));
                 break;
             case ASSET:
-                recipient = getAssetRecipient(targetId);
+                toRecipients.add(getAssetRecipient(targetId));
                 break;
             case CUSTOM:
-                // This recipient is the target ID
-                recipient = new EmailNotificationMessage.Recipient(targetId);
+                // This recipient list is the target ID
+                Arrays.stream(targetId.split(";")).forEach(recipient -> {
+                    if (recipient.startsWith("to:")) {
+                        toRecipients.add(new EmailNotificationMessage.Recipient(recipient.substring(3)));
+                    } else if (recipient.startsWith("cc:")) {
+                        ccRecipients.add(new EmailNotificationMessage.Recipient(recipient.substring(3)));
+                    } else if (recipient.startsWith("bcc:")) {
+                        bccRecipients.add(new EmailNotificationMessage.Recipient(recipient.substring(4)));
+                    } else {
+                        toRecipients.add(new EmailNotificationMessage.Recipient(recipient));
+                    }
+                });
+
                 break;
             default:
                 LOG.warning("Target type not supported: " + targetType);
@@ -283,20 +305,34 @@ public class EmailNotificationHandler implements NotificationHandler {
         EmailNotificationMessage emailNotificationMessage = (EmailNotificationMessage) message;
         EmailPopulatingBuilder emailBuilder = buildEmailBuilder(id, emailNotificationMessage);
 
-        if (recipient != null && !TextUtil.isNullOrEmpty(recipient.getAddress())) {
-            emailBuilder.to(convertRecipient(recipient));
+        if (!toRecipients.isEmpty()) {
+            toRecipients.forEach(recipient -> {
+                if (!TextUtil.isNullOrEmpty(recipient.getAddress())) {
+                    emailBuilder.to(convertRecipient(recipient));
+                }
+            });
+        }
+        if (!ccRecipients.isEmpty()) {
+            ccRecipients.forEach(recipient -> {
+                if (!TextUtil.isNullOrEmpty(recipient.getAddress())) {
+                    emailBuilder.cc(convertRecipient(recipient));
+                }
+            });
+        }
+        if (!bccRecipients.isEmpty()) {
+            bccRecipients.forEach(recipient -> {
+                if (!TextUtil.isNullOrEmpty(recipient.getAddress())) {
+                    emailBuilder.bcc(convertRecipient(recipient));
+                }
+            });
         }
 
-        if ((emailNotificationMessage.getTo() == null || emailNotificationMessage.getTo().isEmpty())
-            && (emailNotificationMessage.getCc() == null || emailNotificationMessage.getCc().isEmpty())
-            && (emailNotificationMessage.getBcc() == null || emailNotificationMessage.getBcc().isEmpty())
-            && recipient == null) {
-            LOG.warning("No recipient found for " + targetType.name().toLowerCase() + ": " + targetId);
+        if (emailBuilder.getRecipients().isEmpty()) {
             return NotificationSendResult.failure("No recipients set for " + targetType.name().toLowerCase() + ": " + targetId);
         }
 
         // Set from based on source if not already set
-        if (emailNotificationMessage.getFrom() == null) {
+        if (emailBuilder.getFromRecipient() == null) {
             emailBuilder.from(defaultFrom);
         }
 

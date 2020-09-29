@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-table",
-  "version": "1.1.0",
+  "version": "1.0.3",
   "description": "OpenRemote table",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
@@ -14,12 +14,15 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@material/data-table": "^5.1.0",
-    "lit-element": "^2.2.1"
+    "lit-element": "^2.4.0"
   },
   "devDependencies": {
     "tslint": ">=5.11.0",
     "typescript": ">=3.4.5",
     "webpack": "^4.41.2",
     "webpack-cli": "^3.3.9"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

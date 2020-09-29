@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-input",
-  "version": "1.1.0",
+  "version": "1.0.4",
   "description": "OpenRemote input",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
@@ -25,12 +25,15 @@
     "@material/slider": "^7.0.0",
     "@material/switch": "^7.0.0",
     "@material/textfield": "^7.0.0",
-    "lit-element": "^2.2.1"
+    "lit-element": "^2.4.0"
   },
   "devDependencies": {
     "tslint": ">=5.11.0",
     "typescript": ">=3.4.5",
     "webpack": "^4.41.2",
     "webpack-cli": "^3.3.9"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -100,7 +100,7 @@ export class OrAddAttributePanel extends LitElement {
             this.attribute.value = descriptor.initialValue;
             this.attribute.type = descriptor.valueDescriptor!.name as AttributeValueDescriptor; // TODO: Fix once asset model works properly
             if (descriptor.metaItemDescriptors) {
-                this.attribute.meta = descriptor.metaItemDescriptors.map((descriptor) => {
+                this.attribute.meta = descriptor.metaItemDescriptors.filter((descriptor) => descriptor.required || (descriptor.hasOwnProperty("initialValue") && descriptor.initialValue !== null)).map((descriptor) => {
                     return {
                         name: descriptor.urn,
                         value: descriptor.initialValue

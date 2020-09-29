@@ -27,7 +27,7 @@
                         },
                         "value": {
                           "predicateType": "radial",
-                          "radius": 50,
+                          "radius": 100,
                           "lat": 51.446308,
                           "lng": 5.454027,
                           "negated": true

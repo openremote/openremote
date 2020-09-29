@@ -42,11 +42,11 @@ public class SentNotification {
     protected String name;
 
     @NotNull
-    @Column(name = "TYPE", nullable = false)
+    @Column(name = "TYPE", nullable = false, length = 50)
     protected String type;
 
     @NotNull
-    @Column(name = "TARGET")
+    @Column(name = "TARGET", length = 50)
     @Enumerated(EnumType.STRING)
     protected Notification.TargetType target;
 
@@ -55,11 +55,11 @@ public class SentNotification {
     protected String targetId;
 
     @NotNull()
-    @Column(name = "SOURCE")
+    @Column(name = "SOURCE", length = 50)
     @Enumerated(EnumType.STRING)
     protected Notification.Source source;
 
-    @Column(name = "SOURCE_ID")
+    @Column(name = "SOURCE_ID", length = 43)
     protected String sourceId;
 
     @Column(name = "MESSAGE", columnDefinition = "jsonb")

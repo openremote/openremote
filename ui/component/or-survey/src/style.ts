@@ -419,7 +419,7 @@ export const surveyLayoutStyle =html`
             
             textarea {
                 flex-grow: 1;
-                border: 1px solid var(--app-grey-color);
+                border: 1px solid var(--or-app-color3);
                 height: 4em;
                 line-height: 16px;
             }

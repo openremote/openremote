@@ -1,7 +1,7 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
 
-import {customElement, html, LitElement, property, PropertyValues, TemplateResult, unsafeCSS} from "lit-element";
+import {customElement, html, LitElement, property, PropertyValues, TemplateResult, unsafeCSS, query} from "lit-element";
 import "@openremote/or-icon";
 import "@openremote/or-input";
 import "@openremote/or-attribute-input";
@@ -12,7 +12,7 @@ import "@openremote/or-survey-results";
 import "@openremote/or-table";
 import "@openremote/or-panel";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import "@openremote/or-mwc-components/dist/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
@@ -38,7 +38,7 @@ import {classMap} from "lit-html/directives/class-map";
 import {GenericAxiosResponse} from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
-import {OrEditAssetChangedEvent} from "./or-edit-asset-panel";
+import {OrEditAssetModifiedEvent} from "./or-edit-asset-panel";
 
 export interface PanelConfig {
     type?: "info" | "history" | "group" | "survey" | "survey-results";
@@ -132,10 +132,13 @@ export function getIncludedProperties(config?: InfoPanelConfig): string[] {
 
 export function getIncludedAttributes(attributes: Attribute[], config?: InfoPanelConfig): Attribute[] {
     const includedAttributes = config && config.attributes && config.attributes.include ? config.attributes.include : undefined;
-    const excludedAttributes = config && config.attributes && config.attributes.exclude ? config.attributes.exclude : [];
-    return attributes.filter((attr) =>
-        (!includedAttributes || includedAttributes.indexOf(attr.name!) >= 0)
-        && (!excludedAttributes || excludedAttributes.indexOf(attr.name!) < 0));
+    const excludedAttributes = config && config.attributes && config.attributes.exclude ? config.attributes.exclude : undefined;
+    if (includedAttributes || excludedAttributes) {
+        return attributes.filter((attr) =>
+            (!includedAttributes || includedAttributes.some((inc) => Util.stringMatch(inc, attr.name!)))
+            && (!excludedAttributes || !excludedAttributes.some((exc) => Util.stringMatch(exc, attr.name!))));
+    }
+    return attributes;
 }
 
 class EventHandler {
@@ -160,15 +163,71 @@ class EventHandler {
     }
 }
 
-export class OrComputeGridEvent extends CustomEvent<void> {
+export class OrAssetViewerComputeGridEvent extends CustomEvent<void> {
 
-    public static readonly NAME = "or-compute-grid-event";
+    public static readonly NAME = "or-asset-viewer-compute-grid-event";
 
     constructor() {
-        super(OrComputeGridEvent.NAME, {
+        super(OrAssetViewerComputeGridEvent.NAME, {
             bubbles: true,
             composed: true
         });
+    }
+}
+
+export type SaveResult = {
+    asset: Asset,
+    statusCode: number
+};
+
+export class OrAssetViewerSaveResultEvent extends CustomEvent<SaveResult> {
+
+    public static readonly NAME = "or-asset-viewer-save-result-event";
+
+    constructor(saveResult:SaveResult) {
+        super(OrAssetViewerComputeGridEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: saveResult
+        });
+    }
+}
+
+export class OrAssetViewerRequestEditToggleEvent extends CustomEvent<Util.RequestEventDetail<boolean>> {
+
+    public static readonly NAME = "or-asset-viewer-request-edit-toggle";
+
+    constructor(edit: boolean) {
+        super(OrAssetViewerRequestEditToggleEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                allow: true,
+                detail: edit
+            }
+        });
+    }
+}
+
+export class OrAssetViewerEditToggleEvent extends CustomEvent<boolean> {
+
+    public static readonly NAME = "or-asset-viewer-edit-toggle";
+
+    constructor(edit: boolean) {
+        super(OrAssetViewerEditToggleEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: edit
+        });
+    }
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [OrAssetViewerComputeGridEvent.NAME]: OrAssetViewerComputeGridEvent;
+        [OrAssetViewerSaveResultEvent.NAME]: OrAssetViewerSaveResultEvent;
+        [OrAssetViewerRequestEditToggleEvent.NAME]: OrAssetViewerRequestEditToggleEvent;
+        [OrAssetViewerEditToggleEvent.NAME]: OrAssetViewerEditToggleEvent;
     }
 }
 
@@ -380,7 +439,6 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
         // Determine available and selected attributes for the child asset type
         let availableAttributes: string[] = [];
         let selectedAttributes: string[] = [];
-        const newlySelectedAttributes: string[] = []; // Updated when the dialog is open
 
         if (groupConfig.childAssetTypes && groupConfig.childAssetTypes[childAssetType]) {
             availableAttributes = groupConfig.childAssetTypes[childAssetType].availableAttributes ? groupConfig.childAssetTypes[childAssetType].availableAttributes! : [];
@@ -398,44 +456,46 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
             selectedAttributes = [...availableAttributes];
         }
 
-        const attributePickerModalActions: DialogAction[] = [
-            {
-                actionName: "ok",
-                default: true,
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("ok")}"></or-input>`,
-                action: () => {
-                    selectedAttributes.length = 0;
-                    selectedAttributes.push(...newlySelectedAttributes);
-                    updateTable();
-                }
-            },
-            {
-                actionName: "cancel",
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
-                action: () => {
-                    // Nothing to do here
-                }
-            },
-        ];
-
         const attributePickerModalOpen = () => {
-            const dialog: OrMwcDialog = hostElement.shadowRoot!.getElementById(panelName + "-attribute-modal") as OrMwcDialog;
 
-            if (dialog) {
-                newlySelectedAttributes.length = 0;
-                newlySelectedAttributes.push(...selectedAttributes);
-                // Update content which will cause a re-render
-                dialog.dialogContent = html`
-                        <div style="display:grid">
+            const newlySelectedAttributes = [...selectedAttributes];
+            let dialog: OrMwcDialog | undefined;
+
+            const attributePickerModalActions: DialogAction[] = [
+                {
+                    actionName: "ok",
+                    default: true,
+                    content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("ok")}"></or-input>`,
+                    action: () => {
+                        selectedAttributes.length = 0;
+                        selectedAttributes.push(...newlySelectedAttributes);
+                        updateTable();
+                    }
+                },
+                {
+                    actionName: "cancel",
+                    content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
+                    action: () => {
+                        // Nothing to do here
+                    }
+                },
+            ];
+
+            showDialog(
+                {
+                    title: "addRemoveAttributes",
+                    actions: attributePickerModalActions,
+                    content: html`
+                        <div style="display: grid">
                             ${availableAttributes.sort().map((attribute) =>
-                    html`<div style="grid-column: 1 / -1;">
-                                        <or-input .type="${InputType.CHECKBOX}" .label="${i18next.t(attribute)}" .value="${!!newlySelectedAttributes.find((selected) => selected === attribute)}"
+                                html`<div style="grid-column: 1 / -1;">
+                                        <or-input .type="${InputType.CHECKBOX}" .label="${i18next.t(attribute)}" .value="${!!selectedAttributes.find((selected) => selected === attribute)}"
                                             @or-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"></or-input>
                                     </div>`)}
                         </div>
-                    `;
-                dialog.open();
-            }
+                    `
+                }
+            );
         };
 
         // Function to update the table and message when assets or config changes
@@ -502,7 +562,6 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
                 <or-icon class="asset-group-add-remove-button" .id="${panelName}-add-remove-columns" icon="pencil" @click="${() => attributePickerModalOpen()}"></or-icon>
                 <or-table hidden .id="${panelName}-attribute-table" .options="{stickyFirstColumn:true}"></or-table>
                 <span><or-translate id="${panelName}-attribute-table-msg" value="loading"></or-translate></span>
-                <or-mwc-dialog id="${panelName}-attribute-modal" dialogTitle="addRemoveAttributes" .dialogActions="${attributePickerModalActions}"></or-mwc-dialog>
             `;
     }
 
@@ -729,16 +788,25 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     protected _attributes?: Attribute[];
     protected resizeHandler = () => OrAssetViewer.generateGrid(this.shadowRoot);
 
+    @query("#wrapper")
+    protected wrapperElem!: HTMLDivElement;
+
+    @query("#save-btn")
+    protected saveBtnElem!: OrInput;
+
+    @query("#edit-btn")
+    protected editBtnElem!: OrInput;
+
     constructor() {
         super();
-        this.addEventListener(OrComputeGridEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
+        this.addEventListener(OrAssetViewerComputeGridEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrChartEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
-        this.addEventListener(OrEditAssetChangedEvent.NAME, () => this._onAssetChanged());
+        this.addEventListener(OrEditAssetModifiedEvent.NAME, () => this._onAssetModified());
     }
 
     public isModified() {
-        return this.editMode && this._assetModified;
+        return !!this.editMode && this._assetModified;
     }
 
     connectedCallback() {
@@ -802,18 +870,23 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         if (editMode) {
             content = html`
-                <or-edit-asset-panel .asset="${this.asset}" .attrs="${this._attributes}"></or-edit-asset-panel>
+                <div id="edit-container">
+                    <or-edit-asset-panel .asset="${this.asset}"></or-edit-asset-panel>
+                </div>
             `;
         } else {
             if (this._viewerConfig.panels) {
-                content = html`${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
-
-                    if (panelConfig.hide) {
-                        return ``;
-                    }
-
-                    return getPanel(name, panelConfig, getPanelContent(name, this.asset!, this._attributes!, this, this._viewerConfig!, panelConfig)) || ``;
-                })}`;
+                content = html`                
+                    <div id="view-container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
+                        ${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
+        
+                            if (panelConfig.hide) {
+                                return ``;
+                            }
+        
+                            return getPanel(name, panelConfig, getPanelContent(name, this.asset!, this._attributes!, this, this._viewerConfig!, panelConfig)) || ``;
+                        })}
+                    </div>`;
             }
         }
 
@@ -825,14 +898,20 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     </a>
                     <div id="title">
                         <or-icon title="${descriptor && descriptor.type ? descriptor.type : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.color ? "#" + descriptor.color : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetType.THING.icon}"></or-icon>
-                        ${editMode ? html`<or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" required outlined .label="${i18next.t("name")}" .value="${this.asset.name}"></or-input>` : html`<span>${this.asset.name}</span>`}
+                        ${editMode ? html`<or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.asset.name}" @or-input-changed="${(e: OrInputChangedEvent) => {this.asset!.name = e.detail.value; this._onAssetModified();}}"></or-input>` : html`<span>${this.asset.name}</span>`}
                     </div>
-                    <div id="created-time" class="mobileHidden"><or-translate value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as i18next.TOptions<i18next.InitOptions>}"></or-translate></div>
-                    ${editMode ? html`<or-input id="save-btn" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-input-changed="${() => this._saveAsset()}"></or-input>` : ``}
+                    ${!this._isReadonly() ? html`
+                        <span id="edit-wrapper">
+                            <or-translate value="editAsset"></or-translate>
+                            <or-input id="edit-btn" .type="${InputType.SWITCH}" .value="${this.editMode}" @or-input-changed="${(ev: OrInputChangedEvent) => this._onEditToggleClicked(ev.detail.value)}"></or-input>
+                        </span>
+                    `: ``}
+                    <div id="right-wrapper">
+                        <or-translate id="created-time" class="mobileHidden" value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as i18next.TOptions<i18next.InitOptions>}"></or-translate>
+                        ${editMode ? html`<or-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-input-changed="${() => this._saveAsset()}"></or-input>` : ``}
+                    </div>
                 </div>
-                <div id="container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
-                    ${content}
-                </div>
+                ${content}
             </div>
         `;
     }
@@ -850,11 +929,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 super.assetIds = undefined;
             }
         } else if (_changedProperties.has("editMode") && !this.editMode) {
-            this.asset = undefined;
-            if (this.assetId) {
-                this._loading = true;
-                super._refreshEventSubscriptions();
-            }
+            this.reloadAsset();
         }
 
         this.onCompleted().then(() => {
@@ -862,6 +937,15 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 OrAssetViewer.generateGrid(this.shadowRoot);
             });
         });
+    }
+
+    public reloadAsset() {
+        this.asset = undefined;
+        this._assetModified = false;
+        if (this.assetId) {
+            this._loading = true;
+            super._refreshEventSubscriptions();
+        }
     }
 
     protected _isReadonly() {
@@ -872,22 +956,47 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         await this.updateComplete;
     }
 
-    protected _toggleEdit(edit: boolean) {
-
+    protected _onEditToggleClicked(edit: boolean) {
+        Util.dispatchCancellableEvent(
+            this,
+            new OrAssetViewerRequestEditToggleEvent(edit),
+            () => this._doEditToggle(edit),
+            () => this.editBtnElem.value = !edit);
     }
 
-    protected _saveAsset() {
-
+    protected _doEditToggle(edit: boolean) {
+        this.editMode = edit;
+        this.dispatchEvent(new OrAssetViewerEditToggleEvent(edit));
     }
 
-    protected _onAssetChanged() {
+    protected async _saveAsset() {
+        if (!this.asset) {
+            return;
+        }
+
+        this.saveBtnElem.disabled = true;
+        this.wrapperElem.classList.add("saving");
+        const response = await manager.rest.api.AssetResource.update(this.asset.id!, this.asset);
+        this.wrapperElem.classList.remove("saving");
+        this.saveBtnElem.disabled = false;
+        this.dispatchEvent(new OrAssetViewerSaveResultEvent({
+            asset: this.asset,
+            statusCode: response.status
+        }));
+
+        if (response.status === 204) {
+            this.reloadAsset();
+        }
+    }
+
+    protected _onAssetModified() {
         this._assetModified = true;
         this.requestUpdate();
     }
 
     public static generateGrid(shadowRoot: ShadowRoot | null) {
         if (shadowRoot) {
-            const grid = shadowRoot.querySelector('#container');
+            const grid = shadowRoot.querySelector('#view-container');
             if (grid) {
                 const rowHeight = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-auto-rows'), 10);
                 const rowGap = parseInt(window.getComputedStyle(grid).getPropertyValue('grid-row-gap'), 10);

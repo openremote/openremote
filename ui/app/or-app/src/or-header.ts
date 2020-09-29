@@ -1,6 +1,5 @@
 import {css, customElement, html, LitElement, property, query, TemplateResult, unsafeCSS} from "lit-element";
 import {until} from "lit-html/directives/until";
-import {ifDefined} from "lit-html/directives/if-defined.js";
 import manager, {
     DefaultBoxShadowBottom,
     DefaultColor1,
@@ -325,7 +324,7 @@ class OrHeader extends LitElement {
     private _drawerOpened = false;
 
     @property({ type: String })
-    private activeMenu: string | undefined = window.location.hash ? window.location.hash : "#!map";
+    private activeMenu: string | undefined = window.location.hash ? window.location.hash.split("/")[0].substr(2) : "map";
 
     public connectedCallback(): void {
         super.connectedCallback();
@@ -339,7 +338,7 @@ class OrHeader extends LitElement {
 
     public _onHashChanged(e: Event) {
         const menu = window.location.hash.split("/")[0];
-        this.activeMenu = menu;
+        this.activeMenu = menu.substr(2);
     }
 
     public _onRealmSelect(realm: string) {

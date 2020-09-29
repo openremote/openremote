@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-asset-tree",
-  "version": "1.1.0",
+  "version": "1.0.4",
   "description": "OpenRemote Asset Tree",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
@@ -13,12 +13,12 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@mdi/js": "^4.5.95",
-    "@openremote/core": "^1.1.0",
-    "@openremote/model": "^1.1.0",
-    "@openremote/or-icon": "^1.1.0",
-    "@openremote/or-translate": "^1.1.0",
-    "@openremote/rest": "^1.1.0",
-    "lit-element": "^2.2.1",
+    "@openremote/core": "^1.0.3",
+    "@openremote/model": "^1.0.3",
+    "@openremote/or-icon": "^1.0.3",
+    "@openremote/or-translate": "^1.0.3",
+    "@openremote/rest": "^1.0.3",
+    "lit-element": "^2.4.0",
     "moment": "^2.24.0"
   },
   "devDependencies": {
@@ -26,5 +26,8 @@
     "typescript": ">=3.4.5",
     "webpack": "^4.41.2",
     "webpack-cli": "^3.3.9"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

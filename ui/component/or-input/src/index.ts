@@ -677,70 +677,66 @@ export class OrInput extends LitElement {
                     let label = this.label;
                     let type = this.type;
                     let componentId = "component";
-                    let denseComfortable = this.comfortable;
-                    let denseCompact = !this.comfortable && this.compact;
-                    let rounded = false;
 
                     if (this.type === InputType.RANGE) {
                         // Change vars so number input can be included alongside the slider
                         label = undefined;
                         outlined = false;
                         hasHelper = false;
-                        denseComfortable = true;
-                        rounded = true;
                         type = InputType.NUMBER;
                         componentId = "number";
                     }
 
-                    const classes = {
-                        "mdc-text-field": true,
-                        "mdc-text-field--filled": !outlined,
-                        "mdc-text-field--outlined": outlined,
-                        "mdc-text-field--textarea": type === InputType.TEXTAREA || type === InputType.JSON,
-                        "mdc-text-field--disabled": this.disabled,
-                        "mdc-text-field--fullwidth": this.fullWidth && !outlined,
-                        "dense-comfortable": denseComfortable,
-                        "dense-compact": denseCompact,
-                        "is-rounded": rounded,
-                        "mdc-text-field--label-floating" : hasValue,
-                        "mdc-text-field--no-label": !this.label,
-                        "mdc-text-field--with-leading-icon": !!this.icon,
-                        "mdc-text-field--with-trailing-icon": !!this.iconTrailing
-                    };
+                    if (!(this.type === InputType.RANGE && this.disableSliderNumberInput)) {
+                        const classes = {
+                            "mdc-text-field": true,
+                            "mdc-text-field--filled": !outlined,
+                            "mdc-text-field--outlined": outlined,
+                            "mdc-text-field--textarea": type === InputType.TEXTAREA || type === InputType.JSON,
+                            "mdc-text-field--disabled": this.disabled,
+                            "mdc-text-field--fullwidth": this.fullWidth && !outlined,
+                            "dense-comfortable": this.comfortable,
+                            "dense-compact": !this.comfortable && this.compact,
+                            "mdc-text-field--label-floating": hasValue,
+                            "mdc-text-field--no-label": !this.label,
+                            "mdc-text-field--with-leading-icon": !!this.icon,
+                            "mdc-text-field--with-trailing-icon": !!this.iconTrailing
+                        };
 
-                    inputElem = type === InputType.TEXTAREA || type === InputType.JSON
-                        ? html`
-                            <textarea id="elem" class="mdc-text-field__input" ?required="${this.required}"
-                            ?readonly="${this.readonly}" ?disabled="${this.disabled}" minlength="${ifDefined(this.minLength)}"
-                            maxlength="${ifDefined(this.maxLength)}" rows="${this.rows ? this.rows : 5}"
-                            cols="${ifDefined(this.cols)}" aria-label="${ifDefined(label)}"
-                            aria-labelledby="${ifDefined(label ? "label" : undefined)}"
-                            @change="${(e: Event) => this.onValueChange((e.target as HTMLTextAreaElement), (e.target as HTMLTextAreaElement).value)}">${valMinMax[0] ? valMinMax[0] : ""}</textarea>`
-                    : html`
-                        <input type="${type}" id="elem" aria-labelledby="${ifDefined(label ? "label" : undefined)}"
-                        class="mdc-text-field__input" ?required="${this.required}" ?readonly="${this.readonly}"
-                        ?disabled="${this.disabled}" min="${ifDefined(valMinMax[1])}" max="${ifDefined(valMinMax[2])}"
-                        step="${ifDefined(this.step)}" minlength="${ifDefined(this.minLength)}" pattern="${ifDefined(this.pattern)}"
-                        maxlength="${ifDefined(this.maxLength)}" placeholder="${ifDefined(this.placeHolder)}"
-                        .value="${valMinMax[0] !== null && valMinMax[0] !== undefined ? valMinMax[0] : ""}"
-                        @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}" />`;
+                        inputElem = type === InputType.TEXTAREA || type === InputType.JSON
+                            ? html`
+                                <textarea id="elem" class="mdc-text-field__input" ?required="${this.required}"
+                                ?readonly="${this.readonly}" ?disabled="${this.disabled}" minlength="${ifDefined(this.minLength)}"
+                                maxlength="${ifDefined(this.maxLength)}" rows="${this.rows ? this.rows : 5}"
+                                cols="${ifDefined(this.cols)}" aria-label="${ifDefined(label)}"
+                                aria-labelledby="${ifDefined(label ? "label" : undefined)}"
+                                @change="${(e: Event) => this.onValueChange((e.target as HTMLTextAreaElement), (e.target as HTMLTextAreaElement).value)}">${valMinMax[0] ? valMinMax[0] : ""}</textarea>`
+                            : html`
+                            <input type="${type}" id="elem" aria-labelledby="${ifDefined(label ? "label" : undefined)}"
+                            class="mdc-text-field__input" ?required="${this.required}" ?readonly="${this.readonly}"
+                            ?disabled="${this.disabled}" min="${ifDefined(valMinMax[1])}" max="${ifDefined(valMinMax[2])}"
+                            step="${ifDefined(this.step)}" minlength="${ifDefined(this.minLength)}" pattern="${ifDefined(this.pattern)}"
+                            maxlength="${ifDefined(this.maxLength)}" placeholder="${ifDefined(this.placeHolder)}"
+                            .value="${valMinMax[0] !== null && valMinMax[0] !== undefined ? valMinMax[0] : ""}"
+                            @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}" />`;
 
-                    inputElem = html`
-                        <label id="${componentId}" class="${classMap(classes)}">
-                            ${this.icon ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--leading" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
-                            ${outlined ? `` : html`<span class="mdc-text-field__ripple"></span>`}
-                            ${inputElem}
-                            ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
-                            ${outlined ? `` : html`<span class="mdc-line-ripple"></span>`}
-                            ${this.iconTrailing ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
-                        </label>
-                        ${hasHelper ? html`
-                            <div class="mdc-text-field-helper-line">
-                                <div class="mdc-text-field-helper-text ${classMap(helperClasses)}">${showValidationMessage ? this.validationMessage : this.helperText}</div>
-                                ${this.charCounter && !this.readonly ? html`<div class="mdc-text-field-character-counter"></div>` : ``}
-                            </div>
-                        ` : ``}
-                    `;
+                        inputElem = html`
+                            <label id="${componentId}" class="${classMap(classes)}">
+                                ${this.icon ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--leading" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
+                                ${outlined ? `` : html`<span class="mdc-text-field__ripple"></span>`}
+                                ${inputElem}
+                                ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
+                                ${outlined ? `` : html`<span class="mdc-line-ripple"></span>`}
+                                ${this.iconTrailing ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
+                            </label>
+                            ${hasHelper ? html`
+                                <div class="mdc-text-field-helper-line">
+                                    <div class="mdc-text-field-helper-text ${classMap(helperClasses)}">${showValidationMessage ? this.validationMessage : this.helperText}</div>
+                                    ${this.charCounter && !this.readonly ? html`<div class="mdc-text-field-character-counter"></div>` : ``}
+                                </div>
+                            ` : ``}
+                        `;
+                    }
 
                     if (this.type === InputType.RANGE) {
                         inputElem = html`
@@ -850,15 +846,18 @@ export class OrInput extends LitElement {
                 }
             }
         } else {
+            // some components need to be kept in sync with the DOM
             if (this.type === InputType.SELECT && this._mdcComponent) {
                 (this._mdcComponent as MDCSelect).selectedIndex = this._selectedIndex;
-            }
-            if (this.type === InputType.RANGE && this._mdcComponent) {
+            } else if (this.type === InputType.RANGE && this._mdcComponent) {
                 const slider = this._mdcComponent as MDCSlider;
                 slider.disabled = this.disabled || this.readonly;
                 slider.min = this.min;
                 slider.max = this.max;
                 slider.value = this.value;
+            } else if (this.type === InputType.SWITCH && this._mdcComponent) {
+                const swtch = this._mdcComponent as MDCSwitch;
+                swtch.checked = this.value;
             }
         }
     }

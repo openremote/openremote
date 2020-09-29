@@ -20,10 +20,9 @@
 package org.openremote.model.util;
 
 import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsPackage;
-import jsinterop.annotations.JsType;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetModelProvider;
+import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.attribute.AttributeDescriptor;
 import org.openremote.model.attribute.AttributeValueDescriptor;
 import org.openremote.model.attribute.MetaItem;
@@ -41,14 +40,25 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty;
  * use the {@link org.openremote.model.asset.AssetModelResource} endpoint to get this information and set it once
  * at start up.
  */
+// TODO: Move this into the AssetModelService once GWT removed
+@Deprecated
 public class AssetModelUtil {
 
+    protected static AgentDescriptor[] agentDescriptors = new AgentDescriptor[0];
     protected static AssetDescriptor[] assetDescriptors = new AssetDescriptor[0];
     protected static AttributeDescriptor[] attributeDescriptors = new AttributeDescriptor[0];
     protected static AttributeValueDescriptor[] attributeValueDescriptors = new AttributeValueDescriptor[0];
     protected static MetaItemDescriptor[] metaItemDescriptors = new MetaItemDescriptor[0];
 
     private AssetModelUtil() {}
+
+    /**
+     * This should be called by something in the VM at startup to populate the available {@link AgentDescriptor}s.
+     */
+    @JsMethod
+    public static void setAgentDescriptors(AgentDescriptor[] agentDescriptors) {
+        AssetModelUtil.agentDescriptors = agentDescriptors;
+    }
 
     /**
      * This should be called by something in the VM at startup to populate the available {@link AssetDescriptor}s.
@@ -85,6 +95,11 @@ public class AssetModelUtil {
     @JsMethod
     public static AssetDescriptor[] getAssetDescriptors() {
         return assetDescriptors;
+    }
+
+    @JsMethod
+    public static AgentDescriptor[] getAgentDescriptors() {
+        return agentDescriptors;
     }
 
     @JsMethod

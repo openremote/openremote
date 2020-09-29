@@ -215,6 +215,10 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
             return;
         }
 
+        if (this.config && this.config.rulesetSaveHandler && !this.config.rulesetSaveHandler(this.ruleset)) {
+            return;
+        }
+
         this.disabled = true;
         this.view.beforeSave();
         this.dispatchEvent(new OrRulesSaveStartEvent());

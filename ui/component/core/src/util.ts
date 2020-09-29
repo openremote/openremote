@@ -14,7 +14,8 @@ import {
     AttributeDescriptor,
     MetaItemType,
     MetaItemDescriptor,
-    AttributeValueDescriptor
+    AttributeValueDescriptor,
+    AssetDescriptor
 } from "@openremote/model";
 import i18next from "i18next";
 import Qs from "qs";
@@ -146,8 +147,8 @@ function addPushNotificationsFromRuleAction(ruleAction: RuleActionUnion, geoPred
         if (ruleAction.notification && ruleAction.notification.message && ruleAction.notification.message.type === "push") {
             // Find applicable targets
             const target = ruleAction.target;
-            if (target && target.ruleConditionTag) {
-                const geoNotifications = geoPredicateMap.get(target.ruleConditionTag);
+            if (target && target.conditionAssets) {
+                const geoNotifications = geoPredicateMap.get(target.conditionAssets);
                 if (geoNotifications) {
                     geoNotifications.forEach((geoNotification) => {
                         geoNotification.notification = ruleAction.notification!.message as PushNotificationMessage;
@@ -237,6 +238,46 @@ export function arrayRemove<T>(arr: T[], item: T) {
     if (index >= 0) {
         arr.splice(index, 1);
     }
+}
+
+export function stringMatch(needle: string, haystack: string): boolean {
+
+    if (haystack === needle) {
+        return true;
+    }
+
+    const startsWith = needle.endsWith("*");
+    const endsWith = !startsWith && needle.startsWith("*");
+    const regExp = !startsWith && !endsWith && needle.startsWith("^") && needle.endsWith("$")
+
+    if (startsWith && haystack.startsWith(needle.substr(0, needle.length - 1))) {
+        return true;
+    }
+
+    if (endsWith && haystack.endsWith(needle.substr(1))) {
+        return true;
+    }
+
+    if (regExp) {
+        try {
+            const regexp = new RegExp(needle);
+            return regexp.test(haystack);
+        } catch(e) {
+            console.error("Failed to compile needle as a RegExp: " + e);
+        }
+    }
+
+    return false;
+}
+
+export function capitaliseFirstLetter(str: string | undefined) {
+    if (!str) {
+        return;
+    }
+    if (str.length == 1) {
+        return str.toUpperCase();
+    }
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 export function enumContains(enm: object, val: string): boolean {
@@ -333,6 +374,16 @@ export function getMetaItemLabel(urn: string): string {
     return i18next.t(["metaItemType." + urn, urn], {nsSeparator: "@"});
 }
 
+export function getAssetTypeLabel(type: string | AssetDescriptor | undefined): string {
+    if (typeof type === "string") {
+        type = AssetModelUtil.getAssetDescriptor(type);
+    }
+    if (!type) {
+        return "";
+    }
+    return i18next.t("assetType." + type.type, {nsSeparator: "@", defaultValue: capitaliseFirstLetter(type.name!.toLowerCase())});
+}
+
 export function getAttributeValueFormat(attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined): string | undefined {
     let format = getMetaValue(MetaItemType.FORMAT, attribute, descriptor, valueDescriptor) as string;
     if (!format) {
@@ -423,4 +474,20 @@ export function sortByString<T>(valueExtractor: (item: T) => string): (a: T, b: 
         }
         return 0;
     };
+}
+
+export interface RequestEventDetail<T> {
+    allow: boolean;
+    detail: T;
+}
+
+export function dispatchCancellableEvent<T>(target: EventTarget, event: CustomEvent<RequestEventDetail<T>>, handler: (detail: T) => void, cancelledHandler?: () => void) {
+    target.dispatchEvent(event);
+    window.setTimeout(() => {
+        if (event.detail.allow) {
+            handler(event.detail.detail);
+        } else if (cancelledHandler) {
+            cancelledHandler();
+        }
+    });
 }

@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-timeline",
-  "version": "1.1.0",
+  "version": "1.0.3",
   "description": "OpenRemote Timeline",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
@@ -12,7 +12,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "lit-element": "^2.2.1",
+    "lit-element": "^2.4.0",
     "moment": "^2.24.0"
   },
   "devDependencies": {
@@ -20,5 +20,8 @@
     "typescript": ">=3.4.5",
     "webpack": "^4.41.2",
     "webpack-cli": "^3.3.9"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -26,10 +26,7 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.value.Value;
 
 import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
@@ -76,15 +73,17 @@ public class VelbusNetwork {
         return this.executorService;
     }
 
-    public synchronized void sendPackets(VelbusPacket... packets) {
+    public void sendPackets(VelbusPacket... packets) {
         if (getConnectionStatus() != ConnectionStatus.CONNECTED) {
             return;
         }
 
-        messageQueue.addAll(Arrays.asList(packets));
+        synchronized (messageQueue) {
+            messageQueue.addAll(Arrays.asList(packets));
 
-        if (queueProcessingTask == null) {
-            startSendingPackets();
+            if (queueProcessingTask == null) {
+                startSendingPackets();
+            }
         }
     }
 
@@ -276,12 +275,16 @@ public class VelbusNetwork {
         );
     }
 
-    protected synchronized void doSendPacket() {
+    protected void doSendPacket() {
         if (getConnectionStatus() != ConnectionStatus.CONNECTED) {
             return;
         }
 
-        VelbusPacket packet = messageQueue.poll();
+        VelbusPacket packet;
+
+        synchronized (messageQueue) {
+            packet = messageQueue.poll();
+        }
 
         if (packet == null) {
             queueProcessingTask.cancel(false);

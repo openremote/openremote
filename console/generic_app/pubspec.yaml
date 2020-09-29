@@ -11,7 +11,7 @@ description: Generic app of OpenRemote
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.0.0+12
+version: 1.0.1+14
 
 environment:
   sdk: ">=2.2.0 <3.0.0"
@@ -24,27 +24,30 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^0.1.2
+  cupertino_icons: ^1.0.0
 
   http: ^0.12.0+4
   json_annotation: ^3.0.1
 
-  flutter_geofence: ^0.2.0
+  geofencing: ^0.1.0
   location: ^3.0.0
   webview_flutter: ^0.3.22+1
-  shared_preferences: ^0.5.7+3
+  shared_preferences: ^0.5.12
   permission_handler: ^5.0.1+1
-  firebase_messaging: ^5.1.4
-  quick_actions: 0.4.0+6
+  firebase_messaging: ^7.0.0
+  quick_actions: 0.4.0+8
   show_up_animation: ^1.0.2
+  awesome_dialog: ^1.2.0
+  event_bus: ^1.1.1
+  url_launcher: ^5.4.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   build_runner: 1.8.1
-  json_serializable: 3.3.0
-  flutter_launcher_icons: "^0.7.5"
+  json_serializable: 3.4.1
+  flutter_launcher_icons: ^0.8.0
 
 flutter_icons:
   android: "launcher_icon"

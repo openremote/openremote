@@ -27,14 +27,17 @@ import org.openremote.model.query.UserQuery;
  * none of the options are supplied then the default behaviour is to use all {@link org.openremote.model.asset.Asset}s
  * that caused the rule to trigger. The precedence is:
  * <ol>
- * <li>{@link #ruleConditionTag}</li>
+ * <li>{@link #conditionAssets} - Assets that matched a specific when condition</li>
+ * <li>{@link #matchedAssets} - Assets that matched with additional {@link AssetQuery} applied</li>
  * <li>{@link #assets}</li>
  * <li>{@link #users}</li>
+ * <li>{@link #custom} - A custom string that the Rule Action interprets to generate targets</li>
  * </ol>
  */
 public class RuleActionTarget {
-    public String ruleConditionTag;
+    public String conditionAssets;
     public AssetQuery matchedAssets;
     public AssetQuery assets;
     public UserQuery users;
+    public String custom;
 }

@@ -1,6 +1,6 @@
 import {css, customElement, html, property} from "lit-element";
 import "@openremote/or-rules";
-import {RulesConfig} from "@openremote/or-rules";
+import {RulesConfig, ActionTargetType, AllowedActionTargetTypes, ActionType} from "@openremote/or-rules";
 import {AssetType, NotificationTargetType, RulesetLang} from "@openremote/model";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {AppStateKeyed} from "../app";
@@ -27,12 +27,17 @@ export function pageRulesProvider<S extends AppStateKeyed>(store: EnhancedStore<
 }
 
 export const PAGE_RULES_CONFIG_DEFAULT: PageRulesConfig = {
+
     rules: {
         controls: {
             allowedLanguages: [RulesetLang.JSON, RulesetLang.FLOW, RulesetLang.GROOVY],
-            hideNotificationTargetType: {
-                email: [NotificationTargetType.TENANT, NotificationTargetType.ASSET],
-                push: [NotificationTargetType.TENANT, NotificationTargetType.CUSTOM],
+            allowedActionTargetTypes: {
+                actions: {
+                    wait: [],
+                    attribute: [],
+                    email: [ActionTargetType.USER, ActionTargetType.CUSTOM],
+                    push: [NotificationTargetType.USER, NotificationTargetType.ASSET],
+                }
             }
         },
         descriptors: {

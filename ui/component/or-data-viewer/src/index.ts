@@ -162,10 +162,23 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
     @property()
     protected _loading: boolean = false;
 
+    protected _resizeHandler = () => {
+        OrDataViewer.generateGrid(this.shadowRoot)
+    };
+
     constructor() {
         super();
-        window.addEventListener("resize", () => OrDataViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrChartEvent.NAME, () => OrDataViewer.generateGrid(this.shadowRoot));
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        window.addEventListener("resize", this._resizeHandler);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        window.removeEventListener("resize", this._resizeHandler);
     }
 
     public async onCompleted() {

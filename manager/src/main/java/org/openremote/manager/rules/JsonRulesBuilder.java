@@ -28,6 +28,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.notification.EmailNotificationMessage;
 import org.openremote.model.notification.Notification;
+import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.UserQuery;
@@ -718,27 +719,41 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 Notification notification = notificationAction.notification;
 
-                if (notification.getMessage() != null && Objects.equals(notification.getMessage().getType(), EmailNotificationMessage.TYPE)) {
-                    EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
+                if (notification.getMessage() != null) {
+                    String body = null;
 
-                    boolean hasBody = !TextUtil.isNullOrEmpty(email.getHtml()) || !TextUtil.isNullOrEmpty(email.getText());
-                    boolean isHtml = !TextUtil.isNullOrEmpty(email.getHtml());
+                    boolean isEmail = Objects.equals(notification.getMessage().getType(), EmailNotificationMessage.TYPE);
+                    boolean isPush = Objects.equals(notification.getMessage().getType(), PushNotificationMessage.TYPE);
 
-                    if (hasBody) {
-                        String body = isHtml ? email.getHtml() : email.getText();
+                    boolean isHtml = false;
 
+                    if (isEmail) {
+                        EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
+                        isHtml = !TextUtil.isNullOrEmpty(email.getHtml());
+                        body = isHtml ? email.getHtml() : email.getText();
+                    } else if (isPush) {
+                        PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
+                        body = pushNotificationMessage.getBody();
+                    }
+
+                    if (!TextUtil.isNullOrEmpty(body)) {
                         if (body.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
-
                             // Need to clone the notification
                             try {
                                 notification = JSON.readValue(JSON.writeValueAsString(notification), Notification.class);
-                                email = (EmailNotificationMessage) notification.getMessage();
                                 String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, isHtml);
                                 body = body.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
-                                if (isHtml) {
-                                    email.setHtml(body);
-                                } else {
-                                    email.setText(body);
+
+                                if (isEmail) {
+                                    EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
+                                    if (isHtml) {
+                                        email.setHtml(body);
+                                    } else {
+                                        email.setText(body);
+                                    }
+                                } else if (isPush) {
+                                    PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
+                                    pushNotificationMessage.setBody(body);
                                 }
                             } catch (JsonProcessingException e) {
                                 LOG.warning("Failed to clone notification so cannot insert asset info");
@@ -747,12 +762,29 @@ public class JsonRulesBuilder extends RulesBuilder {
                     }
                 }
 
-                // Override the notification targets if set in the rule
-                Notification.TargetType targetType = targetIsNotAssets(ruleAction.target) ? Notification.TargetType.USER : Notification.TargetType.ASSET;
+                // Transfer the rule action target into notification targets
+                Notification.TargetType targetType = Notification.TargetType.ASSET;
+                if (ruleAction.target != null) {
+                    if (ruleAction.target.users != null
+                        && ruleAction.target.conditionAssets == null
+                        && ruleAction.target.assets == null
+                        && ruleAction.target.matchedAssets == null) {
+                        targetType = Notification.TargetType.USER;
+                    } else if (ruleAction.target.custom != null
+                        && ruleAction.target.conditionAssets == null
+                        && ruleAction.target.assets == null
+                        && ruleAction.target.matchedAssets == null) {
+                        targetType = Notification.TargetType.CUSTOM;
+                    }
+                }
+
                 Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts);
 
-                if (ids != null && !ids.isEmpty()) {
-                    notification.setTargets(ids.stream().map(id -> new Notification.Target(targetType, id)).collect(Collectors.toList()));
+                if (ids == null) {
+                    notification.setTargets((List<Notification.Target>)null);
+                } else {
+                    Notification.TargetType finalTargetType = targetType;
+                    notification.setTargets(ids.stream().map(id -> new Notification.Target(finalTargetType, id)).collect(Collectors.toList()));
                 }
 
                 log(Level.FINE, "Sending notification for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
@@ -977,8 +1009,8 @@ public class JsonRulesBuilder extends RulesBuilder {
         Map<String, RuleConditionState> conditionStateMap = ruleState.conditionStateMap;
 
         if (target != null) {
-            if (!TextUtil.isNullOrEmpty(target.ruleConditionTag) && conditionStateMap != null) {
-                RuleConditionState triggerState = conditionStateMap.get(target.ruleConditionTag);
+            if (!TextUtil.isNullOrEmpty(target.conditionAssets) && conditionStateMap != null) {
+                RuleConditionState triggerState = conditionStateMap.get(target.conditionAssets);
                 if (!useUnmatched) {
                     return triggerState != null ? triggerState.getMatchedAssetIds() : Collections.emptyList();
                 }
@@ -995,7 +1027,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 return facts.matchAssetState(target.matchedAssets)
                     .map(AssetState::getId)
                     .distinct()
-                    .filter(matchedAssetId -> compareAssetIds.indexOf(matchedAssetId) >= 0)
+                    .filter(compareAssetIds::contains)
                     .collect(Collectors.toList());
             }
 
@@ -1005,6 +1037,10 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             if (target.users != null) {
                 return getUserIds(usersFacade, target.users);
+            }
+
+            if (target.custom != null) {
+                return Collections.singleton(target.custom);
             }
         }
 

@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-asset-viewer",
-  "version": "1.1.0",
+  "version": "1.0.4",
   "description": "OpenRemote Asset Viewer",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
@@ -12,27 +12,30 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/core": "^1.1.0",
-    "@openremote/model": "^1.1.0",
-    "@openremote/or-icon": "^1.1.0",
-    "@openremote/or-input": "^1.1.0",
-    "@openremote/or-attribute-input": "^1.1.0",
-    "@openremote/or-attribute-history": "^1.1.0",
-    "@openremote/or-survey": "^1.1.0",
-    "@openremote/or-survey-results": "^1.1.0",
-    "@openremote/or-translate": "^1.1.0",
-    "@openremote/or-panel": "^1.1.0",
-    "@openremote/or-table": "^1.1.0",
-    "@openremote/or-chart": "^1.1.0",
-    "@openremote/rest": "^1.1.0",
-    "@openremote/or-mwc-components": "^1.1.0",
-    "lit-element": "^2.2.1",
-    "@material/data-table": "^5.1.0"
+    "@material/data-table": "^5.1.0",
+    "@openremote/core": "^1.0.3",
+    "@openremote/model": "^1.0.3",
+    "@openremote/or-attribute-history": "^1.0.4",
+    "@openremote/or-attribute-input": "^1.0.4",
+    "@openremote/or-chart": "^1.0.4",
+    "@openremote/or-icon": "^1.0.3",
+    "@openremote/or-input": "^1.0.4",
+    "@openremote/or-mwc-components": "^1.0.3",
+    "@openremote/or-panel": "^1.0.3",
+    "@openremote/or-survey": "^1.0.3",
+    "@openremote/or-survey-results": "^1.0.3",
+    "@openremote/or-table": "^1.0.3",
+    "@openremote/or-translate": "^1.0.3",
+    "@openremote/rest": "^1.0.3",
+    "lit-element": "^2.4.0"
   },
   "devDependencies": {
     "tslint": ">=5.11.0",
     "typescript": ">=3.4.5",
     "webpack": "^4.41.2",
     "webpack-cli": "^3.3.9"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

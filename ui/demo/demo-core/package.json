@@ -1,6 +1,6 @@
 {
   "name": "@openremote/demo-core",
-  "version": "1.1.0",
+  "version": "1.0.4",
   "description": "Demo",
   "private": true,
   "scripts": {
@@ -15,11 +15,11 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/core": "^1.1.0",
-    "@openremote/or-icon": "^1.1.0",
-    "@openremote/or-translate": "^1.1.0",
+    "@openremote/core": "^1.0.3",
+    "@openremote/or-icon": "^1.0.3",
+    "@openremote/or-translate": "^1.0.3",
     "i18next": "^15.0.9",
-    "lit-element": "^2.2.1"
+    "lit-element": "^2.4.0"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",

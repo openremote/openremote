@@ -88,7 +88,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         }
 
         if (!Files.isReadable(Paths.get(firebaseConfigFilePath))) {
-            LOG.warning(FIREBASE_CONFIG_FILE + " invalid path or file not readable");
+            LOG.warning(FIREBASE_CONFIG_FILE + " invalid path or file not readable: " + firebaseConfigFilePath);
             return;
         }
 
@@ -373,18 +373,21 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
         if (!dataOnly) {
             // Don't set basic notification on Android if there is data so even if app is in background we can show a custom notification
-            // with actions that use the actions from the data
+            // with actions that use the actions from the data # see below TODO
             if (pushMessage.getData() != null || pushMessage.getAction() != null || pushMessage.getButtons() != null) {
                 androidConfigBuilder.putData("or-title", pushMessage.getTitle());
                 if (pushMessage.getBody() != null) {
                     androidConfigBuilder.putData("or-body", pushMessage.getBody());
                 }
             }
+            //TODO: flutter doesn't support action buttons yet, so setting a custom notification wouldn't make sense now
+            // once actions buttons are supported and implemented in the app, this line can be removed
+            androidConfigBuilder.setNotification(AndroidNotification.builder().setTitle(pushMessage.getTitle()).setBody(pushMessage.getBody()).build());
 
             // Use alert dictionary for apns
             // https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/PayloadKeyReference.html
             apsBuilder.setAlert(ApsAlert.builder().setTitle(pushMessage.getTitle()).setBody(pushMessage.getBody()).build())
-                .setSound("default").setCategory("openremoteNotification");
+                    .setSound("default").setCategory("openremoteNotification");
 
             webpushConfigBuilder.setNotification(new WebpushNotification(pushMessage.getTitle(), pushMessage.getBody()));
         }
@@ -407,6 +410,8 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         try {
             if (pushMessage.getAction() != null) {
                 builder.putData("action", Container.JSON.writeValueAsString(pushMessage.getAction()));
+                // Add so tapping the notification will cause an action
+                builder.putData("click_action", "FLUTTER_NOTIFICATION_CLICK");
             }
 
             if (pushMessage.getButtons() != null) {

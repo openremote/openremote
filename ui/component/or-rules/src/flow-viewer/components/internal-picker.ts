@@ -4,7 +4,7 @@ import { nodeConverter } from "../converters/node-converter";
 import { OrInputChangedEvent } from "@openremote/or-input";
 import rest from "@openremote/rest";
 import "@openremote/or-asset-tree";
-import { OrAssetTreeRequestSelectEvent } from "@openremote/or-asset-tree";
+import { OrAssetTreeRequestSelectionEvent } from "@openremote/or-asset-tree";
 import { ResizeObserver } from "resize-observer";
 import { project, modal } from "./flow-editor";
 import { NodeUtilities } from "../node-structure";
@@ -83,9 +83,13 @@ export class InternalPicker extends translate(i18next)(LitElement) {
     }
 
     private get assetTreeTemplate() {
-        return html`<or-asset-tree @or-asset-tree-request-select="${(e: OrAssetTreeRequestSelectEvent) => {
+        return html`<or-asset-tree @or-asset-tree-request-select="${(e: OrAssetTreeRequestSelectionEvent) => {
+            if (!e.detail.detail || e.detail.detail.newNodes.length !== 1) {
+                e.detail.allow = false;
+                return;
+            }
             const value: AssetAttributeInternalValue = {
-                assetId: e.detail.detail.node.asset!.id,
+                assetId: e.detail.detail.newNodes[0].asset!.id,
                 attributeName: "nothing yet"
             };
             this.setValue(value);

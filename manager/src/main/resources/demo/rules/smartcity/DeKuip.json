@@ -44,15 +44,6 @@
       "then": [
         {
           "action": "notification",
-          "target": {
-            "matchedAssets": {
-              "types": [
-                {
-                  "predicateType": "string"
-                }
-              ]
-            }
-          },
           "notification": {
             "name": "De Kuip",
             "message": {

@@ -77,10 +77,21 @@ export const style = css`
         width: 100%;
         display: flex;
         flex-direction: column;
+    }
+    
+    #wrapper.saving {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    #view-container, #edit-container {
+        flex: 0 1 auto;
+        margin-top: 10px;
         overflow: auto;
     }
     
-    #container {
+    #view-container {
+        margin-top: 0;
         box-sizing: border-box;
         display: grid;
         padding: 20px 20px;
@@ -139,12 +150,13 @@ export const style = css`
     #asset-header {
         padding: 20px 30px 0 30px;
         display: flex;
+        flex: 0 0 auto;
         align-items: center;
         justify-content: space-between;
     }
 
     #title {
-        flex: 1 0 auto;
+        flex: 1 1 0%;
         font-size: 18px;
         font-weight: bold;
     }
@@ -154,8 +166,20 @@ export const style = css`
     }
    
     #created-time {
-        flex: 0 0 auto;
         font-size: 12px;
+    }
+    
+    #right-wrapper {
+        flex: 1 1 0%;
+        text-align: right;
+    }
+    
+    #edit-wrapper {
+        flex: 0 0 auto;
+    }
+
+    #edit-wrapper > or-translate {
+        margin-right: 10px;
     }
 
     #save-btn {
@@ -182,12 +206,7 @@ export const style = css`
         display: none;
         cursor: pointer;
     }
-    
-    or-edit-asset-panel {
-        grid-column-start: 1;
-        grid-column-end: 3;
-    }
-    
+
     @media screen and (max-width: 769px) {
         #wrapper {
             position: absolute;
@@ -230,7 +249,7 @@ export const style = css`
             grid-row-start: 4;
         }
         
-        #container { 
+        #view-container { 
             grid-auto-rows: auto;
             grid-template-columns: 100% !important;
             padding: 20px 0;

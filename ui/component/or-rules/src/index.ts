@@ -7,7 +7,8 @@ import manager, {
     DefaultColor3,
     DefaultColor4,
     DefaultColor5,
-    DefaultColor6
+    DefaultColor6,
+    Util
 } from "@openremote/core";
 import i18next from "i18next";
 import "@openremote/or-icon";
@@ -28,7 +29,8 @@ import {
     ValueType,
     ClientRole,
     Asset,
-    NotificationTargetType
+    NotificationTargetType,
+    Ruleset
 } from "@openremote/model";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/dist/or-mwc-drawer";
@@ -48,10 +50,12 @@ export const enum ConditionType {
 
 export const enum ActionType {
     WAIT = "wait",
-    NOTIFICATION = "notification",
+    EMAIL = "email",
     PUSH_NOTIFICATION = "push",
     ATTRIBUTE = "attribute"
 }
+
+export import ActionTargetType = NotificationTargetType;
 
 export enum AssetQueryOperator {
     VALUE_EMPTY = "empty",
@@ -90,10 +94,10 @@ export interface AssetTypeAttributeName {
     assetType: string;
     attributeName: string;
 }
-export interface NotificationActionTargetType {
-    [messageType: string]: NotificationTargetType[]
+export interface AllowedActionTargetTypes {
+    default?: ActionTargetType[];
+    actions?: {[actionType in ActionType]: ActionTargetType[]};
 }
-
 
 export interface RulesConfig {
     controls?: {
@@ -102,7 +106,7 @@ export interface RulesConfig {
         allowedActionTypes?: ActionType[];
         allowedAssetQueryOperators?: Map<AssetTypeAttributeName | AttributeDescriptor | AttributeValueDescriptor | ValueType, AssetQueryOperator[]>;
         allowedRecurrenceOptions?: RecurrenceOption[];
-        hideNotificationTargetType?: NotificationActionTargetType;
+        allowedActionTargetTypes?: AllowedActionTargetTypes;
         hideActionTypeOptions?: boolean;
         hideActionTargetOptions?: boolean;
         hideActionUpdateOptions?: boolean;
@@ -118,7 +122,10 @@ export interface RulesConfig {
         when?: RulesDescriptorSection;
         action?: RulesDescriptorSection;
     };
-    rulesetName?: string;
+    rulesetAddHandler?: (ruleset: RulesetUnion) => boolean;
+    rulesetDeleteHandler?: (ruleset: RulesetUnion) => boolean;
+    rulesetCopyHandler?: (ruleset: RulesetUnion) => boolean;
+    rulesetSaveHandler?: (ruleset: RulesetUnion) => boolean;
     json?: {
         rule?: JsonRule;
         whenGroup?: LogicGroup<RuleCondition>;
@@ -302,19 +309,13 @@ export function getAssetDescriptors(config: RulesConfig | undefined, useActionCo
 
             // Remove any excluded attributes
             if (modifiedDescriptor.attributeDescriptors) {
-                const inc = configDescriptor.includeAttributes !== undefined ? configDescriptor.includeAttributes : undefined;
-                const exc = configDescriptor.excludeAttributes !== undefined ? configDescriptor.excludeAttributes : undefined;
+                const includedAttributes = configDescriptor.includeAttributes !== undefined ? configDescriptor.includeAttributes : undefined;
+                const excludedAttributes = configDescriptor.excludeAttributes !== undefined ? configDescriptor.excludeAttributes : undefined;
 
-                if (inc || exc) {
-                    modifiedDescriptor.attributeDescriptors = modifiedDescriptor.attributeDescriptors.filter((mad) => {
-                        if (exc && exc.indexOf(mad.attributeName!) >= 0) {
-                            return false;
-                        }
-                        if (inc && inc.indexOf(mad.attributeName!) < 0) {
-                            return false;
-                        }
-                        return true;
-                    });
+                if (includedAttributes || excludedAttributes) {
+                    modifiedDescriptor.attributeDescriptors = modifiedDescriptor.attributeDescriptors.filter((mad) =>
+                        (!includedAttributes || includedAttributes.some((inc) => Util.stringMatch(inc,  mad.attributeName!)))
+                        && (!excludedAttributes || !excludedAttributes.some((exc) => Util.stringMatch(exc,  mad.attributeName!))));
                 }
 
                 // Override any attribute descriptors
@@ -629,17 +630,26 @@ export class OrRules extends translate(i18next)(LitElement) {
             return;
         }
 
-        const name = this.config && this.config.rulesetName ? this.config.rulesetName : OrRules.DEFAULT_RULESET_NAME;
         const realm = manager.isSuperUser() ? manager.displayRealm : manager.config.realm;
         const ruleset: RulesetUnion = {
             id: 0,
             type: type,
-            name: name,
+            name: OrRules.DEFAULT_RULESET_NAME,
             lang: lang,
             realm: realm,
             rules: undefined // View needs to populate this on load
         };
+        
+        if (this.config && this.config.rulesetAddHandler && !this.config.rulesetAddHandler(ruleset)) {
+            return;
+        }
+
+        // Ensure config hasn't messed with the certain values
+        if (type === "tenant") {
+            (ruleset as TenantRuleset).realm = realm;
+        }
         this._activeRuleset = ruleset;
+        this.selectedIds = undefined;
     }
 
     protected _onRequestCopy(e: OrRulesRequestCopyEvent) {
@@ -649,12 +659,17 @@ export class OrRules extends translate(i18next)(LitElement) {
             return;
         }
 
-        let ruleset = JSON.parse(JSON.stringify(e.detail)) as RulesetUnion;
+        const ruleset = JSON.parse(JSON.stringify(e.detail)) as RulesetUnion;
         delete ruleset.lastModified;
         delete ruleset.createdOn;
         delete ruleset.status;
         delete ruleset.error;
         delete ruleset.id;
+        ruleset.name = ruleset.name + " copy";
+        if (this.config && this.config.rulesetCopyHandler && !this.config.rulesetCopyHandler(ruleset)) {
+            return;
+        }
+        
         this._activeRuleset = ruleset;
     }
 
@@ -678,7 +693,12 @@ export class OrRules extends translate(i18next)(LitElement) {
 
         // We need to call the backend so disable list until done
         this._rulesList.disabled = true;
-        for (let ruleset of rulesetsToDelete) {
+        for (const ruleset of rulesetsToDelete) {
+
+            if (this.config && this.config.rulesetDeleteHandler && !this.config.rulesetDeleteHandler(ruleset)) {
+                continue;
+            }
+            
             try {
                 await manager.rest.api.RulesResource.deleteTenantRuleset(ruleset.id!);
             } catch (e) {
@@ -694,8 +714,12 @@ export class OrRules extends translate(i18next)(LitElement) {
     }
 
     protected _onRuleSelectionChanged(event: OrRulesSelectionChangedEvent) {
-        this._activeRuleset = event.detail.length === 1 ? {...event.detail[0]} : undefined;
-        this.selectedIds = event.detail.length === 1 ? [event.detail[0].id!] : undefined;
+        const isNewRule = this._activeRuleset && !this._activeRuleset.id;
+
+        if (!isNewRule || event.detail.length !== 0) {
+            this._activeRuleset = event.detail.length === 1 ? {...event.detail[0]} : undefined;
+        }
+        this.selectedIds = event.detail.length === 1 && event.detail[0].id ? [event.detail[0].id!] : undefined;
     }
 
     protected _onRuleSaveStart(event: OrRulesSaveStartEvent) {

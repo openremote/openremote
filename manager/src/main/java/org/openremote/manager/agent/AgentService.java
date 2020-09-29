@@ -33,27 +33,21 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
-import org.openremote.manager.asset.AssetProcessingException;
-import org.openremote.manager.asset.AssetProcessingService;
-import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.AssetUpdateProcessor;
+import org.openremote.manager.asset.*;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.*;
-import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.*;
 import org.openremote.model.attribute.AttributeEvent.Source;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.RefPredicate;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.*;
@@ -91,7 +85,7 @@ import static org.openremote.model.util.TextUtil.isValidURN;
  * <p>
  * Finds all {@link AssetType#AGENT} assets and manages their {@link ProtocolConfiguration}s.
  */
-public class AgentService extends RouteBuilder implements ContainerService, AssetUpdateProcessor, ProtocolAssetService {
+public class AgentService extends RouteBuilder implements ContainerService, AssetUpdateProcessor, ProtocolAssetService, AssetModelProvider {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
     public static final int PRIORITY = DEFAULT_PRIORITY + 100; // Start quite late to ensure protocols etc. are initialised
@@ -110,6 +104,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     protected Map<String, Asset> agentMap;
     protected ParseContext jsonPathParser;
     protected boolean initDone;
+    protected Container container;
 
     /**
      * It's important that {@link Protocol}s have a lower priority than this service so they are fully initialized
@@ -122,6 +117,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
     @Override
     public void init(Container container) throws Exception {
+        this.container = container;
         timerService = container.getService(TimerService.class);
         identityService = container.getService(ManagerIdentityService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
@@ -130,6 +126,9 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
         localAgentConnector = new LocalAgentConnector(this);
+
+        // Register this service as an asset model provider
+        container.getService(AssetModelService.class).addAssetModelProvider(this);
 
         if (initDone) {
             return;
@@ -1072,5 +1071,59 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         }
 
         return Values.parse(pathJson).orElse(null);
+    }
+
+    @Override
+    public MetaItemDescriptor[] getMetaItemDescriptors() {
+        return new MetaItemDescriptor[0];
+    }
+
+    @Override
+    public AssetDescriptor[] getAssetDescriptors() {
+        return new AssetDescriptor[0];
+    }
+
+    // TODO: Update once protocol model changes complete
+    @Override
+    public AgentDescriptor[] getAgentDescriptors() {
+        return container.getServices(Protocol.class).stream().map((protocol) -> {
+            ProtocolDescriptor pd = protocol.getProtocolDescriptor();
+
+            if (pd != null) {
+                // Translate meta item descriptors into asset descriptors
+                AttributeDescriptor[] attributeDescriptors = pd.getProtocolConfigurationMetaItems() == null ? new AttributeDescriptor[0] : pd.getProtocolConfigurationMetaItems().stream()
+                    .map((descriptor) -> {
+                        AttributeValueDescriptor valueDescriptor = EnumUtil.enumFromString(AttributeValueType.class, descriptor.getValueType().name()).orElse(AttributeValueType.OBJECT);
+
+                        return new AttributeDescriptorImpl(
+                            descriptor.getUrn(),
+                            valueDescriptor,
+                            descriptor.getInitialValue()
+                        );
+                    }).toArray(AttributeDescriptor[]::new);
+
+                return new AgentDescriptorImpl(
+                    pd.getDisplayName(),
+                    pd.getName(),
+                    "cogs",
+                    null,
+                    attributeDescriptors)
+                    .setInstanceDiscovery(pd.isConfigurationDiscovery())
+                    .setInstanceImport(pd.isConfigurationImport())
+                    .setAssetDiscovery(pd.isDeviceDiscovery())
+                    .setAssetImport(pd.isDeviceImport());
+            }
+            return null;
+        }).filter(Objects::nonNull).toArray(AgentDescriptor[]::new);
+    }
+
+    @Override
+    public AttributeDescriptor[] getAttributeDescriptors() {
+        return new AttributeDescriptor[0];
+    }
+
+    @Override
+    public AttributeValueDescriptor[] getAttributeValueDescriptors() {
+        return new AttributeValueDescriptor[0];
     }
 }

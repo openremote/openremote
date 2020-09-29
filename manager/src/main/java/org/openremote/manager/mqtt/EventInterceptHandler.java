@@ -23,7 +23,6 @@ import io.moquette.interception.AbstractInterceptHandler;
 import io.moquette.interception.messages.*;
 import org.keycloak.adapters.rotation.AdapterTokenVerifier;
 import org.keycloak.common.VerificationException;
-import org.keycloak.exceptions.TokenNotActiveException;
 import org.keycloak.representations.AccessToken;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.ClientCredentialsAuthForm;
@@ -89,11 +88,7 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
 
     @Override
     public void onConnect(InterceptConnectMessage interceptConnectMessage) {
-
         MqttConnection connection = new MqttConnection(interceptConnectMessage.getClientID(), interceptConnectMessage.getUsername(), interceptConnectMessage.getPassword());
-        String suppliedClientSecret = new String(interceptConnectMessage.getPassword(), StandardCharsets.UTF_8);
-        connection.accessToken = identityProvider.getExternalKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthForm(connection.username, suppliedClientSecret)).getToken();
-
         mqttConnectionMap.put(connection.clientId, connection);
 
         Map<String, Object> headers = prepareHeaders(connection);
@@ -245,17 +240,14 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
             AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
             headers.put(Constants.AUTH_CONTEXT, new AccessTokenAuthContext(connection.realm, accessToken));
         } catch (VerificationException e) {
-            if (e instanceof TokenNotActiveException) {
-                String suppliedClientSecret = new String(connection.password, StandardCharsets.UTF_8);
-                connection.accessToken = identityProvider.getExternalKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthForm(connection.username, suppliedClientSecret)).getToken();
-                try {
-                    AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
-                    headers.put(Constants.AUTH_CONTEXT, new AccessTokenAuthContext(connection.realm, accessToken));
-                } catch (VerificationException verificationException) {
-                    LOG.log(Level.WARNING, "Couldn't verify token", verificationException);
-                }
+            String suppliedClientSecret = new String(connection.password, StandardCharsets.UTF_8);
+            connection.accessToken = identityProvider.getExternalKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthForm(connection.username, suppliedClientSecret)).getToken();
+            try {
+                AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
+                headers.put(Constants.AUTH_CONTEXT, new AccessTokenAuthContext(connection.realm, accessToken));
+            } catch (VerificationException verificationException) {
+                LOG.log(Level.WARNING, "Couldn't verify token", verificationException);
             }
-            LOG.log(Level.WARNING, e.getMessage(), e);
         }
         return headers;
     }

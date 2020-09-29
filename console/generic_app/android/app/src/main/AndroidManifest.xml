@@ -12,9 +12,10 @@
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <application
-        android:name="io.flutter.app.FlutterApplication"
+        android:name=".Application"
         android:label="OpenRemote"
-        android:icon="@mipmap/launcher_icon">
+        android:icon="@mipmap/launcher_icon"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"
@@ -38,9 +39,17 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <receiver android:name="com.intivoto.geofence.GeofenceBroadcastReceiver"
+        <meta-data
+                android:name="com.google.firebase.messaging.default_notification_channel_id"
+                android:value="@string/notification_channel_id" />
+
+        <meta-data
+                android:name="com.google.firebase.messaging.default_notification_icon"
+                android:resource="@drawable/or_push_icon" />
+
+        <receiver android:name="io.flutter.plugins.geofencing.GeofencingBroadcastReceiver"
                   android:enabled="true" android:exported="true"/>
-        <service android:name="com.intivoto.geofence.GeofencePlugin"
+        <service android:name="io.flutter.plugins.geofencing.GeofencingService"
                  android:permission="android.permission.BIND_JOB_SERVICE" android:exported="true"/>
     </application>
 </manifest>

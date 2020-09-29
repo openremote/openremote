@@ -47,17 +47,14 @@
       "then": [
         {
           "action": "notification",
+          "target": {
+            "custom": "test@testemail.com"
+          },
           "notification": {
             "message": {
               "type": "email",
               "subject": "%RULESET_NAME%",
-              "html": "%TRIGGER_ASSETS%",
-              "to": [
-                {
-                  "address": "email@testemail.com",
-                  "name": "email@testemail.com"
-                }
-              ]
+              "html": "%TRIGGER_ASSETS%"
             }
           }
         }

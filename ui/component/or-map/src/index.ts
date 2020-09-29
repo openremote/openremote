@@ -126,7 +126,6 @@ export class OrMap extends LitElement {
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
-        manager.addListener(this.onManagerEvent);
         if (manager.ready) {
             this.loadMap();
         }
@@ -155,6 +154,10 @@ export class OrMap extends LitElement {
         return this._markers;
     }
 
+    public connectedCallback() {
+        super.connectedCallback();
+        manager.addListener(this.onManagerEvent);
+    }
 
     public disconnectedCallback() {
         super.disconnectedCallback();

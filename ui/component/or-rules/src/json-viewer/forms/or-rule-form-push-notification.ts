@@ -37,7 +37,7 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
         const buttons = message && message.buttons ? message.buttons : [];
         
         return html`
-            <div style="display:grid">
+            <form style="display:grid">
                 <or-input value="${title}" 
                     @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "title")}" 
                     .label="${i18next.t("subject")}" 
@@ -58,8 +58,8 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
                     required 
                     placeholder=" "></or-input>
 
-                <or-input value="${buttons && buttons[0] && buttons[0].action &&  buttons[0].action.openInBrowser ? buttons[0].action.openInBrowser : ""}" 
-                    @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "buttons.0.action.openInBrowser")}" 
+                <or-input .value="${action && action.openInBrowser}" 
+                    @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "action.openInBrowser")}" 
                     .label="${i18next.t("openInBrowser")}" 
                     type="${InputType.SWITCH}" 
                     required 
@@ -77,7 +77,7 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
                     type="${InputType.TEXT}" 
                     required 
                     placeholder=" "></or-input>
-            </div>
+            </form>
         `
     }
 
@@ -87,6 +87,9 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
         if(key && this.action.notification && this.action.notification.message){
             let message:any = this.action.notification.message;
             message = set(message, key, value);
+            if(key.includes('action')) {
+                message = set(message, "buttons.0."+key, value);
+            }
             this.action.notification.message = {...message};
         }
 

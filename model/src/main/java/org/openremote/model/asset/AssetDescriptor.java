@@ -51,9 +51,6 @@ public interface AssetDescriptor {
     String getColor();
 
     @JsonProperty
-    boolean getAccessPublicRead();
-
-    @JsonProperty
     AttributeDescriptor[] getAttributeDescriptors();
 
     @JsonIgnore

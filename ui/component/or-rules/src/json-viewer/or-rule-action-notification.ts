@@ -1,26 +1,22 @@
-import {customElement, html, LitElement, property, css, PropertyValues} from "lit-element";
-import {RulesConfig, getAssetTypeFromQuery} from "../index";
+import {css, customElement, html, LitElement, property, TemplateResult} from "lit-element";
+import {until} from "lit-html/directives/until";
+import {ActionTargetType, ActionType, OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
 import {
-    RuleActionNotification,
-    EmailNotificationMessageRecipient,
-    EmailNotificationMessage,
     AssetDescriptor,
+    AssetQuery,
     AssetQueryOrderBy$Property,
-    Asset,
-    NotificationTargetType,
-    User,
-    Tenant,
-    UserQuery,
-    AssetQuery
+    JsonRule,
+    RuleAction,
+    RuleActionNotification
 } from "@openremote/model";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
-import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
+import {getTargetTypeMap, OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import "./modals/or-rule-notification-modal";
 import "./forms/or-rule-form-message";
 import "./forms/or-rule-form-push-notification";
 import "./or-rule-action-attribute";
-import { i18next } from "@openremote/or-translate";
-import manager from "@openremote/core";
+import {i18next} from "@openremote/or-translate";
+import manager, {Util} from "@openremote/core";
 
 // language=CSS
 const style = css`
@@ -42,7 +38,13 @@ export class OrRuleActionNotification extends LitElement {
     }
 
     @property({type: Object, attribute: false})
+    public rule!: JsonRule;
+
+    @property({type: Object, attribute: false})
     public action!: RuleActionNotification;
+
+    @property({type: String, attribute: false})
+    public actionType!: ActionType;
 
     public readonly?: boolean;
 
@@ -52,85 +54,209 @@ export class OrRuleActionNotification extends LitElement {
     @property({type: Object})
     public config?: RulesConfig;
 
-    @property({type: Array, attribute: false})
-    protected _listItems?: Asset[] | User[];
+    protected static getActionTargetTemplate(targetTypeMap: [string, string?][], action: RuleAction, actionType: ActionType, readonly: boolean, config: RulesConfig | undefined, baseAssetQuery: AssetQuery | undefined, onTargetTypeChangedCallback: (type: ActionTargetType) => void, onTargetChangedCallback: (type: ActionTargetType, value: string | undefined) => void): PromiseLike<TemplateResult> | undefined {
 
-    @property({type: String})
-    public type?: NotificationTargetType;
+        let allowedTargetTypes: [ActionTargetType, string][] = [
+            [ActionTargetType.USER, i18next.t("user_plural")],
+            [ActionTargetType.ASSET, i18next.t("asset_plural")],
+            [ActionTargetType.TENANT, i18next.t("tenant_plural")],
+            [ActionTargetType.CUSTOM, i18next.t("custom")]
+        ];
+
+        if (config && config.controls && config.controls.allowedActionTargetTypes) {
+            let configTypes: string[] | undefined;
+
+            if (config.controls.allowedActionTargetTypes.actions) {
+                configTypes = (config.controls.allowedActionTargetTypes.actions as any)[actionType] as ActionTargetType[];
+            } else {
+                configTypes = config.controls.allowedActionTargetTypes.default;
+            }
+
+            if (configTypes) {
+                allowedTargetTypes = allowedTargetTypes.filter((allowedType) => configTypes?.includes(allowedType[0]));
+            }
+        }
+
+        if (allowedTargetTypes.length === 0) {
+            console.warn("Rule action config doesn't allow any action target types for this type of action");
+            return;
+        }
+
+        let targetType: ActionTargetType | undefined = ActionTargetType.ASSET;
+
+        if (action.target) {
+            if (action.target.users && !action.target.conditionAssets && !action.target.matchedAssets && !action.target.assets) {
+                targetType = ActionTargetType.USER;
+            } else if (action.target.custom !== undefined && !action.target.conditionAssets && !action.target.matchedAssets && !action.target.assets) {
+                targetType = ActionTargetType.CUSTOM;
+            }
+        }
+
+        let targetValueTemplate: PromiseLike<TemplateResult>;
+
+        if (!allowedTargetTypes.find((allowedTargetType) => allowedTargetType[0] === targetType)) {
+            targetType = undefined;
+        }
+
+        if (targetType === ActionTargetType.CUSTOM) {
+
+            const template = html`
+                <or-input .type="${InputType.TEXT}" @or-input-changed="${(e: OrInputChangedEvent) => onTargetChangedCallback(targetType!, e.detail.value)}" ?readonly="${readonly}" .value="${action.target!.custom}" ></or-input>            
+            `;
+            targetValueTemplate = Promise.resolve(template);
+
+        } else {
+
+            let targetValuesGenerator: PromiseLike<[string, string][]>;
+            let label: string | undefined;
+            let value: string | undefined;
+
+            if (targetType === ActionTargetType.USER) {
+                targetValuesGenerator = manager.rest.api.UserResource.getAll(manager.displayRealm).then(
+                    (usersResponse) => usersResponse.data.map((user) => [user.id!, user.username!])
+                );
+                label = i18next.t("user_plural");
+
+                const userQuery = action.target!.users!;
+
+                if ((userQuery.ids && userQuery.ids.length > 1)
+                    || userQuery.usernames
+                    || userQuery.assetPredicate
+                    || userQuery.limit
+                    || userQuery.pathPredicate
+                    || userQuery.tenantPredicate) {
+                    console.warn("Rule action user target query is unsupported: " + JSON.stringify(userQuery, null, 2));
+                    return;
+                }
+
+                if (userQuery.ids && userQuery.ids.length === 1) {
+                    value = userQuery.ids[0];
+                }
+            } else {
+                const assetQuery = baseAssetQuery ? {...baseAssetQuery} : {};
+                assetQuery.select = {
+                    excludeAttributeTimestamp: true,
+                    excludeAttributeValue: true,
+                    excludeParentInfo: true,
+                    excludePath: true
+                };
+                assetQuery.orderBy = {
+                    property: AssetQueryOrderBy$Property.NAME
+                };
+
+                targetValuesGenerator = manager.rest.api.AssetResource.queryAssets(assetQuery).then(
+                    (response) => response.data.map((asset) => [asset.id!, asset.name! + " (" + asset.id! + ")"])
+                );
+                label = i18next.t("asset_plural");
+                if (!action.target) {
+                    value = "allMatched";
+                } else {
+                    if (action.target.conditionAssets) {
+                        console.warn("Rule action asset target, conditionAssets is unsupported: " + JSON.stringify(action.target, null, 2));
+                        return;
+                    }
+                    if (action.target.matchedAssets) {
+                        if (action.target.matchedAssets.types && action.target.matchedAssets.types.length > 1) {
+                            console.warn("Rule action asset target, matchedAssets query unsupported: " + JSON.stringify(action.target, null, 2));
+                            return;
+                        }
+                        if (action.target.matchedAssets.types && action.target.matchedAssets.types.length === 1) {
+                            value = action.target.matchedAssets.types[0].value;
+                        }
+                    } else if (action.target.assets) {
+                        if (action.target.assets.ids && action.target.assets.ids.length > 1) {
+                            console.warn("Rule action asset target, assets query unsupported: " + JSON.stringify(action.target, null, 2));
+                            return;
+                        }
+                        if (action.target.assets.ids && action.target.assets.ids.length === 1) {
+                            value = action.target.assets.ids[0];
+                        }
+                    }
+                }
+            }
+
+            targetValueTemplate = targetValuesGenerator.then((values) => {
+
+                // Add additional options for assets
+                if (targetType === ActionTargetType.ASSET) {
+                    const additionalValues: [string, string][] = [["allMatched", i18next.t("matched")]];
+                    if (targetTypeMap && targetTypeMap.length > 1) {
+                        targetTypeMap.forEach((typeAndTag) => {
+                            if (!additionalValues.find((av) => av[0] === typeAndTag[0])) {
+                                additionalValues.push([typeAndTag[0], i18next.t("matchedOfType", {type: Util.getAssetTypeLabel(typeAndTag[0])})]);
+                            }
+                        });
+                    }
+                    values = [...additionalValues, ...values];
+                }
+
+                return html`
+                    <or-input type="${InputType.SELECT}" 
+                        .options="${values}"
+                        .label="${label}"
+                        .value="${value}"
+                        @or-input-changed="${(e: OrInputChangedEvent) => onTargetChangedCallback(targetType!, e.detail.value)}" 
+                        ?readonly="${readonly}"></or-input>
+                `;
+            });
+        }
+
+        targetValueTemplate = targetValueTemplate.then((valueTemplate) => {
+            return html`
+                <or-input type="${InputType.SELECT}" 
+                            .options="${allowedTargetTypes}"
+                            .value="${targetType}"
+                            .label="${i18next.t("recipients")}"
+                            @or-input-changed="${(e: OrInputChangedEvent) => onTargetTypeChangedCallback(e.detail.value as ActionTargetType)}" 
+                            ?readonly="${readonly}"></or-input>
+                ${valueTemplate}
+            `;
+        });
+
+        return targetValueTemplate;
+    }
 
     protected render() {
-        let value: string = "";
-        const message = this.action.notification && this.action.notification.message ? this.action.notification.message : undefined;
-        const messageType = message && message.type ? message.type : undefined;
-        let valueTemplate;
-        let targetTypeTemplate;
-        const idOptions: [string, string] [] = [];
-        let targetTypes = [[NotificationTargetType.USER, i18next.t("user_plural")], [NotificationTargetType.ASSET, i18next.t("asset_plural")], [NotificationTargetType.TENANT, i18next.t("tenant_plural")], [NotificationTargetType.CUSTOM, i18next.t("custom")]];
 
-        const hideNotificationTargetType = this.config && this.config.controls ? this.config.controls.hideNotificationTargetType: {};
-        if(hideNotificationTargetType && messageType && messageType in hideNotificationTargetType) {
-            const hideTargets = hideNotificationTargetType[messageType];
-            if(hideTargets) {
-                targetTypes = targetTypes.filter(target => {
-                    const nTarget = target[0] as NotificationTargetType;
-                    return !hideTargets.includes(nTarget)
-                });
+        if (!this.action.notification || !this.action.notification.message) {
+            return html``;
+        }
+
+        const message = this.action.notification.message;
+        const messageType = message.type!;
+        let baseAssetQuery: AssetQuery;
+
+        if (messageType === "push") {
+            baseAssetQuery = {
+                types: [
+                    {
+                        predicateType: "string",
+                        value: "urn:openremote:asset:console"
+                    }
+                ]};
+        } else {
+            baseAssetQuery = {
+                attributes: {
+                    items: [
+                        {
+                            name: { "predicateType": "string", "value": "email" },
+                            value: { "predicateType": "value-not-empty" }
+                        }
+                    ]
+                }
             }
         }
 
-        if(this.type === NotificationTargetType.ASSET) {
-            idOptions.push(["*", i18next.t("matched")]);
-            if(this._listItems) this._listItems.forEach((asset: Asset) => idOptions.push([asset.id!, asset.name!] as [string, string]));
+        let targetTemplate = OrRuleActionNotification.getActionTargetTemplate(getTargetTypeMap(this.rule), this.action, this.actionType, !!this.readonly, this.config, baseAssetQuery,(type) => this._onTargetTypeChanged(type), (type, value) => this._onTargetChanged(type, value));
+        let modalTemplate: TemplateResult | string = ``;
+
+        if (!targetTemplate) {
+            this.dispatchEvent(new OrRulesRuleUnsupportedEvent());
+            return ``;
         }
 
-        if(this.type ===  NotificationTargetType.TENANT) {
-            if(this._listItems) this._listItems.forEach((tenant: Tenant) => idOptions.push([tenant.id!, tenant.displayName!] as [string, string]));
-        }
-        
-        if(this.type ===  NotificationTargetType.USER) {
-            if(this._listItems) this._listItems.forEach((user: User) => idOptions.push([user.id!, user.username ? user.username : user.email] as [string, string]));
-            
-        }
-        if(this.type){
-            targetTypeTemplate = html`<or-input type="${InputType.SELECT}" 
-                            .options="${targetTypes}"
-                            value="${this.type}"
-                            label="${i18next.t("recipients")}"
-                            @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationType(e.detail.value)}" 
-                            ?readonly="${this.readonly}"></or-input>
-            `;
-        } else if(targetTypes.length > 0 ){
-            targetTypeTemplate = html`<or-input type="${InputType.SELECT}" 
-                        .options="${targetTypes}"
-                        label="${i18next.t("recipients")}"
-                        @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationType(e.detail.value)}" 
-                        ?readonly="${this.readonly}"></or-input>
-            `;
-        }
-
-        if(idOptions.length > 0 && this._listItems) {
-            valueTemplate = html`
-                <or-input type="${InputType.SELECT}" 
-                    .options="${idOptions}"
-                    label="${this.type ? i18next.t(this.type.toLowerCase()+"_plural") : ""}"
-                    .value="${this.getNotificationTargetId()}"
-                    @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationValue(e.detail.value)}" 
-                    ?readonly="${this.readonly}"></or-input>
-            `;
-        }
-
-        if(this.type ===  NotificationTargetType.CUSTOM) {
-            if(messageType === "email" && message) {
-                const emailMessage:EmailNotificationMessage = message;
-                value = message && emailMessage.to ? emailMessage.to.map(t => t.address).join(';') : "";
-            }
-
-            valueTemplate = html`<or-input .type="${InputType.TEXT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value)}" ?readonly="${this.readonly}" .value="${value}" ></or-input>`
-        }
-
-        let modalTemplate = html``;
-        if(message) {
-            if(messageType === "push") {
+        if (message) {
+            if (messageType === "push") {
                 modalTemplate = html`
                     <or-rule-notification-modal title="push-notification" .action="${this.action}">
                         <or-rule-form-push-notification .action="${this.action}"></or-rule-form-push-notification>
@@ -138,7 +264,7 @@ export class OrRuleActionNotification extends LitElement {
                 `;
             }
             
-            if(messageType === "email") {
+            if (messageType === "email") {
                 modalTemplate = html`
                     <or-rule-notification-modal title="email" .action="${this.action}">
                         <or-rule-form-message .action="${this.action}"></or-rule-form-message>
@@ -147,209 +273,64 @@ export class OrRuleActionNotification extends LitElement {
             }
         }
 
-        return html`
-            ${targetTypeTemplate}
-            ${valueTemplate}
-            ${modalTemplate}
-        `;
-    }
-    
-    protected _getAssetType() {
-        if (!this.action.target) {
-            return;
-        }
-        const query = this.action.target.assets ? this.action.target.assets : this.action.target.matchedAssets ? this.action.target.matchedAssets : undefined;
-        return query ? getAssetTypeFromQuery(query) : undefined;
+        targetTemplate = targetTemplate.then((targetTemplate) =>
+            html`
+                ${targetTemplate}
+                ${modalTemplate}
+            `
+        );
+
+        return html`${until(targetTemplate,html``)}`;
     }
 
-    getNotificationTargetType() {
-        if(this.action.target) {
-            if(this.action.target.assets || this.action.target.matchedAssets) return NotificationTargetType.ASSET;
-            if(this.action.target.users) return NotificationTargetType.USER;
-        } else if(this.action.notification) {
-            if(this.action.notification.message && this.action.notification.message.type === "email") return NotificationTargetType.CUSTOM;
-        } else {
-            return;
-        }
-        
-    }
-
-
-    getNotificationTargetId() {
-        if(!this.action.target) return 
-        
-        switch (this.type) {
-            case NotificationTargetType.ASSET:
-                if( this.action.target.matchedAssets) {
-                    return "*";
+    protected _onTargetTypeChanged(targetType: ActionTargetType) {
+        if (targetType === ActionTargetType.ASSET) {
+            delete this.action.target;
+        } else if (targetType === ActionTargetType.USER) {
+            this.action.target = {
+                users: {
+                    ids: []
                 }
-
-                const assets = this.action.target.assets
-                if(assets && assets.ids) {
-                    return assets.ids[0]
-                }
-                break;
-            case NotificationTargetType.USER:
-                const users = this.action.target.users
-                if(users && users.ids) {
-                    return users.ids[0]
-                }
-                break;
-            case NotificationTargetType.TENANT:
-                break;
-            case NotificationTargetType.CUSTOM:
-                break;
+            };
+        } else if (targetType === ActionTargetType.CUSTOM) {
+            this.action.target = {
+                custom: ""
+            }
         }
+
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+        this.requestUpdate();
     }
 
-    protected clearMessageTo() {
-        if(this.action.notification && this.action.notification.message){
-            const message:EmailNotificationMessage = this.action.notification.message
-            delete message.to
-        } 
-    }
-    protected setActionNotificationType(type: NotificationTargetType) {
-        this.type = type;
-        this.loadTypeData(type);
-    }
-
-    protected setActionNotificationValue(value: string) {
-        this.clearMessageTo();
-        switch (this.type) {
-            case NotificationTargetType.ASSET:
-                if (value === "*") {
-                    const assetType = this._getAssetType();
-                    if(this.action.target){
-                        this.action.target.assets = undefined;
-                    }
+    protected _onTargetChanged(targetType: ActionTargetType, value: string | undefined) {
+        switch (targetType) {
+            case ActionTargetType.ASSET:
+                if (!value || value === "allMatched") {
+                    delete this.action.target;
+                } else if (value.startsWith("urn:")) {
+                     // This is an asset type
                     this.action.target = {
                         matchedAssets: {
                             types: [
                                 {
                                     predicateType: "string",
-                                    value: assetType
+                                    value: value
                                 }
                             ]
                         }
                     };
                 } else {
-                    const assets:AssetQuery = {ids: [value]}
-                    this.action.target = {assets: assets}
-                }
-                break;
-            case NotificationTargetType.USER:
-                const users:UserQuery = {ids: [value]}
-                this.action.target = {users: users}
-                break;
-            case NotificationTargetType.TENANT:
-                break;
-            case NotificationTargetType.CUSTOM:
-                break;
-        }
-        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-    }
-
-    protected firstUpdated(_changedProperties: PropertyValues): void {
-        if(_changedProperties.has('action')) {
-            const type = this.getNotificationTargetType();
-            if(type) {
-                this.setActionNotificationType(type);
-            }
-        }
-    }
-
-    protected loadTypeData(type: string | undefined) {
-        if(this.action && this.action.notification) {
-            switch (type) {
-                case NotificationTargetType.ASSET:
-
-                    const messageType = this.action.notification.message ? this.action.notification.message.type : undefined
-                    if(messageType === "push") {
-                        const query = {
-                            types: [
-                            {
-                                predicateType: "string",
-                                value: "urn:openremote:asset:console"
-                            }
-                        ]};
-                        this.loadAssets(query)
-                    } else {
-                        const query = {
-                            attributes: {
-                                items: [
-                                   {
-                                      name: { "predicateType": "string", "value": "email" },
-                                      value: { "predicateType": "value-not-empty" } 
-                                   }
-                                ]
-                              }
+                    this.action.target = {
+                        assets: {
+                            ids: [
+                                value
+                            ]
                         }
-                        this.loadAssets(query)
-                    }
-                    break;
-                case NotificationTargetType.USER:
-                    this.loadUsers()
-                    break;
-                case NotificationTargetType.TENANT:
-                    this.loadTenants()
-                    break;
-                case NotificationTargetType.CUSTOM:
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    protected setActionNotificationName(emails: string | undefined) {
-        delete this.action.target;
-        if(emails && this.action.notification && this.action.notification.message){
-
-            const arrayOfEmails = emails.split(';');
-            const message:EmailNotificationMessage = this.action.notification.message;
-            message.to = [];
-            arrayOfEmails.forEach(email => {
-                const messageRecipient:EmailNotificationMessageRecipient = {
-                        address: email,
-                        name: email
-                };
-
-                if(message && message.to){
-                    message.to.push(messageRecipient);
+                    };
                 }
-            });
-
-            this.action.notification.message = message;
+                break;
         }
+
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-        this.requestUpdate();
-    }
-
-    
-    protected loadTenants() {
-        manager.rest.api.TenantResource.getAll().then((response) => this._listItems = response.data);
-    }
-
-    protected loadUsers() {
-        manager.rest.api.UserResource.getAll(manager.displayRealm).then((response) => this._listItems = response.data).then(() => {
-            this.requestUpdate();
-        });
-    }
-
-    protected loadAssets(query: object) {
-        const baseQuery = {
-            select: {
-                excludeAttributeTimestamp: true,
-                excludeAttributeValue: true,
-                excludeParentInfo: true,
-                excludePath: true
-            },
-            orderBy: {
-                property: AssetQueryOrderBy$Property.NAME
-            }
-        };
-        const assetQuery = {...query, ...baseQuery};
-
-        manager.rest.api.AssetResource.queryAssets(assetQuery).then((response) => this._listItems = response.data);
     }
 }

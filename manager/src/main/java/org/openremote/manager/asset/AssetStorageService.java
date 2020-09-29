@@ -286,12 +286,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         gatewayService = container.getService(GatewayService.class);
         EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, this);
 
-        META_ITEM_RESTRICTED_READ_SQL_FRAGMENT =
-            " ('" + Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).filter(i -> i.getAccess().restrictedRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
-
-        META_ITEM_PUBLIC_READ_SQL_FRAGMENT =
-            " ('" + Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).filter(i -> i.getAccess().publicRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
-
         clientEventService.addSubscriptionAuthorizer((auth, subscription) ->
             (subscription.isEventType(AssetTreeModifiedEvent.class))
                 && identityService.getIdentityProvider().canSubscribeWith(
@@ -336,6 +330,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     @Override
     public void start(Container container) throws Exception {
+        META_ITEM_RESTRICTED_READ_SQL_FRAGMENT =
+            " ('" + Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).filter(i -> i.getAccess().restrictedRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
+
+        META_ITEM_PUBLIC_READ_SQL_FRAGMENT =
+            " ('" + Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).filter(i -> i.getAccess().publicRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
     }
 
     @Override
@@ -701,12 +700,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             // Update all empty attribute timestamps with server-time (a caller which doesn't have a
             // reliable time source such as a browser should clear the timestamp when setting an attribute
             // value).
+            // Ensure attribute names are not stored in the value object
 
             asset.getAttributesStream().forEach(attribute -> {
                 Optional<Long> timestamp = attribute.getValueTimestamp();
                 if (!timestamp.isPresent() || timestamp.get() <= 0) {
                     attribute.setValueTimestamp(timerService.getCurrentTimeMillis());
                 }
+                attribute.getObjectValue().remove("name");
             });
 
             // If username present

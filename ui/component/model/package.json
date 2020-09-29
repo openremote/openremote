@@ -1,6 +1,6 @@
 {
   "name": "@openremote/model",
-  "version": "1.1.0",
+  "version": "1.0.3",
   "description": "OpenRemote 3.x Model Types",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -15,6 +15,9 @@
   "devDependencies": {
     "tslint": ">=5.11.0",
     "typescript": ">=3.4.5"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "files": [
     "dist"

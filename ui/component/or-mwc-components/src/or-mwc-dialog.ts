@@ -3,6 +3,7 @@ import {MDCDialog} from "@material/dialog";
 import "@openremote/or-translate";
 import "@openremote/or-input";
 import {InputType} from "@openremote/or-input";
+import { i18next } from "@openremote/or-translate";
 
 const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
 const listStyle = require("!!raw-loader!@material/list/dist/mdc.list.css");
@@ -58,9 +59,32 @@ declare global {
     }
 }
 
-export function showDialog(config: DialogConfig, hostElement: HTMLElement = document.body): OrMwcDialog {
+export function showErrorDialog(errorMessage: string) {
+    showDialog({
+        title: "error",
+        content: html`
+                <div>
+                    <p><or-translate value="errorOccurred"></or-translate>
+                    ${errorMessage ? html`
+                        :</p>
+                        <p>
+                            <or-translate value="error"></or-translate>
+                            <span> = </span> 
+                            <or-translate .value="${errorMessage}"></or-translate>
+                    ` : ``}
+                    </p>
+                </div>`,
+        actions: [{
+            actionName: "ok",
+            content: i18next.t("ok"),
+            default: true
+        }]
+    });
+}
+
+export function showDialog(config: DialogConfig, hostElement?: HTMLElement): OrMwcDialog {
     if (!hostElement) {
-        hostElement = document.body;
+        hostElement = OrMwcDialog.DialogHostElement || document.body;
     }
 
     const dialog = new OrMwcDialog();
@@ -109,6 +133,11 @@ const style = css`
 
 @customElement("or-mwc-dialog")
 export class OrMwcDialog extends LitElement {
+
+    /**
+     * Can be set by apps to control where in the DOM dialogs are added
+     */
+    public static DialogHostElement: HTMLElement;
 
     static get styles() {
         return [
@@ -203,7 +232,7 @@ export class OrMwcDialog extends LitElement {
                 <div class="mdc-dialog__container">
                     <div class="mdc-dialog__surface">
 						${typeof(this.dialogTitle) === "string" ? html`<h2 class="mdc-dialog__title" id="dialog-title"><or-translate value="${this.dialogTitle}"></or-translate></h2>`
-                            : html`<span class="mdc-dialog__title" id="dialog-title">${this.dialogTitle}</span>`}
+                            : this.dialogTitle ? html`<span class="mdc-dialog__title" id="dialog-title">${this.dialogTitle}</span>` : ``}
                         ${this.dialogContent ? html` 
                             <div class="dialog-container mdc-dialog__content" id="dialog-content">
                                 ${this.dialogContent ? this.dialogContent : html`<slot></slot>`}
@@ -224,8 +253,9 @@ export class OrMwcDialog extends LitElement {
                             </ul>
                         `}
                     </div>
+                </div>
+                <div class="mdc-dialog__scrim"></div>
             </div>
-            <div class="mdc-dialog__scrim"></div>
         `;
     }
 
@@ -248,6 +278,10 @@ export class OrMwcDialog extends LitElement {
             if (matchedAction && matchedAction.action) {
                 matchedAction.action(this);
             }
+        }
+        if (this._mdcComponent) {
+            this._mdcComponent.destroy();
+            this._mdcComponent = undefined;
         }
         this.dispatchEvent(new OrMwcDialogClosedEvent(action));
     }

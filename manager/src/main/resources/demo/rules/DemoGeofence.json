@@ -44,9 +44,6 @@
       "then": [
         {
           "action": "notification",
-          "target": {
-            "useAssetsFromWhen": true
-          },
           "notification": {
             "name": "De Kuip",
             "message": {

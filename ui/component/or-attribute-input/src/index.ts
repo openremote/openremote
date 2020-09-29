@@ -26,14 +26,16 @@ import manager, {AssetModelUtil, DefaultColor4, subscribe, Util} from "@openremo
 import "@openremote/or-input";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 import "@openremote/or-map";
-import {showDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {showDialog, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {
     getMarkerIconAndColorFromAssetType,
     LngLat,
     MapEventDetail,
     MapGL,
     OrMapClickedEvent,
-    Util as MapUtil
+    Util as MapUtil,
+    OrMap,
+    OrMapMarker
 } from "@openremote/or-map";
 
 export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputChangedEventDetail> {
@@ -180,23 +182,44 @@ export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (
     return (value, timestamp, loading, sending, error) => {
         let pos: LngLat | undefined;
         let center: number[] | undefined;
+
         if (value) {
             pos = MapUtil.getLngLat(value);
             center = pos ? pos.toArray() : undefined;
         }
 
+        const centerStr = center ? center.join(", ") : undefined;
         centerControl.pos = pos;
         coordinatesControl.readonly = !!attributeInput.disabled || !!attributeInput.readonly || sending || loading;
-        coordinatesControl.value = center ? center.join(", ") : undefined;
+        coordinatesControl.value = centerStr;
 
         const iconAndColor = getMarkerIconAndColorFromAssetType(assetType);
 
-        const clickHandler = (mapClickDetail: MapEventDetail) => {
-            if (!attributeInput.readonly && !attributeInput.disabled && mapClickDetail.doubleClick) {
-                const geoJsonPoint = MapUtil.getGeoJSONPoint(mapClickDetail.lngLat);
-                if (valueChangeNotifier) {
-                    valueChangeNotifier(geoJsonPoint);
-                }
+        let dialog: OrMwcDialog | undefined;
+
+        const updateHandler = () => {
+            if (valueChangeNotifier) {
+                valueChangeNotifier(MapUtil.getGeoJSONPoint(pos));
+            }
+        };
+
+        const setPos = (lngLat: LngLat | undefined) => {
+            if (attributeInput.readonly || attributeInput.disabled) {
+                return;
+            }
+
+            pos = lngLat;
+
+            if (dialog) {
+                // We're in compact mode modal
+                const marker = dialog.shadowRoot!.getElementById("geo-json-point-marker") as OrMapMarker;
+                marker.lng = pos ? pos.lng : undefined;
+                marker.lat = pos ? pos.lat : undefined;
+                center = pos ? pos.toArray() : undefined;
+                const centerStr = center ? center.join(", ") : undefined;
+                coordinatesControl.value = centerStr;
+            } else {
+                updateHandler();
             }
         };
 
@@ -207,31 +230,68 @@ export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (
                     margin: 3px 0;
                 }
             </style>
-            <or-map class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => clickHandler(ev.detail)}" .center="${center}" .controls="${[centerControl, [coordinatesControl, "top-left"]]}">
-                <or-map-marker active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .color="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
+            <or-map id="geo-json-point-map" class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => {if (ev.detail.doubleClick) {setPos(ev.detail.lngLat);}}}" .center="${center}" .controls="${[centerControl, [coordinatesControl, "top-left"]]}">
+                <or-map-marker id="geo-json-point-marker" active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .color="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
             </or-map>
         `;
 
         if (attributeInput.compact) {
-
             const mapContent = content;
 
             const onClick = () => {
-                showDialog(
+                dialog = showDialog(
                     {
                         content: mapContent,
+                        styles: html`
+                            <style>
+                                or-map {
+                                    width: 600px !important;
+                                    height: 600px !important;
+                                }
+                            </style>
+                        `,
+                        actions: [
+                            {
+                                actionName: "none",
+                                content: i18next.t("none"),
+                                action: () => {
+                                    setPos(undefined);
+                                    updateHandler();
+                                }
+                            },
+                            {
+                                actionName: "ok",
+                                content: i18next.t("ok"),
+                                action: () => {
+                                    updateHandler();
+                                }
+                            },
+                            {
+                                default: true,
+                                actionName: "cancel",
+                                content: i18next.t("cancel")
+                            }
+                        ]
                     });
             };
 
             content = html`
-                <div>
-                    <or-input .type="${InputType.TEXT}" comfortable outlined .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeNotifier)(e)}"></or-input>
-                    <or-input style="width: auto;" .type="${InputType.BUTTON}" compact action icon="crosshairs-gps" @clicked="${onClick}"></or-input>
+                <style>
+                    #geo-json-point-input-compact-wrapper {
+                        display: table-cell;
+                    }
+                    #geo-json-point-input-compact-wrapper > * {
+                        vertical-align: middle;
+                    }
+                </style>
+                <div id="geo-json-point-input-compact-wrapper">
+                    <or-input .type="${InputType.TEXT}" .value="${centerStr}" .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeNotifier)(e)}"></or-input>
+                    <or-input style="width: auto;" .type="${InputType.BUTTON}" compact action icon="crosshairs-gps" @click="${onClick}"></or-input>
                 </div>
             `;
         }
 
-        return getAttributeInputWrapper(content, loading, !!attributeInput.disabled, getHelperText(sending, false, timestamp), attributeInput.label, undefined);
+        return getAttributeInputWrapper(content, loading, !!attributeInput.disabled, attributeInput.hasHelperText ? getHelperText(sending, false, timestamp) : undefined, attributeInput.label, undefined);
     }
 }
 
@@ -577,7 +637,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         }
 
         if (_changedProperties.has("attribute")) {
-            const oldAttr = _changedProperties.get("attribute") as AssetAttribute;
+            const oldAttr = {..._changedProperties.get("attribute") as AssetAttribute};
             const attr = this.attribute;
 
             if (oldAttr && attr) {
@@ -745,16 +805,21 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             this._step = Util.getMetaValue(MetaItemType.STEP, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as number;
             this._options = Util.getMetaValue(MetaItemType.ALLOWED_VALUES, this.attribute, this._attributeDescriptor);
 
-            if (!this.inputType && this._inputType === InputType.TEXT && this._options && Array.isArray(this._options) && this._options.length > 0) {
-                this._inputType = InputType.SELECT;
+            if (this._inputType === InputType.TEXT) {
+                if (this._options && Array.isArray(this._options) && this._options.length > 0) {
+                    this._inputType = InputType.SELECT;
+                } else if (Util.getMetaValue(MetaItemType.MULTILINE, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor)) {
+                    this._inputType = InputType.TEXTAREA;
+                }
             }
 
-            if (!this.inputType && this._inputType === InputType.TEXT && Util.getMetaValue(MetaItemType.MULTILINE, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor)) {
-                this._inputType = InputType.TEXTAREA;
-            }
-
-            if (!this.inputType && this._inputType === InputType.NUMBER && this._min !== undefined && this._max) {
-                this._inputType = InputType.RANGE;
+            if (this._inputType === InputType.NUMBER) {
+                if (this._options && Array.isArray(this._options) && this._options.length > 0) {
+                    this._inputType = InputType.SELECT;
+                    this._options = this._options.map((opt, index) => [index, opt]);
+                } else if (this._min !== undefined && this._max) {
+                    this._inputType = InputType.RANGE;
+                }
             }
 
             this._valueFormat = Util.getAttributeValueFormat(this.attribute, this._attributeDescriptor, this._attributeValueDescriptor);

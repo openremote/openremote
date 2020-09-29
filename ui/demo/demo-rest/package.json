@@ -1,6 +1,6 @@
 {
   "name": "@openremote/demo-rest",
-  "version": "1.1.0",
+  "version": "1.0.4",
   "description": "Demo",
   "private": true,
   "scripts": {
@@ -15,8 +15,8 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/rest": "^1.1.0",
-    "lit-element": "^2.2.1"
+    "@openremote/rest": "^1.0.3",
+    "lit-element": "^2.4.0"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",
