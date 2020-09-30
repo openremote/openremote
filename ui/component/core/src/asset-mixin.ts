@@ -2,6 +2,7 @@
 import {EventProviderFactory, EventProviderStatus} from "./event";
 import {objectsEqual} from "./util";
 import {AttributeRef, SharedEvent, EventRequestResponseWrapper} from "@openremote/model";
+import { Util } from ".";
 
 declare type Constructor<T = {}> = new (...args: any[]) => T;
 
@@ -102,19 +103,23 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
         public async _addEventSubscriptions(): Promise<void> {
             const isAttributes = !!this._attributeRefs;
             const ids: string[] | AttributeRef[] | undefined = this._attributeRefs ? this._attributeRefs : this._assetIds;
-            this._subscriptionIds = [];
 
             if (ids && ids.length > 0) {
+                this._subscriptionIds = [];
+
                 if (!isAttributes) {
                     const assetSubscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAssetEvents(ids, true, (event) => this._onEvent(event));
-                    if (!this._subscriptionIds) {
+                    // Check if the same IDs are in place
+                    const currentIds: string[] | AttributeRef[] | undefined = this._attributeRefs ? this._attributeRefs : this._assetIds;
+                    if (!this._subscriptionIds || !Util.objectsEqual(ids, currentIds)) {
                         eventProviderFactory.getEventProvider()!.unsubscribe(assetSubscriptionId);
                         return;
                     }
                     this._subscriptionIds.push(assetSubscriptionId);
                 }
                 const subscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAttributeEvents(ids, isAttributes, (event) => this._onEvent(event));
-                if (!this._subscriptionIds) {
+                const currentIds: string[] | AttributeRef[] | undefined = this._attributeRefs ? this._attributeRefs : this._assetIds;
+                if (!this._subscriptionIds || !Util.objectsEqual(ids, currentIds)) {
                     eventProviderFactory.getEventProvider()!.unsubscribe(subscriptionId);
                 } else {
                     this._subscriptionIds.push(subscriptionId);

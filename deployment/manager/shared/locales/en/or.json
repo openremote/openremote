@@ -62,8 +62,11 @@
   "valueChanges": "Value changes",
   "save": "Save",
   "active": "Active",
-  "continueWithoutSaving": "If you continue, your changes will not be saved. Continue without saving?",
-  "confirmDelete": "Are you sure you want to delete?",
+  "deleteRulesetsConfirm": "Remove ruleset(s)?",
+  "deleteRulesetsFailed": "Failed to delete one or more requested rulesets(s)",
+  "saveRulesetFailed": "Failed to save ruleset",
+  "rulesetModified": "Ruleset modified",
+  "confirmContinueRulesetModified": "Ruleset has been modified, discard changes?",
   "when": "When",
   "then": "Then",
   "orWhen": "Or when",
@@ -79,7 +82,7 @@
   "status": "Status",
   "name": "Name",
   "deleteAssetsConfirm": "Remove asset(s) and all descendant assets?",
-  "deleteFailed": "Failed to delete requested asset(s)",
+  "deleteAssetsFailed": "Failed to delete requested asset(s)",
   "ok": "OK",
   "cancel": "Cancel",
   "createdOn": "Created on",
@@ -287,7 +290,7 @@
   "parent": "Parent",
   "none": "None",
   "properties": "Properties",
-  "metaItemType": {
+  "metaItemTypes": {
     "urn:openremote:asset:meta:label": "Label",
     "urn:openremote:asset:meta:description": "Description",
     "urn:openremote:asset:meta:storeDataPoints": "Store data points",
@@ -321,7 +324,14 @@
   "addMetaItems": "Add configuration items",
   "assetModified": "Asset modified",
   "confirmContinueAssetModified": "Asset has been modified, discard changes?",
+  "saveAssetFailed": "Failed to save asset",
   "noCommand": "No command",
   "start": "Start",
-  "stop": "Stop"
+  "stop": "Stop",
+  "assetTypes": {
+    "noDescription": "No description available",
+    "urn:openremote:protocol:knx": {
+      "description": "Protocol for connecting to a KNX"
+    }
+  }
 }

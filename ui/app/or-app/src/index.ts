@@ -336,8 +336,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                         deferred.resolve({
                             cancel: false,
                             username: u,
-                            password: p,
-                            closeCallback: () => { dialog.close(); }
+                            password: p
                         });
                     },
                     content: html`<or-input .type=${InputType.BUTTON} .label="${i18next.t("submit")}" raised></or-input>`

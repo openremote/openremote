@@ -19,14 +19,23 @@
  */
 package org.openremote.model.asset.agent;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.openremote.model.asset.AssetDescriptor;
 
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+@JsonDeserialize(as = AgentDescriptorImpl.class)
 public interface AgentDescriptor extends AssetDescriptor {
+    @JsonProperty
     boolean hasInstanceDiscovery();
 
+    @JsonProperty
     boolean hasAssetDiscovery();
 
+    @JsonProperty
     boolean hasInstanceImport();
 
+    @JsonProperty
     boolean hasAssetImport();
 }

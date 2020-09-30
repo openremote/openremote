@@ -1,6 +1,8 @@
-import axios, {AxiosInstance, AxiosRequestConfig} from "axios";
-import {ApiClient} from "./restclient";
+import axios, {AxiosInstance, AxiosRequestConfig, GenericAxiosResponse} from "axios";
+import {ApiClient, RestResponse} from "./restclient";
 import Qs from "qs";
+
+export {RestResponse, GenericAxiosResponse};
 
 export class RestApi {
 

@@ -16,7 +16,8 @@ import {
     Role,
     Attribute,
     ConsoleAppConfig,
-    AssetType
+    AssetType,
+    AgentDescriptor
 } from "@openremote/model";
 import * as Util from "./util";
 import orIconSet from "./or-icon-set";
@@ -98,7 +99,6 @@ export interface BasicLoginResult {
     username: string;
     password: string;
     cancel: boolean;
-    closeCallback: undefined | ((authenticated: boolean) => void);
 }
 
 export enum MapType {
@@ -172,15 +172,15 @@ export class ORIconSets {
             return undefined;
         }
 
-        let parts = (icon || "").split(":");
-        let iconName = parts.pop();
-        let iconSetName = parts.pop() || DEFAULT_ICONSET;
+        const parts = (icon || "").split(":");
+        const iconName = parts.pop();
+        const iconSetName = parts.pop() || DEFAULT_ICONSET;
         if (!iconSetName || iconSetName === "" || !iconName || iconName === "") {
             return;
         }
 
-        let iconSet = IconSets.getIconSet(iconSetName);
-        //iconName = iconName.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); });
+        const iconSet = IconSets.getIconSet(iconSetName);
+        // iconName = iconName.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); });
 
         if (!iconSet || !iconSet.icons.hasOwnProperty(iconName)) {
             return;
@@ -206,10 +206,15 @@ export class ORIconSets {
 
 export class AssetModelUtil {
 
+    public static _agentDescriptors: AgentDescriptor[] = [];
     public static _assetDescriptors: AssetDescriptor[] = [];
     public static _attributeDescriptors: AttributeDescriptor[] = [];
     public static _attributeValueDescriptors: AttributeValueDescriptor[] = [];
     public static _metaItemDescriptors: MetaItemDescriptor[] = [];
+
+    public static getAgentDescriptors(): AgentDescriptor[] {
+        return [...this._agentDescriptors];
+    }
 
     public static getAssetDescriptors(): AssetDescriptor[] {
         return [...this._assetDescriptors];
@@ -711,7 +716,7 @@ export class Manager implements EventProviderFactory {
             fallbackNS: "or",
             ns: this.config.loadTranslations,
             interpolation: {
-                format: function(value, format, lng) {
+                format: (value, format, lng) => {
                     if (format === "uppercase") return value.toUpperCase();
                     if (value instanceof Date) {
                         return moment(value).format(format);
@@ -761,6 +766,7 @@ export class Manager implements EventProviderFactory {
             const attributeValueDescriptorResponse = await rest.api.AssetModelResource.getAttributeValueDescriptors();
             const metaItemDescriptorResponse = await rest.api.AssetModelResource.getMetaItemDescriptors();
 
+            AssetModelUtil._agentDescriptors = agentDescriptorResponse.data;
             AssetModelUtil._assetDescriptors = assetDescriptorResponse.data;
             AssetModelUtil._attributeDescriptors = attributeDescriptorResponse.data;
             AssetModelUtil._attributeValueDescriptors = attributeValueDescriptorResponse.data;
@@ -855,7 +861,7 @@ export class Manager implements EventProviderFactory {
 
     protected async doConsoleInit(): Promise<boolean> {
         try {
-            let orConsole = new Console(this._config.realm, this._config.consoleAutoEnable!, () => {
+            const orConsole = new Console(this._config.realm, this._config.consoleAutoEnable!, () => {
                 this._emitEvent(OREvent.CONSOLE_READY);
             });
 
@@ -945,8 +951,7 @@ export class Manager implements EventProviderFactory {
         let result: BasicLoginResult = {
             username: this._config.credentials ? this._config.credentials.username : "",
             password: this._config.credentials ? this._config.credentials.password : "",
-            cancel: false,
-            closeCallback: undefined
+            cancel: false
         };
         let authenticated = false;
 
@@ -961,9 +966,6 @@ export class Manager implements EventProviderFactory {
 
             if (result.cancel) {
                 console.log("Basic authentication cancelled by user");
-                if (result.closeCallback) {
-                    result.closeCallback(false);
-                }
                 break;
             }
 
@@ -997,10 +999,6 @@ export class Manager implements EventProviderFactory {
         }
 
         this._setAuthenticated(authenticated);
-
-        if (result.closeCallback) {
-            result.closeCallback(authenticated);
-        }
     }
 
     public isSuperUser() {
@@ -1014,7 +1012,7 @@ export class Manager implements EventProviderFactory {
     }
 
     public getAppName(): string {
-        let pathArr = location.pathname.split('/');
+        const pathArr = location.pathname.split('/');
         return pathArr.length >= 1 ? pathArr[1] : "";
     }
 
@@ -1191,7 +1189,7 @@ export class Manager implements EventProviderFactory {
 
     protected _emitEvent(event: OREvent) {
         window.setTimeout(() => {
-            let listeners = this._listeners.slice();
+            const listeners = this._listeners.slice();
             for (const listener of listeners) {
                 listener(event);
             }

@@ -1,17 +1,18 @@
 import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
-import {CalendarEvent, ClientRole, RulesetLang, TenantRuleset} from "@openremote/model";
+import {CalendarEvent, ClientRole, RulesetLang, RulesetUnion, TenantRuleset} from "@openremote/model";
 import "@openremote/or-translate";
-import manager, {EventCallback, OREvent} from "@openremote/core";
+import manager, {OREvent, Util} from "@openremote/core";
 import "@openremote/or-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {style as OrAssetTreeStyle} from "@openremote/or-asset-tree";
 import {
+    AddEventDetail,
+    OrRules,
+    OrRulesAddEvent,
     OrRulesRequestAddEvent,
-    OrRulesRequestCopyEvent,
     OrRulesRequestDeleteEvent,
-    OrRulesRequestSelectEvent,
-    OrRulesSelectionChangedEvent,
-    RequestEventDetail,
+    OrRulesRequestSelectionEvent,
+    OrRulesSelectionEvent,
     RulesConfig,
     RulesetNode
 } from "./index";
@@ -20,6 +21,8 @@ import {MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import {translate} from "@openremote/or-translate";
 import i18next from "i18next";
 import {getContentWithMenuTemplate} from "../../or-mwc-components/dist/or-mwc-menu";
+import {showErrorDialog, showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {GenericAxiosResponse} from "@openremote/rest";
 
 // language=CSS
 const style = css`
@@ -130,7 +133,6 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     protected _globalRulesets: boolean = false;
 
     protected _selectedNodes: RulesetNode[] = [];
-    protected _initCallback?: EventCallback;
     protected _ready = false;
 
     static get styles() {
@@ -140,8 +142,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         ];
     }
 
-    public refresh() {
-        this._nodes = undefined;
+    public async refresh() {
+        await this._loadRulesets();
     }
 
     public disconnectedCallback() {
@@ -325,15 +327,15 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         `;
     }
 
-    protected static _getNodeStatusClasses(ruleset: TenantRuleset): string {
+    protected static _getNodeStatusClasses(ruleset: RulesetUnion): string {
         let status = ruleset.enabled ? "bg-green" : "bg-red";
 
         if (ruleset.enabled) {
 
             // Look at validity meta
             if (ruleset.meta && ruleset.meta.hasOwnProperty("urn:openremote:rule:meta:validity")) {
-                let calendarEvent = ruleset.meta["urn:openremote:rule:meta:validity"] as CalendarEvent;
-                let now = new Date().getTime();
+                const calendarEvent = ruleset.meta["urn:openremote:rule:meta:validity"] as CalendarEvent;
+                const now = new Date().getTime();
 
                 if (calendarEvent.start) {
                     if (now < calendarEvent.start) {
@@ -368,8 +370,12 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         }
 
         this.selectedIds = actuallySelectedIds;
+        const oldSelection = this._selectedNodes;
         this._selectedNodes = selectedNodes;
-        this.dispatchEvent(new OrRulesSelectionChangedEvent(this._selectedNodes.map((node) => node.ruleset)));
+        this.dispatchEvent(new OrRulesSelectionEvent({
+            oldNodes: oldSelection,
+            newNodes: selectedNodes
+        }));
     }
 
     protected static _updateSort(nodes: RulesetNode[], sortFunction: (a: RulesetNode, b: RulesetNode) => number) {
@@ -387,53 +393,171 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
         evt.preventDefault();
 
-        let selectRulesets = this._selectedNodes.map((node) => node.ruleset);
-        const index = selectRulesets.findIndex((ruleset) => ruleset.id === node.ruleset.id);
+        let selectedNodes: RulesetNode[] = [];
+        const index = this._selectedNodes.indexOf(node);
         let select = true;
         let deselectOthers = true;
+        const multiSelect = !this._isReadonly() && this.multiSelect  && (!this.config || !this.config.controls || !this.config.controls.multiSelect);
 
-        if (this.multiSelect) {
-            if (evt.ctrlKey || evt.metaKey) {
-                deselectOthers = false;
-                if (index >= 0 && selectRulesets.length > 1) {
-                    select = false;
-                }
+        if (multiSelect && (evt.ctrlKey || evt.metaKey)) {
+            deselectOthers = false;
+            if (index >= 0 && this._selectedNodes && this._selectedNodes.length > 1) {
+                select = false;
             }
         }
 
         if (deselectOthers) {
-            selectRulesets = [node.ruleset];
+            selectedNodes = [node];
         } else if (select) {
             if (index < 0) {
-                selectRulesets.push(node.ruleset);
+                selectedNodes = [...this._selectedNodes];
+                selectedNodes.push(node);
             }
-        } else {
-            if (index >= 0) {
-                selectRulesets.splice(index, 1);
-                selectRulesets = [...selectRulesets];
-            }
+        } else if (index >= 0) {
+            selectedNodes = [...this._selectedNodes];
+            selectedNodes.splice(index, 1);
         }
 
-        this._doRequest(new OrRulesRequestSelectEvent(selectRulesets), (detail) => {
-            this.selectedIds = detail.map((ruleset) => ruleset.id!);
+        Util.dispatchCancellableEvent(this, new OrRulesRequestSelectionEvent({
+            oldNodes: this._selectedNodes,
+            newNodes: selectedNodes
+        })).then((detail) => {
+            if (detail.allow) {
+                this.selectedIds = detail.detail.newNodes.map((node) => node.ruleset.id!);
+            }
         });
     }
 
     protected _onCopyClicked() {
-        if (this._selectedNodes.length == 1) {
-            this.dispatchEvent(new OrRulesRequestCopyEvent(this._selectedNodes[0].ruleset));
+        if (this._selectedNodes.length !== 1) {
+            return;
         }
-    }
 
-    protected _onDeleteClicked() {
-        if (this._selectedNodes.length > 0) {
-            this.dispatchEvent(new OrRulesRequestDeleteEvent(this._selectedNodes.map((node) => node.ruleset)));
+        const node = this._selectedNodes[0];
+        const ruleset = JSON.parse(JSON.stringify(node.ruleset)) as RulesetUnion;
+        delete ruleset.lastModified;
+        delete ruleset.createdOn;
+        delete ruleset.status;
+        delete ruleset.error;
+        delete ruleset.id;
+        ruleset.name = ruleset.name + " copy";
+
+        if (this.config && this.config.rulesetCopyHandler && !this.config.rulesetCopyHandler(ruleset)) {
+            return;
         }
+
+        Util.dispatchCancellableEvent(this, new OrRulesRequestAddEvent({
+            ruleset: ruleset,
+            sourceRuleset: node.ruleset
+        })).then((detail) => {
+                if (detail.allow) {
+                    this.dispatchEvent(new OrRulesAddEvent(detail.detail));
+                }
+            });
     }
 
     protected _onAddClicked(lang: RulesetLang) {
         const type = this._globalRulesets ? "global": "tenant";
-        this.dispatchEvent(new OrRulesRequestAddEvent(lang, type));
+        const realm = manager.isSuperUser() ? manager.displayRealm : manager.config.realm;
+        const ruleset: RulesetUnion = {
+            id: 0,
+            type: type,
+            name: OrRules.DEFAULT_RULESET_NAME,
+            lang: lang,
+            realm: realm,
+            rules: undefined
+        };
+
+        if (this.config && this.config.rulesetAddHandler && !this.config.rulesetAddHandler(ruleset)) {
+            return;
+        }
+
+        // Ensure config hasn't messed with certain values
+        if (type === "tenant") {
+            (ruleset as TenantRuleset).realm = realm;
+        }
+
+        const detail = {
+            ruleset: ruleset,
+            isCopy: false
+        };
+
+        Util.dispatchCancellableEvent(this, new OrRulesRequestAddEvent(detail))
+            .then((detail) => {
+                if (detail.allow) {
+                    this.dispatchEvent(new OrRulesAddEvent(detail.detail));
+                }
+            });
+    }
+
+    protected _onDeleteClicked() {
+        if (this._selectedNodes.length > 0) {
+            Util.dispatchCancellableEvent(this, new OrRulesRequestDeleteEvent(this._selectedNodes))
+                .then((detail) => {
+                    if (detail.allow) {
+                        this._doDelete();
+                    }
+                });
+        }
+    }
+
+    protected _doDelete() {
+
+        if (!this._selectedNodes || this._selectedNodes.length === 0) {
+            return;
+        }
+
+        const doDelete = async () => {
+            this.disabled = true;
+            const rulesetsToDelete = this._selectedNodes.map((rulesetNode) => rulesetNode.ruleset);
+            let fail = false;
+            
+            for (const ruleset of rulesetsToDelete) {
+
+                if (this.config && this.config.rulesetDeleteHandler && !this.config.rulesetDeleteHandler(ruleset)) {
+                    continue;
+                }
+
+                try {
+                    let response: GenericAxiosResponse<void>;
+
+                    switch (ruleset.type) {
+                        case "asset":
+                            response = await manager.rest.api.RulesResource.deleteAssetRuleset(ruleset.id!);
+                            break;
+                        case "tenant":
+                            response = await manager.rest.api.RulesResource.deleteTenantRuleset(ruleset.id!);
+                            break;
+                        case "global":
+                            response = await manager.rest.api.RulesResource.deleteGlobalRuleset(ruleset.id!);
+                            break;
+                    }
+                    
+                    if (response.status !== 204) {
+                        console.error("Delete ruleset returned unexpected status '" + response.status + "': " + JSON.stringify(ruleset, null, 2));
+                        fail = true;
+                    }
+                } catch (e) {
+                    console.error("Failed to delete ruleset: " + JSON.stringify(ruleset, null, 2), e);
+                    fail = true;
+                }
+            }
+            
+            if (fail) {
+                showErrorDialog(i18next.t("deleteAssetsFailed"));
+            }
+
+            this.disabled = false;
+            this.refresh();
+        };
+
+        // Confirm deletion request
+        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRulesetsConfirm"))
+            .then((ok) => {
+                if (ok) {
+                    doDelete();
+                }
+            });
     }
 
     protected _onSearchClicked() {
@@ -445,7 +569,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     }
 
     protected _getSortFunction(): (a: RulesetNode, b: RulesetNode) => number {
-        return (a, b) => { return (a.ruleset as any)![this.sortBy!] < (b.ruleset as any)![this.sortBy!] ? -1 : (a.ruleset as any)![this.sortBy!] > (b.ruleset as any)![this.sortBy!] ? 1 : 0 };
+        return Util.sortByString((node: RulesetNode) => (node.ruleset as any)![this.sortBy!]);
     }
 
     protected _getRealm(): string | undefined {
@@ -456,16 +580,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         return manager.getRealm();
     }
 
-    protected _doRequest<T>(event: CustomEvent<RequestEventDetail<T>>, handler: (detail: T) => void) {
-        this.dispatchEvent(event);
-        window.setTimeout(() => {
-            if (event.detail.allow) {
-                handler(event.detail.detail);
-            }
-        });
-    }
-
-    protected _loadRulesets() {
+    protected async _loadRulesets() {
         const sortFunction = this._getSortFunction();
 
         if(this._globalRulesets) {
@@ -481,13 +596,14 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                 fullyPopulate: true,
                 language:  this._allowedLanguages
             }
-            manager.rest.api.RulesResource.getTenantRulesets(this._getRealm() || manager.config.realm, params).then((response: any) => {
+            try {
+                const response = await manager.rest.api.RulesResource.getTenantRulesets(this._getRealm() || manager.config.realm, params);
                 if (response && response.data) {
                     this._buildTreeNodes(response.data, sortFunction);
                 }
-            }).catch((reason: any) => {
-                console.error("Error: " + reason);
-            });
+            } catch (e) {
+                console.error("Error: " + e);
+            }
         }
     }
 
@@ -503,7 +619,6 @@ export class OrRuleList extends translate(i18next)(LitElement) {
             });
             
             nodes.sort(sortFunction);
-
             this._nodes = nodes;
         }
         if (this.selectedIds && this.selectedIds.length > 0) {

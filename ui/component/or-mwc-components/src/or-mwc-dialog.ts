@@ -4,6 +4,7 @@ import "@openremote/or-translate";
 import "@openremote/or-input";
 import {InputType} from "@openremote/or-input";
 import { i18next } from "@openremote/or-translate";
+import { Util } from "@openremote/core";
 
 const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
 const listStyle = require("!!raw-loader!@material/list/dist/mdc.list.css");
@@ -59,7 +60,9 @@ declare global {
     }
 }
 
-export function showErrorDialog(errorMessage: string) {
+export async function showErrorDialog(errorMessage: string) {
+    const deferred = new Util.Deferred<boolean>();
+
     showDialog({
         title: "error",
         content: html`
@@ -77,9 +80,39 @@ export function showErrorDialog(errorMessage: string) {
         actions: [{
             actionName: "ok",
             content: i18next.t("ok"),
-            default: true
+            default: true,
+            action: () => deferred.resolve()
         }]
     });
+
+    await deferred.promise;
+}
+
+export async function showOkCancelDialog(title: string, content: string | TemplateResult) {
+
+    const deferred = new Util.Deferred<boolean>();
+
+    showDialog(
+        {
+            content: typeof(content) === "string" ? html`<p>${content}</p>` : content,
+            actions: [
+                {
+                    actionName: "ok",
+                    content: "ok",
+                    action: () => deferred.resolve(true)
+                },
+                {
+                    actionName: "cancel",
+                    content: "cancel",
+                    default: true,
+                    action: () => deferred.resolve(false)
+                }
+            ],
+            title: title
+        }
+    );
+
+    return await deferred.promise;
 }
 
 export function showDialog(config: DialogConfig, hostElement?: HTMLElement): OrMwcDialog {
