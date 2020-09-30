@@ -193,7 +193,6 @@ build-keycloak-postgresql-proxy:
     - if [ ! $DOCKER_IMAGE_TAG ]; then echo "export CI_ENVIRONMENT=$CI_ENVIRONMENT_SLUG" >> deploy.sh; fi
     - if [ $DOCKER_IMAGE_TAG ]; then echo "export CI_ENVIRONMENT=$DOCKER_IMAGE_TAG" >> deploy.sh; fi
     - echo "export SETUP_WIPE_CLEAN_INSTALL=$SETUP_WIPE_CLEAN_INSTALL" >> deploy.sh
-    - echo "export FIREBASE_CONFIG_FILE=${FIREBASE_CONFIG_FILE}" >> deploy.sh
     - if [ $SETUP_ADMIN_PASSWORD ]; then echo "export SETUP_ADMIN_PASSWORD=$SETUP_ADMIN_PASSWORD" >> deploy.sh; fi
     - if [ $NEW_IMAGES ]; then echo "docker pull \$CI_REGISTRY_IMAGE/manager:\$CI_ENVIRONMENT"    >> deploy.sh; fi
     - if [ $NEW_IMAGES ]; then echo "docker pull \$CI_REGISTRY_IMAGE/deployment:\$CI_ENVIRONMENT" >> deploy.sh; fi
@@ -208,6 +207,7 @@ build-keycloak-postgresql-proxy:
     - chmod +x deploy.sh
     - SSH mkdir -p profile deployment proxy manager/build/install/manager postgresql keycloak
     - SCP ./profile/ deploy.sh ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/
+    - SCP ${FIREBASE_CONFIG_FILE} ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/FIREBASE_CONFIG_FILE
     - SSH ./deploy.sh
     - SSH "docker system prune -f; docker images -q --filter dangling=true | xargs docker rmi; rm -rf proxy/ manager/ postgresql/ keycloak/ profile/ deployment/ deploy.sh .docker/config.json"
   after_script:
@@ -233,15 +233,13 @@ email failed build:
   stage: build_fail
   <<: *notify_email
   rules:
-    - if: $CI_COMMIT_MESSAGE !~ /skip-build/
-      when: on_failure
+    - when: on_failure
 
 build FAILED:
   stage: build_fail
   <<: *notify_whatsapp
   rules:
-    - if: $CI_COMMIT_MESSAGE !~ /skip-build/
-      when: on_failure
+    - when: on_failure
 
 test-master:
   stage: test
@@ -279,7 +277,6 @@ deploy demo on OVH:
     DEPLOYMENT_HOST: ${PROJECT_NAME}.openremote.io
     SETUP_WIPE_CLEAN_INSTALL: "true"
     DOCKER_IMAGE_TAG: latest
-    FIREBASE_CONFIG_FILE: ${FIREBASE_CONFIG_FILE}
     NEW_IMAGES: "true"
   environment:
     name: demo
@@ -296,7 +293,6 @@ redeploy demo on OVH:
     DEPLOYMENT_HOST: ${PROJECT_NAME}.openremote.io
     SETUP_WIPE_CLEAN_INSTALL: "true"
     DOCKER_IMAGE_TAG: latest
-    FIREBASE_CONFIG_FILE: ${FIREBASE_CONFIG_FILE}
   environment:
     name: demo
     url: https://${PROJECT_NAME}.openremote.io
@@ -344,4 +340,3 @@ manual delete aws cloudformation stack:
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
       when: never
-
