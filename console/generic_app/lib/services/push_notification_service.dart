@@ -3,9 +3,11 @@ import 'dart:io';
 
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:generic_app/ConsoleProviders/geofence_provider.dart';
 import 'package:generic_app/ConsoleProviders/storage_provider.dart';
+import 'package:generic_app/config/current_console_app_config.dart';
 import 'package:generic_app/events/open_web_page_event.dart';
 import 'package:generic_app/models/alert_action.dart';
 import 'package:generic_app/models/alert_button.dart';
@@ -67,7 +69,8 @@ class PushNotificationService {
       Map<String, dynamic> remoteMessage, bool onResume, bool onLaunch) async {
     Map<dynamic, dynamic> messageData = remoteMessage["data"] ?? remoteMessage;
     if (messageData != null) {
-      bool isSilent = !messageData.containsKey("or-title");
+      bool isSilent = (Platform.isAndroid && !messageData.containsKey("or-title"))
+          || (Platform.isIOS && messageData["aps"]["alert"] == null);
 
       if (isSilent) {
         String action = messageData["action"];
@@ -85,8 +88,8 @@ class PushNotificationService {
             break;
         }
       } else {
-        String title = messageData["or-title"];
-        String body = messageData["or-body"];
+        String title = Platform.isAndroid ? messageData["or-title"] : messageData["aps"]["alert"]["title"];
+        String body = Platform.isAndroid ? messageData["or-body"] : messageData["aps"]["alert"]["body"];
 
         List<AlertButton> buttons;
         AlertButton confirmButton;
@@ -123,7 +126,7 @@ class PushNotificationService {
               title: title,
               desc: body,
               btnOkText: confirmButton?.title ?? "Ok",
-              btnCancelText: declineButton?.title,
+              btnOkColor: CurrentConsoleAppConfig.instance.primaryColor,
               btnOkOnPress: confirmButton != null ? () {
                 if (confirmButton != null && confirmButton.action != null) {
                   performAlertAction(confirmButton.action);
@@ -132,6 +135,8 @@ class PushNotificationService {
                   performAlertAction(action);
                 }
               } : null,
+              btnCancelText: declineButton?.title,
+              btnCancelColor: Colors.black54,
               btnCancelOnPress: declineButton != null ?  () {
               } : null
           ).show();

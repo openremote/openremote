@@ -17,8 +17,6 @@ class ApiManager {
 
   ApiManager(this.baseUrl, {this.baseHeaders});
 
-  /*********************************Private functions*******************************/
-
   Future<T> get<T>(List<String> pathComponents, ResponseParser responseParser,
       {Map<String, dynamic> queryParameters,
       Map<String, String> additionalHeaders}) async {
@@ -63,7 +61,7 @@ class ApiManager {
           if (jsonData is List) {
            return List<T>.from(jsonData.map((item) => responseParser(item)));
           } else {
-            throw new Exception("Expected array in body");
+            throw Exception("Expected array in body");
           }
         } catch (e) {
           print(e);

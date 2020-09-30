@@ -51,7 +51,7 @@ class _SplashPageState extends State<SplashPage> {
         builder: (BuildContext context, AsyncSnapshot snapshot) {
           if (snapshot.hasData) {
             Future.delayed(Duration.zero, () {
-              if (snapshot.data != null) {
+              if (snapshot.data) {
                 Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
@@ -59,7 +59,7 @@ class _SplashPageState extends State<SplashPage> {
                             initialUrl: CurrentConsoleAppConfig.instance.initialUrl)));
               } else {
                 Navigator.pushReplacement(context,
-                    MaterialPageRoute(builder: (context) => ProjectPage()));
+                    MaterialPageRoute(builder: (context) => const ProjectPage()));
               }
             });
           }

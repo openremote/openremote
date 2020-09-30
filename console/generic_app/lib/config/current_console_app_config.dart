@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:generic_app/models/console_app_config.dart';
 import 'package:generic_app/models/link_config.dart';
-import 'package:generic_app/utils/HexColor.dart';
+import 'package:generic_app/utils/hex_color.dart';
 
 class CurrentConsoleAppConfig {
   static final CurrentConsoleAppConfig instance =
