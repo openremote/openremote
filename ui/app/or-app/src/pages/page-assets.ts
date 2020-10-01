@@ -6,7 +6,9 @@ import {
     OrAssetViewerEditToggleEvent,
     OrAssetViewerRequestEditToggleEvent,
     OrAssetViewerSaveEvent,
-    ViewerConfig
+    ViewerConfig,
+    saveAsset,
+    SaveResult
 } from "@openremote/or-asset-viewer";
 import {
     AssetTreeConfig,
@@ -123,7 +125,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         this.addEventListener(OrAssetViewerRequestEditToggleEvent.NAME, this._onEditToggleRequested);
         this.addEventListener(OrAssetViewerEditToggleEvent.NAME, this._onEditToggle);
         this.addEventListener(OrAssetTreeAddEvent.NAME, this._onAssetAdd);
-        this.addEventListener(OrAssetViewerSaveEvent.NAME, this._onAssetSave);
+        this.addEventListener(OrAssetViewerSaveEvent.NAME, (ev) => this._onAssetSave(ev.detail));
         this.addEventListener(OrAssetTreeAssetEvent.NAME, this._onAssetTreeAssetEvent);
     }
 
@@ -209,16 +211,20 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         }
     }
 
-    protected _onAssetAdd(ev: OrAssetTreeAddEvent) {
-        // Load the asset into the viewer and ensure we're in edit mode
-        this._viewer.asset = ev.detail.asset;
-        this._editMode = true;
-        this._updateRoute(true);
+    protected async _onAssetAdd(ev: OrAssetTreeAddEvent) {
+        if (this._editMode) {
+            // Just load the asset into the viewer
+            this._viewer.asset = ev.detail.asset;
+        } else {
+            // Auto save and load
+            const result = await saveAsset(ev.detail.asset);
+            this._onAssetSave(result);
+        }
     }
 
-    protected _onAssetSave(ev: OrAssetViewerSaveEvent) {
-        if (ev.detail.success && ev.detail.isNew) {
-            this._addedAssetId = ev.detail.asset.id!;
+    protected _onAssetSave(result: SaveResult) {
+        if (result.success && result.isNew) {
+            this._addedAssetId = result.assetId!;
         }
     }
 
@@ -228,6 +234,8 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
             if (this._addedAssetId === ev.detail.asset.id) {
                 this._assetIds = [ev.detail.asset.id];
                 this._addedAssetId = undefined;
+                this._viewer.assetId = ev.detail.asset.id;
+                this._updateRoute(true);
             }
         }
     }

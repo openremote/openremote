@@ -283,6 +283,20 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
+    public isAncestorSelected(node: UiAssetTreeNode) {
+        if (!this.selectedIds || !node.parent) {
+            return false;
+        }
+
+        while (node.parent) {
+            node = node.parent;
+            if (this.selectedIds.includes(node.asset!.id!)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     protected render() {
 
         return html`
@@ -294,7 +308,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 <div id="header-btns">                
                     <or-input ?hidden="${!this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}"></or-input>
                     <or-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-input>
-                    <or-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-input>
+                    <or-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0 || this.selectedNodes.some((node) => this.isAncestorSelected(node))}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-input>
                     <or-input ?hidden="${this._isReadonly() || !this._canAdd()}" type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked()}"></or-input>
                     <or-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-input>
                     
@@ -509,8 +523,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         const parent = this._selectedNodes && this._selectedNodes.length === 1 ? this._selectedNodes[0].asset : undefined;
 
         const onAddChanged = (ev: OrAddChangedEvent) => {
+            const nameValid = ev.detail.name && ev.detail.name.trim().length > 0 && ev.detail.name.trim().length < 1024;
             const addBtn = dialog.shadowRoot!.getElementById("add-btn") as OrInput;
-            addBtn.disabled = !ev.detail.descriptor || !ev.detail.name;
+            addBtn.disabled = !ev.detail.descriptor || !nameValid;
         };
 
         dialog = showDialog(
@@ -532,18 +547,20 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
                             const addAssetDialog = dialog.shadowRoot!.getElementById("add-panel") as OrAddAssetDialog;
                             const descriptor = addAssetDialog.selectedType;
+                            const name = addAssetDialog.name;
 
                             if (!descriptor) {
                                 return;
                             }
 
                             const asset: Asset = {
-                                name: "New Asset",
+                                name: name,
                                 type: descriptor.type,
                                 realm: manager.getRealm()
                             };
-                            if(this.selectedIds) {
-                                asset["parentId"] = this.selectedIds[0];
+
+                            if (this.selectedIds) {
+                                asset.parentId = parent ? parent.id : undefined;
                             }
                             const detail: AddEventDetail = {
                                 asset: asset

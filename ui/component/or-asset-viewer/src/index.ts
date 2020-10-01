@@ -178,8 +178,8 @@ export class OrAssetViewerComputeGridEvent extends CustomEvent<void> {
 
 export type SaveResult = {
     success: boolean,
-    asset: Asset,
-    isNew: boolean
+    assetId: string,
+    isNew?: boolean
 };
 
 export class OrAssetViewerRequestSaveEvent extends CustomEvent<Util.RequestEventDetail<Asset>> {
@@ -703,6 +703,40 @@ async function getAssetChildren(id: string, childAssetType: string): Promise<Ass
     return response.data.filter((asset) => asset.type === childAssetType);
 }
 
+export async function saveAsset(asset: Asset, isUpdate: boolean = false): Promise<SaveResult> {
+
+    let success: boolean;
+    let id: string = "";
+
+    try {
+        if (isUpdate) {
+            if (!asset.id) {
+                throw new Error("Request to update existing asset but asset ID is not set");
+            }
+            const response = await manager.rest.api.AssetResource.update(asset.id!, asset);
+            success = response.status === 204;
+            if (success) {
+                id = asset.id!;
+            }
+        } else {
+            const response = await manager.rest.api.AssetResource.create(asset);
+            success = response.status === 200;
+            if (success) {
+                id = response.data.id!;
+            }
+        }
+    } catch (e) {
+        success = false;
+        console.error("Failed to save asset", e);
+    }
+
+    return {
+        assetId: id,
+        success: success,
+        isNew: !isUpdate
+    };
+}
+
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const tableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-table.css");
 
@@ -995,39 +1029,24 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             return;
         }
 
-        let fail = false;
-        const isNew = !asset.id;
+        const isUpdate = !!asset.version;
         this.saveBtnElem.disabled = true;
         this.wrapperElem.classList.add("saving");
 
-        try {
-            if (!isNew) {
-                const response = await manager.rest.api.AssetResource.update(asset.id!, asset);
-                fail = response.status !== 204;
-            } else {
-                const response = await manager.rest.api.AssetResource.create(asset);
-                fail = response.status !== 200;
-                if (!fail) {
-                    asset = response.data;
-                }
-            }
-        } catch (e) {
-            fail = true;
-            console.error("Failed to save asset", e);
-        }
+        const result = await saveAsset(asset, isUpdate);
 
         this.wrapperElem.classList.remove("saving");
         this.saveBtnElem.disabled = false;
 
-        if (fail) {
+        if (!result.success) {
             showErrorDialog(i18next.t("saveAssetFailed"));
+        } else {
+            this._assetModified = false;
+            this.assetId = result.assetId;
+            this.reloadAsset();
         }
 
-        this.dispatchEvent(new OrAssetViewerSaveEvent({
-            asset: asset,
-            isNew: isNew,
-            success: !fail
-        }));
+        this.dispatchEvent(new OrAssetViewerSaveEvent(result));
     }
 
     protected _onAssetModified() {

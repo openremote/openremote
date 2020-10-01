@@ -9,10 +9,9 @@ import {
     OrMwcList,
     OrMwcListChangedEvent
 } from "@openremote/or-mwc-components/dist/or-mwc-list";
-import {OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {i18next} from "@openremote/or-translate";
-import {Util, DefaultColor5, DefaultColor2} from "@openremote/core";
-import { InputType, OrInputChangedEvent, OrInput } from "@openremote/or-input";
+import {DefaultColor2, DefaultColor5, Util} from "@openremote/core";
+import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 
 export type OrAddAssetDetail = {
     name: string | undefined;
