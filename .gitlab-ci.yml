@@ -21,8 +21,8 @@ workflow:
 stages:
   - prebuild
   - build
-  - build_fail
   - deploy_ovh
+  - build_fail
   - test
   - tests_fail
   - deploy
