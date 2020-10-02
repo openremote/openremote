@@ -645,7 +645,7 @@ export class OrRules extends translate(i18next)(LitElement) {
 
     protected _confirmContinue(action: () => void) {
         if (this._viewer.modified) {
-            showOkCancelDialog(i18next.t("rulesetModified"), i18next.t("confirmContinueRulesetModified"))
+            showOkCancelDialog(i18next.t("loseChanges"), i18next.t("confirmContinueRulesetModified"))
                 .then((ok) => {
                     if (ok) {
                         action();

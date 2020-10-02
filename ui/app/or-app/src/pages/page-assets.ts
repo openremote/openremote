@@ -169,10 +169,6 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
     protected _onAssetSelectionChanged(event: OrAssetTreeSelectionEvent) {
         const nodes = event.detail.newNodes;
         const newIds = event.detail.newNodes.map((node) => node.asset.id!);
-        if (Util.objectsEqual(newIds, this._assetIds)) {
-            return;
-        }
-
         this._assetIds = newIds;
         this._viewer.assetId = nodes.length === 1 ? nodes[0].asset!.id : undefined;
         this._updateRoute(true);
@@ -200,7 +196,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
 
     protected _confirmContinue(action: () => void) {
         if (this._viewer.isModified()) {
-            showOkCancelDialog(i18next.t("assetModified"), i18next.t("confirmContinueAssetModified"))
+            showOkCancelDialog(i18next.t("loseChanges"), i18next.t("confirmContinueAssetModified"))
                 .then((ok) => {
                     if (ok) {
                         action();
@@ -225,6 +221,8 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
     protected _onAssetSave(result: SaveResult) {
         if (result.success && result.isNew) {
             this._addedAssetId = result.assetId!;
+        } else {
+            this._viewer.assetId = result.assetId;
         }
     }
 

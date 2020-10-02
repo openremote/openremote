@@ -154,7 +154,7 @@ const style = css`
     }
     
     .mdc-text-field, .mdc-text-field-helper-line {
-        width: inherit;
+        width: 100%;
     }
     
     .mdc-text-field.dense-comfortable {

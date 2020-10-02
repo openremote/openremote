@@ -703,8 +703,9 @@ async function getAssetChildren(id: string, childAssetType: string): Promise<Ass
     return response.data.filter((asset) => asset.type === childAssetType);
 }
 
-export async function saveAsset(asset: Asset, isUpdate: boolean = false): Promise<SaveResult> {
+export async function saveAsset(asset: Asset): Promise<SaveResult> {
 
+    const isUpdate = !!asset.id && asset.version !== undefined;
     let success: boolean;
     let id: string = "";
 
@@ -1029,11 +1030,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             return;
         }
 
-        const isUpdate = !!asset.version;
         this.saveBtnElem.disabled = true;
         this.wrapperElem.classList.add("saving");
 
-        const result = await saveAsset(asset, isUpdate);
+        const result = await saveAsset(asset);
 
         this.wrapperElem.classList.remove("saving");
         this.saveBtnElem.disabled = false;

@@ -523,7 +523,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         const parent = this._selectedNodes && this._selectedNodes.length === 1 ? this._selectedNodes[0].asset : undefined;
 
         const onAddChanged = (ev: OrAddChangedEvent) => {
-            const nameValid = ev.detail.name && ev.detail.name.trim().length > 0 && ev.detail.name.trim().length < 1024;
+            const nameValid = !!ev.detail.name && ev.detail.name.trim().length > 0 && ev.detail.name.trim().length < 1024;
             const addBtn = dialog.shadowRoot!.getElementById("add-btn") as OrInput;
             addBtn.disabled = !ev.detail.descriptor || !nameValid;
         };
@@ -537,17 +537,19 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 actions: [
                     {
                         actionName: "cancel",
-                        content: i18next.t("cancel")
+                        content: i18next.t("cancel"),
+                        action: () => {
+                            console.log("CLOSED");
+                        }
                     },
                     {
                         actionName: "add",
-                        default: true,
                         content: html`<or-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" disabled></or-input>`,
                         action: () => {
 
                             const addAssetDialog = dialog.shadowRoot!.getElementById("add-panel") as OrAddAssetDialog;
                             const descriptor = addAssetDialog.selectedType;
-                            const name = addAssetDialog.name;
+                            const name = addAssetDialog.name.trim();
 
                             if (!descriptor) {
                                 return;

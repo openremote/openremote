@@ -69,9 +69,16 @@ export class OrAddAssetDialog extends LitElement {
     public static get styles() {
         // language=CSS
         return css`
-            #name-input {
-                margin: 10px;
+            #name-wrapper {
+                display: flex;
+                padding: 10px;
             }
+            
+            #name-wrapper > * {
+                margin: 0 5px;
+                flex: 1 1 auto;
+            }
+            
             #mdc-dialog-form-add {
                 display: flex;
                 height: 600px;
@@ -91,9 +98,6 @@ export class OrAddAssetDialog extends LitElement {
                 overflow: auto;
                 text-transform: capitalize;
                 border-right: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-            }
-            #name-input {
-                width: 400px;
             }
         `;
     }
@@ -135,8 +139,13 @@ export class OrAddAssetDialog extends LitElement {
             );
         }
 
+        const parentStr = this.parent ? this.parent.name + " (" + this.parent.id + ")" : i18next.t("none");
+
         return html`
-            <or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.name}" @or-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-input>
+            <div id="name-wrapper">
+                <or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.name}" @or-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-input>
+                <or-input id="parent" .type="${InputType.TEXT}" comfortable readonly outlined .label="${i18next.t("parent")}" .value="${parentStr}"></or-input>
+            </div>
             <form id="mdc-dialog-form-add">
                 <div id="type-list">
                     ${createListGroup(lists)}
@@ -169,11 +178,9 @@ export class OrAddAssetDialog extends LitElement {
     }
 
     protected onModified() {
-        if (this.nameInput.valid && this.selectedType) {
-            this.dispatchEvent(new OrAddChangedEvent({
-                name: this.name,
-                descriptor: this.selectedType
-            }));
-        }
+        this.dispatchEvent(new OrAddChangedEvent({
+            name: this.name,
+            descriptor: this.selectedType
+        }));
     }
 }

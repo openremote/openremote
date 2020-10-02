@@ -65,7 +65,6 @@
   "deleteRulesetsConfirm": "Remove ruleset(s)?",
   "deleteRulesetsFailed": "Failed to delete one or more requested rulesets(s)",
   "saveRulesetFailed": "Failed to save ruleset",
-  "rulesetModified": "Ruleset modified",
   "confirmContinueRulesetModified": "Ruleset has been modified, discard changes?",
   "when": "When",
   "then": "Then",
@@ -322,7 +321,7 @@
     "urn:openremote:asset:meta:protocolConfiguration": "Protocol configuration"
   },
   "addMetaItems": "Add configuration items",
-  "assetModified": "Asset modified",
+  "loseChanges": "Discard changes?",
   "confirmContinueAssetModified": "Asset has been modified, discard changes?",
   "saveAssetFailed": "Failed to save asset",
   "noCommand": "No command",
