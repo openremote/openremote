@@ -120,7 +120,7 @@ public interface AgentResource {
     );
 
     /**
-     * Get discovered linked attributes for the specified {@link org.openremote.model.asset.agent.Agent}
+     * Get discovered linked attributes for the specified Agent
      * and {@link org.openremote.model.asset.agent.ProtocolConfiguration}.
      * <p>
      * Currently this request will automatically add the found {@link Asset}s to the DB as well as returning
@@ -142,7 +142,7 @@ public interface AgentResource {
     );
 
     /**
-     * Get discovered linked attributes for the specified {@link org.openremote.model.asset.agent.Agent}
+     * Get discovered linked attributes for the specified Agent
      * and {@link org.openremote.model.asset.agent.ProtocolConfiguration} using the supplied {@link FileInfo}.
      * <p>
      * Currently this request will automatically add the found {@link Asset}s to the DB as well as returning

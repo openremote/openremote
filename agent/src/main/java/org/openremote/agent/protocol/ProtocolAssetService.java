@@ -164,8 +164,7 @@ public interface ProtocolAssetService extends ContainerService {
     Value applyValueFilters(Value value, ValueFilter<?>... filters);
 
     /**
-     * Subscribe to changes of {@link Asset}s that are descendants of the specified
-     * {@link org.openremote.model.asset.agent.Agent}.
+     * Subscribe to changes of {@link Asset}s that are descendants of the specified agent.
      * <p>
      * When an agent is unlinked from a protocol then all subscriptions will be automatically removed also; it is safe
      * to call this method multiple times for the same agentId and assetChangeConsumer and only a single subscription

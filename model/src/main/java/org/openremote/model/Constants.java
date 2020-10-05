@@ -49,6 +49,7 @@ public interface Constants {
     String NAMESPACE = "urn:openremote";
     String PROTOCOL_NAMESPACE = NAMESPACE + ":protocol";
     String ASSET_NAMESPACE = NAMESPACE + ":asset";
+    String AGENT_ASSET_NAMESPACE = ASSET_NAMESPACE + ":agent";
     String ASSET_META_NAMESPACE = ASSET_NAMESPACE + ":meta";
     String DEFAULT_DATETIME_FORMAT ="dd. MMM yyyy HH:mm:ss zzz";
     String DEFAULT_DATETIME_FORMAT_MILLIS ="dd. MMM yyyy HH:mm:ss:SSS zzz";

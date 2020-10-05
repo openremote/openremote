@@ -36,6 +36,7 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+@Deprecated
 public class LocalAgentConnector implements AgentConnector {
 
     private static final Logger LOG = Logger.getLogger(LocalAgentConnector.class.getName());
@@ -51,7 +52,8 @@ public class LocalAgentConnector implements AgentConnector {
             .filter(entry -> entry.getKey().equals(agent.getId()))
             .map(Map.Entry::getValue)
             .findFirst();
-        return foundAgent.map(asset -> Agent.getProtocolConfigurations(asset).stream()
+        return foundAgent.map(asset -> asset.getAttributesStream()
+            .filter(ProtocolConfiguration::isProtocolConfiguration)
             .map(AssetAttribute::getReferenceOrThrow)
             .map(protocolConfigurationRef -> new Pair<>(protocolConfigurationRef, agentService.getProtocolConnectionStatus(protocolConfigurationRef)))
             .map(pair -> new AgentStatusEvent(
@@ -60,7 +62,7 @@ public class LocalAgentConnector implements AgentConnector {
                 pair.key,
                 pair.value)
             )
-            .collect(Collectors.toList())).orElseGet(ArrayList::new);
+            .collect(Collectors.toList())).orElse(Collections.emptyList());
     }
 
     @Override
