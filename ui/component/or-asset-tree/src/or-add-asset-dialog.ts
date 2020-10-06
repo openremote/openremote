@@ -153,18 +153,25 @@ export class OrAddAssetDialog extends LitElement {
                 <div id="asset-type-option-container">
                     ${!this.selectedType 
                     ? html`` 
-                    : html`
-                        <or-icon id="type-icon" .icon="${this.selectedType.icon}"></or-icon>
-                        <or-translate id="type-description" .value="${Util.getAssetTypeLabel(this.selectedType)}"></or-translate>
-                    `}
+                    : this.getTypeTemplate(this.selectedType)}
                 </div>
             </form>
+        `;
+    }
+
+    protected getTypeTemplate(descriptor: AgentDescriptor | AssetDescriptor) {
+
+        return html`
+            <or-icon style="--or-icon-fill: ${descriptor.color ? "#" + descriptor.color : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
+            <or-translate id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
         `;
     }
 
     protected onTypeChanged(isAgent: boolean, listItem: ListItem) {
         const descriptor = listItem.data as AssetDescriptor | AgentDescriptor;
         this.selectedType = descriptor;
+
+        // Deselect other list selection
         const otherList = isAgent ? this.assetList : this.agentList;
         if (otherList) {
             otherList.values = undefined;

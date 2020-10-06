@@ -11,7 +11,8 @@ import {
     AssetsEvent,
     AssetTreeNode,
     ClientRole,
-    SharedEvent
+    SharedEvent,
+    AssetType
 } from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
@@ -187,7 +188,7 @@ export const getAssetTypes = async () => {
 }
 
 export function getDefaultAllowedAddAssetTypes(): [AgentDescriptor[], AssetDescriptor[]] {
-    return [AssetModelUtil.getAgentDescriptors(), AssetModelUtil.getAssetDescriptors()];
+    return [AssetModelUtil.getAgentDescriptors(), AssetModelUtil.getAssetDescriptors().filter((descriptor) => descriptor.type !== AssetType.AGENT.type)];
 }
 
 @customElement("or-asset-tree")
@@ -537,10 +538,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 actions: [
                     {
                         actionName: "cancel",
-                        content: i18next.t("cancel"),
-                        action: () => {
-                            console.log("CLOSED");
-                        }
+                        content: i18next.t("cancel")
                     },
                     {
                         actionName: "add",
