@@ -120,19 +120,18 @@ build-deployment-manager-swarm:
     - docker push openremote/deployment:${CACHE_TAG:-latest}
     - docker push openremote/manager:${CACHE_TAG:-latest}
     - docker push openremote/manager-swarm:${CACHE_TAG:-latest}
-    ## TODO dind does not support arm64 archieture for now, therefore the code below breaks the build
     # Build ARM images
-    - docker buildx build --platform linux/arm64 -t openremote/manager:arm64 manager/build/install/manager
-    - docker buildx build --platform linux/arm64 -t openremote/deployment:arm64 deployment
-    # - docker buildx build --platform linux/arm64 -t openremote/proxy:arm64 proxy
-    # - docker buildx build --platform linux/arm64 -t openremote/keycloak:arm64 keycloak
-    # - docker buildx build --platform linux/arm64 -t openremote/postgresql:arm64 postgresql
+    - docker buildx build --push --platform linux/arm64 -t openremote/manager:latest-arm64 manager/build/install/manager
+    - docker buildx build --push --platform linux/arm64 -t openremote/deployment:latest-arm64 deployment
+    # - docker buildx build --platform linux/arm64 -t openremote/proxy:latest-arm64 proxy
+    # - docker buildx build --platform linux/arm64 -t openremote/keycloak:latest-arm64 keycloak
+    # - docker buildx build --platform linux/arm64 -t openremote/postgresql:latest-arm64 postgresql
     # Push ARM images
-    - docker push openremote/manager:arm64
-    - docker push openremote/deployment:arm64
-    # - docker push openremote/proxy:arm64
-    # - docker push openremote/keycloak:arm64
-    # - docker push openremote/postgresql:arm64
+    - docker push openremote/manager:latest-arm64
+    - docker push openremote/deployment:latest-arm64
+    # - docker push openremote/proxy:latest-arm64
+    # - docker push openremote/keycloak:latest-arm64
+    # - docker push openremote/postgresql:latest-arm64
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
   retry:
