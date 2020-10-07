@@ -61,12 +61,13 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
             }
 
             .list-container {
-                width: 100vw;
+                width: 100%;
                 height: 100vh;
             }
 
             .list-item {
                 display: flex;
+                min-height: 45px;
                 flex-direction: row;
                 text-decoration: none;
                 padding: 20px;
