@@ -126,12 +126,6 @@ build-deployment-manager-swarm:
     # - docker buildx build --platform linux/arm64 -t openremote/proxy:latest-arm64 proxy
     # - docker buildx build --platform linux/arm64 -t openremote/keycloak:latest-arm64 keycloak
     # - docker buildx build --platform linux/arm64 -t openremote/postgresql:latest-arm64 postgresql
-    # Push ARM images
-    - docker push openremote/manager:latest-arm64
-    - docker push openremote/deployment:latest-arm64
-    # - docker push openremote/proxy:latest-arm64
-    # - docker push openremote/keycloak:latest-arm64
-    # - docker push openremote/postgresql:latest-arm64
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
   retry:
