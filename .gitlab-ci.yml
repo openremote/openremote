@@ -72,12 +72,12 @@ build-enviroment:
 
 build-enviroment-arm:
   stage: prebuild
-  image: $DOCKERHUB_USER/docker:buildx
+  #image: $DOCKERHUB_USER/docker:buildx
   variables:
     CI_IMAGE: $DOCKERHUB_USER/$CI_PROJECT_NAME
     PLATFORM: linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7
   before_script:
-    #- export DOCKER_CLI_EXPERIMENTAL=enabled
+    - export DOCKER_CLI_EXPERIMENTAL=enabled
     #- mkdir -p /root/.docker/cli-plugins
     #- mv .docker/cli-plugins/docker-buildx /root/.docker/cli-plugins/
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
