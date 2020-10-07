@@ -72,6 +72,7 @@ build-enviroment:
 
 build-enviroment-arm:
   stage: prebuild
+  image: $DOCKERHUB_USER/docker:buildx
   variables:
     CI_IMAGE: $DOCKERHUB_USER/$CI_PROJECT_NAME
     PLATFORM: linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7
