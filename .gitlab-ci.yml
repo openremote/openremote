@@ -72,10 +72,10 @@ build-enviroment:
 
 build-enviroment-arm:
   stage: prebuild
-  #image: $DOCKERHUB_USER/docker:buildx
   variables:
     CI_IMAGE: $DOCKERHUB_USER/$CI_PROJECT_NAME
     PLATFORM: linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7
+  allow_failure: true
   before_script:
     - export DOCKER_CLI_EXPERIMENTAL=enabled
     - mkdir -p /root/.docker/cli-plugins
@@ -85,7 +85,6 @@ build-enviroment-arm:
     - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     - docker buildx create --use
   script:
-    #- docker buildx use default
     - docker buildx ls
     - docker context ls
     - docker buildx build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
@@ -93,11 +92,11 @@ build-enviroment-arm:
       --build-arg BUILDKIT_INLINE_CACHE=1 .
     - docker images
     #- docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-  # rules:
-  #   - if: $CI_COMMIT_MESSAGE =~ /skip-build/
-  #     when: never
-    # - changes:
-    #     - Dockerfile
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /skip-build/
+      when: never
+    - changes:
+        - Dockerfile
 
 build-deployment-manager-swarm:
   stage: build
@@ -107,8 +106,9 @@ build-deployment-manager-swarm:
     - mv .docker/cli-plugins/docker-buildx /root/.docker/cli-plugins/
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker login -u "$DOCKERHUB_USER" -p "$DOCKERHUB_PASSWORD"
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - docker buildx create --use
   script:
-    - docker buildx use default
     - docker buildx ls
     - docker context ls
     - docker run -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
@@ -121,15 +121,15 @@ build-deployment-manager-swarm:
     - docker push openremote/manager:${CACHE_TAG:-latest}
     - docker push openremote/manager-swarm:${CACHE_TAG:-latest}
     ## TODO dind does not support arm64 archieture for now, therefore the code below breaks the build
-    # # Build ARM images
-    # - docker buildx build --platform linux/arm64 -t openremote/manager:arm64 manager/build/install/manager
-    # - docker buildx build --platform linux/arm64 -t openremote/deployment:arm64 deployment
+    # Build ARM images
+    - docker buildx build --platform linux/arm64 -t openremote/manager:arm64 manager/build/install/manager
+    - docker buildx build --platform linux/arm64 -t openremote/deployment:arm64 deployment
     # - docker buildx build --platform linux/arm64 -t openremote/proxy:arm64 proxy
     # - docker buildx build --platform linux/arm64 -t openremote/keycloak:arm64 keycloak
     # - docker buildx build --platform linux/arm64 -t openremote/postgresql:arm64 postgresql
-    # # Push ARM images
-    # - docker push openremote/manager:arm64
-    # - docker push openremote/deployment:arm64
+    # Push ARM images
+    - docker push openremote/manager:arm64
+    - docker push openremote/deployment:arm64
     # - docker push openremote/proxy:arm64
     # - docker push openremote/keycloak:arm64
     # - docker push openremote/postgresql:arm64
