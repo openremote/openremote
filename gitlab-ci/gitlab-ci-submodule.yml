@@ -170,6 +170,7 @@ test-master:
 
 email failed tests:
   stage: tests_fail
+  needs: ["test-master"]
   <<: *notify_email
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
@@ -177,6 +178,7 @@ email failed tests:
 
 test FAILED:
   stage: tests_fail
+  needs: ["test-master"]
   <<: *notify_whatsapp
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/

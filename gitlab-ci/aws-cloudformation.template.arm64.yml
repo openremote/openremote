@@ -17,7 +17,7 @@ Parameters:
   HostedZone:
     Description: Use AWS hosted zone
     Type: String
-    Default: false
+    Default: true
     AllowedValues:
       - true
       - false
@@ -81,10 +81,10 @@ Resources:
           sudo gpasswd -a ubuntu docker
           sudo snap install docker
           # Prepare deployment files
-          mkdir profile
-          cd profile
+          cd /home/ubuntu # we need this because on arm docker-compose cannot read /
           wget https://github.com/openremote/openremote/raw/master/profile/deploy-no-build.yml
           wget https://github.com/openremote/openremote/raw/master/profile/demo-basic-no-build.yml
+          ls -la
           if [ ${HostName} ] && [ ${DomainName} ]
           then
             export DOMAINNAME=${HostName}.${DomainName}
@@ -107,7 +107,7 @@ Resources:
           fi
           export SETUP_ADMIN_PASSWORD=${OpenRemotePassword}
           export LE_EMAIL=me@privacy.net
-          docker-compose -f profile/demo-basic-no-build.yml -p openremote up -d
+          docker-compose -f demo-basic-no-build.yml -p openremote up -d
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
