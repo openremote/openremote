@@ -116,7 +116,6 @@ build-keycloak-postgresql-proxy:
         - proxy/**/*
         - postgresql/**/*
         - keycloak/**/*
-        - .gitlab-ci.yml
   retry:
     max: 2
 
