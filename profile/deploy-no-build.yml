@@ -1,0 +1,348 @@
+# OpenRemote v3
+#
+# This is the base configuration profile. Note that you must extend this
+# configuration to complete it with service dependencies and volume
+# mappings, see docker-compose.yml for a usable complete configuration.
+#
+version: '2.4'
+
+services:
+
+  # This service will only populate an empty volume on startup and then exit.
+  # If the volume already contains data, it exits immediately.
+  deployment:
+    image: openremote/deployment:${DATE_TAG:-latest}
+
+  # The frontend proxy manages SSL certificates, terminates SSL/TLS connections and forwards them to the backend.
+  proxy:
+
+    # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
+    image: openremote/proxy:${DATE_TAG:-latest}
+
+    # Uncomment to support the IKEA TRÅDFRI protocol. USE AT YOUR OWN RISK.
+    # network_mode: host
+
+    environment:
+
+      # It is important that all services have the same timezone and are time synchronized.
+      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
+      TZ: Europe/Zurich
+
+      # File to which std out will be logged
+      LOGFILE: /var/log/proxy.log
+
+      # The public host name of this OpenRemote installation. Set this to request/manage an SSL
+      # certificate with the free https://letsencrypt.org/ provider. The default 'localhost' will
+      # rely on a baked-in self-signed certificate. If you change this, adjust manager#IDENTITY_NETWORK_HOST.
+      DOMAINNAME: ${DOMAINNAME:-localhost}
+
+      # Provide your own email address for your SSL certificates with Let's Encrypt. This should
+      # be set when DOMAINNAME is not 'localhost'.
+      LE_EMAIL: ${LE_EMAIL:-}
+
+      # Enable --staging will manage fake certificates, so avoid hitting the rate limits of Let's Encrypt
+      # when testing (this is important, you are limited to 5 duplicate certificates per week!)
+      # LE_EXTRA_ARGS: '--staging --logs-dir=/etc/letsencrypt'
+
+      # Traffic should be forwarded to this service (defaults to manager:8080)
+      # PROXY_BACKEND_HOST: manager
+      # PROXY_BACKEND_PORT: 8080
+
+      # The proxy supports up to 10 custom redirects from hostname to any path on the
+      # backend service. This can be used to give consoles a vanity domain name.
+      # PROXY_HOST_REDIRECT_1_NAME: www.my-console-master.tld
+      # PROXY_HOST_REDIRECT_1_TARGET: /console/master
+      # PROXY_HOST_REDIRECT_2_NAME: www.my-console-tenant-a.tld
+      # PROXY_HOST_REDIRECT_2_TARGET: /console/building
+      # PROXY_HOST_REDIRECT_3_NAME: ...
+
+      # Customize proxy log, defaults to 'notice', requests are logged at 'info'.
+      # Available levels are: emerg, alert, crit, err, warning, notice, info, debug
+      # PROXY_LOGLEVEL: 'notice'
+
+      # Uncomment to support the IKEA TRÅDFRI protocol. USE AT YOUR OWN RISK.
+      # PROXY_BACKEND_HOST: 127.0.0.1
+
+    # Run proxy, obtain and automatically renew SSL certificates if DOMAINNAME is not localhost. Use
+    # the command 'help' to get a list of all options.
+    command: run
+
+    # Expose a public web service mapped to ports on the host.
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8883:8883"
+
+    # Resource limits
+    mem_reservation: 512m
+    oom_kill_disable: true
+
+    # Configure logging of the container
+    logging:
+        options:
+            max-size: 10m
+
+  # The API gateway and Manager web application.
+  manager:
+
+    # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
+    image: openremote/manager:${DATE_TAG:-latest}
+
+    # Uncomment to support the IKEA TRÅDFRI protocol. USE AT YOUR OWN RISK.
+    # network_mode: host
+
+    environment:
+
+      # It is important that all services have the same timezone and are time synchronized.
+      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
+      TZ: Europe/Zurich
+
+      # If developer mode is enabled, all setup tasks will be executed on application startup.
+      # This will clean all data in the database, and then import demo/test data. Some caching and
+      # other runtime performance-optimizations will also be disabled.
+      DEV_MODE: ${DEV_MODE:-false}
+
+      # This switch can wipe your database, this is the factory reset!
+      SETUP_WIPE_CLEAN_INSTALL: ${SETUP_WIPE_CLEAN_INSTALL:-false}
+      SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
+
+      # When you are ready to permanently install your project, replace it with the next lines...
+      # SETUP_WIPE_CLEAN_INSTALL: # Allow override on CLI
+
+      # Configure SMTP smart host, to send password reset emails etc.
+      #SETUP_EMAIL_HOST: smtp-host.demo.tld
+      #SETUP_EMAIL_USER: 'smtp-user'
+      #SETUP_EMAIL_PASSWORD: 'smtp-password'
+      #SETUP_EMAIL_PORT: 25
+      #SETUP_EMAIL_TLS: 'true'
+      #SETUP_EMAIL_FROM_KEYCLOAK: 'no-reply@openremote.io'
+      #SETUP_EMAIL_FROM_DEFAULT: 'no-reply@openremote.io'
+
+      # Other demo data can be imported as needed, these examples only use the simulator protocol.
+      SETUP_IMPORT_DEMO_USERS: 'true'
+      SETUP_IMPORT_DEMO_ASSETS: 'true'
+      SETUP_IMPORT_DEMO_RULES: 'true'
+      SETUP_IMPORT_DEMO_SCENES: 'true'
+
+      # Create a demo agent with example configurations for all built-in protocols:
+      #
+      # - KNX IP gateway
+      # - Velbus IP gateway or serial bridge
+      #
+      SETUP_IMPORT_DEMO_AGENT: 'true'
+      SETUP_IMPORT_DEMO_AGENT_KNX: 'false'
+      # SETUP_IMPORT_DEMO_AGENT_KNX_GATEWAY_IP: '10.0.0.11'
+      # SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP: '10.0.0.12'
+      SETUP_IMPORT_DEMO_AGENT_VELBUS: 'false'
+      # SETUP_IMPORT_DEMO_AGENT_VELBUS_COM_PORT: 'COM3'
+      # TODO: Additional docker settings are necessary to use com ports and multicast from within containers
+
+      # The public host name of this OpenRemote installation. This name is used in bearer tokens
+      # and must be the name you access the web services under. If you change proxy#DOMAINNAME, also
+      # change this to match.
+      IDENTITY_NETWORK_HOST: ${IDENTITY_NETWORK_HOST:-localhost}
+
+      # Set if SSL is enabled on the frontend reverse proxy and all internal proxies should assume https
+      IDENTITY_NETWORK_SECURE: 'true'
+
+      # The public port of this OpenRemote installation.
+      IDENTITY_NETWORK_WEBSERVER_PORT: 443
+
+      # The service-internal JDBC connection URL for the database service.
+      DATABASE_CONNECTION_URL: jdbc:postgresql://postgresql/openremote
+
+      # The database connection settings, passwords should be changed in production!
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
+      DATABASE_MIN_POOL_SIZE: 5
+      DATABASE_MAX_POOL_SIZE: 20
+      DATABASE_CONNECTION_TIMEOUT_SECONDS: 300
+
+      # The service-internal host name and port of the identity provider.
+      KEYCLOAK_HOST: keycloak
+      KEYCLOAK_PORT: 8080
+      MASTER_REALM_KEYCLOAK_THEME: ${MASTER_REALM_KEYCLOAK_THEME:-openremote}
+
+      # Uncomment to support the IKEA TRÅDFRI protocol. USE AT YOUR OWN RISK.
+      # Also remove (or comment) the already existing variables with the same name.
+      # KEYCLOAK_HOST: 127.0.0.1
+      # KEYCLOAK_PORT: 8081
+      # DATABASE_CONNECTION_URL: jdbc:postgresql://localhost/openremote
+
+      # The service-internal webservice interface binding, bind to all interfaces
+      # when running  in container. Default is 127.0.0.1.
+      WEBSERVER_LISTEN_HOST: 0.0.0.0
+
+      # Console applications can register for push notifications through FCM.
+      # NOTIFICATION_FIREBASE_URL: https://fcm.googleapis.com/fcm/send
+      # NOTIFICATION_FIREBASE_API_KEY = '...'
+      # FIREBASE_CONFIG_FILE = '/deployment/manager/fcm.json'
+
+      # Custom location of the static applications.
+      # APP_DOCROOT: '/deployment/manager/app'
+      # SHARED_DOCROOT: '/deployment/manager/shared'
+      # Custom default app name to load when '/' is requested
+      APP_DEFAULT: ${APP_DEFAULT:-main}
+
+      # Disable HTTP redirects when a console application requests libraries which
+      # are delivered and used on the platform. This is necessary if your console application
+      # needs a different version of Polymer, Chart JS, or any of the other "bower_components"
+      # which are by default served as static resources from the manager service.
+      # CONSOLE_USE_STATIC_BOWER_COMPONENTS = 'false'
+
+      # Map related settings.
+      # Provide a path to the map tiles database file (see https://openmaptiles.com/).
+      # MAP_TILES_PATH: '/deployment/map/mapdata.mbtiles'
+      #
+      # Override the map settings such as center location and zoom when opening the
+      # manager's map, as well as other style details and colours.
+      # MAP_SETTINGS_PATH: '/deployment/map/mapsettings.json'
+      #
+      # Set the tileserver host name and port; the manager will reverse proxy to this server
+      # to provider raster map tiles to frontend apps
+      # MAP_TILESERVER_HOST: null
+      # MAP_TILESERVER_PORT: 8082
+      # MAP_TILESERVER_REQUEST_TIMEOUT: 10000
+
+      # Override logging.properties with a file of your choice.
+      # LOGGING_CONFIG_FILE: '/deployment/manager/logging.properties'
+
+      # The number of threads and therefore background tasks that can be executed at the same
+      # time. Used by scheduled, usually short-lived and non-blocking tasks, such as protocols
+      # polling a remote service at regular interval, or the internal checks for expired client
+      # subscriptions on the event bus (default depends on detected CPU cores). Also used by
+      # the rules engine.
+      # SCHEDULED_TASKS_THREADS_MAX: 4
+
+      # When asset attributes are enabled for rule events, each value update will be a temporary
+      # fact in rules. You can set the global default expiration time span used when no other
+      # attribute-level configuration exists. Default is 1 hour.
+      # RULE_EVENT_EXPIRES: '1h'
+
+      # The identity provider implementation to use for managing user identities, roles, and
+      # access authorization. The default is Keycloak, which requires a separate service but
+      # provides full multi-tenancy identity, role permissions, and user session timeouts.
+      # The basic provider supports only superusers and their text passwords, managed in a
+      # simple database table, and always requires a new login when a page is reloaded.
+      # IDENTITY_PROVIDER: 'basic'
+
+      # For the Keycloak identity provider, you may configure session timeouts of frontend apps. This
+      # will only be applied on newly created realms, or once on the master realm when clean setup runs.
+      #
+      # Validity of non-offline refresh tokens, force login when expired on web app, default is 1 day.
+      # IDENTITY_SESSION_MAX_MINUTES: 1440
+      #
+      # Validity of offline refresh tokens, force login on native console app, default is 14 days.
+      # Note that production offline tokens should be valid for months or years: When the offline token
+      # expires, the native console app can no longer contact the service in the background (e.g. when
+      # processing push notifications) and will therefore fail silently until the user logs in again.
+      # IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES: 20160
+
+      # Configure the default max age for data points stored in the database (individual attributes can use a custom
+      # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
+      # DATA_POINTS_MAX_AGE_DAYS = 30
+
+      # Custom JVM options (increase heap size if required)
+      JAVA_OPTS: '-XX:NativeMemoryTracking=summary
+                  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof'
+
+    # Resource limits
+    mem_reservation: 512m
+
+    # Configure logging of the container, see deployment/logging.properties
+    logging:
+        options:
+            max-size: 10m
+
+  # Keycloak identity provider
+  keycloak:
+
+    # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
+    image: openremote/keycloak:${DATE_TAG:-latest}
+    #image: jboss/keycloak:7.0.0
+
+    environment:
+
+      # It is important that all services have the same timezone and are time synchronized.
+      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
+      TZ: Europe/Zurich
+
+      # Switch to DEBUG to diagnose Keycloak problems.
+      KEYCLOAK_LOGLEVEL: INFO
+
+      # When you are ready to permanently install your project, replace it with the next line ...
+      # SETUP_ADMIN_PASSWORD: # Allow override on CLI
+
+      # Configure how Keycloak connects to the database
+      DB_VENDOR: postgres
+      DB_ADDR: postgresql
+      DB_PORT: 5432
+      DB_DATABASE: openremote
+      DB_USER: postgres
+      DB_SCHEMA: public
+      DB_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
+      KEYCLOAK_USER: admin
+      PROXY_ADDRESS_FORWARDING: 'true'
+
+      # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
+      KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
+
+      # Custom JVM options (increase heap size if required)
+      JAVA_OPTS: '-XX:NativeMemoryTracking=summary
+                  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof
+                  -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true'
+
+    # Resource limits
+    mem_reservation: 512m
+
+    # Configure logging of the container
+    logging:
+        options:
+            max-size: 10m
+
+    # Uncomment to support the IKEA TRÅDFRI protocol. USE AT YOUR OWN RISK.
+    # ports:
+    #   - "8081:8080"
+
+  # PostgreSQL DBMS
+  postgresql:
+
+    # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
+    image: openremote/postgresql:${DATE_TAG:-latest}
+
+    environment:
+
+      # It is important that all services have the same timezone and are time synchronized.
+      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
+      TZ: Europe/Zurich
+
+      # Create database and user if there is no data. For production, run
+      # this once with your volume mapping for the data directory (see docker-compose.yml),
+      # then remove the variables and restart to preserve the stored data. It
+      # doesn't hurt if you don't remove it, an existing will never be reconfigured.
+      POSTGRES_DB: openremote
+      POSTGRES_USER: postgres # 9.6 image doesn't work if we use a custom user
+      POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
+
+      # You can open an SQL console on a running container with:
+      # docker exec -it <container ID> psql -U openremote
+
+    # Resource limits
+    mem_reservation: 512m
+
+    # Configure logging of the container
+    logging:
+        options:
+            max-size: 10m
+
+    # Uncomment to support the IKEA TRÅDFRI protocol. USE AT YOUR OWN RISK.
+    # ports:
+    #   - "5432:5432"
+
+  # Map tile server for serving raster tiles using mbtiles
+  map:
+    image: openremote/tileserver-gl:${DATE_TAG:-latest}
+
+  # Manager for Docker swarm (embedding openremote/deployment and reduced size to save money on public cloud)
+  swarm:
+    image: openremote/manager-swarm:${DATE_TAG:-latest}
