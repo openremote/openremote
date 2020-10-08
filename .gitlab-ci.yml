@@ -11,6 +11,7 @@ variables:
   DEPLOYMENT_HOST_USER: root
   DEPLOYMENT_PORT: 2222
   DAST_WEBSITE: https://staging.${PROJECT_NAME}.openremote.io
+  PLATFORM: linux/amd64,linux/arm64
 
 workflow:
   rules:
@@ -70,34 +71,6 @@ build-enviroment:
     - changes:
         - Dockerfile
 
-build-enviroment-arm:
-  stage: prebuild
-  variables:
-    CI_IMAGE: $DOCKERHUB_USER/$CI_PROJECT_NAME
-    PLATFORM: linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7
-  allow_failure: true
-  before_script:
-    - export DOCKER_CLI_EXPERIMENTAL=enabled
-    - mkdir -p /root/.docker/cli-plugins
-    - mv .docker/cli-plugins/docker-buildx /root/.docker/cli-plugins/
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-    - docker login -u "$DOCKERHUB_USER" -p "$DOCKERHUB_PASSWORD"
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    - docker buildx create --use
-  script:
-    - docker buildx ls
-    - docker context ls
-    - docker buildx build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-      --platform "$PLATFORM" --cache-from "$CI_IMAGE"
-      --build-arg BUILDKIT_INLINE_CACHE=1 .
-    - docker images
-    #- docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-  rules:
-    - if: $CI_COMMIT_MESSAGE =~ /skip-build/
-      when: never
-    - changes:
-        - Dockerfile
-
 build-deployment-manager-swarm:
   stage: build
   before_script:
@@ -113,19 +86,10 @@ build-deployment-manager-swarm:
     - docker context ls
     - docker run -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "./gradlew --console plain clean installDist"
-    - docker run -v $(pwd):/or
-      -v /var/run/docker.sock:/var/run/docker.sock
-      "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-      /bin/sh -c "docker-compose -f profile/deploy.yml build --build-arg GIT_COMMIT=$SOURCE_COMMIT deployment manager swarm"
-    - docker push openremote/deployment:${CACHE_TAG:-latest}
-    - docker push openremote/manager:${CACHE_TAG:-latest}
-    - docker push openremote/manager-swarm:${CACHE_TAG:-latest}
-    # Build ARM images
-    - docker buildx build --push --platform linux/arm64 -t openremote/manager:latest-arm64 manager/build/install/manager
-    - docker buildx build --push --platform linux/arm64 -t openremote/deployment:latest-arm64 deployment
-    # - docker buildx build --platform linux/arm64 -t openremote/proxy:latest-arm64 proxy
-    # - docker buildx build --platform linux/arm64 -t openremote/keycloak:latest-arm64 keycloak
-    # - docker buildx build --platform linux/arm64 -t openremote/postgresql:latest-arm64 postgresql
+    # Build multi-arch images
+    - docker buildx build --push --platform $PLATFORM -t openremote/manager:latest manager/build/install/manager
+    - docker buildx build --push --platform $PLATFORM -t openremote/deployment:latest deployment
+    - docker buildx build --push --platform $PLATFORM -t openremote/manager-swarm:latest -f swarm.Dockerfile manager/build/install/manager
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
   retry:
@@ -139,14 +103,12 @@ build-keycloak-postgresql-proxy:
     - mv .docker/cli-plugins/docker-buildx /root/.docker/cli-plugins/
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker login -u "$DOCKERHUB_USER" -p "$DOCKERHUB_PASSWORD"
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - docker buildx create --use
   script:
-    - docker run -v $(pwd):/or
-      -v /var/run/docker.sock:/var/run/docker.sock
-      "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-      /bin/sh -c "docker-compose -f profile/deploy.yml build --build-arg GIT_COMMIT=$SOURCE_COMMIT keycloak proxy postgresql"
-    - docker push openremote/proxy:${CACHE_TAG:-latest}
-    - docker push openremote/keycloak:${CACHE_TAG:-latest}
-    - docker push openremote/postgresql:${CACHE_TAG:-latest}
+    - docker buildx build --push --platform $PLATFORM -t openremote/proxy:latest proxy
+    - docker buildx build --push --platform $PLATFORM -t openremote/keycloak:latest keycloak
+    - docker buildx build --push --platform $PLATFORM -t openremote/postgresql:latest postgresql
   rules:
     - if: $CI_COMMIT_MESSAGE =~ /skip-build/
       when: never
@@ -154,6 +116,7 @@ build-keycloak-postgresql-proxy:
         - proxy/**/*
         - postgresql/**/*
         - keycloak/**/*
+        - .gitlab-ci.yml
   retry:
     max: 2
 
