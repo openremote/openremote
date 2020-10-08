@@ -342,7 +342,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     content: html`<or-input .type=${InputType.BUTTON} .label="${i18next.t("submit")}" raised></or-input>`
                 }
             ]
-        });
+        }, document.body); // Attach to document as or-app isn't visible until initialised
 
         return deferred.promise;
     }
