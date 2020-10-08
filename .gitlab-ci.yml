@@ -89,7 +89,7 @@ build-deployment-manager-swarm:
     # Build multi-arch images
     - docker buildx build --push --platform $PLATFORM -t openremote/manager:latest manager/build/install/manager
     - docker buildx build --push --platform $PLATFORM -t openremote/deployment:latest deployment
-    - docker buildx build --push --platform $PLATFORM -t openremote/manager-swarm:latest -f swarm.Dockerfile manager/build/install/manager
+    - docker buildx build --push --platform $PLATFORM -t openremote/manager-swarm:latest -f manager/build/install/manager/swarm.Dockerfile manager/build/install/manager
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
   retry:

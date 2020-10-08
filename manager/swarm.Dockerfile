@@ -1,8 +1,7 @@
 # hadolint ignore=DL3007
-FROM openremote/manager:latest AS manager
-# hadolint ignore=DL3007
 FROM openremote/deployment:latest AS deployment
-FROM openjdk:8-jre
+# hadolint ignore=DL3007
+FROM openremote/manager:latest
 
 # Add git commit label must be specified at build time using --build-arg GIT_COMMIT=dadadadadad
 ARG GIT_COMMIT=unknown
@@ -24,7 +23,6 @@ WORKDIR /opt/app
 
 RUN mkdir -p /deployment/extensions
 
-COPY --from=manager /opt/app/lib /opt/app/lib
 COPY --from=deployment /deployment/ /deployment/
 # hadolint ignore=DL3025
 ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main
