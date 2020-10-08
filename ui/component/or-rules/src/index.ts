@@ -94,7 +94,7 @@ export interface AssetTypeAttributeName {
 }
 export interface AllowedActionTargetTypes {
     default?: ActionTargetType[];
-    actions?: {[actionType in ActionType]: ActionTargetType[]};
+    actions?: {[actionType in ActionType]?: ActionTargetType[]};
 }
 
 export interface RulesConfig {
