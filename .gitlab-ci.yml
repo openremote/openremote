@@ -284,6 +284,7 @@ redeploy demo on OVH:
 
 email failed tests:
   stage: tests_fail
+  needs: ["test-master"]
   before_script:
     - export STAGE='tests'
   <<: *notify_email
@@ -293,6 +294,7 @@ email failed tests:
 
 test FAILED:
   stage: tests_fail
+  needs: ["test-master"]
   <<: *notify_whatsapp
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
