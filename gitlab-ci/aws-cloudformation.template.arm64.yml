@@ -76,6 +76,14 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
+          # Create swap file
+          sudo fallocate -l 1G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+          echo vm.swappiness=10 | sudo tee -a /etc/sysctl.conf
+          echo vm.vfs_cache_pressure=50 | /etc/sysctl.conf
           # Install docker
           sudo groupadd docker
           sudo gpasswd -a ubuntu docker
@@ -84,7 +92,6 @@ Resources:
           cd /home/ubuntu # we need this because on arm docker-compose cannot read /
           wget https://github.com/openremote/openremote/raw/master/profile/deploy-no-build.yml
           wget https://github.com/openremote/openremote/raw/master/profile/demo-basic-no-build.yml
-          ls -la
           if [ ${HostName} ] && [ ${DomainName} ]
           then
             export DOMAINNAME=${HostName}.${DomainName}
