@@ -304,6 +304,11 @@ export class OrRuleActionNotification extends LitElement {
 
     protected _onTargetChanged(targetType: ActionTargetType, value: string | undefined) {
         switch (targetType) {
+            case ActionTargetType.CUSTOM:
+                    this.action.target = {
+                        custom: value
+                    }
+                break;
             case ActionTargetType.ASSET:
                 if (!value || value === "allMatched") {
                     delete this.action.target;
