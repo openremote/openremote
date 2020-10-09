@@ -82,8 +82,13 @@ Resources:
           sudo mkswap /swapfile
           sudo swapon /swapfile
           echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+          sysctl vm.swappiness=10
+          sysctl vm.vfs_cache_pressure=50
           echo vm.swappiness=10 | sudo tee -a /etc/sysctl.conf
-          echo vm.vfs_cache_pressure=50 | /etc/sysctl.conf
+          echo vm.vfs_cache_pressure=50 | sudo tee -a /etc/sysctl.conf
+          free -h
+          cat /proc/sys/vm/swappiness
+          cat /proc/sys/vm/vfs_cache_pressure
           # Install docker
           sudo groupadd docker
           sudo gpasswd -a ubuntu docker

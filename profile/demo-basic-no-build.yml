@@ -17,6 +17,7 @@ services:
       - deployment-data:/deployment
 
   proxy:
+    restart: unless-stopped
     extends:
       file: deploy-no-build.yml
       service: proxy
@@ -25,6 +26,7 @@ services:
         condition: service_healthy
 
   postgresql:
+    restart: unless-stopped
     extends:
       file: deploy-no-build.yml
       service: postgresql
@@ -32,6 +34,7 @@ services:
       - postgresql-data:/var/lib/postgresql/data
 
   manager:
+    restart: unless-stopped
     extends:
       file: deploy-no-build.yml
       service: manager
