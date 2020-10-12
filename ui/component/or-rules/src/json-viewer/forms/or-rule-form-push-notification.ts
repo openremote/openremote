@@ -83,9 +83,9 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
     protected setActionNotificationName(value: string | undefined, key?: string) {
         if(key && this.action.notification && this.action.notification.message){
             let message:any = this.action.notification.message;
-            message = set(message, key, value);
+            set(message, key, value);
             if(key.includes('action')) {
-                message = set(message, "buttons.0."+key, value);
+                set(message, "buttons.0."+key, value);
             }
             this.action.notification.message = {...message};
         }

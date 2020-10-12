@@ -179,7 +179,8 @@ export class OrAssetViewerComputeGridEvent extends CustomEvent<void> {
 export type SaveResult = {
     success: boolean,
     assetId: string,
-    isNew?: boolean
+    isNew?: boolean,
+    isCopy?: boolean
 };
 
 export class OrAssetViewerRequestSaveEvent extends CustomEvent<Util.RequestEventDetail<Asset>> {

@@ -214,6 +214,8 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         } else {
             // Auto save and load
             const result = await saveAsset(ev.detail.asset);
+            result.isCopy = true;
+            this.dispatchEvent(new OrAssetViewerSaveEvent(result));
             this._onAssetSave(result);
         }
     }
