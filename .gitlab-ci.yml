@@ -107,7 +107,7 @@ build-keycloak-postgresql-proxy:
     - docker buildx create --use
   script:
     - docker buildx build --push --platform $PLATFORM -t openremote/proxy:latest proxy
-    - docker buildx build --push --platform $PLATFORM -t openremote/keycloak:latest keycloak
+    - docker buildx build --push --platform linux/amd64 -t openremote/keycloak:latest keycloak
     - docker buildx build --push --platform $PLATFORM -t openremote/postgresql:latest postgresql
   rules:
     - if: $CI_COMMIT_MESSAGE =~ /skip-build/
