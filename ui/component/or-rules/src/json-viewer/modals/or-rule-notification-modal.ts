@@ -10,7 +10,32 @@ import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 
 import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+const checkValidity = (form:HTMLElement | null, dialog:OrMwcDialog) => {
+    if(form) {
+        const inputs = form.querySelectorAll('or-input')
+        const elements = Array.prototype.slice.call(inputs);
 
+        const valid = elements.every((element) => {
+            if(element.shadowRoot) {
+                const input  = element.shadowRoot.querySelector('input, textarea, select') as any
+
+                if(input && input.checkValidity()) {
+                    return true
+                } else {
+                    element._mdcComponent.valid = false;
+                    element._mdcComponent.helperTextContent = 'required';
+
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        })
+        if(valid) {
+            dialog.close();
+        }
+    }
+}
 @customElement("or-rule-notification-modal")
 export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
 
@@ -55,38 +80,23 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
             this.renderDialogHTML(this.action);
         }
     }
+    
+    
 
     checkForm() {
         const dialog: OrMwcDialog = this.shadowRoot!.host as OrMwcDialog;
-        if (this.shadowRoot && this.shadowRoot.querySelector('or-rule-form-push-notification')) {
+
+        if (this.shadowRoot) {
+            const messageNotification = this.shadowRoot.querySelector('or-rule-form-message');
             const pushNotification = this.shadowRoot.querySelector('or-rule-form-push-notification');
+
             if(pushNotification && pushNotification.shadowRoot) {
                 const form = pushNotification.shadowRoot.querySelector('form')
-                if(form) {
-                    const inputs = form.querySelectorAll('or-input')
-                    const elements = Array.prototype.slice.call(inputs);
-
-                    const valid = elements.every((element) => {
-                        if(element.shadowRoot) {
-                            const input  = element.shadowRoot.querySelector('input, textarea, select') as any
-
-                            if(input && input.checkValidity()) {
-                                return true
-                            } else {
-                                element._mdcComponent.valid = false;
-                                element._mdcComponent.helperTextContent = 'required';
-
-                                return false;
-                            }
-                        } else {
-                            return false;
-                        }
-                    })
-                    if(valid) {
-                        dialog.close();
-                    }
-                }
-
+                return checkValidity(form, dialog)
+            }
+            else if(messageNotification && messageNotification.shadowRoot) {
+                const form = messageNotification.shadowRoot.querySelector('form')
+                return checkValidity(form, dialog)
             }
         }
     }
