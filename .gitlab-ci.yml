@@ -116,6 +116,7 @@ build-keycloak-postgresql-proxy:
         - proxy/**/*
         - postgresql/**/*
         - keycloak/**/*
+    - when: manual
   retry:
     max: 2
 
@@ -215,16 +216,18 @@ build-keycloak-postgresql-proxy:
 # This step is executed when build fails. The purpose is to e-mail a git commiter about the problem.
 email failed build:
   stage: build_fail
-  needs: ["build-deployment-manager-swarm"]
   <<: *notify_email
   rules:
+    - if: $CI_COMMIT_MESSAGE =~ /skip-build/
+      when: never
     - when: on_failure
 
 build FAILED:
   stage: build_fail
-  needs: ["build-deployment-manager-swarm"]
   <<: *notify_whatsapp
   rules:
+    - if: $CI_COMMIT_MESSAGE =~ /skip-build/
+      when: never
     - when: on_failure
 
 test-master:
@@ -255,8 +258,6 @@ deploy demo on OVH:
   stage: deploy_ovh
   allow_failure: true
   rules:
-    - if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
-      when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
       when: manual
   variables:
