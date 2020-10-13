@@ -218,6 +218,8 @@ email failed build:
   stage: build_fail
   <<: *notify_email
   rules:
+    - if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
+      when: on_failure
     - if: $CI_COMMIT_MESSAGE =~ /skip-build/
       when: never
     - when: on_failure
@@ -226,6 +228,8 @@ build FAILED:
   stage: build_fail
   <<: *notify_whatsapp
   rules:
+    - if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
+      when: on_failure
     - if: $CI_COMMIT_MESSAGE =~ /skip-build/
       when: never
     - when: on_failure
@@ -258,6 +262,8 @@ deploy demo on OVH:
   stage: deploy_ovh
   allow_failure: true
   rules:
+    - if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
+      when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
       when: manual
   variables:
