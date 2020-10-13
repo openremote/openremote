@@ -215,12 +215,14 @@ build-keycloak-postgresql-proxy:
 # This step is executed when build fails. The purpose is to e-mail a git commiter about the problem.
 email failed build:
   stage: build_fail
+  needs: ["build-deployment-manager-swarm"]
   <<: *notify_email
   rules:
     - when: on_failure
 
 build FAILED:
   stage: build_fail
+  needs: ["build-deployment-manager-swarm"]
   <<: *notify_whatsapp
   rules:
     - when: on_failure
