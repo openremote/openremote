@@ -257,6 +257,18 @@ deploy staging:
     url: https://${CI_ENVIRONMENT_SLUG}.${PROJECT_NAME}.${DOMAIN}
   <<: *deploy_definition
 
+deploy staging when tests fail:
+  stage: deploy
+  needs: ["email failed tests"]
+  when: manual
+  variables:
+    DEPLOYMENT_HOST: ${CI_ENVIRONMENT_SLUG}.${PROJECT_NAME}.${DOMAIN}
+    SETUP_WIPE_CLEAN_INSTALL: "true"
+  environment:
+    name: staging
+    url: https://${CI_ENVIRONMENT_SLUG}.${PROJECT_NAME}.${DOMAIN}
+  <<: *deploy_definition
+
 deploy staging FAILED:
   stage: notify_deploy_staging_fail
   needs: ["deploy staging"]
