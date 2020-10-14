@@ -116,6 +116,7 @@ build-keycloak-postgresql-proxy:
         - proxy/**/*
         - postgresql/**/*
         - keycloak/**/*
+    - when: manual
   retry:
     max: 2
 
@@ -217,12 +218,20 @@ email failed build:
   stage: build_fail
   <<: *notify_email
   rules:
+    - if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
+      when: on_failure
+    - if: $CI_COMMIT_MESSAGE =~ /skip-build/
+      when: never
     - when: on_failure
 
 build FAILED:
   stage: build_fail
   <<: *notify_whatsapp
   rules:
+    - if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
+      when: on_failure
+    - if: $CI_COMMIT_MESSAGE =~ /skip-build/
+      when: never
     - when: on_failure
 
 test-master:
