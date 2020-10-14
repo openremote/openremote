@@ -97,6 +97,7 @@ build-deployment-manager-swarm:
 
 build-keycloak-postgresql-proxy:
   stage: build
+  allow_failure: true
   before_script:
     - export DOCKER_CLI_EXPERIMENTAL=enabled
     - mkdir -p /root/.docker/cli-plugins
