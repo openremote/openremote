@@ -96,7 +96,7 @@ For more information and how to set up a development environment, see the [Devel
 
 ## Discuss OpenRemote
 
-Join us on the [community group](https://forum.openremote.io/).
+Join us on the [community forum](https://forum.openremote.io/).
 
 ## See also
 
