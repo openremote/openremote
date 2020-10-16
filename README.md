@@ -1,7 +1,7 @@
 # OpenRemote v3 [![CI/CD pipeline](https://gitlab.com/openremote/openremote/badges/master/pipeline.svg)](https://gitlab.com/openremote/openremote/pipelines)
 
 
-[Source](https://github.com/openremote/openremote) **·** [Documentation](https://github.com/openremote/openremote/wiki) **·** [Community](https://groups.google.com/forum/#!forum/openremotecommunity) **·** [Issues](https://github.com/openremote/openremote/issues) **·** [Docker Images](https://hub.docker.com/u/openremote/) **·** [OpenRemote Inc.](https://openremote.io)
+[Source](https://github.com/openremote/openremote) **·** [Documentation](https://github.com/openremote/openremote/wiki) **·** [Community](https://forum.openremote.io) **·** [Issues](https://github.com/openremote/openremote/issues) **·** [Docker Images](https://hub.docker.com/u/openremote/) **·** [OpenRemote Inc.](https://openremote.io)
 
 We are currently working on v3 of the OpenRemote platform. This is **beta** software that should be used only for development.
 
