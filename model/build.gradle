@@ -25,6 +25,7 @@ dependencies {
     compile "org.keycloak:keycloak-core:$keycloakVersion:sources"
 
     compile "org.jeasy:easy-rules-core:$easyRulesVersion"
+    compile "org.mnode.ical4j:ical4j:$ical4jVersion"
 }
 
 jar {

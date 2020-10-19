@@ -19,8 +19,10 @@
  */
 package org.openremote.model.rules;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.gwt.core.shared.GwtIncompatible;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -359,10 +361,14 @@ public abstract class Ruleset {
         return this;
     }
 
+    @JsonIgnore
+    @GwtIncompatible
     public CalendarEvent getValidity() {
         return Values.getObject(meta).flatMap(objValue -> objValue.getObject(META_KEY_VALIDITY)).flatMap(CalendarEvent::fromValue).orElse(null);
     }
 
+    @JsonIgnore
+    @GwtIncompatible
     public Ruleset setValidity(CalendarEvent calendarEvent) {
         if (meta == null) {
             meta = Values.createObject();

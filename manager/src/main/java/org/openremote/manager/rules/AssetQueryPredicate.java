@@ -21,14 +21,14 @@ package org.openremote.manager.rules;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
-import net.fortuna.ical4j.model.*;
+import net.fortuna.ical4j.model.DateList;
+import net.fortuna.ical4j.model.Recur;
 import org.geotools.referencing.GeodeticCalculator;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.attribute.Meta;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.calendar.CalendarEvent;
-import org.openremote.model.calendar.RecurrenceRule;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.AssetQuery.NumberType;
@@ -44,7 +44,6 @@ import org.openremote.model.value.Values;
 
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.Date;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -491,27 +490,13 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             return new Pair<>(calendarEvent.getStart().getTime(), calendarEvent.getEnd().getTime());
         }
 
-        if (calendarEvent.getRecurrence() == null) {
+        Recur recurrence = calendarEvent.getRecurrence();
+
+        if (recurrence == null) {
             if (calendarEvent.getEnd().before(when)) {
                 return null;
             }
             return new Pair<>(calendarEvent.getStart().getTime(), calendarEvent.getEnd().getTime());
-        }
-
-        RecurrenceRule recurrenceRule = calendarEvent.getRecurrence();
-        Recur recurrence;
-
-        if (recurrenceRule.getCount() != null) {
-            recurrence = new Recur(recurrenceRule.getFrequency().name(), recurrenceRule.getCount());
-        } else if (recurrenceRule.getUntil() != null) {
-            recurrence = new Recur(recurrenceRule.getFrequency().name(),
-                new net.fortuna.ical4j.model.Date(recurrenceRule.getUntil()));
-        } else {
-            recurrence = new Recur(recurrenceRule.getFrequency().name(), null);
-        }
-
-        if (recurrenceRule.getInterval() != null) {
-            recurrence.setInterval(recurrenceRule.getInterval());
         }
 
         long whenMillis = when.toInstant().minus(calendarEvent.getEnd().getTime() - calendarEvent.getStart().getTime(), ChronoUnit.MILLIS).toEpochMilli();

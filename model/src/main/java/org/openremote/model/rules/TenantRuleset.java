@@ -19,6 +19,7 @@
  */
 package org.openremote.model.rules;
 
+import com.google.gwt.core.shared.GwtIncompatible;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -153,6 +154,7 @@ public class TenantRuleset extends Ruleset {
         return this;
     }
 
+    @GwtIncompatible
     @Override
     public TenantRuleset setValidity(CalendarEvent calendarEvent) {
         super.setValidity(calendarEvent);
