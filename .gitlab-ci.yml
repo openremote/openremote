@@ -38,7 +38,7 @@ lint-Dockerfile:
   allow_failure: true
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
-      when: manual
+      when: never
 
 lint-swarm-Dockerfile:
   stage: build
@@ -50,6 +50,7 @@ lint-swarm-Dockerfile:
     - env
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
+      when: never
 
 build-enviroment:
   stage: prebuild
@@ -73,6 +74,7 @@ build-enviroment:
 
 build-deployment-manager-swarm:
   stage: build
+  allow_failure: true
   before_script:
     - export DOCKER_CLI_EXPERIMENTAL=enabled
     - mkdir -p /root/.docker/cli-plugins
@@ -92,6 +94,7 @@ build-deployment-manager-swarm:
     - docker buildx build --push --platform $PLATFORM -t openremote/manager-swarm:latest -f manager/build/install/manager/swarm.Dockerfile manager/build/install/manager
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
+      when: manual
   retry:
     max: 2
 
