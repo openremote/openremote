@@ -87,6 +87,13 @@ services:
         options:
             max-size: 10m
 
+    healthcheck:
+        interval: 3s
+        timeout: 3s
+        start_period: 2s
+        retries: 30
+        test: ["CMD", "curl", "--fail", "--silent", "http://localhost:80"]
+
   # The API gateway and Manager web application.
   manager:
 
@@ -257,6 +264,13 @@ services:
     # Resource limits
     mem_reservation: 512m
 
+    healthcheck:
+        interval: 3s
+        timeout: 3s
+        start_period: 2s
+        retries: 120
+        test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080"]
+
     # Configure logging of the container, see deployment/logging.properties
     logging:
         options:
@@ -311,6 +325,14 @@ services:
         options:
             max-size: 10m
 
+    healthcheck:
+        test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/auth"]
+        interval: 3s
+        timeout: 3s
+        # This was 600s in the Dockerfile, but that seems way too long.
+        start_period: 60s
+        retries: 30
+
     # Uncomment to support the IKEA TRÅDFRI protocol. USE AT YOUR OWN RISK.
     # ports:
     #   - "8081:8080"
@@ -348,6 +370,13 @@ services:
     logging:
         options:
             max-size: 10m
+
+    healthcheck:
+        interval: 3s
+        timeout: 3s
+        start_period: 2s
+        retries: 30
+        test: ["CMD", "gosu", "postgres", "pg_isready"]
 
     # Uncomment to support the IKEA TRÅDFRI protocol. USE AT YOUR OWN RISK.
     # ports:
