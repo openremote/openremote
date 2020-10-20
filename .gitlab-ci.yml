@@ -252,7 +252,8 @@ test-master:
       /bin/sh -c "./gradlew clean test"
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
-      when: on_success
+      when: delayed
+      start_in: 2h # Give github actions time to finish (usually a little more than 1h)
   artifacts:
     when: on_failure
     paths:
