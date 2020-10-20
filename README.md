@@ -1,4 +1,7 @@
-# OpenRemote v3 [![CI/CD pipeline](https://gitlab.com/openremote/openremote/badges/master/pipeline.svg)](https://gitlab.com/openremote/openremote/pipelines)
+# OpenRemote v3
+
+[![CI/CD pipeline](https://gitlab.com/openremote/openremote/badges/master/pipeline.svg)](https://gitlab.com/openremote/openremote/pipelines)
+![installDist and build multi-arch Docker containers](https://github.com/openremote/openremote/workflows/installDist%20and%20build%20multi-arch%20Docker%20containers/badge.svg)
 
 
 [Source](https://github.com/openremote/openremote) **·** [Documentation](https://github.com/openremote/openremote/wiki) **·** [Community](https://forum.openremote.io) **·** [Issues](https://github.com/openremote/openremote/issues) **·** [Docker Images](https://hub.docker.com/u/openremote/) **·** [OpenRemote Inc.](https://openremote.io)
