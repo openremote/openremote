@@ -7,19 +7,41 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4C81AA642546B251006ED5DD /* ProjectViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C81AA632546B251006ED5DD /* ProjectViewController.swift */; };
+		4C81AADD2546EB28006ED5DD /* ORTextInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C81AADC2546EB28006ED5DD /* ORTextInput.swift */; };
+		4C81AAE62547124D006ED5DD /* UIColor+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C81AAE52547124D006ED5DD /* UIColor+Utils.swift */; };
+		4C81AB2D25472C7F006ED5DD /* String+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C81AB2C25472C7F006ED5DD /* String+Utils.swift */; };
+		4CEDA25D25405B1E00C47E3B /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 4CEDA25C25405B1E00C47E3B /* GoogleService-Info.plist */; };
+		4CEDA27B2540690300C47E3B /* ApiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA27A2540690300C47E3B /* ApiManager.swift */; };
+		4CEDA27E25406A4400C47E3B /* ORAppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA27D25406A4400C47E3B /* ORAppConfig.swift */; };
+		4CEDA28125406C1700C47E3B /* ORLinkConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA28025406C1700C47E3B /* ORLinkConfig.swift */; };
+		4CEDA2852540740C00C47E3B /* ORNotificationResource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA2832540740B00C47E3B /* ORNotificationResource.swift */; };
+		4CEDA28B2540742900C47E3B /* ORPushNotificationButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA28A2540742900C47E3B /* ORPushNotificationButton.swift */; };
+		4CEDA28C2540742900C47E3B /* ORPushNotificationAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA2892540742900C47E3B /* ORPushNotificationAction.swift */; };
+		4CEDA2922540747D00C47E3B /* GeofenceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA28F2540747D00C47E3B /* GeofenceProvider.swift */; };
+		4CEDA2932540747D00C47E3B /* PushNotificationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA2902540747D00C47E3B /* PushNotificationProvider.swift */; };
+		4CEDA2942540747D00C47E3B /* StorageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA2912540747D00C47E3B /* StorageProvider.swift */; };
+		4CEDA29A2540748C00C47E3B /* ErrorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA2992540748C00C47E3B /* ErrorManager.swift */; };
+		4CEDA29E254074A500C47E3B /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA29D254074A500C47E3B /* Constants.swift */; };
+		4CEDA2A1254074AB00C47E3B /* Reachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA2A0254074AB00C47E3B /* Reachability.swift */; };
+		4CEDA2A4254074B900C47E3B /* ORViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA2A3254074B900C47E3B /* ORViewController.swift */; };
+		4CEDA2A7254074D100C47E3B /* Storyboard.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4CEDA2A6254074D100C47E3B /* Storyboard.storyboard */; };
+		4CEDA2CE254075D400C47E3B /* SplashViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA2CD254075D400C47E3B /* SplashViewController.swift */; };
+		4CEDA2D02540765D00C47E3B /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA29D254074A500C47E3B /* Constants.swift */; };
+		4CEDA2D22540768700C47E3B /* ORLinkConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA28025406C1700C47E3B /* ORLinkConfig.swift */; };
+		4CEDA2D32540768700C47E3B /* ORPushNotificationAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA2892540742900C47E3B /* ORPushNotificationAction.swift */; };
+		4CEDA2D42540768700C47E3B /* ORAppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA27D25406A4400C47E3B /* ORAppConfig.swift */; };
+		4CEDA2D52540768700C47E3B /* ORPushNotificationButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA28A2540742900C47E3B /* ORPushNotificationButton.swift */; };
+		4CEDA2E72540768B00C47E3B /* ORNotificationResource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA2832540740B00C47E3B /* ORNotificationResource.swift */; };
+		4CEDA2E92540770200C47E3B /* GeofenceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA28F2540747D00C47E3B /* GeofenceProvider.swift */; };
 		5952998DA2B50AFF73DDCAE1 /* Pods_NotificationService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 570B5A477F4AA747A62A45EF /* Pods_NotificationService.framework */; };
 		756FA8BF24545CB0CC18CA6E /* Pods_GenericApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4E012F268F107177E6B242E8 /* Pods_GenericApp.framework */; };
 		878D2D0D249A490300011484 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 878D2D0C249A490300011484 /* AppDelegate.swift */; };
-		878D2D0F249A490300011484 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 878D2D0E249A490300011484 /* SceneDelegate.swift */; };
-		878D2D11249A490300011484 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 878D2D10249A490300011484 /* ContentView.swift */; };
 		878D2D13249A490400011484 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 878D2D12249A490400011484 /* Assets.xcassets */; };
 		878D2D16249A490400011484 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 878D2D15249A490400011484 /* Preview Assets.xcassets */; };
 		878D2D19249A490400011484 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 878D2D17249A490400011484 /* LaunchScreen.storyboard */; };
 		878D2D27249A498900011484 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 878D2D26249A498900011484 /* NotificationService.swift */; };
 		878D2D2B249A498900011484 /* NotificationService.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 878D2D24249A498900011484 /* NotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		878D2D31249A4D3700011484 /* ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 878D2D30249A4D3700011484 /* ORLib.framework */; };
-		878D2D32249A4D3700011484 /* ORLib.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 878D2D30249A4D3700011484 /* ORLib.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		878D2D36249A50FC00011484 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 878D2D35249A50FC00011484 /* LoginView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,28 +66,37 @@
 			name = "Embed App Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		878D2D33249A4D3700011484 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				878D2D32249A4D3700011484 /* ORLib.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		3B0E05618605D241D5A82AA3 /* Pods-NotificationService.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NotificationService.debug.xcconfig"; path = "Target Support Files/Pods-NotificationService/Pods-NotificationService.debug.xcconfig"; sourceTree = "<group>"; };
 		46FD90D41833A0E2C4C7DDA6 /* Pods-NotificationService.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NotificationService.release.xcconfig"; path = "Target Support Files/Pods-NotificationService/Pods-NotificationService.release.xcconfig"; sourceTree = "<group>"; };
+		4C81AA632546B251006ED5DD /* ProjectViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectViewController.swift; sourceTree = "<group>"; };
+		4C81AADC2546EB28006ED5DD /* ORTextInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORTextInput.swift; sourceTree = "<group>"; };
+		4C81AAE0254709EC006ED5DD /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
+		4C81AAE52547124D006ED5DD /* UIColor+Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIColor+Utils.swift"; sourceTree = "<group>"; };
+		4C81AB2C25472C7F006ED5DD /* String+Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Utils.swift"; sourceTree = "<group>"; };
+		4CEDA259254042A900C47E3B /* OpenRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpenRemote.entitlements; sourceTree = "<group>"; };
+		4CEDA25C25405B1E00C47E3B /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		4CEDA27A2540690300C47E3B /* ApiManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ApiManager.swift; sourceTree = "<group>"; };
+		4CEDA27D25406A4400C47E3B /* ORAppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORAppConfig.swift; sourceTree = "<group>"; };
+		4CEDA28025406C1700C47E3B /* ORLinkConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORLinkConfig.swift; sourceTree = "<group>"; };
+		4CEDA2832540740B00C47E3B /* ORNotificationResource.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORNotificationResource.swift; sourceTree = "<group>"; };
+		4CEDA2892540742900C47E3B /* ORPushNotificationAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORPushNotificationAction.swift; sourceTree = "<group>"; };
+		4CEDA28A2540742900C47E3B /* ORPushNotificationButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORPushNotificationButton.swift; sourceTree = "<group>"; };
+		4CEDA28F2540747D00C47E3B /* GeofenceProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GeofenceProvider.swift; sourceTree = "<group>"; };
+		4CEDA2902540747D00C47E3B /* PushNotificationProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PushNotificationProvider.swift; sourceTree = "<group>"; };
+		4CEDA2912540747D00C47E3B /* StorageProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StorageProvider.swift; sourceTree = "<group>"; };
+		4CEDA2992540748C00C47E3B /* ErrorManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorManager.swift; sourceTree = "<group>"; };
+		4CEDA29D254074A500C47E3B /* Constants.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		4CEDA2A0254074AB00C47E3B /* Reachability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reachability.swift; sourceTree = "<group>"; };
+		4CEDA2A3254074B900C47E3B /* ORViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORViewController.swift; sourceTree = "<group>"; };
+		4CEDA2A6254074D100C47E3B /* Storyboard.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Storyboard.storyboard; sourceTree = "<group>"; };
+		4CEDA2CD254075D400C47E3B /* SplashViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashViewController.swift; sourceTree = "<group>"; };
 		4E012F268F107177E6B242E8 /* Pods_GenericApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GenericApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		570B5A477F4AA747A62A45EF /* Pods_NotificationService.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_NotificationService.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		878D2D09249A490300011484 /* OpenRemote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenRemote.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		878D2D0C249A490300011484 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		878D2D0E249A490300011484 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		878D2D10249A490300011484 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		878D2D12249A490400011484 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		878D2D15249A490400011484 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		878D2D18249A490400011484 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -74,7 +105,6 @@
 		878D2D26249A498900011484 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		878D2D28249A498900011484 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		878D2D30249A4D3700011484 /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		878D2D35249A50FC00011484 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		A994B3D3E3853BA4D16AA5A8 /* Pods-GenericApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GenericApp.debug.xcconfig"; path = "Target Support Files/Pods-GenericApp/Pods-GenericApp.debug.xcconfig"; sourceTree = "<group>"; };
 		D61E1E0434CC1446EAF20BA0 /* Pods-GenericApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GenericApp.release.xcconfig"; path = "Target Support Files/Pods-GenericApp/Pods-GenericApp.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -93,13 +123,53 @@
 			buildActionMask = 2147483647;
 			files = (
 				5952998DA2B50AFF73DDCAE1 /* Pods_NotificationService.framework in Frameworks */,
-				878D2D31249A4D3700011484 /* ORLib.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4CEDA264254068D700C47E3B /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				4CEDA27D25406A4400C47E3B /* ORAppConfig.swift */,
+				4CEDA28025406C1700C47E3B /* ORLinkConfig.swift */,
+				4CEDA2892540742900C47E3B /* ORPushNotificationAction.swift */,
+				4CEDA28A2540742900C47E3B /* ORPushNotificationButton.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		4CEDA279254068DD00C47E3B /* Network */ = {
+			isa = PBXGroup;
+			children = (
+				4CEDA27A2540690300C47E3B /* ApiManager.swift */,
+				4CEDA2832540740B00C47E3B /* ORNotificationResource.swift */,
+			);
+			path = Network;
+			sourceTree = "<group>";
+		};
+		4CEDA28E2540747400C47E3B /* ConsoleProviders */ = {
+			isa = PBXGroup;
+			children = (
+				4CEDA2912540747D00C47E3B /* StorageProvider.swift */,
+				4CEDA28F2540747D00C47E3B /* GeofenceProvider.swift */,
+				4CEDA2902540747D00C47E3B /* PushNotificationProvider.swift */,
+			);
+			path = ConsoleProviders;
+			sourceTree = "<group>";
+		};
+		4CEDA29C2540749B00C47E3B /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				4CEDA2A0254074AB00C47E3B /* Reachability.swift */,
+				4CEDA29D254074A500C47E3B /* Constants.swift */,
+				4C81AAE52547124D006ED5DD /* UIColor+Utils.swift */,
+				4C81AB2C25472C7F006ED5DD /* String+Utils.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
 		6E621588C821060939F236DC /* Pods */ = {
 			isa = PBXGroup;
 			children = (
@@ -134,12 +204,17 @@
 		878D2D0B249A490300011484 /* GenericApp */ = {
 			isa = PBXGroup;
 			children = (
+				4CEDA29C2540749B00C47E3B /* Utils */,
+				4CEDA28E2540747400C47E3B /* ConsoleProviders */,
+				4CEDA279254068DD00C47E3B /* Network */,
+				4CEDA264254068D700C47E3B /* Models */,
+				4CEDA25C25405B1E00C47E3B /* GoogleService-Info.plist */,
+				4CEDA259254042A900C47E3B /* OpenRemote.entitlements */,
 				878D2D34249A50E500011484 /* UI */,
 				878D2D0C249A490300011484 /* AppDelegate.swift */,
-				878D2D0E249A490300011484 /* SceneDelegate.swift */,
-				878D2D10249A490300011484 /* ContentView.swift */,
 				878D2D12249A490400011484 /* Assets.xcassets */,
 				878D2D17249A490400011484 /* LaunchScreen.storyboard */,
+				4CEDA2A6254074D100C47E3B /* Storyboard.storyboard */,
 				878D2D1A249A490400011484 /* Info.plist */,
 				878D2D14249A490400011484 /* Preview Content */,
 			);
@@ -157,6 +232,7 @@
 		878D2D25249A498900011484 /* NotificationService */ = {
 			isa = PBXGroup;
 			children = (
+				4C81AAE0254709EC006ED5DD /* NotificationService.entitlements */,
 				878D2D26249A498900011484 /* NotificationService.swift */,
 				878D2D28249A498900011484 /* Info.plist */,
 			);
@@ -166,7 +242,11 @@
 		878D2D34249A50E500011484 /* UI */ = {
 			isa = PBXGroup;
 			children = (
-				878D2D35249A50FC00011484 /* LoginView.swift */,
+				4CEDA2992540748C00C47E3B /* ErrorManager.swift */,
+				4CEDA2A3254074B900C47E3B /* ORViewController.swift */,
+				4CEDA2CD254075D400C47E3B /* SplashViewController.swift */,
+				4C81AA632546B251006ED5DD /* ProjectViewController.swift */,
+				4C81AADC2546EB28006ED5DD /* ORTextInput.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -213,7 +293,6 @@
 				878D2D20249A498900011484 /* Sources */,
 				878D2D21249A498900011484 /* Frameworks */,
 				878D2D22249A498900011484 /* Resources */,
-				878D2D33249A4D3700011484 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -231,7 +310,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 1140;
-				LastUpgradeCheck = 1140;
+				LastUpgradeCheck = 1200;
 				ORGANIZATIONNAME = OpenRemote;
 				TargetAttributes = {
 					878D2D08249A490300011484 = {
@@ -267,8 +346,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				878D2D19249A490400011484 /* LaunchScreen.storyboard in Resources */,
+				4CEDA25D25405B1E00C47E3B /* GoogleService-Info.plist in Resources */,
 				878D2D16249A490400011484 /* Preview Assets.xcassets in Resources */,
 				878D2D13249A490400011484 /* Assets.xcassets in Resources */,
+				4CEDA2A7254074D100C47E3B /* Storyboard.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -350,10 +431,25 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4CEDA2922540747D00C47E3B /* GeofenceProvider.swift in Sources */,
+				4CEDA29E254074A500C47E3B /* Constants.swift in Sources */,
+				4C81AA642546B251006ED5DD /* ProjectViewController.swift in Sources */,
 				878D2D0D249A490300011484 /* AppDelegate.swift in Sources */,
-				878D2D0F249A490300011484 /* SceneDelegate.swift in Sources */,
-				878D2D36249A50FC00011484 /* LoginView.swift in Sources */,
-				878D2D11249A490300011484 /* ContentView.swift in Sources */,
+				4CEDA29A2540748C00C47E3B /* ErrorManager.swift in Sources */,
+				4CEDA2932540747D00C47E3B /* PushNotificationProvider.swift in Sources */,
+				4CEDA2CE254075D400C47E3B /* SplashViewController.swift in Sources */,
+				4CEDA28125406C1700C47E3B /* ORLinkConfig.swift in Sources */,
+				4CEDA2942540747D00C47E3B /* StorageProvider.swift in Sources */,
+				4C81AAE62547124D006ED5DD /* UIColor+Utils.swift in Sources */,
+				4C81AADD2546EB28006ED5DD /* ORTextInput.swift in Sources */,
+				4CEDA2A4254074B900C47E3B /* ORViewController.swift in Sources */,
+				4C81AB2D25472C7F006ED5DD /* String+Utils.swift in Sources */,
+				4CEDA27E25406A4400C47E3B /* ORAppConfig.swift in Sources */,
+				4CEDA28B2540742900C47E3B /* ORPushNotificationButton.swift in Sources */,
+				4CEDA28C2540742900C47E3B /* ORPushNotificationAction.swift in Sources */,
+				4CEDA27B2540690300C47E3B /* ApiManager.swift in Sources */,
+				4CEDA2A1254074AB00C47E3B /* Reachability.swift in Sources */,
+				4CEDA2852540740C00C47E3B /* ORNotificationResource.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -361,7 +457,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4CEDA2E92540770200C47E3B /* GeofenceProvider.swift in Sources */,
+				4CEDA2D22540768700C47E3B /* ORLinkConfig.swift in Sources */,
 				878D2D27249A498900011484 /* NotificationService.swift in Sources */,
+				4CEDA2D02540765D00C47E3B /* Constants.swift in Sources */,
+				4CEDA2D52540768700C47E3B /* ORPushNotificationButton.swift in Sources */,
+				4CEDA2E72540768B00C47E3B /* ORNotificationResource.swift in Sources */,
+				4CEDA2D32540768700C47E3B /* ORPushNotificationAction.swift in Sources */,
+				4CEDA2D42540768700C47E3B /* ORAppConfig.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -413,6 +516,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -473,6 +577,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -507,7 +612,9 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = GenericApp/OpenRemote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 17;
 				DEVELOPMENT_ASSET_PATHS = "\"GenericApp/Preview Content\"";
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				ENABLE_PREVIEWS = YES;
@@ -516,10 +623,11 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = io.openremote.app;
 				PRODUCT_NAME = OpenRemote;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -529,7 +637,9 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = GenericApp/OpenRemote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 17;
 				DEVELOPMENT_ASSET_PATHS = "\"GenericApp/Preview Content\"";
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				ENABLE_PREVIEWS = YES;
@@ -538,10 +648,11 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = io.openremote.app;
 				PRODUCT_NAME = OpenRemote;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -549,6 +660,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 3B0E05618605D241D5A82AA3 /* Pods-NotificationService.debug.xcconfig */;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = NotificationService/NotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				INFOPLIST_FILE = NotificationService/Info.plist;
@@ -569,6 +681,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 46FD90D41833A0E2C4C7DDA6 /* Pods-NotificationService.release.xcconfig */;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = NotificationService/NotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				INFOPLIST_FILE = NotificationService/Info.plist;

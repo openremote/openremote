@@ -1,3 +1,5 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -9,11 +11,14 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
       .then((_) async {
+    await Firebase.initializeApp();
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
     runApp(ORApp());
   });
 }
 class ORApp extends StatelessWidget {
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {

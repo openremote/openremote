@@ -192,18 +192,17 @@ class GeofenceProvider {
         GeofenceDefinition.fromJson).then((geofenceDefinitions) async {
       print("Fetched geofences=${geofenceDefinitions.length}");
 
-      final List<GeofenceDefinition> remainingGeofences = List.from(geofenceDefinitions);
+      final List<GeofenceDefinition> remainingGeofences = [];
       geofences.forEach((oldGeofence) async {
-        if (!geofenceDefinitions
-            .any((definition) => definition.id == oldGeofence.id)) {
+        if (!geofenceDefinitions.any((definition) => definition.id == oldGeofence.id)) {
           await removeGeofence(oldGeofence.id);
         } else {
-          remainingGeofences.removeWhere((element) => element.id == oldGeofence.id);
+          remainingGeofences.add(oldGeofence);
         }
       });
 
-      remainingGeofences.forEach((definition) async {
-        if (!geofences.any((element) => element.id == definition.id)) {
+      geofenceDefinitions.forEach((definition) async {
+        if (!remainingGeofences.any((element) => element.id == definition.id)) {
           await addGeofence(definition);
         }
       });

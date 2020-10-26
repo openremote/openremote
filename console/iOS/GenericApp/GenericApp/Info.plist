@@ -15,30 +15,41 @@
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSApplicationCategoryType</key>
+	<string></string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>UIApplicationSceneManifest</key>
-	<dict>
-		<key>UIApplicationSupportsMultipleScenes</key>
-		<false/>
-		<key>UISceneConfigurations</key>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Location is needed in order to get updates on surveys</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Location is needed in order to get updates on surveys</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Location is needed in order to get updates on surveys</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Location is needed in order to get updates on surveys</string>
+	<key>UIApplicationShortcutItems</key>
+	<array>
 		<dict>
-			<key>UIWindowSceneSessionRoleApplication</key>
-			<array>
-				<dict>
-					<key>UISceneConfigurationName</key>
-					<string>Default Configuration</string>
-					<key>UISceneDelegateClassName</key>
-					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
-				</dict>
-			</array>
+			<key>UIApplicationShortcutItemIconFile</key>
+			<string>ic_settings</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Projects</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>projects</string>
 		</dict>
-	</dict>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Storyboard</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>armv7</string>
@@ -46,8 +57,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
