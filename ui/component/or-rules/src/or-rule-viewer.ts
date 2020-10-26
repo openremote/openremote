@@ -11,6 +11,7 @@ import {ClientRole, RulesetLang, RulesetUnion} from "@openremote/model";
 import manager, { Util } from "@openremote/core";
 import "./json-viewer/or-rule-json-viewer";
 import "./or-rule-text-viewer";
+import "./or-rule-validity";
 import "./flow-viewer/components/flow-editor";
 import "@openremote/or-input";
 import {translate} from "@openremote/or-translate";
@@ -54,7 +55,7 @@ export const style = css`
         box-sizing: border-box;
         min-height: var(--internal-or-rules-header-height);
         height: var(--internal-or-rules-header-height);
-        z-index: 1;
+        z-index: 2;
         padding: 15px 20px;
         --or-icon-fill: var(--internal-or-rules-panel-color);
     }
@@ -179,10 +180,11 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
             <div id="main-wrapper" class="wrapper">            
                 <div id="rule-header">
                     <or-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" required minlength="3" maxlength="255" @or-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-input>
+                    <or-rule-validity id="rule-header-validity" .ruleset="${this.ruleset}"></or-rule-validity>
                     <div id="rule-header-controls">
                         
                         <span id="active-wrapper">
-                            <or-translate value="active"></or-translate>
+                            <or-translate value="enabled"></or-translate>
                             <or-input .type="${InputType.SWITCH}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${!this.ruleset.id}" @or-input-changed="${this._toggleEnabled}"></or-input>
                         </span>
            

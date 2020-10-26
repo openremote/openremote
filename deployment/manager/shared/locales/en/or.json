@@ -332,5 +332,12 @@
     "urn:openremote:protocol:knx": {
       "description": "Protocol for connecting to a KNX"
     }
-  }
+  },
+  "validityType":"Schedule type",
+  "validityAlways":"Always active",
+  "validityPeriod":"Plan a occurence",
+  "validityRecurrence":"Plan a repeating occurence",
+  "activeFromTo": "Active from {{start}} to {{end}}",
+  "fromTo":"From {{start}} to {{end}}",
+  "fromToDays":"from {{start}} to {{days}} days later {{end}}"
 }

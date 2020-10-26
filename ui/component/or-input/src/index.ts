@@ -65,6 +65,7 @@ export enum InputType {
     BUTTON_TOGGLE = "button-toggle",
     BUTTON_MOMENTARY = "button-momentary",
     CHECKBOX = "checkbox",
+    CHECKBOX_LIST = "checkbox-list",
     COLOUR = "color",
     DATE = "date",
     DATETIME = "datetime-local",
@@ -135,7 +136,27 @@ const style = css`
     #menu-anchor {
         max-width: 100%;
     }
-       
+    
+    .mdc-checkbox-list input {
+        display: none;
+    }
+    
+    .mdc-checkbox-list label {
+        display: block;
+        border-radius: 50%;
+        text-align: center;
+        width: 32px;
+        line-height: 32px;
+        height: 32px;
+        background-color: var(--or-app-color2);
+        font-size: 13px;
+    }
+
+    .mdc-checkbox-list input:checked + label {
+        color: var(--or-app-color2);
+        background-color: var(--mdc-theme-primary);
+    }
+
     .or-input--rounded {
         border-radius: 50% !important;
     }
@@ -417,7 +438,8 @@ export class OrInput extends LitElement {
 
             switch (this.type) {
                 case InputType.RADIO:
-                    return html`<span>RADIO</span>`;
+                    return html`RADIO`
+                    break;
                 case InputType.SWITCH:
                     return html`
                         <span id="wrapper">
@@ -579,6 +601,44 @@ export class OrInput extends LitElement {
                         </button>
                     `;
                 }
+                case InputType.CHECKBOX_LIST:
+
+                    let optsRadio: [string, string][] | undefined;
+                    if (this.options && this.options.length > 0) {
+                        if (Array.isArray(this.options[0])) {
+                            optsRadio = this.options as [string, string][];
+                        } else {
+                            optsRadio = (this.options as string[]).map((option) => [option, option]);
+                        }
+                    }
+
+                    this._selectedIndex = -1;
+                    return html`
+                            <div class="mdc-checkbox-list">
+                                ${optsRadio ? optsRadio.map(([optValue, optDisplay], index) => {
+                                    if (this.value === optValue) {
+                                        this._selectedIndex = index;
+                                    }
+                                    return html`
+                                    <div id="field" class="mdc-form-field">
+                                        <div id="component" class="mdc-checkbox">
+                                            <input type="checkbox" 
+                                                ?checked="${this.value && this.value.includes(optValue)}"
+                                                ?required="${this.required}"
+                                                name="${optValue}"
+                                                ?disabled="${this.disabled || this.readonly}"
+                                                @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), {name: (e.target as HTMLInputElement).name, checked: (e.target as HTMLInputElement).checked})}"
+                                                class="mdc-checkbox__native-control" id="elem-${optValue}"/>
+
+                                            <label for="elem-${optValue}"><or-translate value="${optDisplay}"></or-translate></label>
+                                              
+                                        </div>
+                                    </div>
+
+                                    `;
+                                }) : ``}
+                            </div>
+                    `;
                 case InputType.CHECKBOX:
                     return html`
                         <div id="field" class="mdc-form-field">
@@ -596,7 +656,7 @@ export class OrInput extends LitElement {
                                     <div class="mdc-checkbox__mixedmark"></div>
                                 </div>
                             </div>
-                            <label for="elem">${this.label}</label>
+                            <label class="mdc-checkbox-circle" for="elem">${this.label}</label>
                         </div>
                     `;
                 case InputType.NUMBER:
