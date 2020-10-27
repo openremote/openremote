@@ -9,6 +9,7 @@
 import UIKit
 import Firebase
 import CoreLocation
+import IQKeyboardManagerSwift
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
@@ -23,6 +24,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
     var fcmToken: String?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        IQKeyboardManager.shared.enable = true
+
         UNUserNotificationCenter.current().delegate = self
         // if the app was launched because of geofencing
 

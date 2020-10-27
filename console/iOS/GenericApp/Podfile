@@ -16,6 +16,7 @@ target 'GenericApp' do
   pod 'MaterialComponents/TextFields'
   pod 'MaterialComponents/Buttons'
   pod 'Popover'
+  pod 'IQKeyboardManagerSwift'
 end
 
 target 'NotificationService' do
