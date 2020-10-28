@@ -207,8 +207,7 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
         actionIntent.putExtra("notificationId", notificationId)
         actionIntent.putExtra("acknowledgement", acknowledgement)
         actionIntent.action = System.currentTimeMillis().toString()
-        if (ORAlertAction?.url != null && !ORAlertAction.url.isNullOrEmpty()
-        ) {
+        if (ORAlertAction?.url != null && ORAlertAction.url.isNotEmpty()) {
             actionIntent.putExtra("appUrl", ORAlertAction.url)
             actionIntent.putExtra("httpMethod", ORAlertAction.httpMethod)
             actionIntent.putExtra("silent", ORAlertAction.isSilent)

@@ -35,6 +35,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.iid.FirebaseInstanceId
 import io.openremote.app.R
 import io.openremote.app.models.ORAppConfig
+import io.openremote.app.network.ApiManager
 import io.openremote.app.service.GeofenceProvider
 import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONException
@@ -103,23 +104,44 @@ class MainActivity : Activity() {
             initializeWebView()
         }
 
-        openIntentUrl(intent)
         progressBar = findViewById(R.id.webProgressBar)
         progressBar?.max = 100
         progressBar?.progress = 1
-    }
 
-    override fun onNewIntent(intent: Intent) {
-        openIntentUrl(intent)
-    }
-
-    private fun openIntentUrl(intent: Intent) {
         if (intent.hasExtra(APP_CONFIG_KEY)) {
             appConfig = jacksonObjectMapper().readValue(
                 intent.getStringExtra(APP_CONFIG_KEY),
                 ORAppConfig::class.java
             )
         }
+
+        if (appConfig == null) {
+            sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+
+            val project = sharedPreferences!!.getString("project", null)
+            val realm = sharedPreferences!!.getString("realm", null)
+
+            if (!project.isNullOrBlank() && !realm.isNullOrBlank()) {
+                val apiManager = ApiManager("https://${project}.openremote.io/api/$realm")
+                apiManager.getAppConfig { statusCode, appConfig, error ->
+                    if (statusCode in 200..299) {
+                        this.appConfig = appConfig
+                        processAppConfig()
+                    }
+                    openIntentUrl(intent)
+                }
+            }
+        } else {
+            processAppConfig()
+            openIntentUrl(intent)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        openIntentUrl(intent)
+    }
+
+    private fun processAppConfig() {
         if (appConfig != null) {
 
             if (appConfig!!.menuEnabled && !appConfig!!.links.isNullOrEmpty()) {
@@ -159,8 +181,9 @@ class MainActivity : Activity() {
                 }
                 floatingActionButton.layoutParams = layoutParams
                 floatingActionButton.setImageResource(R.drawable.ic_menu)
-                if(!appConfig!!.primaryColor.isNullOrBlank()) {
-                    floatingActionButton.backgroundTintList = ColorStateList.valueOf(Color.parseColor(appConfig!!.primaryColor!!))
+                if (!appConfig!!.primaryColor.isNullOrBlank()) {
+                    floatingActionButton.backgroundTintList =
+                        ColorStateList.valueOf(Color.parseColor(appConfig!!.primaryColor!!))
                 }
                 floatingActionButton.setOnClickListener {
                     // We are showing only toast message. However, you can do anything you need.
@@ -177,24 +200,33 @@ class MainActivity : Activity() {
 
                 activity_web.addView(floatingActionButton)
             }
-            LOG.fine("Loading web view: ${appConfig!!.initialUrl}")
-            loadUrl(appConfig!!.initialUrl)
-        } else if (!intent.hasExtra("appUrl")) {
-            val url = clientUrl
-            LOG.fine("Loading web view: $url")
-            loadUrl(url)
-        } else {
-            var url = clientUrl
-            val intentUrl = intent.getStringExtra("appUrl")
-            if (intentUrl != null) {
-                url = if (intentUrl.startsWith("http") || intentUrl.startsWith("https")) {
-                    intentUrl
-                } else {
-                    url + intentUrl
-                }
+        }
+    }
+
+    private fun openIntentUrl(intent: Intent) {
+        when {
+            intent.hasExtra("appUrl") -> {
+                val url = intent.getStringExtra("appUrl")
+                LOG.fine("Loading web view: $url")
+                loadUrl(url)
             }
-            LOG.fine("Loading web view: $url")
-            loadUrl(url)
+            appConfig != null -> {
+                LOG.fine("Loading web view: ${appConfig!!.initialUrl}")
+                loadUrl(appConfig!!.initialUrl)
+            }
+            else -> {
+                var url = clientUrl
+                val intentUrl = intent.getStringExtra("appUrl")
+                if (intentUrl != null) {
+                    url = if (intentUrl.startsWith("http") || intentUrl.startsWith("https")) {
+                        intentUrl
+                    } else {
+                        url + intentUrl
+                    }
+                }
+                LOG.fine("Loading web view: $url")
+                loadUrl(url)
+            }
         }
     }
 

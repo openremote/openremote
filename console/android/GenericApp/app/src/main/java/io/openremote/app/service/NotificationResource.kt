@@ -12,7 +12,7 @@ class NotificationResource(context: Context) {
     private val sharedPreferences: SharedPreferences =
         PreferenceManager.getDefaultSharedPreferences(context)
 
-    fun executeRequest(httpMethod: String, appUrl: String, data: String) {
+    fun executeRequest(httpMethod: String, appUrl: String, data: String?) {
         val project = sharedPreferences.getString("project", null)
         val realm = sharedPreferences.getString("realm", null)
 
@@ -26,13 +26,14 @@ class NotificationResource(context: Context) {
                         requestMethod = httpMethod
                         setRequestProperty("Accept", "application/json")
 
+                        if (!data.isNullOrBlank()) {
+                            setRequestProperty("Content-Type", "application/json")
+                            doOutput = true
 
-                        setRequestProperty("Content-Type", "application/json")
-                        doOutput = true
-
-                        val outputWriter = outputStream.bufferedWriter()
-                        outputWriter.write(data)
-                        outputWriter.flush()
+                            val outputWriter = outputStream.bufferedWriter()
+                            outputWriter.write(data)
+                            outputWriter.flush()
+                        }
                     }
             }
         }
@@ -62,7 +63,11 @@ class NotificationResource(context: Context) {
         }
     }
 
-    fun notificationAcknowledged(notificationId: Long, fcmToken: String?, acknowledgement: String) {
+    fun notificationAcknowledged(
+        notificationId: Long,
+        fcmToken: String?,
+        acknowledgement: String?
+    ) {
         val project = sharedPreferences.getString("project", null)
         val realm = sharedPreferences.getString("realm", null)
 
@@ -82,7 +87,7 @@ class NotificationResource(context: Context) {
 
                         val outputWriter = outputStream.bufferedWriter()
                         outputWriter.write(
-                            "{\"acknowledgement\": \"$acknowledgement\"}"
+                            "{\"acknowledgement\": \"${acknowledgement ?: ""}\"}"
                         )
                         outputWriter.flush()
                     }
