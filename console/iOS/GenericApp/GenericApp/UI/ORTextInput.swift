@@ -45,7 +45,7 @@ class ORTextInput: UIView {
         textInput.tag = 1
         textInput.translatesAutoresizingMaskIntoConstraints = false
         textInput.placeholder = placeholderText
-        textInput.textColor = textColor
+        textInput.clearButtonMode = .never
 
         self.addSubview(textInput)
 
@@ -55,15 +55,13 @@ class ORTextInput: UIView {
             (textInput.leadingAnchor.constraint(equalTo: self.leadingAnchor)),
             (textInput.trailingAnchor.constraint(equalTo: self.trailingAnchor))
         ])
-
-
     }
 
     private func setupContoller(){
         controller = MDCTextInputControllerFilled(textInput: textInput)
 
         controller.activeColor = textColor
-        controller.textInput?.textColor = textColor
         controller.floatingPlaceholderActiveColor = textColor
+
     }
 }
