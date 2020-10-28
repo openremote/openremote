@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/cog"
+        android:shortcutId="project"
+        android:shortcutShortLabel="@string/Project">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="io.openremote.app.ui.SplashActivity"
+            android:targetPackage="io.openremote.app" />
+        <intent
+            android:action="CLEAR_SETTINGS"
+            android:targetClass="io.openremote.app.ui.ProjectActivity"
+            android:targetPackage="io.openremote.app" />
+    </shortcut>
+
+</shortcuts>
