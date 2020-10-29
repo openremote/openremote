@@ -273,7 +273,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 action: () => {
                     if(this.ruleset && this.ruleset.meta) {
                         if(this.getValidityType() === "validityRecurrence") {
-                            this.ruleset.meta["urn:openremote:rule:meta:validity"].recurrence = this.rrule.toString()
+                            this.ruleset.meta["urn:openremote:rule:meta:validity"].recurrence = this.rrule.toString().split("RRULE:")[1]
                         }
                         if(this.getValidityType() === "validityPeriod" || this.getValidityType() === "validityRecurrence") {
                             this.ruleset.meta["urn:openremote:rule:meta:validity"].start = moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).valueOf()
