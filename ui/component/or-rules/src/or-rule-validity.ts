@@ -15,6 +15,8 @@ import moment from "moment";
 @customElement("or-rule-validity")
 export class OrRuleValidity extends translate(i18next)(LitElement) {
 
+    @property({type: Number})
+    public rulesetId?: number | undefined;
 
     @property({type: Object})
     public ruleset?: RulesetUnion;
@@ -28,6 +30,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
     constructor() {
         super();
     }
+
     public static styles = css`
         :host {
             margin-left: 20px;
@@ -37,6 +40,11 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
     protected updated(changedProps: PropertyValues) {
         super.updated(changedProps);
         if(changedProps.has("ruleset") && this.ruleset) {
+            if(this.ruleset.id && this.ruleset.id != this.rulesetId) {
+                const dialog: OrMwcDialog = this.shadowRoot!.getElementById("radial-modal") as OrMwcDialog;
+                if (dialog) dialog.close();
+                this.rulesetId = this.ruleset.id
+            }
             if(!this.ruleset.meta) this.ruleset.meta = {};
             if(!this.ruleset.meta["urn:openremote:rule:meta:validity"]) return;
 
@@ -66,9 +74,10 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
     }
 
     isAllDay() {
-        if(this.ruleset && this.ruleset.meta && this.ruleset.meta["urn:openremote:rule:meta:validity"]) {
-            if(moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).hours() === 0 && moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).minutes() === 0 
-            && moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).hours() === 23 && moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).minutes() === 59) {
+        if(this.ruleset && this.ruleset.meta) {
+            const validity = this.ruleset.meta["urn:openremote:rule:meta:validity"];
+            if(moment(validity.start).hours() === 0 && moment(validity.start).minutes() === 0 
+            && moment(validity.end).hours() === 23 && moment(validity.end).minutes() === 59) {
                 return true
             }
         }
@@ -81,34 +90,34 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 case "all-day":
                     if(value) {
                         if(this.ruleset.meta) {
-                            this.ruleset.meta["urn:openremote:rule:meta:validity"].start = moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).startOf('day');
-                            this.ruleset.meta["urn:openremote:rule:meta:validity"].end = moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).endOf('day');
+                            this.ruleset.meta["urn:openremote:rule:meta:validity"].start = moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).startOf('day');
+                            this.ruleset.meta["urn:openremote:rule:meta:validity"].end = moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).endOf('day');
                         }
                     } else {
                         if(this.ruleset.meta) {
-                            this.ruleset.meta["urn:openremote:rule:meta:validity"].start = moment.utc();
-                            this.ruleset.meta["urn:openremote:rule:meta:validity"].end = moment.utc().add(1, 'hour');
+                            this.ruleset.meta["urn:openremote:rule:meta:validity"].start = moment();
+                            this.ruleset.meta["urn:openremote:rule:meta:validity"].end = moment().add(1, 'hour');
                         }
                         
                     }
                     break;
                 case "start":
                     if(this.ruleset.meta)
-                        this.ruleset.meta["urn:openremote:rule:meta:validity"]['start'] = moment.utc(value).set({hour:0,minute:0,second:0,millisecond:0}).format();
+                        this.ruleset.meta["urn:openremote:rule:meta:validity"]['start'] = moment(value).set({hour:0,minute:0,second:0,millisecond:0}).format();
 
                     if(this.getValidityType() === "validityRecurrence") 
-                        origOptions[key] = moment.utc(value).format();
+                        origOptions[key] = moment(value).format();
                         this.rrule = new RRule(origOptions);
                     break;
                 case "end":
                     if(this.ruleset.meta)
-                        this.ruleset.meta["urn:openremote:rule:meta:validity"]['end'] = moment.utc(value).set({hour:23,minute:59,second:0,millisecond:0}).format();
+                        this.ruleset.meta["urn:openremote:rule:meta:validity"]['end'] = moment(value).set({hour:23,minute:59,second:0,millisecond:0}).format();
                     break;
                 case "never-ends":
                     if(value) {
                         delete origOptions.until
                     } else {
-                        origOptions.until = new Date(moment.utc().add(1, 'year').format());
+                        origOptions.until = new Date(moment().add(1, 'year').format());
                     }
                     if(this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
                     break;
@@ -121,23 +130,27 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                     }
                     if(this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
                     break;
-                case "dtstart":
                 case "until":
+                    if(this.rrule.options.until) {
+                        const newDate = moment(value)
+                        origOptions["until"] = new Date(moment(origOptions["until"]).set({year: newDate.year(), month: newDate.month(), date: newDate.date()}).format())
+                    }
+                    if(this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
                     break;
                 case "dtstart-time":
                     const timeParts = value.split(':');
-                    origOptions["dtstart"] = moment.utc(origOptions["dtstart"]).set({hour:timeParts[0],minute:timeParts[1],second:0,millisecond:0}).format()
+                    origOptions["dtstart"] = moment(origOptions["dtstart"]).set({hour:timeParts[0],minute:timeParts[1],second:0,millisecond:0}).format()
                     if(this.ruleset.meta)
-                        this.ruleset.meta["urn:openremote:rule:meta:validity"].start = moment.utc(origOptions["dtstart"]).format();
+                        this.ruleset.meta["urn:openremote:rule:meta:validity"].start = moment(origOptions["dtstart"]).format();
                     if(this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
                     break;
                 case "until-time":
                     const untilParts = value.split(':');
                     if(this.rrule.options.until) {
-                        origOptions["until"] = moment.utc(origOptions["until"]).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).format()
+                        origOptions["until"] = moment(origOptions["until"]).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).format()
                     }
                     if(this.ruleset.meta)
-                        this.ruleset.meta["urn:openremote:rule:meta:validity"].end = moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).format();
+                        this.ruleset.meta["urn:openremote:rule:meta:validity"].end = moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).format();
                     if(this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
                     break;
             }
@@ -152,17 +165,17 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
             const diff = moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).diff(this.ruleset.meta["urn:openremote:rule:meta:validity"].start, 'days');
             let diffString = "";
             if(this.isAllDay()) {
-                if(diff > 0) diffString = " "+diff+ " " + i18next.t("days") + " " + i18next.t("later")+ " ";
+                if(diff > 0) diffString = " "+i18next.t('forDays', {days: diff});
                 return this.rrule.toText()+diffString;
             } else {
-                if(diff > 0) diffString = i18next.t("fromToDays", {start: moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format("HH:mm"), end: moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).format("HH:mm"), days: diff })
-                if(diff === 0) diffString = i18next.t("fromTo", {start: moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format("HH:mm"), end: moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).format("HH:mm") })
+                if(diff > 0) diffString = i18next.t("fromToDays", {start: moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format("HH:mm"), end: moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).format("HH:mm"), days: diff })
+                if(diff === 0) diffString = i18next.t("fromTo", {start: moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format("HH:mm"), end: moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).format("HH:mm") })
                 return this.rrule.toText()+" "+diffString;
             } 
         } else if(this.ruleset && this.ruleset.meta && this.ruleset.meta["urn:openremote:rule:meta:validity"]){
             let format = "DD-MM-YYYY";
             if(!this.isAllDay()) format = "DD-MM-YYYY HH:mm";
-            return i18next.t("activeFromTo", {start: moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format(format), end: moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).format(format) })
+            return i18next.t("activeFromTo", {start: moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format(format), end: moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).format(format) })
         }
     }
 
@@ -174,14 +187,14 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 break;
             case "validityPeriod":
                 this.ruleset.meta["urn:openremote:rule:meta:validity"] = {
-                    start: moment.utc().startOf('day'),
-                    end:moment.utc().endOf('day')
+                    start: moment().startOf('day'),
+                    end:moment().endOf('day')
                 };
                 break;
             case "validityRecurrence":
                 this.ruleset.meta["urn:openremote:rule:meta:validity"] = {
-                    start: moment.utc().startOf('day'),
-                    end:moment.utc().endOf('day'),
+                    start: moment().startOf('day'),
+                    end:moment().endOf('day'),
                     recurrence: {}
                 };
                 break;
@@ -216,14 +229,16 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                     </div>
 
                     ${(validityType  === "validityPeriod" || validityType  === "validityRecurrence") ? html`
-                        <label style="display:block; margin-top: 10px;">Period</label>
-                        <div class="layout horizontal">
-                            <or-input value="${moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-input>
-                            <or-input .disabled=${this.isAllDay()} .value="${moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format("HH:mm")}" .type="${InputType.TIME}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "dtstart-time")}" .label="${i18next.t("from")}"></or-input>
-
-                            <or-input .value="${moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).format("YYYY-MM-DD")}"  .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-input>
-                            
-                            <or-input .disabled=${this.isAllDay()} .value="${moment.utc(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).format("HH:mm")}" .type="${InputType.TIME}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until-time")}" .label="${i18next.t("to")}"></or-input>
+                        <label style="display:block; margin-top: 20px;">Period</label>
+                        <div style="display: flex; justify-content: space-between;" class="layout horizontal">
+                            <div>  
+                                <or-input value="${moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-input>
+                                <or-input .disabled=${this.isAllDay()} .value="${moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format("HH:mm")}" .type="${InputType.TIME}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "dtstart-time")}" .label="${i18next.t("from")}"></or-input>
+                            </div>
+                            <div>
+                                <or-input .value="${moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).format("YYYY-MM-DD")}"  .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-input>
+                                <or-input .disabled=${this.isAllDay()} .value="${moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).format("HH:mm")}" .type="${InputType.TIME}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until-time")}" .label="${i18next.t("to")}"></or-input>
+                            </div>
                         </div>  
                         
                         <div class="layout horizontal">
@@ -232,17 +247,17 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                     ` : ``}
                  
                     ${validityType  === "validityRecurrence" ? html`
-                        <label style="display:block; margin-top: 10px;">Repeat occurence every</label>
+                        <label style="display:block; margin-top: 20px;">Repeat occurence every</label>
                         <div class="layout horizontal">
                             <or-input .value="${selectedOptions}" .type="${InputType.CHECKBOX_LIST}" .options="${options}" .label="${i18next.t("days of the week")}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "byweekday")}" ></or-input>
                         </div>
                         
-                        <label style="display:block; margin-top: 10px;">Repetition ends</label>
+                        <label style="display:block; margin-top: 20px;">Repetition ends</label>
                         <div class="layout horizontal">                        
                             <or-input .value="${!this.rrule.options.until}"  @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "never-ends")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("never")}"></or-input>
                         </div>
                         <div class="layout horizontal">
-                            <or-input ?disabled="${!this.rrule.options.until}" .value="${this.rrule.options.until ? moment.utc(this.rrule.options.until).format("YYYY-MM-DD") : moment.utc().add(1, 'year').format('YYYY-MM-DD')}"  .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}" .label="${i18next.t("to")}"></or-input>
+                            <or-input ?disabled="${!this.rrule.options.until}" .value="${this.rrule.options.until ? moment(this.rrule.options.until).format("YYYY-MM-DD") : moment().add(1, 'year').format('YYYY-MM-DD')}"  .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}" .label="${i18next.t("to")}"></or-input>
                         </div>
                     ` : ``}
                   
@@ -276,10 +291,11 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                             this.ruleset.meta["urn:openremote:rule:meta:validity"].recurrence = this.rrule.toString().split("RRULE:")[1]
                         }
                         if(this.getValidityType() === "validityPeriod" || this.getValidityType() === "validityRecurrence") {
-                            this.ruleset.meta["urn:openremote:rule:meta:validity"].start = moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).valueOf()
-                            this.ruleset.meta["urn:openremote:rule:meta:validity"].end = moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).valueOf()
+                            this.ruleset.meta["urn:openremote:rule:meta:validity"].start = moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).unix()*1000
+                            this.ruleset.meta["urn:openremote:rule:meta:validity"].end = moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).unix()*1000
                         }
                         this.dispatchEvent(new OrRulesRuleChangedEvent(true));
+                        this.requestUpdate('ruleset')
                     }
                 }
             },
@@ -291,7 +307,6 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
             if (dialog) {
                 dialog.open();
                 this.renderDialogHTML();
-
             }
         };
 

@@ -151,7 +151,17 @@ const style = css`
         background-color: var(--or-app-color2);
         font-size: 13px;
     }
-
+    
+    input::-webkit-calendar-picker-indicator {
+        margin: 0;
+    }
+    
+    .mdc-checkbox-list .mdc-checkbox {
+        padding: 0;
+        height: 32px;
+        width: 32px;
+    }
+    
     .mdc-checkbox-list input:checked + label {
         color: var(--or-app-color2);
         background-color: var(--mdc-theme-primary);

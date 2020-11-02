@@ -96,5 +96,4 @@ const appConfig: AppConfig<RootState> = {
 };
 orApp.managerConfig = managerConfig;
 orApp.appConfig = appConfig;
-
 document.body.appendChild(orApp);

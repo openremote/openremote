@@ -339,5 +339,6 @@
   "validityRecurrence":"Plan a repeating occurence",
   "activeFromTo": "Active from {{start}} to {{end}}",
   "fromTo":"From {{start}} to {{end}}",
-  "fromToDays":"from {{start}} to {{days}} days later {{end}}"
+  "fromToDays":"from {{start}} to {{days}} days later {{end}}",
+  "forDays":"for {{days}} days"
 }
