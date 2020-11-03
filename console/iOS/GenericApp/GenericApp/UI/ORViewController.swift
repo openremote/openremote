@@ -121,6 +121,10 @@ class ORViewcontroller : UIViewController {
             menuButton?.setImage(#imageLiteral(resourceName: "ic_menu"), for: .highlighted)
             menuButton?.isHidden = true
 
+            if let secondColor = appConfig?.secondaryColor {
+                menuButton?.tintColor = UIColor(hexaRGB: secondColor)
+            }
+
             view.addSubview(menuButton!)
             view.bringSubviewToFront(menuButton!)
 
