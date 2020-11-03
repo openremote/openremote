@@ -15,9 +15,7 @@ import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.*
 import android.text.TextUtils
-import android.view.KeyEvent
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.webkit.*
 import android.webkit.ConsoleMessage.MessageLevel
 import android.webkit.WebView.WebViewTransport
@@ -144,6 +142,14 @@ class MainActivity : Activity() {
     private fun processAppConfig() {
         if (appConfig != null) {
 
+            if (!appConfig!!.primaryColor.isNullOrBlank()) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+                window.statusBarColor = Color.parseColor(appConfig!!.primaryColor!!)
+
+                progressBar?.progressTintList =
+                    ColorStateList.valueOf(Color.parseColor(appConfig!!.primaryColor!!))
+            }
+
             if (appConfig!!.menuEnabled && !appConfig!!.links.isNullOrEmpty()) {
                 val floatingActionButton = FloatingActionButton(this)
 
@@ -184,6 +190,12 @@ class MainActivity : Activity() {
                 if (!appConfig!!.primaryColor.isNullOrBlank()) {
                     floatingActionButton.backgroundTintList =
                         ColorStateList.valueOf(Color.parseColor(appConfig!!.primaryColor!!))
+                }
+                if (!appConfig!!.secondaryColor.isNullOrBlank()) {
+                    floatingActionButton.imageTintList =
+                        ColorStateList.valueOf(Color.parseColor(appConfig!!.secondaryColor!!))
+                } else {
+                    floatingActionButton.imageTintList = ColorStateList.valueOf(Color.DKGRAY)
                 }
                 floatingActionButton.setOnClickListener {
                     // We are showing only toast message. However, you can do anything you need.

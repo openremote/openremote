@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4C1FF8B6255044210085B2D0 /* Window+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1FF8B5255044210085B2D0 /* Window+Utils.swift */; };
 		4C81AA642546B251006ED5DD /* ProjectViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C81AA632546B251006ED5DD /* ProjectViewController.swift */; };
 		4C81AADD2546EB28006ED5DD /* ORTextInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C81AADC2546EB28006ED5DD /* ORTextInput.swift */; };
 		4C81AAE62547124D006ED5DD /* UIColor+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C81AAE52547124D006ED5DD /* UIColor+Utils.swift */; };
@@ -71,6 +72,7 @@
 /* Begin PBXFileReference section */
 		3B0E05618605D241D5A82AA3 /* Pods-NotificationService.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NotificationService.debug.xcconfig"; path = "Target Support Files/Pods-NotificationService/Pods-NotificationService.debug.xcconfig"; sourceTree = "<group>"; };
 		46FD90D41833A0E2C4C7DDA6 /* Pods-NotificationService.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NotificationService.release.xcconfig"; path = "Target Support Files/Pods-NotificationService/Pods-NotificationService.release.xcconfig"; sourceTree = "<group>"; };
+		4C1FF8B5255044210085B2D0 /* Window+Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Window+Utils.swift"; sourceTree = "<group>"; };
 		4C38E9C02548089A00E381C6 /* OpenRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpenRemote.entitlements; sourceTree = "<group>"; };
 		4C38E9C12548090200E381C6 /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
 		4C81AA632546B251006ED5DD /* ProjectViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectViewController.swift; sourceTree = "<group>"; };
@@ -166,6 +168,7 @@
 				4CEDA29D254074A500C47E3B /* Constants.swift */,
 				4C81AAE52547124D006ED5DD /* UIColor+Utils.swift */,
 				4C81AB2C25472C7F006ED5DD /* String+Utils.swift */,
+				4C1FF8B5255044210085B2D0 /* Window+Utils.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -444,6 +447,7 @@
 				4C81AADD2546EB28006ED5DD /* ORTextInput.swift in Sources */,
 				4CEDA2A4254074B900C47E3B /* ORViewController.swift in Sources */,
 				4C81AB2D25472C7F006ED5DD /* String+Utils.swift in Sources */,
+				4C1FF8B6255044210085B2D0 /* Window+Utils.swift in Sources */,
 				4CEDA27E25406A4400C47E3B /* ORAppConfig.swift in Sources */,
 				4CEDA28B2540742900C47E3B /* ORPushNotificationButton.swift in Sources */,
 				4CEDA28C2540742900C47E3B /* ORPushNotificationAction.swift in Sources */,
@@ -614,11 +618,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = GenericApp/OpenRemote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 21;
+				CURRENT_PROJECT_VERSION = 22;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = GenericApp/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -639,11 +644,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = GenericApp/OpenRemote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 21;
+				CURRENT_PROJECT_VERSION = 22;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = GenericApp/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -662,9 +668,10 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = NotificationService/NotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 21;
+				CURRENT_PROJECT_VERSION = 22;
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				INFOPLIST_FILE = NotificationService/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -685,9 +692,10 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = NotificationService/NotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 21;
+				CURRENT_PROJECT_VERSION = 22;
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				INFOPLIST_FILE = NotificationService/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

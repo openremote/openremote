@@ -11,8 +11,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.location.*
-import io.openremote.app.ui.MainActivity
 import io.openremote.app.R
+import io.openremote.app.ui.MainActivity
 import java.net.URL
 import java.util.*
 import java.util.logging.Level
@@ -267,22 +267,20 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
 
             // Remove previous fences that no longer exist
             val oldFences = getGeofences(context)
-            val remainingFences: ArrayList<GeofenceDefinition> = arrayListOf()
 
             oldFences.forEach { oldFence ->
                 if (geofences.none { Objects.equals(it.id, oldFence.id) }) {
                     LOG.info("Geofence now obsolete: $oldFence")
                     removeGeofence(oldFence.id)
-                } else {
-                    remainingFences.add(oldFence)
-                    LOG.info("Geofence unchanged: $oldFence")
                 }
             }
 
             geofences.forEach { geofence ->
-                if (remainingFences.none { Objects.equals(it.id, geofence.id) }) {
-                    addGeofence(geofencingClient, getGeofencePendingIntent(context, getBaseUrl(context).orEmpty()), geofence)
-                }
+                addGeofence(
+                    geofencingClient,
+                    getGeofencePendingIntent(context, getBaseUrl(context).orEmpty()),
+                    geofence
+                )
             }
 
             sharedPreferences.edit()
