@@ -77,7 +77,7 @@ Internet Explorer 11 is also supported.
 
 
 ## License
-[GNU AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
+[GNU AGPLv3](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
 [npm-image]: https://img.shields.io/npm/v/live-xxx.svg
 [npm-url]: https://npmjs.org/package/@openremote/or-asset-list
