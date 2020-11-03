@@ -859,7 +859,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             return Optional.empty();
         }
 
-        return !Agent.hasUrl(agent) ? Optional.of(localAgentConnector) : Optional.empty();
+        return Optional.of(localAgentConnector);
     }
 
     protected boolean addReplaceAgent(Asset agent) {

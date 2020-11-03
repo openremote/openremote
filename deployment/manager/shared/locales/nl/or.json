@@ -62,8 +62,10 @@
   "valueChanges": "Waarde verandert",
   "save": "Opslaan",
   "active": "Actief",
-  "continueWithoutSaving": "Als je doorgaat worden je veranderingen niet opgeslagen. Doorgaan zonder opslaan?",
-  "confirmDelete": "Weet je zeker dat je dit wil verwijderen?",
+  "deleteRulesetsConfirm": "Regels verwijderen?",
+  "deleteRulesetsFailed": "Het verwijderen van een of meerdere regels is niet geukt",
+  "saveRulesetFailed": "Het opslaan van de regel is niet gelukt",
+  "confirmContinueRulesetModified": "De regel is aangepast, wijzigingen weggooien?",
   "when": "Als",
   "then": "Dan",
   "orWhen": "Of als",
@@ -79,6 +81,7 @@
   "status": "Status",
   "name": "Naam",
   "deleteAssetsConfirm": "Verwijder alle asset(s) en onderliggende assets?",
+  "deleteAssetsFailed": "Verwijderen van de asset(s) is niet gelukt",
   "ok": "OK",
   "cancel": "Annuleren",
   "createdOn": "Aangemaakt op",
@@ -143,6 +146,7 @@
   "anyOfThisType": "Eén van dit type",
   "notification": "Melding",
   "matched": "Dezelfde",
+  "matchedOfType": "Hetzelfde type: {{type}}",
   "unmatched": "Niet dezelfde",
   "wait": "Wacht",
   "underlyingAssets": "Onderliggende assets",
@@ -220,7 +224,7 @@
   "sendFailed": "Verzenden mislukt",
   "managerError": {
     "MANAGER_FAILED_TO_LOAD": "Manager kan niet geladen worden (bekijk de console logs)",
-    "KEYCLOAK_FAILED_TO_LOAD": "Keycloak kan niet geladen worden (bekijk de console logs)",
+    "AUTH_FAILED": "Auth kan niet geladen worden (bekijk de console logs)",
     "AUTH_TYPE_UNSUPPORTED": "Opgevraagde auth type wordt niet ondersteund",
     "CONSOLE_ERROR": "Console foutmelding (bekijk de console logs)",
     "EVENTS_CONNECTION_ERROR": "Event bus connectie fout (bekijk de console logs)",
@@ -253,8 +257,8 @@
     "EUR_PER_MONTH": "€/month",
     "GBP_PER_KWH": "£/kWh",
     "GBP_PER_MONTH": "£/month",
-    "EUR": "€",
-    "GBP": "£",
+    "CURRENCY_EUR": "€",
+    "CURRENCY_GBP": "£",
     "POWER_KW": "kW",
     "POWER_W": "W",
     "POWER_KWP": "kWp",
@@ -280,11 +284,12 @@
   "editCurrentValue": "Decimalen",
   "decimals": "Decimalen",
   "editAsset": "Asset aanpassen",
+  "viewAsset": "Asset bekijken",
   "addAsset": "Asset toevoegen",
   "parent": "Parent",
   "none": "Geen",
   "properties": "Eigenschappen",
-  "metaItemType": {
+  "metaItemTypes": {
     "urn:openremote:asset:meta:label": "Label",
     "urn:openremote:asset:meta:description": "Beschrijving",
     "urn:openremote:asset:meta:storeDataPoints": "Datapunten opslaan",
@@ -316,5 +321,23 @@
     "urn:openremote:asset:meta:protocolConfiguration": "Protocol configuratie"
   },
   "addMetaItems": "Voeg configuratie item toe",
-  "customAttribute": "Custom attribuut"
+  "loseChanges": "Wijzigingen weggooien?",
+  "confirmContinueAssetModified": "Asset is aangepast, wijzigingen weggooien?",
+  "saveAssetFailed": "Asset opslaan niet gelukt",
+  "noCommand": "Geen commando",
+  "start": "Start",
+  "stop": "Stop",
+  "assetTypes": {
+    "noDescription": "Geen beschrijving beschikbaar",
+    "urn:openremote:protocol:knx": {
+      "description": "Protocol voor het koppelen van KNX"
+    }
+  },
+  "validityType": "Planning van de regel",
+  "validityAlways": "Altijd actief",
+  "validityPeriod": "Eén periode plannen",
+  "validityRecurrence": "Herhaling plannen",
+  "activeFromTo": "Actief van {{start}} tot {{end}}",
+  "fromTo": "Van {{start}} tot {{end}}",
+  "fromToDays": "van {{start}} tot {{days}} dagen later {{end}}"
 }

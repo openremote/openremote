@@ -274,7 +274,7 @@ export function capitaliseFirstLetter(str: string | undefined) {
     if (!str) {
         return;
     }
-    if (str.length == 1) {
+    if (str.length === 1) {
         return str.toUpperCase();
     }
     return str.charAt(0).toUpperCase() + str.slice(1);
@@ -371,7 +371,7 @@ export function getAttributeLabel(attribute: Attribute | undefined, descriptor: 
 }
 
 export function getMetaItemLabel(urn: string): string {
-    return i18next.t(["metaItemType." + urn, urn], {nsSeparator: "@"});
+    return i18next.t(["metaItemTypes." + urn, urn], {nsSeparator: "@"});
 }
 
 export function getAssetTypeLabel(type: string | AssetDescriptor | undefined): string {
@@ -381,7 +381,7 @@ export function getAssetTypeLabel(type: string | AssetDescriptor | undefined): s
     if (!type) {
         return "";
     }
-    return i18next.t("assetType." + type.type, {nsSeparator: "@", defaultValue: capitaliseFirstLetter(type.name!.toLowerCase())});
+    return i18next.t("assetType." + type.type, {nsSeparator: "@", defaultValue: capitaliseFirstLetter(type.name!.replace(/_/g, " ").toLowerCase())});
 }
 
 export function getAttributeValueFormat(attribute: Attribute | undefined, descriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined): string | undefined {
@@ -466,13 +466,17 @@ export function sortByString<T>(valueExtractor: (item: T) => string): (a: T, b: 
     return (a,b) => {
         const v1 = valueExtractor(a);
         const v2 = valueExtractor(b);
-        if (v1 > v2) {
+
+        if (!v1 && !v2) {
+            return 0;
+        }
+        if (v1 && !v2) {
             return 1;
         }
-        if (v1 < v2) {
+        if (!v1 && v2) {
             return -1;
         }
-        return 0;
+        return v1.localeCompare(v2);
     };
 }
 
@@ -481,13 +485,12 @@ export interface RequestEventDetail<T> {
     detail: T;
 }
 
-export function dispatchCancellableEvent<T>(target: EventTarget, event: CustomEvent<RequestEventDetail<T>>, handler: (detail: T) => void, cancelledHandler?: () => void) {
+export function dispatchCancellableEvent<T>(target: EventTarget, event: CustomEvent<RequestEventDetail<T>>) {
+    const deferred = new Deferred<RequestEventDetail<T>>();
     target.dispatchEvent(event);
     window.setTimeout(() => {
-        if (event.detail.allow) {
-            handler(event.detail.detail);
-        } else if (cancelledHandler) {
-            cancelledHandler();
-        }
+        deferred.resolve(event.detail);
     });
+
+    return deferred.promise;
 }

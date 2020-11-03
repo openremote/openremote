@@ -191,7 +191,9 @@ class OrHeader extends LitElement {
             .menu-item[selected] {
                 opacity: 1;
             }                
-      
+            #desktop-left .menu-item or-icon {
+                margin-right: 10px;
+            }
             #desktop-left .menu-item  {
                 display: none;
                 line-height: calc(var(--internal-or-header-height) - 4px);

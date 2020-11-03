@@ -1,7 +1,9 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:generic_app/ui/SplashPage.dart';
+import 'package:generic_app/ui/splash_page.dart';
 
 import 'generated/l10n.dart';
 
@@ -9,11 +11,14 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
       .then((_) async {
-    runApp(new ORApp());
+    await Firebase.initializeApp();
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
+    runApp(ORApp());
   });
 }
 class ORApp extends StatelessWidget {
-  static final GlobalKey<NavigatorState> navigatorKey = new GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -31,7 +36,7 @@ class ORApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: S.delegate.supportedLocales,
-      home: SplashPage(),
+      home: const SplashPage(),
     );
   }
 }

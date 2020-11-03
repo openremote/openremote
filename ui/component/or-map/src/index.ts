@@ -214,6 +214,12 @@ export class OrMap extends LitElement {
 
         this._loaded = true;
     }
+    
+    public resize() {
+        if (this._map) {
+            this._map.resize();
+        }
+    }
 
     public flyTo(coordinates?: LngLatLike, zoom?: number) {
         if (this._map) {

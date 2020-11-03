@@ -1,0 +1,48 @@
+#
+# Demo setup of OpenRemote v3 with basic identity provider
+#
+version: '2.4'
+
+volumes:
+  postgresql-data:
+  deployment-data:
+
+services:
+
+  # This service will only populate an empty volume on startup and then exit.
+  # If the volume already contains data, it exits immediately.
+  deployment:
+    image: openremote/deployment:${DATE_TAG:-latest}
+    volumes:
+      - deployment-data:/deployment
+
+  proxy:
+    restart: unless-stopped
+    extends:
+      file: deploy-no-build.yml
+      service: proxy
+    depends_on:
+      manager:
+        condition: service_healthy
+
+  postgresql:
+    restart: unless-stopped
+    extends:
+      file: deploy-no-build.yml
+      service: postgresql
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+
+  manager:
+    restart: unless-stopped
+    extends:
+      file: deploy-no-build.yml
+      service: manager
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    volumes:
+      - deployment-data:/deployment
+    environment:
+      # Use basic identity service instead of Keycloak, set master admin password
+      IDENTITY_PROVIDER: basic

@@ -2,6 +2,7 @@ package org.openremote.test.rules.residence
 
 
 import com.google.firebase.messaging.Message
+import net.fortuna.ical4j.model.Recur
 import org.openremote.container.Container
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetProcessingService
@@ -19,7 +20,6 @@ import org.openremote.manager.setup.builtin.KeycloakTestSetup
 import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.calendar.CalendarEvent
-import org.openremote.model.calendar.RecurrenceRule
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
@@ -357,10 +357,12 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         version = ruleset.version
         def validityStart = Instant.ofEpochMilli(getClockTimeOf(container)).plus(2000, ChronoUnit.MILLIS)
         def validityEnd = Instant.ofEpochMilli(getClockTimeOf(container)).plus(4000, ChronoUnit.MILLIS)
+        def recur = new Recur(Recur.DAILY, 3)
+        recur.setInterval(2)
         def calendarEvent = new CalendarEvent(
             Date.from(validityStart),
             Date.from(validityEnd),
-            new RecurrenceRule(RecurrenceRule.Frequency.DAILY, 2, 3, null))
+            recur)
         ruleset = rulesetStorageService.merge(ruleset.addMeta(Ruleset.META_KEY_VALIDITY,calendarEvent.toValue()))
 
         then: "the ruleset should be redeployed and paused until 1st occurrence"
@@ -467,7 +469,9 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         RulesEngine.UNPAUSE_SCHEDULER = originalUnpause
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = originalDebounceMillis
         TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
-        notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
-        notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
+        if (notificationService != null) {
+            notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
+            notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
+        }
     }
 }

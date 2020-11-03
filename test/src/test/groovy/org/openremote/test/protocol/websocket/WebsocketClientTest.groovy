@@ -130,6 +130,10 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             assert connectionStatus == ConnectionStatus.CONNECTED
         }
 
+        // TODO: Remove this once client supports some better connection logic
+        and: "some time passes to allow the connection to be fully initialised"
+        sleep(3000)
+
         when: "we subscribe to attribute events produced by the server"
         client.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
             new EventSubscription(

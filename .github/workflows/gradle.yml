@@ -1,0 +1,51 @@
+# This workflow will build a Java project with Gradle
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
+
+name: installDist and build multi-arch Docker containers
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  PLATFORM: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
+  KEYCLOAK_PLATFORM: linux/amd64
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: grant execute permission for gradlew
+        run: chmod +x gradlew
+      - name: build with Gradle
+        run: ./gradlew installDist
+      - name: set up QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: all
+      - name: install buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+          install: true
+      - name: available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+      - name: login to docker hub
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
+      - name: build and push images
+        run: |
+          docker build --push --platform $PLATFORM -t openremote/manager:latest manager/build/install/manager
+          docker build --push --platform $PLATFORM -t openremote/deployment:latest deployment
+          docker build --push --platform $PLATFORM -t openremote/manager-swarm:latest -f manager/build/install/manager/swarm.Dockerfile manager/build/install/manager
+          docker build --push --platform $PLATFORM -t openremote/proxy:latest proxy
+          docker build --push --platform $KEYCLOAK_PLATFORM -t openremote/keycloak:latest keycloak
+          docker build --push --platform $PLATFORM -t openremote/postgresql:latest postgresql

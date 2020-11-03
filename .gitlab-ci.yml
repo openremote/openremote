@@ -11,6 +11,7 @@ variables:
   DEPLOYMENT_HOST_USER: root
   DEPLOYMENT_PORT: 2222
   DAST_WEBSITE: https://staging.${PROJECT_NAME}.openremote.io
+  PLATFORM: linux/amd64,linux/arm64
 
 workflow:
   rules:
@@ -21,8 +22,8 @@ workflow:
 stages:
   - prebuild
   - build
-  - build_fail
   - deploy_ovh
+  - build_fail
   - test
   - tests_fail
   - deploy
@@ -37,7 +38,7 @@ lint-Dockerfile:
   allow_failure: true
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
-      when: manual
+      when: never
 
 lint-swarm-Dockerfile:
   stage: build
@@ -49,6 +50,7 @@ lint-swarm-Dockerfile:
     - env
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
+      when: never
 
 build-enviroment:
   stage: prebuild
@@ -72,59 +74,45 @@ build-enviroment:
 
 build-deployment-manager-swarm:
   stage: build
+  allow_failure: true
   before_script:
     - export DOCKER_CLI_EXPERIMENTAL=enabled
     - mkdir -p /root/.docker/cli-plugins
     - mv .docker/cli-plugins/docker-buildx /root/.docker/cli-plugins/
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker login -u "$DOCKERHUB_USER" -p "$DOCKERHUB_PASSWORD"
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - docker buildx create --use
   script:
-    - docker buildx use default
     - docker buildx ls
     - docker context ls
     - docker run -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "./gradlew --console plain clean installDist"
-    - docker run -v $(pwd):/or
-      -v /var/run/docker.sock:/var/run/docker.sock
-      "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-      /bin/sh -c "docker-compose -f profile/deploy.yml build --build-arg GIT_COMMIT=$SOURCE_COMMIT deployment manager swarm"
-    - docker push openremote/deployment:${CACHE_TAG:-latest}
-    - docker push openremote/manager:${CACHE_TAG:-latest}
-    - docker push openremote/manager-swarm:${CACHE_TAG:-latest}
-    ## TODO dind does not support arm64 archieture for now, therefore the code below breaks the build
-    # # Build ARM images
-    # - docker buildx build --platform linux/arm64 -t openremote/manager:arm64 manager/build/install/manager
-    # - docker buildx build --platform linux/arm64 -t openremote/deployment:arm64 deployment
-    # - docker buildx build --platform linux/arm64 -t openremote/proxy:arm64 proxy
-    # - docker buildx build --platform linux/arm64 -t openremote/keycloak:arm64 keycloak
-    # - docker buildx build --platform linux/arm64 -t openremote/postgresql:arm64 postgresql
-    # # Push ARM images
-    # - docker push openremote/manager:arm64
-    # - docker push openremote/deployment:arm64
-    # - docker push openremote/proxy:arm64
-    # - docker push openremote/keycloak:arm64
-    # - docker push openremote/postgresql:arm64
+    # Build multi-arch images
+    - docker buildx build --push --platform $PLATFORM -t openremote/manager:latest manager/build/install/manager
+    - docker buildx build --push --platform $PLATFORM -t openremote/deployment:latest deployment
+    - docker buildx build --push --platform $PLATFORM -t openremote/manager-swarm:latest -f manager/build/install/manager/swarm.Dockerfile manager/build/install/manager
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
+      when: manual
   retry:
     max: 2
 
 build-keycloak-postgresql-proxy:
   stage: build
+  allow_failure: true
   before_script:
     - export DOCKER_CLI_EXPERIMENTAL=enabled
     - mkdir -p /root/.docker/cli-plugins
     - mv .docker/cli-plugins/docker-buildx /root/.docker/cli-plugins/
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker login -u "$DOCKERHUB_USER" -p "$DOCKERHUB_PASSWORD"
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - docker buildx create --use
   script:
-    - docker run -v $(pwd):/or
-      -v /var/run/docker.sock:/var/run/docker.sock
-      "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-      /bin/sh -c "docker-compose -f profile/deploy.yml build --build-arg GIT_COMMIT=$SOURCE_COMMIT keycloak proxy postgresql"
-    - docker push openremote/proxy:${CACHE_TAG:-latest}
-    - docker push openremote/keycloak:${CACHE_TAG:-latest}
-    - docker push openremote/postgresql:${CACHE_TAG:-latest}
+    - docker buildx build --push --platform $PLATFORM -t openremote/proxy:latest proxy
+    - docker buildx build --push --platform linux/amd64 -t openremote/keycloak:latest keycloak
+    - docker buildx build --push --platform $PLATFORM -t openremote/postgresql:latest postgresql
   rules:
     - if: $CI_COMMIT_MESSAGE =~ /skip-build/
       when: never
@@ -132,6 +120,7 @@ build-keycloak-postgresql-proxy:
         - proxy/**/*
         - postgresql/**/*
         - keycloak/**/*
+    - when: manual
   retry:
     max: 2
 
@@ -193,7 +182,6 @@ build-keycloak-postgresql-proxy:
     - if [ ! $DOCKER_IMAGE_TAG ]; then echo "export CI_ENVIRONMENT=$CI_ENVIRONMENT_SLUG" >> deploy.sh; fi
     - if [ $DOCKER_IMAGE_TAG ]; then echo "export CI_ENVIRONMENT=$DOCKER_IMAGE_TAG" >> deploy.sh; fi
     - echo "export SETUP_WIPE_CLEAN_INSTALL=$SETUP_WIPE_CLEAN_INSTALL" >> deploy.sh
-    - echo "export FIREBASE_CONFIG_FILE=${FIREBASE_CONFIG_FILE}" >> deploy.sh
     - if [ $SETUP_ADMIN_PASSWORD ]; then echo "export SETUP_ADMIN_PASSWORD=$SETUP_ADMIN_PASSWORD" >> deploy.sh; fi
     - if [ $NEW_IMAGES ]; then echo "docker pull \$CI_REGISTRY_IMAGE/manager:\$CI_ENVIRONMENT"    >> deploy.sh; fi
     - if [ $NEW_IMAGES ]; then echo "docker pull \$CI_REGISTRY_IMAGE/deployment:\$CI_ENVIRONMENT" >> deploy.sh; fi
@@ -208,6 +196,7 @@ build-keycloak-postgresql-proxy:
     - chmod +x deploy.sh
     - SSH mkdir -p profile deployment proxy manager/build/install/manager postgresql keycloak
     - SCP ./profile/ deploy.sh ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/
+    - SCP ${FIREBASE_CONFIG_FILE} ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/FIREBASE_CONFIG_FILE
     - SSH ./deploy.sh
     - SSH "docker system prune -f; docker images -q --filter dangling=true | xargs docker rmi; rm -rf proxy/ manager/ postgresql/ keycloak/ profile/ deployment/ deploy.sh .docker/config.json"
   after_script:
@@ -233,15 +222,21 @@ email failed build:
   stage: build_fail
   <<: *notify_email
   rules:
-    - if: $CI_COMMIT_MESSAGE !~ /skip-build/
+    - if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
       when: on_failure
+    - if: $CI_COMMIT_MESSAGE =~ /skip-build/
+      when: never
+    - when: on_failure
 
 build FAILED:
   stage: build_fail
   <<: *notify_whatsapp
   rules:
-    - if: $CI_COMMIT_MESSAGE !~ /skip-build/
+    - if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
       when: on_failure
+    - if: $CI_COMMIT_MESSAGE =~ /skip-build/
+      when: never
+    - when: on_failure
 
 test-master:
   stage: test
@@ -257,7 +252,8 @@ test-master:
       /bin/sh -c "./gradlew clean test"
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
-      when: on_success
+      when: delayed
+      start_in: 2h # Give github actions time to finish (usually a little more than 1h)
   artifacts:
     when: on_failure
     paths:
@@ -279,7 +275,6 @@ deploy demo on OVH:
     DEPLOYMENT_HOST: ${PROJECT_NAME}.openremote.io
     SETUP_WIPE_CLEAN_INSTALL: "true"
     DOCKER_IMAGE_TAG: latest
-    FIREBASE_CONFIG_FILE: ${FIREBASE_CONFIG_FILE}
     NEW_IMAGES: "true"
   environment:
     name: demo
@@ -296,7 +291,6 @@ redeploy demo on OVH:
     DEPLOYMENT_HOST: ${PROJECT_NAME}.openremote.io
     SETUP_WIPE_CLEAN_INSTALL: "true"
     DOCKER_IMAGE_TAG: latest
-    FIREBASE_CONFIG_FILE: ${FIREBASE_CONFIG_FILE}
   environment:
     name: demo
     url: https://${PROJECT_NAME}.openremote.io
@@ -304,6 +298,7 @@ redeploy demo on OVH:
 
 email failed tests:
   stage: tests_fail
+  needs: ["test-master"]
   before_script:
     - export STAGE='tests'
   <<: *notify_email
@@ -313,6 +308,7 @@ email failed tests:
 
 test FAILED:
   stage: tests_fail
+  needs: ["test-master"]
   <<: *notify_whatsapp
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
@@ -344,4 +340,3 @@ manual delete aws cloudformation stack:
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-deploy/
       when: never
-

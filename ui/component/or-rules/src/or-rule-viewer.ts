@@ -2,20 +2,23 @@ import {css, customElement, html, LitElement, property, PropertyValues, query, T
 import {
     OrRulesRuleChangedEvent,
     OrRulesRuleUnsupportedEvent,
-    OrRulesSaveEndEvent,
-    OrRulesSaveStartEvent,
+    OrRulesSaveEvent,
+    OrRulesRequestSaveEvent,
     RulesConfig,
-    RuleView
+    RuleView, AddEventDetail, OrRulesAddEvent
 } from "./index";
 import {ClientRole, RulesetLang, RulesetUnion} from "@openremote/model";
-import manager from "@openremote/core";
+import manager, { Util } from "@openremote/core";
 import "./json-viewer/or-rule-json-viewer";
 import "./or-rule-text-viewer";
+import "./or-rule-validity";
 import "./flow-viewer/components/flow-editor";
 import "@openremote/or-input";
 import {translate} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import {InputType, OrInputChangedEvent, OrInput} from "@openremote/or-input";
 import i18next from "i18next";
+import { GenericAxiosResponse } from "@openremote/rest";
+import { showErrorDialog } from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 
 // language=CSS
 export const style = css`
@@ -33,6 +36,11 @@ export const style = css`
         align-items: center;
         height: 100%;
     }
+
+    #main-wrapper.saving {
+        opacity: 0.5;
+        pointer-events: none;
+    }
     
     #rule-name {
         max-width: 400px;
@@ -47,7 +55,7 @@ export const style = css`
         box-sizing: border-box;
         min-height: var(--internal-or-rules-header-height);
         height: var(--internal-or-rules-header-height);
-        z-index: 1;
+        z-index: 9;
         padding: 15px 20px;
         --or-icon-fill: var(--internal-or-rules-panel-color);
     }
@@ -110,6 +118,12 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     @query("#rule-view")
     public view?: RuleView;
 
+    @query("#main-wrapper")
+    protected wrapperElem!: HTMLDivElement;
+
+    @query("#save-btn")
+    protected saveBtnElem!: OrInput;
+
     protected _focusName = false;
 
     constructor() {
@@ -131,6 +145,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
 
             if (this.ruleset) {
                 this._focusName = true;
+                this.modified = !this.ruleset.id;
             }
         }
         return super.shouldUpdate(_changedProperties);
@@ -162,17 +177,18 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
 
         // TODO: load the appropriate viewer depending on state and ruleset language
         return html`
-            <div class="wrapper">            
+            <div id="main-wrapper" class="wrapper">            
                 <div id="rule-header">
                     <or-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" required minlength="3" maxlength="255" @or-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-input>
+                    <or-rule-validity id="rule-header-validity" .ruleset="${this.ruleset}"></or-rule-validity>
                     <div id="rule-header-controls">
                         
                         <span id="active-wrapper">
-                            <or-translate value="active"></or-translate>
+                            <or-translate value="enabled"></or-translate>
                             <or-input .type="${InputType.SWITCH}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${!this.ruleset.id}" @or-input-changed="${this._toggleEnabled}"></or-input>
                         </span>
            
-                        <or-input .type="${InputType.BUTTON}" id="save-btn" .label="${i18next.t("save")}" raised ?disabled="${this._cannotSave()}" @or-input-changed="${this._doSave}"></or-input>
+                        <or-input .type="${InputType.BUTTON}" id="save-btn" .label="${i18next.t("save")}" raised ?disabled="${this._cannotSave()}" @or-input-changed="${this._onSaveClicked}"></or-input>
                     </div>                        
                 </div>
 
@@ -210,7 +226,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         this._ruleValid = e.detail;
     }
 
-    protected _doSave() {
+    protected _onSaveClicked() {
         if (!this.ruleset || !this.view) {
             return;
         }
@@ -219,61 +235,78 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
             return;
         }
 
-        this.disabled = true;
-        this.view.beforeSave();
-        this.dispatchEvent(new OrRulesSaveStartEvent());
+        Util.dispatchCancellableEvent(this, new OrRulesRequestSaveEvent(this.ruleset))
+            .then((detail) => {
+                if (detail.allow) {
+                    this._doSave();
+                }
+            });
+    }
 
-        if (this.ruleset.type === "tenant") {
-            if (this.ruleset.id) {
-                manager.rest.api.RulesResource.updateTenantRuleset(this.ruleset.id!, this.ruleset).then((response) => {
-                    this.disabled = false;
-                    this.modified = false;
-                    this.dispatchEvent(new OrRulesSaveEndEvent(true));
-                }).catch(reason => {
-                    console.error("Failed to save ruleset: " + reason);
-                    this.disabled = false;
-                    this.dispatchEvent(new OrRulesSaveEndEvent(false));
-                });
-            } else {
-                manager.rest.api.RulesResource.createTenantRuleset(this.ruleset).then((response) => {
-                    if (this.ruleset) {
-                        this.ruleset.id = response.data;
-                    }
-                    this.disabled = false;
-                    this.modified = false;
-                    this.dispatchEvent(new OrRulesSaveEndEvent(true));
-                }).catch(reason => {
-                    console.error("Failed to save ruleset: " + reason);
-                    this.disabled = false;
-                    this.dispatchEvent(new OrRulesSaveEndEvent(false));
-                });
-            }
-        } else if (this.ruleset.type === "global") { 
-            if (this.ruleset.id) {
-                manager.rest.api.RulesResource.updateGlobalRuleset(this.ruleset.id!, this.ruleset).then((response) => {
-                    this.disabled = false;
-                    this.modified = false;
-                    this.dispatchEvent(new OrRulesSaveEndEvent(true));
-                }).catch(reason => {
-                    console.error("Failed to save ruleset: " + reason);
-                    this.disabled = false;
-                    this.dispatchEvent(new OrRulesSaveEndEvent(false));
-                });
-            } else {
-                manager.rest.api.RulesResource.createGlobalRuleset(this.ruleset).then((response) => {
-                    if (this.ruleset) {
-                        this.ruleset.id = response.data;
-                    }
-                    this.disabled = false;
-                    this.modified = false;
-                    this.dispatchEvent(new OrRulesSaveEndEvent(true));
-                }).catch(reason => {
-                    console.error("Failed to save ruleset: " + reason);
-                    this.disabled = false;
-                    this.dispatchEvent(new OrRulesSaveEndEvent(false));
-                });
-            }
+    protected async _doSave() {
+        const ruleset = this.ruleset;
+
+        if (!ruleset || !this.view) {
+            return;
         }
+
+        let fail = false;
+        const isNew = !ruleset.id;
+        this.saveBtnElem.disabled = true;
+        this.wrapperElem.classList.add("saving");
+        this.view.beforeSave();
+
+        let response: GenericAxiosResponse<number | void>;
+
+        try {
+            switch (ruleset.type) {
+                case "asset":
+                    if (isNew) {
+                        response = await manager.rest.api.RulesResource.createAssetRuleset(ruleset);
+                    } else {
+                        response = await manager.rest.api.RulesResource.updateAssetRuleset(ruleset.id!, ruleset);
+                    }
+                    break;
+                case "tenant":
+                    if (isNew) {
+                        response = await manager.rest.api.RulesResource.createTenantRuleset(ruleset);
+                    } else {
+                        response = await manager.rest.api.RulesResource.updateTenantRuleset(ruleset.id!, ruleset);
+                    }
+                    break;
+                case "global":
+                    if (isNew) {
+                        response = await manager.rest.api.RulesResource.createGlobalRuleset(ruleset);
+                    } else {
+                        response = await manager.rest.api.RulesResource.updateGlobalRuleset(ruleset.id!, ruleset);
+                    }
+                    break;
+            }
+
+            if (response.status !== (isNew ? 200 : 204)) {
+                fail = true;
+                showErrorDialog("Create ruleset returned unexpected status: " + response.status);
+                return;
+            } else if (response.data) {
+                ruleset.id = response.data;
+            }
+        } catch (e) {
+            fail = true;
+            console.error("Failed to save ruleset", e);
+        }
+
+        this.wrapperElem.classList.remove("saving");
+        this.saveBtnElem.disabled = false;
+
+        if (fail) {
+            showErrorDialog(i18next.t("saveRulesetFailed"));
+        }
+
+        this.dispatchEvent(new OrRulesSaveEvent({
+            ruleset: ruleset,
+            isNew: isNew,
+            success: !fail
+        }));
     }
 
     protected _onRuleUnsupported() {

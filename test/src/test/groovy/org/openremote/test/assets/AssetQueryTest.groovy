@@ -1,6 +1,6 @@
 package org.openremote.test.assets
 
-
+import net.fortuna.ical4j.model.Recur
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -14,7 +14,6 @@ import org.openremote.model.attribute.AttributeType
 import org.openremote.model.attribute.AttributeValueType
 import org.openremote.model.attribute.MetaItemType
 import org.openremote.model.calendar.CalendarEvent
-import org.openremote.model.calendar.RecurrenceRule
 import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.AssetQuery.OrderBy
@@ -842,7 +841,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         def start = calendar.getTime()
         calendar.add(Calendar.HOUR, 2)
         def end = calendar.getTime()
-        def recur = new RecurrenceRule(RecurrenceRule.Frequency.DAILY, 2, 5, null)
+        def recur = new Recur(Recur.DAILY, 5)
+        recur.setInterval(2)
 
         lobby.addAttributes(
             new AssetAttribute("test", AttributeValueType.CALENDAR_EVENT, new CalendarEvent(start, end, recur).toValue())
@@ -859,7 +859,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             new AssetQuery()
                 .select(new Select().excludePath(true).excludeAttributeMeta(true)) // Need attributes to do calendar filtering
                 .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
-                .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517155200000)))) // 30/01/2018 @ 6:00pm (UTC)
+                .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517155200000)))) // 28/01/2018 @ 4:00pm (UTC)
                 .orderBy(new OrderBy(NAME))
         )
 

@@ -1,7 +1,7 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
 
-import {customElement, html, LitElement, property, PropertyValues, TemplateResult, unsafeCSS, query} from "lit-element";
+import {customElement, html, LitElement, property, PropertyValues, query, TemplateResult, unsafeCSS} from "lit-element";
 import "@openremote/or-icon";
 import "@openremote/or-input";
 import "@openremote/or-attribute-input";
@@ -12,7 +12,7 @@ import "@openremote/or-survey-results";
 import "@openremote/or-table";
 import "@openremote/or-panel";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {showOkCancelDialog, showErrorDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import "@openremote/or-mwc-components/dist/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
@@ -39,6 +39,7 @@ import {GenericAxiosResponse} from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent} from "./or-edit-asset-panel";
+import { RestResponse } from "@openremote/rest";
 
 export interface PanelConfig {
     type?: "info" | "history" | "group" | "survey" | "survey-results";
@@ -176,16 +177,34 @@ export class OrAssetViewerComputeGridEvent extends CustomEvent<void> {
 }
 
 export type SaveResult = {
-    asset: Asset,
-    statusCode: number
+    success: boolean,
+    assetId: string,
+    isNew?: boolean,
+    isCopy?: boolean
 };
 
-export class OrAssetViewerSaveResultEvent extends CustomEvent<SaveResult> {
+export class OrAssetViewerRequestSaveEvent extends CustomEvent<Util.RequestEventDetail<Asset>> {
 
-    public static readonly NAME = "or-asset-viewer-save-result-event";
+    public static readonly NAME = "or-asset-viewer-request-save";
 
-    constructor(saveResult:SaveResult) {
-        super(OrAssetViewerComputeGridEvent.NAME, {
+    constructor(asset: Asset) {
+        super(OrAssetViewerRequestSaveEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                allow: true,
+                detail: asset
+            }
+        });
+    }
+}
+
+export class OrAssetViewerSaveEvent extends CustomEvent<SaveResult> {
+
+    public static readonly NAME = "or-asset-viewer-save";
+
+    constructor(saveResult: SaveResult) {
+        super(OrAssetViewerSaveEvent.NAME, {
             bubbles: true,
             composed: true,
             detail: saveResult
@@ -225,7 +244,8 @@ export class OrAssetViewerEditToggleEvent extends CustomEvent<boolean> {
 declare global {
     export interface HTMLElementEventMap {
         [OrAssetViewerComputeGridEvent.NAME]: OrAssetViewerComputeGridEvent;
-        [OrAssetViewerSaveResultEvent.NAME]: OrAssetViewerSaveResultEvent;
+        [OrAssetViewerRequestSaveEvent.NAME]: OrAssetViewerRequestSaveEvent;
+        [OrAssetViewerSaveEvent.NAME]: OrAssetViewerSaveEvent;
         [OrAssetViewerRequestEditToggleEvent.NAME]: OrAssetViewerRequestEditToggleEvent;
         [OrAssetViewerEditToggleEvent.NAME]: OrAssetViewerEditToggleEvent;
     }
@@ -459,43 +479,25 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
         const attributePickerModalOpen = () => {
 
             const newlySelectedAttributes = [...selectedAttributes];
-            let dialog: OrMwcDialog | undefined;
 
-            const attributePickerModalActions: DialogAction[] = [
-                {
-                    actionName: "ok",
-                    default: true,
-                    content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("ok")}"></or-input>`,
-                    action: () => {
-                        selectedAttributes.length = 0;
-                        selectedAttributes.push(...newlySelectedAttributes);
-                        updateTable();
-                    }
-                },
-                {
-                    actionName: "cancel",
-                    content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
-                    action: () => {
-                        // Nothing to do here
-                    }
-                },
-            ];
-
-            showDialog(
-                {
-                    title: "addRemoveAttributes",
-                    actions: attributePickerModalActions,
-                    content: html`
-                        <div style="display: grid">
-                            ${availableAttributes.sort().map((attribute) =>
-                                html`<div style="grid-column: 1 / -1;">
-                                        <or-input .type="${InputType.CHECKBOX}" .label="${i18next.t(attribute)}" .value="${!!selectedAttributes.find((selected) => selected === attribute)}"
-                                            @or-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"></or-input>
-                                    </div>`)}
-                        </div>
-                    `
+            showOkCancelDialog(
+                i18next.t("addRemoveAttributes"),
+                html`
+                    <div style="display: grid">
+                        ${availableAttributes.sort().map((attribute) =>
+                            html`<div style="grid-column: 1 / -1;">
+                                    <or-input .type="${InputType.CHECKBOX}" .label="${i18next.t(attribute)}" .value="${!!selectedAttributes.find((selected) => selected === attribute)}"
+                                        @or-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"></or-input>
+                                </div>`)}
+                    </div>
+                `
+            ).then((ok) => {
+                if (ok) {
+                    selectedAttributes.length = 0;
+                    selectedAttributes.push(...newlySelectedAttributes);
+                    updateTable();
                 }
-            );
+            });
         };
 
         // Function to update the table and message when assets or config changes
@@ -702,6 +704,41 @@ async function getAssetChildren(id: string, childAssetType: string): Promise<Ass
     return response.data.filter((asset) => asset.type === childAssetType);
 }
 
+export async function saveAsset(asset: Asset): Promise<SaveResult> {
+
+    const isUpdate = !!asset.id && asset.version !== undefined;
+    let success: boolean;
+    let id: string = "";
+
+    try {
+        if (isUpdate) {
+            if (!asset.id) {
+                throw new Error("Request to update existing asset but asset ID is not set");
+            }
+            const response = await manager.rest.api.AssetResource.update(asset.id!, asset);
+            success = response.status === 204;
+            if (success) {
+                id = asset.id!;
+            }
+        } else {
+            const response = await manager.rest.api.AssetResource.create(asset);
+            success = response.status === 200;
+            if (success) {
+                id = response.data.id!;
+            }
+        }
+    } catch (e) {
+        success = false;
+        console.error("Failed to save asset", e);
+    }
+
+    return {
+        assetId: id,
+        success: success,
+        isNew: !isUpdate
+    };
+}
+
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const tableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-table.css");
 
@@ -832,7 +869,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             if (this.asset) {
                 this._viewerConfig = this._getPanelConfig(this.asset);
                 this._attributes = Util.getAssetAttributes(this.asset);
-                this._assetModified = false;
+                this._assetModified = !this.asset.id;
             }
         }
 
@@ -907,8 +944,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         </span>
                     `: ``}
                     <div id="right-wrapper">
-                        <or-translate id="created-time" class="mobileHidden" value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as i18next.TOptions<i18next.InitOptions>}"></or-translate>
-                        ${editMode ? html`<or-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-input-changed="${() => this._saveAsset()}"></or-input>` : ``}
+                        ${this.asset!.createdOn ? html`<or-translate id="created-time" class="mobileHidden" value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as i18next.TOptions<i18next.InitOptions>}"></or-translate>` : ``}
+                        ${editMode ? html`<or-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-input-changed="${() => this._onSaveClicked()}"></or-input>` : ``}
                     </div>
                 </div>
                 ${content}
@@ -959,9 +996,14 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     protected _onEditToggleClicked(edit: boolean) {
         Util.dispatchCancellableEvent(
             this,
-            new OrAssetViewerRequestEditToggleEvent(edit),
-            () => this._doEditToggle(edit),
-            () => this.editBtnElem.value = !edit);
+            new OrAssetViewerRequestEditToggleEvent(edit)).then(
+                (detail) => {
+                    if (detail.allow) {
+                        this._doEditToggle(edit);
+                    } else {
+                        this.editBtnElem.value = !edit;
+                    }
+                });
     }
 
     protected _doEditToggle(edit: boolean) {
@@ -969,24 +1011,43 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         this.dispatchEvent(new OrAssetViewerEditToggleEvent(edit));
     }
 
-    protected async _saveAsset() {
+    protected _onSaveClicked() {
         if (!this.asset) {
+            return;
+        }
+
+        Util.dispatchCancellableEvent(this, new OrAssetViewerRequestSaveEvent(this.asset))
+            .then((detail) => {
+                if (detail.allow) {
+                    this._doSave();
+                }
+            });
+    }
+
+    protected async _doSave() {
+        let asset = this.asset;
+
+        if (!asset) {
             return;
         }
 
         this.saveBtnElem.disabled = true;
         this.wrapperElem.classList.add("saving");
-        const response = await manager.rest.api.AssetResource.update(this.asset.id!, this.asset);
+
+        const result = await saveAsset(asset);
+
         this.wrapperElem.classList.remove("saving");
         this.saveBtnElem.disabled = false;
-        this.dispatchEvent(new OrAssetViewerSaveResultEvent({
-            asset: this.asset,
-            statusCode: response.status
-        }));
 
-        if (response.status === 204) {
+        if (!result.success) {
+            showErrorDialog(i18next.t("saveAssetFailed"));
+        } else {
+            this._assetModified = false;
+            this.assetId = result.assetId;
             this.reloadAsset();
         }
+
+        this.dispatchEvent(new OrAssetViewerSaveEvent(result));
     }
 
     protected _onAssetModified() {

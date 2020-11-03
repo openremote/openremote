@@ -20,7 +20,10 @@
 package org.openremote.model.calendar;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gwt.core.shared.GwtIncompatible;
+import net.fortuna.ical4j.model.Recur;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -69,21 +72,30 @@ import java.util.Optional;
 {
     "start": 1441177200000,
     "ends": 1441206000000,
-    "recurrence": {
-        "frequency": "DAILY",
-        "interval": 1,
-        "until": 1517443200000
-    }
+    "recurrence": "RRULE:FREQ=DAILY;INTERVAL=2;COUNT=4"
 }
  * }</pre></blockquote>
  */
 public class CalendarEvent {
     protected Date start;
     protected Date end;
-    protected RecurrenceRule recurrence;
+    @JsonIgnore
+    protected Recur recurrence;
 
     @JsonCreator
-    public CalendarEvent(@JsonProperty("start") Date start, @JsonProperty("end") Date end, @JsonProperty("recurrence") RecurrenceRule recurrence) {
+    public CalendarEvent(@JsonProperty("start") Date start, @JsonProperty("end") Date end, @JsonProperty("recurrence") String recurrence) {
+        Recur recur = null;
+
+        try {
+            recur = new Recur(recurrence);
+        } catch (Exception e) {}
+
+        this.start = start;
+        this.end = end;
+        this.recurrence = recur;
+    }
+
+    public CalendarEvent(Date start, Date end, Recur recurrence) {
         this.start = start;
         this.end = end;
         this.recurrence = recurrence;
@@ -97,10 +109,18 @@ public class CalendarEvent {
         return end;
     }
 
-    public RecurrenceRule getRecurrence() {
+    @JsonIgnore
+    public Recur getRecurrence() {
         return recurrence;
     }
 
+    // TODO: Remove once GWT removed
+    @JsonProperty("recurrence")
+    protected String getRecurrenceInternal() {
+        return recurrence != null ? recurrence.toString() : null;
+    }
+
+    @GwtIncompatible
     public static Optional<CalendarEvent> fromValue(Value value) {
         if (value == null || value.getType() != ValueType.OBJECT) {
             return Optional.empty();
@@ -109,12 +129,19 @@ public class CalendarEvent {
         ObjectValue objectValue = (ObjectValue) value;
         Optional<Long> start = objectValue.get("start").flatMap(Values::getLongCoerced);
         Optional<Long> end = objectValue.get("end").flatMap(Values::getLongCoerced);
-        Optional<RecurrenceRule> recurrence = RecurrenceRule.fromValue(objectValue.getObject("recurrence").orElse(null));
+        Optional<Recur> recurrence = objectValue.get("recurrence").flatMap(Values::getString).map(str -> {
+            try {
+                return new Recur(str);
+            } catch (Exception e) {
+                return null;
+            }
+        });
 
         return start.map(aLong -> new CalendarEvent(new Date(aLong),
             end.map(Date::new).orElse(null), recurrence.orElse(null)));
     }
 
+    @GwtIncompatible
     public Value toValue() {
         ObjectValue objectValue = Values.createObject();
         objectValue.put("start", start.getTime());
@@ -122,7 +149,7 @@ public class CalendarEvent {
             objectValue.put("end", end.getTime());
         }
         if (recurrence != null) {
-            objectValue.put("recurrence", recurrence.toValue());
+            objectValue.put("recurrence", recurrence.toString());
         }
 
         return objectValue;

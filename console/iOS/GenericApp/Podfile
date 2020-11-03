@@ -13,14 +13,13 @@ end
 target 'GenericApp' do
   project 'GenericApp'
   shared_pods
+  pod 'MaterialComponents/TextFields'
+  pod 'MaterialComponents/Buttons'
+  pod 'Popover'
+  pod 'IQKeyboardManagerSwift'
 end
 
 target 'NotificationService' do
   project 'GenericApp'
-  shared_pods
-end
-
-target 'ORLib' do
-  project '../ORLib/ORLib'
   shared_pods
 end

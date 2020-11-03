@@ -31,10 +31,10 @@ export class OrRuleFormMessage extends translate(i18next)(LitElement) {
         const message:EmailNotificationMessage | undefined = this.action.notification!.message;
         
         return html`
-            <div style="display:grid">
+            <form style="display:grid">
                 <or-input value="${message && message.subject ?  message.subject : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "subject")}" .label="${i18next.t("subject")}" type="${InputType.TEXT}" required placeholder=" "></or-input>
                 <or-input value="${message && message.html ? message.html : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "html")}" .label="${i18next.t("message")}" type="${InputType.TEXTAREA}" required placeholder=" " ></or-input>
-            </div>
+            </form>
         `
     }
 

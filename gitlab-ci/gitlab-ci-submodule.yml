@@ -146,14 +146,14 @@ build FAILED:
 
 test-master:
   stage: test
-  allow_failure: true
+  allow_failure: false
   before_script:
     - docker run -v $(pwd):/or
       -v /var/run/docker.sock:/var/run/docker.sock registry.gitlab.com/openremote/openremote:master
-      /bin/sh -c "docker-compose -f profile/dev-testing.yml pull"
+      /bin/sh -c "docker-compose -f openremote/profile/dev-testing.yml pull"
     - docker run -v $(pwd):/or
       -v /var/run/docker.sock:/var/run/docker.sock registry.gitlab.com/openremote/openremote:master
-      /bin/sh -c "docker-compose -f profile/dev-testing.yml up --no-build -d"
+      /bin/sh -c "docker-compose -f openremote/profile/dev-testing.yml up --no-build -d"
   script:
     - docker run --network host -v $(pwd):/or registry.gitlab.com/openremote/openremote:master
       /bin/sh -c "./gradlew clean test"
@@ -163,13 +163,14 @@ test-master:
   artifacts:
     when: on_failure
     paths:
-      - "test/build/reports/tests/test/*"
-      - "test/build/reports/tests/test/*/*"
+      - "openremote/test/build/reports/tests/test/*"
+      - "openremote/test/build/reports/tests/test/*/*"
     expire_in: 4 weeks
   timeout: 30m
 
 email failed tests:
   stage: tests_fail
+  needs: ["test-master"]
   <<: *notify_email
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
@@ -177,6 +178,7 @@ email failed tests:
 
 test FAILED:
   stage: tests_fail
+  needs: ["test-master"]
   <<: *notify_whatsapp
   rules:
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
@@ -205,11 +207,9 @@ include:
     - echo "Deploy to $CI_ENVIRONMENT_SLUG server"
     - echo "export PROJECT_NAME=$PROJECT_NAME" >> deploy.sh
     - echo "export CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE" >> deploy.sh
-    - echo "export FIREBASE_CONFIG_FILE=$FIREBASE_CONFIG_FILE" >> deploy.sh
     - if [ ! $DOCKER_IMAGE_TAG ]; then echo "export CI_ENVIRONMENT=$CI_ENVIRONMENT_SLUG" >> deploy.sh; fi
     - if [ $DOCKER_IMAGE_TAG ]; then echo "export CI_ENVIRONMENT=$DOCKER_IMAGE_TAG" >> deploy.sh; fi
     - echo "export SETUP_WIPE_CLEAN_INSTALL=$SETUP_WIPE_CLEAN_INSTALL" >> deploy.sh
-    - echo "export FIREBASE_CONFIG_FILE=FIREBASE_CONFIG_FILE" >> deploy.sh
     - if [ $SETUP_ADMIN_PASSWORD ]; then echo "export SETUP_ADMIN_PASSWORD=$SETUP_ADMIN_PASSWORD" >> deploy.sh; fi
     - echo "echo ${OR_PASSWORD} | docker login -u openremote --password-stdin $CI_REGISTRY || exit 666" >> deploy.sh
     - echo "docker pull $CI_REGISTRY_IMAGE/manager:\$CI_ENVIRONMENT"   >> deploy.sh
@@ -249,6 +249,18 @@ include:
 
 deploy staging:
   stage: deploy
+  variables:
+    DEPLOYMENT_HOST: ${CI_ENVIRONMENT_SLUG}.${PROJECT_NAME}.${DOMAIN}
+    SETUP_WIPE_CLEAN_INSTALL: "true"
+  environment:
+    name: staging
+    url: https://${CI_ENVIRONMENT_SLUG}.${PROJECT_NAME}.${DOMAIN}
+  <<: *deploy_definition
+
+deploy staging when tests fail:
+  stage: deploy
+  needs: ["email failed tests"]
+  when: manual
   variables:
     DEPLOYMENT_HOST: ${CI_ENVIRONMENT_SLUG}.${PROJECT_NAME}.${DOMAIN}
     SETUP_WIPE_CLEAN_INSTALL: "true"

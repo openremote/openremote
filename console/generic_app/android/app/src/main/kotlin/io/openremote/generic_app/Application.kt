@@ -9,6 +9,8 @@ import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.PluginRegistrantCallback
 import io.flutter.plugins.firebasemessaging.FlutterFirebaseMessagingService
 import io.flutter.plugins.geofencing.GeofencingService
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugins.GeneratedPluginRegistrant
 
 class Application : FlutterApplication(), PluginRegistrantCallback {
     override fun onCreate() {
@@ -35,6 +37,9 @@ class Application : FlutterApplication(), PluginRegistrantCallback {
 
     override fun registerWith(registry: PluginRegistry) {
         io.flutter.plugins.firebasemessaging.FirebaseMessagingPlugin.registerWith(registry?.registrarFor("io.flutter.plugins.firebasemessaging.FirebaseMessagingPlugin"))
+        io.flutter.plugins.sharedpreferences.SharedPreferencesPlugin.registerWith(registry?.registrarFor("io.flutter.plugins.sharedpreferences.SharedPreferencesPlugin"));
         registry?.registrarFor("io.flutter.plugins.geofencing.GeofencingPlugin")
+
+        GeneratedPluginRegistrant.registerWith(FlutterEngine(this))
     }
 }

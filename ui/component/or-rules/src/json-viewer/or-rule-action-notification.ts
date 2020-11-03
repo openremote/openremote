@@ -7,7 +7,8 @@ import {
     AssetQueryOrderBy$Property,
     JsonRule,
     RuleAction,
-    RuleActionNotification
+    RuleActionNotification,
+    UserQuery
 } from "@openremote/model";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {getTargetTypeMap, OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
@@ -304,6 +305,17 @@ export class OrRuleActionNotification extends LitElement {
 
     protected _onTargetChanged(targetType: ActionTargetType, value: string | undefined) {
         switch (targetType) {
+            case ActionTargetType.USER:
+                if(value){
+                    const users:UserQuery = {ids: [value]}
+                    this.action.target = {users: users}
+                }
+            break;
+            case ActionTargetType.CUSTOM:
+                    this.action.target = {
+                        custom: value
+                    }
+                break;
             case ActionTargetType.ASSET:
                 if (!value || value === "allMatched") {
                     delete this.action.target;

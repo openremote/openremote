@@ -759,6 +759,37 @@ public enum AssetType implements AssetDescriptor {
             READ_ONLY,
             RULE_STATE,
             STORE_DATA_POINTS)
+    ),
+
+    SHIP(ASSET_NAMESPACE + ":ship", "ferry", "000080",
+        new AttributeDescriptorImpl("shipMssiNumber", NUMBER, null,
+                LABEL.withInitialValue("MSSI number"),
+                READ_ONLY,
+                RULE_STATE),
+        new AttributeDescriptorImpl("shipImoNumber", NUMBER, null,
+                LABEL.withInitialValue("IMO number"),
+                READ_ONLY,
+                RULE_STATE),
+        new AttributeDescriptorImpl("shipHeading", DIRECTION, null,
+                LABEL.withInitialValue("Heading"),
+                READ_ONLY,
+                STORE_DATA_POINTS,
+                RULE_STATE),
+        new AttributeDescriptorImpl("shipSpeed", SPEED, null,
+                LABEL.withInitialValue("Speed"),
+                STORE_DATA_POINTS,
+                RULE_STATE,
+                READ_ONLY,
+                UNIT_TYPE.withInitialValue(UNITS_SPEED_KNOTS)),
+        new AttributeDescriptorImpl("shipLength", NUMBER, null,
+                LABEL.withInitialValue("Ship length"),
+                UNIT_TYPE.withInitialValue(UNITS_DISTANCE_METRES),
+                READ_ONLY,
+                RULE_STATE),
+        new AttributeDescriptorImpl("shipType", STRING, null,
+                LABEL.withInitialValue("Type of ship"),
+                READ_ONLY,
+                RULE_STATE)
     );
 
     final protected String type;

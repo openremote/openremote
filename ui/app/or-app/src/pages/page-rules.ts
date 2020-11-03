@@ -1,6 +1,6 @@
 import {css, customElement, html, property} from "lit-element";
 import "@openremote/or-rules";
-import {RulesConfig, ActionTargetType, AllowedActionTargetTypes, ActionType} from "@openremote/or-rules";
+import {ActionTargetType, RulesConfig} from "@openremote/or-rules";
 import {AssetType, NotificationTargetType, RulesetLang} from "@openremote/model";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {AppStateKeyed} from "../app";

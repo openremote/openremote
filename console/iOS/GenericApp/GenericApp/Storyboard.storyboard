@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17156" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="oDU-zF-Uvs">
+    <device id="retina6_1" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17126"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--Splash View Controller-->
+        <scene sceneID="xjs-uN-Dtd">
+            <objects>
+                <viewController id="oDU-zF-Uvs" customClass="SplashViewController" customModule="OpenRemote" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="bwX-tc-a4T">
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <viewLayoutGuide key="safeArea" id="y8x-w5-OSh"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                    </view>
+                    <connections>
+                        <segue destination="i2l-kx-xKH" kind="presentation" identifier="goToProjectView" modalPresentationStyle="fullScreen" id="PNL-Mf-RkC"/>
+                        <segue destination="HSA-l5-YFF" kind="presentation" identifier="goToWebView" modalPresentationStyle="fullScreen" id="5Oq-tw-rj7"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Afh-RU-OvJ" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="53" y="375"/>
+        </scene>
+        <!--Project View Controller-->
+        <scene sceneID="VQ6-6b-t86">
+            <objects>
+                <viewController id="i2l-kx-xKH" customClass="ProjectViewController" customModule="OpenRemote" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="YE9-2c-hEL">
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="or_logo" translatesAutoresizingMaskIntoConstraints="NO" id="91w-Qy-cB6">
+                                <rect key="frame" x="30" y="124" width="354" height="199"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="91w-Qy-cB6" secondAttribute="height" multiplier="16:9" id="bHR-kc-LYU"/>
+                                </constraints>
+                            </imageView>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Connect to your application" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Kbv-Tf-5fK">
+                                <rect key="frame" x="30" y="373" width="354" height="21"/>
+                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="17"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="BlP-aM-prv" customClass="ORTextInput" customModule="OpenRemote" customModuleProvider="target">
+                                <rect key="frame" x="30" y="413" width="354" height="40"/>
+                                <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="40" id="nJi-N3-4Su"/>
+                                </constraints>
+                                <userDefinedRuntimeAttributes>
+                                    <userDefinedRuntimeAttribute type="string" keyPath="setPlaceholderText" value="Project"/>
+                                </userDefinedRuntimeAttributes>
+                            </view>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="2fd-Z9-umb" customClass="ORTextInput" customModule="OpenRemote" customModuleProvider="target">
+                                <rect key="frame" x="30" y="483" width="354" height="40"/>
+                                <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="40" id="Ddc-Hy-G6Q"/>
+                                </constraints>
+                                <userDefinedRuntimeAttributes>
+                                    <userDefinedRuntimeAttribute type="string" keyPath="setPlaceholderText" value="Realm"/>
+                                </userDefinedRuntimeAttributes>
+                            </view>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="tdG-Qt-Lhh" customClass="MDCRaisedButton">
+                                <rect key="frame" x="325" y="603" width="59" height="30"/>
+                                <state key="normal" title="Connect"/>
+                                <connections>
+                                    <action selector="connectButtonpressed:" destination="i2l-kx-xKH" eventType="touchUpInside" id="x7E-CE-Jfr"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="D5Z-HK-RNC"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                        <constraints>
+                            <constraint firstItem="tdG-Qt-Lhh" firstAttribute="trailing" secondItem="2fd-Z9-umb" secondAttribute="trailing" id="2el-oM-gye"/>
+                            <constraint firstItem="D5Z-HK-RNC" firstAttribute="trailing" secondItem="Kbv-Tf-5fK" secondAttribute="trailing" constant="30" id="2jL-yL-nzr"/>
+                            <constraint firstItem="91w-Qy-cB6" firstAttribute="trailing" secondItem="Kbv-Tf-5fK" secondAttribute="trailing" id="4JQ-ny-GpV"/>
+                            <constraint firstItem="Kbv-Tf-5fK" firstAttribute="top" secondItem="91w-Qy-cB6" secondAttribute="bottom" constant="50" id="6Xz-rs-f9s"/>
+                            <constraint firstItem="tdG-Qt-Lhh" firstAttribute="top" secondItem="2fd-Z9-umb" secondAttribute="bottom" constant="80" id="8YO-LN-Y6a"/>
+                            <constraint firstItem="BlP-aM-prv" firstAttribute="leading" secondItem="Kbv-Tf-5fK" secondAttribute="leading" id="EHO-FA-FcK"/>
+                            <constraint firstItem="91w-Qy-cB6" firstAttribute="leading" secondItem="Kbv-Tf-5fK" secondAttribute="leading" id="LwD-ts-QIa"/>
+                            <constraint firstItem="BlP-aM-prv" firstAttribute="top" secondItem="Kbv-Tf-5fK" secondAttribute="bottom" constant="19" id="fEU-7e-c4r"/>
+                            <constraint firstItem="Kbv-Tf-5fK" firstAttribute="leading" secondItem="D5Z-HK-RNC" secondAttribute="leading" constant="30" id="kBY-W2-5la"/>
+                            <constraint firstItem="2fd-Z9-umb" firstAttribute="leading" secondItem="BlP-aM-prv" secondAttribute="leading" id="khz-Ar-gHc"/>
+                            <constraint firstItem="91w-Qy-cB6" firstAttribute="top" secondItem="D5Z-HK-RNC" secondAttribute="top" constant="80" id="mPB-1f-dRx"/>
+                            <constraint firstItem="2fd-Z9-umb" firstAttribute="top" secondItem="BlP-aM-prv" secondAttribute="bottom" constant="30" id="ptV-cK-szI"/>
+                            <constraint firstItem="BlP-aM-prv" firstAttribute="trailing" secondItem="Kbv-Tf-5fK" secondAttribute="trailing" id="rBu-cB-S9o"/>
+                            <constraint firstItem="2fd-Z9-umb" firstAttribute="trailing" secondItem="BlP-aM-prv" secondAttribute="trailing" id="zdw-wG-TuZ"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="connectButton" destination="tdG-Qt-Lhh" id="XHn-UJ-kYr"/>
+                        <outlet property="projectTextInput" destination="BlP-aM-prv" id="CXN-GZ-wnr"/>
+                        <outlet property="realmTextInput" destination="2fd-Z9-umb" id="WBg-9f-mUS"/>
+                        <segue destination="HSA-l5-YFF" kind="presentation" identifier="goToWebView" modalPresentationStyle="fullScreen" id="DyD-E7-g7I"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="n9R-ku-sNp" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="849" y="61"/>
+        </scene>
+        <!--Viewcontroller-->
+        <scene sceneID="liA-xA-sIe">
+            <objects>
+                <viewController id="HSA-l5-YFF" customClass="ORViewcontroller" customModule="OpenRemote" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="iMh-t6-rOs">
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <viewLayoutGuide key="safeArea" id="eSh-1f-zrb"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                    </view>
+                    <navigationItem key="navigationItem" id="kjP-Jz-yAy"/>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="06P-nW-O1T" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="848" y="745"/>
+        </scene>
+    </scenes>
+    <inferredMetricsTieBreakers>
+        <segue reference="DyD-E7-g7I"/>
+    </inferredMetricsTieBreakers>
+    <resources>
+        <image name="or_logo" width="1422.6666259765625" height="806.33331298828125"/>
+        <systemColor name="systemBackgroundColor">
+            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+    </resources>
+</document>

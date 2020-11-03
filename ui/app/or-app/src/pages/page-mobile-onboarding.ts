@@ -75,7 +75,7 @@ class PageMobileOnboarding<S extends AppStateKeyed> extends Page<S> {
                 width: 42px;
                 height: 42px;
                 border-radius: 50%;
-                background-color: var(--or-app-color4);
+                background-color: var(--or-console-primary-color, --or-app-color4);
                 justify-content: center;
                 align-items: center;
                 display: flex;

@@ -19,10 +19,9 @@
  */
 package org.openremote.model.asset;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import org.openremote.model.asset.agent.AgentDescriptorImpl;
 import org.openremote.model.attribute.AttributeDescriptor;
 
 import java.util.Arrays;

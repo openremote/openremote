@@ -1,9 +1,29 @@
-# Installing OpenRemote on Raspberry Pi 3
+# Running OpenRemote on ARM64 device
+
+This procedure was tested on AWS t4g EC2 instance using [CloudFormation template](https://github.com/openremote/openremote/gitlab-ci/aws-cloudformation.template.arm64.yml).
+
+OpenRemote images on Docker Hub are multi-arch created automatically by CI/CD pipeline, therefore there is no need to build them locally. The multi-arch build procedure is defined as [Github action](https://github.com/openremote/openremote/blob/master/.github/workflows/gradle.yml) and uses official Docker QEMU action.
+
+There is no official base Keycloak ARM image provided, therefore the stack uses basic http authentication.  
+TODO: use central remote Keycloak installation.
+
+To start the OpenRemote stack:
+- login to ARM device;
+- install *docker* with *docker-compose* if necessary;
+- start the stack:
+```bash
+docker-compose -p openremote -f profile/demo-basic-no-build.yml up -d
+```
+
+**Tip:** [AWS CloudFormation template](https://github.com/openremote/openremote/gitlab-ci/aws-cloudformation.template.arm64.yml) Resources.EC2Instance.Properties.UserData section contains installation script for AWS Linux ARM device. The minimum RAM is 512M, which can be run on [BeagleBoneBlack](http://beagleboard.org/black).  
+TODO: test it on actual device.
+
+## Installing OpenRemote on Raspberry Pi 3 (old)
 
 You need a [Raspberry Pi 3](https://www.raspberrypi.org/products/raspberry-pi-3-model-b/) and and empty SD card. First download [Etcher](https://etcher.io/) to burn SD card images.
 
 
-Download the [Pi64 Lite distribution](https://github.com/bamarni/pi64/releases) and write it to your card. This is a minimal Debian Linux variant that runs on a 64 bit kernel with OpenJDK ARM64 optimized for ths platform.
+Download the [Pi64 Lite distribution](https://github.com/bamarni/pi64/releases) and write it to your card. This is a minimal Debian Linux variant that runs on a 64 bit kernel with OpenJDK ARM64 optimized for this platform.
 
 Next you must copy some files onto your new SD card, so keep it mounted on your computer. Generate the files with:
 

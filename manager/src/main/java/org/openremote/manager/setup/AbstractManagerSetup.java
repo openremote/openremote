@@ -765,4 +765,12 @@ public abstract class AbstractManagerSetup implements Setup {
 
     return parkingAsset;
     }
+
+    protected Asset createDemoShipAsset(String name, Asset area, GeoJSON location) {
+        Asset shipAsset = new Asset(name, SHIP, area).addAttributes(
+                new AssetAttribute(AttributeType.LOCATION, location.toValue())
+        );
+
+        return shipAsset;
+    }
 }

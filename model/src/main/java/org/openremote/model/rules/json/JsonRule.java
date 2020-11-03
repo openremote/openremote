@@ -48,11 +48,6 @@ import org.openremote.model.query.LogicGroup;
  * {@link JsonRule#when} but excluding the {@link AssetQuery#attributes} predicates and excluding any assets that match
  * the entire {@link JsonRule#when}. If the number of these assets is greater than 0 then these {@link RuleAction}s will be
  * executed.
- * <h2>Recurrence</h2>
- * <p>
- * {@link #recurrence} - Optional logic used to control when rule firing can recur.
- * <b>NOTE: Rule trigger history is not persisted so on system restart this information is lost and a rule will be
- * able to fire again.</b>
  */
 public class JsonRule {
 

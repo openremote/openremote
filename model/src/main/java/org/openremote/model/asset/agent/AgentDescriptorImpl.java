@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset.agent;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.asset.AssetDescriptorImpl;
 import org.openremote.model.attribute.AttributeDescriptor;
 
@@ -38,6 +39,7 @@ public class AgentDescriptorImpl extends AssetDescriptorImpl implements AgentDes
         return instanceDiscovery;
     }
 
+    @JsonIgnore
     public AgentDescriptorImpl setInstanceDiscovery(boolean instanceDiscovery) {
         this.instanceDiscovery = instanceDiscovery;
         return this;
@@ -48,6 +50,7 @@ public class AgentDescriptorImpl extends AssetDescriptorImpl implements AgentDes
         return false;
     }
 
+    @JsonIgnore
     public AgentDescriptorImpl setInstanceImport(boolean instanceImport) {
         this.instanceImport = instanceImport;
         return this;
@@ -58,6 +61,7 @@ public class AgentDescriptorImpl extends AssetDescriptorImpl implements AgentDes
         return false;
     }
 
+    @JsonIgnore
     public AgentDescriptorImpl setAssetDiscovery(boolean assetDiscovery) {
         this.assetDiscovery = assetDiscovery;
         return this;
@@ -68,6 +72,7 @@ public class AgentDescriptorImpl extends AssetDescriptorImpl implements AgentDes
         return false;
     }
 
+    @JsonIgnore
     public AgentDescriptorImpl setAssetImport(boolean assetImport) {
         this.assetImport = assetImport;
         return this;

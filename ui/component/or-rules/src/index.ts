@@ -1,4 +1,4 @@
-import {css, customElement, html, LitElement, property, query, TemplateResult, unsafeCSS, PropertyValues} from "lit-element";
+import {css, customElement, html, LitElement, property, query, unsafeCSS} from "lit-element";
 import manager, {
     AssetModelUtil,
     DefaultBoxShadow,
@@ -17,20 +17,17 @@ import {
     AssetQuery,
     AttributeDescriptor,
     AttributeValueDescriptor,
+    ClientRole,
     JsonRule,
     LogicGroup,
     MetaItemDescriptor,
     MetaItemType,
+    NotificationTargetType,
     RuleActionUnion,
     RuleCondition,
     RulesetLang,
     RulesetUnion,
-    TenantRuleset,
-    ValueType,
-    ClientRole,
-    Asset,
-    NotificationTargetType,
-    Ruleset
+    ValueType
 } from "@openremote/model";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/dist/or-mwc-drawer";
@@ -41,7 +38,8 @@ import "./flow-viewer/flow-viewer";
 import {OrRuleList} from "./or-rule-list";
 import {OrRuleViewer} from "./or-rule-viewer";
 import {RecurrenceOption} from "./json-viewer/or-rule-then-otherwise";
-import { AttributeInputCustomProvider } from "@openremote/or-attribute-input";
+import {AttributeInputCustomProvider} from "@openremote/or-attribute-input";
+import {showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 
 export const enum ConditionType {
     ASSET_QUERY = "assetQuery",
@@ -96,7 +94,7 @@ export interface AssetTypeAttributeName {
 }
 export interface AllowedActionTargetTypes {
     default?: ActionTargetType[];
-    actions?: {[actionType in ActionType]: ActionTargetType[]};
+    actions?: {[actionType in ActionType]?: ActionTargetType[]};
 }
 
 export interface RulesConfig {
@@ -115,6 +113,7 @@ export interface RulesConfig {
         hideWhenAddCondition?: boolean;
         hideWhenAddAttribute?: boolean;
         hideWhenAddGroup?: boolean;
+        multiSelect?: boolean;
     };
     inputProvider?: AttributeInputCustomProvider;
     descriptors?: {
@@ -171,7 +170,7 @@ export interface RulesConfigAttributeValue {
 }
 
 export interface RulesetNode {
-    ruleset: TenantRuleset;
+    ruleset: RulesetUnion;
     selected: boolean;
 }
 
@@ -397,92 +396,33 @@ export class OrRulesRuleUnsupportedEvent extends CustomEvent<void> {
     }
 }
 
-export class OrRulesRequestSelectEvent extends CustomEvent<RequestEventDetail<RulesetUnion[]>> {
+export interface NodeSelectEventDetail {
+    oldNodes: RulesetNode[];
+    newNodes: RulesetNode[];
+}
 
-    public static readonly NAME = "or-rules-request-select";
+export class OrRulesRequestSelectionEvent extends CustomEvent<RequestEventDetail<NodeSelectEventDetail>> {
 
-    constructor(request: TenantRuleset[]) {
-        super(OrRulesRequestSelectEvent.NAME, {
+    public static readonly NAME = "or-rules-request-selection";
+
+    constructor(request: NodeSelectEventDetail) {
+        super(OrRulesRequestSelectionEvent.NAME, {
             bubbles: true,
             composed: true,
             detail: {
-                allow: true,
-                detail: request
+                detail: request,
+                allow: true
             }
         });
     }
 }
 
-export class OrRulesRequestAddEvent extends CustomEvent<RulesetUnion> {
+export class OrRulesSelectionEvent extends CustomEvent<NodeSelectEventDetail> {
 
-    public static readonly NAME = "or-rules-request-add";
+    public static readonly NAME = "or-rules-selection";
 
-    constructor(lang: RulesetLang, type:any) {
-        super(OrRulesRequestAddEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: {lang, type}
-        });
-    }
-}
-
-export class OrRulesRequestDeleteEvent extends CustomEvent<RulesetUnion[]> {
-
-    public static readonly NAME = "or-rules-request-delete";
-
-    constructor(request: TenantRuleset[]) {
-        super(OrRulesRequestDeleteEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: request
-        });
-    }
-}
-
-export class OrRulesRequestCopyEvent extends CustomEvent<RulesetUnion> {
-
-    public static readonly NAME = "or-rules-request-copy";
-
-    constructor(request: TenantRuleset) {
-        super(OrRulesRequestCopyEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: request
-        });
-    }
-}
-
-export class OrRulesSaveStartEvent extends CustomEvent<void> {
-
-    public static readonly NAME = "or-rules-save-start";
-
-    constructor() {
-        super(OrRulesSaveStartEvent.NAME, {
-            bubbles: true,
-            composed: true
-        });
-    }
-}
-
-export class OrRulesSaveEndEvent extends CustomEvent<boolean> {
-
-    public static readonly NAME = "or-rules-save-end";
-
-    constructor(success: boolean) {
-        super(OrRulesSaveEndEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: success
-        });
-    }
-}
-
-export class OrRulesSelectionChangedEvent extends CustomEvent<RulesetUnion[]> {
-
-    public static readonly NAME = "or-rules-selection-changed";
-
-    constructor(nodes: TenantRuleset[]) {
-        super(OrRulesSelectionChangedEvent.NAME, {
+    constructor(nodes: NodeSelectEventDetail) {
+        super(OrRulesSelectionEvent.NAME, {
             bubbles: true,
             composed: true,
             detail: nodes
@@ -490,17 +430,116 @@ export class OrRulesSelectionChangedEvent extends CustomEvent<RulesetUnion[]> {
     }
 }
 
+export type AddEventDetail = {
+    ruleset: RulesetUnion;
+    sourceRuleset?: RulesetUnion;
+}
+
+export class OrRulesRequestAddEvent extends CustomEvent<RequestEventDetail<AddEventDetail>> {
+
+    public static readonly NAME = "or-rules-request-add";
+
+    constructor(detail: AddEventDetail) {
+        super(OrRulesRequestAddEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                detail: detail,
+                allow: true
+            }
+        });
+    }
+}
+
+export class OrRulesAddEvent extends CustomEvent<AddEventDetail> {
+
+    public static readonly NAME = "or-rules-add";
+
+    constructor(detail: AddEventDetail) {
+        super(OrRulesAddEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: detail
+        });
+    }
+}
+
+export class OrRulesRequestDeleteEvent extends CustomEvent<RequestEventDetail<RulesetNode[]>> {
+
+    public static readonly NAME = "or-rules-request-delete";
+
+    constructor(request: RulesetNode[]) {
+        super(OrRulesRequestDeleteEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                detail: request,
+                allow: true
+            }
+        });
+    }
+}
+
+export type SaveResult = {
+    success: boolean,
+    ruleset: RulesetUnion,
+    isNew: boolean
+};
+
+export class OrRulesRequestSaveEvent extends CustomEvent<RequestEventDetail<RulesetUnion>> {
+
+    public static readonly NAME = "or-rules-request-save";
+
+    constructor(ruleset: RulesetUnion) {
+        super(OrRulesRequestSaveEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                allow: true,
+                detail: ruleset
+            }
+        });
+    }
+}
+
+export class OrRulesSaveEvent extends CustomEvent<SaveResult> {
+
+    public static readonly NAME = "or-rules-save";
+
+    constructor(result: SaveResult) {
+        super(OrRulesSaveEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: result
+        });
+    }
+}
+
+export class OrRulesDeleteEvent extends CustomEvent<RulesetUnion[]> {
+
+    public static readonly NAME = "or-rules-delete";
+
+    constructor(rulesets: RulesetUnion[]) {
+        super(OrRulesDeleteEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: rulesets
+        });
+    }
+}
+
 declare global {
     export interface HTMLElementEventMap {
         [OrRulesRuleUnsupportedEvent.NAME]: OrRulesRuleUnsupportedEvent;
-        [OrRulesRequestSelectEvent.NAME]: OrRulesRequestSelectEvent;
-        [OrRulesRequestAddEvent.NAME]: OrRulesRequestAddEvent;
-        [OrRulesRequestDeleteEvent.NAME]: OrRulesRequestDeleteEvent;
-        [OrRulesRequestCopyEvent.NAME]: OrRulesRequestCopyEvent;
-        [OrRulesSaveStartEvent.NAME]: OrRulesSaveStartEvent;
-        [OrRulesSaveEndEvent.NAME]: OrRulesSaveEndEvent;
         [OrRulesRuleChangedEvent.NAME]: OrRulesRuleChangedEvent;
-        [OrRulesSelectionChangedEvent.NAME]: OrRulesSelectionChangedEvent;
+        [OrRulesRequestSelectionEvent.NAME]: OrRulesRequestSelectionEvent;
+        [OrRulesSelectionEvent.NAME]: OrRulesSelectionEvent;
+        [OrRulesRequestAddEvent.NAME]: OrRulesRequestAddEvent;
+        [OrRulesAddEvent.NAME]: OrRulesAddEvent;
+        [OrRulesRequestDeleteEvent.NAME]: OrRulesRequestDeleteEvent;
+        [OrRulesRequestSaveEvent.NAME]: OrRulesRequestSaveEvent;
+        [OrRulesSaveEvent.NAME]: OrRulesSaveEvent;
+        [OrRulesDeleteEvent.NAME]: OrRulesDeleteEvent;
     }
 }
 
@@ -581,39 +620,22 @@ export class OrRules extends translate(i18next)(LitElement) {
     private _rulesList!: OrRuleList;
 
     @query("#rule-viewer")
-    private _ruleViewer!: OrRuleViewer;
-
-    @property({attribute: false})
-    private _activeRuleset?: RulesetUnion;
+    private _viewer!: OrRuleViewer;
 
     constructor() {
         super();
 
-        this.addEventListener(OrRulesRequestSelectEvent.NAME, this._onRequestSelect);
-        this.addEventListener(OrRulesRequestAddEvent.NAME,this._onRequestAdd);
-        this.addEventListener(OrRulesRequestDeleteEvent.NAME, this._onRequestDelete);
-        this.addEventListener(OrRulesRequestCopyEvent.NAME, this._onRequestCopy);
-        this.addEventListener(OrRulesSelectionChangedEvent.NAME, this._onRuleSelectionChanged);
-        this.addEventListener(OrRulesSaveEndEvent.NAME, this._onRuleSaveEnd);
-        this.addEventListener(OrRulesSaveStartEvent.NAME, this._onRuleSaveStart);
-    }
-
-    public shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (this._rulesList && _changedProperties.has("selectedIds")) {
-            this._rulesList.selectedIds = this.selectedIds;
-            if (_changedProperties.size === 1) {
-                return false;
-            }
-        }
-
-        return super.shouldUpdate(_changedProperties);
+        this.addEventListener(OrRulesRequestSelectionEvent.NAME, this._onRuleSelectionRequested);
+        this.addEventListener(OrRulesSelectionEvent.NAME, this._onRuleSelectionChanged);
+        this.addEventListener(OrRulesAddEvent.NAME, this._onRuleAdd);
+        this.addEventListener(OrRulesSaveEvent.NAME, this._onRuleSave);
     }
 
     protected render() {
 
         return html`
             <or-rule-list id="rule-list" .config="${this.config}" .language="${this.language}" .selectedIds="${this.selectedIds}"></or-rule-list>
-            <or-rule-viewer id="rule-viewer" .ruleset="${this._activeRuleset}" .config="${this.config}" .readonly="${this.isReadonly()}"></or-rule-viewer>
+            <or-rule-viewer id="rule-viewer" .config="${this.config}" .readonly="${this.isReadonly()}"></or-rule-viewer>
         `;
     }
 
@@ -621,124 +643,56 @@ export class OrRules extends translate(i18next)(LitElement) {
         return this.readonly || !manager.hasRole(ClientRole.WRITE_RULES);
     }
 
-    protected _onRequestAdd(e: OrRulesRequestAddEvent) {
-        const lang = e.detail.lang;
-        const type = e.detail.type;
-        const shouldContinue = this._okToLeaveActiveRule();
-
-        if (!shouldContinue) {
-            return;
+    protected _confirmContinue(action: () => void) {
+        if (this._viewer.modified) {
+            showOkCancelDialog(i18next.t("loseChanges"), i18next.t("confirmContinueRulesetModified"))
+                .then((ok) => {
+                    if (ok) {
+                        action();
+                    }
+                });
+        } else {
+            action();
         }
-
-        const realm = manager.isSuperUser() ? manager.displayRealm : manager.config.realm;
-        const ruleset: RulesetUnion = {
-            id: 0,
-            type: type,
-            name: OrRules.DEFAULT_RULESET_NAME,
-            lang: lang,
-            realm: realm,
-            rules: undefined // View needs to populate this on load
-        };
-        
-        if (this.config && this.config.rulesetAddHandler && !this.config.rulesetAddHandler(ruleset)) {
-            return;
-        }
-
-        // Ensure config hasn't messed with the certain values
-        if (type === "tenant") {
-            (ruleset as TenantRuleset).realm = realm;
-        }
-        this._activeRuleset = ruleset;
-        this.selectedIds = undefined;
     }
 
-    protected _onRequestCopy(e: OrRulesRequestCopyEvent) {
-        const shouldContinue = this._okToLeaveActiveRule();
+    protected _onRuleSelectionRequested(event: OrRulesRequestSelectionEvent) {
+        const isModified = this._viewer.modified;
 
-        if (!shouldContinue) {
+        if (!isModified) {
             return;
         }
 
-        const ruleset = JSON.parse(JSON.stringify(e.detail)) as RulesetUnion;
-        delete ruleset.lastModified;
-        delete ruleset.createdOn;
-        delete ruleset.status;
-        delete ruleset.error;
-        delete ruleset.id;
-        ruleset.name = ruleset.name + " copy";
-        if (this.config && this.config.rulesetCopyHandler && !this.config.rulesetCopyHandler(ruleset)) {
-            return;
-        }
-        
-        this._activeRuleset = ruleset;
-    }
+        // Prevent the request and check if user wants to lose changes
+        event.detail.allow = false;
 
-    protected async _onRequestDelete(event: OrRulesRequestDeleteEvent) {
-
-        let confirmed = this._okToLeaveActiveRule();
-
-        if (!confirmed) {
-            return;
-        }
-
-        confirmed = !this._activeRuleset!.id || window.confirm(i18next.t("confirmDelete"));
-
-        if (!confirmed) {
-            return;
-        }
-
-        this._activeRuleset = undefined;
-
-        const rulesetsToDelete = event.detail;
-
-        // We need to call the backend so disable list until done
-        this._rulesList.disabled = true;
-        for (const ruleset of rulesetsToDelete) {
-
-            if (this.config && this.config.rulesetDeleteHandler && !this.config.rulesetDeleteHandler(ruleset)) {
-                continue;
+        this._confirmContinue(() => {
+            const nodes = event.detail.detail.newNodes;
+            if (Util.objectsEqual(nodes, event.detail.detail.oldNodes)) {
+                // User has clicked the same node so let's force reload it
+                this._viewer.ruleset =  {...nodes[0].ruleset};
+            } else {
+                this.selectedIds = nodes.map((node) => node.ruleset.id!);
+                this._viewer.ruleset = nodes.length === 1 ? nodes[0].ruleset : undefined;
             }
-            
-            try {
-                await manager.rest.api.RulesResource.deleteTenantRuleset(ruleset.id!);
-            } catch (e) {
-                console.error("Failed to delete ruleset '" + ruleset.id + "': " + e);
-            }
+        });
+    }
+
+    protected _onRuleSelectionChanged(event: OrRulesSelectionEvent) {
+        const nodes = event.detail.newNodes;
+        this.selectedIds = nodes.map((node) => node.ruleset.id!);
+        this._viewer.ruleset = nodes.length === 1 ? {...nodes[0].ruleset} : undefined;
+    }
+
+    protected _onRuleAdd(event: OrRulesAddEvent) {
+        // Load the ruleset into the viewer
+        this._viewer.ruleset = event.detail.ruleset;
+    }
+
+    protected async _onRuleSave(event: OrRulesSaveEvent) {
+        await this._rulesList.refresh();
+        if (event.detail.success && event.detail.isNew) {
+            this.selectedIds = [event.detail.ruleset.id!];
         }
-        this._rulesList.refresh();
-        this._rulesList.disabled = false;
-    }
-
-    protected _onRequestSelect(event: OrRulesRequestSelectEvent) {
-        event.detail.allow = this._okToLeaveActiveRule();
-    }
-
-    protected _onRuleSelectionChanged(event: OrRulesSelectionChangedEvent) {
-        const isNewRule = this._activeRuleset && !this._activeRuleset.id;
-
-        if (!isNewRule || event.detail.length !== 0) {
-            this._activeRuleset = event.detail.length === 1 ? {...event.detail[0]} : undefined;
-        }
-        this.selectedIds = event.detail.length === 1 && event.detail[0].id ? [event.detail[0].id!] : undefined;
-    }
-
-    protected _onRuleSaveStart(event: OrRulesSaveStartEvent) {
-        this._rulesList.disabled = true;
-        this._ruleViewer.disabled = true;
-    }
-
-    protected _onRuleSaveEnd(event: OrRulesSaveEndEvent) {
-        this._rulesList.disabled = false;
-        this._ruleViewer.disabled = false;
-        this.selectedIds = [
-            this._ruleViewer.ruleset!.id!
-        ];
-        if (event.detail) {
-            this._rulesList.refresh();
-        }
-    }
-
-    protected _okToLeaveActiveRule() {
-        return !this._ruleViewer.modified || window.confirm(i18next.t("continueWithoutSaving"));
     }
 }

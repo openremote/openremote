@@ -31,14 +31,21 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
     static get styles() {
         // language=CSS
         return css`
-            :host {
+            :host,
+            :host > .inner {
                 flex: 1;
                 width: 100%;     
                 align-items: center;
                 justify-content: center;     
-                flex-direction: column;           
+                flex-direction: column;     
+                --internal-or-map-marker-color: var(--or-console-primary-color, --or-app-color4);
             }
-
+            .inner {
+                display: none;
+            }
+            .inner[active] {
+                display: block;
+            }
             .header {
                 position: fixed;
                 z-index: 99999; 
@@ -61,17 +68,18 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
             }
 
             .list-container {
-                width: 100vw;
+                width: 100%;
                 height: 100vh;
             }
 
             .list-item {
                 display: flex;
+                min-height: 45px;
                 flex-direction: row;
                 text-decoration: none;
                 padding: 20px;
                 color: var(--or-app-color3);
-                border-bottom: 1px solid var(--or-app-color3);;
+                border-bottom: 1px solid #22211f47;
             }
 
             h3, p {
@@ -79,13 +87,13 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
             }
 
             h3 {
-                color: var(--or-app-color4);
+                color: var(--or-console-primary-color, --or-app-color4);
             }
             
             .button {
                 cursor: pointer;
                 background-color: var(--or-app-color2);
-                color: var(--or-app-color4);
+                color: var(--or-console-primary-color, --or-app-color4);
                 --or-icon-fill: var(--or-app-color3);
                 width: 42px;
                 height: 42px;
@@ -216,10 +224,18 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
     @property()
     public config?: GeofencesConfig;
 
+    protected updated(changedProperties) {
+        if(changedProperties.has('view') && this.view === "map"){
+            const map = this.shadowRoot.querySelector('.or-map');
+            const vectorMap = map as OrMap;
+            vectorMap.resize()
+        }
+    }
+
     protected render() {
         const controls = [new NavigationControl({showCompass: false, showZoom: false})];
         return html`
-            ${this.view === 'map' ? html`
+                <div ?active="${this.view === 'map'}" class="inner">
                     <div class="header">
                         <div class="d-flex right">
                             <a class="d-flex button" @click="${() => history.back()}"><or-icon icon="close"></or-icon></a>
@@ -227,7 +243,7 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
                             <a class="d-flex location-button button" @click="${this.getLocation}"><or-icon icon="crosshairs-gps"></or-icon></a>
                         </div>
                     </div>
-                    <or-map id="vector" class="or-map" .controls="${controls}" type="VECTOR" style="height: 100%; width: 100%;">
+                    <or-map id="vector" class="or-map" .controls="${controls}" type="VECTOR" style="height: 100vh; width: 100vw">
                         ${this.mapItems.map((marker: any) => {
                         return html`
                             <or-map-marker ?active="${JSON.stringify(this.activeItem) === JSON.stringify(marker) }" icon="information" .marker="${marker}" lat="${marker.predicate.lat}" lng="${marker.predicate.lng}"></or-map-marker>
@@ -248,31 +264,29 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
                             </div>
                         </a>
                     ` : ``}
-            ` : ``}
-           
-           ${this.view === 'list' ? html`
-                <div class="header">
-                    <div class="d-flex right">
-                        <a class="d-flex button" @click="${() => history.back()}"><or-icon icon="close"></or-icon></a>
-                        <a class="d-flex button" @click="${() => this.view = "map"}"><or-icon icon="map"></or-icon></a>
+                </div>
+                <div ?active="${this.view === 'list'}" class="inner">
+                    <div class="header">
+                        <div class="d-flex right">
+                            <a class="d-flex button" @click="${() => history.back()}"><or-icon icon="close"></or-icon></a>
+                            <a class="d-flex button" @click="${() => this.view = "map"}"><or-icon icon="map"></or-icon></a>
+                        </div>
+                    </div>
+                    <div class="list-container">
+                        ${this.listItems.map((item: any) => {
+                            return html`
+                            <a class="list-item" href="${this.createUrl(item.notification.action)}">
+                                <div class="flex">
+                                    <h3>${item.notification.title}</h3>
+                                    <p>${item.notification.body}</p>
+                                </div>
+                                <div style="align-items: center; justify-content: center; display: flex;">
+                                    <or-icon style="margin-left: 20px;" icon="chevron-right"></or-icon>
+                                </div>
+                            </a>
+                        `})}
                     </div>
                 </div>
-                <div class="d-flex flex list-container">
-                    ${this.listItems.map((item: any) => {
-                        return html`
-                        <a class="list-item" href="${this.createUrl(item.notification.action)}">
-                            <div class="flex">
-                                <h3>${item.notification.title}</h3>
-                                <p>${item.notification.body}</p>
-                            </div>
-                            <div style="align-items: center; justify-content: center; display: flex;">
-                                <or-icon style="margin-left: 20px;" icon="chevron-right"></or-icon>
-                            </div>
-                        </a>
-                    `})}
-                </div>
-            ` : ``}
-
         `;
     }
 

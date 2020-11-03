@@ -10,7 +10,32 @@ import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 
 import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+const checkValidity = (form:HTMLElement | null, dialog:OrMwcDialog) => {
+    if(form) {
+        const inputs = form.querySelectorAll('or-input')
+        const elements = Array.prototype.slice.call(inputs);
 
+        const valid = elements.every((element) => {
+            if(element.shadowRoot) {
+                const input  = element.shadowRoot.querySelector('input, textarea, select') as any
+
+                if(input && input.checkValidity()) {
+                    return true
+                } else {
+                    element._mdcComponent.valid = false;
+                    element._mdcComponent.helperTextContent = 'required';
+
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        })
+        if(valid) {
+            dialog.close();
+        }
+    }
+}
 @customElement("or-rule-notification-modal")
 export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
 
@@ -55,6 +80,26 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
             this.renderDialogHTML(this.action);
         }
     }
+    
+    
+
+    checkForm() {
+        const dialog: OrMwcDialog = this.shadowRoot!.host as OrMwcDialog;
+
+        if (this.shadowRoot) {
+            const messageNotification = this.shadowRoot.querySelector('or-rule-form-message');
+            const pushNotification = this.shadowRoot.querySelector('or-rule-form-push-notification');
+
+            if(pushNotification && pushNotification.shadowRoot) {
+                const form = pushNotification.shadowRoot.querySelector('form')
+                return checkValidity(form, dialog)
+            }
+            else if(messageNotification && messageNotification.shadowRoot) {
+                const form = messageNotification.shadowRoot.querySelector('form')
+                return checkValidity(form, dialog)
+            }
+        }
+    }
 
     protected render() {
         if(!this.action) return html``;
@@ -68,42 +113,8 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
                 }
             },
             {
-                actionName: "none",
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("ok")}"></or-input>`,
-                action: (dialog) => {
-                    dialog.open()
-                    if (dialog.shadowRoot && dialog.shadowRoot.querySelector('or-rule-form-push-notification')) {
-                        const pushNotification = dialog.shadowRoot.querySelector('or-rule-form-push-notification');
-                        if(pushNotification && pushNotification.shadowRoot) {
-                            const form = pushNotification.shadowRoot.querySelector('form')
-                            if(form) {
-                                const inputs = form.querySelectorAll('or-input')
-                                const elements = Array.prototype.slice.call(inputs);
-
-                                const valid = elements.every((element) => {
-                                    if(element.shadowRoot) {
-                                        const input  = element.shadowRoot.querySelector('input, textarea, select') as any
-
-                                        if(input && input.checkValidity()) {
-                                            return true
-                                        } else {
-                                            element._mdcComponent.valid = false;
-                                            element._mdcComponent.helperTextContent = 'required';
-                                            return false;
-                                        }
-                                    } else {
-                                        return false;
-                                    }
-                                })
-                                if(valid) {
-                                    dialog.close()
-                                } else {
-                                }
-                            }
-
-                        }
-                    }
-                }
+                actionName: "",
+                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("ok")}" @click="${this.checkForm}"></or-input>`
             }
         ];
        

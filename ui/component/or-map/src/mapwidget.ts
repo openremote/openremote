@@ -98,6 +98,23 @@ export class MapWidget {
         return this;
     }
 
+    public resize(): this {
+
+        switch (this._type) {
+            case MapType.RASTER:
+                if (this._mapJs) {
+                }
+                break;
+            case MapType.VECTOR:
+                if (this._mapGl) {
+                    this._mapGl.resize()
+                }
+                break;
+        }
+
+        return this;
+    }
+
     public setZoom(zoom?: number): this {
 
         this._zoom = zoom;

@@ -11,7 +11,7 @@ export class OrTranslate extends translate(i18next)(LitElement) {
 
     public static styles = css`
         :host {
-            display: inline;
+            display: inline-block;
         }
         
         :host([hidden]) {

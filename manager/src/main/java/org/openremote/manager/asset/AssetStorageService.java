@@ -1836,7 +1836,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     .append(joinCounter)
                     .append(".VALUE #>> '{value,end}')::float / 1000) > ? OR jsonb_typeof(AX")
                     .append(joinCounter)
-                    .append(".VALUE #> '{value,recurrence}') = 'object'))");
+                    .append(".VALUE #> '{value,recurrence}') = 'string'))");
                 binders.add((st) -> st.setTimestamp(pos, when));
                 binders.add((st) -> st.setTimestamp(pos+1, when));
             } else {

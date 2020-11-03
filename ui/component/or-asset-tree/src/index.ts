@@ -1,21 +1,33 @@
-import {customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
-import {styleMap} from "lit-html/directives/style-map";
+import {customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
 import "@openremote/or-input";
 import "@openremote/or-icon";
-import {Asset, AssetQuery, AssetTreeNode, ClientRole, SharedEvent, AssetsEvent, AssetEvent, AssetEventCause, AssetDescriptor, AssetType} from "@openremote/model";
+import {
+    AgentDescriptor,
+    Asset,
+    AssetDescriptor,
+    AssetEvent,
+    AssetEventCause,
+    AssetQuery,
+    AssetsEvent,
+    AssetTreeNode,
+    ClientRole,
+    SharedEvent,
+    AssetType
+} from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
-import manager, {AssetModelUtil, Util, OREvent, EventCallback, subscribe} from "@openremote/core";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import manager, {AssetModelUtil, EventCallback, OREvent, subscribe, Util} from "@openremote/core";
+import {InputType, OrInput} from "@openremote/or-input";
 import Qs from "qs";
-import {getAssetDescriptorIconTemplate, OrIcon} from "@openremote/or-icon";
+import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/dist/or-mwc-menu";
 import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import "@openremote/or-mwc-components/dist/or-mwc-list";
-import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/dist/or-mwc-list";
-import {i18next, OrTranslate} from "@openremote/or-translate";
+import {i18next} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {showDialog, showErrorDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {OrMwcDialog, showDialog, showErrorDialog, showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
+import "./or-add-asset-dialog";
 
 export interface AssetTreeTypeConfig {
     include?: string[];
@@ -25,11 +37,10 @@ export interface AssetTreeTypeConfig {
 export interface AssetTreeConfig {
     select?: {
         multiSelect?: boolean;
-        interceptor?: (node: UiAssetTreeNode | null) => boolean;
         types?: string[];
     };
     add?: {
-        typesProvider?: (parent: UiAssetTreeNode | undefined) => AssetDescriptor[] | undefined;
+        typesProvider?: (parent: UiAssetTreeNode | undefined) => [AgentDescriptor[], AssetDescriptor[]] | undefined;
         typesParent?: {
             default?: AssetTreeTypeConfig;
             none?: AssetTreeTypeConfig;
@@ -46,7 +57,7 @@ export interface UiAssetTreeNode extends AssetTreeNode {
     children: UiAssetTreeNode[];
 }
 
-interface NodeSelectEventDetail {
+export interface NodeSelectEventDetail {
     oldNodes: UiAssetTreeNode[];
     newNodes: UiAssetTreeNode[];
 }
@@ -55,7 +66,7 @@ export {style};
 
 export class OrAssetTreeRequestSelectionEvent extends CustomEvent<Util.RequestEventDetail<NodeSelectEventDetail>> {
 
-    public static readonly NAME = "or-asset-tree-request-select";
+    public static readonly NAME = "or-asset-tree-request-selection";
 
     constructor(request: NodeSelectEventDetail) {
         super(OrAssetTreeRequestSelectionEvent.NAME, {
@@ -71,7 +82,7 @@ export class OrAssetTreeRequestSelectionEvent extends CustomEvent<Util.RequestEv
 
 export class OrAssetTreeSelectionEvent extends CustomEvent<NodeSelectEventDetail> {
 
-    public static readonly NAME = "or-asset-tree-selection-changed";
+    public static readonly NAME = "or-asset-tree-selection";
 
     constructor(detail: NodeSelectEventDetail) {
         super(OrAssetTreeSelectionEvent.NAME, {
@@ -83,24 +94,21 @@ export class OrAssetTreeSelectionEvent extends CustomEvent<NodeSelectEventDetail
 }
 
 export type AddEventDetail = {
+    sourceAsset?: Asset;
     asset: Asset;
-    isCopy: boolean;
 }
 
 export class OrAssetTreeRequestAddEvent extends CustomEvent<Util.RequestEventDetail<AddEventDetail>> {
 
     public static readonly NAME = "or-asset-tree-request-add";
 
-    constructor(asset: Asset, isCopy: boolean = false) {
+    constructor(detail: AddEventDetail) {
         super(OrAssetTreeRequestAddEvent.NAME, {
             bubbles: true,
             composed: true,
             detail: {
                 allow: true,
-                detail: {
-                    asset: asset,
-                    isCopy: isCopy
-                }
+                detail: detail
             }
         });
     }
@@ -110,14 +118,11 @@ export class OrAssetTreeAddEvent extends CustomEvent<AddEventDetail> {
 
     public static readonly NAME = "or-asset-tree-add";
 
-    constructor(asset: Asset, isCopy: boolean = false) {
-        super(OrAssetTreeRequestAddEvent.NAME, {
+    constructor(detail: AddEventDetail) {
+        super(OrAssetTreeAddEvent.NAME, {
             bubbles: true,
             composed: true,
-            detail: {
-                asset: asset,
-                isCopy: isCopy
-            }
+            detail: detail
         });
     }
 }
@@ -138,30 +143,28 @@ export class OrAssetTreeRequestDeleteEvent extends CustomEvent<Util.RequestEvent
     }
 }
 
-export class OrAssetTreeRequestCopyEvent extends CustomEvent<Util.RequestEventDetail<UiAssetTreeNode>> {
+export class OrAssetTreeAssetEvent extends CustomEvent<AssetEvent> {
 
-    public static readonly NAME = "or-asset-tree-request-copy";
+    public static readonly NAME = "or-asset-tree-asset-event";
 
-    constructor(request: UiAssetTreeNode) {
-        super(OrAssetTreeRequestCopyEvent.NAME, {
+    constructor(assetEvent: AssetEvent) {
+        super(OrAssetTreeAssetEvent.NAME, {
             bubbles: true,
             composed: true,
-            detail: {
-                allow: true,
-                detail: request
-            }
+            detail: assetEvent
         });
     }
 }
 
+
 declare global {
     export interface HTMLElementEventMap {
         [OrAssetTreeRequestSelectionEvent.NAME]: OrAssetTreeRequestSelectionEvent;
+        [OrAssetTreeSelectionEvent.NAME]: OrAssetTreeSelectionEvent;
         [OrAssetTreeRequestAddEvent.NAME]: OrAssetTreeRequestAddEvent;
         [OrAssetTreeAddEvent.NAME]: OrAssetTreeAddEvent;
         [OrAssetTreeRequestDeleteEvent.NAME]: OrAssetTreeRequestDeleteEvent;
-        [OrAssetTreeRequestCopyEvent.NAME]: OrAssetTreeRequestCopyEvent;
-        [OrAssetTreeSelectionEvent.NAME]: OrAssetTreeSelectionEvent;
+        [OrAssetTreeAssetEvent.NAME]: OrAssetTreeAssetEvent;
     }
 }
 
@@ -182,6 +185,10 @@ export const getAssetTypes = async () => {
     if(response && response.data) {
         return response.data.map(asset => asset.type!);
     }
+}
+
+export function getDefaultAllowedAddAssetTypes(): [AgentDescriptor[], AssetDescriptor[]] {
+    return [AssetModelUtil.getAgentDescriptors(), AssetModelUtil.getAssetDescriptors().filter((descriptor) => descriptor.type !== AssetType.AGENT.type)];
 }
 
 @customElement("or-asset-tree")
@@ -237,7 +244,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _connected: boolean = false;
     protected _selectedNodes: UiAssetTreeNode[] = [];
     protected _initCallback?: EventCallback;
-    protected _addedAssetId?: string;
 
     public get selectedNodes(): UiAssetTreeNode[] {
         return this._selectedNodes ? [...this._selectedNodes] : [];
@@ -265,12 +271,31 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         manager.removeListener(this.onManagerEvent);
     }
 
+    public refresh() {
+        // Clear nodes to re-fetch them
+        this._nodes = undefined;
+    }
+
     protected onManagerEvent = (event: OREvent) => {
         switch (event) {
             case OREvent.DISPLAY_REALM_CHANGED:
                 this._nodes = undefined;
                 break;
         }
+    }
+
+    public isAncestorSelected(node: UiAssetTreeNode) {
+        if (!this.selectedIds || !node.parent) {
+            return false;
+        }
+
+        while (node.parent) {
+            node = node.parent;
+            if (this.selectedIds.includes(node.asset!.id!)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     protected render() {
@@ -284,7 +309,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 <div id="header-btns">                
                     <or-input ?hidden="${!this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}"></or-input>
                     <or-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-input>
-                    <or-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-input>
+                    <or-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0 || this.selectedNodes.some((node) => this.isAncestorSelected(node))}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-input>
                     <or-input ?hidden="${this._isReadonly() || !this._canAdd()}" type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked()}"></or-input>
                     <or-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-input>
                     
@@ -408,9 +433,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         } else {
             let canSelect = true;
 
-            if (this.config && this.config.select && this.config.select.interceptor) {
-                canSelect = this.config.select.interceptor(node);
-            } else if (node && this.config && this.config.select?.types) {
+            if (node && this.config && this.config.select?.types) {
                 canSelect = this.config.select.types.indexOf(node.asset!.type!) >= 0;
             }
 
@@ -421,10 +444,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             let selectedNodes: UiAssetTreeNode[] = [];
 
             if (node) {
-                const index = this.selectedIds ? this.selectedIds.indexOf(node.asset!.id!) : -1;
+                const index = this.selectedNodes.indexOf(node);
                 let select = true;
                 let deselectOthers = true;
-
                 const multiSelect = !this._isReadonly() && (!this.config || !this.config.select || !this.config.select.multiSelect);
 
                 if (multiSelect && evt && (evt.ctrlKey || evt.metaKey)) {
@@ -450,7 +472,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             Util.dispatchCancellableEvent(this, new OrAssetTreeRequestSelectionEvent({
                 oldNodes: this.selectedNodes,
                 newNodes: selectedNodes
-            }), (detail) => this.selectedNodes = detail.newNodes);
+            })).then((detail) => {
+                if (detail.allow) {
+                    this.selectedNodes = detail.detail.newNodes
+                }
+            });
         }
     }
 
@@ -458,107 +484,116 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._onNodeClicked(null, null);
     }
 
-    protected _onCopyClicked() {
-        if (this._selectedNodes.length > 0) {
-            Util.dispatchCancellableEvent(this, new OrAssetTreeRequestCopyEvent(this._selectedNodes[0]), () => this._doCopy());
+    protected async _onCopyClicked() {
+        if (this._selectedNodes.length !== 1) {
+            return;
         }
-    }
 
-    protected _onDeleteClicked() {
-        Util.dispatchCancellableEvent(this, new OrAssetTreeRequestDeleteEvent(this._selectedNodes), () => this._doDelete());
+        try {
+            // Need to fully load the source asset
+            const response = await manager.rest.api.AssetResource.get(this._selectedNodes[0].asset!.id!);
+            if (!response.data) {
+                throw new Error("API returned an invalid response when retrieving the source asset");
+            }
+            const asset = JSON.parse(JSON.stringify(response.data)) as Asset;
+            asset.name += " copy";
+            delete asset.id;
+            delete asset.path;
+            delete asset.createdOn;
+            delete asset.version;
+
+            Util.dispatchCancellableEvent(this, new OrAssetTreeRequestAddEvent(
+                {
+                    sourceAsset: this._selectedNodes[0].asset!,
+                    asset: asset
+                })).then((detail) => {
+                    if (detail.allow) {
+                        this.dispatchEvent(new OrAssetTreeAddEvent(detail.detail));
+                    }
+            });
+        } catch (e) {
+            console.error("Failed to copy asset", e);
+            showErrorDialog("Failed to copy asset");
+        }
     }
 
     protected _onAddClicked() {
 
-        const listItems: ListItem[] = this._getAllowedChildTypes(this._selectedNodes[0])
-            .sort(Util.sortByString((descriptor) => descriptor.name!))
-            .map((descriptor) => {
-                return {
-                    styleMap: {
-                        "--or-icon-fill": descriptor.color ? "#" + descriptor.color : "unset"
-                    },
-                    icon: descriptor.icon,
-                    text: i18next.t(descriptor.name!, {defaultValue: descriptor.name!.replace(/_/g, " ").toLowerCase()}),
-                    value: descriptor.type!,
-                    data: descriptor
-                }
-            });
+        const types = this._getAllowedChildTypes(this._selectedNodes[0]);
+        let dialog: OrMwcDialog;
+        const parent = this._selectedNodes && this._selectedNodes.length === 1 ? this._selectedNodes[0].asset : undefined;
 
-        let descriptor: AssetDescriptor;
-
-        const onAssetTypeChanged = (listItem: ListItem) => {
-            descriptor = listItem.data as AssetDescriptor;
-            const icon = dialog.shadowRoot!.getElementById("type-icon") as OrIcon;
-            const description = dialog.shadowRoot!.getElementById("type-description") as OrTranslate;
-            icon.icon = descriptor.icon;
-            description.value = listItem.text;
+        const onAddChanged = (ev: OrAddChangedEvent) => {
+            const nameValid = !!ev.detail.name && ev.detail.name.trim().length > 0 && ev.detail.name.trim().length < 1024;
+            const addBtn = dialog.shadowRoot!.getElementById("add-btn") as OrInput;
+            addBtn.disabled = !ev.detail.descriptor || !nameValid;
         };
 
-        const dialog = showDialog(
+        dialog = showDialog(
             {
                 title: i18next.t("addAsset"),
                 content: html`
-                    <form id="mdc-dialog-form-add">
-                        <div id="type-list">
-                            <or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => onAssetTypeChanged(evt.detail[0] as ListItem)}" .listItems="${listItems}" id="menu"></or-mwc-list>
-                        </div>
-                        <div id="asset-type-option-container">
-                            <or-icon id="type-icon" class="hidden"></or-icon>
-                            <or-translate id="type-description" class="hidden"></or-translate>
-                        </div>
-                    </form>`,
+                    <or-add-asset-dialog id="add-panel" .config="${this.config}" .agentTypes="${types[0]}" .assetTypes="${types[1]}" .parent="${parent}" @or-add-asset-changed="${onAddChanged}"></or-add-asset-dialog>
+                `,
                 actions: [
                     {
                         actionName: "cancel",
-                        content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`
+                        content: i18next.t("cancel")
                     },
                     {
-                        actionName: "yes",
-                        default: true,
-                        content: html`<or-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" data-mdc-dialog-action="yes"></or-input>`,
+                        actionName: "add",
+                        content: html`<or-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" disabled></or-input>`,
                         action: () => {
-                            // TODO change this to open edit page
+
+                            const addAssetDialog = dialog.shadowRoot!.getElementById("add-panel") as OrAddAssetDialog;
+                            const descriptor = addAssetDialog.selectedType;
+                            const name = addAssetDialog.name.trim();
+
                             if (!descriptor) {
                                 return;
                             }
 
                             const asset: Asset = {
-                                name: "New Asset",
+                                name: name,
                                 type: descriptor.type,
                                 realm: manager.getRealm()
                             };
-                            if(this.selectedIds) {
-                                asset['parentId'] = this.selectedIds[0];
+
+                            if (this.selectedIds) {
+                                asset.parentId = parent ? parent.id : undefined;
                             }
-                            Util.dispatchCancellableEvent(this, new OrAssetTreeRequestAddEvent(asset), () => this._doAdd(asset));
+                            const detail: AddEventDetail = {
+                                asset: asset
+                            };
+                            Util.dispatchCancellableEvent(this, new OrAssetTreeRequestAddEvent(detail))
+                                .then((detail) => {
+                                    if (detail.allow) {
+                                        this.dispatchEvent(new OrAssetTreeAddEvent(detail.detail));
+                                    }
+                                });
                         }
                     }
                 ],
                 styles: html`
                     <style>
-                        #mdc-dialog-form-add {
-                            display: flex;
-                            height:400px;
-                            border-top: 1px solid var(--or-app-color2);
-                        }
-                        #asset-type-option-container {
-                            background-color: var(--or-app-color2);
-                            padding: 15px;
-                            width: 260px;
-                            max-width: 100%;
-                            font-size: 16px;
-                        }
-                        #type-list {
-                            overflow-y: scroll;
-                            text-transform: capitalize;
-                        }
-                        .hidden {
-                            visibility: hidden;
+                        .mdc-dialog__content {
+                            padding: 0 !important;
                         }
                     </style>
                 `
             }
         )
+    }
+
+    protected _onDeleteClicked() {
+        if (this._selectedNodes.length > 0) {
+            Util.dispatchCancellableEvent(this, new OrAssetTreeRequestDeleteEvent(this._selectedNodes))
+                .then((detail) => {
+                    if (detail.allow) {
+                        this._doDelete();
+                    }
+                });
+        }
     }
 
     protected _onSearchClicked() {
@@ -590,35 +625,26 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 paramsSerializer: params => Qs.stringify(params, {arrayFormat: 'repeat'})
             }).then((response) => {
                 // Clear nodes to re-fetch them
-                this._nodes = undefined;
+                this.refresh();
                 this.disabled = false;
 
                 if (response.status !== 204) {
-                    showErrorDialog(i18next.t("deleteFailed"));
+                    showErrorDialog(i18next.t("deleteAssetsFailed"));
                 }
             }).catch((reason) => {
-                // Clear nodes to re-fetch them
-                this._nodes = undefined;
+                this.refresh();
                 this.disabled = false;
-                showErrorDialog(i18next.t("deleteFailed"));
+                showErrorDialog(i18next.t("deleteAssetsFailed"));
             });
         };
 
         // Confirm deletion request
-        showDialog({
-            content: html`<or-translate value="deleteAssetsConfirm"></or-translate>`,
-            actions: [
-                {
-                    content: i18next.t("ok"),
-                    actionName: "ok",
-                    action: () => doDelete()
-                },
-                {
-                    content: i18next.t("cancel"),
-                    actionName: "cancel"
+        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteAssetsConfirm"))
+            .then((ok) => {
+                if (ok) {
+                    doDelete();
                 }
-            ]
-        });
+            });
     }
 
     protected _canAdd(): boolean {
@@ -629,7 +655,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         return this._getAllowedChildTypes(selectedNode).length > 0;
     }
 
-    protected _getAllowedChildTypes(selectedNode: UiAssetTreeNode | undefined): AssetDescriptor[] {
+    protected _getAllowedChildTypes(selectedNode: UiAssetTreeNode | undefined): [AgentDescriptor[], AssetDescriptor[]] {
         let includedAssetTypes: string[] | undefined;
         let excludedAssetTypes: string[];
 
@@ -661,27 +687,19 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }
         }
 
-        return AssetModelUtil.getAssetDescriptors()
+        const descriptors = getDefaultAllowedAddAssetTypes();
+        descriptors[0] = descriptors[0]
             .filter((descriptor) => (!includedAssetTypes || includedAssetTypes.some((inc) => Util.stringMatch(inc, descriptor.type!)))
                 && (!excludedAssetTypes || !excludedAssetTypes.some((exc) => Util.stringMatch(exc, descriptor.type!))));
-    }
+        descriptors[1] = descriptors[1]
+            .filter((descriptor) => (!includedAssetTypes || includedAssetTypes.some((inc) => Util.stringMatch(inc, descriptor.type!)))
+                && (!excludedAssetTypes || !excludedAssetTypes.some((exc) => Util.stringMatch(exc, descriptor.type!))));
 
-    protected async _doAdd(asset: Asset) {
-        const response = await manager.rest.api.AssetResource.create(asset);
-        this._addedAssetId = response.data.id!;
-        this.dispatchEvent(new OrAssetTreeAddEvent(response.data));
-    }
-
-    protected _doCopy() {
-        const node = this.selectedNodes[0];
-        const newAsset = {...node.asset} as Asset;
-        newAsset.name += " copy";
-        delete newAsset.id;
-        Util.dispatchCancellableEvent(this, new OrAssetTreeRequestAddEvent(newAsset), () => this._doAdd(newAsset));
+        return descriptors;
     }
 
     protected _getSortFunction(): (a: UiAssetTreeNode, b: UiAssetTreeNode) => number {
-        return (a, b) => (a.asset as any)![this.sortBy!] < (b.asset as any)![this.sortBy!] ? -1 : (a.asset as any)![this.sortBy!] > (b.asset as any)![this.sortBy!] ? 1 : 0;
+        return Util.sortByString((node: UiAssetTreeNode) => (node.asset as any)![this.sortBy!]);
     }
 
     protected _loadAssets() {
@@ -747,6 +765,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._nodes = undefined;
     }
 
+    public getNodes(): UiAssetTreeNode[] {
+        return this._nodes || [];
+    }
+
     public _onEvent(event: SharedEvent) {
 
         if (event.eventType === "assets") {
@@ -778,10 +800,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 }
             });
             this._buildTreeNodes(assets, this._getSortFunction());
-            if (this._addedAssetId) {
-                this.selectedIds = [this._addedAssetId];
-                this._addedAssetId = undefined;
-            }
+            this.dispatchEvent(new OrAssetTreeAssetEvent(assetEvent));
         }
     }
 

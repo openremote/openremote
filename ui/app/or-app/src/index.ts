@@ -292,7 +292,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                         this._store.dispatch(updatePage("default"));
                     })
                 }
-
+               
                 router.resolve();
             } else {
                 showErrorDialog(manager.isError ? "managerError." + manager.error : "");
@@ -336,14 +336,13 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                         deferred.resolve({
                             cancel: false,
                             username: u,
-                            password: p,
-                            closeCallback: () => { dialog.close(); }
+                            password: p
                         });
                     },
                     content: html`<or-input .type=${InputType.BUTTON} .label="${i18next.t("submit")}" raised></or-input>`
                 }
             ]
-        });
+        }, document.body); // Attach to document as or-app isn't visible until initialised
 
         return deferred.promise;
     }
@@ -382,8 +381,16 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         if (!this._initialised) {
             return html`<or-mwc-dialog id="app-modal"></or-mwc-dialog>`;
         }
+        let consoleStyles;
+        if(manager.consoleAppConfig) {
+            const consoleAppConfig = manager.consoleAppConfig;
+            const primary = consoleAppConfig.primaryColor;
+            const secondary = consoleAppConfig.secondaryColor;
+            consoleStyles = html`<style>:host {--or-console-primary-color:${primary};--or-console-secondary-color:${secondary};}</style>`;
+        }
         return html`
             ${unsafeHTML(this._config.styles ? this._config.styles.strings : ``)}
+            ${consoleStyles}
             ${this._config.header ? html`
                 <or-header logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
             ` : ``}

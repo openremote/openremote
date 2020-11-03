@@ -12,7 +12,7 @@ import {
 import {styleMap} from "lit-html/directives/style-map";
 import {ifDefined} from "lit-html/directives/if-defined";
 import {MDCList, MDCListActionEvent} from "@material/list";
-import { DefaultColor8, DefaultColor4 } from "@openremote/core";
+import { DefaultColor8, DefaultColor4, Util } from "@openremote/core";
 import i18next from "i18next";
 const listStyle = require("!!raw-loader!@material/list/dist/mdc.list.css");
 const checkboxStyle = require("!!raw-loader!@material/checkbox/dist/mdc.checkbox.css");
@@ -75,6 +75,24 @@ export enum ListType {
     CHECKBOX = "CHECKBOX"
 }
 
+export type ListGroupItem = {
+    heading: string;
+    list: TemplateResult;
+};
+
+export function createListGroup(lists: ListGroupItem[]) {
+    return html`
+        <div class="mdc-list-group">
+            ${lists.map((list) => {
+                return html`
+                    <h3 class="mdc-list-group__subheader">${list.heading}</h3>
+                    ${list.list}
+                `                            
+            })}
+        </div>    
+    `;
+}
+
 @customElement("or-mwc-list")
 export class OrMwcList extends LitElement {
 
@@ -114,6 +132,18 @@ export class OrMwcList extends LitElement {
             this._mdcComponent.destroy();
             this._mdcComponent = undefined;
         }
+    }
+
+    protected shouldUpdate(_changedProperties: PropertyValues): boolean {
+
+        if (this._mdcComponent && _changedProperties.has("values")) {
+            if (!Util.objectsEqual(this.values, _changedProperties.get("values"))) {
+                const vals = this.values ? Array.isArray(this.values) ? this.values : [this.values] : [];
+                this.setSelectedItems(this.values && this.listItems ? this.listItems.filter((li) => li && vals?.includes(li.value)) as ListItem[] : undefined);
+            }
+        }
+
+        return true;
     }
 
     protected render() {
@@ -249,13 +279,13 @@ export class OrMwcList extends LitElement {
         }
 
         return html`
-            <li style="${listItem.styleMap ? styleMap(listItem.styleMap) : ""}" class="mdc-list-item${isSelected ? " mdc-menu-item--selected" : ""}" role="${ifDefined(role)}" tabindex="${ifDefined(tabIndex)}" aria-checked="${ifDefined(ariaChecked)}" aria-selected="${ifDefined(ariaSelected)}">
-                        <span class="mdc-list-item__ripple"></span>
-                        ${leftTemplate}
-                        ${textTemplate}
-                        ${rightTemplate}
-                    </li>
-                `;
+            <li style="${listItem.styleMap ? styleMap(listItem.styleMap) : ""}" class="mdc-list-item${isSelected ? " mdc-list-item--selected" : ""}" role="${ifDefined(role)}" tabindex="${ifDefined(tabIndex)}" aria-checked="${ifDefined(ariaChecked)}" aria-selected="${ifDefined(ariaSelected)}">
+                <span class="mdc-list-item__ripple"></span>
+                ${leftTemplate}
+                ${textTemplate}
+                ${rightTemplate}
+            </li>
+        `;
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
@@ -274,11 +304,34 @@ export class OrMwcList extends LitElement {
         }
 
         const selectedIndexes = Array.isArray(this._mdcComponent.selectedIndex) ? this._mdcComponent.selectedIndex : [this._mdcComponent.selectedIndex];
-        const items = this.listItems?.filter((item) => item !== null) as ListItem[];
+        const items = this.listItems ? this.listItems.filter((item) => item !== null) as ListItem[] : [];
         return selectedIndexes.map((index) => items![index]);
     }
 
+    public setSelectedItems(items: ListItem | ListItem[] | string | string[] | undefined) {
+        if (!this._mdcComponent || !this.listItems) {
+            return;
+        }
+        if (!items) {
+            this._mdcComponent.selectedIndex = -1;
+            return;
+        }
+
+        const itemArr = (!Array.isArray(items) ? [items] : items).map((item) => typeof(item) === "string" ? item : item.value);
+        const listItems = this.listItems.filter((item) => item !== null) as ListItem[];
+
+        const indexes = listItems.reduce((indexes, listItem, index) => {
+            if (listItem && itemArr.includes(listItem.value)) {
+                indexes.push(index);
+            }
+            return indexes;
+        }, [] as number[]);
+
+        this._mdcComponent.selectedIndex = indexes.length === 1 ? indexes[0] : indexes.length > 1 ? indexes : -1;
+    }
+
     protected _onSelected(ev: MDCListActionEvent) {
+        this.values = this.selectedItems.map((item) => item.value!);
         ev.stopPropagation();
         this.dispatchEvent(new OrMwcListChangedEvent(this.selectedItems));
     }
