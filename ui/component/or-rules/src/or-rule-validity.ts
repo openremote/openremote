@@ -229,9 +229,9 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                     </div>
 
                     ${(validityType  === "validityPeriod" || validityType  === "validityRecurrence") ? html`
-                        <label style="display:block; margin-top: 20px;">Period</label>
+                        <label style="display:block; margin-top: 20px;"><or-translate value="period"></or-translate></label>
                         <div style="display: flex; justify-content: space-between;" class="layout horizontal">
-                            <div>  
+                            <div> 
                                 <or-input value="${moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-input>
                                 <or-input .disabled=${this.isAllDay()} .value="${moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format("HH:mm")}" .type="${InputType.TIME}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "dtstart-time")}" .label="${i18next.t("from")}"></or-input>
                             </div>
@@ -242,17 +242,17 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                         </div>  
                         
                         <div class="layout horizontal">
-                            <or-input .value=${this.isAllDay()} @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "all-day")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("all day")}"></or-input>
+                            <or-input .value=${this.isAllDay()} @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "all-day")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("allDay")}"></or-input>
                         </div>
                     ` : ``}
                  
                     ${validityType  === "validityRecurrence" ? html`
-                        <label style="display:block; margin-top: 20px;">Repeat occurence every</label>
+                        <label style="display:block; margin-top: 20px;"><or-translate value="repeatOccurenceEvery"></or-translate></label>
                         <div class="layout horizontal">
-                            <or-input .value="${selectedOptions}" .type="${InputType.CHECKBOX_LIST}" .options="${options}" .label="${i18next.t("days of the week")}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "byweekday")}" ></or-input>
+                            <or-input .value="${selectedOptions}" .type="${InputType.CHECKBOX_LIST}" .options="${options}" .label="${i18next.t("daysOfTheWeek")}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "byweekday")}" ></or-input>
                         </div>
                         
-                        <label style="display:block; margin-top: 20px;">Repetition ends</label>
+                        <label style="display:block; margin-top: 20px;"><or-translate value="repetitionEnds"></or-translate></label>
                         <div class="layout horizontal">                        
                             <or-input .value="${!this.rrule.options.until}"  @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "never-ends")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("never")}"></or-input>
                         </div>
@@ -314,7 +314,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
         
         return html`
             <or-input .type="${InputType.BUTTON}" .label="${this.timeLabel()}" @click="${validityModalOpen}"></or-input>
-            <or-mwc-dialog id="radial-modal" dialogTitle="Schedule rule activity" .dialogActions="${validityModalActions}"></or-mwc-dialog>
+            <or-mwc-dialog id="radial-modal" dialogTitle="${i18next.t("scheduleRuleActivity")}" .dialogActions="${validityModalActions}"></or-mwc-dialog>
         `
     }
 }

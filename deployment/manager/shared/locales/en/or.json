@@ -340,5 +340,13 @@
   "activeFromTo": "Active from {{start}} to {{end}}",
   "fromTo":"From {{start}} to {{end}}",
   "fromToDays":"from {{start}} to {{days}} days later {{end}}",
-  "forDays":"for {{days}} days"
+  "forDays":"for {{days}} days",
+  "scheduleRuleActivity": "Schedule Rule Activity",
+  "apply": "apply",
+  "to": "to",
+  "from": "from", 
+  "never": "never", 
+  "repetitionEnds": "repetition ends",
+  "repeatOccurenceEvery": "repeat occurence every",
+  "daysOfTheWeek": "days of the week"
 }
