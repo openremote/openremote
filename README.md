@@ -5,9 +5,7 @@
 
 [Source](https://github.com/openremote/openremote) **·** [Documentation](https://github.com/openremote/openremote/wiki) **·** [Community](https://forum.openremote.io) **·** [Issues](https://github.com/openremote/openremote/issues) **·** [Docker Images](https://hub.docker.com/u/openremote/) **·** [OpenRemote Inc.](https://openremote.io)
 
-We are currently working on v3 of the OpenRemote platform. This is **beta** software that should be used only for development.
-
-If you are using OpenRemote v2, [read the OpenRemote v2 documentation](https://github.com/openremote/Documentation/wiki).
+We are currently working on OpenRemote Manager v3, a concise 100% open source IoT platform. This is **beta** software.
 
 ## Quickstart
 
