@@ -1,0 +1,3 @@
+allprojects {
+    apply from: "${findProject(":openremote") != null ? project(":openremote").projectDir : rootDir}/project.gradle"
+}
