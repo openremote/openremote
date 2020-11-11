@@ -55,7 +55,7 @@ export const style = css`
         box-sizing: border-box;
         min-height: var(--internal-or-rules-header-height);
         height: var(--internal-or-rules-header-height);
-        z-index: 9;
+        z-index: 7;
         padding: 15px 20px;
         --or-icon-fill: var(--internal-or-rules-panel-color);
     }

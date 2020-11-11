@@ -569,7 +569,12 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     }
 
     protected _getSortFunction(): (a: RulesetNode, b: RulesetNode) => number {
-        return Util.sortByString((node: RulesetNode) => (node.ruleset as any)![this.sortBy!]);
+        switch (this.sortBy) {
+            case "createdOn":
+                return Util.sortByNumber((node: RulesetNode) => (node.ruleset as any)![this.sortBy!]);
+            default:
+                return Util.sortByString((node: RulesetNode) => (node.ruleset as any)![this.sortBy!]);
+        }
     }
 
     protected _getRealm(): string | undefined {

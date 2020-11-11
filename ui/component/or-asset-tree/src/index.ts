@@ -699,7 +699,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected _getSortFunction(): (a: UiAssetTreeNode, b: UiAssetTreeNode) => number {
-        return Util.sortByString((node: UiAssetTreeNode) => (node.asset as any)![this.sortBy!]);
+        switch (this.sortBy) {
+            case "createdOn":
+                return Util.sortByNumber((node: UiAssetTreeNode) => (node.asset as any)![this.sortBy!]);
+            default:
+                return Util.sortByString((node: UiAssetTreeNode) => (node.asset as any)![this.sortBy!]);
+        }
     }
 
     protected _loadAssets() {
