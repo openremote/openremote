@@ -1,6 +1,5 @@
 package io.openremote.app.service
 
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -12,13 +11,12 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.firebase.messaging.RemoteMessage
-import io.openremote.app.BuildConfig.APPLICATION_ID
-import io.openremote.app.ui.MainActivity
 import io.openremote.app.R
 import io.openremote.app.models.ORAlertAction
 import io.openremote.app.models.ORAlertButton
-import java.util.*
+import io.openremote.app.ui.MainActivity
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -60,11 +58,11 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
 
         // TODO(developer): Handle FCM messages here.
         // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
-        LOG.fine("Received message from: " + remoteMessage.from)
+        LOG.info("Received message from: " + remoteMessage.from)
 
         // If the message contains a notification then we assume it has been shown to the user
         if (remoteMessage.notification != null) {
-            LOG.fine(
+            LOG.info(
                 "Message contains notification body: " + remoteMessage.notification!!.getBody()
             )
         } else if (remoteMessage.data.isNotEmpty()) {
@@ -105,9 +103,9 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
                 // Check for action (to be executed when notification is clicked)
                 if (messageData.containsKey("action")) {
                     val actionJson = messageData["action"]
-                    if (actionJson != null && !actionJson.isEmpty()) {
+                    if (actionJson != null && actionJson.isNotEmpty()) {
                         try {
-                            actionOR = ObjectMapper().readValue(
+                            actionOR = jacksonObjectMapper().readValue(
                                 actionJson,
                                 ORAlertAction::class.java
                             )
@@ -122,7 +120,7 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
                     val buttonsJson = messageData["buttons"]
                     if (buttonsJson != null && buttonsJson.isNotEmpty()) {
                         try {
-                            buttonORS = ObjectMapper().readValue(
+                            buttonORS = jacksonObjectMapper().readValue(
                                 buttonsJson,
                                 Array<ORAlertButton>::class.java
                             )
@@ -147,7 +145,11 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
             getString(R.string.NOTIFICATION_CHANNEL_ID),
             channelName, NotificationManager.IMPORTANCE_HIGH
         )
+        val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         channel.setShowBadge(false)
+        channel.setSound(defaultSoundUri, null)
+        channel.enableVibration(true)
+        channel.vibrationPattern = longArrayOf(100, 200, 300, 400, 500, 400, 300, 200, 400)
         val service = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         service.createNotificationChannel(channel)
     }
@@ -159,17 +161,15 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
         actionOR: ORAlertAction?,
         buttonORS: Array<ORAlertButton>?
     ) {
-        val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        val notificationBuilder = NotificationCompat.Builder(this, getString(R.string.NOTIFICATION_CHANNEL_ID))
+
+        val notificationBuilder = NotificationCompat.Builder(
+            this,
+            getString(R.string.NOTIFICATION_CHANNEL_ID)
+        )
             .setContentTitle(title)
-            .setWhen(Date().time)
-            .setShowWhen(true)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setContentText(body)
             .setSmallIcon(R.drawable.notification_icon)
-            .setWhen(0)
-            .setPriority(Notification.PRIORITY_MAX)
-            .setSound(defaultSoundUri)
             .setDeleteIntent(createActionIntent(notificationId, "\"CLOSED\"", null))
         if (actionOR != null) {
             notificationBuilder.setContentIntent(createActionIntent(notificationId, null, actionOR))
@@ -189,7 +189,7 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
                 )
             }
         }
-        LOG.fine(
+        LOG.info(
             "Showing notification id=$notificationId, title=$title, body=$body, action=$actionOR, buttons=" + (buttonORS?.size
                 ?: 0)
         )
@@ -210,8 +210,8 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
         if (ORAlertAction?.url != null && ORAlertAction.url.isNotEmpty()) {
             actionIntent.putExtra("appUrl", ORAlertAction.url)
             actionIntent.putExtra("httpMethod", ORAlertAction.httpMethod)
-            actionIntent.putExtra("silent", ORAlertAction.isSilent)
-            actionIntent.putExtra("openInBrowser", ORAlertAction.isOpenInBrowser)
+            actionIntent.putExtra("silent", ORAlertAction.silent)
+            actionIntent.putExtra("openInBrowser", ORAlertAction.openInBrowser)
             actionIntent.putExtra("data", ObjectMapper().writeValueAsString(ORAlertAction.data))
         }
         return PendingIntent.getService(this, 0, actionIntent, PendingIntent.FLAG_ONE_SHOT)

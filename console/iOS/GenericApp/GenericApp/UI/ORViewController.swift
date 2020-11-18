@@ -54,7 +54,7 @@ class ORViewcontroller : UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         if let applicationConfig = appConfig {
-            myWebView?.load(URLRequest(url: URL(string: applicationConfig.initialUrl.stringByURLEncoding()!)!))
+            loadURL(url: URL(string: applicationConfig.initialUrl.stringByURLEncoding()!)!)
         }
     }
 
@@ -119,6 +119,11 @@ class ORViewcontroller : UIViewController {
             menuButton?.setImage(#imageLiteral(resourceName: "ic_menu"), for: .normal)
             menuButton?.setImage(#imageLiteral(resourceName: "ic_menu"), for: .selected)
             menuButton?.setImage(#imageLiteral(resourceName: "ic_menu"), for: .highlighted)
+            menuButton?.isHidden = true
+
+            if let secondColor = appConfig?.secondaryColor {
+                menuButton?.tintColor = UIColor(hexaRGB: secondColor)
+            }
 
             view.addSubview(menuButton!)
             view.bringSubviewToFront(menuButton!)
@@ -386,6 +391,12 @@ extension ORViewcontroller: WKNavigationDelegate {
                     decisionHandler(.cancel)
                 }
             } else {
+                if let config = appConfig, let button = menuButton {
+                    if config.url.stringByURLEncoding() == navigationAction.request.url?.absoluteString {
+                        button.isHidden = false
+                    }
+                }
+
                 decisionHandler(.allow)
             }
         }

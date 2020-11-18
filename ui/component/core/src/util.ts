@@ -461,7 +461,23 @@ export function loadJs(url: string) {
             document.body.appendChild(script);
         });
 };
+export function sortByNumber<T>(valueExtractor: (item: T) => number): (a: T, b: T) => number {
+    return (a,b) => {
+        const v1 = valueExtractor(a);
+        const v2 = valueExtractor(b);
 
+        if (!v1 && !v2) {
+            return 0;
+        }
+        if (v1 && !v2) {
+            return 1;
+        }
+        if (!v1 && v2) {
+            return -1;
+        }
+        return v1 - v2;
+    };
+}
 export function sortByString<T>(valueExtractor: (item: T) => string): (a: T, b: T) => number {
     return (a,b) => {
         const v1 = valueExtractor(a);

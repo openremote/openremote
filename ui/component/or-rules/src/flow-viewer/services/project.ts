@@ -81,7 +81,7 @@ export class Project extends EventEmitter {
         collection.nodes!.forEach((node) => {
             this.addNode(node);
         });
-        await this.workspace.updateComplete;
+        if(this.workspace) await this.workspace.updateComplete;
         collection.connections!.forEach((conn) => {
             this.createConnection(conn.from!, conn.to!);
         });

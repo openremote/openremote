@@ -135,7 +135,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         if let action = userInfo[DefaultsKey.actionKey] as? String {
             if action == Actions.geofenceRefresh {
-                if let controllerGeofenceProvider = (self.window?.rootViewController as! ORViewcontroller).geofenceProvider {
+                if let controllerGeofenceProvider = (self.window?.topController as? ORViewcontroller)?.geofenceProvider {
+
                     controllerGeofenceProvider.refreshGeofences()
                 } else if let delegateGeofenceProvider = geofenceProvider {
                     delegateGeofenceProvider.refreshGeofences()
@@ -146,7 +147,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
             } else if action == Actions.store {
                 if let data = userInfo[DefaultsKey.dataKey] as? [String: String] {
                     if let key = data["key"] {
-                        if let storageProvider = (self.window?.rootViewController as! ORViewcontroller).storageProvider {
+                        if let storageProvider = (self.window?.topController as? ORViewcontroller)?.storageProvider {
+                            storageProvider.store(key: key, data: data["value"])
+                        } else {
+                            let storageProvider = StorageProvider()
                             storageProvider.store(key: key, data: data["value"])
                         }
                     }
@@ -260,7 +264,7 @@ extension AppDelegate : UNUserNotificationCenterDelegate {
                         UIApplication.shared.open(url)
                     } else {
                         NSLog("%@", " in app: \(url)")
-                        (self.window?.rootViewController as! ORViewcontroller).loadURL(url:url)
+                        (self.window?.topController as? ORViewcontroller)?.loadURL(url:url)
                     }
                 }
             }
@@ -307,7 +311,7 @@ extension AppDelegate : UNUserNotificationCenterDelegate {
                                             UIApplication.shared.open(url)
                                         } else {
                                             NSLog("%@", " in app: \(url)")
-                                            (self.window?.rootViewController as! ORViewcontroller).loadURL(url:url)
+                                            (self.window?.topController as? ORViewcontroller)?.loadURL(url:url)
                                         }
                                     }
                                 }
