@@ -137,11 +137,11 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
 
                     if (downsample) {
                         // TODO: Change this to use something like this max min decimation algorithm https://knowledge.ni.com/KnowledgeArticleDetails?id=kA00Z0000019YLKSA2&l=en-GB)
-                        query.append("select TS as X, coalesce(AVG_VALUE, null) as Y " +
+                        query.append("select PERIOD.TS as X, coalesce(AVG_VALUE, null) as Y " +
                             " from ( " +
                             "       select date_trunc(?, GS)::timestamp TS " +
                             "       from generate_series(to_timestamp(?), to_timestamp(?), ?) GS " +
-                            "       ) TS " +
+                            "       ) PERIOD " +
                             "  left join ( " +
                             "       select " +
                             "           date_trunc(?, TIMESTAMP)::timestamp as TS, ");
@@ -160,8 +160,8 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
                             "           and " +
                             "           ENTITY_ID = ? and ATTRIBUTE_NAME = ? " +
                             "         group by TS " +
-                            "  ) DP using (TS) " +
-                            " order by TS asc "
+                            "  ) DP on DP.TS >= PERIOD.TS and DP.TS < PERIOD.TS + ? " +
+                            " order by PERIOD.TS asc "
                         );
 
                     } else {
@@ -190,6 +190,7 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
                             st.setLong(7, toTimestampSeconds);
                             st.setString(8, attributeRef.getEntityId());
                             st.setString(9, attributeRef.getAttributeName());
+                            st.setObject(10, new PGInterval(interval));
                         } else {
                             st.setLong(1, fromTimestampSeconds);
                             st.setLong(2, toTimestampSeconds);
