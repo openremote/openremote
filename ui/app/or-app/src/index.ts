@@ -108,7 +108,6 @@ export function headerItemLogs<S extends AppStateKeyed, A extends AnyAction>(orA
         hideMobile: true
     };
 }
-
 export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "account",
@@ -120,7 +119,14 @@ export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(
         }
     };
 }
-
+export function headerItemUsers<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: "account-group",
+        value: "users",
+        href: "users",
+        text: "user_plural"
+    };
+}
 export function getRealmQueryParameter(): string {
     if(location.search && location.search !== "") {
         return Util.getQueryParameter(location.search, "realm");
