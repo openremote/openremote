@@ -179,13 +179,21 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public Role[] getRoles(@BeanParam RequestParams requestParams, String realm, String userId) {
+    public Role[] getCurrentUserRoles(RequestParams requestParams) {
+        if (!isAuthenticated()) {
+            throw new ForbiddenException("Must be authenticated");
+        }
+        return getUserRoles(requestParams, getRequestRealm(), getUserId());
+    }
+
+    @Override
+    public Role[] getUserRoles(@BeanParam RequestParams requestParams, String realm, String userId) {
         if (!isSuperUser() && !Objects.equals(getUserId(), userId)) {
             throw new ForbiddenException("Regular users can only retrieve their own roles");
         }
 
         try {
-            return identityService.getIdentityProvider().getRoles(
+            return identityService.getIdentityProvider().getUserRoles(
                 realm, userId
             );
         } catch (ClientErrorException ex) {
@@ -196,17 +204,9 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public Role[] getCurrentUserRoles(RequestParams requestParams) {
-        if (!isAuthenticated()) {
-            throw new ForbiddenException("Must be authenticated");
-        }
-        return getRoles(requestParams, getRequestRealm(), getUserId());
-    }
-
-    @Override
-    public void updateRoles(@BeanParam RequestParams requestParams, String realm, String userId, Role[] roles) {
+    public void updateUserRoles(@BeanParam RequestParams requestParams, String realm, String userId, Role[] roles) {
         try {
-            identityService.getIdentityProvider().updateRoles(
+            identityService.getIdentityProvider().updateUserRoles(
                 realm,
                 userId,
                 KEYCLOAK_CLIENT_ID,
@@ -214,6 +214,34 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
                     .filter(Role::isAssigned)
                     .map(Role::getName)
                     .toArray(String[]::new));
+        } catch (ClientErrorException ex) {
+            ex.printStackTrace(System.out);
+            throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
+    }
+
+    @Override
+    public Role[] getRoles(RequestParams requestParams, String realm) {
+        try {
+            return identityService.getIdentityProvider().getRoles(
+                realm,
+                null);
+        } catch (ClientErrorException ex) {
+            throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
+    }
+
+    @Override
+    public void updateRoles(RequestParams requestParams, String realm, Role[] roles) {
+        try {
+            identityService.getIdentityProvider().updateRoles(
+                realm,
+                KEYCLOAK_CLIENT_ID,
+                roles);
         } catch (ClientErrorException ex) {
             ex.printStackTrace(System.out);
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());

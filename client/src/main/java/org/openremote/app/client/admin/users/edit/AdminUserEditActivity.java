@@ -259,7 +259,7 @@ public class AdminUserEditActivity
     protected void updateRoles(Runnable onComplete) {
         environment.getApp().getRequests().sendWith(
             roleArrayMapper,
-            requestParams -> userResource.updateRoles(requestParams, realm, userId, roles),
+            requestParams -> userResource.updateUserRoles(requestParams, realm, userId, roles),
             204,
             onComplete
         );
@@ -313,7 +313,7 @@ public class AdminUserEditActivity
     protected void loadRoles(Runnable onComplete) {
         environment.getApp().getRequests().sendAndReturn(
             roleArrayMapper,
-            requestParams -> userResource.getRoles(requestParams, realm, userId),
+            requestParams -> userResource.getUserRoles(requestParams, realm, userId),
             200,
             roles -> {
                 List<Role> roleList = new ArrayList<>();

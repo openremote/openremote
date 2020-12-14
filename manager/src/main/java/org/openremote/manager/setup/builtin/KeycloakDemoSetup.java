@@ -65,6 +65,6 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         // Users
         User smartCityUser = createUser(tenantCity.getRealm(), "smartcity", "smartcity", "Smart", "City", null, true, demoUserRoles);
         this.smartCityUserId = smartCityUser.getId();
-        keycloakProvider.updateRoles(tenantCity.getRealm(), smartCityUserId, "account"); // Remove all roles for account client
+        keycloakProvider.updateUserRoles(tenantCity.getRealm(), smartCityUserId, "account"); // Remove all roles for account client
     }
 }

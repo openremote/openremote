@@ -353,7 +353,7 @@ public class ClientEventService implements ProtocolClientEventService {
 
         User serviceUser = keycloakIdentityProvider.getClientServiceUser(clientCredentials.getRealm(), clientCredentials.getClientId());
         if (clientCredentials.getRoles() != null && clientCredentials.getRoles().length > 0) {
-            keycloakIdentityProvider.updateRoles(clientCredentials.getRealm(), serviceUser.getId(), KEYCLOAK_CLIENT_ID, Arrays.stream(clientCredentials.getRoles()).map(ClientRole::getValue).toArray(String[]::new));
+            keycloakIdentityProvider.updateUserRoles(clientCredentials.getRealm(), serviceUser.getId(), KEYCLOAK_CLIENT_ID, Arrays.stream(clientCredentials.getRoles()).map(ClientRole::getValue).toArray(String[]::new));
         }
     }
 

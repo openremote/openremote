@@ -164,15 +164,30 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public Role[] getRoles(String realm, String userId) {
+    public Role[] getRoles(String realm, String client) {
+        if (client != null && !MASTER_REALM.equals(client)) {
+            throw new IllegalStateException("This provider only has a single master realm");
+        }
         return ClientRole.ALL_ROLES.stream()
-            .map(role -> new Role(UUID.randomUUID().toString(), role, false, true))
+            .map(role -> new Role(UUID.randomUUID().toString(), role, false, true, null))
             .toArray(Role[]::new);
     }
 
     @Override
-    public void updateRoles(String realm, String username, String client, String... roles) {
+    public void updateRoles(String realm, String client, Role[] roles) {
         throw new UnsupportedOperationException("This provider does not support updating roles");
+    }
+
+    @Override
+    public Role[] getUserRoles(String realm, String userId) {
+        return ClientRole.ALL_ROLES.stream()
+            .map(role -> new Role(UUID.randomUUID().toString(), role, false, true, null))
+            .toArray(Role[]::new);
+    }
+
+    @Override
+    public void updateUserRoles(String realm, String username, String client, String... roles) {
+        throw new UnsupportedOperationException("This provider does not support updating user roles");
     }
 
     @Override

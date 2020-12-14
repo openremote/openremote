@@ -96,7 +96,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
             return null;
         }
         if (roles != null && roles.length > 0) {
-            keycloakProvider.updateRoles(realm, user.getId(), KEYCLOAK_CLIENT_ID, Arrays.stream(roles).map(ClientRole::getValue).toArray(String[]::new));
+            keycloakProvider.updateUserRoles(realm, user.getId(), KEYCLOAK_CLIENT_ID, Arrays.stream(roles).map(ClientRole::getValue).toArray(String[]::new));
         }
         return user;
     }

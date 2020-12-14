@@ -19,21 +19,31 @@
  */
 package org.openremote.model.security;
 
+import java.util.Arrays;
+
+/**
+ * Represents a role; depending on the context then different values will be populated. If getting roles related to a user
+ * then the {@link #isAssigned} will indicate whether the role is assigned to the user or not and {@link #isComposite}
+ * will indicate if it is a composite role. If getting roles for a client then if {@link #isComposite} then the
+ */
 public class Role {
 
     protected String id;
     protected String name;
+    protected String description;
     protected boolean composite;
-    protected boolean assigned;
+    protected Boolean assigned;
+    protected String[] compositeRoleIds;
 
     public Role() {
     }
 
-    public Role(String id, String name, boolean composite, boolean assigned) {
+    public Role(String id, String name, boolean composite, Boolean assigned, String[] compositeRoleIds) {
         this.id = id;
         this.name = name;
         this.composite = composite;
         this.assigned = assigned;
+        this.compositeRoleIds = compositeRoleIds;
     }
 
     public String getId() {
@@ -52,7 +62,20 @@ public class Role {
         this.name = name;
     }
 
-    public boolean isAssigned() {
+    public String getDescription() {
+        return description;
+    }
+
+    public Role setDescription(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public void setAssigned(Boolean assigned) {
+        this.assigned = assigned;
+    }
+
+    public Boolean isAssigned() {
         return assigned;
     }
 
@@ -68,12 +91,21 @@ public class Role {
         this.composite = composite;
     }
 
+    public String[] getCompositeRoleIds() {
+        return compositeRoleIds;
+    }
+
+    public void setCompositeRoleIds(String[] compositeRoleIds) {
+        this.compositeRoleIds = compositeRoleIds;
+    }
+
     @Override
     public String toString() {
         return getClass().getName() + "{" +
             "id='" + id + '\'' +
             ", name='" + name + '\'' +
             ", composite=" + composite +
+            ", compositeRoleNames=" + Arrays.toString(compositeRoleIds) +
             ", assigned=" + assigned +
             '}';
     }

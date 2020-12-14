@@ -39,8 +39,24 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public interface UserResource {
 
     @GET
+    @Path("{realm}/roles")
     @Produces(APPLICATION_JSON)
-    @Path("{realm}")
+    @SuccessStatusCode(200)
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
+    @SuppressWarnings("unusable-by-js")
+    Role[] getRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
+
+    @PUT
+    @Path("{realm}/roles")
+    @Consumes(APPLICATION_JSON)
+    @SuccessStatusCode(204)
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
+    @SuppressWarnings("unusable-by-js")
+    void updateRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, Role[] roles);
+
+    @GET
+    @Produces(APPLICATION_JSON)
+    @Path("{realm}/users")
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
     User[] getAll(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
@@ -53,13 +69,14 @@ public interface UserResource {
     User get(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
     @GET
+    @Path("user")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
     User getCurrent(@BeanParam RequestParams requestParams);
 
     @PUT
-    @Path("{realm}/{userId}")
+    @Path("{realm}/users/{userId}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
@@ -68,7 +85,7 @@ public interface UserResource {
     void update(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, @Valid User user);
 
     @POST
-    @Path("{realm}")
+    @Path("{realm}/users")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
@@ -77,7 +94,7 @@ public interface UserResource {
     void create(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid User user);
 
     @DELETE
-    @Path("{realm}/{userId}")
+    @Path("{realm}/users/{userId}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
@@ -85,7 +102,7 @@ public interface UserResource {
     void delete(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
     @PUT
-    @Path("{realm}/{userId}/reset-password")
+    @Path("{realm}/reset-password/{userId}")
     @SuccessStatusCode(204)
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
@@ -94,24 +111,24 @@ public interface UserResource {
     void resetPassword(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Credential credential);
 
     @GET
-    @Path("{realm}/{userId}/role")
+    @Path("{realm}/userRoles/{userId}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
-    Role[] getRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
+    Role[] getUserRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
     @GET
-    @Path("role")
+    @Path("userRoles")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
     Role[] getCurrentUserRoles(@BeanParam RequestParams requestParams);
 
     @PUT
-    @Path("{realm}/role/{userId}")
+    @Path("{realm}/userRoles/{userId}")
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
-    void updateRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Role[] roles);
+    void updateUserRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Role[] roles);
 }

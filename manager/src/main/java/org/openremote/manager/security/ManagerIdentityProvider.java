@@ -59,9 +59,13 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     void resetPassword(String realm, String userId, Credential credential);
 
-    Role[] getRoles(String realm, String userId);
+    Role[] getRoles(String realm, String client);
 
-    void updateRoles(String realm, String username, String client, String...roles);
+    void updateRoles(String realm, String client, Role[] roles);
+
+    Role[] getUserRoles(String realm, String userId);
+
+    void updateUserRoles(String realm, String username, String client, String...roles);
 
     boolean isMasterRealmAdmin(String userId);
 

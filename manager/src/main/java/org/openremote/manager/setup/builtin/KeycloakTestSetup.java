@@ -82,23 +82,23 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         // Users
         User testuser1 = createUser(MASTER_REALM, "testuser1", "testuser1", "DemoMaster", "DemoLast", null, true, container.isDevMode() ? REGULAR_USER_ROLES : demoUserRoles);
         this.testuser1Id = testuser1.getId();
-        keycloakProvider.updateRoles(MASTER_REALM, testuser1Id, "account"); // Remove all roles for account client
+        keycloakProvider.updateUserRoles(MASTER_REALM, testuser1Id, "account"); // Remove all roles for account client
         User testuser2 = createUser(tenantBuilding.getRealm(), "testuser2", "testuser2", "DemoA2", "DemoLast", "testuser2@openremote.local", true, new ClientRole[] {
             ClientRole.WRITE_USER,
             ClientRole.READ_MAP,
             ClientRole.READ_ASSETS
         });
         this.testuser2Id = testuser2.getId();
-        keycloakProvider.updateRoles(tenantBuilding.getRealm(), testuser2Id, "account"); // Remove all roles for account client
+        keycloakProvider.updateUserRoles(tenantBuilding.getRealm(), testuser2Id, "account"); // Remove all roles for account client
         User testuser3 = createUser(tenantBuilding.getRealm(), "testuser3", "testuser3", "DemoA3", "DemoLast", "testuser3@openremote.local", true, container.isDevMode() ? REGULAR_USER_ROLES : demoUserRoles);
         this.testuser3Id = testuser3.getId();
-        keycloakProvider.updateRoles(tenantBuilding.getRealm(), testuser3Id, "account"); // Remove all roles for account client
+        keycloakProvider.updateUserRoles(tenantBuilding.getRealm(), testuser3Id, "account"); // Remove all roles for account client
         User buildingUser = createUser(tenantBuilding.getRealm(), "building", "building", "Building", "User", "building@openremote.local", true, demoUserRoles);
         this.buildingUserId = buildingUser.getId();
-        keycloakProvider.updateRoles(tenantBuilding.getRealm(), buildingUserId, "account"); // Remove all roles for account client
+        keycloakProvider.updateUserRoles(tenantBuilding.getRealm(), buildingUserId, "account"); // Remove all roles for account client
         User smartCityUser = createUser(tenantCity.getRealm(), "smartcity", "smartcity", "Smart", "City", null, true, demoUserRoles);
         this.smartCityUserId = smartCityUser.getId();
-        keycloakProvider.updateRoles(tenantCity.getRealm(), smartCityUserId, "account"); // Remove all roles for account client
+        keycloakProvider.updateUserRoles(tenantCity.getRealm(), smartCityUserId, "account"); // Remove all roles for account client
 
         if (container.isDevMode()) {
             /*
@@ -117,7 +117,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
 
             // Add asset RW roles to service user
             User serviceUser = keycloakProvider.getClientServiceUser(tenantBuilding.getRealm(), mqttClient.getClientId());
-            keycloakProvider.updateRoles(tenantBuilding.getRealm(), serviceUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ_ASSETS.getValue(), ClientRole.WRITE_ASSETS.getValue(), ClientRole.WRITE_ATTRIBUTES.getValue());
+            keycloakProvider.updateUserRoles(tenantBuilding.getRealm(), serviceUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ_ASSETS.getValue(), ClientRole.WRITE_ASSETS.getValue(), ClientRole.WRITE_ATTRIBUTES.getValue());
         }
     }
 }

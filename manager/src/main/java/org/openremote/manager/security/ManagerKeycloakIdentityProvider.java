@@ -44,10 +44,14 @@ import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -208,7 +212,139 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public Role[] getRoles(String realm, String userId) {
+    public Role[] getRoles(String realm, String client) {
+
+        RealmResource realmResource = getRealms().realm(realm);
+        ClientsResource clientsResource = realmResource.clients();
+        String clientId;
+
+        if (TextUtil.isNullOrEmpty(client)) {
+            clientId = clientsResource.findByClientId(KEYCLOAK_CLIENT_ID).get(0).getId();
+        } else {
+            ClientRepresentation clientRepresentation = getClient(realm, client);
+            if (clientRepresentation == null) {
+                throw new NotFoundException("Cannot find specified client: " + client);
+            }
+            clientId = clientsResource.findByClientId(clientRepresentation.getClientId()).get(0).getId();
+        }
+
+        ClientResource clientResource = realmResource.clients().get(clientId);
+        List<RoleRepresentation> clientRoles = clientResource.roles().list();
+        List<Role> roles = new ArrayList<>();
+
+        for (RoleRepresentation clientRole : clientRoles) {
+            String[] composites = clientRole.isComposite() ? realmResource.rolesById().getClientRoleComposites(clientRole.getId(), clientId).stream().map(RoleRepresentation::getId).toArray(String[]::new) : null;
+            roles.add(new Role(clientRole.getId(), clientRole.getName(), clientRole.isComposite(), null, composites).setDescription(clientRole.getDescription()));
+        }
+
+        return roles.toArray(new Role[0]);
+    }
+
+    @Override
+    public void updateRoles(String realm, String client, Role[] roles) {
+
+        RealmResource realmResource = getRealms().realm(realm);
+        ClientsResource clientsResource = realmResource.clients();
+        String clientId;
+
+        if (TextUtil.isNullOrEmpty(client)) {
+            clientId = clientsResource.findByClientId(KEYCLOAK_CLIENT_ID).get(0).getId();
+        } else {
+            ClientRepresentation clientRepresentation = getClient(realm, client);
+            if (clientRepresentation == null) {
+                throw new NotFoundException("Cannot find specified client: " + client);
+            }
+            clientId = clientsResource.findByClientId(clientRepresentation.getClientId()).get(0).getId();
+        }
+
+        ClientResource clientResource = realmResource.clients().get(clientId);
+        List<RoleRepresentation> existingRoles = new ArrayList<>(clientResource.roles().list());
+
+        List<RoleRepresentation> removedRoles = existingRoles.stream()
+            .filter(existingRole -> Arrays.stream(roles).noneMatch(r -> existingRole.getId().equals(r.getId())))
+            .collect(Collectors.toList());
+
+        removedRoles.forEach(removedRole -> {
+            realmResource.rolesById().deleteRole(removedRole.getId());
+            existingRoles.remove(removedRole);
+        });
+
+        Arrays.stream(roles).forEach(role -> {
+
+            RoleRepresentation existingRole;
+            boolean compositesModified = false;
+            Set<RoleRepresentation> existingComposites = new HashSet<>();
+            Set<RoleRepresentation> requestedComposites = new HashSet<>();
+
+            if (role.getId() == null) {
+                existingRole = saveRole(realmResource, clientResource, role, null);
+                existingRoles.add(existingRole);
+                compositesModified = role.getCompositeRoleIds() != null && role.getCompositeRoleIds().length > 0;
+                if (compositesModified) {
+                    requestedComposites.addAll(Arrays.stream(role.getCompositeRoleIds())
+                        .map(id -> existingRoles.stream().filter(er -> er.getId().equals(id)).findFirst().orElse(null))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet()));
+                }
+            } else {
+                existingRole = existingRoles.stream().filter(r -> r.getId().equals(role.getId())).findFirst().orElseThrow(() -> new BadRequestException("One or more supplied roles have an ID that doesn't exist"));
+
+                boolean isComposite = role.isComposite() && role.getCompositeRoleIds() != null && role.getCompositeRoleIds().length > 0;
+
+                boolean rolePropertiesModified = !Objects.equals(existingRole.getName(), role.getName())
+                    || !Objects.equals(existingRole.getDescription(), role.getDescription());
+
+                if (isComposite || existingRole.isComposite()) {
+                    existingComposites.addAll(Optional.ofNullable(realmResource.rolesById().getClientRoleComposites(existingRole.getId(), clientId)).orElse(new HashSet<>()));
+                    requestedComposites.addAll(Arrays.stream(role.getCompositeRoleIds())
+                        .map(id -> existingRoles.stream().filter(er -> er.getId().equals(id)).findFirst().orElse(null))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet()));
+
+                    if (requestedComposites.size() != role.getCompositeRoleIds().length) {
+                        throw new BadRequestException("One or more composite roles contain an invalid role ID");
+                    }
+
+                    compositesModified = !Objects.equals(existingComposites, requestedComposites);
+                }
+
+                if (rolePropertiesModified) {
+                    // Merge the role property changes
+                    saveRole(realmResource, clientResource, role, existingRole);
+                }
+            }
+
+            if (compositesModified) {
+                List<RoleRepresentation> removed = existingComposites.stream().filter(existing -> !requestedComposites.contains(existing)).collect(Collectors.toList());
+                List<RoleRepresentation> added = requestedComposites.stream().filter(existing -> !existingComposites.contains(existing)).collect(Collectors.toList());
+                if (!removed.isEmpty()) {
+                    realmResource.rolesById().deleteComposites(existingRole.getId(), removed);
+                }
+                if (!added.isEmpty()) {
+                    realmResource.rolesById().addComposites(existingRole.getId(), added);
+                }
+            }
+        });
+    }
+
+    protected RoleRepresentation saveRole(RealmResource realmResource, ClientResource clientResource, Role role, RoleRepresentation representation) {
+        if (representation == null) {
+            representation = new RoleRepresentation();
+        }
+        representation.setName(role.getName());
+        representation.setDescription(role.getDescription());
+        representation.setClientRole(true);
+        if (representation.getId() == null) {
+            clientResource.roles().create(representation);
+        } else {
+            realmResource.rolesById().updateRole(representation.getId(), representation);
+        }
+
+        return clientResource.roles().get(representation.getName()).toRepresentation();
+    }
+
+    @Override
+    public Role[] getUserRoles(String realm, String userId) {
         RealmResource realmResource = getRealms().realm(realm);
         RoleMappingResource roleMappingResource = realmResource.users().get(userId).roles();
         ClientsResource clientsResource = realmResource.clients();
@@ -232,15 +368,16 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 roleRepresentation.getId(),
                 roleRepresentation.getName(),
                 roleRepresentation.isComposite(),
-                isAssigned
-            ));
+                isAssigned,
+                null)
+                .setDescription(roleRepresentation.getDescription()));
         }
 
         return roles.toArray(new Role[0]);
     }
 
     @Override
-    public void updateRoles(String realm, String userId, String client, String... roles) {
+    public void updateUserRoles(String realm, String userId, String client, String... roles) {
         RealmResource realmResource = getRealms().realm(realm);
         UserRepresentation user = realmResource.users().get(userId).toRepresentation();
 
