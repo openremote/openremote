@@ -124,7 +124,8 @@ export function headerItemUsers<S extends AppStateKeyed, A extends AnyAction>(or
         icon: "account-group",
         value: "users",
         href: "users",
-        text: "user_plural"
+        text: "user_plural",
+        roles: ["write:admin"]
     };
 }
 export function getRealmQueryParameter(): string {
@@ -178,6 +179,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 --or-app-color2: ${unsafeCSS(DefaultColor2)};
                 --or-app-color3: #22211f;
                 --or-app-color4: #4D9D2A;
+                --or-console-primary-color: #4D9D2A;
                 color: ${unsafeCSS(DefaultColor3)};
                 fill: ${unsafeCSS(DefaultColor3)};
                 font-size: 14px;
