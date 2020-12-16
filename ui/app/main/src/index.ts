@@ -16,6 +16,7 @@ import {
     headerItemRules,
     headerItemAccount,
     headerItemUsers,
+    headerItemRoles,
     headerItemInsights} from "@openremote/or-app";
 import "@openremote/or-app/dist/pages/page-map";
 import {pageMapReducer, pageMapProvider} from "@openremote/or-app/dist/pages/page-map";
@@ -33,6 +34,8 @@ import "@openremote/or-app/dist/pages/page-account";
 import {pageAccountProvider} from "@openremote/or-app/dist/pages/page-account";
 import "@openremote/or-app/dist/pages/page-users";
 import {pageUsersProvider} from "@openremote/or-app/dist/pages/page-users";
+import "@openremote/or-app/dist/pages/page-roles";
+import {pageRolesProvider} from "@openremote/or-app/dist/pages/page-roles";
 
 const rootReducer = combineReducers({
     app: appReducer,
@@ -56,6 +59,7 @@ const appConfig: AppConfig<RootState> = {
         insights: pageInsightsProvider(store),
         rules: pageRulesProvider(store),
         account: pageAccountProvider(store),
+        roles: pageRolesProvider(store),
         users: pageUsersProvider(store)
     },
     default: {
@@ -80,6 +84,7 @@ const appConfig: AppConfig<RootState> = {
                 headerItemLogs(orApp),
                 headerItemAccount(orApp),
                 headerItemUsers(orApp),
+                headerItemRoles(orApp),
                 headerItemLogout(orApp)
                 // {
                 //     icon: "account-cog",

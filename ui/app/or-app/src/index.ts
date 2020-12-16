@@ -128,6 +128,15 @@ export function headerItemUsers<S extends AppStateKeyed, A extends AnyAction>(or
         roles: ["write:admin"]
     };
 }
+export function headerItemRoles<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: "account-group",
+        value: "roles",
+        href: "roles",
+        text: "role_plural",
+        roles: ["write:admin"]
+    };
+}
 export function getRealmQueryParameter(): string {
     if(location.search && location.search !== "") {
         return Util.getQueryParameter(location.search, "realm");

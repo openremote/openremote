@@ -13,26 +13,26 @@ import "@openremote/or-translate";
 import { EnhancedStore } from "@reduxjs/toolkit";
 import { AppStateKeyed } from "../app";
 import { Page } from "../types";
-import { Role, User } from "@openremote/model";
+import { Role } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { OrIcon } from "@openremote/or-icon";
 import { InputType, OrInputChangedEvent } from "@openremote/or-input";
 
 const tableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-table.css");
 
-export function pageUsersProvider<S extends AppStateKeyed>(
+export function pageRolesProvider<S extends AppStateKeyed>(
   store: EnhancedStore<S>
 ) {
   return {
-    routes: ["users"],
+    routes: ["roles"],
     pageCreator: () => {
-      return new PageUsers(store);
+      return new PageRoles(store);
     },
   };
 }
 
-@customElement("page-users")
-class PageUsers<S extends AppStateKeyed> extends Page<S> {
+@customElement("page-roles")
+class PageRoles<S extends AppStateKeyed> extends Page<S> {
   static get styles() {
     // language=CSS
     return [
@@ -115,26 +115,25 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
       `,
     ];
   }
-
-  @property()
-  protected _users: User[] = [];
-
   @property()
   protected _compositeRoles: Role[] = [];
 
   @property()
-  protected _userRoleMapper = {};
-  
+  protected _roles: Role[] = [];
+
+  @property()
+  protected _rolesMapper = {};
+
   @property()
   public realm?: string;
 
   get name(): string {
-    return "users";
+    return "roles";
   }
 
   constructor(store: EnhancedStore<S>) {
     super(store);
-    this.getUsers();
+    this.getRoles();
   }
 
     protected _onManagerEvent = (event: OREvent) => {
@@ -148,7 +147,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
   public shouldUpdate(_changedProperties: PropertyValues): boolean {
 
       if (_changedProperties.has("realm")) {
-          this.getUsers();
+          this.getRoles();
       }
 
       return super.shouldUpdate(_changedProperties);
@@ -165,50 +164,26 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
   }
 
 
-  private getUsers() {
+  private getRoles() {
     manager.rest.api.UserResource.getRoles(manager.displayRealm).then(roleResponse => {
       this._compositeRoles = [...roleResponse.data.filter(role => role.composite)];
+      this._roles = [...roleResponse.data.filter(role => !role.composite)];
+      this._roles.map(role => {
+        this._rolesMapper[role.id] = role.name
+      })
     })
-    manager.rest.api.UserResource.getAll(manager.displayRealm).then(
-      (usersResponse) => {
-        this._users = [...usersResponse.data];
-        this._users.map(user => {
-          manager.rest.api.UserResource.getUserRoles(manager.displayRealm, user.id).then(userRoleResponse => {
-              this._userRoleMapper[user.id] = userRoleResponse.data.find(r => r.composite && r.assigned);
-              this.requestUpdate()
-          })
-        })
-        
-      }
-    );
   }
 
-  private _createUser(user) {
-  manager.rest.api.UserResource.create(manager.displayRealm, user).then(response => {
-    this.getUsers()
-  });
+  private _createRole(role) {
     
   }
 
-  private _updateRole(user, value) {
-    if(this._compositeRoles.length === 0) return
-    const role = this._compositeRoles.find(c => c.id === value);
-    role['assigned'] = true;
-    manager.rest.api.UserResource.updateUserRoles(manager.displayRealm, user.id, [role])
+  private _updateRoles() {
+    const roles = [...this._compositeRoles, ...this._roles];
+    manager.rest.api.UserResource.updateRoles(manager.displayRealm, roles);
   }
 
-  private _updateUser(user, passwords) {
-      if(passwords && passwords.resetPassword && passwords.repeatPassword) {
-          if(passwords.resetPassword !== passwords.repeatPassword) return;
-          const credentials = {value: passwords.resetPassword}
-          manager.rest.api.UserResource.resetPassword(manager.displayRealm, user.id, credentials);
-
-      }
-    manager.rest.api.UserResource.update(manager.displayRealm, user.id, user);
-  }
-
-  private _deleteUser(user) {
-    manager.rest.api.UserResource.delete(manager.displayRealm, user.id).then(response => console.log(response));
+  private _deleterole(role) {
   }
 
   protected render(): TemplateResult | void {
@@ -234,78 +209,68 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         expanderIcon.icon = "chevron-down";
       }
     };
-    const selectOptions = this._compositeRoles.map(role => {
-      return [role.id, role.name]
-    })
     return html`
          <div id="wrapper">
                 <div id="title">
                 <or-icon icon="account-group"></or-icon>${i18next.t(
-                  "user_plural"
+                  "role"
                 )}
                 </div>
                 <div class="panel">
-                <p>${i18next.t("user_plural")}</p>
+                <p>${i18next.t("role")}</p>
                   <div id="table-users" class="mdc-data-table">
                   <table class="mdc-data-table__table" aria-label="attribute list" >
                       <thead>
                           <tr class="mdc-data-table__header-row">
-                              <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="username"></or-translate></th>
-                              <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="email"></or-translate></th>
+                              <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="name"></or-translate></th>
+                              <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="description"></or-translate></th>
                               <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="user_role"></or-translate></th>
-                              <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="status"></or-translate></th>
                           </tr>
                       </thead>
                       <tbody class="mdc-data-table__content">
-                      ${this._users.map(
-                        (user, index) => {
-                          let passwords = {resetPassword: "", repeatPassword:""};
+                      ${this._compositeRoles.map(
+                        (role, index) => {
+                          const compositeRoleName = role.compositeRoleIds.map(id => this._rolesMapper[id]).join(', ');
                           return html`
                           <tr id="mdc-data-table-row-${index}" class="mdc-data-table__row" @click="${(ev) => expanderToggle(ev, index)}">
                             <td
                               class="padded-cell mdc-data-table__cell"
                             >
                               <or-icon id="mdc-data-table-icon-${index}" icon="chevron-right"></or-icon>
-                              <span>${user.username}</span>
+                              <span>${role.name}</span>
                             </td>
                             <td class="padded-cell mdc-data-table__cell">
-                              ${user.email}
+                              ${role.description}
                             </td>
                             <td class="padded-cell mdc-data-table__cell">
-                            ${this._userRoleMapper[user.id] ? this._userRoleMapper[user.id].name : null}
-                            </td>
-                            <td class="padded-cell mdc-data-table__cell">
-                              ${user.enabled ? "Active" : "In active"}
+                              ${compositeRoleName}
                             </td>
                           </tr>
                           <tr id="attribute-meta-row-${index}" class="attribute-meta-row">
                             <td colspan="4">
                               <div class="meta-item-container">
+                                  <or-input .label="${i18next.t("role")}" .type="${InputType.TEXT}" min="1" required .value="${role.name}" @or-input-changed="${(e: OrInputChangedEvent) => role.name = e.detail.value}"></or-input>            
+
                                   <div class="row">
                                       <div class="column">
-                                          <or-input .label="${i18next.t("user")}" .type="${InputType.TEXT}" min="1" required .value="${user.username}" @or-input-changed="${(e: OrInputChangedEvent) => user.username = e.detail.value}"></or-input>            
-                                          <or-input .label="${i18next.t("email")}" .type="${InputType.EMAIL}" min="1" required .value="${user.email}" @or-input-changed="${(e: OrInputChangedEvent) => user.email = e.detail.value}"></or-input>            
-                                          <or-input .label="${i18next.t("firstName")}" .type="${InputType.TEXT}" min="1" required .value="${user.firstName}" @or-input-changed="${(e: OrInputChangedEvent) => user.firstName = e.detail.value}"></or-input>            
-                                          <or-input .label="${i18next.t("lastName")}" .type="${InputType.TEXT}" min="1" required .value="${user.lastName}" @or-input-changed="${(e: OrInputChangedEvent) => user.lastName = e.detail.value}"></or-input>            
+                                        ${this._roles.map(r => {
+                                          return html`
+                                             <or-input .label="${r.name}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-input-changed="${(e: OrInputChangedEvent) => e.detail.value ? role.compositeRoleIds = [...role.compositeRoleIds, r.id]: role.compositeRoleIds = role.compositeRoleIds.filter(id=> id !== r.id) }"></or-input>            
+                                          `
+                                        })}
+                                      
                                       </div>
 
                                       <div class="column">
-                                          ${user.id ? html`
-                                              <or-input .value="${this._userRoleMapper[user.id] ? this._userRoleMapper[user.id].id : null}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => this._updateRole(user, e.detail.value)}"></or-input>
-
-                                              <or-input .label="${i18next.t("resetPassword")}" .type="${InputType.PASSWORD}" min="1"  @or-input-changed="${(e: OrInputChangedEvent) => passwords.resetPassword = e.detail.value}"></or-input>            
-                                              <or-input .label="${i18next.t("repeatPassword")}" .type="${InputType.PASSWORD}" min="1" @or-input-changed="${(e: OrInputChangedEvent) => passwords.repeatPassword = e.detail.value}"></or-input>            
-                                          ` :``}
-                                          <or-input .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" required .value="${user.enabled}" @or-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}"></or-input>
                                       </div>
                                   </div>
 
                                   <div class="row">
-                                  ${user.id ? html`
-                                      <or-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteUser(user)}"></or-input>            
-                                      <or-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateUser(user, passwords)}"></or-input>   
+                                  ${role.id ? html`
+                                      <or-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-input>            
+                                      <or-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-input>   
                                   ` : html`
-                                    <or-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._createUser(user)}"></or-input>   
+                                    <or-input style="margin-left: auto;" .label="${i18next.t("create")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-input>   
                                   `}    
                                   </div>
                               </div>
@@ -317,7 +282,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                   </table>
                 </div>
 
-                <a class="button" @click="${() => this._users = [...this._users, {}]}"><or-icon icon="plus"></or-icon><strong>${i18next.t("add")} ${i18next.t("user")}</strong></a> 
+                <a class="button" @click="${() => this._compositeRoles = [...this._compositeRoles, {compositeRoleIds:[]}]}"><or-icon icon="plus"></or-icon><strong>${i18next.t("add")} ${i18next.t("role")}</strong></a> 
             </div>
             </div>
            
