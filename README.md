@@ -31,7 +31,7 @@ docker-compose up --no-build
 To run OpenRemote is swarm mode, which uses Docker Hub images:
 
 ```
-docker stack deploy --compose-file docker-compose-swarm.yml openremote
+docker stack deploy --compose-file swarm/swarm-docker-compose.yml openremote
 ```
 you don't need to pull or build images in this case, docker swarm mode does this automatically.
 
@@ -41,6 +41,11 @@ Alternatively you can build the Docker images locally from source, please see [h
 
 ```
 ./gradlew clean installDist
+```
+
+We have also embeded tooling in a docker container and you can use it instead in case you have different tooling installed, e.g. higer version of JDK than 8.
+```
+docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master ./gradlew clean installDist
 ```
 
 Next, if you are using Docker Community Edition build the Docker images and start the stack with:
