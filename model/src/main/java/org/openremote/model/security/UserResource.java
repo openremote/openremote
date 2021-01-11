@@ -91,7 +91,7 @@ public interface UserResource {
     @SuccessStatusCode(204)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @SuppressWarnings("unusable-by-js")
-    void create(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid User user);
+    User create(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid User user);
 
     @DELETE
     @Path("{realm}/users/{userId}")

@@ -127,9 +127,9 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public void create(RequestParams requestParams, String realm, User user) {
+    public User create(RequestParams requestParams, String realm, User user) {
         try {
-            identityService.getIdentityProvider().createUser(
+            return identityService.getIdentityProvider().createUser(
                 realm, user,
                 null);
         } catch (ClientErrorException ex) {

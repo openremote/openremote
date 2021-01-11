@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
