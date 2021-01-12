@@ -17,6 +17,7 @@ import { Role } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { OrIcon } from "@openremote/or-icon";
 import { InputType, OrInputChangedEvent } from "@openremote/or-input";
+import {showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 
 const tableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-table.css");
 
@@ -38,7 +39,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
     return [
       unsafeCSS(tableStyle),
       css`
-        #wrapper {
+         #wrapper {
           height: 100%;
           width: 100%;
           display: flex;
@@ -47,16 +48,20 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
         }
 
         #title {
-          margin: 20px auto;
-          padding: 0;
+          margin: 0 auto;
+          padding: 20px;
           font-size: 18px;
           font-weight: bold;
-          width: 100%;
+          width: calc(100% - 40px);
           max-width: 1400px;
         }
-        
+
+        #title or-icon {
+          margin-right: 10px;
+        }
+
         .panel {
-          width: 100%;
+          width: calc(100% - 80px);
           max-width: 1400px;
           background-color: white;
           border: 1px solid #e5e5e5;
@@ -96,6 +101,10 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
             flex: 1 1 0;
         }
 
+        .mdc-data-table__header-cell {
+          font-weight: bold;
+        }
+
         .attribute-meta-row.expanded .meta-item-container {
           max-height: 1000px;
           transition: max-height 1s ease-in;
@@ -106,11 +115,18 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
           display: flex;
           flex-direction: row;
           align-content: center;
-          margin: 10px 0px;
+          margin: 10px 15px;
+          align-items: center;
         }
 
         .button or-icon {
           --or-icon-fill: var(--or-app-color4);
+        }
+
+        @media screen and (max-width: 769px){
+          .panel {
+            border-radius: 0;
+          }
         }
       `,
     ];
@@ -174,16 +190,26 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
     })
   }
 
-  private _createRole(role) {
-    
-  }
-
   private _updateRoles() {
     const roles = [...this._compositeRoles, ...this._roles];
-    manager.rest.api.UserResource.updateRoles(manager.displayRealm, roles);
+    manager.rest.api.UserResource.updateRoles(manager.displayRealm, roles).then(response => {
+      this.getRoles()
+    });
   }
 
-  private _deleterole(role) {
+  private _deleteRole(role) {
+    showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRoleConfirm"))
+    .then((ok) => {
+        if (ok) {
+          this.doDelete(role);
+        }
+    });
+  }
+  
+  private doDelete(role) {
+    this._compositeRoles = [...this._compositeRoles.filter(u => u.id != role.id)]
+    this._updateRoles()
+
   }
 
   protected render(): TemplateResult | void {
@@ -246,10 +272,11 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
                               ${compositeRoleName}
                             </td>
                           </tr>
-                          <tr id="attribute-meta-row-${index}" class="attribute-meta-row">
+                          <tr id="attribute-meta-row-${index}" class="attribute-meta-row${!role.name ? " expanded" : ""}">
                             <td colspan="4">
                               <div class="meta-item-container">
                                   <or-input .label="${i18next.t("role")}" .type="${InputType.TEXT}" min="1" required .value="${role.name}" @or-input-changed="${(e: OrInputChangedEvent) => role.name = e.detail.value}"></or-input>            
+                                  <or-input .label="${i18next.t("description")}" .type="${InputType.TEXT}" min="1" required .value="${role.description}" @or-input-changed="${(e: OrInputChangedEvent) => role.description = e.detail.value}"></or-input>            
 
                                   <div class="row">
                                       <div class="column">
@@ -267,9 +294,10 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
 
                                   <div class="row">
                                   ${role.id ? html`
-                                      <or-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-input>            
+                                      <or-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteRole(role)}"></or-input>            
                                       <or-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-input>   
                                   ` : html`
+                                    <or-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @click="${() => {this._compositeRoles.splice(-1,1); this._compositeRoles = [...this._compositeRoles]}}"></or-input>            
                                     <or-input style="margin-left: auto;" .label="${i18next.t("create")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-input>   
                                   `}    
                                   </div>
@@ -278,11 +306,17 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
                           </tr>
                         `
                       })}
+                        ${!!this._compositeRoles[this._compositeRoles.length -1].id ? html`
+                        <tr class="mdc-data-table__row">
+                          <td colspan="4">
+                            <a class="button" @click="${() => this._compositeRoles = [...this._compositeRoles, {compositeRoleIds:[]}]}"><or-icon icon="plus"></or-icon><strong>${i18next.t("add")} ${i18next.t("role")}</strong></a> 
+                          </td>
+                        </tr>
+                      ` : ``}
                       </tbody>
                   </table>
                 </div>
 
-                <a class="button" @click="${() => this._compositeRoles = [...this._compositeRoles, {compositeRoleIds:[]}]}"><or-icon icon="plus"></or-icon><strong>${i18next.t("add")} ${i18next.t("role")}</strong></a> 
             </div>
             </div>
            

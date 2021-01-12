@@ -17,6 +17,7 @@ import { Role, User } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { OrIcon } from "@openremote/or-icon";
 import { InputType, OrInputChangedEvent } from "@openremote/or-input";
+import {showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 
 const tableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-table.css");
 
@@ -47,16 +48,20 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         }
 
         #title {
-          margin: 20px auto;
-          padding: 0;
+          margin: 0 auto;
+          padding: 20px;
           font-size: 18px;
           font-weight: bold;
-          width: 100%;
+          width: calc(100% - 40px);
           max-width: 1400px;
         }
-        
+
+        #title or-icon {
+          margin-right: 10px;
+        }
+
         .panel {
-          width: 100%;
+          width: calc(100% - 80px);
           max-width: 1400px;
           background-color: white;
           border: 1px solid #e5e5e5;
@@ -96,6 +101,10 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             flex: 1 1 0;
         }
 
+        .mdc-data-table__header-cell {
+          font-weight: bold;
+        }
+
         .attribute-meta-row.expanded .meta-item-container {
           max-height: 1000px;
           transition: max-height 1s ease-in;
@@ -106,11 +115,18 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
           display: flex;
           flex-direction: row;
           align-content: center;
-          margin: 10px 0px;
+          margin: 10px 15px;
+          align-items: center;
         }
 
         .button or-icon {
           --or-icon-fill: var(--or-app-color4);
+        }
+
+        @media screen and (max-width: 769px){
+          .panel {
+            border-radius: 0;
+          }
         }
       `,
     ];
@@ -183,9 +199,18 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     );
   }
 
-  private _createUser(user) {
-  manager.rest.api.UserResource.create(manager.displayRealm, user).then(response => {
+  private _createUser(user, passwords, role) {
+  manager.rest.api.UserResource.create(manager.displayRealm, user).then((response:any) => {
     this.getUsers()
+    if(passwords && passwords.resetPassword && passwords.repeatPassword) {
+      if(passwords.resetPassword !== passwords.repeatPassword) return;
+      const credentials = {value: passwords.resetPassword}
+      const id = response.data.id;
+      manager.rest.api.UserResource.resetPassword(manager.displayRealm, id, credentials);
+      if(role) {
+        this._updateRole(response.data, role)
+      }
+    }
   });
     
   }
@@ -193,22 +218,38 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
   private _updateRole(user, value) {
     if(this._compositeRoles.length === 0) return
     const role = this._compositeRoles.find(c => c.id === value);
-    role['assigned'] = true;
-    manager.rest.api.UserResource.updateUserRoles(manager.displayRealm, user.id, [role])
+    if(role){
+      role['assigned'] = true;
+      manager.rest.api.UserResource.updateUserRoles(manager.displayRealm, user.id, [role])
+      this._userRoleMapper[user.id] = role;
+    }
   }
 
-  private _updateUser(user, passwords) {
+  private _updateUser(user, passwords, role) {
       if(passwords && passwords.resetPassword && passwords.repeatPassword) {
           if(passwords.resetPassword !== passwords.repeatPassword) return;
           const credentials = {value: passwords.resetPassword}
           manager.rest.api.UserResource.resetPassword(manager.displayRealm, user.id, credentials);
-
+      }
+      if(role) {
+        this._updateRole(user, role)
       }
     manager.rest.api.UserResource.update(manager.displayRealm, user.id, user);
   }
 
   private _deleteUser(user) {
-    manager.rest.api.UserResource.delete(manager.displayRealm, user.id).then(response => console.log(response));
+    showOkCancelDialog(i18next.t("delete"), i18next.t("deleteUserConfirm"))
+    .then((ok) => {
+        if (ok) {
+          this.doDelete(user);
+        }
+    });
+  }
+  
+  private doDelete(user) {
+    manager.rest.api.UserResource.delete(manager.displayRealm, user.id).then(response => {
+      this._users = [...this._users.filter(u => u.id != user.id)]
+    })
   }
 
   protected render(): TemplateResult | void {
@@ -260,6 +301,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                       ${this._users.map(
                         (user, index) => {
                           let passwords = {resetPassword: "", repeatPassword:""};
+                          let role = undefined;
                           return html`
                           <tr id="mdc-data-table-row-${index}" class="mdc-data-table__row" @click="${(ev) => expanderToggle(ev, index)}">
                             <td
@@ -278,7 +320,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                               ${user.enabled ? "Active" : "In active"}
                             </td>
                           </tr>
-                          <tr id="attribute-meta-row-${index}" class="attribute-meta-row">
+                          <tr id="attribute-meta-row-${index}" class="attribute-meta-row${!user.username ? " expanded" : ""}">
                             <td colspan="4">
                               <div class="meta-item-container">
                                   <div class="row">
@@ -290,12 +332,10 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                       </div>
 
                                       <div class="column">
-                                          ${user.id ? html`
-                                              <or-input .value="${this._userRoleMapper[user.id] ? this._userRoleMapper[user.id].id : null}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => this._updateRole(user, e.detail.value)}"></or-input>
+                                            <or-input .value="${this._userRoleMapper[user.id] ? this._userRoleMapper[user.id].id : null}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => role = e.detail.value}"></or-input>
 
-                                              <or-input .label="${i18next.t("resetPassword")}" .type="${InputType.PASSWORD}" min="1"  @or-input-changed="${(e: OrInputChangedEvent) => passwords.resetPassword = e.detail.value}"></or-input>            
-                                              <or-input .label="${i18next.t("repeatPassword")}" .type="${InputType.PASSWORD}" min="1" @or-input-changed="${(e: OrInputChangedEvent) => passwords.repeatPassword = e.detail.value}"></or-input>            
-                                          ` :``}
+                                            <or-input .label="${i18next.t("resetPassword")}" .type="${InputType.PASSWORD}" min="1"  @or-input-changed="${(e: OrInputChangedEvent) => passwords.resetPassword = e.detail.value}"></or-input>            
+                                            <or-input .label="${i18next.t("repeatPassword")}" .type="${InputType.PASSWORD}" min="1" @or-input-changed="${(e: OrInputChangedEvent) => passwords.repeatPassword = e.detail.value}"></or-input>   
                                           <or-input .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" required .value="${user.enabled}" @or-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}"></or-input>
                                       </div>
                                   </div>
@@ -303,9 +343,10 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                   <div class="row">
                                   ${user.id ? html`
                                       <or-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteUser(user)}"></or-input>            
-                                      <or-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateUser(user, passwords)}"></or-input>   
+                                      <or-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateUser(user, passwords, role)}"></or-input>   
                                   ` : html`
-                                    <or-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._createUser(user)}"></or-input>   
+                                    <or-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @click="${() => {this._users.splice(-1,1); this._users = [...this._users]}}"></or-input>            
+                                    <or-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._createUser(user, passwords, role)}"></or-input>   
                                   `}    
                                   </div>
                               </div>
@@ -313,11 +354,18 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                           </tr>
                         `
                       })}
+                      ${!!this._users[this._users.length -1].id ? html`
+                        <tr class="mdc-data-table__row">
+                          <td colspan="4">
+                            <a class="button" @click="${() => this._users = [...this._users, {enabled: true}]}"><or-icon icon="plus"></or-icon><strong>${i18next.t("add")} ${i18next.t("user")}</strong></a> 
+                          </td>
+                        </tr>
+                      ` : ``}
+                     
                       </tbody>
                   </table>
                 </div>
 
-                <a class="button" @click="${() => this._users = [...this._users, {}]}"><or-icon icon="plus"></or-icon><strong>${i18next.t("add")} ${i18next.t("user")}</strong></a> 
             </div>
             </div>
            
