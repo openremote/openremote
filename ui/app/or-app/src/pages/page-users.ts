@@ -13,7 +13,7 @@ import "@openremote/or-translate";
 import { EnhancedStore } from "@reduxjs/toolkit";
 import { AppStateKeyed } from "../app";
 import { Page } from "../types";
-import { Role, User } from "@openremote/model";
+import { ClientRole, Role, User } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { OrIcon } from "@openremote/or-icon";
 import { InputType, OrInputChangedEvent } from "@openremote/or-input";
@@ -71,6 +71,16 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
           padding: 20px;
         }
 
+        .panel-title {
+            text-transform: uppercase;
+            font-weight: bolder;
+            line-height: 1em;
+            color: var(--internal-or-asset-viewer-title-text-color);
+            margin-bottom: 20px;
+            flex: 0 0 auto;
+            letter-spacing: 0.025em;
+        }
+
         #table-users {
             width: 100%;
         }
@@ -80,11 +90,18 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
           overflow: hidden;
           max-height: 0;
           transition: max-height 0.25s ease-out;
-          padding: 0 20px 0 50px;
+          padding: 0 20px 0 30px;
         }
 
         or-input {
             margin-bottom: 20px;
+            margin-right: 20px;
+        }
+
+        or-icon {
+            vertical-align: middle;
+            --or-icon-width: 20px;
+            --or-icon-height: 20px;
         }
 
         .row {
@@ -97,12 +114,17 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         .column {
             display: flex;
             flex-direction: column;
-            margin: 10px;
+            margin: 0px;
             flex: 1 1 0;
+            
         }
 
         .mdc-data-table__header-cell {
           font-weight: bold;
+        }
+        
+        .attribute-meta-row td {
+          padding: 0;
         }
 
         .attribute-meta-row.expanded .meta-item-container {
@@ -124,6 +146,11 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         }
 
         @media screen and (max-width: 769px){
+          .row {
+            display: block;
+            flex-direction: column;
+          }
+
           .panel {
             border-radius: 0;
           }
@@ -141,6 +168,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
   @property()
   protected _userRoleMapper = {};
   
+  @property()
+  public validPassword?: boolean = true;
+
   @property()
   public realm?: string;
 
@@ -201,14 +231,18 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
   private _createUser(user, passwords, role) {
   manager.rest.api.UserResource.create(manager.displayRealm, user).then((response:any) => {
-    this.getUsers()
     if(passwords && passwords.resetPassword && passwords.repeatPassword) {
-      if(passwords.resetPassword !== passwords.repeatPassword) return;
+      if(passwords.resetPassword !== passwords.repeatPassword) {
+        this.validPassword = false; 
+        return;
+      }
       const credentials = {value: passwords.resetPassword}
       const id = response.data.id;
       manager.rest.api.UserResource.resetPassword(manager.displayRealm, id, credentials);
       if(role) {
-        this._updateRole(response.data, role)
+        this._updateRole(response.data, role);
+      } else {
+          this.getUsers()
       }
     }
   });
@@ -220,14 +254,19 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     const role = this._compositeRoles.find(c => c.id === value);
     if(role){
       role['assigned'] = true;
-      manager.rest.api.UserResource.updateUserRoles(manager.displayRealm, user.id, [role])
+      manager.rest.api.UserResource.updateUserRoles(manager.displayRealm, user.id, [role]).then(response => {
+        this.getUsers()
+      })
       this._userRoleMapper[user.id] = role;
     }
   }
 
   private _updateUser(user, passwords, role) {
       if(passwords && passwords.resetPassword && passwords.repeatPassword) {
-          if(passwords.resetPassword !== passwords.repeatPassword) return;
+          if(passwords.resetPassword !== passwords.repeatPassword) {
+            this.validPassword = false; 
+            return;
+          };
           const credentials = {value: passwords.resetPassword}
           manager.rest.api.UserResource.resetPassword(manager.displayRealm, user.id, credentials);
       }
@@ -278,6 +317,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     const selectOptions = this._compositeRoles.map(role => {
       return [role.id, role.name]
     })
+    const readonly = !manager.hasRole(ClientRole.WRITE_USER);
     return html`
          <div id="wrapper">
                 <div id="title">
@@ -286,7 +326,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                 )}
                 </div>
                 <div class="panel">
-                <p>${i18next.t("user_plural")}</p>
+                <p class="panel-title">${i18next.t("user_plural")}</p>
                   <div id="table-users" class="mdc-data-table">
                   <table class="mdc-data-table__table" aria-label="attribute list" >
                       <thead>
@@ -302,6 +342,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                         (user, index) => {
                           let passwords = {resetPassword: "", repeatPassword:""};
                           let role = undefined;
+                          const isSameUser = user.username === manager.username;
                           return html`
                           <tr id="mdc-data-table-row-${index}" class="mdc-data-table__row" @click="${(ev) => expanderToggle(ev, index)}">
                             <td
@@ -325,23 +366,23 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                               <div class="meta-item-container">
                                   <div class="row">
                                       <div class="column">
-                                          <or-input .label="${i18next.t("user")}" .type="${InputType.TEXT}" min="1" required .value="${user.username}" @or-input-changed="${(e: OrInputChangedEvent) => user.username = e.detail.value}"></or-input>            
-                                          <or-input .label="${i18next.t("email")}" .type="${InputType.EMAIL}" min="1" required .value="${user.email}" @or-input-changed="${(e: OrInputChangedEvent) => user.email = e.detail.value}"></or-input>            
-                                          <or-input .label="${i18next.t("firstName")}" .type="${InputType.TEXT}" min="1" required .value="${user.firstName}" @or-input-changed="${(e: OrInputChangedEvent) => user.firstName = e.detail.value}"></or-input>            
-                                          <or-input .label="${i18next.t("lastName")}" .type="${InputType.TEXT}" min="1" required .value="${user.lastName}" @or-input-changed="${(e: OrInputChangedEvent) => user.lastName = e.detail.value}"></or-input>            
+                                          <or-input ?readonly="${readonly}" .label="${i18next.t("user")}" .type="${InputType.TEXT}" min="1" required .value="${user.username}" @or-input-changed="${(e: OrInputChangedEvent) => user.username = e.detail.value}"></or-input>            
+                                          <or-input ?readonly="${readonly}" .label="${i18next.t("email")}" .type="${InputType.EMAIL}" min="1" .value="${user.email}" @or-input-changed="${(e: OrInputChangedEvent) => user.email = e.detail.value}"></or-input>            
+                                          <or-input ?readonly="${readonly}" .label="${i18next.t("firstName")}" .type="${InputType.TEXT}" min="1" .value="${user.firstName}" @or-input-changed="${(e: OrInputChangedEvent) => user.firstName = e.detail.value}"></or-input>            
+                                          <or-input ?readonly="${readonly}" .label="${i18next.t("surname")}" .type="${InputType.TEXT}" min="1" .value="${user.lastName}" @or-input-changed="${(e: OrInputChangedEvent) => user.lastName = e.detail.value}"></or-input>            
                                       </div>
 
                                       <div class="column">
-                                            <or-input .value="${this._userRoleMapper[user.id] ? this._userRoleMapper[user.id].id : null}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => role = e.detail.value}"></or-input>
+                                            <or-input  ?readonly="${readonly}"  ?disabled="${isSameUser}" .value="${this._userRoleMapper[user.id] ? this._userRoleMapper[user.id].id : null}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => role = e.detail.value}"></or-input>
 
-                                            <or-input .label="${i18next.t("resetPassword")}" .type="${InputType.PASSWORD}" min="1"  @or-input-changed="${(e: OrInputChangedEvent) => passwords.resetPassword = e.detail.value}"></or-input>            
-                                            <or-input .label="${i18next.t("repeatPassword")}" .type="${InputType.PASSWORD}" min="1" @or-input-changed="${(e: OrInputChangedEvent) => passwords.repeatPassword = e.detail.value}"></or-input>   
-                                          <or-input .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" required .value="${user.enabled}" @or-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}"></or-input>
+                                            <or-input ?readonly="${readonly}" .label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1"  @or-input-changed="${(e: OrInputChangedEvent) => passwords.resetPassword = e.detail.value}"></or-input>            
+                                            <or-input helperText="${this.validPassword ? "" : i18next.t("samePassword")}" helperPersistent ?readonly="${readonly}" .label="${i18next.t("repeatPassword")}" .type="${InputType.PASSWORD}" min="1" @or-input-changed="${(e: OrInputChangedEvent) => {passwords.repeatPassword = e.detail.value; }}"></or-input>   
+                                          <or-input  ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" required .value="${user.enabled}" @or-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}"></or-input>
                                       </div>
                                   </div>
 
                                   <div class="row">
-                                  ${user.id ? html`
+                                  ${user.id && !readonly ? html`
                                       <or-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteUser(user)}"></or-input>            
                                       <or-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateUser(user, passwords, role)}"></or-input>   
                                   ` : html`
@@ -354,7 +395,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                           </tr>
                         `
                       })}
-                      ${!!this._users[this._users.length -1].id ? html`
+                      ${!!this._users[this._users.length -1].id && !readonly ? html`
                         <tr class="mdc-data-table__row">
                           <td colspan="4">
                             <a class="button" @click="${() => this._users = [...this._users, {enabled: true}]}"><or-icon icon="plus"></or-icon><strong>${i18next.t("add")} ${i18next.t("user")}</strong></a> 

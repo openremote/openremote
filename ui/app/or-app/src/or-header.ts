@@ -209,6 +209,10 @@ class OrHeader extends LitElement {
                 margin: 10px 0;
             }
             
+            #drawer .menu-item  or-icon {
+                margin: 0 5px;
+            }
+
             #desktop-left .menu-item[selected] {
                 display: inline-block;
                 line-height: var(--internal-or-header-height);
@@ -345,6 +349,7 @@ class OrHeader extends LitElement {
 
     public _onRealmSelect(realm: string) {
         manager.displayRealm = realm;
+        window.sessionStorage.setItem('realm', realm);
         this.requestUpdate();
     }
     protected _hashCallback = (e: Event) => {
@@ -416,6 +421,8 @@ class OrHeader extends LitElement {
             return html``;
         }
 
+        const realm = window.sessionStorage.getItem('realm');
+        if(realm) manager.displayRealm = realm;
         const picker = this._getTenants().then((tenants) => {
 
             const menuItems = tenants.map((r) => {

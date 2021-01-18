@@ -130,7 +130,7 @@ export function headerItemUsers<S extends AppStateKeyed, A extends AnyAction>(or
 }
 export function headerItemRoles<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
-        icon: "account-group",
+        icon: "account-box-multiple",
         value: "roles",
         href: "roles",
         text: "role_plural",
